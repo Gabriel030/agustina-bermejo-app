@@ -1,10 +1,12 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
-import com.red_escuela.backend.service.FileStorageService;
+import com.red_escuela.backend.shared.storage.FileStorageService;
+import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +18,18 @@ public class AddProgramEnrollmentApplicationDocumentService implements AddProgra
     private final ProgramEnrollmentApplicationFinder applicationFinder;
     private final StudentDocumentRepository studentDocumentRepository;
     private final FileStorageService fileStorageService;
+    private final TransactionBoundFileCleanup transactionBoundFileCleanup;
+    private final Clock clock;
 
     public AddProgramEnrollmentApplicationDocumentService(ProgramEnrollmentApplicationFinder applicationFinder,
                                                             StudentDocumentRepository studentDocumentRepository,
-                                                            FileStorageService fileStorageService) {
+                                                            FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
+                                                            Clock clock) {
         this.applicationFinder = applicationFinder;
         this.studentDocumentRepository = studentDocumentRepository;
         this.fileStorageService = fileStorageService;
+        this.transactionBoundFileCleanup = transactionBoundFileCleanup;
+        this.clock = clock;
     }
 
     @Override
@@ -32,17 +39,18 @@ public class AddProgramEnrollmentApplicationDocumentService implements AddProgra
         Long studentId = application.getStudent().getId();
 
         studentDocumentRepository.findByStudentIdAndType(studentId, command.type()).ifPresent(existing -> {
-            fileStorageService.delete(existing.getFilePath());
+            transactionBoundFileCleanup.deleteAfterCommit(existing.getFilePath());
             studentDocumentRepository.delete(existing);
         });
 
         String relativePath = fileStorageService.store(studentId, command.type().name(), command.file());
+        transactionBoundFileCleanup.deleteIfRolledBack(relativePath);
 
         StudentDocument document = new StudentDocument();
         document.setStudent(application.getStudent());
         document.setType(command.type());
         document.setFilePath(relativePath);
-        document.setUploadedAt(LocalDateTime.now());
+        document.setUploadedAt(LocalDateTime.now(clock));
         return studentDocumentRepository.save(document);
     }
 }

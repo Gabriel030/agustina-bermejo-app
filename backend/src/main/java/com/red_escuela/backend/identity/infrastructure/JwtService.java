@@ -40,7 +40,7 @@ public class JwtService {
 
     public String generateAccessToken(Person person) {
         Instant now = Instant.now();
-        List<String> roles = person.getRoles().stream().map(Role::getName).toList();
+        List<String> roles = person.getRoles().stream().map(Role::getName).sorted().toList();
 
         return Jwts.builder()
                 .subject(String.valueOf(person.getId()))

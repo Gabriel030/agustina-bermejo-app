@@ -8,6 +8,8 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
+import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 
 @Getter
 @Setter
@@ -72,4 +74,30 @@ public class SectionEvaluationConfig {
 
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
+
+    public boolean isEditable() {
+        return status == SectionEvaluationConfigStatus.DRAFT || status == SectionEvaluationConfigStatus.REJECTED;
+    }
+
+    public boolean canBeSubmitted(LocalDateTime now) {
+        return status == SectionEvaluationConfigStatus.REJECTED
+                || (status == SectionEvaluationConfigStatus.DRAFT && isSubmissionWindowOpen(now));
+    }
+
+    public void submitForApproval(LocalDateTime now) {
+        if (!isEditable()) {
+            throw new InvalidSectionEvaluationConfigTransitionException(status, "enviar a aprobación");
+        }
+        if (!canBeSubmitted(now)) {
+            throw new SubmissionWindowClosedException(subjectSection.getId());
+        }
+        status = SectionEvaluationConfigStatus.PENDING_APPROVAL;
+        submittedAt = now;
+        rejectionReason = null;
+    }
+
+    private boolean isSubmissionWindowOpen(LocalDateTime now) {
+        LocalDateTime termStart = subjectSection.getTerm().getStartDate();
+        return termStart == null || now.isBefore(termStart);
+    }
 }

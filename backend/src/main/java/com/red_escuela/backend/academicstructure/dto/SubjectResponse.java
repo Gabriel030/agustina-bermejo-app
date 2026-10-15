@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 public record SubjectResponse(
         Long id, String code, String name, String description,
         Integer weeklyHours, Integer weeklyHoursLab, String gradeMode,
-        Integer maxFinalExamAttempts, String status) {
+        Integer maxFinalExamAttempts, String status, String rejectionReason) {
 
     public static SubjectResponse from(Subject subject) {
         return new SubjectResponse(
@@ -13,6 +13,7 @@ public record SubjectResponse(
                 subject.getWeeklyHours(), subject.getWeeklyHoursLab(),
                 subject.getGradeMode() == null ? null : subject.getGradeMode().name(),
                 subject.getMaxFinalExamAttempts(),
-                subject.getStatus() == null ? null : subject.getStatus().name());
+                subject.getStatus() == null ? null : subject.getStatus().name(),
+                subject.getRejectionReason());
     }
 }

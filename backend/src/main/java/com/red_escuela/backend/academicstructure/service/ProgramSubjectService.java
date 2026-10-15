@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
@@ -11,7 +12,7 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCorequisite;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExistsException;
@@ -77,6 +78,7 @@ public class ProgramSubjectService {
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         Subject subject = subjectRepository.findById(request.subjectId())
                 .orElseThrow(() -> new SubjectNotFoundException(request.subjectId()));
+        subject.requireAssignableToPlan();
 
         if (programSubjectRepository.findByProgramIdAndSubjectId(programId, request.subjectId()).isPresent()) {
             throw new ProgramSubjectAlreadyExistsException(programId, request.subjectId());
@@ -91,6 +93,7 @@ public class ProgramSubjectService {
         }
 
         validateCategoryInvariants(request.category(), request.curricularYear(), request.curricularTerm(), request.electiveGroupId());
+        program.requireCurricularYearWithinDuration(request.curricularYear());
 
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
@@ -116,6 +119,7 @@ public class ProgramSubjectService {
         ProgramSubject programSubject = findOrThrow(id);
 
         if (request.curricularYear() != null) {
+            programSubject.getProgram().requireCurricularYearWithinDuration(request.curricularYear());
             programSubject.setCurricularYear(request.curricularYear());
         }
         if (request.curricularTerm() != null) {
@@ -191,7 +195,7 @@ public class ProgramSubjectService {
         prerequisite.setProgramSubject(objetivo);
         prerequisite.setPrerequisiteProgramSubject(prerequisitePropuesto);
         prerequisite.setRequirementType(request.requirementType());
-        prerequisite.setMinGrade(request.minGrade());
+        prerequisite.setMinGrade(Grade.ofNullable(request.minGrade()));
         prerequisite.setNotes(request.notes());
 
         try {

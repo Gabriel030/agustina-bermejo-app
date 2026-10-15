@@ -1,0 +1,20 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.config`
+|Spring components
+|* `c.r.b.c.ActuatorSecurityConfig`
+* `c.r.b.c.JwtAuthenticationFilter`
+* `c.r.b.c.LocalSeedRunner`
+* `c.r.b.c.MetricsConfig`
+* `c.r.b.c.RequestIdFilter`
+* `c.r.b.c.SchedulerLockConfig`
+* `c.r.b.c.SecurityConfig`
+* `c.r.b.c.TimeZoneConfig`
+* `c.r.b.c.UserIdMdcFilter`
+|Bean references
+|* `c.r.b.i.infrastructure.JwtService` (in Identity)
+* `c.r.b.i.repository.PersonRepository` (in Identity)
+* `c.r.b.i.repository.RoleRepository` (in Identity)
+* `c.r.b.i.service.PersonFactory` (in Identity)
+|===

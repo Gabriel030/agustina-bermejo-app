@@ -1,32 +1,19 @@
 package com.red_escuela.backend.karate;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.intuit.karate.junit5.Karate;
+import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class KarateSuiteTest {
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    static {
-        postgres.start();
-    }
-
-    @DynamicPropertySource
-    static void configureDatasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-    }
-
+@SlowTest(reason = "Runs the whole Karate HTTP regression suite against a real started application")
+class KarateSuiteTest extends AbstractIntegrationTest {
     @LocalServerPort
     private int port;
 

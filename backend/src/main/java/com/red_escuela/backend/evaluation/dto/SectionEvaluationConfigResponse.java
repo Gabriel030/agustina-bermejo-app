@@ -1,5 +1,8 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Grade;
+
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 
 import java.time.LocalDate;
@@ -16,14 +19,15 @@ public record SectionEvaluationConfigResponse(
         String reviewedByName, LocalDateTime reviewedAt,
         LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
         String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,
-        Double minRegularGrade, Double minApprovalGrade, Double promotionMinGrade,
-        List<SectionInstructorSummary> instructors, boolean canEdit) {
+        BigDecimal minRegularGrade, BigDecimal minApprovalGrade, BigDecimal promotionMinGrade,
+        List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
 
     public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
-        return from(config, instructors, false);
+        return from(config, instructors, false, false);
     }
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors, boolean canEdit) {
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
+                                                       boolean canEdit, boolean canSubmit) {
         var section = config.getSubjectSection();
         var term = section.getTerm();
         var scheme = section.getEvaluationScheme();
@@ -41,9 +45,9 @@ public record SectionEvaluationConfigResponse(
                 scheme == null ? null : scheme.getName(),
                 scheme == null ? null : scheme.getExamCountExpected(),
                 scheme == null ? null : scheme.getHasFinal(),
-                scheme == null ? null : scheme.getMinRegularGrade(),
-                scheme == null ? null : scheme.getMinApprovalGrade(),
-                scheme == null ? null : scheme.getPromotionMinGrade(),
-                instructors, canEdit);
+                scheme == null ? null : Grade.valueOrNull(scheme.getMinRegularGrade()),
+                scheme == null ? null : Grade.valueOrNull(scheme.getMinApprovalGrade()),
+                scheme == null ? null : Grade.valueOrNull(scheme.getPromotionMinGrade()),
+                instructors, canEdit, canSubmit);
     }
 }

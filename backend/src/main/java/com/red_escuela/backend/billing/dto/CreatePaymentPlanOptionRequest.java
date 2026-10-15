@@ -7,6 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public record CreatePaymentPlanOptionRequest(
-        @NotBlank String description, @NotNull PaymentPlanCadence cadence, MonetaryAdjustmentValueRequest upfrontDiscount,
+        @NotBlank String description, @NotNull PaymentPlanCadence cadence, MonetaryAdjustmentRequest upfrontDiscount,
         boolean upfrontWindowEnabled, LocalDate upfrontWindowStart, LocalDate upfrontWindowEnd) {
 }

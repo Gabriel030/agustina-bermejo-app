@@ -36,6 +36,30 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Object[]> countsByCourseEnrollment(@Param("enrollmentIds") List<Long> enrollmentIds,
                                             @Param("absent") AttendanceStatus absent);
 
+    @Query("""
+            select a.programSubjectSectionEnrollment.id as enrollmentId, count(a) as total,
+                   sum(case when a.status in :presentLike then 1 else 0 end) as present,
+                   sum(case when a.status in :absences then 1 else 0 end) as absences
+            from Attendance a
+            where a.programSubjectSectionEnrollment.subjectSection.id = :sectionId
+            group by a.programSubjectSectionEnrollment.id
+            """)
+    List<EnrollmentAttendanceCounts> countsByProgramSection(@Param("sectionId") Long sectionId,
+                                                           @Param("presentLike") List<AttendanceStatus> presentLike,
+                                                           @Param("absences") List<AttendanceStatus> absences);
+
+    @Query("""
+            select a.courseSubjectSectionEnrollment.id as enrollmentId, count(a) as total,
+                   sum(case when a.status in :presentLike then 1 else 0 end) as present,
+                   sum(case when a.status in :absences then 1 else 0 end) as absences
+            from Attendance a
+            where a.courseSubjectSectionEnrollment.courseSubjectSection.id = :sectionId
+            group by a.courseSubjectSectionEnrollment.id
+            """)
+    List<EnrollmentAttendanceCounts> countsByCourseSection(@Param("sectionId") Long sectionId,
+                                                          @Param("presentLike") List<AttendanceStatus> presentLike,
+                                                          @Param("absences") List<AttendanceStatus> absences);
+
     List<Attendance> findByCourseSubjectSectionEnrollmentId(Long enrollmentId);
 
     Optional<Attendance> findByProgramSubjectSectionEnrollmentIdAndClassDate(Long enrollmentId, LocalDate classDate);

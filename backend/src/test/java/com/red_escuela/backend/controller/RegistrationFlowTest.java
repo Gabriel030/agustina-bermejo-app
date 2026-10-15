@@ -5,20 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.RegisterRequest;
 import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplicationRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -32,6 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
+import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
+import com.red_escuela.backend.billing.entity.PaymentMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -49,6 +51,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -81,6 +84,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     private Long persistInstitution() {
         Institution institution = new Institution();
@@ -116,9 +122,10 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(10);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
         template.setCreatedBy(director);
         entityManager.persist(template);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
@@ -189,15 +196,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         director.setStatus(StatusType.ACTIVE);
         entityManager.persist(director);
 
-        PriceRevision revision = new PriceRevision();
-        revision.setProgram(program);
-        revision.setCourse(course);
-        revision.setFeeType(feeType);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(amount);
-        revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-        revision.setCreatedBy(director);
-        entityManager.persist(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program == null ? null : program.getId(), course == null ? null : course.getId(), feeType, "Precio de prueba", ars(amount), LocalDate.now().minusDays(1), director.getId());
         entityManager.flush();
     }
 
@@ -209,6 +208,13 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return new RegisterRequest(
                 "Sofía", "Ramírez", "sofia.ramirez." + sufijo + "@example.com",
                 "sofia.ramirez." + sufijo, "Test1234", institutionId);
+    }
+
+    private void giveDni(String suffix) {
+        entityManager.flush();
+        entityManager.createQuery("update Person p set p.dni = :dni where p.username = :username")
+                .setParameter("dni", "9" + Math.abs(suffix.hashCode())).setParameter("username", "sofia.ramirez." + suffix).executeUpdate();
+        entityManager.clear();
     }
 
     @Test
@@ -283,9 +289,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("carrera", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("carrera");
 
-        String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -294,8 +300,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = objectMapper.readTree(solicitudResponse).get("id").asLong();
 
-        mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -314,14 +319,110 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         assertThat(persisted.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
 
         Student student = persisted.getStudent();
+        assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
+        assertThat(persisted.getAdmissionInvoice()).isNotNull();
         assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(),
                 java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
-                .isNotEmpty();
-        assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
-        assertThat(persisted.getPaymentReceipt()).isNotNull();
-        assertThat(persisted.getPaymentReceipt().getStatus())
-                .isEqualTo(com.red_escuela.backend.billing.entity.PaymentReceiptStatus.APPROVED);
+                .isEmpty();
+
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                java.util.List.of(new PaymentAllocationRequest(persisted.getAdmissionInvoice().getId(),
+                        persisted.getAdmissionInvoice().getAmounts().outstandingAmount().value())),
+                PaymentMethod.TRANSFER, false, null, null, null, null), persisted.getDecidedBy());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(com.red_escuela.backend.billing.invoice.domain.Invoice.class, persisted.getAdmissionInvoice().getId()).getPaymentStatus())
+                .isEqualTo(com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAID);
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-228")
+    void requestingAProgramOrACourseWithoutDniIsRejectedWithDniRequired() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        Course course = persistCourse(20);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        persistPriceRevision(null, course, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000));
+        String registerResponse = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("sindni", institutionId))))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+
+        mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));
+        mockMvc.perform(multipart("/me/course-enrollments")
+                        .file(comprobante())
+                        .param("courseId", course.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-228")
+    @org.junit.jupiter.api.Tag("D-233")
+    void aForeignStudentWithAPassportCanRequestAProgram() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        String registerResponse = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("pasaporte", institutionId))))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .content("{\"documentType\":\"PASSPORT\",\"dni\":\"X1234567\"}"))
+                .andExpect(status().isOk());
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-228")
+    @org.junit.jupiter.api.Tag("D-233")
+    void aDniWithLettersIsRejectedAndLeavesTheProgramRequestWithoutDocument() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        String registerResponse = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("dnibad", institutionId))))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .content("{\"documentType\":\"DNI\",\"dni\":\"12AB5678\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_DOCUMENT_NUMBER"));
+
+        mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));
     }
 
     @Test
@@ -336,9 +437,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("rechazo", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("rechazo");
 
-        String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -378,9 +479,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("selfapprove", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("selfapprove");
 
-        String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -393,16 +494,17 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void enrollingInACourseStaysUnderReviewAndOnlyGrantsTheRoleOnApprovingTheReceipt() throws Exception {
+    void enrollingInACourseStaysUnderReviewUntilTheReceiptIsApproved() throws Exception {
         Long institutionId = persistInstitution();
         Course course = persistCourse(20);
-        persistPriceRevision(null, course, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000));
+        persistPriceRevision(null, course, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("curso", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("curso");
 
         mockMvc.perform(multipart("/me/course-enrollments")
                         .file(comprobante())
@@ -417,26 +519,16 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.roles").isEmpty());
 
         String tokenAdministrativo = administrativeToken();
-        String pendientesResponse = mockMvc.perform(get("/payment-receipts")
+        String pendientesResponse = mockMvc.perform(get("/bank-transfer-receipts")
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         JsonNode pendientes = objectMapper.readTree(pendientesResponse);
         Long receiptId = pendientes.get(pendientes.size() - 1).get("id").asLong();
 
-        mockMvc.perform(post("/payment-receipts/" + receiptId + "/approve")
+        mockMvc.perform(post("/bank-transfer-receipts/" + receiptId + "/approve")
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
-
-        mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roles[0]").value("ALUMNO"));
-
-        String misSolicitudesResponse = mockMvc.perform(get("/me/course-enrollment-applications")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        assertThat(objectMapper.readTree(misSolicitudesResponse).get(0).get("courseEnrollmentId").isNull()).isFalse();
     }
 }

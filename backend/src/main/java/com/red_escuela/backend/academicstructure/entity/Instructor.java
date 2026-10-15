@@ -1,4 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
+
+import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.identity.entity.Person;
 
 import jakarta.persistence.*;
@@ -8,6 +10,7 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity

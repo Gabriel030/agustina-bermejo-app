@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
+import java.util.function.BooleanSupplier;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -26,14 +28,20 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstru
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.red_escuela.backend.shared.domain.Grade;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester;
 
 @Service
 public class GradeItemService {
+
+    private static final int WORKING_SCALE = 6;
 
     private final GradeItemRepository gradeItemRepository;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
@@ -43,6 +51,8 @@ public class GradeItemService {
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
+    private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -52,7 +62,9 @@ public class GradeItemService {
             CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
-            GraduationRequestAutoRequester graduationRequestAutoRequester) {
+            GraduationRequestAutoRequester graduationRequestAutoRequester,
+            AttendanceRiskCalculator attendanceRiskCalculator,
+            FinalExamEligibilityEvaluator finalExamEligibilityEvaluator) {
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
@@ -61,6 +73,8 @@ public class GradeItemService {
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.graduationRequestAutoRequester = graduationRequestAutoRequester;
+        this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
     }
 
     @Transactional
@@ -81,25 +95,54 @@ public class GradeItemService {
                 .findByProgramSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
+        boolean correction = isFinalCorrection(gradeItem, request);
+        requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
+        applyProgramEnrollmentCondition(enrollment, correction);
+        return gradeItem;
+    }
 
+    @Transactional
+    public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
+        subjectSectionEnrollmentRepository.findById(enrollmentId)
+                .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
+                .ifPresent(enrollment -> applyProgramEnrollmentCondition(enrollment, false));
+    }
+
+    @Transactional
+    public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
+        courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
+                .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
+                .ifPresent(enrollment -> applyCourseEnrollmentCondition(enrollment, false));
+    }
+
+    private void applyProgramEnrollmentCondition(SubjectSectionEnrollment enrollment, boolean finalCorrection) {
+        Long enrollmentId = enrollment.getId();
+        EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        var current = enrollment.statusAssumingRegularWhen(finalCorrection);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
+                current, () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
+        if (result == null && finalCorrection) {
+            result = new CourseworkResult(current, null, null);
+        }
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
                 enrollment.setFinalScore(result.finalScore());
                 enrollment.setFinalGradeType(result.finalGradeType());
+            } else if (finalCorrection) {
+                enrollment.setFinalScore(null);
+                enrollment.setFinalGradeType(null);
             }
             subjectSectionEnrollmentRepository.save(enrollment);
             if (result.status() == EnrollmentStatus.APPROVED) {
                 graduationRequestAutoRequester.createIfEligible(enrollment.getProgramEnrollment().getId());
             }
         }
-        return gradeItem;
     }
 
     @Transactional
@@ -120,22 +163,44 @@ public class GradeItemService {
                 .findByCourseSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
+        boolean correction = isFinalCorrection(gradeItem, request);
+        requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
+        applyCourseEnrollmentCondition(enrollment, correction);
+        return gradeItem;
+    }
 
+    private void applyCourseEnrollmentCondition(CourseSubjectSectionEnrollment enrollment, boolean finalCorrection) {
+        Long enrollmentId = enrollment.getId();
+        EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        var current = enrollment.statusAssumingRegularWhen(finalCorrection);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
+                current, () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
+        if (result == null && finalCorrection) {
+            result = new CourseworkResult(current, null, null);
+        }
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
                 enrollment.setFinalScore(result.finalScore());
                 enrollment.setFinalGradeType(result.finalGradeType());
+            } else if (finalCorrection) {
+                enrollment.setFinalScore(null);
+                enrollment.setFinalGradeType(null);
             }
             courseSubjectSectionEnrollmentRepository.save(enrollment);
         }
-        return gradeItem;
+    }
+
+    private CourseworkResult holdWhileFree(CourseworkResult result, EnrollmentStatus currentStatus, BooleanSupplier isFree) {
+        if (result == null || !result.passesCoursework() || currentStatus == EnrollmentStatus.REGULAR) {
+            return result;
+        }
+        return isFree.getAsBoolean() ? null : result;
     }
 
     public List<GradeItem> listByProgramEnrollment(Long enrollmentId) {
@@ -150,7 +215,7 @@ public class GradeItemService {
         return findOrThrow(id);
     }
 
-    public Double getExamBoardScore(Long examBoardId, Long enrollmentId) {
+    public Grade getExamBoardScore(Long examBoardId, Long enrollmentId) {
         return gradeItemRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId)
                 .stream()
                 .map(GradeItem::getScore)
@@ -178,18 +243,31 @@ public class GradeItemService {
         return examBoard;
     }
 
+    private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {
+        return request.type() == GradeItemType.FINAL && existing.getId() != null;
+    }
+
+    private void requireEligibleForFinalExam(CreateGradeItemRequest request, Long enrollmentId, boolean regular, boolean correction) {
+        if (request.type() == GradeItemType.FINAL && !correction) {
+            finalExamEligibilityEvaluator.requireEligible(enrollmentId, regular);
+        }
+    }
+
     private void applyData(GradeItem gradeItem, CreateGradeItemRequest request, ExamBoard examBoard) {
+        gradeItem.setScore(Grade.of(request.score()));
         gradeItem.setType(request.type());
         gradeItem.setSequenceNumber(request.sequenceNumber());
         gradeItem.setWeight(request.weight());
         gradeItem.setDate(request.date());
-        gradeItem.setScore(request.score());
-        gradeItem.setMaxScore(request.maxScore());
         gradeItem.setComments(request.comments());
         gradeItem.setExamBoard(examBoard);
     }
 
-    private record CourseworkResult(EnrollmentStatus status, Double finalScore, FinalGradeType finalGradeType) {
+    private record CourseworkResult(EnrollmentStatus status, Grade finalScore, FinalGradeType finalGradeType) {
+        boolean passesCoursework() {
+            return status == EnrollmentStatus.REGULAR
+                    || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);
+        }
     }
 
     private CourseworkResult calculateResult(
@@ -236,7 +314,7 @@ public class GradeItemService {
         if (!allApprovedIndividually(examenes, scheme.getPromotionMinGrade())) {
             return null;
         }
-        double promedio = examenes.stream().mapToDouble(GradeItem::getScore).average().orElse(0.0);
+        Grade promedio = Grade.average(examenes.stream().map(GradeItem::getScore).toList()).orElseThrow();
         return new CourseworkResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
     }
 
@@ -246,8 +324,8 @@ public class GradeItemService {
         boolean regularAlcanzado = estadoActual == EnrollmentStatus.REGULAR;
 
         if (todosLosParcialesCargados && scheme.getMinRegularGrade() != null) {
-            double promedio = applyAggregation(scheme.getAggregationMethod(), examenes);
-            if (promedio < scheme.getMinRegularGrade()) {
+            Optional<Grade> promedio = applyAggregation(scheme.getAggregationMethod(), examenes);
+            if (promedio.map(p -> !p.meets(scheme.getMinRegularGrade())).orElse(true)) {
                 return new CourseworkResult(EnrollmentStatus.FAILED, null, null);
             }
             regularAlcanzado = true;
@@ -259,7 +337,7 @@ public class GradeItemService {
                     : null;
         }
 
-        if (ultimoFinal.getScore() != null && ultimoFinal.getScore() >= scheme.getMinApprovalGrade()) {
+        if (ultimoFinal.getScore() != null && ultimoFinal.getScore().meets(scheme.getMinApprovalGrade())) {
             return new CourseworkResult(EnrollmentStatus.APPROVED, ultimoFinal.getScore(), FinalGradeType.FINAL_EXAM);
         }
 
@@ -281,53 +359,51 @@ public class GradeItemService {
         todos.addAll(tps);
 
         if (scheme.getMinRegularGrade() != null) {
-            double promedioRegular = applyAggregation(scheme.getAggregationMethod(), todos);
-            if (promedioRegular < scheme.getMinRegularGrade()) {
+            Optional<Grade> promedioRegular = applyAggregation(scheme.getAggregationMethod(), todos);
+            if (promedioRegular.map(p -> !p.meets(scheme.getMinRegularGrade())).orElse(true)) {
                 return new CourseworkResult(EnrollmentStatus.FAILED, null, null);
             }
         }
         if (scheme.getMinApprovalGrade() == null) {
             return null;
         }
-        double promedio = applyAggregation(scheme.getAggregationMethod(), todos);
-        if (promedio >= scheme.getMinApprovalGrade()) {
-            return new CourseworkResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
-        }
-        return null;
+        return applyAggregation(scheme.getAggregationMethod(), todos)
+                .filter(promedio -> promedio.meets(scheme.getMinApprovalGrade()))
+                .map(promedio -> new CourseworkResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION))
+                .orElse(null);
     }
 
-    private boolean allApprovedIndividually(List<GradeItem> items, double umbral) {
-        return !items.isEmpty() && items.stream().allMatch(i -> i.getScore() != null && i.getScore() >= umbral);
+    private boolean allApprovedIndividually(List<GradeItem> items, Grade umbral) {
+        return !items.isEmpty() && items.stream().allMatch(i -> i.getScore() != null && i.getScore().meets(umbral));
     }
 
-    private double applyAggregation(GradeAggregationMethod method, List<GradeItem> parciales) {
-        List<Double> scores = parciales.stream().map(GradeItem::getScore).filter(Objects::nonNull).toList();
+    private Optional<Grade> applyAggregation(GradeAggregationMethod method, List<GradeItem> parciales) {
+        List<Grade> scores = parciales.stream().map(GradeItem::getScore).filter(Objects::nonNull).toList();
         if (scores.isEmpty() || method == null) {
-            return 0.0;
+            return Optional.empty();
         }
         return switch (method) {
-            case SIMPLE_AVERAGE -> scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+            case SIMPLE_AVERAGE -> Grade.average(scores);
             case WEIGHTED_AVERAGE -> {
-                double sumaPonderada = 0.0;
-                double sumaPesos = 0.0;
+                BigDecimal sumaPonderada = BigDecimal.ZERO;
+                BigDecimal sumaPesos = BigDecimal.ZERO;
                 for (GradeItem item : parciales) {
                     if (item.getScore() == null) {
                         continue;
                     }
-                    double peso = item.getWeight() == null ? 0.0 : item.getWeight();
-                    sumaPonderada += item.getScore() * peso;
-                    sumaPesos += peso;
+                    BigDecimal peso = item.getWeight() == null ? BigDecimal.ZERO : BigDecimal.valueOf(item.getWeight());
+                    sumaPonderada = sumaPonderada.add(item.getScore().value().multiply(peso));
+                    sumaPesos = sumaPesos.add(peso);
                 }
-                yield sumaPesos == 0.0
-                        ? scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0)
-                        : sumaPonderada / sumaPesos;
+                yield sumaPesos.signum() == 0
+                        ? Grade.average(scores)
+                        : Optional.of(Grade.averageOf(sumaPonderada.divide(sumaPesos, WORKING_SCALE, RoundingMode.HALF_UP)));
             }
-            case MAX_SCORE -> scores.stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
+            case MAX_SCORE -> scores.stream().max(Comparator.naturalOrder());
             case LAST_ATTEMPT -> parciales.stream()
                     .filter(i -> i.getScore() != null)
                     .max(Comparator.comparing(GradeItem::getDate, Comparator.nullsFirst(Comparator.naturalOrder())))
-                    .map(GradeItem::getScore)
-                    .orElse(0.0);
+                    .map(GradeItem::getScore);
         };
     }
 

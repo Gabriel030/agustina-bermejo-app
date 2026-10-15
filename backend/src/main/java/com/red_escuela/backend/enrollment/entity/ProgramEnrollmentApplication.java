@@ -1,14 +1,15 @@
 package com.red_escuela.backend.enrollment.entity;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 
-import com.red_escuela.backend.exception.InvalidProgramEnrollmentApplicationStateException;
+import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.Program;
 
@@ -56,21 +57,29 @@ public class ProgramEnrollmentApplication {
     private String rejectionReason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_receipt_id")
-    private PaymentReceipt paymentReceipt;
+    @JoinColumn(name = "admission_invoice_id")
+    private Invoice admissionInvoice;
 
-    public void approve(Person decidedBy) {
+    @Column(name = "enrollment_failure_notified_at")
+    private LocalDateTime enrollmentFailureNotifiedAt;
+
+    public void markEnrollmentFailureNotified() {
+        this.enrollmentFailureNotifiedAt = ApplicationTime.now();
+    }
+
+    public void approve(Person decidedBy, Invoice admissionInvoice) {
         requirePending();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
         this.decidedBy = decidedBy;
-        this.decidedAt = LocalDateTime.now();
+        this.decidedAt = ApplicationTime.now();
+        this.admissionInvoice = admissionInvoice;
     }
 
     public void reject(Person decidedBy, String reason) {
         requirePending();
         this.status = ProgramEnrollmentApplicationStatus.REJECTED;
         this.decidedBy = decidedBy;
-        this.decidedAt = LocalDateTime.now();
+        this.decidedAt = ApplicationTime.now();
         this.rejectionReason = reason;
     }
 

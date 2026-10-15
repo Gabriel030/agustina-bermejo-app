@@ -9,6 +9,7 @@ import java.util.List;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 
 @Getter
 @Setter
@@ -53,6 +54,16 @@ public class ExamBoard {
 
     @OneToMany(mappedBy = "examBoard", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExamBoardInstructor> tribunal;
+
+    public void close(LocalDateTime now) {
+        if (status == ExamBoardStatus.CLOSED) {
+            return;
+        }
+        if (now.isBefore(examDate)) {
+            throw new ExamBoardNotYetTakenException(id);
+        }
+        status = ExamBoardStatus.CLOSED;
+    }
 
     @PrePersist
     @PreUpdate

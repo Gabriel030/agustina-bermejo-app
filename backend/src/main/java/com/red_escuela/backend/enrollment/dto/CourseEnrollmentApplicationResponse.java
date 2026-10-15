@@ -9,15 +9,17 @@ public record CourseEnrollmentApplicationResponse(
         String courseName,
         String paymentStatus,
         String rejectionReason,
-        Long courseEnrollmentId) {
+        Long courseEnrollmentId,
+        String courseEnrollmentStatus) {
     public static CourseEnrollmentApplicationResponse from(CourseEnrollmentApplication application) {
         return new CourseEnrollmentApplicationResponse(
                 application.getId(),
                 application.getStudent().getId(),
                 application.getCourse().getId(),
                 application.getCourse().getName(),
-                application.getPaymentReceipt().getStatus().name(),
-                application.getPaymentReceipt().getRejectionReason(),
-                application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getId());
+                application.getPaymentReceipt() == null ? "APPROVED" : application.getPaymentReceipt().getStatus().name(),
+                application.getPaymentReceipt() == null ? null : application.getPaymentReceipt().getRejectionReason(),
+                application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getId(),
+                application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getStatus().name());
     }
 }

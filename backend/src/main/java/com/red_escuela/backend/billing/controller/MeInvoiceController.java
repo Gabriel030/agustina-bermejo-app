@@ -1,19 +1,18 @@
 package com.red_escuela.backend.billing.controller;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 
-import com.red_escuela.backend.billing.dto.BillingStandingResponse;
-import com.red_escuela.backend.billing.dto.CreditNoteResponse;
-import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
-import com.red_escuela.backend.billing.dto.InvoiceResponse;
-import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
+import com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse;
+import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
+import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
+import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusUseCase;
+import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
+import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
-import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
-import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
@@ -35,33 +34,33 @@ import java.util.stream.Stream;
 public class MeInvoiceController {
 
     private final InvoiceQueryService invoiceQueryService;
+    private final BankTransferReceiptResponseAssembler receiptResponseAssembler;
     private final CurrentStudentService currentStudentService;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
     private final CreateMpPreferenceUseCase createMpPreferenceUseCase;
+    private final GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase;
+    private final GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase;
 
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
                                 UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase,
                                 CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                                ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
-                                CreateMpPreferenceUseCase createMpPreferenceUseCase) {
+                                CreateMpPreferenceUseCase createMpPreferenceUseCase,
+                                GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase,
+                                GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase,
+                                BankTransferReceiptResponseAssembler receiptResponseAssembler) {
         this.invoiceQueryService = invoiceQueryService;
+        this.receiptResponseAssembler = receiptResponseAssembler;
         this.currentStudentService = currentStudentService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.findOwnPaymentReceiptsUseCase = findOwnPaymentReceiptsUseCase;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
         this.createMpPreferenceUseCase = createMpPreferenceUseCase;
-    }
-
-    @GetMapping("/credit-notes")
-    public List<CreditNoteResponse> myCreditNotes() {
-        Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return listCreditNotesForStudentUseCase.list(studentId).stream().map(CreditNoteResponse::from).toList();
+        this.getOwnCourseEnrollmentBillingStatusUseCase = getOwnCourseEnrollmentBillingStatusUseCase;
+        this.getOwnProgramEnrollmentBillingStatusUseCase = getOwnProgramEnrollmentBillingStatusUseCase;
     }
 
     @PostMapping("/invoices/{id}/mp-preference")
@@ -71,17 +70,17 @@ public class MeInvoiceController {
         return createMpPreferenceUseCase.create(id, studentId);
     }
 
-    @PostMapping("/invoices/{id}/payment-receipts")
+    @PostMapping("/invoices/{id}/bank-transfer-receipts")
     @ResponseStatus(HttpStatus.CREATED)
-    public PaymentReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
+    public BankTransferReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return PaymentReceiptResponse.from(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
+        return receiptResponseAssembler.assembleBankTransferReceiptResponse(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
     }
 
-    @GetMapping("/payment-receipts")
-    public List<PaymentReceiptResponse> myReceipts() {
+    @GetMapping("/bank-transfer-receipts")
+    public List<BankTransferReceiptResponse> myReceipts() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return findOwnPaymentReceiptsUseCase.findOwn(studentId).stream().map(PaymentReceiptResponse::from).toList();
+        return receiptResponseAssembler.assembleBankTransferReceiptResponses(findOwnPaymentReceiptsUseCase.findOwn(studentId));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")
@@ -91,38 +90,34 @@ public class MeInvoiceController {
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")
-    public EnrollmentBillingStatusResponse myCourseInstallments(@PathVariable Long id) {
+    public MeEnrollmentBillingStatusResponse myCourseInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return toStatusResponse(invoiceQueryService.courseBillable(id), invoiceQueryService.byOwnCourse(studentId, id));
+        return getOwnCourseEnrollmentBillingStatusUseCase.get(studentId, id);
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
-    public EnrollmentBillingStatusResponse myProgramInstallments(@PathVariable Long id) {
+    public MeEnrollmentBillingStatusResponse myProgramInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return toStatusResponse(invoiceQueryService.programBillable(id), invoiceQueryService.byOwnProgram(studentId, id));
+        return getOwnProgramEnrollmentBillingStatusUseCase.get(studentId, id);
     }
 
-    @GetMapping("/billing-standing")
-    public List<BillingStandingResponse> myBillingStanding() {
+    @GetMapping("/enrollment-payment-status")
+    public List<EnrollmentPaymentStatusResponse> myPaymentStatus() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return billingStandingOf(studentId);
+        return paymentStatusOf(studentId);
     }
 
-    private List<BillingStandingResponse> billingStandingOf(Long studentId) {
+    private List<EnrollmentPaymentStatusResponse> paymentStatusOf(Long studentId) {
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> billingStandingResponse("CourseEnrollment", enrollment.getId(), enrollment)),
+                        .map(enrollment -> enrollmentPaymentStatusResponse("CourseEnrollment", enrollment.getId(), enrollment)),
                 programEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> billingStandingResponse("ProgramEnrollment", enrollment.getId(), enrollment)))
+                        .map(enrollment -> enrollmentPaymentStatusResponse("ProgramEnrollment", enrollment.getId(), enrollment)))
                 .toList();
     }
 
-    private BillingStandingResponse billingStandingResponse(String enrollmentType, Long enrollmentId, BillableEnrollment billable) {
-        return new BillingStandingResponse(enrollmentType, enrollmentId, billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt());
+    private EnrollmentPaymentStatusResponse enrollmentPaymentStatusResponse(String enrollmentType, Long enrollmentId, BillableEnrollment billable) {
+        return new EnrollmentPaymentStatusResponse(enrollmentType, enrollmentId, billable.getPaymentStatus().name(), billable.getPaymentStatusUpdatedAt());
     }
 
-    private EnrollmentBillingStatusResponse toStatusResponse(BillableEnrollment billable, List<Invoice> invoices) {
-        return new EnrollmentBillingStatusResponse(billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt(),
-                invoices.stream().map(InvoiceResponse::from).toList(), null, null, null, null);
-    }
 }

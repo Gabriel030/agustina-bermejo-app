@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;

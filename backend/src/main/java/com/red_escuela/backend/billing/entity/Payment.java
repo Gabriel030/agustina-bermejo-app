@@ -1,10 +1,11 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +13,8 @@ import com.red_escuela.backend.identity.entity.Person;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "payment")
+@Entity(name = "LegacyPayment")
+@Table(name = "legacy_payment")
 public class Payment {
     @Id
     @Column(name = "id")
@@ -24,8 +25,12 @@ public class Payment {
     @Column(name = "version")
     private Long version;
 
-    @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "amount", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "amount_currency", nullable = false))
+    })
+    private Money amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "method", nullable = false)
@@ -51,6 +56,10 @@ public class Payment {
     @Column(name = "card_installments")
     private Integer cardInstallments;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "card_type")
+    private CardType cardType;
+
     @Column(name = "notes", length = 500)
     private String notes;
 
@@ -65,7 +74,7 @@ public class Payment {
 
     @PrePersist
     void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = ApplicationTime.now();
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -74,6 +83,6 @@ public class Payment {
 
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = ApplicationTime.now();
     }
 }

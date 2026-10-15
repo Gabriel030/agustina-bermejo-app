@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.exception;
 
-public class MercadoPagoGatewayException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.ExternalServiceException;
+
+public class MercadoPagoGatewayException extends ExternalServiceException {
 
     public MercadoPagoGatewayException(String message, Throwable cause) {
         super(message, cause);

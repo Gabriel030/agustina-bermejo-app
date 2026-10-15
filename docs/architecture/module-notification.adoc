@@ -1,0 +1,18 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.notification`
+|Spring components
+|_Event listeners_
+
+* `c.r.b.n.NotificationDispatcher`
+
+_Others_
+
+* `c.r.b.n.NotificationChannel` (via `c.r.b.n.InAppNotificationChannel`)
+|Bean references
+|* `c.r.b.i.repository.PersonRepository` (in Identity)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+|Events listened to
+|* `c.r.b.n.DomainNotificationEvent` 
+|===

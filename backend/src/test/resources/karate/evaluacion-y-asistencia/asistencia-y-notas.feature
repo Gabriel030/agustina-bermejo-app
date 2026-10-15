@@ -32,13 +32,14 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA notas ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -87,13 +88,13 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7 }
     When method post
     Then status 201
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 8, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 8 }
     When method post
     Then status 201
 
@@ -105,7 +106,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 6, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 6 }
     When method post
     Then status 201
 
@@ -118,7 +119,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'FINAL', sequenceNumber: 1, date: '2026-06-01T00:00:00', score: 8, maxScore: 10 }
+    And request { type: 'FINAL', sequenceNumber: 1, date: '2026-06-01T00:00:00', score: 8 }
     When method post
     Then status 201
 
@@ -147,19 +148,19 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 2, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 2 }
     When method post
     Then status 201
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 3, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 3 }
     When method post
     Then status 201
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 1, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 1 }
     When method post
     Then status 201
 
@@ -195,7 +196,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + otroDocente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7 }
     When method post
     Then status 403
 

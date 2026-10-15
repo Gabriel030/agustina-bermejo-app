@@ -3,20 +3,111 @@ name: CI
 on:
   push:
     branches: [develop, master]
-    paths-ignore: ['**.md', 'docs/**']
+    paths-ignore: ['*.md', 'docs/**']
   pull_request:
     branches: [develop, master]
-    paths-ignore: ['**.md', 'docs/**']
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore: ['*.md', 'docs/**']
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  backend:
+  backend-changes:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      relevant: ${{ steps.changes.outputs.relevant }}
+      baseline_run: ${{ steps.baseline.outputs.run_id }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect backend changes
+        id: changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          relevant=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
+              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/)'; then
+                relevant=false
+              fi
+            fi
+          fi
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          echo "backend changes: $relevant"
+
+      - name: Resolve the latest integration-branch run that published test timings
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          run_id=""
+          for candidate in $(gh run list --repo "${{ github.repository }}" --workflow ci.yml --branch develop --event push --status success --limit 10 --json databaseId --jq '.[].databaseId' 2>/dev/null); do
+            if gh api "repos/${{ github.repository }}/actions/runs/$candidate/artifacts" --jq '.artifacts[] | select(.name == "test-baseline" and .expired == false) | .id' 2>/dev/null | grep -q .; then
+              run_id="$candidate"
+              break
+            fi
+          done
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "baseline run: ${run_id:-none (the versioned timings.txt is used)}"
+
+  backend-contract:
+    runs-on: ubuntu-latest
+    needs: backend-changes
+    if: needs.backend-changes.outputs.relevant == 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the OpenAPI contract for breaking changes
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'contract-break-approved') }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          git fetch origin "${{ github.base_ref }}"
+          if ! git show "origin/${{ github.base_ref }}:contracts/openapi.json" > "$RUNNER_TEMP/openapi-base.json" 2>/dev/null; then
+            echo "The base branch has no contracts/openapi.json yet: skipping the breaking-change check"
+            exit 0
+          fi
+          scripts/oasdiff-breaking.sh "$RUNNER_TEMP/openapi-base.json" contracts/openapi.json
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    needs: backend-changes
+    if: needs.backend-changes.outputs.relevant == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    name: backend-tests (${{ matrix.shard }})
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mark the shard start
+        run: echo "SHARD_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Use the timings measured on the integration branch when available
+        if: needs.backend-changes.outputs.baseline_run != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ needs.backend-changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D "$RUNNER_TEMP/baseline"
+          python3 .github/scripts/test-shards.py use "$RUNNER_TEMP/baseline/timings.txt"
+
+      - name: Verify the shard assignment covers every test class once
+        run: python3 .github/scripts/test-shards.py verify 4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -24,19 +115,188 @@ jobs:
           distribution: temurin
           java-version: |
             21
-          cache: maven
-          cache-dependency-path: backend/pom.xml
 
-      - name: Run backend test suite
+      - name: Cache the Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Compile and run the shard
         working-directory: backend
-        run: ./mvnw clean verify
+        env:
+          EXCLUDED_GROUPS: ${{ github.event_name == 'push' && 'none' || 'docs' }}
+        run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 4)" -Dsurefire.failIfNoSpecifiedTests=false "-Dtest.excludedGroups=$EXCLUDED_GROUPS"
+
+      - name: Enforce the time budget of the shard
+        if: always()
+        run: |
+          export SHARD_END=$(date +%s)
+          mkdir -p shard-out
+          python3 .github/scripts/test-budget.py check-shard --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json
+
+      - name: Collect the shard reports
+        if: always()
+        run: |
+          mkdir -p shard-out/reports
+          cp backend/target/surefire-reports/TEST-*.xml shard-out/reports/ 2>/dev/null || true
+          cp backend/target/spring-contexts/contexts.txt shard-out/contexts.txt 2>/dev/null || true
+
+      - name: Upload the shard reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-reports-${{ matrix.shard }}
+          path: shard-out
+          retention-days: 7
+          if-no-files-found: ignore
+
+  test-report:
+    runs-on: ubuntu-latest
+    needs: [backend-changes, backend-tests]
+    if: always() && needs.backend-changes.outputs.relevant == 'true' && needs.backend-tests.result != 'skipped'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Self-test of the budget scripts
+        run: python3 -m unittest discover -s .github/scripts -p 'test_budget_scripts.py'
+
+      - name: Download the shard reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: shard-reports-*
+          path: shards
+
+      - name: Download the integration-branch baseline
+        if: needs.backend-changes.outputs.baseline_run != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "${{ needs.backend-changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D baseline
+
+      - name: Build the report and enforce the Spring context cap
+        id: report
+        shell: bash
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" > changed.txt || true
+          fi
+          args=(aggregate --shards shards --out report-out)
+          [ -f baseline/metrics.json ] && args+=(--baseline baseline/metrics.json)
+          [ -f changed.txt ] && args+=(--changed changed.txt)
+          python3 .github/scripts/test-budget.py "${args[@]}"
+          status=$?
+          [ -f report-out/report.md ] && cat report-out/report.md >> "$GITHUB_STEP_SUMMARY"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Comment the report on the pull request
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('report-out/report.md') != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          repo="${{ github.repository }}"
+          number="${{ github.event.pull_request.number }}"
+          existing=$(gh api "repos/$repo/issues/$number/comments" --paginate --jq '.[] | select(.body | contains("<!-- test-time-report -->")) | .id' | head -n 1)
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/$repo/issues/comments/$existing" -F body=@report-out/report.md > /dev/null
+          else
+            gh api --method POST "repos/$repo/issues/$number/comments" -F body=@report-out/report.md > /dev/null
+          fi
+
+      - name: Regenerate the timings from this run
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && needs.backend-tests.result == 'success'
+        run: |
+          mkdir -p baseline-out
+          python3 .github/scripts/test-shards.py update-xml shards --out baseline-out/timings.txt
+          cp report-out/metrics.json baseline-out/metrics.json
+
+      - name: Publish the timings as the baseline for pull requests
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && needs.backend-tests.result == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-baseline
+          path: baseline-out
+          retention-days: 60
+
+      - name: Fail when the Spring context cap is exceeded
+        if: steps.report.outputs.status != '0'
+        run: exit 1
+
+  backend:
+    runs-on: ubuntu-latest
+    needs: [backend-changes, backend-tests, backend-contract, test-report]
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    steps:
+      - name: Aggregate the backend results
+        shell: bash
+        run: |
+          set -uo pipefail
+          echo "changes=${{ needs.backend-changes.result }} tests=${{ needs.backend-tests.result }} contract=${{ needs.backend-contract.result }} report=${{ needs.test-report.result }}"
+          if [ "${{ needs.backend-changes.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.backend-changes.outputs.relevant }}" != "true" ]; then
+            echo "no backend changes"
+            exit 0
+          fi
+          [ "${{ needs.backend-tests.result }}" = "success" ] && [ "${{ needs.test-report.result }}" = "success" ] && { [ "${{ needs.backend-contract.result }}" = "success" ] || [ "${{ needs.backend-contract.result }}" = "skipped" ]; }
+
+  local-tests-log:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require the local test log when the billing domain changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+          if printf '%s\n' "$changed" | grep -qE '^backend/(pom\.xml|src/main/java/com/red_escuela/backend/(shared/domain|billing/(operation|reporting/domain|configuration/(policy|domain)|authorization/domain|invoice/(domain|policy|operation)|account/(domain|policy)|note/(domain|policy)|planning/(policy|domain|service)|collections/(policy|domain)|pricing/(domain|policy)|payment/(domain|policy|gateway)))/|src/main/java/com/red_escuela/backend/billing/infrastructure/(MpWebhookSignatureVerifier|SdkMercadoPagoPaymentFetcher)\.java)'; then
+            if ! printf '%s\n' "$changed" | grep -qx 'docs/testing/local-test-log.md'; then
+              echo "This PR changes code that PIT mutates (targetClasses of the mutation profile): add its local PIT run to docs/testing/local-test-log.md"
+              exit 1
+            fi
+          fi
+          echo "local test log check passed"
 
   frontend:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect frontend changes
+        id: changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          relevant=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
+              if ! printf '%s\n' "$changed" | grep -qE '^(frontend/|\.github/workflows/)'; then
+                relevant=false
+              fi
+            fi
+          fi
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          echo "frontend changes: $relevant"
 
       - name: Set up Node
+        if: steps.changes.outputs.relevant == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,18 +304,27 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm ci
 
+      - name: Audit production dependencies
+        if: steps.changes.outputs.relevant == 'true'
+        working-directory: frontend
+        run: npm run audit:prod
+
       - name: Lint
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run lint
 
       - name: Build
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run build
 
       - name: Run frontend test suite
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run test
 

@@ -11,7 +11,7 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
-import com.red_escuela.backend.exception.RoleNotFoundException;
+import com.red_escuela.backend.identity.exception.RoleNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -48,8 +48,8 @@ public class CreateStaffService implements CreateStaffUseCase {
         staffRoleAssignmentPolicy.requireCanAssign(requestedRole);
 
         Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
-        person.setDni(request.dni());
-        person.setUsername(request.dni());
+        person.changeDocument(request.documentType(), request.dni());
+        person.setUsername(person.getDni());
 
         var address = person.getAddress();
         address.setStreet(request.street());
@@ -67,7 +67,7 @@ public class CreateStaffService implements CreateStaffUseCase {
         try {
             personRepository.saveAndFlush(person);
         } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
+            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
 
         if ("DOCENTE".equals(requestedRole)) {
@@ -76,7 +76,7 @@ public class CreateStaffService implements CreateStaffUseCase {
             instructorRepository.save(instructor);
         }
 
-        requestPasswordResetUseCase.requestReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.emailValue());
 
         return new StaffUseCaseResult(person, requestedRole);
     }

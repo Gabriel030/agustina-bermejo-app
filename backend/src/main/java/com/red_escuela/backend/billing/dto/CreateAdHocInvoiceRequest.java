@@ -1,16 +1,16 @@
 package com.red_escuela.backend.billing.dto;
 
-import com.red_escuela.backend.billing.entity.FeeType;
-import jakarta.validation.constraints.DecimalMin;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.validation.PositiveMoney;
 import java.time.LocalDate;
 
 public record CreateAdHocInvoiceRequest(
         @NotNull FeeType feeType,
-        @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
+        @NotNull @PositiveMoney Money amount,
         @NotNull LocalDate dueDate,
         @NotBlank String description,
         Long subjectId,

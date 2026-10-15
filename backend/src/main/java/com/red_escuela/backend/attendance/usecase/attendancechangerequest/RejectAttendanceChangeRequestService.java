@@ -7,10 +7,10 @@ import com.red_escuela.backend.attendance.service.AttendanceChangeRequestFinder;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.notification.AttendanceChangeRequestRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class RejectAttendanceChangeRequestService implements RejectAttendanceChangeRequestUseCase {
@@ -38,7 +38,7 @@ public class RejectAttendanceChangeRequestService implements RejectAttendanceCha
 
         request.setStatus(AttendanceChangeRequestStatus.REJECTED);
         request.setApprovedBy(currentPersonService.resolveCurrentPerson());
-        request.setApprovedAt(LocalDateTime.now());
+        request.setApprovedAt(ApplicationTime.now());
         AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
 
         eventPublisher.publishEvent(new AttendanceChangeRequestRejectedEvent(saved, saved.getRequestedBy().getPerson()));

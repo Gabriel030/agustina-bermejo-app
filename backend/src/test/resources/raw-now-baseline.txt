@@ -1,0 +1,13 @@
+com.red_escuela.backend.academicstructure.dto.CourseResponse
+com.red_escuela.backend.academicstructure.dto.TermResponse
+com.red_escuela.backend.academicstructure.service.CourseSectionService
+com.red_escuela.backend.academicstructure.service.SubjectSectionService
+com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleService
+com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService
+com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService
+com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService
+com.red_escuela.backend.announcement.service.ScheduledAnnouncementDispatchJob
+com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementService
+com.red_escuela.backend.announcement.usecase.announcement.ListMyAnnouncementsService
+com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementService
+com.red_escuela.backend.identity.infrastructure.JwtService

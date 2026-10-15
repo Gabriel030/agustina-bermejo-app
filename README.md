@@ -8,17 +8,19 @@ El proyecto sigue una arquitectura de tres capas:
 
 ### Backend (Spring Boot)
 - **Capa de Entidades**: Modelos de datos que representan las tablas de la base de datos.
-- **Repositorios**: Interfaces que extienden JpaRepository para el acceso a datos.
+- **Repositorios**: Interfaces que extienden `JpaRepository` para el acceso a datos.
 - **Servicios**: Lógica de negocio y reglas de la aplicación.
 - **Controladores**: Manejan las peticiones HTTP y devuelven respuestas.
 - **DTOs**: Objetos para transferencia de datos entre capas.
 - **Seguridad**: Autenticación y autorización con JWT.
+- **Migraciones**: Versionado de esquema con Flyway.
 
 ### Frontend (React + Vite)
 - **Componentes**: UI reutilizables.
 - **Vistas**: Páginas principales de la aplicación.
 - **Servicios**: Llamadas a la API del backend.
 - **Contexto**: Gestión del estado global de la aplicación.
+- **Ruteo**: Navegación con React Router.
 
 ### Base de Datos
 - MySQL/PostgreSQL para almacenamiento persistente.
@@ -26,9 +28,14 @@ El proyecto sigue una arquitectura de tres capas:
 
 ## 🗄️ Modelo de Datos
 
-A continuación se muestra el diagrama entidad-relación del sistema:
+- **Diagrama DER (versión previa)**  
+  ![Diagrama DER](backend/src/main/java/com/red_escuela/backend/repository/der/DER.png)
 
-![Diagrama DER](https://github.com/Gabriel030/agustina-bermejo-app/blob/master/backend/src/main/java/com/red_escuela/backend/repository/der/DER.png)
+- **Nuevo DDL v2**  
+  ![DDL v2](backend/src/main/java/com/red_escuela/backend/repository/der/DDL-v2.png)
+
+  Enlace directo en GitHub (opcional):  
+  https://github.com/Gabriel030/agustina-bermejo-app/blob/master/backend/src/main/java/com/red_escuela/backend/repository/der/DDL-v2.png
 
 ## 🚀 Características Principales
 
@@ -38,6 +45,17 @@ A continuación se muestra el diagrama entidad-relación del sistema:
 - Gestión de calificaciones
 - Programas de estudio
 - Eventos institucionales
+- Seguridad con JWT y control de acceso por roles
+- Migraciones automáticas con Flyway
+
+## 🆕 Novedades de esta versión
+
+- **DDL v2** con relaciones, claves foráneas e índices actualizados.
+- **Migraciones Flyway** alineadas al nuevo esquema.
+- **DTOs y servicios** ajustados al nuevo modelo de datos.
+- **Endpoints actualizados** para reflejar cambios en entidades y relaciones.
+- **Mejoras de seguridad** y manejo de roles/permisos.
+- **Ajustes de frontend** para consumir los nuevos contratos del backend.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -46,7 +64,8 @@ A continuación se muestra el diagrama entidad-relación del sistema:
 - Spring Boot 3.x
 - Spring Security
 - JPA/Hibernate
-- JWT para autenticación
+- JWT
+- Flyway
 - Maven
 
 ### Frontend
@@ -72,9 +91,10 @@ A continuación se muestra el diagrama entidad-relación del sistema:
    ```bash
    cd backend
    mvn spring-boot:run
-   ```
+
 4. Ejecutar el frontend:
    ```bash
+
    cd frontend
    npm install
    npm run dev

@@ -1,0 +1,26 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.billing`
+|Bean references
+|* `c.r.b.i.service.CurrentStudentService` (in Identity)
+* `c.r.b.e.repository.CourseEnrollmentRepository` (in Enrollment)
+* `c.r.b.e.repository.ProgramEnrollmentRepository` (in Enrollment)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.s.storage.FileStorageService` (in Shared)
+* `c.r.b.s.domain.policy.PolicySet` (in Shared)
+* `c.r.b.a.repository.SubjectRepository` (in Academic structure)
+* `c.r.b.e.repository.ExamBoardRegistrationRepository` (in Evaluation)
+* `c.r.b.a.repository.ProgramRepository` (in Academic structure)
+* `c.r.b.a.repository.TermRepository` (in Academic structure)
+* `c.r.b.e.service.ProgramEnrollmentService` (in Enrollment)
+* `c.r.b.e.service.CourseEnrollmentService` (in Enrollment)
+* `c.r.b.e.repository.EnrollmentFeeExemptionRepository` (in Enrollment)
+* `c.r.b.i.repository.StudentRepository` (in Identity)
+* `c.r.b.s.storage.TransactionBoundFileCleanup` (in Shared)
+* `c.r.b.a.repository.CourseRepository` (in Academic structure)
+* `c.r.b.e.repository.CourseEnrollmentApplicationRepository` (in Enrollment)
+|Events listened to
+|* `c.r.b.n.SuspensionLiftedEvent` 
+
+|===

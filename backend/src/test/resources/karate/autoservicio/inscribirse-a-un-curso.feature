@@ -26,21 +26,28 @@ Feature: Caso de uso — Inscribirse a un curso
     * def nombreCurso = 'Karate - Curso ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', schedule: 'Sáb 10-13hs', capacity: 20, price: 15000, durationMonths: 3 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', schedule: 'Sáb 10-13hs', capacity: 20, price: { amount: '15000', currency: 'ARS' }, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
 
-    # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(RECURRING_FEE) desde el
+    # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(MONTHLY_INSTALLMENT) desde el
     # price de arriba — no hace falta un paso aparte.
 
     # Alumno recién registrado
+    * def dniAlumno = '' + (30000000 + java.lang.System.nanoTime() % 60000000)
     * def emailAlumno = 'karate.inscribirmecurso.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
     And request { nombre: 'QA', apellido: 'InscribeCurso', email: '#(emailAlumno)', username: '#(emailAlumno)', password: '#(passwordValida)', institutionId: '#(institutionId)' }
     When method post
     Then status 201
     * def alumnoToken = response.accessToken
+
+    Given path '/me'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And request { dni: '#(dniAlumno)' }
+    When method put
+    Then status 200
 
   Scenario: Inscripción con comprobante queda en revisión, aprobar recién ahí otorga ALUMNO y crea el CourseEnrollment
     # Solicitar — 201, PENDING_REVIEW, sin CourseEnrollment todavía
@@ -72,7 +79,7 @@ Feature: Caso de uso — Inscribirse a un curso
     # bandeja es global (sin filtro por alumno, ver spec técnica), así que se toma el de
     # id más alto — el propio, porque ningún otro comprobante se crea entre el paso de
     # arriba y este (ejecución secuencial de Karate, sin @Karate.Test en paralelo).
-    Given path '/payment-receipts'
+    Given path '/bank-transfer-receipts'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
@@ -80,7 +87,7 @@ Feature: Caso de uso — Inscribirse a un curso
     * def maxId = Math.max.apply(null, idsOrdenados)
     * def pendiente = response.filter(function(x){ return x.id == maxId })[0]
 
-    Given path '/payment-receipts', pendiente.id, 'approve'
+    Given path '/bank-transfer-receipts', pendiente.id, 'approve'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 200
@@ -88,8 +95,10 @@ Feature: Caso de uso — Inscribirse a un curso
 
     # El request que hubiera atrapado el bug real: ALUMNO otorgado en la misma
     # operación de aprobación, sin transacción de test de por medio que lo enmascare.
+    * configure retry = { count: 60, interval: 500 }
     Given path '/me'
     And header Authorization = 'Bearer ' + alumnoToken
+    And retry until response.roles.indexOf('ALUMNO') >= 0
     When method get
     Then status 200
     And match response.roles contains 'ALUMNO'
@@ -101,6 +110,7 @@ Feature: Caso de uso — Inscribirse a un curso
     * def propiaAprobada = response.filter(function(x){ return x.courseId == courseId })[0]
     And match propiaAprobada.paymentStatus == 'APPROVED'
     And match propiaAprobada.courseEnrollmentId != null
+    And match propiaAprobada.courseEnrollmentStatus == 'ENROLLED'
 
     # Inscribirme de nuevo al mismo curso (ya matriculado) — 409
     Given path '/me/course-enrollments'
@@ -109,6 +119,7 @@ Feature: Caso de uso — Inscribirse a un curso
     And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante2.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
+    And match response.code == 'ALREADY_ENROLLED_IN_COURSE'
 
   Scenario: Inscribirme a un curso inexistente — 404
     Given path '/me/course-enrollments'

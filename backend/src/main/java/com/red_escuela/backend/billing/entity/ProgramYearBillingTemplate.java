@@ -1,12 +1,11 @@
 package com.red_escuela.backend.billing.entity;
 
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateExceedsTermSpanException;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -29,9 +28,6 @@ public class ProgramYearBillingTemplate {
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
 
-    @Column(name = "recurring_fee_invoices_count", nullable = false)
-    private Integer recurringFeeInvoicesCount;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
     private Person createdBy;
@@ -42,28 +38,27 @@ public class ProgramYearBillingTemplate {
     @PrePersist
     void onCreate() {
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
-        }
-        validateRecurringFeeInvoicesCountAgainstTermSpan();
-    }
-
-    @PreUpdate
-    void onUpdate() {
-        validateRecurringFeeInvoicesCountAgainstTermSpan();
-    }
-
-    private void validateRecurringFeeInvoicesCountAgainstTermSpan() {
-        Long termSpanMonths = term.spanInMonths();
-        if (termSpanMonths != null && recurringFeeInvoicesCount != null && recurringFeeInvoicesCount > termSpanMonths) {
-            throw new ProgramYearBillingTemplateExceedsTermSpanException(recurringFeeInvoicesCount, termSpanMonths);
+            this.createdAt = ApplicationTime.now();
         }
     }
 
-    public boolean canGenerateInvoice(YearMonth period, long invoicesGeneratedInWindow) {
-        return term.contains(period) && invoicesGeneratedInWindow < recurringFeeInvoicesCount;
+    public LocalDateTime termStartDate() {
+        return term.getStartDate();
     }
 
-    public int remainingInvoices(long invoicesGeneratedInWindow) {
-        return recurringFeeInvoicesCount - (int) invoicesGeneratedInWindow;
+    public LocalDateTime termEndDate() {
+        return term.getEndDate();
+    }
+
+    public Integer termYear() {
+        return term.getYear();
+    }
+
+    public Long programId() {
+        return program.getId();
+    }
+
+    public Long termId() {
+        return term.getId();
     }
 }

@@ -1,10 +1,10 @@
 package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -15,28 +15,38 @@ public class CourseResponse {
     private final Long termId;
     private final String schedule;
     private final Integer capacity;
-    private final BigDecimal price;
+    private final Money price;
     private final Integer durationMonths;
     private final String status;
     private final boolean visibleInCatalog;
     private final String teachingMode;
     private final LocalDateTime registrationStart;
     private final LocalDateTime registrationEnd;
+    private final boolean registrationOpen;
+    private final Boolean full;
+
+    public static CourseResponse from(Course course, long occupiedSeats) {
+        return baseBuilder(course).full(!course.hasCapacityFor(occupiedSeats)).build();
+    }
 
     public static CourseResponse from(Course course) {
+        return baseBuilder(course).build();
+    }
+
+    private static CourseResponseBuilder baseBuilder(Course course) {
         return CourseResponse.builder()
                 .id(course.getId())
                 .name(course.getName())
                 .termId(course.getTerm().getId())
                 .schedule(course.getSchedule())
                 .capacity(course.getCapacity())
-                .price(course.getPrice())
+                .price(course.priceAsMoney())
                 .durationMonths(course.getDurationMonths())
                 .status(course.getIsActive() == null ? null : course.getIsActive().name())
                 .visibleInCatalog(course.isVisibleInCatalog())
                 .teachingMode(course.getTeachingMode() == null ? null : course.getTeachingMode().name())
                 .registrationStart(course.getRegistrationStart())
                 .registrationEnd(course.getRegistrationEnd())
-                .build();
+                .registrationOpen(course.isRegistrationOpenAt(LocalDateTime.now()));
     }
 }

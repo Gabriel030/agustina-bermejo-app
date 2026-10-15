@@ -21,6 +21,6 @@ public class ResetStudentPasswordService implements ResetStudentPasswordUseCase 
     public void resetPassword(Long studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
-        requestPasswordResetUseCase.requestReset(student.getPerson().getEmail());
+        requestPasswordResetUseCase.requestReset(student.getPerson().emailValue());
     }
 }

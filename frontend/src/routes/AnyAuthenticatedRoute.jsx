@@ -5,11 +5,11 @@ import { useAuth } from '@/context/AuthContext';
 // son autoservicio: cualquier persona con sesión puede entrar, tenga o no
 // todavía un rol asignado (ver Spec técnica - Frontend, registro y catálogo).
 export function AnyAuthenticatedRoute({ children }) {
-  const { usuario } = useAuth();
+  const { usuario, loggedOut } = useAuth();
   const location = useLocation();
 
   if (!usuario) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={loggedOut ? undefined : { from: location }} />;
   }
 
   return children;

@@ -1,12 +1,17 @@
 import { useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { ChevronLeft, Copy, Check, Upload, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Stepper } from '@/components/Stepper';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { usePaymentConfig, useSubirComprobante, useMisComprobantes } from '@/hooks/useBilling';
+import { toast } from 'sonner';
+import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
+import { useMisSolicitudesCarrera } from '@/features/enrollment/hooks/useCatalogo';
+import { usePaymentConfig, useSubirComprobante, useMisComprobantes, usePriceBreakdown } from '@/hooks/useBilling';
+import { formatMoney, receiptFileError, receiptUploadErrorMessage } from '@/lib/billing';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
@@ -48,7 +53,7 @@ function DatoField({ label, value }) {
   );
 }
 
-function PasoDatos({ config, onNext }) {
+function PasoDatos({ config, amount, onNext }) {
   return (
     <div className="flex flex-col gap-6">
       <GlassCard className="divide-y divide-border p-5">
@@ -69,7 +74,9 @@ function PasoDatos({ config, onNext }) {
       )}
 
       <p className="text-sm text-ink-faint">
-        Realizá la transferencia por el monto exacto de la factura y luego subí el comprobante en el siguiente paso.
+        {amount != null
+          ? `Transferí exactamente ${formatMoney(amount)} y luego subí el comprobante en el siguiente paso.`
+          : 'Realizá la transferencia por el monto exacto de la cuota y luego subí el comprobante en el siguiente paso.'}
       </p>
 
       <Button variant="gradient" onClick={onNext}>
@@ -82,17 +89,24 @@ function PasoDatos({ config, onNext }) {
 function PasoComprobante({ invoiceId, onSuccess }) {
   const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
-  const { mutate, isPending, error } = useSubirComprobante();
+  const [fileError, setFileError] = useState(null);
+  const { mutate, isPending } = useSubirComprobante();
 
   function handleFileChange(e) {
-    setFile(e.target.files[0] ?? null);
+    const selected = e.target.files[0] ?? null;
+    const validationError = selected ? receiptFileError(selected) : null;
+    setFileError(validationError);
+    setFile(validationError ? null : selected);
   }
 
   function handleSubmit() {
     if (!file) return;
     mutate(
       { invoiceId, file },
-      { onSuccess: () => onSuccess() },
+      {
+        onSuccess: () => onSuccess(),
+        onError: (error) => toast.error(receiptUploadErrorMessage(error)),
+      },
     );
   }
 
@@ -123,9 +137,9 @@ function PasoComprobante({ invoiceId, onSuccess }) {
         />
       </GlassCard>
 
-      {error && <p className="text-sm text-danger">{error.message}</p>}
+      {fileError && <p className="text-sm text-danger">{fileError}</p>}
 
-      <Button variant="gradient" disabled={!file || isPending} onClick={handleSubmit}>
+      <Button variant="gradient" disabled={!file} loading={isPending} onClick={handleSubmit}>
         {isPending ? 'Enviando…' : 'Enviar comprobante'}
       </Button>
     </div>
@@ -135,13 +149,25 @@ function PasoComprobante({ invoiceId, onSuccess }) {
 const RECEIPT_STATUS = {
   PENDING_REVIEW: { label: 'Pendiente de revisión', icon: Clock, tone: 'warning' },
   APPROVED: { label: 'Aprobado', icon: CheckCircle, tone: 'success' },
+  APPLIED_TO_DEBT: { label: 'Aprobado, aplicado a deuda anterior', icon: Clock, tone: 'warning' },
   REJECTED: { label: 'Rechazado', icon: XCircle, tone: 'danger' },
 };
 
+function textoDePagoAprobado(solicitud) {
+  if (!solicitud) return 'Tu pago fue confirmado correctamente.';
+  if (solicitud.admissionInvoice?.paymentStatus !== 'PAID') {
+    return 'Aprobamos tu comprobante, pero el monto acreditado todavía no alcanza a cubrir la matrícula de ingreso completa. Revisá el detalle en Mis pagos.';
+  }
+  if (solicitud.programEnrollmentId) return `Tu pago fue confirmado. Ya estás inscripto en ${solicitud.programName}.`;
+  return `Tu pago fue confirmado. Estamos confirmando tu inscripción en ${solicitud.programName}.`;
+}
+
 function PasoEstado({ invoiceId }) {
-  const navigate = useNavigate();
+  const { originLabel, goToOrigin } = usePaymentReturn();
   const { data: comprobantes, isLoading } = useMisComprobantes();
   const comprobante = comprobantes?.find((c) => c.invoiceId === parseInt(invoiceId, 10));
+  const { data: solicitudes } = useMisSolicitudesCarrera();
+  const solicitudDeMatricula = (solicitudes ?? []).find((s) => s.admissionInvoice?.id === parseInt(invoiceId, 10));
 
   if (isLoading) return <Skeleton className="h-32" />;
 
@@ -169,7 +195,9 @@ function PasoEstado({ invoiceId }) {
             </p>
           )}
           {comprobante.status === 'APPROVED' && (
-            <p className="mt-1 text-sm text-ink-faint">Tu pago fue confirmado correctamente.</p>
+            <p className="mt-1 text-sm text-ink-faint">
+              {textoDePagoAprobado(solicitudDeMatricula)}
+            </p>
           )}
           {comprobante.status === 'REJECTED' && (
             <>
@@ -182,8 +210,8 @@ function PasoEstado({ invoiceId }) {
         </div>
       </GlassCard>
 
-      <Button variant="gradient" onClick={() => navigate('/alumno/pagos')}>
-        Volver a Mis pagos
+      <Button variant="gradient" onClick={goToOrigin}>
+        {originLabel}
       </Button>
     </div>
   );
@@ -191,13 +219,20 @@ function PasoEstado({ invoiceId }) {
 
 export function AlumnoPagarTransferencia() {
   const { invoiceId } = useParams();
-  const navigate = useNavigate();
+  const { goTo } = usePaymentReturn();
   const { data: config, isLoading } = usePaymentConfig();
-  const [pasoActual, setPasoActual] = useState('datos');
+  const { data: breakdown } = usePriceBreakdown(invoiceId);
+  const { data: receipts } = useMisComprobantes();
+  const hasReceiptUnderReview = (receipts ?? []).some(
+    (receipt) => receipt.invoiceId === Number(invoiceId) && receipt.status === 'PENDING_REVIEW',
+  );
+  const [chosenStep, setChosenStep] = useState(null);
   const [pasosVisitados, setPasosVisitados] = useState(['datos']);
+  const pasoActual = chosenStep ?? (hasReceiptUnderReview ? 'estado' : 'datos');
+  const visitedSteps = hasReceiptUnderReview ? PASOS.map((step) => step.key) : pasosVisitados;
 
   function irAPaso(paso) {
-    setPasoActual(paso);
+    setChosenStep(paso);
     if (!pasosVisitados.includes(paso)) {
       setPasosVisitados((prev) => [...prev, paso]);
     }
@@ -207,7 +242,7 @@ export function AlumnoPagarTransferencia() {
     <PageContainer className="max-w-lg">
       <button
         type="button"
-        onClick={() => navigate(`/alumno/pagos/${invoiceId}/seleccion`)}
+        onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
         className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
       >
         <ChevronLeft size={16} />
@@ -216,17 +251,19 @@ export function AlumnoPagarTransferencia() {
 
       <h1 className="text-xl font-bold">Pago por transferencia</h1>
 
+      {breakdown && <InvoiceSummary breakdown={breakdown} />}
+
       <Stepper
         pasos={PASOS}
         pasoActual={pasoActual}
-        pasosVisitados={pasosVisitados}
+        pasosVisitados={visitedSteps}
         onStepClick={irAPaso}
       />
 
       {isLoading && <Skeleton className="h-48" />}
 
       {!isLoading && pasoActual === 'datos' && (
-        <PasoDatos config={config} onNext={() => irAPaso('comprobante')} />
+        <PasoDatos config={config} amount={breakdown?.remainingBalance} onNext={() => irAPaso('comprobante')} />
       )}
       {pasoActual === 'comprobante' && (
         <PasoComprobante invoiceId={invoiceId} onSuccess={() => irAPaso('estado')} />

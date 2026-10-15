@@ -1,5 +1,8 @@
 package com.red_escuela.backend.evaluation.service;
 
+import java.time.Clock;
+import com.red_escuela.backend.shared.domain.Grade;
+import java.math.BigDecimal;
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -26,7 +29,14 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
+import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
+import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 
 @Service
 public class ExamBoardService {
@@ -38,15 +48,22 @@ public class ExamBoardService {
     private final CourseSubjectRepository courseSubjectRepository;
     private final TermRepository termRepository;
     private final InstructorRepository instructorRepository;
+    private final HolidayRepository holidayRepository;
+    private final GradeItemRepository gradeItemRepository;
+    private final Clock clock;
 
-    public ExamBoardService(
-            ExamBoardRepository examBoardRepository,
+    public ExamBoardService(ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
             ExamBoardRegistrationRepository examBoardRegistrationRepository,
             SubjectRepository subjectRepository,
             CourseSubjectRepository courseSubjectRepository,
             TermRepository termRepository,
-            InstructorRepository instructorRepository) {
+            InstructorRepository instructorRepository,
+            HolidayRepository holidayRepository,
+            GradeItemRepository gradeItemRepository,
+            Clock clock) {
+        this.holidayRepository = holidayRepository;
+        this.gradeItemRepository = gradeItemRepository;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
@@ -54,6 +71,7 @@ public class ExamBoardService {
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
         this.instructorRepository = instructorRepository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -66,6 +84,9 @@ public class ExamBoardService {
         }
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
+        if (holidayRepository.existsByDate(request.examDate().toLocalDate())) {
+            throw new ExamDateOnHolidayException(request.examDate().toLocalDate());
+        }
 
         ExamBoard examBoard = new ExamBoard();
         if (hasSubject) {
@@ -107,7 +128,7 @@ public class ExamBoardService {
     @Transactional
     public ExamBoard close(Long examBoardId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
-        examBoard.setStatus(ExamBoardStatus.CLOSED);
+        examBoard.close(LocalDateTime.now(clock));
         return examBoardRepository.save(examBoard);
     }
 
@@ -117,7 +138,8 @@ public class ExamBoardService {
     }
 
     public List<ExamBoardRegistrationSummaryResponse> listRegistrantsWithDetail(Long examBoardId) {
-        return listRegistrants(examBoardId).stream().map(this::toSummary).toList();
+        List<GradeItem> grades = gradeItemRepository.findByExamBoardId(examBoardId);
+        return listRegistrants(examBoardId).stream().map(registration -> toSummary(registration, grades)).toList();
     }
 
     public ExamBoard get(Long id) {
@@ -129,7 +151,39 @@ public class ExamBoardService {
                 : examBoardRepository.findByStatusOrderByExamDateDesc(status);
     }
 
-    private ExamBoardRegistrationSummaryResponse toSummary(ExamBoardRegistration registration) {
+    public List<ExamBoard> listForTribunalMember(Long instructorId, ExamBoardStatus status) {
+        return list(status).stream()
+                .filter(examBoard -> examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoard.getId(), instructorId))
+                .toList();
+    }
+
+    public void requireTribunalMember(Long examBoardId, Long instructorId) {
+        findOrThrow(examBoardId);
+        if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
+            throw new NotExamBoardTribunalMemberException(instructorId, examBoardId);
+        }
+    }
+
+    private BigDecimal finalScoreOf(ExamBoardRegistration registration, List<GradeItem> grades) {
+        return grades.stream()
+                .filter(grade -> sameEnrollment(grade, registration))
+                .map(GradeItem::getScore)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(Grade::value)
+                .orElse(null);
+    }
+
+    private boolean sameEnrollment(GradeItem grade, ExamBoardRegistration registration) {
+        if (registration.getProgramSubjectSectionEnrollment() != null) {
+            return grade.getProgramSubjectSectionEnrollment() != null
+                    && grade.getProgramSubjectSectionEnrollment().getId().equals(registration.getProgramSubjectSectionEnrollment().getId());
+        }
+        return grade.getCourseSubjectSectionEnrollment() != null
+                && grade.getCourseSubjectSectionEnrollment().getId().equals(registration.getCourseSubjectSectionEnrollment().getId());
+    }
+
+    private ExamBoardRegistrationSummaryResponse toSummary(ExamBoardRegistration registration, List<GradeItem> grades) {
         String carrera;
         Integer attemptNumber;
         Person person;
@@ -146,7 +200,7 @@ public class ExamBoardService {
         }
         return new ExamBoardRegistrationSummaryResponse(
                 registration.getId(), person.getName() + " " + person.getLastname(), person.getDni(),
-                carrera, attemptNumber, registration.getStatus().name());
+                carrera, attemptNumber, registration.getStatus().name(), finalScoreOf(registration, grades));
     }
 
     private ExamBoard findOrThrow(Long id) {

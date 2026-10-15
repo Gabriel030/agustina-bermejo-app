@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { MobileMenu } from '@/components/MobileMenu';
-import { NotificationBell } from '@/components/NotificationBell';
+import { NotificationBell } from '@/features/notifications';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
-import { usePerfilPropio, useAvatar } from '@/features/gestion-personas/hooks/useMiPerfil';
+import { usePerfilPropio, useAvatar } from '@/features/identity/hooks/useMiPerfil';
 
 function iniciales(nombre, apellido) {
   return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
@@ -13,7 +13,7 @@ function iniciales(nombre, apellido) {
 export function TopHeader({ titulo, items }) {
   const { usuario } = useAuth();
   const { data: perfil } = usePerfilPropio();
-  const { data: avatarUrl } = useAvatar(perfil?.hasAvatar);
+  const { data: avatarUrl } = useAvatar(!!perfil && !!perfil.hasAvatar);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] shrink-0">

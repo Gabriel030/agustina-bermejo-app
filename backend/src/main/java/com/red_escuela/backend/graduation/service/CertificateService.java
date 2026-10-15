@@ -1,4 +1,6 @@
 package com.red_escuela.backend.graduation.service;
+
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;import java.time.Clock;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
@@ -29,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 @Service
@@ -41,21 +44,27 @@ public class CertificateService {
     private final InvoiceQueryService invoiceQueryService;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
+    private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
+    private final Clock clock;
 
-    public CertificateService(
-            ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
+    public CertificateService(ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
             InvoiceQueryService invoiceQueryService, CertificateIssuanceRepository certificateIssuanceRepository,
-            CurrentPersonService currentPersonService) {
+            CurrentPersonService currentPersonService,
+            EnrollmentFeeRequirementService enrollmentFeeRequirementService,
+            Clock clock) {
+        this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.invoiceQueryService = invoiceQueryService;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
         this.currentPersonService = currentPersonService;
+        this.clock = clock;
     }
 
     @Transactional
     public byte[] issueRegularCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
@@ -70,7 +79,7 @@ public class CertificateService {
 
         Person person = student.getPerson();
         String texto = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
-                + " (DNI " + person.getDni() + ") es alumno/a regular de la carrera "
+                + " (" + person.getDocumentType().label() + " " + person.getDni() + ") es alumno/a regular de la carrera "
                 + enrollment.getProgram().getName() + ".";
         byte[] pdf = generatePdf("Constancia de alumno regular", texto);
         recordIssuance(enrollment, CertificateType.REGULAR_STUDENT);
@@ -80,12 +89,13 @@ public class CertificateService {
     @Transactional
     public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         Person person = enrollment.getStudent().getPerson();
         List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
-                        + " (DNI " + person.getDni() + "), alumno/a de la carrera "
+                        + " (" + person.getDocumentType().label() + " " + person.getDni() + "), alumno/a de la carrera "
                         + enrollment.getProgram().getName() + ", tiene aprobadas las siguientes materias:");
         if (aprobadas.isEmpty()) {
             texto.append(" ninguna materia aprobada todavía.");
@@ -103,7 +113,7 @@ public class CertificateService {
         CertificateIssuance issuance = new CertificateIssuance();
         issuance.setType(type);
         issuance.setProgramEnrollment(enrollment);
-        issuance.setIssuedAt(LocalDateTime.now());
+        issuance.setIssuedAt(LocalDateTime.now(clock));
         issuance.setRequestedBy(currentPersonService.resolveCurrentPerson());
         certificateIssuanceRepository.save(issuance);
     }
@@ -139,7 +149,7 @@ public class CertificateService {
                 content.beginText();
                 content.setFont(fontRegular, 10);
                 content.newLineAtOffset(margen, Math.max(y, margen));
-                content.showText("Fecha de emisión: " + LocalDateTime.now().format(FECHA));
+                content.showText("Fecha de emisión: " + LocalDateTime.now(clock).format(FECHA));
                 content.endText();
             }
 

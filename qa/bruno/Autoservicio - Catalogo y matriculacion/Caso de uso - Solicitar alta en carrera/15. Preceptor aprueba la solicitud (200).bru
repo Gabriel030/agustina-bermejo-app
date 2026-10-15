@@ -1,0 +1,31 @@
+meta {
+  name: 15. Preceptor aprueba la solicitud (200)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/program-enrollment-applications/{{applicationIdQA}}/approve
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status pasa a APPROVED", function () {
+    expect(res.getBody().status).to.equal("APPROVED");
+  });
+
+  test("se emite la factura de matrícula de ingreso pendiente", function () {
+    expect(res.getBody().admissionInvoice.paymentStatus).to.equal("PENDING");
+  });
+}
+
+docs {
+  D-227: aprobar emite la factura de matrícula de ingreso con vencimiento a 10 días; la inscripción se confirma recién cuando el alumno la paga.
+}

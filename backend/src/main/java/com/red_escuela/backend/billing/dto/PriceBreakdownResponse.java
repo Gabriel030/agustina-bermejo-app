@@ -1,10 +1,10 @@
 package com.red_escuela.backend.billing.dto;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 
 public record PriceBreakdownResponse(
-        Long invoiceId, String feeType, String period, BigDecimal baseAmount, String priceRevisionDescription,
+        Long invoiceId, String feeType, String period, Money baseAmount, String priceRevisionDescription,
         List<PriceBreakdownLineResponse> adjustments,
-        BigDecimal amountDue, List<PriceBreakdownPaymentResponse> paymentsApplied, BigDecimal remainingBalance, String status) {
+        Money amountDue, List<PriceBreakdownPaymentResponse> paymentsApplied, Money remainingBalance, String status) {
 }

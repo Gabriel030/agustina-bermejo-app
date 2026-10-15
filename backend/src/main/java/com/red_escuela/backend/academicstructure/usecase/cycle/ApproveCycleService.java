@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseSubjectSection
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
         var subjectSections = subjectSectionRepository.findByAcademicOfferingCycleId(cycleId);
         for (var section : subjectSections) {
             for (var slot : slotRepository.findBySubjectSectionId(section.getId())) {
-                conflictChecker.checkClassroomAvailability(
+                conflictChecker.checkClassroomAvailability(cycle.getTerm(),
                         slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
             }
         }
@@ -61,7 +61,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
         var courseSections = courseSectionRepository.findByAcademicOfferingCycleId(cycleId);
         for (var section : courseSections) {
             for (var slot : slotRepository.findByCourseSectionId(section.getId())) {
-                conflictChecker.checkClassroomAvailability(
+                conflictChecker.checkClassroomAvailability(cycle.getTerm(),
                         slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
             }
         }
@@ -69,10 +69,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
         subjectSections.forEach(s -> { s.setStatus(StatusType.ACTIVE); subjectSectionRepository.save(s); });
         courseSections.forEach(s -> { s.setStatus(StatusType.ACTIVE); courseSectionRepository.save(s); });
 
-        var director = currentPersonService.resolveCurrentPerson();
-        cycle.setStatus(AcademicOfferingCycleStatus.APPROVED);
-        cycle.setDecidedBy(director);
-        cycle.setDecidedAt(LocalDateTime.now());
+        cycle.approve(currentPersonService.resolveCurrentPerson(), LocalDateTime.now());
         cycleRepository.save(cycle);
     }
 }

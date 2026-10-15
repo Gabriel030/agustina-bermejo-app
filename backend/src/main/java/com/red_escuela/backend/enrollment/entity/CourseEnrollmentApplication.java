@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.academicstructure.entity.Course;
 
 @Getter
@@ -32,9 +32,12 @@ public class CourseEnrollmentApplication {
     @Column(name = "section_overrides")
     private String sectionOverrides;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "payment_receipt_id", nullable = false)
-    private PaymentReceipt paymentReceipt;
+    @Column(name = "invoice_id")
+    private Long invoiceId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_receipt_id")
+    private BankTransferReceipt paymentReceipt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_enrollment_id")

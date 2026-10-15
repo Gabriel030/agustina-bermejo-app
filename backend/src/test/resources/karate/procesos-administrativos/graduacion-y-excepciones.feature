@@ -4,8 +4,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
   # explícitos (decisión 8) — Alumno solicita, Administrativo verifica deuda, Director aprueba.
   # MeCertificateController: constancias en PDF sin entidad propia (decisión 6).
   # DirectorApprovalRequestController: excepciones del Director (decisión 12, catálogo abierto
-  # LATE_EXAM/PREREQUISITE_WAIVER) — sin efecto real sobre otros services, deuda técnica ya
-  # documentada en la spec, no se prueba acá porque no existe comportamiento que verificar.
+  # LATE_EXAM/PREREQUISITE_WAIVER).
 
   Background:
     * url baseUrl
@@ -32,6 +31,35 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 201
     * def programConCreditosId = response.id
 
+    * def subjectCodes = Java.type('com.red_escuela.backend.config.TestSubjectCodes')
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#("Materia QA excepciones " + java.lang.System.nanoTime())', code: '#(subjectCodes.next())' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
+
+    Given path '/programs', programConCreditosId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 201
+
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#("Materia QA plan completo " + java.lang.System.nanoTime())', code: '#(subjectCodes.next())' }
+    When method post
+    Then status 201
+    * def planSubjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(planSubjectId)
+
+    Given path '/programs', programSinRequisitosId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(planSubjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 0 }
+    When method post
+    Then status 201
+
   Scenario: Ciclo completo de egreso — solicitar, verificar deuda, aprobar, matriculación queda COMPLETED
     * def alumno = fixtures.createConfirmedStudent(institutionId)
     * def alumnoToken = alumno.accessToken
@@ -42,6 +70,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumnoToken
@@ -106,6 +135,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -117,7 +147,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 409
 
-  Scenario: Verificar deuda con factura pendiente — el trámite sigue en REQUESTED (decisión 10), 409
+  Scenario: Verificar deuda con una cuota vencida — el trámite sigue en REQUESTED (decisión 10), 409
     * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
@@ -126,6 +156,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -133,18 +164,138 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 201
     * def graduationRequestId = response.id
 
-    * fixtures.createPendingInvoice(programEnrollmentId, '2026-12-31')
+    * fixtures.createPendingInvoice(programEnrollmentId, '2026-01-10')
 
     Given path '/graduation-requests', graduationRequestId, 'verify-debt'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 409
+    And match response.code == 'PENDING_DEBT'
 
     Given path '/program-enrollments', programEnrollmentId, 'graduation-requests'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
     And match response[0].status == 'REQUESTED'
+
+  Scenario: Verificar deuda con una cuota impaga que todavía no venció — también bloquea, 409
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programSinRequisitosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
+
+    Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
+    And header Authorization = 'Bearer ' + alumno.accessToken
+    When method post
+    Then status 201
+    * def graduationRequestId = response.id
+
+    * fixtures.createPendingInvoice(programEnrollmentId, '2099-12-31')
+
+    Given path '/graduation-requests', graduationRequestId, 'verify-debt'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 409
+    And match response.code == 'PENDING_DEBT'
+
+  Scenario: Aprobar el egreso de un alumno que dejó de cumplir los requisitos — 409 con código
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programSinRequisitosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
+
+    Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
+    And header Authorization = 'Bearer ' + alumno.accessToken
+    When method post
+    Then status 201
+    * def graduationRequestId = response.id
+
+    Given path '/graduation-requests', graduationRequestId, 'verify-debt'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/programs', programSinRequisitosId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 201
+
+    Given path '/graduation-requests', graduationRequestId, 'approve'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 409
+    And match response.code == 'GRADUATION_REQUIREMENTS_NOT_MET'
+
+    Given path '/program-enrollments', programEnrollmentId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.status == 'ENROLLED'
+
+  Scenario: Aprobar el egreso de un alumno con una cuota vencida — 409 con código
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programSinRequisitosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
+
+    Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
+    And header Authorization = 'Bearer ' + alumno.accessToken
+    When method post
+    Then status 201
+    * def graduationRequestId = response.id
+
+    Given path '/graduation-requests', graduationRequestId, 'verify-debt'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    * fixtures.createPendingInvoice(programEnrollmentId, '2026-01-10')
+
+    Given path '/graduation-requests', graduationRequestId, 'approve'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 409
+    And match response.code == 'PENDING_DEBT'
+
+  Scenario: Motivo de rechazo de egreso de más de 500 caracteres — 400, no 409
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+    * def motivoLargo = karate.repeat(501, function(){ return 'a' }).join('')
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programSinRequisitosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
+
+    Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
+    And header Authorization = 'Bearer ' + alumno.accessToken
+    When method post
+    Then status 201
+    * def graduationRequestId = response.id
+
+    Given path '/graduation-requests', graduationRequestId, 'reject'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { motivo: '#(motivoLargo)' }
+    When method post
+    Then status 400
 
   Scenario: Rechazar un trámite permite volver a solicitar
     * def alumno = fixtures.createConfirmedStudent(institutionId)
@@ -155,6 +306,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -183,6 +335,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -227,14 +380,14 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
-    And request { programId: #(programSinRequisitosId) }
+    And request { programId: #(programConCreditosId) }
     When method post
     Then status 201
     * def programEnrollmentId = response.id
 
     Given path '/director-approval-requests'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', justification: 'Alumno con certificado médico' }
+    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', subjectId: '#(subjectId)', justification: 'Alumno con certificado médico' }
     When method post
     Then status 201
     And match response.status == 'REQUESTED'
@@ -280,14 +433,14 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
-    And request { programId: #(programSinRequisitosId) }
+    And request { programId: #(programConCreditosId) }
     When method post
     Then status 201
     * def programEnrollmentId = response.id
 
     Given path '/director-approval-requests'
     And header Authorization = 'Bearer ' + adminToken
-    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', justification: 'Solicitud a rechazar' }
+    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', subjectId: '#(subjectId)', justification: 'Solicitud a rechazar' }
     When method post
     Then status 201
     * def exceptionId = response.id
@@ -303,6 +456,82 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     And header Authorization = 'Bearer ' + directorToken
     When method post
     Then status 409
+    And match response.code == 'INVALID_DIRECTOR_APPROVAL_REQUEST_STATE'
+
+  Scenario: Excepción sin materia — 400 con código
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programConCreditosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+
+    Given path '/director-approval-requests'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { type: 'PREREQUISITE_WAIVER', programEnrollmentId: '#(programEnrollmentId)', justification: 'Sin materia' }
+    When method post
+    Then status 400
+    And match response.code == 'DIRECTOR_APPROVAL_SUBJECT_REQUIRED'
+
+  Scenario: Excepción con una materia que no es del plan de la carrera — 400 con código
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programSinRequisitosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+
+    Given path '/director-approval-requests'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', subjectId: '#(subjectId)', justification: 'Materia de otra carrera' }
+    When method post
+    Then status 400
+    And match response.code == 'SUBJECT_NOT_IN_PROGRAM_PLAN'
+
+  Scenario: Justificación de más de 1000 caracteres — 400, no 409
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+    * def justificacionLarga = karate.repeat(1001, function(){ return 'a' }).join('')
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programConCreditosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+
+    Given path '/director-approval-requests'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', subjectId: '#(subjectId)', justification: '#(justificacionLarga)' }
+    When method post
+    Then status 400
+
+  Scenario: Notas de la decisión de más de 500 caracteres — 400, no 409
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+    * def notasLargas = karate.repeat(501, function(){ return 'a' }).join('')
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: #(programConCreditosId) }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+
+    Given path '/director-approval-requests'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { type: 'LATE_EXAM', programEnrollmentId: '#(programEnrollmentId)', subjectId: '#(subjectId)', justification: 'Notas largas' }
+    When method post
+    Then status 201
+    * def exceptionId = response.id
+
+    Given path '/director-approval-requests', exceptionId, 'reject'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { notas: '#(notasLargas)' }
+    When method post
+    Then status 400
 
   Scenario: Excepción sobre una matriculación inexistente — 404
     Given path '/director-approval-requests'

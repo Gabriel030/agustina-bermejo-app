@@ -1,26 +1,24 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -39,12 +37,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
     @Autowired
-    private ProgramEnrollmentBillingScheduler billingScheduler;
+    private BillingTestTrigger billingTrigger;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -72,12 +71,11 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
-
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -122,9 +120,9 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(5);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 5);
         template.setCreatedBy(persistPerson(dni + "-creador"));
-        template = templateRepository.save(template);
+        template = com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(configurationVersionRepository, templateRepository.save(template));
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
@@ -135,14 +133,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         cohort.setCreatedBy(template.getCreatedBy());
         cohort = programCohortRepository.save(cohort);
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setProgram(program);
-        priceRevision.setFeeType(FeeType.ENROLLMENT_FEE);
-        priceRevision.setDescription("Matrícula de prueba");
-        priceRevision.setMonthlyAmount(java.math.BigDecimal.valueOf(10000));
-        priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(template.getCreatedBy());
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(10000), LocalDate.now().minusYears(1), template.getCreatedBy().getId());
 
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
@@ -160,13 +151,13 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         try {
             transactionTemplate.executeWithoutResult(status -> {
-                billingScheduler.generateEnrollmentFee(enrollment);
+                billingTrigger.issueEntryFee(enrollment);
                 throw new RuntimeException("Falla simulada después de generar la matrícula");
             });
         } catch (RuntimeException ignored) {
         }
 
-        List<com.red_escuela.backend.billing.entity.Invoice> invoices =
+        List<com.red_escuela.backend.billing.invoice.domain.Invoice> invoices =
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).isEmpty();
     }

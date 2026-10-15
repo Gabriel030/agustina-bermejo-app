@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.service;
+import java.time.Clock;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
 import com.red_escuela.backend.identity.service.PersonFactory;
@@ -6,7 +7,7 @@ import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -15,9 +16,9 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
-import com.red_escuela.backend.exception.InstitutionNotFoundException;
+import com.red_escuela.backend.identity.exception.InstitutionNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
-import com.red_escuela.backend.exception.RoleNotFoundException;
+import com.red_escuela.backend.identity.exception.RoleNotFoundException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -32,7 +33,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.service.FileStorageService;
+import com.red_escuela.backend.shared.storage.FileStorageService;
+import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 
 @Service
 public class ProspectService {
@@ -44,26 +46,30 @@ public class ProspectService {
     private final RoleRepository roleRepository;
     private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
+    private final TransactionBoundFileCleanup transactionBoundFileCleanup;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
+    private final Clock clock;
 
-    public ProspectService(
-            StudentRepository studentRepository,
+    public ProspectService(StudentRepository studentRepository,
             StudentDocumentRepository studentDocumentRepository,
             InstitutionRepository institutionRepository,
             RoleRepository roleRepository,
             PersonFactory personFactory,
-            FileStorageService fileStorageService,
+            FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
             RequestPasswordResetUseCase requestPasswordResetUseCase,
-            SendEmailVerificationUseCase sendEmailVerificationUseCase) {
+            SendEmailVerificationUseCase sendEmailVerificationUseCase,
+            Clock clock) {
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.institutionRepository = institutionRepository;
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
+        this.transactionBoundFileCleanup = transactionBoundFileCleanup;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
         this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
+        this.clock = clock;
     }
 
     @Transactional
@@ -96,7 +102,7 @@ public class ProspectService {
         Person person = student.getPerson();
 
         if (request.dni() != null) {
-            person.setDni(request.dni());
+            person.changeDocument(request.documentType(), request.dni());
         }
 
         Address address = person.getAddress();
@@ -111,7 +117,7 @@ public class ProspectService {
         try {
             studentRepository.saveAndFlush(student);
         } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
+            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
     }
 
@@ -125,17 +131,18 @@ public class ProspectService {
         Student student = findStudentOrThrow(studentId);
 
         studentDocumentRepository.findByStudentIdAndType(studentId, type).ifPresent(existing -> {
-            fileStorageService.delete(existing.getFilePath());
+            transactionBoundFileCleanup.deleteAfterCommit(existing.getFilePath());
             studentDocumentRepository.delete(existing);
         });
 
         String relativePath = fileStorageService.store(studentId, type.name(), file);
+        transactionBoundFileCleanup.deleteIfRolledBack(relativePath);
 
         StudentDocument document = new StudentDocument();
         document.setStudent(student);
         document.setType(type);
         document.setFilePath(relativePath);
-        document.setUploadedAt(LocalDateTime.now());
+        document.setUploadedAt(LocalDateTime.now(clock));
 
         return studentDocumentRepository.save(document);
     }
@@ -153,8 +160,8 @@ public class ProspectService {
         }
 
         Person person = student.getPerson();
-        person.setDni(request.dni());
-        person.setUsername(request.dni());
+        person.changeDocument(request.documentType(), request.dni());
+        person.setUsername(person.getDni());
 
         var address = person.getAddress();
         address.setStreet(request.street());
@@ -174,10 +181,10 @@ public class ProspectService {
         try {
             studentRepository.saveAndFlush(student);
         } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
+            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
 
-        requestPasswordResetUseCase.requestReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.emailValue());
 
         return student;
     }

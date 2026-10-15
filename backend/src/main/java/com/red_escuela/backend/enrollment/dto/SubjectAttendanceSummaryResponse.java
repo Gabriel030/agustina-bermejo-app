@@ -1,4 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
-public record SubjectAttendanceSummaryResponse(String subjectName, Double attendancePercentage) {
+import com.red_escuela.backend.shared.domain.Percentage;
+
+public record SubjectAttendanceSummaryResponse(String subjectName, Percentage attendancePercent) {
 }

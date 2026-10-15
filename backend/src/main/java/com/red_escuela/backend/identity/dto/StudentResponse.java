@@ -17,7 +17,7 @@ public record StudentResponse(
                 person.getLastname(),
                 person.getDni(),
                 person.getUsername(),
-                person.getEmail(),
+                person.emailValue(),
                 student.getOnboardingStatus(),
                 person.getStatus() == null ? null : person.getStatus().name(),
                 person.getEmailVerified());

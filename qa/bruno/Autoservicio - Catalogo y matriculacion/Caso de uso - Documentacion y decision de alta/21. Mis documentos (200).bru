@@ -1,0 +1,32 @@
+meta {
+  name: 21. Mis documentos (200)
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/me/documents
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+docs {
+  El detalle de la solicitud (DetalleSolicitud.jsx) usa este endpoint para mostrar los documentos que el alumno ya subió en una visita anterior (B-p2-20). Devuelve solo los documentos propios, con tipo y fecha de subida.
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("cada documento trae tipo y fecha de subida", function () {
+    const body = res.getBody();
+    expect(body).to.be.an("array");
+    body.forEach(d => {
+      expect(d.type).to.be.a("string");
+      expect(d.uploadedAt).to.be.a("string");
+    });
+  });
+}

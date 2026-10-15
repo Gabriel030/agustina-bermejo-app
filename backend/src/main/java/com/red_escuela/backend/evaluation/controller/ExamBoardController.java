@@ -18,14 +18,35 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Set;
+import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 
 @RestController
 public class ExamBoardController {
 
-    private final ExamBoardService examBoardService;
+    private static final Set<String> STAFF_WITH_FULL_ACCESS = Set.of("ROLE_PRECEPTOR", "ROLE_ADMINISTRATIVO", "ROLE_DIRECTOR");
 
-    public ExamBoardController(ExamBoardService examBoardService) {
+    private final ExamBoardService examBoardService;
+    private final CurrentInstructorService currentInstructorService;
+
+    public ExamBoardController(ExamBoardService examBoardService, CurrentInstructorService currentInstructorService) {
         this.examBoardService = examBoardService;
+        this.currentInstructorService = currentInstructorService;
+    }
+
+    private boolean isTeacherOnly(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .noneMatch(STAFF_WITH_FULL_ACCESS::contains);
+    }
+
+    private void requireTribunalMemberIfTeacher(Long examBoardId, Authentication authentication) {
+        if (isTeacherOnly(authentication)) {
+            examBoardService.requireTribunalMember(examBoardId, currentInstructorService.resolveCurrentInstructor().getId());
+        }
     }
 
     @PostMapping("/exam-boards")
@@ -37,13 +58,17 @@ public class ExamBoardController {
 
     @GetMapping("/exam-boards")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardResponse> list(@RequestParam(required = false) ExamBoardStatus status) {
-        return examBoardService.list(status).stream().map(ExamBoardResponse::from).toList();
+    public List<ExamBoardResponse> list(@RequestParam(required = false) ExamBoardStatus status, Authentication authentication) {
+        List<ExamBoard> examBoards = isTeacherOnly(authentication)
+                ? examBoardService.listForTribunalMember(currentInstructorService.resolveCurrentInstructor().getId(), status)
+                : examBoardService.list(status);
+        return examBoards.stream().map(ExamBoardResponse::from).toList();
     }
 
     @GetMapping("/exam-boards/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public ExamBoardResponse get(@PathVariable Long id) {
+    public ExamBoardResponse get(@PathVariable Long id, Authentication authentication) {
+        requireTribunalMemberIfTeacher(id, authentication);
         return ExamBoardResponse.from(examBoardService.get(id));
     }
 
@@ -63,7 +88,8 @@ public class ExamBoardController {
 
     @GetMapping("/exam-boards/{id}/registrations")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardRegistrationSummaryResponse> listRegistrants(@PathVariable Long id) {
+    public List<ExamBoardRegistrationSummaryResponse> listRegistrants(@PathVariable Long id, Authentication authentication) {
+        requireTribunalMemberIfTeacher(id, authentication);
         return examBoardService.listRegistrantsWithDetail(id);
     }
 }

@@ -1,0 +1,7 @@
+COUNT billing 2
+COUNT enrollment 4
+Module 'identity' depends on module 'academicstructure' via com.red_escuela.backend.identity.usecase.auth.RegisterService -> com.red_escuela.backend.academicstructure.repository.InstitutionRepository. Allowed targets: shared.
+Module 'identity' depends on module 'academicstructure' via com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService -> com.red_escuela.backend.academicstructure.repository.InstitutionRepository. Allowed targets: shared.
+Module 'identity' depends on module 'academicstructure' via com.red_escuela.backend.identity.usecase.staff.CreateStaffService -> com.red_escuela.backend.academicstructure.repository.InstructorRepository. Allowed targets: shared.
+Module 'identity' depends on named interface(s) 'academicstructure :: model' via com.red_escuela.backend.identity.entity.Student -> com.red_escuela.backend.academicstructure.entity.Institution. Allowed targets: shared.
+Module 'identity' depends on named interface(s) 'academicstructure :: model' via com.red_escuela.backend.identity.usecase.staff.CreateStaffService -> com.red_escuela.backend.academicstructure.entity.Instructor. Allowed targets: shared.

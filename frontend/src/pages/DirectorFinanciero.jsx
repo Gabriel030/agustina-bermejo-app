@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { TrendingDown, TrendingUp, Users, AlertCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -7,19 +7,48 @@ import { StatCard } from '@/components/StatCard';
 import { Stagger } from '@/components/Stagger';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
-import { useFinancialDashboard, useDebtors } from '@/hooks/useDirector';
+import { useFinancialDashboard, useDebtors } from '@/features/billing/hooks/useFinancialDashboard';
+import { formatMoney } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
-function formatPesos(amount) {
-  if (amount == null) return '—';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount);
+function formatPesos(money) {
+  return formatMoney(money) || '—';
+}
+
+const COUNT_GRID = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))]';
+const AMOUNT_GRID = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))]';
+
+function CurrencyKpis({ totals, currencyLabel }) {
+  return (
+    <section aria-label={currencyLabel ?? 'Montos'} className="flex min-w-0 flex-col gap-2">
+      {currencyLabel && (
+        <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{currencyLabel}</h2>
+      )}
+      <div className={AMOUNT_GRID}>
+        <Stagger className="min-w-0">
+          <StatCard label="Deuda total">
+            <div className="font-heading text-2xl font-bold text-danger">{formatPesos(totals.totalDebt)}</div>
+          </StatCard>
+          <StatCard label="Proyectado del mes">
+            <div className="font-heading text-2xl font-bold text-ink">{formatPesos(totals.monthlyProjected)}</div>
+          </StatCard>
+          <StatCard label="Cobrado del mes">
+            <div className="font-heading text-2xl font-bold text-success">{formatPesos(totals.monthlyCollected)}</div>
+          </StatCard>
+          <StatCard label="Pendiente del mes">
+            <div className="font-heading text-2xl font-bold text-warning">{formatPesos(totals.monthlyDebt)}</div>
+          </StatCard>
+        </Stagger>
+      </div>
+    </section>
+  );
 }
 
 function KpiCards({ data, isLoading }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className={COUNT_GRID}>
+        {Array.from({ length: 4 }).map((_, i) => (
           <GlassCard key={i} className="p-5">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="mt-2 h-8 w-20" />
@@ -29,30 +58,28 @@ function KpiCards({ data, isLoading }) {
     );
   }
 
+  const totalsByCurrency = data?.totalsByCurrency ?? [];
+  const multiCurrency = totalsByCurrency.length > 1;
+
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      <Stagger>
-        <StatCard label="Alumnos en deuda">
-          <div className="flex items-end gap-1.5">
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className={COUNT_GRID}>
+        <Stagger className="min-w-0">
+          <StatCard label="Alumnos en deuda">
             <span className="font-heading text-3xl font-bold text-danger">{data?.studentsInDebt ?? 0}</span>
-          </div>
-        </StatCard>
-        <StatCard label="Alumnos al día">
-          <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
-        </StatCard>
-        <StatCard label="Deuda total">
-          <div className="font-heading text-2xl font-bold text-danger">{formatPesos(data?.totalDebt)}</div>
-        </StatCard>
-        <StatCard label="Proyectado del mes">
-          <div className="font-heading text-2xl font-bold text-ink">{formatPesos(data?.monthlyProjected)}</div>
-        </StatCard>
-        <StatCard label="Cobrado del mes">
-          <div className="font-heading text-2xl font-bold text-success">{formatPesos(data?.monthlyCollected)}</div>
-        </StatCard>
-        <StatCard label="Pendiente del mes">
-          <div className="font-heading text-2xl font-bold text-warning">{formatPesos(data?.monthlyDebt)}</div>
-        </StatCard>
-      </Stagger>
+          </StatCard>
+          <StatCard label="Alumnos al día">
+            <span className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</span>
+          </StatCard>
+        </Stagger>
+      </div>
+      {(totalsByCurrency.length ? totalsByCurrency : [{}]).map((totals) => (
+        <CurrencyKpis
+          key={totals.totalDebt?.currency ?? 'none'}
+          totals={totals}
+          currencyLabel={multiCurrency ? totals.totalDebt.currency : null}
+        />
+      ))}
     </div>
   );
 }
@@ -90,7 +117,7 @@ function DebtorsTable({ data, isLoading }) {
       </TableHeader>
       <TableBody>
         {data.map((d) => (
-          <TableRow key={d.studentId} className="cursor-pointer" onClick={() => navigate(`/director/alumnos/${d.studentId}`)}>
+          <TableRow key={`${d.studentId}-${d.totalDebt.currency}`}className="cursor-pointer" onClick={() => navigate(`/director/alumnos/${d.studentId}`)}>
             <TableCell className="pl-4 font-medium text-ink">{d.fullName}</TableCell>
             <TableCell className="text-ink-soft">{d.dni}</TableCell>
             <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>
@@ -111,15 +138,16 @@ export function DirectorFinanciero() {
   const { data: debtors, isLoading: cargandoDeudores } = useDebtors(sortBy);
 
   return (
-    <PageContainer>
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-bold text-ink">Resumen financiero</h1>
-        <p className="mt-0.5 text-sm text-ink-soft">Estado de cobros y alumnos con deuda vencida</p>
-      </div>
+    <PageContainer title="Resumen financiero">
+      <p className="-mt-4 text-sm text-ink-soft">Estado de cobros y alumnos con deuda vencida</p>
 
       <KpiCards data={kpis} isLoading={cargandoKpis} />
 
-      <GlassCard className="mt-6">
+      <Link to="/director/financiero/anios-lectivos" className="text-sm font-semibold text-primary hover:underline">
+        Configurar el cobro de los años lectivos por carrera
+      </Link>
+
+      <GlassCard>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-danger" />

@@ -1,0 +1,29 @@
+meta {
+  name: 11. Solicitar de nuevo la misma carrera - duplicado pendiente (409)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdQA}}&cohortId={{cohortIdQA}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 409 — AlreadyHasPendingApplicationException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  Criterio de aceptación de la spec funcional: no puede tener dos
+  solicitudes `PENDING` a la misma carrera. Blindado también por el
+  índice único parcial `uk_program_enrollment_application_pending` a
+  nivel DB (no solo el chequeo del service) — ver
+  `V22__program_enrollment_application.sql`.
+}

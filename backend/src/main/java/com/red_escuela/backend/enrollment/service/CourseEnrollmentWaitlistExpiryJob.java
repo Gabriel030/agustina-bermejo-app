@@ -1,47 +1,53 @@
 package com.red_escuela.backend.enrollment.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.notification.CourseWaitlistExpiredEvent;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import org.springframework.context.ApplicationEventPublisher;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
 @Service
 public class CourseEnrollmentWaitlistExpiryJob {
-    private final CourseRepository courseRepository;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final CourseEnrollmentService courseEnrollmentService;
-    private final ApplicationEventPublisher eventPublisher;
+    private static final Logger log = LoggerFactory.getLogger(CourseEnrollmentWaitlistExpiryJob.class);
 
-    public CourseEnrollmentWaitlistExpiryJob(CourseRepository courseRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                              CourseEnrollmentService courseEnrollmentService, ApplicationEventPublisher eventPublisher) {
+    private final CourseRepository courseRepository;
+    private final CourseWaitlistExpiration courseWaitlistExpiration;
+    private final Clock clock;
+
+    public CourseEnrollmentWaitlistExpiryJob(CourseRepository courseRepository, CourseWaitlistExpiration courseWaitlistExpiration, Clock clock) {
         this.courseRepository = courseRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.courseEnrollmentService = courseEnrollmentService;
-        this.eventPublisher = eventPublisher;
+        this.courseWaitlistExpiration = courseWaitlistExpiration;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone}")
-    @Transactional
+    @SchedulerLock(name = "CourseEnrollmentWaitlistExpiryJob", lockAtMostFor = "PT30M")
     public void expireWaitlists() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
+        log.info("Vencimiento de listas de espera iniciado: fecha={}", today);
+        long start = System.currentTimeMillis();
+        int candidates = 0;
+        int processed = 0;
+        int failed = 0;
         for (Course course : courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull()) {
             if (!course.waitlistDeadlineHasPassed(today)) {
                 continue;
             }
-            for (CourseEnrollment enrollment : courseEnrollmentRepository.findByCourseIdAndStatus(course.getId(), EnrollmentStatus.WAITLISTED)) {
-                enrollment.setStatus(EnrollmentStatus.WAITLIST_EXPIRED);
-                courseEnrollmentRepository.save(enrollment);
-                courseEnrollmentService.cancelModuleEnrollments(enrollment);
-                eventPublisher.publishEvent(new CourseWaitlistExpiredEvent(enrollment));
+            candidates++;
+            try {
+                courseWaitlistExpiration.expire(course.getId());
+                processed++;
+            } catch (RuntimeException e) {
+                failed++;
+                log.error("No se pudo vencer la lista de espera del curso {}", course.getId(), e);
             }
         }
+        log.info("Vencimiento de listas de espera finalizado: candidatas={}, procesadas={}, fallidas={}, duracion={}ms",
+                candidates, processed, failed, System.currentTimeMillis() - start);
     }
 }

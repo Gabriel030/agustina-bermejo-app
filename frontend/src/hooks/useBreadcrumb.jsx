@@ -1,9 +1,9 @@
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
-import { useComisionesDictadas, useConfiguracionComision } from '@/hooks/useDocente';
-import { useConfiguracionComisionStaff } from '@/hooks/useDirector';
-import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
-import { useLegajoPersonal } from '@/features/gestion-personas/hooks/useLegajoPersonal';
+import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
+import { useComisionesDictadas } from '@/features/academic-structure';
+import { useConfiguracionComision, useConfiguracionComisionStaff } from '@/features/evaluation';
+import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
+import { useLegajoPersonal } from '@/features/identity/hooks/useLegajoPersonal';
 import { Skeleton } from '@/components/Skeleton';
 
 const ETIQUETA_TAB_COMISION = {
@@ -34,8 +34,8 @@ export function useBreadcrumb() {
   const enDetallePagosCurso = /^\/alumno\/pagos\/curso\/[^/]+$/.test(location.pathname);
   const enDetallePagosCarrera = /^\/alumno\/pagos\/carrera\/[^/]+$/.test(location.pathname);
   const enDetallePagos = enDetallePagosCurso || enDetallePagosCarrera;
-  const { data: cursos } = useMisCursos();
-  const { data: carreras } = useMisMatriculaciones();
+  const { data: cursos } = useMisCursos(enDetallePagosCurso);
+  const { data: carreras } = useMisMatriculaciones(enDetallePagosCarrera);
 
   const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
   const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);

@@ -1,6 +1,8 @@
 package com.red_escuela.backend.graduation.exception;
 
-public class CertificateNotEligibleException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class CertificateNotEligibleException extends BadRequestException {
     public CertificateNotEligibleException(String motivo) {
         super("El alumno no cumple la condición para emitir la constancia: " + motivo);
     }

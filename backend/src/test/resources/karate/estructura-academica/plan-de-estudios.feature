@@ -15,10 +15,10 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Ciclo completo de una materia — alta, aprobación, edición, baja y reactivación
     * def nombre = 'Análisis Matemático I ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal' }
+    And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal', weeklyHours: 4, gradeMode: 'NUMERIC' }
     When method post
     Then status 201
     And match response.status == 'DRAFT'
@@ -66,7 +66,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Materia con nombre duplicado — 409
     * def nombre = 'Historia ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombre)', code: '#(codigo)' }
@@ -103,8 +103,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma = 'Profesorado QA ' + java.lang.System.nanoTime()
     * def nombreA = 'Materia A ' + java.lang.System.nanoTime()
     * def nombreB = 'Materia B ' + java.lang.System.nanoTime()
-    * def codigoA = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigoB = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoA = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigoB = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -119,6 +119,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectAId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectAId)
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -126,6 +127,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectBId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectBId)
 
     # A en el 2do cuatrimestre de 1er año — para que B (1er cuatrimestre, más abajo)
     # pueda ser su correlativa sin violar la validación de orden cronológico (una
@@ -183,7 +185,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Agregar la misma materia dos veces a la carrera — 409
     * def nombrePrograma = 'Carrera QA duplicado ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia duplicable ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -198,6 +200,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -236,7 +239,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Prerequisito de sí misma — 400
     * def nombrePrograma = 'Carrera QA prereq sí misma ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia autorreferencial ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -251,6 +254,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -269,12 +273,12 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma = 'Carrera QA correlatividades ' + java.lang.System.nanoTime()
     * def nombreC = 'Materia C ' + java.lang.System.nanoTime()
     * def nombreD = 'Materia D ' + java.lang.System.nanoTime()
-    * def codigoC = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigoD = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoC = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigoD = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombrePrograma)', totalYears: 1, totalCreditsRequired: 0 }
+    And request { name: '#(nombrePrograma)', totalYears: 2, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id
@@ -285,6 +289,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectCId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectCId)
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -292,6 +297,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectDId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectDId)
 
     # C en 2do año y D en 1ro — D tiene que ser cronológicamente anterior a C para
     # poder ser su correlativa (ver validación de orden cronológico agregada a
@@ -336,8 +342,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma2 = 'Carrera QA 2 ' + java.lang.System.nanoTime()
     * def nombreSubject1 = 'Materia carrera 1 ' + java.lang.System.nanoTime()
     * def nombreSubject2 = 'Materia carrera 2 ' + java.lang.System.nanoTime()
-    * def codigo1 = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigo2 = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo1 = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigo2 = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -359,6 +365,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subject1Id = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subject1Id)
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -366,6 +373,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subject2Id = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subject2Id)
 
     Given path '/programs', program1Id, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -397,7 +405,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombreGrupo = 'Optativas de Idioma ' + java.lang.System.nanoTime()
     * def nombrePrograma = 'Carrera QA electivas ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Electiva de Idioma ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/elective-groups'
     And header Authorization = 'Bearer ' + adminToken
@@ -419,6 +427,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     # Decisión 8: no se puede tagear con un grupo que la carrera no asignó todavía
     Given path '/programs', programId, 'subjects'
@@ -521,3 +530,226 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     And request { name: '#(nombre)' }
     When method post
     Then status 409
+
+  Scenario: Rechazar una materia exige motivo, lo guarda para el administrativo y se limpia al reenviarla
+    * def nombre = 'Materia a rechazar ' + java.lang.System.nanoTime()
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 4, gradeMode: 'NUMERIC' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId, 'reject'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: '' }
+    When method post
+    Then status 400
+
+    Given path '/subjects', subjectId, 'reject'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: 'Falta la bibliografía obligatoria' }
+    When method post
+    Then status 200
+    And match response.status == 'REJECTED'
+    And match response.rejectionReason == 'Falta la bibliografía obligatoria'
+
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And param status = 'REJECTED'
+    When method get
+    Then status 200
+    * def rechazada = response.filter(function(x){ return x.id == subjectId })
+    And match rechazada[0].rejectionReason == 'Falta la bibliografía obligatoria'
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+    And match response.status == 'PENDING_APPROVAL'
+    And match response.rejectionReason == null
+
+  Scenario: Una materia sin horas o sin modalidad de calificación se guarda como borrador pero no se puede enviar a aprobación
+    * def nombre = 'Materia incompleta ' + java.lang.System.nanoTime()
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)' }
+    When method post
+    Then status 201
+    And match response.status == 'DRAFT'
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 400
+    And match response.code == 'INCOMPLETE_SUBJECT'
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { weeklyHoursLab: 2 }
+    When method put
+    Then status 200
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 400
+    And match response.code == 'INCOMPLETE_SUBJECT'
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { gradeMode: 'PASS_FAIL' }
+    When method put
+    Then status 200
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+    And match response.status == 'PENDING_APPROVAL'
+
+  Scenario: El código se corrige en borrador y queda fijo una vez aprobada la materia
+    * def nombre = 'Materia con código a corregir ' + java.lang.System.nanoTime()
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigoCorregido = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 3, gradeMode: 'NUMERIC' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { code: '#(codigoCorregido)' }
+    When method put
+    Then status 200
+    And match response.code == codigoCorregido
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId, 'approve'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { code: '#(codigo)', weeklyHours: 5 }
+    When method put
+    Then status 409
+    And match response.code == 'SUBJECT_INVALID_TRANSITION'
+
+  Scenario Outline: Materia con horas negativas o intentos de final en cero — 400
+    * def nombre = 'Materia inválida ' + java.lang.System.nanoTime()
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def body = { name: '#(nombre)', code: '#(codigo)', gradeMode: 'NUMERIC' }
+    * body.weeklyHours = <weeklyHours>
+    * body.weeklyHoursLab = <weeklyHoursLab>
+    * body.maxFinalExamAttempts = <attempts>
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request body
+    When method post
+    Then status 400
+
+    Examples:
+      | weeklyHours | weeklyHoursLab | attempts |
+      | -5          | 2              | 3        |
+      | 4           | -1             | 3        |
+      | 4           | 0              | 0        |
+
+  Scenario: Una materia pendiente de aprobación no se puede editar ni agregar a un plan — 409
+    * def nombre = 'Materia pendiente ' + java.lang.System.nanoTime()
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def nombrePrograma = 'Carrera QA pendiente ' + java.lang.System.nanoTime()
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 3, gradeMode: 'NUMERIC' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { weeklyHours: 6 }
+    When method put
+    Then status 409
+
+    Given path '/programs'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombrePrograma)', totalYears: 2, totalCreditsRequired: 0 }
+    When method post
+    Then status 201
+    * def programId = response.id
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 409
+    And match response.code == 'SUBJECT_NOT_ASSIGNABLE_TO_PLAN'
+
+  Scenario: Agregar al plan con año fuera de la duración o sin los datos de su categoría — 400 con código
+    * def nombrePrograma = 'Carrera QA años ' + java.lang.System.nanoTime()
+    * def nombreMateria = 'Materia años ' + java.lang.System.nanoTime()
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+
+    Given path '/programs'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombrePrograma)', totalYears: 3, totalCreditsRequired: 0 }
+    When method post
+    Then status 201
+    * def programId = response.id
+
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombreMateria)', code: '#(codigo)' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 5, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 400
+    And match response.code == 'CURRICULAR_YEAR_OUT_OF_RANGE'
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, credits: 5 }
+    When method post
+    Then status 400
+    And match response.code == 'INVALID_PROGRAM_SUBJECT_CATEGORY'
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 3, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 201
+    * def programSubjectId = response.id
+
+    Given path '/program-subjects', programSubjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { curricularYear: 4 }
+    When method put
+    Then status 400
+    And match response.code == 'CURRICULAR_YEAR_OUT_OF_RANGE'

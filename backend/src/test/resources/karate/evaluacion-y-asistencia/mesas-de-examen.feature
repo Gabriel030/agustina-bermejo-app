@@ -29,13 +29,14 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA mesas ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -85,7 +86,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -204,18 +205,19 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
     * def nombreMateriaOtra = 'Materia QA mesas otra ' + java.lang.System.nanoTime()
-    * def codigoMateriaOtra = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateriaOtra = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaOtra)', code: '#(codigoMateriaOtra)' }
     When method post
     Then status 201
     * def subjectOtroId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectOtroId)
 
     Given path '/exam-boards'
     And header Authorization = 'Bearer ' + adminToken
@@ -320,7 +322,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -394,7 +396,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -416,6 +418,54 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And header Authorization = 'Bearer ' + alumno.accessToken
     When method post
     Then status 204
+
+  Scenario: Un Docente solo ve las mesas en las que integra el tribunal — 403 en las ajenas
+    Given path '/exam-boards'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { subjectId: '#(subjectId)', termId: '#(termId)', examDate: '2026-07-01T00:00:00' }
+    When method post
+    Then status 201
+    * def examBoardId = response.id
+
+    Given path '/exam-boards', examBoardId, 'tribunal'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { instructorId: '#(docente.instructorId)' }
+    When method post
+    Then status 204
+
+    * def ajeno = fixtures.createTeacherWithToken()
+
+    Given path '/exam-boards', examBoardId, 'registrations'
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 403
+
+    Given path '/exam-boards', examBoardId
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 403
+
+    Given path '/exam-boards'
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 200
+    And match response[*].id !contains examBoardId
+
+    Given path '/exam-boards', examBoardId, 'registrations'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    When method get
+    Then status 200
+
+    Given path '/exam-boards'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    When method get
+    Then status 200
+    And match response[*].id contains examBoardId
+
+    Given path '/exam-boards', examBoardId, 'registrations'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method get
+    Then status 200
 
   Scenario: Autoservicio — un alumno no puede dar de baja la inscripción de otro (404, no 403)
     * def alumno1 = fixtures.createConfirmedStudent(fixtures.createInstitution())
@@ -445,7 +495,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollment1Id, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 

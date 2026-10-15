@@ -13,7 +13,7 @@ const API = 'http://localhost:8080';
 
 /*
  * Integration test del flujo crítico de Épica 7 (Fase 2 + Fase 3) — registro →
- * catálogo → detalle de carrera → wizard de inscripción con pago → ver la
+ * catálogo → detalle de carrera → wizard de solicitud sin pago → ver la
  * solicitud PENDING en la tab Mis solicitudes, con datos reales del backend
  * (mockeados vía MSW), mismo criterio que login.integration.test.jsx.
  */
@@ -41,7 +41,9 @@ async function registrarse(user) {
   await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 }
 
-describe('flujo de registro end-to-end', () => {
+const E2E_FLOW_TIMEOUT_MS = 20000;
+
+describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () => {
   it('registrarse sin rol asignado redirige a /catalogo, no a una pantalla de rol', async () => {
     server.use(
       http.get(`${API}/me`, () =>
@@ -58,7 +60,7 @@ describe('flujo de registro end-to-end', () => {
     expect(screen.getAllByText('Catálogo').length).toBeGreaterThan(0);
   });
 
-  it('registrarse → detalle de carrera → wizard con pago → ver la solicitud PENDING en Mis solicitudes', async () => {
+  it('registrarse → detalle de carrera → wizard sin pago → ver la solicitud PENDING en Mis solicitudes', async () => {
     // Auditoría 2026-09-04 (calidad de tests): ningún handler de este test miraba el body/FormData
     // real de la request — devolvían una respuesta fija sin importar qué se mandó, así que un bug
     // real (mandar el cohortId equivocado, o un comprobante vacío en el FormData) hubiera pasado
@@ -81,10 +83,10 @@ describe('flujo de registro end-to-end', () => {
       http.get(`${API}/programs`, () => HttpResponse.json([{ id: 1, name: 'Diseño Gráfico', totalYears: 3 }])),
       http.get(`${API}/programs/1`, () => HttpResponse.json({ id: 1, name: 'Diseño Gráfico', totalYears: 3 })),
       http.get(`${API}/programs/1/pricing`, () =>
-        HttpResponse.json({ programId: 1, matriculaCohorte1: 50000, matriculaCohorte2: 25000, cuotaMensual: 15000 }),
+        HttpResponse.json({ programId: 1, matriculaCohorte1: { amount: '50000.00', currency: 'ARS' }, matriculaCohorte2: { amount: '25000.00', currency: 'ARS' }, cuotaMensual: { amount: '15000.00', currency: 'ARS' } }),
       ),
       http.get(`${API}/programs/1/cohorts`, () =>
-        HttpResponse.json([{ id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01' }]),
+        HttpResponse.json([{ id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true }]),
       ),
       http.get(`${API}/programs/1/subjects`, () => HttpResponse.json([])),
       http.put(`${API}/me`, () =>
@@ -108,12 +110,12 @@ describe('flujo de registro end-to-end', () => {
     await user.click(await screen.findByText('Diseño Gráfico'));
     await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
 
-    // Página de inscripción (no modal): cohorte → documentación → pago → confirmar
+    // Página de inscripción (no modal): cohorte → documentación → confirmar (D-227: la matrícula se factura al aprobar)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(await screen.findByText('Marzo 2026'));
 
     // Email ya viene precargado de /me (Sofía se registró con email) — solo falta DNI/dirección.
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
     const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
     await user.type(calleInput, 'Calle Falsa');
     await user.type(numeroInput, '123');
@@ -125,26 +127,23 @@ describe('flujo de registro end-to-end', () => {
     await user.upload(inputsDocs[0], dniFrente);
     await user.upload(inputsDocs[1], dniDorso);
     await user.upload(inputsDocs[2], analitico);
-    await user.click(screen.getByRole('button', { name: 'Continuar →' }));
-
-    const comprobante = new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' });
-    const [comprobanteInput] = document.querySelectorAll('input[type="file"]');
-    await user.upload(comprobanteInput, comprobante);
-    await user.click(await screen.findByRole('button', { name: 'Confirmar solicitud' }));
+    expect(screen.queryByText('Subir comprobante de pago')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Confirmar solicitud' }));
     const modalConfirmar = await screen.findByRole('dialog');
     await user.click(within(modalConfirmar).getByRole('button', { name: 'Sí, confirmar' }));
     expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
+    expect(screen.getByText(/quedó en revisión y no se te cobró nada\. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ir a mis solicitudes' }));
 
     // Revisar la tab Mis solicitudes
     await user.click(await screen.findByRole('tab', { name: 'Mis solicitudes' }));
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('En revisión')).toBeInTheDocument();
 
     // Verificación real de lo que se mandó al backend (no solo del status code mockeado de
     // vuelta) — un bug que mande el cohortId equivocado, el DNI sin actualizar, o un comprobante
-    // vacío en el FormData ahora sí hace fallar este test.
+    // que ya no corresponde en el FormData ahora sí hace fallar este test.
     const llamadaA = (urlSufijo, method) =>
       fetchSpy.mock.calls.find(([url, opts]) => String(url).endsWith(urlSufijo) && opts?.method === method);
 
@@ -155,7 +154,7 @@ describe('flujo de registro end-to-end', () => {
     const solicitudFormData = solicitarCarreraOpts.body;
     expect(solicitudFormData.get('programId')).toBe('1');
     expect(solicitudFormData.get('cohortId')).toBe('1');
-    expect(solicitudFormData.get('comprobante').name).toBe('comprobante.pdf');
+    expect(solicitudFormData.has('comprobante')).toBe(false);
 
     const documentosSubidos = fetchSpy.mock.calls
       .filter(([url]) => String(url).includes('/documents?type='))

@@ -5,8 +5,8 @@ import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @UseCase
@@ -24,6 +24,6 @@ public class GetActiveSessionsService implements GetActiveSessionsUseCase {
     @Override
     public List<RefreshToken> getActiveSessions() {
         Person person = currentPersonService.resolveCurrentPerson();
-        return refreshTokenRepository.findByPersonAndRevokedFalseAndExpiresAtAfter(person, LocalDateTime.now());
+        return refreshTokenRepository.findByPersonAndRevokedFalseAndExpiresAtAfter(person, ApplicationTime.now());
     }
 }

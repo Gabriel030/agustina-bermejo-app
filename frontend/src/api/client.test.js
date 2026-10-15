@@ -62,4 +62,26 @@ describe('apiFetch', () => {
     ).rejects.toThrow();
     expect(refreshLlamado).toBe(false);
   });
+
+  it('expone el code que manda el backend en el cuerpo del error', async () => {
+    server.use(
+      http.post(`${API}/me/course-enrollments`, () =>
+        HttpResponse.json({ code: 'ALREADY_ENROLLED_IN_COURSE' }, { status: 409 }),
+      ),
+    );
+
+    await expect(apiFetch('/me/course-enrollments', { method: 'POST' })).rejects.toMatchObject({
+      status: 409,
+      code: 'ALREADY_ENROLLED_IN_COURSE',
+    });
+  });
+
+  it('un error sin cuerpo deja el code en null', async () => {
+    server.use(http.post(`${API}/me/course-enrollments`, () => new HttpResponse(null, { status: 409 })));
+
+    await expect(apiFetch('/me/course-enrollments', { method: 'POST' })).rejects.toMatchObject({
+      status: 409,
+      code: null,
+    });
+  });
 });

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageContainer } from '@/components/PageContainer';
@@ -10,7 +10,24 @@ import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
+import { toast } from 'sonner';
+import { apiFetchBlob } from '@/api/client';
+import {
+  FEE_TYPE_LABELS,
+  formatDate,
+  formatPeriod,
+  hasInvoiceDetail,
+  invoiceDisplayStatus,
+  invoiceStatusInfo,
+  invoiceTitle,
+  isInvoicePayable,
+} from '@/lib/billing';
+import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
+import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
+import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
+import { useExpandedRows } from '@/hooks/useExpandedRows';
+import { formatMoney, moneyValue } from '@/lib/utils';
+import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
   useRegistrarPago,
@@ -28,30 +45,11 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
-const FEE_TYPE_LABELS = {
-  RECURRING_FEE: 'Cuota mensual',
-  ENROLLMENT_FEE: 'Matrícula',
-  SUBSCRIPTION_FEE: 'Cuota anual',
-  EXAM_RIGHT: 'Derecho a examen',
-  RETAKEN_SUBJECT_FEE: 'Recurse',
-  DEGREE_ISSUANCE: 'Emisión de título',
-  ADMINISTRATIVE_FEE: 'Gestión administrativa',
-};
-
-const INVOICE_STATUS_CONFIG = {
-  PENDING: { label: 'Pendiente', tone: 'warning' },
-  OVERDUE: { label: 'Vencida', tone: 'danger' },
-  PAID: { label: 'Pagada', tone: 'success' },
-  PARTIALLY_PAID: { label: 'Pago parcial', tone: 'warning' },
-  CANCELLED: { label: 'Anulada', tone: 'neutral' },
-  WAIVED: { label: 'Bonificada', tone: 'neutral' },
-};
-
 const BILLING_STANDING_CONFIG = {
-  CURRENT: { label: 'Al día', tone: 'success' },
+  UP_TO_DATE: { label: 'Al día', tone: 'success' },
   OVERDUE: { label: 'En mora', tone: 'danger' },
   SUSPENDED: { label: 'Suspendido', tone: 'danger' },
-  WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' },
+  WITHDRAWN_FOR_NONPAYMENT: { label: 'Dado de baja', tone: 'neutral' },
 };
 
 const PAYMENT_METHODS = [
@@ -61,62 +59,126 @@ const PAYMENT_METHODS = [
   { value: 'MERCADO_PAGO', label: 'Mercado Pago' },
 ];
 
-function formatPeriod(period) {
-  if (!period) return '-';
-  const [year, month] = period.split('-');
-  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${MESES[parseInt(month, 10) - 1]} ${year}`;
+function formatMonto(money) {
+  return formatMoney(money) || '-';
 }
 
-function formatMonto(amount) {
-  if (amount == null) return '-';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(amount);
+const REGISTER_PAYMENT_ERRORS = {
+  PARTIAL_PAYMENT_NOT_ALLOWED: 'Las cuotas se cobran completas: el monto cambió. Actualizá la pantalla y volvé a intentar.',
+  PAYMENT_EXCEEDS_INVOICE_BALANCE: 'El monto supera el saldo de la cuota. Actualizá la pantalla y revisá los saldos.',
+  INVOICE_NOT_PAYABLE: 'Una de las cuotas ya no admite pagos. Actualizá la pantalla y revisá su estado.',
+};
+
+const APPROVE_RECEIPT_ERRORS = {
+  INVOICE_NOT_PAYABLE:
+    'La cuota de este comprobante ya está saldada (por ejemplo, se cobró en mostrador). Rechazalo indicando el motivo.',
+  INVALID_PAYMENT_RECEIPT_STATE: 'Este comprobante ya fue revisado. Actualizá la bandeja.',
+};
+
+async function openReceiptFile(receiptId) {
+  const preview = window.open('', '_blank');
+  try {
+    const { blob } = await apiFetchBlob(`/bank-transfer-receipts/${receiptId}/file`);
+    const url = URL.createObjectURL(blob);
+    if (preview) {
+      preview.location.href = url;
+    } else {
+      window.location.assign(url);
+    }
+  } catch {
+    preview?.close();
+    toast.error('No pudimos abrir el comprobante. Probá de nuevo.');
+  }
 }
 
-function formatFecha(date) {
-  if (!date) return '-';
-  const d = new Date(date.includes('T') ? date : date + 'T00:00:00');
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+function nearestDueInvoiceId(invoices) {
+  const sorted = [...invoices].sort((a, b) => String(a.dueDate ?? '').localeCompare(String(b.dueDate ?? '')));
+  return sorted[0]?.id;
+}
+
+function PayableInvoiceRow({ invoice, checked, onToggle }) {
+  const [showLines, setShowLines] = useState(false);
+  const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(invoice));
+  const inputId = `register-payment-${invoice.id}`;
+  const multiLine = (invoice.lines ?? []).length > 1;
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <label htmlFor={inputId} className="flex cursor-pointer items-center gap-3">
+        <input
+          id={inputId}
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          aria-label={`Cobrar ${invoiceTitle(invoice)}`}
+          className="h-4 w-4 accent-brand"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-ink">{invoiceTitle(invoice)}</p>
+          <p className="text-xs text-ink-faint">Vence el {formatDate(invoice.dueDate)}</p>
+        </div>
+        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+        <div className="flex w-28 flex-col items-end">
+          <span className="font-mono text-sm font-semibold text-ink">{formatMonto(invoice.outstandingAmount)}</span>
+          <span className="text-xs text-ink-faint">Saldo a cobrar</span>
+        </div>
+      </label>
+      {multiLine && (
+        <div className="mt-2 pl-7">
+          <button
+            type="button"
+            aria-expanded={showLines}
+            onClick={() => setShowLines((value) => !value)}
+            className="text-xs font-semibold text-brand hover:underline"
+          >
+            {showLines ? 'Ocultar desglose' : 'Ver desglose'}
+          </button>
+          {showLines && (
+            <div className="mt-2">
+              <InvoiceLinesBreakdown invoice={invoice} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
-  const [amounts, setAmounts] = useState(() =>
-    Object.fromEntries(
-      invoices
-        .filter((inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID')
-        .map((inv) => [inv.id, inv.remainingBalance?.toString() ?? '0'])
-    )
-  );
+  const underReviewInvoices = invoices.filter((inv) => invoiceDisplayStatus(inv) === 'PAYMENT_UNDER_REVIEW');
+  const payableInvoices = invoices.filter((inv) => isInvoicePayable(inv) && invoiceDisplayStatus(inv) !== 'PAYMENT_UNDER_REVIEW');
+  const [selectedIds, setSelectedIds] = useState(() => new Set([nearestDueInvoiceId(payableInvoices)]));
   const [method, setMethod] = useState('CASH');
   const [notes, setNotes] = useState('');
   const [externalRef, setExternalRef] = useState('');
   const [error, setError] = useState('');
   const { mutate, isPending } = useRegistrarPago();
 
-  const payableInvoices = invoices.filter(
-    (inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID'
-  );
+  const selectedInvoices = payableInvoices.filter((inv) => selectedIds.has(inv.id));
+  const total = selectedInvoices.reduce((sum, inv) => sum + moneyValue(inv.outstandingAmount), 0);
+  const totalCurrency = (selectedInvoices[0] ?? payableInvoices[0])?.outstandingAmount?.currency ?? 'ARS';
 
-  const total = payableInvoices.reduce((sum, inv) => {
-    const a = parseFloat(amounts[inv.id] ?? '0');
-    return sum + (isNaN(a) ? 0 : a);
-  }, 0);
+  function toggleInvoice(id) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function handleSubmit() {
-    const allocations = payableInvoices
-      .map((inv) => ({ invoiceId: inv.id, amountApplied: parseFloat(amounts[inv.id] ?? '0') }))
-      .filter((a) => a.amountApplied > 0);
-
-    if (!allocations.length) {
-      setError('Ingresá al menos un monto mayor a cero.');
+    if (!selectedInvoices.length) {
+      setError('Elegí al menos una cuota para cobrar.');
       return;
     }
+
+    const allocations = selectedInvoices.map((inv) => ({ invoiceId: inv.id, amountApplied: inv.outstandingAmount }));
 
     mutate(
       { allocations, method, notes: notes || undefined, externalReference: externalRef || undefined },
       {
         onSuccess: () => onClose(true),
-        onError: (e) => setError(e?.message ?? 'Error al registrar el pago.'),
+        onError: (e) => setError(REGISTER_PAYMENT_ERRORS[e?.code] ?? e?.message ?? 'Error al registrar el pago.'),
       }
     );
   }
@@ -129,41 +191,38 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
           <p className="text-sm text-ink-faint">{enrollmentName}</p>
         </DialogHeader>
 
+        {underReviewInvoices.length > 0 && (
+          <div className="rounded-xl bg-warning-bg px-3 py-2 text-sm text-warning">
+            <p className="font-semibold">En revisión — resolvelas en Comprobantes</p>
+            <ul className="mt-1 text-xs">
+              {underReviewInvoices.map((inv) => (
+                <li key={inv.id}>
+                  {invoiceTitle(inv)} · vence el {formatDate(inv.dueDate)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {payableInvoices.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas pendientes en esta inscripción.</p>
+          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas para cobrar en esta inscripción.</p>
         ) : (
           <div className="flex flex-col gap-4">
+            <p className="text-sm text-ink-soft">Las cuotas se cobran completas: no se admiten pagos parciales.</p>
             <div className="flex flex-col gap-3">
-              {payableInvoices.map((inv) => {
-                const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-                return (
-                  <div key={inv.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">
-                        {FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}
-                        {inv.period ? ` · ${formatPeriod(inv.period)}` : ''}
-                      </p>
-                      <p className="text-xs text-ink-faint">Saldo: {formatMonto(inv.remainingBalance)}</p>
-                    </div>
-                    <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                    <div className="w-28">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={amounts[inv.id] ?? ''}
-                        onChange={(e) => setAmounts((prev) => ({ ...prev, [inv.id]: e.target.value }))}
-                        className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-right text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-brand"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+              {payableInvoices.map((inv) => (
+                <PayableInvoiceRow
+                  key={inv.id}
+                  invoice={inv}
+                  checked={selectedIds.has(inv.id)}
+                  onToggle={() => toggleInvoice(inv.id)}
+                />
+              ))}
             </div>
 
             <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
               <span className="text-sm font-medium text-ink">Total</span>
-              <span className="font-mono font-semibold text-ink">{formatMonto(total)}</span>
+              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: totalCurrency })}</span>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -216,7 +275,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
           <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={handleSubmit} disabled={isPending}>
+          <Button variant="gradient" onClick={handleSubmit} loading={isPending}>
             {isPending ? 'Registrando…' : 'Confirmar pago'}
           </Button>
         </DialogFooter>
@@ -225,40 +284,105 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
   );
 }
 
-function EnrollmentCard({ enrollment }) {
-  const [expanded, setExpanded] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+function InvoicesTable({ invoices }) {
+  const { isExpanded, toggle } = useExpandedRows();
 
-  const standingInfo = BILLING_STANDING_CONFIG[enrollment.billingStanding] ?? {
-    label: enrollment.billingStanding,
+  return (
+    <Table className="min-w-[760px]">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Concepto</TableHead>
+          <TableHead>Vencimiento</TableHead>
+          <TableHead>Fecha de pago</TableHead>
+          <TableHead className="text-right">Importe</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead className="w-10" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invoices.map((inv) => {
+          const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(inv));
+          const expandable = hasInvoiceDetail(inv);
+          const open = expandable && isExpanded(inv.id);
+          const concept = invoiceTitle(inv);
+          return (
+            <Fragment key={inv.id}>
+              <TableRow
+                className={expandable ? 'cursor-pointer' : undefined}
+                onClick={expandable ? () => toggle(inv.id) : undefined}
+              >
+                <TableCell className="font-medium">{concept}</TableCell>
+                <TableCell className="text-ink-faint">{formatDate(inv.dueDate)}</TableCell>
+                <TableCell>
+                  <PaymentDateCell invoice={inv} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <InvoiceAmountCell invoice={inv} />
+                </TableCell>
+                <TableCell>
+                  <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+                </TableCell>
+                <TableCell>
+                  {expandable && (
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      aria-controls={`invoice-detail-${inv.id}`}
+                      aria-label={`Ver pagos de ${concept}`}
+                      className="rounded-lg p-1 text-ink-faint"
+                    >
+                      {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  )}
+                </TableCell>
+              </TableRow>
+              {open && (
+                <TableRow id={`invoice-detail-${inv.id}`} className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="bg-neutral-bg/40 px-4">
+                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink showDocumentStatus />
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+function EnrollmentCard({ enrollment, defaultExpanded = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [showModal, setShowModal] = useState(false);
+
+  const standingInfo = BILLING_STANDING_CONFIG[enrollment.paymentStatus] ?? {
+    label: enrollment.paymentStatus,
     tone: 'neutral',
   };
 
   const invoices = enrollment.invoices ?? [];
-  const hasPayable = invoices.some(
-    (inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID'
-  );
+  const hasPayable = invoices.some(isInvoicePayable);
 
   const productLabel = `${enrollment.enrollmentType === 'COURSE' ? 'Curso' : 'Carrera'}: ${enrollment.productName ?? enrollment.enrollmentId}`;
 
   function handleModalClose(paid) {
     setShowModal(false);
-    if (paid) setSuccessMsg('Pago registrado correctamente.');
+    if (paid) toast.success('Pago registrado correctamente.');
   }
 
   return (
     <div className="rounded-2xl border border-border bg-surface">
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-4 p-4 text-left"
       >
         <div className="flex-1 min-w-0">
           <p className="truncate font-semibold text-ink">{productLabel}</p>
-          {enrollment.billingStandingUpdatedAt && (
+          {enrollment.paymentStatusUpdatedAt && (
             <p className="text-xs text-ink-faint">
-              Desde {formatFecha(enrollment.billingStandingUpdatedAt)}
+              Desde {formatDate(enrollment.paymentStatusUpdatedAt)}
             </p>
           )}
         </div>
@@ -268,42 +392,10 @@ function EnrollmentCard({ enrollment }) {
 
       {expanded && (
         <div className="border-t border-border px-4 pb-4 pt-3">
-          {successMsg && (
-            <p className="mb-3 rounded-lg bg-success-bg px-3 py-2 text-sm text-success">{successMsg}</p>
-          )}
-
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-sm text-ink-faint">Sin cuotas generadas todavía.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Concepto</TableHead>
-                  <TableHead>Período</TableHead>
-                  <TableHead>Vencimiento</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((inv) => {
-                  const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-                  return (
-                    <TableRow key={inv.id}>
-                      <TableCell className="font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</TableCell>
-                      <TableCell className="text-ink-faint">{formatPeriod(inv.period)}</TableCell>
-                      <TableCell className="text-ink-faint">{formatFecha(inv.dueDate)}</TableCell>
-                      <TableCell className="text-right font-mono font-semibold tabular-nums">
-                        {formatMonto(inv.remainingBalance)}
-                      </TableCell>
-                      <TableCell>
-                        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <InvoicesTable invoices={invoices} />
           )}
 
           {hasPayable && (
@@ -413,7 +505,11 @@ function TabFacturacion() {
           )}
           {!loadingOverview &&
             overview?.map((enrollment) => (
-              <EnrollmentCard key={`${enrollment.enrollmentType}-${enrollment.enrollmentId}`} enrollment={enrollment} />
+              <EnrollmentCard
+                key={`${enrollment.enrollmentType}-${enrollment.enrollmentId}`}
+                enrollment={enrollment}
+                defaultExpanded={overview.length === 1}
+              />
             ))}
         </>
       )}
@@ -448,10 +544,10 @@ function RechazarModal({ receipt, onClose }) {
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="text-sm text-ink-faint">
-            Alumno: <span className="font-medium text-ink">{receipt.studentName ?? `ID ${receipt.invoiceId}`}</span>
+            Alumno: <span className="font-medium text-ink">{receipt.studentName ?? 'Sin datos del alumno'}</span>
           </div>
           <div className="text-sm text-ink-faint">
-            Comprobante subido el {formatFecha(receipt.uploadedAt)}
+            Comprobante subido el {formatDate(receipt.uploadedAt)}
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
@@ -471,11 +567,7 @@ function RechazarModal({ receipt, onClose }) {
           <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
-          <Button
-            className="bg-danger text-white hover:bg-danger/90"
-            onClick={handleSubmit}
-            disabled={isPending}
-          >
+          <Button variant="destructive" onClick={handleSubmit} loading={isPending}>
             {isPending ? 'Rechazando…' : 'Rechazar'}
           </Button>
         </DialogFooter>
@@ -517,23 +609,23 @@ function TabComprobantes() {
               {receipt.studentDni && (
                 <p className="text-sm text-ink-faint">DNI {receipt.studentDni}</p>
               )}
+              {receipt.productName && <p className="text-sm text-ink-soft">{receipt.productName}</p>}
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-faint">
                 {receipt.invoiceFeeType && (
                   <span>{FEE_TYPE_LABELS[receipt.invoiceFeeType] ?? receipt.invoiceFeeType}</span>
                 )}
                 {receipt.invoicePeriod && <span>{formatPeriod(receipt.invoicePeriod)}</span>}
-                <span>Subido {formatFecha(receipt.uploadedAt)}</span>
+                <span>Subido {formatDate(receipt.uploadedAt)}</span>
               </div>
               {receipt.filePath && (
-                <a
-                  href={receipt.filePath}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => openReceiptFile(receipt.id)}
                   className="mt-1.5 inline-flex items-center gap-1 text-sm text-brand hover:underline"
                 >
                   <Receipt size={13} />
                   Ver comprobante
-                </a>
+                </button>
               )}
             </div>
             <div className="flex shrink-0 gap-2">
@@ -543,8 +635,14 @@ function TabComprobantes() {
                 onClick={() => {
                   setPendingApproveId(receipt.id);
                   aprobar(receipt.id, {
-                    onSuccess: () => setPendingApproveId(null),
-                    onError: () => setPendingApproveId(null),
+                    onSuccess: () => {
+                      setPendingApproveId(null);
+                      toast.success('Comprobante aprobado. El pago quedó acreditado.');
+                    },
+                    onError: (error) => {
+                      setPendingApproveId(null);
+                      toast.error(APPROVE_RECEIPT_ERRORS[error?.code] ?? error?.message ?? 'No pudimos aprobar el comprobante.');
+                    },
                   });
                 }}
                 disabled={aprobando && pendingApproveId === receipt.id}
@@ -572,26 +670,34 @@ function TabComprobantes() {
   );
 }
 
+const TAB_ACCOUNT = 'estado-de-cuenta';
+const TAB_RECEIPTS = 'comprobantes';
+
 export function AdministrativoFacturacion() {
-  const [tab, setTab] = useState('facturacion');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === TAB_RECEIPTS ? TAB_RECEIPTS : TAB_ACCOUNT;
+  const { data: pendingReceipts } = useComprobantesAdmin();
+  const pendingCount = pendingReceipts?.length ?? 0;
+
+  function handleTabChange(value) {
+    setSearchParams(value === TAB_ACCOUNT ? {} : { tab: value });
+  }
 
   return (
-    <PageContainer>
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented" className="w-full">
-          <TabsTrigger value="facturacion" className="flex-1">
-            Facturación
-          </TabsTrigger>
-          <TabsTrigger value="comprobantes" className="flex-1">
-            Comprobantes
+    <PageContainer title="Facturación">
+      <Tabs value={tab} onValueChange={handleTabChange}>
+        <TabsList variant="segmented">
+          <TabsTrigger value={TAB_ACCOUNT}>Estado de cuenta</TabsTrigger>
+          <TabsTrigger value={TAB_RECEIPTS}>
+            {pendingCount > 0 ? `Comprobantes · ${pendingCount}` : 'Comprobantes'}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="facturacion" className="mt-5">
+        <TabsContent value={TAB_ACCOUNT} className="mt-5">
           <TabFacturacion />
         </TabsContent>
 
-        <TabsContent value="comprobantes" className="mt-5">
+        <TabsContent value={TAB_RECEIPTS} className="mt-5">
           <TabComprobantes />
         </TabsContent>
       </Tabs>

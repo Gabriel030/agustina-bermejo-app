@@ -1,8 +1,10 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.dto.CreatePromotionBenefitRequest;
 import com.red_escuela.backend.billing.dto.CreatePromotionRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException;
@@ -22,7 +24,7 @@ public class PromotionBuilder {
         this.currentPersonService = currentPersonService;
     }
 
-    public Promotion build(CreatePromotionRequest request) {
+    public Promotion build(CreatePromotionRequest request, Currency currency) {
         if (request.eligibilityValidFrom().isAfter(request.eligibilityValidTo())) {
             throw new InvalidWindowConfigurationException("eligibilityValidFrom no puede ser posterior a eligibilityValidTo");
         }
@@ -39,7 +41,9 @@ public class PromotionBuilder {
             PromotionBenefit benefit = new PromotionBenefit();
             benefit.setPromotion(promotion);
             benefit.setFeeType(benefitRequest.feeType());
-            benefit.setValue(benefitRequest.value().toValue());
+            MonetaryAdjustment value = benefitRequest.value().toAdjustment();
+            value.requireCurrency(currency);
+            benefit.setValue(value);
             benefit.setInvoiceScopeCount(benefitRequest.invoiceScopeCount());
             promotion.getBenefits().add(benefit);
         }

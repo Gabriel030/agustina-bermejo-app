@@ -7,7 +7,9 @@ import java.util.List;
 
 public enum NotificationTopic implements NotificationRecipient {
     DIRECTOR_APPROVALS(new RoleRecipient("DIRECTOR")),
-    EVALUATION_CONFIG_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO"));
+    EVALUATION_CONFIG_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
+    BILLING_CONFIGURATION_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
+    ENROLLMENT_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO"), new RoleRecipient("PRECEPTOR"));
 
     private final List<NotificationRecipient> members;
 

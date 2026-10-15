@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.billing.dto.ProgramPricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class ProgramController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramResponse update(@PathVariable Long id, @RequestBody UpdateProgramRequest request) {
+    public ProgramResponse update(@PathVariable Long id, @Valid @RequestBody UpdateProgramRequest request) {
         return ProgramResponse.from(programService.update(id, request));
     }
 
@@ -64,8 +65,9 @@ public class ProgramController {
     }
 
     @GetMapping
-    public List<ProgramResponse> list(@RequestParam(required = false) StatusType status) {
-        return programService.list(status).stream().map(ProgramResponse::from).toList();
+    public List<ProgramResponse> list(@RequestParam(required = false) StatusType status,
+            @RequestParam(required = false) Boolean visibleInCatalog) {
+        return programService.list(status, visibleInCatalog).stream().map(ProgramResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")
@@ -78,5 +80,11 @@ public class ProgramController {
     @GetMapping("/{id}")
     public ProgramResponse get(@PathVariable Long id) {
         return ProgramResponse.from(programService.get(id));
+    }
+
+    @GetMapping("/{id}/pricing")
+    public ProgramPricingResponse getPricing(@PathVariable Long id) {
+        var program = programService.get(id);
+        return new ProgramPricingResponse(id, program.enrollmentFeeAsMoney(), program.enrollmentFeeAsMoney(), program.priceAsMoney());
     }
 }

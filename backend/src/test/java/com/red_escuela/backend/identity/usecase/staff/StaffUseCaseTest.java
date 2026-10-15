@@ -3,11 +3,11 @@ package com.red_escuela.backend.identity.usecase.staff;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
 import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.exception.RoleNotAssignableByActorException;
+import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -65,7 +65,7 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
 
     private CreateStaffRequest requestParaRol(String dni, String role) {
         return new CreateStaffRequest(
-                "Nombre", "Apellido", dni + "@example.com", dni,
+                "Nombre", "Apellido", dni + "@example.com", dni, com.red_escuela.backend.shared.domain.DocumentType.OTHER,
                 null, null, null, null, null, null, null, role);
     }
 
@@ -117,6 +117,6 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
 
         authenticateAsActor("B0000007", "ADMINISTRATIVO");
         Person editado = updateStaffUseCase.update(new UpdateStaffCommand(docente.getId(), edicion)).person();
-        assertThat(editado.getEmail()).isEqualTo("nuevo@example.com");
+        assertThat(editado.emailValue()).isEqualTo("nuevo@example.com");
     }
 }

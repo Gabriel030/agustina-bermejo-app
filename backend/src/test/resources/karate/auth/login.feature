@@ -45,3 +45,34 @@ Feature: Login (POST /auth/login)
     And request { username: 12345, password: null }
     When method post
     Then status 400
+
+  Scenario: Account lockout — correct password rejected after 5 failed attempts
+    Given path '/auth/login'
+    And request { username: '#(emailUnico)', password: 'contraseña-incorrecta-1' }
+    When method post
+    Then status 401
+
+    Given path '/auth/login'
+    And request { username: '#(emailUnico)', password: 'contraseña-incorrecta-2' }
+    When method post
+    Then status 401
+
+    Given path '/auth/login'
+    And request { username: '#(emailUnico)', password: 'contraseña-incorrecta-3' }
+    When method post
+    Then status 401
+
+    Given path '/auth/login'
+    And request { username: '#(emailUnico)', password: 'contraseña-incorrecta-4' }
+    When method post
+    Then status 401
+
+    Given path '/auth/login'
+    And request { username: '#(emailUnico)', password: 'contraseña-incorrecta-5' }
+    When method post
+    Then status 401
+
+    Given path '/auth/login'
+    And request { username: '#(emailUnico)', password: '#(passwordValida)' }
+    When method post
+    Then status 401

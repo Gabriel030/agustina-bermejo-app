@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -26,7 +26,7 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -85,6 +85,9 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -147,9 +150,10 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate template = new com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(10);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
         template.setCreatedBy(systemActor);
         entityManager.persist(template);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);

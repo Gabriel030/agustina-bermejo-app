@@ -1,4 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
+
+import org.springframework.modulith.NamedInterface;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,9 +8,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Builder
@@ -34,6 +41,11 @@ public class Program {
 
     @Column(name = "enrollment_fee_amount")
     private BigDecimal enrollmentFeeAmount;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency", nullable = false)
+    private Currency currency = Currency.ARS;
 
     @Column(name = "total_years")
     private Integer totalYears;
@@ -64,4 +76,55 @@ public class Program {
 
     @OneToMany(mappedBy = "program", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubject> programSubjectsList;
+
+    public void requireCurricularYearWithinDuration(Integer curricularYear) {
+        if (curricularYear == null) {
+            return;
+        }
+        if (curricularYear < 1 || (totalYears != null && curricularYear > totalYears)) {
+            throw new CurricularYearOutOfRangeException(curricularYear, totalYears);
+        }
+    }
+
+    public Money priceAsMoney() {
+        return price == null ? null : Money.of(price, currency);
+    }
+
+    public Money enrollmentFeeAsMoney() {
+        return enrollmentFeeAmount == null ? null : Money.of(enrollmentFeeAmount, currency);
+    }
+
+    public boolean changeRecurringFee(Money newPrice) {
+        if (newPrice == null) {
+            return false;
+        }
+        requireProgramCurrency(newPrice);
+        if (sameAmount(price, newPrice.amount())) {
+            return false;
+        }
+        price = newPrice.amount();
+        return true;
+    }
+
+    public boolean changeEnrollmentFee(Money newEnrollmentFee) {
+        if (newEnrollmentFee == null) {
+            return false;
+        }
+        requireProgramCurrency(newEnrollmentFee);
+        if (sameAmount(enrollmentFeeAmount, newEnrollmentFee.amount())) {
+            return false;
+        }
+        enrollmentFeeAmount = newEnrollmentFee.amount();
+        return true;
+    }
+
+    private void requireProgramCurrency(Money money) {
+        if (money.currency() != currency) {
+            throw new CurrencyMismatchException(currency, money.currency());
+        }
+    }
+
+    private static boolean sameAmount(BigDecimal current, BigDecimal requested) {
+        return current != null && current.compareTo(requested) == 0;
+    }
 }

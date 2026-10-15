@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -17,7 +17,7 @@ import java.util.Set;
 public class AdHocInvoiceRequestResolver {
 
     private static final Set<FeeType> AD_HOC_FEE_TYPES = EnumSet.of(
-            FeeType.EXAM_RIGHT, FeeType.RETAKEN_SUBJECT_FEE, FeeType.DEGREE_ISSUANCE, FeeType.ADMINISTRATIVE_FEE);
+            FeeType.EXAM_FEE, FeeType.RETAKEN_SUBJECT_FEE, FeeType.DEGREE_ISSUANCE_FEE, FeeType.ADMINISTRATIVE_FEE);
 
     private final SubjectRepository subjectRepository;
     private final ExamBoardRegistrationRepository examBoardRegistrationRepository;

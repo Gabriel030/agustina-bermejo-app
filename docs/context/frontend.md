@@ -90,6 +90,39 @@ está en esta lista.
   dentro del componente**, sin pasarlo por Context ni por una librería. Ver
   `Login.jsx` como referencia — dos campos, sin necesidad de nada más.
 
+## Estructura por módulo (Épica 18, Fase F0)
+
+El front se organiza por módulo de backend, no por rol:
+
+- `src/features/<módulo>/` con `routes.jsx` (y, a medida que F1 mueve cada módulo, `pages/`,
+  `components/`, `hooks/` y `api.js`). Módulos: `identity`, `academic-structure`, `enrollment`,
+  `attendance`, `evaluation`, `billing`, `graduation`, `announcements`, `notifications`,
+  `workspace` (pantallas que combinan varios módulos).
+- Cada `routes.jsx` exporta `routes = { public, shared, role }`: `public` (rutas sin sesión),
+  `shared` (rutas de cualquier usuario autenticado, bajo el layout del rol o el de autoservicio) y
+  `role` (`{ roles, path, element }`, relativas a `/<rol>`).
+- `src/routes/featureRoutes.jsx` junta las de todas las features y `src/routes/roleConfig.js`
+  define layout y páginas de navegación de cada rol (las que no tienen ruta real caen en
+  `Placeholder`). `AppRouter` solo compone: para sumar una pantalla se toca solo el `routes.jsx`
+  de su módulo.
+- Un componente que usan dos o más módulos va a `src/components/`, no a una feature.
+- F1 ya movió identity, academic-structure (incluye lo que era `gestion-academica` y `oferta-academica`),
+  enrollment, attendance, evaluation, graduation, announcements, notifications y workspace: tienen
+  `pages/`, `components/` y `hooks/` propios. Sigue pendiente billing (V2-14/15/16): sus páginas viven
+  todavía en `src/pages/`, y `features/billing/` solo tiene `routes.jsx`, `index.js` y los hooks
+  `usePaymentStanding` y `useFinancialDashboard` que salieron de los hooks por rol.
+- Los hooks por rol `useAlumno`, `useDocente` y `useDirector` ya no existen: cada hook vive en el
+  módulo cuyo endpoint llama y se consume desde el `index.js` de ese módulo.
+- `workspace` guarda las pantallas que combinan varios módulos (`AlumnoInicio`, `AlumnoMisCarreras`,
+  `AlumnoMateriaDetalle`, `DirectorAprobaciones`, `DocenteMisComisiones`) y compone hooks y componentes
+  de cada módulo a través de sus `index.js`.
+- Convención "copiar, no borrar": mientras un hook por rol mezcla módulos, cada módulo copia a su
+  carpeta solo sus funciones y el archivo original queda hasta que workspace lo borre.
+- Un módulo expone a los demás solo lo que sale de su `index.js`.
+
+Regla de límites (ESLint, `no-restricted-imports`, en `warn` hasta M6): una feature no importa
+de otra salvo por su `index.js`, y `components/`, `lib/` y `layouts/` no importan de `features/`.
+
 ## Estructura de carpetas
 
 Fase 1 usa carpetas **por tipo** (`api/`, `components/`, `context/`, `layouts/`,

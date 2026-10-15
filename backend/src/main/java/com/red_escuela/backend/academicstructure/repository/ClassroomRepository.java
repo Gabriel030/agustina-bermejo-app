@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.repository;
 
 import com.red_escuela.backend.academicstructure.entity.Classroom;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

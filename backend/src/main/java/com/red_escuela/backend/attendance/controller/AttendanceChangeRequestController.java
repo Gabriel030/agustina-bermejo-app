@@ -12,7 +12,7 @@ import com.red_escuela.backend.attendance.usecase.attendancechangerequest.Reject
 import com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeCommand;
 import com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeUseCase;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -1,5 +1,9 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import java.time.Clock;
+import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
@@ -18,7 +22,11 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchExce
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
+import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
@@ -36,41 +44,59 @@ public class ExamBoardRegistrationService {
     private final ExamBoardRepository examBoardRepository;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
+    private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
+    private final Clock clock;
 
-    public ExamBoardRegistrationService(
-            ExamBoardRegistrationRepository examBoardRegistrationRepository,
+    public ExamBoardRegistrationService(ExamBoardRegistrationRepository examBoardRegistrationRepository,
             ExamBoardRepository examBoardRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
+            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
+            DirectorApprovalRequestRepository directorApprovalRequestRepository,
+            AttendanceRiskCalculator attendanceRiskCalculator,
+            EnrollmentFeeRequirementService enrollmentFeeRequirementService,
+            Clock clock) {
+        this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.directorApprovalRequestRepository = directorApprovalRequestRepository;
+        this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.clock = clock;
+    }
+
+    private void requireEnrollmentFeeOfCourseTerm(SubjectSectionEnrollment enrollment) {
+        Term term = enrollment.getSubjectSection().getTerm();
+        if (term == null) {
+            enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementScope.EXAM_REGISTRATION);
+            return;
+        }
+        enrollmentFeeRequirementService.requireForTerm(enrollment.getProgramEnrollment(), term, EnrollmentFeeRequirementScope.EXAM_REGISTRATION);
     }
 
     @Transactional
     public ExamBoardRegistration registerProgramEnrollment(Long examBoardId, Long enrollmentId) {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
-        requireOpenExamBoard(examBoard);
+        requireScheduledExamBoard(examBoard);
 
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        requireEnrollmentFeeOfCourseTerm(enrollment);
+        if (!directorApprovalRequestRepository.hasApproved(
+                enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId(), ExceptionType.LATE_EXAM)) {
+            requireOpenRegistrationWindow(examBoard);
+        }
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
+        }
+        if (attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre()) {
+            throw new StudentFreeByAbsencesException(enrollmentId);
         }
         Long subjectId = enrollment.getSubjectSection().getSubject().getId();
         if (examBoard.getSubject() == null || !examBoard.getSubject().getId().equals(subjectId)) {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);
-        }
-
-        Integer maxAttempts = examBoard.getSubject().getMaxFinalExamAttempts();
-        if (maxAttempts != null) {
-            long previousAttempts = examBoardRegistrationRepository
-                    .countByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatusNot(
-                            enrollment.getProgramEnrollment().getId(), subjectId, ExamBoardRegistrationStatus.WITHDRAWN);
-            if (previousAttempts >= maxAttempts) {
-                throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
-            }
         }
 
         examBoardRegistrationRepository
@@ -85,13 +111,23 @@ public class ExamBoardRegistrationService {
 
         var existing = examBoardRegistrationRepository
                 .findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId);
+        if (existing.isPresent() && existing.get().getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
+            throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
+        }
+
+        Integer maxAttempts = examBoard.getSubject().getMaxFinalExamAttempts();
+        if (maxAttempts != null) {
+            long previousAttempts = examBoardRegistrationRepository
+                    .countByProgramSubjectSectionEnrollmentIdAndStatusNot(enrollmentId, ExamBoardRegistrationStatus.WITHDRAWN);
+            if (previousAttempts >= maxAttempts) {
+                throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
+            }
+        }
+
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
-            if (registration.getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
-                throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
-            }
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-            registration.setRegisteredAt(LocalDateTime.now());
+            registration.setRegisteredAt(LocalDateTime.now(clock));
             return examBoardRegistrationRepository.save(registration);
         }
 
@@ -99,7 +135,7 @@ public class ExamBoardRegistrationService {
         created.setExamBoard(examBoard);
         created.setProgramSubjectSectionEnrollment(enrollment);
         created.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-        created.setRegisteredAt(LocalDateTime.now());
+        created.setRegisteredAt(LocalDateTime.now(clock));
         try {
             return examBoardRegistrationRepository.saveAndFlush(created);
         } catch (DataIntegrityViolationException e) {
@@ -117,19 +153,12 @@ public class ExamBoardRegistrationService {
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
         }
+        if (attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre()) {
+            throw new StudentFreeByAbsencesException(enrollmentId);
+        }
         Long courseSubjectId = enrollment.getCourseSubjectSection().getCourseSubject().getId();
         if (examBoard.getCourseSubject() == null || !examBoard.getCourseSubject().getId().equals(courseSubjectId)) {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);
-        }
-
-        Integer maxAttempts = examBoard.getCourseSubject().getMaxFinalExamAttempts();
-        if (maxAttempts != null) {
-            long previousAttempts = examBoardRegistrationRepository
-                    .countByCourseSubjectSectionEnrollment_CourseEnrollment_IdAndCourseSubjectSectionEnrollment_CourseSubjectSection_CourseSubject_IdAndStatusNot(
-                            enrollment.getCourseEnrollment().getId(), courseSubjectId, ExamBoardRegistrationStatus.WITHDRAWN);
-            if (previousAttempts >= maxAttempts) {
-                throw new MaxExamAttemptsExceededException(courseSubjectId, maxAttempts);
-            }
         }
 
         examBoardRegistrationRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId).stream()
@@ -141,13 +170,23 @@ public class ExamBoardRegistrationService {
 
         var existing = examBoardRegistrationRepository
                 .findByExamBoardIdAndCourseSubjectSectionEnrollmentId(examBoardId, enrollmentId);
+        if (existing.isPresent() && existing.get().getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
+            throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
+        }
+
+        Integer maxAttempts = examBoard.getCourseSubject().getMaxFinalExamAttempts();
+        if (maxAttempts != null) {
+            long previousAttempts = examBoardRegistrationRepository
+                    .countByCourseSubjectSectionEnrollmentIdAndStatusNot(enrollmentId, ExamBoardRegistrationStatus.WITHDRAWN);
+            if (previousAttempts >= maxAttempts) {
+                throw new MaxExamAttemptsExceededException(courseSubjectId, maxAttempts);
+            }
+        }
+
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
-            if (registration.getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
-                throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
-            }
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-            registration.setRegisteredAt(LocalDateTime.now());
+            registration.setRegisteredAt(LocalDateTime.now(clock));
             return examBoardRegistrationRepository.save(registration);
         }
 
@@ -155,7 +194,7 @@ public class ExamBoardRegistrationService {
         created.setExamBoard(examBoard);
         created.setCourseSubjectSectionEnrollment(enrollment);
         created.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-        created.setRegisteredAt(LocalDateTime.now());
+        created.setRegisteredAt(LocalDateTime.now(clock));
         try {
             return examBoardRegistrationRepository.saveAndFlush(created);
         } catch (DataIntegrityViolationException e) {
@@ -190,10 +229,18 @@ public class ExamBoardRegistrationService {
     }
 
     private void requireOpenExamBoard(ExamBoard examBoard) {
+        requireScheduledExamBoard(examBoard);
+        requireOpenRegistrationWindow(examBoard);
+    }
+
+    private void requireScheduledExamBoard(ExamBoard examBoard) {
         if (examBoard.getStatus() != ExamBoardStatus.SCHEDULED) {
             throw new ExamBoardClosedException(examBoard.getId());
         }
-        LocalDateTime now = LocalDateTime.now();
+    }
+
+    private void requireOpenRegistrationWindow(ExamBoard examBoard) {
+        LocalDateTime now = LocalDateTime.now(clock);
         if (examBoard.getRegistrationStart() != null && now.isBefore(examBoard.getRegistrationStart())) {
             throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
         }

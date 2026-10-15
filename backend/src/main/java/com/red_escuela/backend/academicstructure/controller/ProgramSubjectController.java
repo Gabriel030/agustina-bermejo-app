@@ -7,7 +7,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest
 import com.red_escuela.backend.academicstructure.dto.PrerequisiteResponse;
 import com.red_escuela.backend.academicstructure.dto.ProgramSubjectResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramSubjectRequest;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.ProgramSubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

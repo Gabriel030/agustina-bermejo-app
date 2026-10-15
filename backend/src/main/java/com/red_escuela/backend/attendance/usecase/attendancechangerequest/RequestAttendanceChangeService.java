@@ -47,6 +47,7 @@ public class RequestAttendanceChangeService implements RequestAttendanceChangeUs
             throw new NotOwnSectionException(requestedById, sectionId);
         }
 
+        command.body().requestedStatus().requireRecordableByInstructor();
         AttendanceChangeRequest request = new AttendanceChangeRequest();
         request.setAttendance(attendance);
         request.setRequestedBy(command.requestedBy());

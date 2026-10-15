@@ -1,31 +1,33 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.billing.exception.StudentInDebtException;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,9 +39,11 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -81,6 +85,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -112,18 +119,12 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
-        enrollment.setBillingStanding(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = new Invoice();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
-        invoice.setPeriod(YearMonth.now().minusMonths(3));
-        invoice.setDueDate(LocalDate.now().minusMonths(3));
-        invoice.setBaseAmount(deuda);
-        invoice.setStatus(InvoiceStatus.OVERDUE);
-        invoiceRepository.save(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(3)).dueOn(LocalDate.now().minusMonths(3)).withBaseAmount(ars(deuda)).build();
+        BillingTestFixtures.markInvoiceAsOverdue(invoice);
         return enrollment;
     }
 
@@ -138,6 +139,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-065")
     void studentWithOverdueDebtInOneProgramCannotEnrollInADifferentProgram() {
         Student student = persistStudent("88010002");
         Program programConDeuda = persistProgram();
@@ -158,14 +160,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = programEnrollmentRepository.save(enrollment);
-        Invoice invoice = new Invoice();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
-        invoice.setPeriod(YearMonth.now());
-        invoice.setDueDate(LocalDate.now().plusDays(5));
-        invoice.setBaseAmount(BigDecimal.valueOf(5000));
-        invoice.setStatus(InvoiceStatus.PENDING);
-        invoiceRepository.save(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now().plusDays(5)).withBaseAmount(ars(5000)).build();
 
         Program programNuevo = persistProgram();
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
@@ -182,7 +177,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
+                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
@@ -191,36 +186,21 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void partialPaymentStillBlocks() {
+    @Tag("D-136")
+    void aPartialPaymentIsRejectedAndTheDebtStillBlocks() {
         Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");
         Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(2000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(2000))),
+                PaymentMethod.CASH, false, null, null, null, null), admin))
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException.class);
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
-    }
-
-    @Test
-    void waivingWithDirectorRoleReleasesTheDebtWithoutPaymentAndAllowsImmediateEnrollment() {
-        Person director = persistPerson("director.debt3." + System.nanoTime());
-        Student student = persistStudent("88010006");
-        Program program = persistProgram();
-        ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
-
-        studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
-
-        Invoice deudaVieja = invoiceRepository.findByIdWithAdjustments(
-                invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow();
-        assertThat(deudaVieja.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
-
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
-        assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
     @Test
@@ -232,13 +212,13 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         com.red_escuela.backend.billing.entity.Scholarship scholarship = new com.red_escuela.backend.billing.entity.Scholarship();
         scholarship.setProgramEnrollment(cicloViejo);
-        scholarship.setValue(new com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue.FixedAmount(BigDecimal.valueOf(2000)));
+        scholarship.setValue(new com.red_escuela.backend.shared.domain.MonetaryAdjustment.Nominal(ars(2000)));
         scholarship.setReason("Beca del ciclo viejo");
         scholarship.setGrantedBy(director);
         scholarship.addInstallments(3);
         scholarshipRepository.save(scholarship);
 
-        studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
+        payInFull(director, invoiceRepository.findInvoiceWithLinesById(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow());
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
         assertThat(scholarshipRepository.findByProgramEnrollmentId(nuevaMatricula.getId())).isEmpty();
@@ -253,14 +233,16 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment ciclo1 = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(3000));
         ProgramEnrollment ciclo2 = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(4000));
 
-        studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
-
-        Invoice deuda1 = invoiceRepository.findByIdWithAdjustments(
+        Invoice deuda1 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo1.getId()).get(0).getId()).orElseThrow();
-        Invoice deuda2 = invoiceRepository.findByIdWithAdjustments(
+        Invoice deuda2 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo2.getId()).get(0).getId()).orElseThrow();
-        assertThat(deuda1.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
-        assertThat(deuda2.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+                .isInstanceOf(StudentInDebtException.class);
+        payInFull(director, deuda1);
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+                .isInstanceOf(StudentInDebtException.class);
+        payInFull(director, deuda2);
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
@@ -279,7 +261,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
+                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
@@ -294,5 +276,11 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
+    }
+
+    private void payInFull(Person registrant, Invoice debt) {
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(debt.getId(), debt.getAmounts().outstandingAmount().value())),
+                PaymentMethod.CASH, false, null, null, null, null), registrant);
     }
 }

@@ -6,6 +6,86 @@ cobertura sin verificar un comportamiento que alguien podría romper no vale nad
 Priorizá: (1) casos de uso de negocio con sus bordes, (2) flujos críticos de punta
 a punta, y recién después mirá cobertura como termómetro de qué quedó sin tocar.
 
+## Mapa de herramientas: qué pregunta responde cada una
+
+JUnit es solo el motor que ejecuta los tests. Antes de escribir un test, elegí la
+herramienta por la **pregunta de riesgo** que tiene que responder: cada tipo de
+prueba encuentra bugs que los demás no ven.
+
+| Herramienta | Tipo de prueba | Pregunta que responde | Estado |
+|---|---|---|---|
+| JUnit 5 | Unitario | ¿Esta regla puntual (Policy, Value Object, cálculo) funciona con sus bordes? | En uso |
+| JUnit 5 + Testcontainers (Postgres real) | Integración | ¿Funciona contra la base real, con transacciones, CHECKs, triggers e índices únicos? | En uso |
+| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso, **solo local** |
+| jqwik | Tests de propiedades | ¿Se cumplen los invariantes con cualquier combinación de datos, no solo con los casos que se me ocurrieron? | En uso |
+| `MutableClock` + `BillingInvariantChecker` | Escenarios temporales | ¿Funciona con el paso del tiempo (días, meses, años lectivos) y los invariantes se sostienen en cada paso? | En uso |
+| Hilos reales contra Postgres | Concurrencia | ¿Dos operaciones simultáneas (pagos, emisiones, imputaciones) no duplican ni corrompen nada? | En uso |
+| ArchUnit | Arquitectura | ¿La estructura del código no se degrada (sin setters de estado, sin clases en paquetes congelados, validaciones solo en Policies)? | En uso |
+| Spring Modulith (`ModularityTest`) | Límites de módulos | ¿Ningún módulo accede a internos de otro ni aparecen dependencias o ciclos nuevos? | En uso |
+| `BillingDecisionCoverageTest` | Cobertura de decisiones | ¿Cada decisión de negocio vigente (D-xxx del registro) tiene al menos un test con su `@Tag`? | En uso |
+| JUnit sobre HTTP (`characterization/`) | Caracterización | ¿Quedó fijado el comportamiento actual antes de refactorizar, para detectar cambios no buscados? | En uso |
+| Karate | API (regresión HTTP) | ¿La API responde lo esperado (status, body, códigos de error) en los flujos de punta a punta? | En uso |
+| Awaitility | Procesos asíncronos | ¿El efecto en segundo plano ocurrió? (esperar siempre por el propio eventId, nunca por conteos globales) | En uso |
+| Vitest + RTL + MSW | Front unitario/componente | ¿El componente muestra y reacciona bien ante cada respuesta del backend? | En uso |
+| Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | Propuesto |
+| OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | En uso (lado backend: instantánea `contracts/openapi.json` + `oasdiff`); falta la validación de los mocks del front (Q13b) |
+| Gatling o k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | Propuesto |
+| OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); ZAP y matriz por rol: propuesto |
+
+## Criterio: qué tests escribir para un cambio
+
+Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada **señal de riesgo** que tenga el cambio suma su herramienta. Un PR que no cubre lo que piden estas dos tablas se devuelve en la revisión.
+
+### Paso 1: base obligatoria según qué cambiaste
+
+| Cambiaste… | Mínimo obligatorio | Por qué |
+|---|---|---|
+| Una regla de negocio pura (Policy, Value Object, cálculo, máquina de estados) | JUnit puro con bordes (cero, negativo, límite, redondeo) y **cada transición válida e inválida** | Es barato y ahí viven la mayoría de los bugs de lógica |
+| Algo que guarda o lee de la base (servicio, repository) | Integración con Testcontainers (Postgres real) | Constraints, triggers, índices únicos y cascadas solo aparecen contra la base real |
+| Un endpoint (controller, DTO, código de error) | MockMvc con status, JSON y `code` de error; un escenario de Karate si es un flujo de punta a punta | El front depende del contrato exacto |
+| Una pantalla o un componente | Vitest + RTL + MSW con cada respuesta posible del backend: ok, error, vacío y cargando | Testea lo que ve el usuario, no la implementación |
+| Una migración que transforma datos existentes | Integración que carga datos con la forma vieja, migra y verifica el resultado | Un esquema vacío no prueba una migración de datos |
+| Un refactor grande de algo que ya funciona | Caracterización **antes** de tocar, y que siga verde después | Cualquier diferencia de comportamiento sale a la luz |
+
+### Paso 2: señales de riesgo (cada una suma su herramienta)
+
+| Si el cambio… | Sumá | Pregunta que responde |
+|---|---|---|
+| Mueve plata o toca la cuenta corriente | `BillingInvariantChecker` construido **antes** de escribir, `@Tag("D-xxx")` de la decisión y revisión independiente del PR | ¿Los saldos cierran después de cada operación? |
+| Depende de fechas (vencimiento, mora, corrida mensual, año lectivo) | `MutableClock` con escenarios que **avanzan el tiempo** y bordes de fecha (fin de mes, febrero, 31 de diciembre) | ¿Sigue funcionando el día después y el mes que viene? |
+| Combina varios valores en un invariante (saldos, imputaciones, descuentos) | jqwik | ¿Se cumple con combinaciones que no se me ocurrieron? |
+| Puede ejecutarse dos veces o en paralelo (pagos, webhooks, jobs, eventos reintentados) | Hilos reales contra Postgres y un test de **idempotencia**: la misma entrada dos veces produce un solo efecto | ¿Un reintento duplica o pierde algo? |
+| Es asíncrono (evento, listener, notificación) | Awaitility esperando por el **propio** id de evento | ¿El efecto ocurrió, sin depender de otros tests? |
+| Es lógica de dominio de facturación | PIT en local (umbral 90%) y su fila en `docs/testing/local-test-log.md` | Si alguien rompe esto, ¿algún test se entera? |
+| Agrega clases, paquetes o dependencias entre módulos | ArchUnit y Modulith (corren en CI) | ¿La estructura se degrada? |
+| Cambia permisos o roles | Matriz rol × endpoint: 403 para cada rol que no corresponde | ¿Un rol puede hacer algo que no debería? |
+| Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (propuesto) | ¿Un usuario real lo completa en el navegador? |
+| Cambia la forma de una respuesta que consume el front | Contrato OpenAPI (propuesto) | ¿El cambio rompe al front sin que nadie se entere? |
+| Procesa volumen (corrida mensual, pipeline nocturno) | k6 o Gatling (propuesto) | ¿Aguanta miles de alumnos en el tiempo disponible? |
+
+### Dónde corre cada cosa y cómo queda constancia
+
+GitHub Actions tiene un tope de minutos, así que en el CI solo corre lo barato: `./mvnw clean verify` (JUnit, Testcontainers, Karate, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT, Playwright, k6 y OWASP Dependency-Check corren solo en local**, mientras se programa, con el semáforo de CI.
+
+Cada corrida local se anota en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas. Si el PR toca código que PIT muta (los paquetes de `targetClasses` del perfil `mutation`: `shared/domain`, `billing/operation` y los `domain`/`policy` de billing) o el `pom.xml`, y no agrega su fila de PIT, el job `local-tests-log` del CI falla. Si cambiás `targetClasses`, actualizá también el patrón de ese job.
+
+### Qué clases ejecuta `./mvnw clean verify`
+
+El plugin surefire del `pom.xml` declara `<includes>` explícitos: `Test*`, `*Test`, `*Tests`, `*TestCase` (los defaults), más `*IT` (integración con Testcontainers) y `*Properties` (jqwik). Una clase de test con otro sufijo **no corre** ni en local ni en GitHub, sin avisar. `SurefireDiscoversEveryTestClassTest` escanea `src/test/java` y falla si una clase con `@Test`/`@Property` no matchea esos includes; al nombrar una clase nueva, usá uno de esos sufijos. PIT sigue excluyendo el grupo `integration`.
+
+### Auditoría de dependencias (solo local)
+
+Responde: ¿alguna librería empaquetada tiene un CVE publicado? Corre cuando un PR agrega o sube una dependencia, y antes de cada release.
+
+- **Backend (OWASP Dependency-Check):** desde `backend/`, con el semáforo de CI: `zsh -ic './mvnw -P dependency-check org.owasp:dependency-check-maven:check'`. Falla con CVSS >= 7. La clave del NVD vive solo en el entorno de quien corre (`NVD_API_KEY` exportada en `~/.zshrc`; el `zsh -ic` la hereda). Nunca se escribe en el repo, en logs ni en reportes, y no hay secret en GitHub. Reporte en `backend/target/dependency-check-report.html` y `.json`. La primera corrida baja el NVD (decenas de minutos); después usa `~/.m2/repository/org/owasp/dependency-check-data`.
+- **Supresiones:** `backend/dependency-check-suppressions.xml`. Cada `<suppress>` lleva `until="AAAA-MM-DDZ"` (máximo 90 días) y un `<notes>` con el motivo y el link al CVE. Ninguna sin `until`.
+- **Front:** `npm run audit:prod` (`npm audit --omit=dev --audit-level=high`, bloqueante al adoptarse) y `npm run audit:all` (incluye devDependencies, informativo). `audit:prod` corre en el job `frontend` del CI de GitHub (queda en verde desde Q11b); `audit:all` y Dependency-Check no están en el CI.
+- Anotar cada corrida en `docs/testing/local-test-log.md`.
+
+### Paso 3: un test que nunca falló no prueba nada
+
+Todo test de una regla crítica se ve fallar al menos una vez: romper el código o corromper el dato a propósito y comprobar que se pone rojo; recién después se arregla. PIT lo automatiza para el dominio puro, pero no cubre los tests de integración: ahí se hace a mano (por ejemplo, un test que corrompe `unallocated_credit_amount` y exige que `BillingInvariantChecker` falle).
+
 ## Backend (ya establecido, verificado contra el repo real)
 
 **No se mockea la base de datos.** Todo test que toca un repository corre contra
@@ -34,6 +114,73 @@ pedido explícito.
 Correr todo: `./mvnw clean verify` desde `backend/`. Necesita Docker corriendo (Testcontainers
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
+
+## Presupuesto de tiempo y pirámide de tests
+
+El CI del backend corre en 4 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada PR pasa por presupuestos **bloqueantes** que miden la corrida real.
+
+### Presupuestos
+
+| Qué | Límite | Quién lo hace cumplir |
+|---|---|---|
+| Una clase de test | 30 s | `test-budget.py check-shard`, en cada shard |
+| Una clase marcada `@SlowTest` | 90 s | ídem |
+| Un shard (suma de las clases que corre) | 240 s | ídem |
+| Contextos de Spring distintos en toda la corrida | 24 | `test-budget.py aggregate`, job `test-report` |
+| Reglas ArchUnit sobre los tests | sin violaciones nuevas | `TestSuiteRulesTest` |
+
+Los límites son constantes de `.github/scripts/test-budget.py` (parámetros `--max-class`, `--max-slow-class`, `--max-shard`, `--max-contexts`). Subirlos es una decisión de producto que va en un PR aparte, con motivo.
+
+### La pirámide de tests
+
+1. **Base, la gran mayoría: tests de dominio puros.** Policies, value objects, cálculos y reglas se testean sin Spring, sin base y sin mocks de infraestructura (JUnit + AssertJ, jqwik donde haya propiedades). Corren en milisegundos. ArchUnit impide que las clases de test de paquetes `..domain..` y `..policy..` usen `@SpringBootTest` o extiendan `AbstractIntegrationTest`.
+2. **Medio: tests de integración solo para persistencia e integración real.** Queries, constraints, transacciones, eventos entre módulos, endpoints. Extienden `AbstractIntegrationTest` (Postgres real, aislamiento por clase con `TestDatabaseIsolation`). No repitas ahí lo que ya cubre un test de dominio.
+3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline pueden superar 30 s. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR.
+
+### Reglas para no pagar contextos y esperas de más
+
+- **Reutilizá la configuración compartida de mocks.** Cada combinación distinta de `@MockitoBean`/`@MockBean`/`@TestPropertySource`/`@ActiveProfiles` crea un contexto de Spring nuevo (varios segundos de arranque). Si tu test solo necesita mockear el envío de mails o el validador de Google, anotalo con `@SharedMockBeans` (`testsupport/SharedMockBeans.java`): mockea `EmailService` y `GoogleIdTokenService`, y todos los tests que lo usen comparten contexto. Si hace falta un mock común más, se agrega a esa anotación, no se declara de nuevo en cada clase.
+- **No uses `Thread.sleep`.** Usá Awaitility (`await().atMost(...).until(...)`). ArchUnit lo bloquea.
+- **No uses `@DirtiesContext`.** Tira el contexto cacheado y obliga a recrearlo. Si un test deja estado, limpialo en un `@AfterEach` o usá `TestDatabaseIsolation`.
+- **Acotá los procesos globales.** La detección de facturas vencidas y el barrido de mora (`InvoiceOverdueSweepService`), el barrido de cumplimiento (`EnrollmentBillingComplianceSweepService`), la emisión mensual (`MonthlyInstallmentIssuanceJob`), el vencimiento de solicitudes de autorización (`ExpireAuthorizationRequestsJob`), la activación de versiones de configuración (`ActivateDueConfigurationVersionsJob`) y el reenvío de eventos (`EventPublicationResubmissionJob`) recorren toda la base. En un test nuevo, no llames a esos jobs: invocá el caso de uso o el paso que recibe ids explícitos (la cuenta, la factura, la inscripción de tu escenario). ArchUnit lo detecta por llamada directa a esos métodos, con una lista de excepciones legadas que solo puede achicarse. Lo que ArchUnit **no** puede verificar es una llamada indirecta (un helper que invoca el job por reflexión o vía un bean intermedio): ahí manda esta regla y la revisión del PR.
+
+### Listas de excepciones legadas
+
+Las reglas de `TestSuiteRulesTest` usan `FreezingArchRule`, igual que las de `ArchitectureTest`: las violaciones existentes viven en `backend/src/test/resources/archunit-frozen/` y **solo pueden achicarse**. Si arreglás una, el archivo no se actualiza solo (`allowStoreUpdates=false`): borrá la línea a mano en el mismo PR. Nunca agregues líneas para tapar una violación nueva; corregí el test.
+
+### Cómo leer el reporte del PR
+
+El job `test-report` publica un comentario en el PR (se actualiza en cada push, no se duplica) y el mismo contenido en el resumen del job:
+
+- **Tiempo de pared y suma de tests**, con la diferencia contra la última corrida de `develop` que publicó mediciones.
+- **Contextos de Spring distintos** (unión entre shards) contra el tope de 24, con su diferencia.
+- **Top 5 de clases más lentas tocadas por el PR** (o del total si el PR no toca clases de test), con su tiempo en `develop`.
+- **Clases `@SlowTest`** con su tiempo y motivo.
+
+Los tiempos para repartir clases entre shards no se editan a mano: cada push a `develop` regenera `timings.txt` desde los reportes de surefire y lo publica como artifact `test-baseline`; los PR lo usan para repartir y, si no existe, caen al `.github/test-shards/timings.txt` versionado. Las clases nuevas sin medición pesan el promedio de las medidas.
+
+### Reproducir una falla de un shard en local
+
+Cada fallo de CI dice en qué shard ocurrió (`backend-tests (N)`). Para correr exactamente las mismas clases, con el mismo algoritmo y los mismos tiempos que la CI:
+
+```bash
+python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 4)
+python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con ./mvnw test
+```
+
+`run` toma el semáforo de CI (`~/.claude/epica18/ci-slot.sh acquire shard-2`) y lo libera al terminar, también si falla; si ese script no existe en la máquina, corre sin él. El reparto usa el `timings.txt` versionado: la CI usa el medido en la última corrida de `develop`, así que si difiere mucho puede variar la composición. Para reproducir con el reparto exacto, bajá el artifact `test-baseline` de esa corrida y copialo sobre `.github/test-shards/timings.txt` (sin commitearlo).
+
+### Qué hacer si falla un presupuesto
+
+| Falla | Qué hacer |
+|---|---|
+| Una clase supera 30 s | Primero buscá por qué: contexto nuevo evitable, `Thread.sleep`, un proceso global sin acotar, datos de prueba de más. Si es un escenario largo legítimo, partilo; si no se puede, `@SlowTest(reason = "...")`. |
+| Una `@SlowTest` supera 90 s | Partila. El límite alto no es para que crezca. |
+| Un shard supera 240 s | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: si el último `develop` ya publicó `test-baseline`, el reparto se corrige solo. |
+| Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
+| ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
+
+Para reproducir en local: `python3 .github/scripts/test-budget.py check-shard --shard 0 --reports backend/target/surefire-reports` contra los reportes de una corrida (`--max-class 5` fuerza el fallo para ver el mensaje). Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
 
 ## Frontend (Vitest + RTL + MSW, instalado desde la Fase 1)
 
@@ -225,6 +372,15 @@ en el PR ni en `BACKFILL.md` — se agrega también como entrada nueva en
 [Deuda técnica y gaps de QA](~/Documentos%20No%20SYNC/Obsidian-vault/agustina-bermejo-app/Roadmap%20frontend/Deuda%20técnica%20y%20gaps%20de%20QA.md)
 (vault de Obsidian, linkeado desde `Roadmap frontend/Indice.md`) — para que
 quede visible en el roadmap y no se pierda en el historial de PRs.
+
+## Contrato OpenAPI (lado backend)
+
+- `contracts/openapi.json` es la instantánea del spec generado por springdoc desde los controllers reales. `OpenApiSnapshotTest` falla si el código cambia el spec sin regenerarlo.
+- Regenerar: `cd backend && ./mvnw test -Dtest=OpenApiSnapshotTest#generatedSpecMatchesCommittedSnapshot -Dopenapi.update=true`, y revisar el diff de `contracts/openapi.json` en el PR.
+- Cambios incompatibles contra otro spec: `scripts/oasdiff-breaking.sh <base.json> <nuevo.json>` (descarga oasdiff 1.33.0 de la release oficial de GitHub y verifica el sha256 de `checksums.txt`). El CI lo corre en cada PR contra el `contracts/openapi.json` de la rama base; se saltea con la etiqueta `contract-break-approved`.
+- Prueba reproducible de que el control detecta un campo borrado: `scripts/oasdiff-probe.sh`.
+- `/v3/api-docs` solo existe con `springdoc.api-docs.enabled=true` (perfiles `local` y `test`); en producción la propiedad es `false` y no hay Swagger UI.
+- Los componentes de un `record` de respuesta son `required` salvo `Optional` o `@Nullable`; las clases con Lombok no reciben ese tratamiento.
 
 ## Antes de dar una tarea por terminada
 

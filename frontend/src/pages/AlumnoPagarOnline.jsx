@@ -1,16 +1,42 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
+import { toast } from 'sonner';
 import { ChevronLeft, CreditCard, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
-import { useCrearPreferenciaMp } from '@/hooks/useBilling';
-
-const MP_BLUE = '#009ee3';
+import { Skeleton } from '@/components/Skeleton';
+import { useCrearPreferenciaMp, usePaymentConfig } from '@/hooks/useBilling';
 
 export function AlumnoPagarOnline() {
   const { invoiceId } = useParams();
-  const navigate = useNavigate();
+  const { data: config, isLoading } = usePaymentConfig();
+  const notified = useRef(false);
+  const gatewayDisabled = !isLoading && config?.mpEnabled !== true;
+
+  useEffect(() => {
+    if (gatewayDisabled && !notified.current) {
+      notified.current = true;
+      toast.info('El pago con tarjeta todavía no está disponible. Elegí otro medio de pago.');
+    }
+  }, [gatewayDisabled]);
+
+  if (isLoading) {
+    return (
+      <PageContainer className="max-w-lg">
+        <Skeleton className="h-40" />
+      </PageContainer>
+    );
+  }
+  if (gatewayDisabled) {
+    return <Navigate to={`/alumno/pagos/${invoiceId}/seleccion`} replace />;
+  }
+  return <OnlinePaymentRedirect invoiceId={invoiceId} />;
+}
+
+function OnlinePaymentRedirect({ invoiceId }) {
+  const { goTo } = usePaymentReturn();
   const { mutate, isPending, error, data } = useCrearPreferenciaMp();
   const [initiated, setInitiated] = useState(false);
 
@@ -31,7 +57,7 @@ export function AlumnoPagarOnline() {
     <PageContainer className="max-w-lg">
       <button
         type="button"
-        onClick={() => navigate(`/alumno/pagos/${invoiceId}/seleccion`)}
+        onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
         className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
       >
         <ChevronLeft size={16} />
@@ -60,8 +86,7 @@ export function AlumnoPagarOnline() {
             </div>
             <a
               href={data.initPoint}
-              style={{ backgroundColor: MP_BLUE }}
-              className="rounded-xl px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              className="rounded-xl bg-gradient-to-br from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
             >
               Ir a Mercado Pago
             </a>

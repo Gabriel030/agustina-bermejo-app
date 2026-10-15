@@ -166,7 +166,7 @@
   mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
 }
 
-/* Tabla de avisos del docente (features/avisos). La columna del título queda
+/* Tabla de avisos del docente (features/announcements). La columna del título queda
    fija porque con siete columnas siempre hay scroll horizontal, y una celda
    sticky necesita fondo opaco: se compone --surface sobre --bg1 (mismos tokens
    que la card, así el modo oscuro sale solo y no hay borde entre las dos) y el

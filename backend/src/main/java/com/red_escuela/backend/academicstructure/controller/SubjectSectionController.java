@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.SectionInstructorResponse;
 import com.red_escuela.backend.academicstructure.dto.SubjectSectionResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
 import jakarta.validation.Valid;

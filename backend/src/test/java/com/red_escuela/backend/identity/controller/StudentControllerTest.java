@@ -3,13 +3,13 @@ package com.red_escuela.backend.identity.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.entity.WithdrawalReason;
@@ -111,6 +111,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
         person.setAuthProvider(AuthProvider.LOCAL);
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
+        grantStudentRoleIfConfirmed(person, onboardingStatus);
         entityManager.persist(person);
 
         Student student = new Student();
@@ -120,6 +121,12 @@ class StudentControllerTest extends AbstractIntegrationTest {
         entityManager.persist(student);
         entityManager.flush();
         return student;
+    }
+
+    private void grantStudentRoleIfConfirmed(Person person, StudentOnboardingStatus onboardingStatus) {
+        if (onboardingStatus == StudentOnboardingStatus.CONFIRMADO) {
+            person.getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+        }
     }
 
     @Test
@@ -156,6 +163,14 @@ class StudentControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/students/{id}/billing-overview", 999999L).header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void billingOverviewIsForbiddenForRolesOtherThanAdministrativoAndDirector() throws Exception {
+        String token = tokenWithRole("preceptor.billing1", "PRECEPTOR");
+
+        mockMvc.perform(get("/students/{id}/billing-overview", 1L).header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -225,6 +240,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
+        grantStudentRoleIfConfirmed(person, onboardingStatus);
         entityManager.persist(person);
         Student student = new Student();
         student.setPerson(person);

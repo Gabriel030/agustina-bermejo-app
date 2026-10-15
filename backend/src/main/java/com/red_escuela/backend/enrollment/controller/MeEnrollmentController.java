@@ -66,7 +66,7 @@ public class MeEnrollmentController {
     public CourseEnrollmentApplicationResponse enrollInCourse(
             @RequestParam Long courseId,
             @RequestParam(required = false) String sectionOverrides,
-            @RequestPart MultipartFile comprobante) {
+            @RequestPart(required = false) MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
         CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializarOverrides(sectionOverrides));
         CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request, comprobante);

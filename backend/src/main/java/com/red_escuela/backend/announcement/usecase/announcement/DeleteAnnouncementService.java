@@ -7,7 +7,7 @@ import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepo
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

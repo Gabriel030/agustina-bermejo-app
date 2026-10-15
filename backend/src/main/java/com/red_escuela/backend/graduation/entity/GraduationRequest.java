@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
 
 @Getter
 @Setter
@@ -49,4 +50,18 @@ public class GraduationRequest {
 
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
+
+    public void requireAwaitingDirectorDecision() {
+        if (status != GraduationRequestStatus.ADMIN_VERIFIED) {
+            throw new InvalidGraduationRequestStateException(id);
+        }
+    }
+
+    public void approve(Person director, LocalDateTime approvedAt) {
+        requireAwaitingDirectorDecision();
+        status = GraduationRequestStatus.APPROVED;
+        decidedBy = director;
+        decidedAt = approvedAt;
+        programEnrollment.complete(approvedAt);
+    }
 }

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -51,12 +53,12 @@ public class ScholarshipInstallment {
     void markApplied(Invoice invoice) {
         this.status = InstallmentStatus.APPLIED;
         this.invoice = invoice;
-        this.appliedAt = LocalDateTime.now();
+        this.appliedAt = ApplicationTime.now();
     }
 
     void cancel(String reason) {
         this.status = InstallmentStatus.CANCELLED;
         this.cancelledReason = reason;
-        this.cancelledAt = LocalDateTime.now();
+        this.cancelledAt = ApplicationTime.now();
     }
 }

@@ -1,67 +1,83 @@
 package com.red_escuela.backend.billing.usecase.dashboard;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
 import java.time.YearMonth;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @UseCase
 public class GetFinancialDashboardService implements GetFinancialDashboardUseCase {
+    private static final List<EnrollmentStatus> ACTIVE_COURSE_STATUSES = List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
+    private static final List<ProgramEnrollmentStatus> ACTIVE_PROGRAM_STATUSES = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
 
     private final InvoiceRepository invoiceRepository;
-    private final StudentRepository studentRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final Clock clock;
 
-    public GetFinancialDashboardService(InvoiceRepository invoiceRepository, StudentRepository studentRepository) {
+    public GetFinancialDashboardService(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+                                        ProgramEnrollmentRepository programEnrollmentRepository,
+                                        Clock clock) {
         this.invoiceRepository = invoiceRepository;
-        this.studentRepository = studentRepository;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.clock = clock;
     }
 
     @Override
     @Transactional(readOnly = true)
     public FinancialDashboardResponse execute() {
-        Set<Long> debtorIds = new HashSet<>(invoiceRepository.findCourseStudentIdsByStatus(InvoiceStatus.OVERDUE));
-        debtorIds.addAll(invoiceRepository.findProgramStudentIdsByStatus(InvoiceStatus.OVERDUE));
+        Set<Long> debtorIds = new HashSet<>(invoiceRepository.findStudentIdsByPaymentStatus(InvoicePaymentStatus.OVERDUE));
         int studentsInDebt = debtorIds.size();
 
-        long totalStudents = studentRepository.count();
-        int studentsUpToDate = (int) Math.max(0, totalStudents - studentsInDebt);
+        Set<Long> activeStudentIds = new HashSet<>(courseEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_COURSE_STATUSES));
+        activeStudentIds.addAll(programEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_PROGRAM_STATUSES));
+        activeStudentIds.removeAll(debtorIds);
+        int studentsUpToDate = activeStudentIds.size();
 
-        List<InvoiceStatus> debtStatuses = List.of(InvoiceStatus.OVERDUE);
-        List<Invoice> debtInvoices = invoiceRepository.findByStatusInWithAdjustments(debtStatuses);
+        YearMonth currentPeriod = YearMonth.now(clock);
+        Map<Currency, Money> totalDebt = byCurrency(invoiceRepository.sumOutstandingAmountByPaymentStatus(InvoicePaymentStatus.OVERDUE.name()));
+        Map<Currency, Money> monthlyProjected = byCurrency(invoiceRepository.sumTotalByPeriod(currentPeriod.atDay(1)));
+        Map<Currency, Money> monthlyCollected = byCurrency(invoiceRepository.sumPaidByPeriod(currentPeriod.atDay(1)));
 
-        Map<Long, BigDecimal> allocatedByInvoice;
-        if (debtInvoices.isEmpty()) {
-            allocatedByInvoice = Map.of();
-        } else {
-            List<Long> invoiceIds = debtInvoices.stream().map(Invoice::getId).toList();
-            allocatedByInvoice = invoiceRepository.sumAllocatedByInvoiceIds(invoiceIds).stream()
-                    .collect(Collectors.toMap(row -> (Long) row[0], row -> (BigDecimal) row[1]));
+        List<FinancialDashboardResponse.CurrencyTotals> totals = Arrays.stream(Currency.values())
+                .filter(currency -> currency == Currency.ARS || totalDebt.containsKey(currency)
+                        || monthlyProjected.containsKey(currency) || monthlyCollected.containsKey(currency))
+                .map(currency -> {
+                    Money projected = monthlyProjected.getOrDefault(currency, Money.zero(currency));
+                    Money collected = monthlyCollected.getOrDefault(currency, Money.zero(currency));
+                    Money debt = projected.minus(collected);
+                    return new FinancialDashboardResponse.CurrencyTotals(
+                            totalDebt.getOrDefault(currency, Money.zero(currency)), projected, collected,
+                            debt.isNegative() ? Money.zero(currency) : debt);
+                })
+                .toList();
+
+        return new FinancialDashboardResponse(studentsInDebt, studentsUpToDate, totals);
+    }
+
+    private static Map<Currency, Money> byCurrency(List<InvoiceRepository.CurrencyTotal> rows) {
+        Map<Currency, Money> result = new EnumMap<>(Currency.class);
+        for (InvoiceRepository.CurrencyTotal row : rows) {
+            Currency currency = Currency.valueOf(row.getCurrency());
+            result.put(currency, Money.of(row.getTotal(), currency));
         }
-
-        Map<Long, BigDecimal> allocated = allocatedByInvoice;
-        BigDecimal totalDebt = debtInvoices.stream()
-                .map(inv -> inv.getAmountDue()
-                        .subtract(allocated.getOrDefault(inv.getId(), BigDecimal.ZERO))
-                        .max(BigDecimal.ZERO))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        YearMonth currentPeriod = YearMonth.now();
-        BigDecimal monthlyProjected = invoiceRepository.sumBaseAmountByPeriod(currentPeriod);
-        BigDecimal monthlyCollected = invoiceRepository.sumBaseAmountByPeriodAndStatusIn(
-                currentPeriod, List.of(InvoiceStatus.PAID, InvoiceStatus.WAIVED));
-        BigDecimal monthlyDebt = monthlyProjected.subtract(monthlyCollected).max(BigDecimal.ZERO);
-
-        return new FinancialDashboardResponse(
-                studentsInDebt, studentsUpToDate, totalDebt,
-                monthlyProjected, monthlyCollected, monthlyDebt
-        );
+        return result;
     }
 }
