@@ -20,4 +20,14 @@ public class DiscountOperationHandlersConfiguration {
     public OperationPreHandlers closeDiscountDefinitionPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
         return new OperationPreHandlers(BillingOperationType.CLOSE_DISCOUNT_DEFINITION, List.of(directorAuthorizationHandler));
     }
+
+    @Bean
+    public OperationPreHandlers grantStudentDiscountPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
+        return new OperationPreHandlers(BillingOperationType.GRANT_STUDENT_DISCOUNT, List.of(directorAuthorizationHandler));
+    }
+
+    @Bean
+    public OperationPreHandlers revokeStudentDiscountPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
+        return new OperationPreHandlers(BillingOperationType.REVOKE_STUDENT_DISCOUNT, List.of(directorAuthorizationHandler));
+    }
 }

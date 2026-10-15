@@ -62,6 +62,7 @@ export const ADJUSTMENT_TYPE_LABELS = {
   ANNUAL_UPFRONT: 'Pago anual',
   COHORT_ENTRY: 'Ingreso de cohorte',
   MANUAL: 'Manual',
+  INDIVIDUAL: 'Descuento individual',
   DISCOUNT: 'Descuento',
 };
 
