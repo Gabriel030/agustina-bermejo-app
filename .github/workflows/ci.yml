@@ -86,7 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3]
+        shard: [0, 1, 2, 3, 4]
     name: backend-tests (${{ matrix.shard }})
     permissions:
       contents: read
@@ -107,7 +107,7 @@ jobs:
           python3 .github/scripts/test-shards.py use "$RUNNER_TEMP/baseline/timings.txt"
 
       - name: Verify the shard assignment covers every test class once
-        run: python3 .github/scripts/test-shards.py verify 4
+        run: python3 .github/scripts/test-shards.py verify 5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -128,7 +128,7 @@ jobs:
         working-directory: backend
         env:
           EXCLUDED_GROUPS: ${{ github.event_name == 'push' && 'none' || 'docs' }}
-        run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 4)" -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$EXCLUDED_GROUPS"
+        run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 5)" -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$EXCLUDED_GROUPS"
 
       - name: Enforce the time budget of the shard
         if: always()

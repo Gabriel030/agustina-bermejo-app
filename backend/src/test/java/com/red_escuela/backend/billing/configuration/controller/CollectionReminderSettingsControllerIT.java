@@ -70,9 +70,8 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    private static String body(int dailyCap, int daysBeforeDue, String start, String end, LocalDate effectiveFrom) {
-        return "{\"values\":{\"emissionReminderEnabled\":true,\"daysAfterIssueReminder\":5,\"daysBeforeDueReminder\":" + daysBeforeDue
-                + ",\"daysAfterDueReminder\":10,\"daysBeforeSuspensionReminder\":1,\"suspensionNoticeEnabled\":true,\"postWithdrawalSummaryMonths\":6,"
+    private static String body(int dailyCap, int postWithdrawalMonths, String start, String end, LocalDate effectiveFrom) {
+        return "{\"values\":{\"suspensionNoticeEnabled\":true,\"postWithdrawalSummaryMonths\":" + postWithdrawalMonths + ","
                 + "\"minDaysBetweenEmails\":3,\"maxReminderEmailsPerMonth\":4,\"emailWindowStart\":\"" + start + "\",\"emailWindowEnd\":\"" + end
                 + "\",\"dailyEmailCap\":" + dailyCap + ",\"contactListDaysOverdue\":14,\"contactListOverdueInstallments\":2},\"effectiveFrom\":\"" + effectiveFrom
                 + "\",\"changeReason\":\"motivo\"}";
@@ -126,7 +125,7 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
         postTo("/changes", token, body(280, 0, "09:00", "11:00", TODAY.plusDays(1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_COLLECTION_REMINDER_SETTINGS"))
-                .andExpect(jsonPath("$.violations[0].message").value("daysBeforeDueReminder debe estar entre 1 y 60."));
+                .andExpect(jsonPath("$.violations[0].message").value("Los meses de resumen posterior a la baja deben estar entre 1 y 24."));
         postTo("/changes", token, body(280, 1, "11:00", "09:00", TODAY.plusDays(1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_COLLECTION_REMINDER_SETTINGS"));

@@ -10,7 +10,15 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
+import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
+import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderMilestoneDates;
+import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleResolver;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleVersion;
+import com.red_escuela.backend.billing.configuration.domain.ResolvedReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
@@ -104,6 +112,34 @@ public class BillingConfigurationReader {
 
     public CollectionReminderSettings collectionReminderSettingsEffectiveOn(LocalDate date) {
         return findCollectionReminderSettingsEffectiveOn(date).orElse(CollectionReminderSettings.initial());
+    }
+
+    public ResolvedReminderSchedule reminderScheduleFor(ReminderScheduleTarget target, LocalDate date) {
+        return reminderScheduleFor(target, date, Optional.empty());
+    }
+
+    public ResolvedReminderSchedule reminderScheduleFor(ReminderScheduleTarget target, LocalDate date, Optional<ReminderMilestoneDates> milestoneDates) {
+        Optional<ReminderScheduleVersion> exception = target.targetId() == null ? Optional.empty()
+                : findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId()), date);
+        Optional<ReminderScheduleVersion> group = findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleGroup(target.group()), date);
+        ConfigurationTopic globalTopic = ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS);
+        Optional<ConfigurationVersion> globalVersion = repository.findEffectiveVersion(globalTopic.scope().name(), globalTopic.key(), date);
+        CollectionReminderSettings globalSettings = globalVersion.map(version -> CollectionReminderSettings.class.cast(version.values()))
+                .orElse(CollectionReminderSettings.initial());
+        return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null), milestoneDates);
+    }
+
+    private Optional<ReminderScheduleVersion> findReminderScheduleVersion(ConfigurationTopic topic, LocalDate date) {
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date)
+                .map(version -> new ReminderScheduleVersion(version.getId(), reminderScheduleOf(version.values())));
+    }
+
+    private static ReminderSchedule reminderScheduleOf(ConfigurationValues values) {
+        return switch (values) {
+            case ProgramReminderSchedule program -> program.schedule();
+            case CourseReminderSchedule course -> course.schedule();
+            default -> throw new IllegalStateException("La versión no es una lista de avisos: " + values.scope());
+        };
     }
 
     public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {

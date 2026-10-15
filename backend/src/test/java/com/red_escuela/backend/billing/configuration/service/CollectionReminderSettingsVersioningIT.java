@@ -132,16 +132,14 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
 
     private static CollectionReminderSettings withDailyCap(int cap) {
         CollectionReminderSettings initial = CollectionReminderSettings.initial();
-        return new CollectionReminderSettings(initial.emissionReminderEnabled(), initial.daysAfterIssueReminder(), initial.daysBeforeDueReminder(),
-                initial.daysAfterDueReminder(), initial.daysBeforeSuspensionReminder(), initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(),
+        return new CollectionReminderSettings(initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(),
                 initial.minDaysBetweenEmails(), initial.maxReminderEmailsPerMonth(), initial.emailWindowStart(), initial.emailWindowEnd(), cap,
                 initial.contactListDaysOverdue(), initial.contactListOverdueInstallments());
     }
 
-    private static CollectionReminderSettings withDaysBeforeDue(int days) {
+    private static CollectionReminderSettings withMinDaysBetweenEmails(int days) {
         CollectionReminderSettings initial = CollectionReminderSettings.initial();
-        return new CollectionReminderSettings(initial.emissionReminderEnabled(), initial.daysAfterIssueReminder(), days, initial.daysAfterDueReminder(),
-                initial.daysBeforeSuspensionReminder(), initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(), initial.minDaysBetweenEmails(),
+        return new CollectionReminderSettings(initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(), days,
                 initial.maxReminderEmailsPerMonth(), initial.emailWindowStart(), initial.emailWindowEnd(), initial.dailyEmailCap(),
                 initial.contactListDaysOverdue(), initial.contactListOverdueInstallments());
     }
@@ -249,15 +247,15 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     void aProposalAcceptedWithTwoDaysAndApprovedTheNextDayStillTakesEffectOnItsOwnDate() {
         LocalDate march5 = MARCH_THIRD.plusDays(2);
         authenticateAs(administrative);
-        Long requestId = proposeAwaiting(withDaysBeforeDue(2), march5);
+        Long requestId = proposeAwaiting(withMinDaysBetweenEmails(2), march5);
         MutableClock.INSTANCE.setDate(MARCH_FOURTH);
         authenticateAs(director);
 
         approveRequest.approve(requestId, "ok");
 
         assertThat(versionOf(requestId).getStatus()).isEqualTo(ConfigurationVersionStatus.SCHEDULED);
-        assertThat(reader.collectionReminderSettingsEffectiveOn(MARCH_FOURTH).daysBeforeDueReminder()).isEqualTo(1);
-        assertThat(reader.collectionReminderSettingsEffectiveOn(march5).daysBeforeDueReminder()).isEqualTo(2);
+        assertThat(reader.collectionReminderSettingsEffectiveOn(MARCH_FOURTH).minDaysBetweenEmails()).isEqualTo(3);
+        assertThat(reader.collectionReminderSettingsEffectiveOn(march5).minDaysBetweenEmails()).isEqualTo(2);
     }
 
     @Test
@@ -265,9 +263,9 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     void incoherentValuesAreRejectedWithTheViolationOfTheField() {
         authenticateAs(administrative);
 
-        assertThatThrownBy(() -> proposeAwaiting(withDaysBeforeDue(0), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderSettingsException.class);
-        assertThat(validate.validateChange(TOPIC, withDaysBeforeDue(61), MARCH_FOURTH, "m")).extracting("code").containsExactly("INVALID_COLLECTION_REMINDER_SETTINGS");
-        assertThat(validate.validateChange(TOPIC, new CollectionReminderSettings(true, 5, 1, 10, 1, true, 6, 3, 4, LocalTime.of(11, 0), LocalTime.of(9, 0), 250, 14, 2),
+        assertThatThrownBy(() -> proposeAwaiting(withMinDaysBetweenEmails(0), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderSettingsException.class);
+        assertThat(validate.validateChange(TOPIC, withMinDaysBetweenEmails(-1), MARCH_FOURTH, "m")).extracting("code").containsExactly("INVALID_COLLECTION_REMINDER_SETTINGS");
+        assertThat(validate.validateChange(TOPIC, new CollectionReminderSettings(true, 6, 3, 4, LocalTime.of(11, 0), LocalTime.of(9, 0), 250, 14, 2),
                 MARCH_FOURTH, "m")).hasSize(1);
         assertThat(count("select count(*) from configuration_version where proposed_by_id = ?", administrative.getId())).isZero();
     }
