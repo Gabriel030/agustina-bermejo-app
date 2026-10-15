@@ -20,7 +20,8 @@ class EnrollmentWithdrawalLateFeeFreezeIT extends AbstractLateFeeScenarioIT {
     private CourseEnrollmentService courseEnrollmentService;
 
     @Test
-    void aWithdrawalInformedForAprilTwentyEighthFreezesTheLateFeeFromThatDayAndKeepsTheAlreadyIssuedAprilDebitNoteWhichOnlyBreaksTheFrozenDaysInvariants() {
+    @Tag("contradicts-D-375")
+    void aWithdrawalInformedForAprilTwentyEighthStillLeavesTheLateFeeAfterTheInformedDateUncredited() {
         arrange(2107);
         publishDefaults(2107);
         Invoice origin = overdueInstallmentDueOn(d(2107, 4, 11));
@@ -36,6 +37,7 @@ class EnrollmentWithdrawalLateFeeFreezeIT extends AbstractLateFeeScenarioIT {
         assertThat(jdbc.queryForObject("select completion_date::date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2107-04-28");
         assertThat(summaryOf(origin)).containsExactly("2107-04-12..2107-04-30:19:3800.00");
         assertThat(jdbc.queryForObject("select count(*) from invoice where origin_invoice_id = ?", Long.class, origin.getId())).isEqualTo(issuedDebitNotes);
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id in (select id from invoice where origin_invoice_id = ?)", Long.class, origin.getId())).isZero();
         assertThatThrownBy(invariants::assertAllBillingInvariantsHold).isInstanceOf(AssertionError.class).satisfies(failure ->
                 assertThat(failure.getMessage().lines().skip(1).toList()).isNotEmpty()
                         .allMatch(line -> line.startsWith("I-11c charged days differ") || line.startsWith("I-11e late fee charged for days frozen")));
