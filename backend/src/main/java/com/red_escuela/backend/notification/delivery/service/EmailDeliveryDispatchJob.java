@@ -40,7 +40,7 @@ public class EmailDeliveryDispatchJob {
     }
 
     @Scheduled(cron = "0 */10 9-11 * * MON-FRI", zone = "${app.timezone}")
-    @SchedulerLock(name = "EmailDeliveryDispatchJob", lockAtMostFor = "PT9M")
+    @SchedulerLock(name = "EmailDeliveryDispatchJob", lockAtMostFor = "PT9M", lockAtLeastFor = "PT1M")
     public void run() {
         dispatchDueEmails();
     }

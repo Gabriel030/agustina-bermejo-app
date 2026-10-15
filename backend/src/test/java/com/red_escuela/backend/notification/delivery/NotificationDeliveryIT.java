@@ -43,8 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.time.Duration;
-import static org.awaitility.Awaitility.await;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.red_escuela.backend.notification.delivery.service.InAppDeliveryChannel;

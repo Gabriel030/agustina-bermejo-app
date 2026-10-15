@@ -20,13 +20,14 @@ public record DeliveryEnvelope(String dedupKey, DeliveryCategory category, Strin
         if (priority < HIGHEST_PRIORITY) {
             throw new IllegalArgumentException("A priority is at least " + HIGHEST_PRIORITY);
         }
-        if (relatedEntityType != null && (relatedEntityType.isBlank() || relatedEntityType.length() > MAX_RELATED_ENTITY_TYPE_LENGTH)) {
+        if (relatedEntityType != null && (relatedEntityType.isBlank() || relatedEntityType.length() > MAX_RELATED_ENTITY_TYPE_LENGTH
+                || relatedEntityType.indexOf('\0') >= 0)) {
             throw new IllegalArgumentException("A related entity type is between 1 and " + MAX_RELATED_ENTITY_TYPE_LENGTH + " characters");
         }
     }
 
     private static void requireText(String value, int maxLength, String name) {
-        if (value == null || value.isBlank() || value.length() > maxLength) {
+        if (value == null || value.isBlank() || value.length() > maxLength || value.indexOf('\0') >= 0) {
             throw new IllegalArgumentException(name + " is between 1 and " + maxLength + " characters");
         }
     }

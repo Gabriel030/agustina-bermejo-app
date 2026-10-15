@@ -31,6 +31,13 @@ class DeliveryValuesTest {
     }
 
     @Test
+    void aNulCharacterInAnEnvelopeTextIsRejected() {
+        assertThatThrownBy(() -> envelope("cla\0ve", "KIND", 1, 1L, "Invoice", DAY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> envelope("clave", "KI\0ND", 1, 1L, "Invoice", DAY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> envelope("clave", "KIND", 1, 1L, "Inv\0oice", DAY)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void anEnvelopeAtTheLimitsOfEveryColumnIsAccepted() {
         assertThatCode(() -> envelope("k".repeat(120), "x".repeat(64), 1, 1L, "t".repeat(60), DAY)).doesNotThrowAnyException();
     }
