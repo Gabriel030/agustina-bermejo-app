@@ -12,6 +12,7 @@ Reglas:
 
 | Fecha | PR | Commit | Área | Herramienta | Comando | Resultado | Notas |
 |---|---|---|---|---|---|---|---|
+| 2026-10-15 | V2-07a1 (correcciones de revisión #220) | `0d3fe74f` | billing.discount (domain, policy) | PIT | `./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage` | ✅ 92% (1988/2153), umbral 90; BUILD SUCCESS | Corrida sobre todo el perfil tras D-326, moneda monto vs tope, motivo de cierre acotado a 450 y validación de estado al cerrar |
 | 2026-10-14 | V2-07a1 | `4b9c7678` | billing.discount (domain, policy), `pom.xml` (suma billing.discount.domain/policy a targetClasses y targetTests) | PIT | `./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage` | ✅ 92% (1849/2007), umbral 90; BUILD SUCCESS | Corrida sobre todo el perfil; 253 tests focalizados en verde (Discount*, ArchitectureTest, ModularityTest, PolicyCatalogTest, decisiones) |
 | 2026-10-14 | #218 | `57ee6ab5` + correcciones de revisión | billing (dominio puro: configuration domain/policy), shared/domain | PIT | `./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage` | ✅ 92% (1843/1999), umbral 90 | Revisión de V2-18b2a: recorte por fecha de cada repetición (D-371, D-372), ids de versión en la resolución |
 | 2026-10-14 | V2-18b2a | `8603eb32` + correcciones de tags | billing (dominio puro: configuration domain/policy), shared/domain | PIT | `./mvnw clean verify -P mutation` | ✅ 92% (1841/1997), umbral 90; 3058 tests, 0 fallas, 1 omitido | Lista libre de avisos por grupo (D-368 a D-373); migración V111 |
