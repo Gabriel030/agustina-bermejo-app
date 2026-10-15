@@ -48,6 +48,32 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
 
     @Query(value = """
             select c.id from late_fee_charge c
+            join invoice d on d.id = c.debit_note_id
+            join lateral (
+                select coalesce(pe.completion_date, ce.completion_date)::date as end_date
+                from invoice_line l
+                left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+                left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+                where l.invoice_id = c.origin_invoice_id order by l.id limit 1) e on e.end_date is not null
+            where c.id > :lastId and d.document_status = 'ISSUED' and d.payment_status not in ('CANCELLED', 'PAYMENT_UNDER_REVIEW')
+              and c.charged_days - coalesce((select sum(k.corrected_days) from late_fee_charge_correction k where k.late_fee_charge_id = c.id), 0)
+                  > greatest(0, least(c.period_end, e.end_date) - c.period_start + 1)
+            order by c.id
+            limit :pageSize
+            """, nativeQuery = true)
+    List<Long> findChargeIdsWithDaysAfterTheEnrollmentEndAfter(@Param("lastId") Long lastId, @Param("pageSize") int pageSize);
+
+    @Query(value = """
+            select to_char(coalesce(pe.withdrawal_registered_on, ce.withdrawal_registered_on), 'YYYY-MM-DD')
+            from invoice_line l
+            left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+            left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+            where l.invoice_id = (select c.origin_invoice_id from late_fee_charge c where c.id = :chargeId) order by l.id limit 1
+            """, nativeQuery = true)
+    Optional<String> findEnrollmentEndRegistrationDateOfCharge(@Param("chargeId") Long chargeId);
+
+    @Query(value = """
+            select c.id from late_fee_charge c
             where (select l.program_enrollment_id from invoice_line l where l.invoice_id = c.origin_invoice_id order by l.id limit 1) = :programEnrollmentId
             order by c.id
             """, nativeQuery = true)

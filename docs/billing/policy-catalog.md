@@ -453,7 +453,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): —
 - Eventos que publica: AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación CANCEL_CONFIGURATION_VERSION
 
@@ -502,7 +502,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: CreditNoteIssuedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación ISSUE_INVOICE
 
@@ -510,14 +510,15 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): InvoiceDiscountEnrichmentHandler
 - Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
 - Post-procesamiento de InvoiceIssuedDomainEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE
 
 - Validaciones (momentos): LATE_FEE_CORRECTION_ISSUING
 - Pre-procesamiento (en orden): —
-- Eventos que publica: CreditNoteIssuedEvent
+- Eventos que publica: CreditNoteIssuedEvent, LateFeeCorrectionIssuedAfterFiscalWindowEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
+- Post-procesamiento de LateFeeCorrectionIssuedAfterFiscalWindowEvent: LateFeeCorrectionNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow
 
 ## Operación ISSUE_LATE_FEE_DEBIT_NOTE
 
@@ -533,4 +534,4 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice

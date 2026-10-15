@@ -3,6 +3,8 @@ package com.red_escuela.backend.billing.collections.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import com.red_escuela.backend.billing.collections.operation.LateFeeCorrectionSweepResult;
+import com.red_escuela.backend.billing.collections.operation.LateFeeWithdrawalCorrectionStep;
 import com.red_escuela.backend.billing.collections.operation.OverdueDetectionResult;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
@@ -31,11 +33,13 @@ class InvoiceOverdueSweepStatusTest {
     private final OverdueInvoiceDetectionStep step = mock(OverdueInvoiceDetectionStep.class);
     private final BatchExecutionLogRepository logRepository = mock(BatchExecutionLogRepository.class);
     private final LateFeeAccrualStep accrualStep = mock(LateFeeAccrualStep.class);
-    private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, accrualStep, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
+    private final LateFeeWithdrawalCorrectionStep correctionStep = mock(LateFeeWithdrawalCorrectionStep.class);
+    private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, accrualStep, correctionStep, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
 
     private BatchExecutionLog runWith(OverdueDetectionResult result) {
         when(step.detectOverdueInvoices(TODAY)).thenReturn(result);
         when(accrualStep.accrueLateFees(TODAY)).thenReturn(LateFeeAccrualResult.nothing());
+        when(correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(TODAY)).thenReturn(LateFeeCorrectionSweepResult.nothing());
         sweep.run(TODAY);
         ArgumentCaptor<BatchExecutionLog> saved = ArgumentCaptor.forClass(BatchExecutionLog.class);
         verify(logRepository).save(saved.capture());
@@ -70,6 +74,7 @@ class InvoiceOverdueSweepStatusTest {
     void theSweepDetectsFirstThenAccruesAndWritesASingleLogWithBothResults() {
         when(step.detectOverdueInvoices(TODAY)).thenReturn(new OverdueDetectionResult(2, 2, 0, 0, List.of()));
         when(accrualStep.accrueLateFees(TODAY)).thenReturn(new LateFeeAccrualResult(3, 4, 1, List.of(Map.of("invoiceId", 5L))));
+        when(correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(TODAY)).thenReturn(LateFeeCorrectionSweepResult.nothing());
 
         sweep.run(TODAY);
 
