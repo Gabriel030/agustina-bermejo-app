@@ -28,3 +28,4 @@ public record AllocationPlanContext(Long studentCurrentAccountId, Currency curre
         return openInvoicesInAllocationOrder.stream().filter(invoice -> invoice.invoiceId().equals(invoiceId)).findFirst();
     }
 }
+
