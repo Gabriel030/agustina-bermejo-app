@@ -79,10 +79,14 @@ public final class BillingTestFixtures {
     }
 
     public static Invoice payInvoiceInFull(Invoice invoice) {
-        return inTransaction(() -> payInTransaction(reload(invoice), invoice.getDueDate()));
+        return inTransaction(() -> payInTransaction(reload(invoice), invoice.getDueDate(), invoice.getDueDate()));
     }
 
-    private static Invoice payInTransaction(Invoice invoice, LocalDate paidOn) {
+    public static Invoice payInvoiceInFullWithMoneyOf(Invoice invoice, LocalDate effectiveDate, LocalDate allocatedOn) {
+        return inTransaction(() -> payInTransaction(reload(invoice), effectiveDate, allocatedOn));
+    }
+
+    private static Invoice payInTransaction(Invoice invoice, LocalDate effectiveDate, LocalDate paidOn) {
         Long studentId = bean(InvoiceRepository.class).findOwnerStudentIdByInvoiceId(invoice.getId()).orElseThrow();
         Student student = bean(com.red_escuela.backend.identity.repository.StudentRepository.class).findById(studentId).orElseThrow();
         Money amount = invoice.getAmounts().outstandingAmount().value();
@@ -100,7 +104,7 @@ public final class BillingTestFixtures {
         allocation.setAmountApplied(amount);
         payment.getAllocations().add(allocation);
         bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).save(
-                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), paidOn, paidOn, ACTOR));
+                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), effectiveDate, paidOn, ACTOR));
         StudentCurrentAccountService accounts = bean(StudentCurrentAccountService.class);
         StudentCurrentAccount account = accounts.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
         accounts.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
@@ -247,7 +251,7 @@ public final class BillingTestFixtures {
             if (status == InvoicePaymentStatus.OVERDUE) {
                 result.markInvoiceAsOverdue(dueDate.plusDays(1), ACTOR);
             } else if (status == InvoicePaymentStatus.PAID) {
-                result = payInTransaction(result, dueDate);
+                result = payInTransaction(result, dueDate, dueDate);
             } else if (status != InvoicePaymentStatus.PENDING) {
                 throw new UnsupportedOperationException("The new billing model has no direct " + status + " state (D-165, D-136)");
             }

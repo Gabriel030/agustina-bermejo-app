@@ -54,8 +54,8 @@ public class InvoiceOverdueSweepService {
         OverdueDetectionResult detection = detectionStep.detectOverdueInvoices(today);
         LateFeeAccrualResult accrual = accrualStep.accrueLateFees(today);
         long durationMs = System.currentTimeMillis() - start;
-        log.info("Barrido de mora finalizado: candidatas={}, procesadas={}, omitidas={}, fallidas={}, recargosCandidatas={}, recargosCierre={}, recargosFallidos={}, duracion={}ms",
-                detection.candidates(), detection.marked(), detection.skipped(), detection.failed(), accrual.candidates(), accrual.debitNotesIssued(), accrual.failed(),
+        log.info("Barrido de mora finalizado: candidatas={}, procesadas={}, omitidas={}, fallidas={}, recargosCandidatas={}, recargosPagoCandidatas={}, recargosCierre={}, recargosPagoRecuperados={}, recargosFallidos={}, duracion={}ms",
+                detection.candidates(), detection.marked(), detection.skipped(), detection.failed(), accrual.candidates(), accrual.settlementCandidates(), accrual.debitNotesIssued() - accrual.settlementDebitNotesRecovered(), accrual.settlementDebitNotesRecovered(), accrual.failed(),
                 durationMs);
         int failed = detection.failed() + detection.skipped() + accrual.failed();
         int processed = detection.marked() + accrual.debitNotesIssued();
@@ -64,7 +64,7 @@ public class InvoiceOverdueSweepService {
         List<Map<String, Object>> errors = new ArrayList<>(detection.errors());
         errors.addAll(accrual.errors());
         batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(clock), detection.candidates() + accrual.candidates(), processed, failed, durationMs, status, serialize(errors)));
+                JOB_NAME, LocalDateTime.now(clock), detection.candidates() + accrual.candidates() + accrual.settlementCandidates(), processed, failed, durationMs, status, serialize(errors)));
     }
 
     private String serialize(List<Map<String, Object>> errors) {
