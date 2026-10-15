@@ -201,4 +201,36 @@ class LateFeeCorrectionBackupIT extends AbstractLateFeeCorrectionIT {
 
         assertThat(correctionService.findChargeIdsWithUncorrectedDaysAfter(0L, 100_000)).doesNotContain(chargeId);
     }
+
+    @Test
+    @Tag("D-375")
+    void aDebitNoteWhoseLineBalanceWasExhaustedByAReductionIsNotACandidateOfTheSweep() {
+        Invoice origin = aprilDebitNoteOrigin(2183);
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        Long chargeId = (Long) chargesOf(origin).get(0).get("id");
+        endEnrollmentSilently("WITHDRAWN", d(2183, 4, 28), d(2183, 5, 3));
+        jdbc.update("update invoice_line set credited_amount = amount where invoice_id = ?", debitNoteId);
+
+        assertThat(correctionService.findChargeIdsWithUncorrectedDaysAfter(0L, 100_000)).doesNotContain(chargeId);
+    }
+
+    @Test
+    @Tag("D-375")
+    void theSweepCorrectsADebitNoteThatAlreadyHasAPartialCreditAndStillHasBalance() {
+        Invoice origin = aprilDebitNoteOrigin(2184);
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        Long chargeId = (Long) chargesOf(origin).get(0).get("id");
+        jdbc.update("update invoice_line set credited_amount = 1000.00 where invoice_id = ?", debitNoteId);
+        endEnrollmentSilently("WITHDRAWN", d(2184, 4, 28), d(2184, 5, 3));
+        MutableClock.INSTANCE.setDate(d(2184, 5, 4));
+        assertThat(correctionService.findChargeIdsWithUncorrectedDaysAfter(0L, 100_000)).contains(chargeId);
+
+        correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(d(2184, 5, 4));
+        awaitEventsDrained();
+
+        List<Map<String, Object>> creditNotes = creditNotesOf(debitNoteId);
+        assertThat(creditNotes).hasSize(1);
+        assertThat((BigDecimal) creditNotes.get(0).get("total_amount")).isEqualByComparingTo("400.00");
+        assertThat(netChargedDaysOf(debitNoteId)).isEqualByComparingTo("17");
+    }
 }

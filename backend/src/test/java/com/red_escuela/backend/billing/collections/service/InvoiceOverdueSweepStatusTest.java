@@ -36,11 +36,9 @@ class InvoiceOverdueSweepStatusTest {
     private final LateFeeWithdrawalCorrectionStep correctionStep = mock(LateFeeWithdrawalCorrectionStep.class);
     private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, accrualStep, correctionStep, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
 
-    private BatchExecutionLog runWith(OverdueDetectionResult result) {
-        return runWith(result, LateFeeCorrectionSweepResult.nothing());
-    }
+    private LateFeeCorrectionSweepResult correction = LateFeeCorrectionSweepResult.nothing();
 
-    private BatchExecutionLog runWith(OverdueDetectionResult result, LateFeeCorrectionSweepResult correction) {
+    private BatchExecutionLog runWith(OverdueDetectionResult result) {
         when(step.detectOverdueInvoices(TODAY)).thenReturn(result);
         when(accrualStep.accrueLateFees(TODAY)).thenReturn(LateFeeAccrualResult.nothing());
         when(correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(TODAY)).thenReturn(correction);
@@ -96,7 +94,8 @@ class InvoiceOverdueSweepStatusTest {
     @Test
     @Tag("D-375")
     void correctionsIssuedAreCountedAsProcessedAndASweepWithOnlyThemIsASuccess() {
-        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()), new LateFeeCorrectionSweepResult(3, 3, 0, 0, List.of()));
+        correction = new LateFeeCorrectionSweepResult(3, 3, 0, 0, List.of());
+        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()));
 
         assertThat(log.getStatus()).isEqualTo(BatchExecutionStatus.SUCCESS);
         assertThat(log.getCandidateCount()).isEqualTo(3);
@@ -107,8 +106,8 @@ class InvoiceOverdueSweepStatusTest {
     @Test
     @Tag("D-375")
     void aFailedCorrectionLeavesThePartialStatusItsErrorAndTheCounts() {
-        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()),
-                new LateFeeCorrectionSweepResult(4, 2, 1, 1, List.of(Map.of("lateFeeChargeId", 77L, "message", "Boom"))));
+        correction = new LateFeeCorrectionSweepResult(4, 2, 1, 1, List.of(Map.of("lateFeeChargeId", 77L, "message", "Boom")));
+        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()));
 
         assertThat(log.getStatus()).isEqualTo(BatchExecutionStatus.PARTIAL_FAILURE);
         assertThat(log.getCandidateCount()).isEqualTo(4);
@@ -120,8 +119,8 @@ class InvoiceOverdueSweepStatusTest {
     @Test
     @Tag("D-375")
     void aSweepWhereOnlyCorrectionsFailedAndNothingElseWasProcessedIsAFailure() {
-        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()),
-                new LateFeeCorrectionSweepResult(1, 0, 0, 1, List.of(Map.of("lateFeeChargeId", 5L, "message", "Boom"))));
+        correction = new LateFeeCorrectionSweepResult(1, 0, 0, 1, List.of(Map.of("lateFeeChargeId", 5L, "message", "Boom")));
+        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()));
 
         assertThat(log.getStatus()).isEqualTo(BatchExecutionStatus.FAILED);
         assertThat(log.getErrors()).contains("5");
