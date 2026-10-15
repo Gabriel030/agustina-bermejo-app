@@ -1,0 +1,8 @@
+Cycle detected: Slice entity -> \
+                Slice exception -> \
+                Slice entity\
+  1. Dependencies of Slice entity\
+    - Method <com.red_escuela.backend.announcement.entity.Announcement.markAsSent(java.time.LocalDateTime)> calls constructor <com.red_escuela.backend.announcement.exception.AnnouncementAlreadySentException.<init>(java.lang.Long)> in (Announcement.java:130)\
+  2. Dependencies of Slice exception\
+    - Constructor <com.red_escuela.backend.announcement.exception.SegmentNotAvailableForSectionException.<init>(com.red_escuela.backend.announcement.entity.AudienceSegmentKey)> has parameter of type <com.red_escuela.backend.announcement.entity.AudienceSegmentKey> in (SegmentNotAvailableForSectionException.java:0)\
+    - Constructor <com.red_escuela.backend.announcement.exception.UnknownAudienceSegmentException.<init>(com.red_escuela.backend.announcement.entity.AudienceSegmentKey)> has parameter of type <com.red_escuela.backend.announcement.entity.AudienceSegmentKey> in (UnknownAudienceSegmentException.java:0)

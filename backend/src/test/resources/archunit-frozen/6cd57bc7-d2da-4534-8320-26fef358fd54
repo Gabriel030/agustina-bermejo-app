@@ -1,0 +1,4 @@
+com.red_escuela.backend.billing.api.BankTransferAdmissionReceiptLookup.findLatestReceiptByInvoiceIds(java.util.Collection) declares @Transactional
+com.red_escuela.backend.billing.api.VersionedYearEnrollmentFeeTermsLookup.requireEnrollmentFeeTermsEffectiveOn(java.lang.Long, java.lang.Long, java.time.LocalDate) declares @Transactional
+com.red_escuela.backend.config.LocalSeedRunner.run(org.springframework.boot.ApplicationArguments) declares @Transactional
+com.red_escuela.backend.shared.event.ProcessedEffectGuard.runEffectOnce(com.red_escuela.backend.shared.event.DeduplicableDomainEvent, java.lang.String, java.lang.Runnable) declares @Transactional
