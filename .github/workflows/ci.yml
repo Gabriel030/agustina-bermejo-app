@@ -204,7 +204,7 @@ jobs:
           ./mvnw -B -P mutation test-compile org.pitest:pitest-maven:mutationCoverage 2>&1 | tee "$RUNNER_TEMP/pit.log"
 
       - name: Save the PIT incremental history
-        if: always() && hashFiles('backend/target/pit-history/history.bin') != ''
+        if: (success() || failure()) && hashFiles('backend/target/pit-history/history.bin') != ''
         uses: actions/cache/save@v4
         with:
           path: backend/target/pit-history
