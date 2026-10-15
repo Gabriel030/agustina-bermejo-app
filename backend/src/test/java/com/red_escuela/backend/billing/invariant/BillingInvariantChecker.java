@@ -298,7 +298,7 @@ public final class BillingInvariantChecker {
              where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
 
     private static final String ENROLLMENT_REGISTRATION_OF_ORIGIN = """
-            (select coalesce(pe.withdrawal_registered_on, ce.withdrawal_registered_on, pe.completion_date::date, ce.completion_date::date)
+            (select coalesce(pe.withdrawal_registered_on, ce.withdrawal_registered_on)
              from invoice_line l
              left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
              left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
@@ -385,7 +385,7 @@ public final class BillingInvariantChecker {
     }
 
     public List<String> lateFeeCorrectionsAreConsistent() {
-        return violations("I-11i late fee correction outside its debit note, within the enrollment, or issued after the withdrawal was registered, or with a credit note above the complement", """
+        return violations("I-11i late fee correction outside its debit note, within the enrollment, or issued after the withdrawal was registered, or with a credit note above the complement, or below the complement while the line still had creditable balance after it", """
                 select 'correction ' || k.id || ' debit note ' || k.debit_note_id
                 from late_fee_charge_correction k
                 join late_fee_charge c on c.id = k.late_fee_charge_id
@@ -395,11 +395,13 @@ public final class BillingInvariantChecker {
                     k.debit_note_id <> c.debit_note_id
                     or k.first_corrected_day < c.period_start or k.last_corrected_day > c.period_end
                     or %1$s is null or k.first_corrected_day <= %1$s
-                    or %2$s is null or d.issue_date > %2$s
+                    or (%2$s is not null and d.issue_date > %2$s)
                     or n.reason <> 'LATE_FEE_CORRECTION' or n.invoice_id <> k.debit_note_id or n.recipient_snapshot is distinct from d.student_snapshot
                     or n.total_amount > %3$s
                     or (n.total_amount < %3$s and exists (select 1 from invoice_line l
-                                                          where l.invoice_id = d.id and (l.amount - l.discount_amount) - l.credited_amount - l.free_credited_amount > 0)))
+                                                          where l.invoice_id = d.id and (l.amount - l.discount_amount) - n.total_amount - (
+                                                              select coalesce(sum(cl.amount), 0) from credit_note_line cl join credit_note p on p.id = cl.credit_note_id
+                                                              where p.invoice_id = d.id and p.id < n.id and cl.invoice_line_number = l.line_number) > 0)))
                 """.formatted(ENROLLMENT_END_OF_ORIGIN, ENROLLMENT_REGISTRATION_OF_ORIGIN, CORRECTION_COMPLEMENT), baselineInvoiceId);
     }
 
