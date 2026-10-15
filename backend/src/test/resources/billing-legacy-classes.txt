@@ -6,7 +6,6 @@ com.red_escuela.backend.billing.controller.InvoiceController
 com.red_escuela.backend.billing.controller.LatePaymentSettingsController
 com.red_escuela.backend.billing.controller.MeInvoiceController
 com.red_escuela.backend.billing.controller.MpWebhookController
-com.red_escuela.backend.billing.controller.PaymentController
 com.red_escuela.backend.billing.controller.PaymentGatewayConfigController
 com.red_escuela.backend.billing.controller.PaymentPlanOptionController
 com.red_escuela.backend.billing.controller.PaymentPlanSelectionController
