@@ -69,8 +69,15 @@ public class EmailDeliveryChannel {
 
     @Transactional
     public void dispatchDelivery(Long deliveryId) {
-        NotificationDelivery delivery = deliveryRepository.findByIdForUpdate(deliveryId)
-                .orElseThrow(() -> new NotificationDeliveryNotFoundException(deliveryId));
+        Optional<NotificationDelivery> locked = deliveryRepository.findByIdForUpdate(deliveryId);
+        if (locked.isEmpty()) {
+            if (!deliveryRepository.existsById(deliveryId)) {
+                throw new NotificationDeliveryNotFoundException(deliveryId);
+            }
+            log.info("Entrega {} en manos de otro worker, se omite", deliveryId);
+            return;
+        }
+        NotificationDelivery delivery = locked.get();
         if (!delivery.getStatus().isWaitingForDispatch()) {
             return;
         }
