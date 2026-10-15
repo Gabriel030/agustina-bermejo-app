@@ -1795,7 +1795,7 @@
             "type" : [ "string", "null" ]
           },
           "calculation" : {
-            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas es nulo para esas becas",
+            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/Nominal"
             }, {
@@ -1803,7 +1803,8 @@
             } ]
           },
           "capPerInvoice" : {
-            "$ref" : "#/components/schemas/Money"
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Opcional; puede venir null"
           },
           "courseId" : {
             "format" : "int64",
@@ -1845,7 +1846,7 @@
             "type" : [ "integer", "null" ]
           }
         },
-        "required" : [ "applicableInvoiceType", "availableFrom", "calculation", "discountType", "name", "priority" ],
+        "required" : [ "applicableInvoiceType", "availableFrom", "discountType", "name", "priority" ],
         "type" : "object"
       },
       "CreateElectiveGroupRequest" : {
@@ -2689,7 +2690,7 @@
             "type" : [ "string", "null" ]
           },
           "calculation" : {
-            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas es nulo para esas becas",
+            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/Nominal"
             }, {
@@ -2697,7 +2698,8 @@
             } ]
           },
           "capPerInvoice" : {
-            "$ref" : "#/components/schemas/Money"
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Opcional; puede venir null"
           },
           "closedAt" : {
             "format" : "date-time",
@@ -2739,7 +2741,7 @@
           },
           "estimatedQuotaCost" : {
             "$ref" : "#/components/schemas/Money",
-            "description" : "Solo con estimatedQuotaCostStatus = ESTIMATED"
+            "description" : "Solo con estimatedQuotaCostStatus = ESTIMATED; en cualquier otro estado puede venir null"
           },
           "estimatedQuotaCostStatus" : {
             "description" : "ESTIMATED: hay costo. NO_QUOTA: la promoción no tiene cupo. NOT_APPLICABLE: no se puede calcular (sin alcance de oferta, sin cuotas o sin cálculo). NO_EFFECTIVE_PRICE: no hay precio vigente hoy para la oferta y el cargo.",
@@ -2815,7 +2817,7 @@
             "type" : [ "string", "null" ]
           },
           "calculation" : {
-            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas es nulo para esas becas",
+            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/Nominal"
             }, {
@@ -2823,7 +2825,8 @@
             } ]
           },
           "capPerInvoice" : {
-            "$ref" : "#/components/schemas/Money"
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Opcional; puede venir null"
           },
           "closedAt" : {
             "format" : "date-time",
@@ -2895,7 +2898,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "applicableInvoiceType", "availableFrom", "calculation", "createdAt", "directPublication", "discountType", "id", "name", "priority", "status" ],
+        "required" : [ "applicableInvoiceType", "availableFrom", "createdAt", "directPublication", "discountType", "id", "name", "priority", "status" ],
         "type" : "object"
       },
       "DiscountDefinitionValidationResponse" : {

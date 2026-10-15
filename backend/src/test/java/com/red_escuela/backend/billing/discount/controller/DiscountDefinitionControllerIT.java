@@ -2,7 +2,11 @@ package com.red_escuela.backend.billing.discount.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.support.PriceFixtures;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
@@ -28,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -274,9 +279,9 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         body.put("quota", 2);
         createdAsDirector(body);
 
-        MutableClock.INSTANCE.setDate(LocalDate.of(2019, 12, 31));
+        MutableClock.INSTANCE.setDate(IssuingScenarioFactory.INITIAL_PRICE_FROM.minusDays(1));
         JsonNode beforeThePrice = entryNamed(catalog("?type=COHORT_PROMOTION"), "a08 sin precio vigente");
-        MutableClock.INSTANCE.setDate(LocalDate.of(2020, 1, 1));
+        MutableClock.INSTANCE.setDate(IssuingScenarioFactory.INITIAL_PRICE_FROM);
         JsonNode onTheFirstDay = entryNamed(catalog("?type=COHORT_PROMOTION"), "a08 sin precio vigente");
 
         assertThat(beforeThePrice.get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_EFFECTIVE_PRICE");
@@ -319,26 +324,26 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-240")
-    void aDefinitionWithoutAnOfferingScopeReportsNotApplicableOrNoQuota() throws Exception {
+    void aDefinitionWithoutAnOfferingScopeCannotHaveQuotaSoItReportsNoQuota() throws Exception {
         createdAsDirector(annualUpfront("pago anual sin alcance"));
 
         assertThat(entryNamed(catalog(""), "pago anual sin alcance").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_QUOTA");
     }
 
     private Long persistCourse(boolean withPrice) {
-        com.red_escuela.backend.academicstructure.entity.Term term = new com.red_escuela.backend.academicstructure.entity.Term();
+        Term term = new Term();
         term.setYear(2031);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
-        com.red_escuela.backend.academicstructure.entity.Course course = new com.red_escuela.backend.academicstructure.entity.Course();
+        Course course = new Course();
         course.setName("Curso " + System.nanoTime());
         course.setTerm(term);
         course.setCapacity(20);
         course.setIsActive(StatusType.ACTIVE);
         entityManager.persist(course);
         if (withPrice) {
-            com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota del curso",
-                    com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("80000"), Currency.ARS), TODAY.minusDays(1), lastPersonId);
+            PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota del curso", Money.of(new BigDecimal("80000"), Currency.ARS),
+                    TODAY.minusDays(1), lastPersonId);
         }
         return course.getId();
     }

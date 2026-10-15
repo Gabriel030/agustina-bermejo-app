@@ -14,8 +14,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public record DiscountDefinitionResponse(Long id, String name, DiscountDefinitionType discountType, InvoiceType applicableInvoiceType, @Schema(description = "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas es nulo para esas becas") MonetaryAdjustment calculation,
-                                         @Nullable Integer installmentsTotal, LocalDate availableFrom, @Nullable LocalDate availableUntil, int priority, @Nullable Money capPerInvoice,
+public record DiscountDefinitionResponse(Long id, String name, DiscountDefinitionType discountType, InvoiceType applicableInvoiceType, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null") MonetaryAdjustment calculation,
+                                         @Nullable Integer installmentsTotal, LocalDate availableFrom, @Nullable LocalDate availableUntil, int priority, @Schema(description = "Opcional; puede venir null") @Nullable Money capPerInvoice,
                                          @Nullable Long programId, @Nullable Long programCohortId, @Nullable Long courseId, @Nullable LocalDate enrollmentWindowFrom,
                                          @Nullable LocalDate enrollmentWindowTo, @Nullable Integer quota, DiscountDefinitionStatus status, boolean directPublication,
                                          @Nullable Long authorizationRequestId, @Nullable Long createdById, Instant createdAt, @Nullable Long closedById, @Nullable Instant closedAt,
