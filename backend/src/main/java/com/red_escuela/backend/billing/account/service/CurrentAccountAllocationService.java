@@ -18,6 +18,7 @@ import com.red_escuela.backend.billing.account.repository.CurrentAccountEntryRep
 import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.billing.events.AccountCreditAllocatedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.events.PaymentAllocationReversedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
@@ -144,7 +145,7 @@ public class CurrentAccountAllocationService {
                 .throwIfDenied(PaymentAllocationRejectedException::new);
         PaymentAllocation reversal = allocationRepository.save(allocation.recordAllocationReversal(businessDate, reason, actor));
         invoice.reversePaymentAllocation(businessDate, gracePeriodDays, actor, reason);
-        invoice.pullRecordedDomainEvents().forEach(eventPublisher::publishEvent);
+        eventPublisher.publishEvent(PaymentAllocationReversedEvent.reversedFor(allocation.getInvoiceId(), lockedAccount.getId(), businessDate));
         accountService.restoreUnallocatedCreditFromReversedAllocation(lockedAccount, allocation.getAmount());
         log.info("Imputación revertida: cuenta={}, factura={}, monto={}, motivo={}", lockedAccount.getId(), allocation.getInvoiceId(),
                 allocation.getAmount().value().amount(), reason);
