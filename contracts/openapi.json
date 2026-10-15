@@ -1082,30 +1082,11 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "daysAfterDueReminder" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "daysAfterIssueReminder" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "daysBeforeDueReminder" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "daysBeforeSuspensionReminder" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "emailWindowEnd" : {
             "type" : "string"
           },
           "emailWindowStart" : {
             "type" : "string"
-          },
-          "emissionReminderEnabled" : {
-            "type" : "boolean"
           },
           "maxReminderEmailsPerMonth" : {
             "format" : "int32",
@@ -1123,7 +1104,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "daysAfterDueReminder", "daysAfterIssueReminder", "daysBeforeDueReminder", "daysBeforeSuspensionReminder", "emailWindowEnd", "emailWindowStart", "emissionReminderEnabled", "maxReminderEmailsPerMonth", "minDaysBetweenEmails", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
+        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "maxReminderEmailsPerMonth", "minDaysBetweenEmails", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
         "type" : "object"
       },
       "CollectionReminderSettingsVersionResponse" : {

@@ -174,8 +174,8 @@ def aggregate(args):
     lines.append('| Métrica | Valor | Δ vs última corrida de develop |')
     lines.append('|---|---|---|')
     wall_text = clock(wall) if wall is not None else 'n/a'
-    lines.append('| Tiempo de pared (4 shards en paralelo) | %s | %s |' % (
-        wall_text, fmt_delta(wall, baseline.get('wall_seconds'), 's') if wall is not None else 'n/a'))
+    lines.append('| Tiempo de pared (%d shards en paralelo) | %s | %s |' % (
+        len(shards), wall_text, fmt_delta(wall, baseline.get('wall_seconds'), 's') if wall is not None else 'n/a'))
     total = sum(times.values())
     lines.append('| Tiempo de tests sumado | %s | %s |' % (clock(total), fmt_delta(total, baseline.get('total_seconds'), 's')))
     lines.append('| Contextos de Spring distintos | %d / %d | %s |' % (

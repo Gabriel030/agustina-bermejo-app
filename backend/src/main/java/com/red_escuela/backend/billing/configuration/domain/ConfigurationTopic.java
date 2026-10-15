@@ -10,6 +10,8 @@ public record ConfigurationTopic(ConfigurationScope scope, Long programId, Long 
             case YEAR_TERMS, ANNUAL_UPFRONT -> programId != null && termId != null && courseId == null && cohortId == null;
             case COHORT_ENTRY -> cohortId != null && programId == null && termId == null && courseId == null;
             case COURSE_TERMS -> courseId != null && programId == null && termId == null && cohortId == null;
+            case PROGRAM_REMINDER_SCHEDULE -> termId == null && courseId == null && cohortId == null;
+            case COURSE_REMINDER_SCHEDULE -> programId == null && termId == null && cohortId == null;
             case LATE_PAYMENT, ISSUANCE, ALLOCATION, IRREGULAR_TERMS, COLLECTION_REMINDERS, BILLING_DASHBOARD_GOALS -> programId == null && termId == null && courseId == null && cohortId == null;
         };
         if (!valid) {
@@ -33,6 +35,23 @@ public record ConfigurationTopic(ConfigurationScope scope, Long programId, Long 
         return new ConfigurationTopic(ConfigurationScope.COURSE_TERMS, null, null, courseId, null);
     }
 
+    public static ConfigurationTopic ofReminderScheduleGroup(TeachingGroup group) {
+        return new ConfigurationTopic(group.scope(), null, null, null, null);
+    }
+
+    public static ConfigurationTopic ofReminderScheduleException(TeachingGroup group, Long targetId) {
+        Objects.requireNonNull(targetId, "targetId");
+        return switch (group) {
+            case PROGRAMS -> new ConfigurationTopic(group.scope(), targetId, null, null, null);
+            case MONTHLY_COURSES -> new ConfigurationTopic(group.scope(), null, null, targetId, null);
+        };
+    }
+
+    public boolean isReminderScheduleException() {
+        return (scope == ConfigurationScope.PROGRAM_REMINDER_SCHEDULE && programId != null)
+                || (scope == ConfigurationScope.COURSE_REMINDER_SCHEDULE && courseId != null);
+    }
+
     public static ConfigurationTopic ofGlobal(ConfigurationScope scope) {
         return new ConfigurationTopic(scope, null, null, null, null);
     }
@@ -42,6 +61,8 @@ public record ConfigurationTopic(ConfigurationScope scope, Long programId, Long 
             case YEAR_TERMS, ANNUAL_UPFRONT -> scope + ":P" + programId + ":T" + termId;
             case COHORT_ENTRY -> scope + ":C" + cohortId;
             case COURSE_TERMS -> scope + ":C" + courseId;
+            case PROGRAM_REMINDER_SCHEDULE -> programId == null ? scope.name() : scope + ":P" + programId;
+            case COURSE_REMINDER_SCHEDULE -> courseId == null ? scope.name() : scope + ":C" + courseId;
             case LATE_PAYMENT, ISSUANCE, ALLOCATION, IRREGULAR_TERMS, COLLECTION_REMINDERS, BILLING_DASHBOARD_GOALS -> scope.name();
         };
     }
