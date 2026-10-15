@@ -21,6 +21,14 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | SingleOpenProposalPerTopicPolicy | PROPOSAL_ALREADY_OPEN | D-116 |
 
+## Momento CASH_PAYMENT_DATING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CashPaymentDateNotInFuturePolicy | PAYMENT_DATE_IN_FUTURE | D-169, D-266 |
+| 2 | CashPaymentDateWithinAdministrativeWindowPolicy | CASH_PAYMENT_DATE_TOO_OLD | D-266, D-270 |
+| 3 | CashPaymentBackdateReasonPolicy | CASH_PAYMENT_BACKDATE_REASON_REQUIRED | D-266, D-270 |
+
 ## Momento CASH_PAYMENT_PREVIEW
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -282,9 +290,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | IdempotencyKeyFormatPolicy | IDEMPOTENCY_KEY_INVALID | D-136 |
 | 2 | CashPaymentAmountPolicy | CASH_PAYMENT_AMOUNT_INVALID | D-136, D-097, D-098 |
 | 3 | CashPaymentReceiptNumberPolicy | CASH_PAYMENT_RECEIPT_NUMBER_INVALID | D-136 |
-| 4 | CashPaymentDateNotInFuturePolicy | PAYMENT_DATE_IN_FUTURE | D-169, D-266 |
-| 5 | CashPaymentDateWithinAdministrativeWindowPolicy | CASH_PAYMENT_DATE_TOO_OLD | D-266, D-270 |
-| 6 | CashPaymentBackdateReasonPolicy | CASH_PAYMENT_BACKDATE_REASON_REQUIRED | D-266, D-270 |
+| 4 | CashPaymentBackdateReasonLengthPolicy | CASH_PAYMENT_BACKDATE_REASON_INVALID | D-266 |
 
 ## Momento PRICE_VERSION
 
@@ -508,7 +514,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación REGISTER_PAYMENT
 
-- Validaciones (momentos): PAYMENT_REGISTRATION, CASH_PAYMENT_PREVIEW
+- Validaciones (momentos): PAYMENT_REGISTRATION, CASH_PAYMENT_DATING, CASH_PAYMENT_PREVIEW
 - Pre-procesamiento (en orden): IdempotencyKeyHandler
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —

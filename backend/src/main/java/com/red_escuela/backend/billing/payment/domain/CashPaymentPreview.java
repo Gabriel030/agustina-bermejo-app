@@ -6,10 +6,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
-public record CashPaymentPreview(List<CoveredInvoice> coveredInvoices, NonNegativeMoney unallocatedAfterwards, String fingerprint) {
+public record CashPaymentPreview(List<CoveredInvoice> coveredInvoices, List<CoveredInvoice> coveredByRemainingCredit, NonNegativeMoney unallocatedAfterwards,
+                                 String fingerprint) {
 
     public CashPaymentPreview {
         coveredInvoices = List.copyOf(coveredInvoices);
+        coveredByRemainingCredit = List.copyOf(coveredByRemainingCredit);
         Objects.requireNonNull(unallocatedAfterwards, "unallocatedAfterwards");
         Objects.requireNonNull(fingerprint, "fingerprint");
     }

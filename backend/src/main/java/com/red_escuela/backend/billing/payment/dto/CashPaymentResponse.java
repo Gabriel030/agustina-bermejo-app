@@ -8,11 +8,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record CashPaymentResponse(Long paymentId, Money amount, LocalDate paidOn, LocalDateTime registeredAt, List<AllocatedInvoiceResponse> allocatedInvoices,
-                                  Money unallocatedCredit) {
+                                  List<AllocatedInvoiceResponse> allocatedFromRemainingCredit, Money unallocatedCredit) {
 
     public static CashPaymentResponse from(CashPaymentRegistrationResult result) {
         return new CashPaymentResponse(result.paymentId(), result.amount().value(), result.paidOn(), result.registeredAt(),
                 result.allocatedInvoices().stream().map(invoice -> new AllocatedInvoiceResponse(invoice.invoiceId(), invoice.amount().value())).toList(),
+                result.allocatedFromRemainingCredit().stream().map(invoice -> new AllocatedInvoiceResponse(invoice.invoiceId(), invoice.amount().value())).toList(),
                 result.unallocatedCredit().value());
     }
 

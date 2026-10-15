@@ -53,6 +53,17 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     List<Invoice> findOpenIssuedInvoicesByAccountOrderedForAllocation(@Param("accountId") Long accountId);
 
+    @Query("""
+            select i.id from Invoice i
+            where i.studentCurrentAccountId = :accountId
+              and i.documentStatus = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.ISSUED
+              and i.paymentStatus in (com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PENDING,
+                                      com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.OVERDUE,
+                                      com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAYMENT_UNDER_REVIEW)
+            order by i.id asc
+            """)
+    List<Long> findOpenIssuedInvoiceIdsByAccountOrderedById(@Param("accountId") Long accountId);
+
     @Query("select i.studentCurrentAccountId from Invoice i where i.id = :invoiceId")
     Optional<Long> findStudentCurrentAccountIdByInvoiceId(@Param("invoiceId") Long invoiceId);
 

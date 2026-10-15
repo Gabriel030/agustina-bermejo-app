@@ -72,11 +72,13 @@ class CashPaymentPoliciesTest {
     @Test
     @Tag("D-266")
     void theReasonRespectsTheFiveHundredCharacterColumn() {
-        CashPaymentBackdateReasonPolicy policy = new CashPaymentBackdateReasonPolicy();
+        CashPaymentBackdateReasonLengthPolicy policy = new CashPaymentBackdateReasonLengthPolicy();
 
         assertThat(policy.evaluateRule(dated(TODAY.minusDays(6), true, "a".repeat(CashPaymentLimits.MAX_BACKDATE_REASON_LENGTH))).allowed()).isTrue();
-        assertThat(policy.evaluateRule(dated(TODAY.minusDays(6), true, "a".repeat(CashPaymentLimits.MAX_BACKDATE_REASON_LENGTH + 1))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(dated(TODAY.minusDays(6), true, "a".repeat(CashPaymentLimits.MAX_BACKDATE_REASON_LENGTH + 1))).code())
+                .isEqualTo("CASH_PAYMENT_BACKDATE_REASON_INVALID");
         assertThat(policy.evaluateRule(dated(TODAY, true, "a".repeat(CashPaymentLimits.MAX_BACKDATE_REASON_LENGTH + 1))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(dated(TODAY, false, null)).allowed()).isTrue();
     }
 
     @Test

@@ -23,24 +23,40 @@ class CashPaymentFingerprintTest {
         return new CashPaymentPreview.CoveredInvoice(invoiceId, "Cuota", LocalDate.of(2027, 3, 10), ars(amount));
     }
 
+    private static String fingerprint(long studentId, Currency currency, String amount, List<CashPaymentPreview.CoveredInvoice> byCash,
+                                      List<CashPaymentPreview.CoveredInvoice> byRemainingCredit, String leftover) {
+        return CashPaymentFingerprint.of(studentId, currency, ars(amount), byCash, byRemainingCredit, ars(leftover));
+    }
+
     @Test
     void theSameCoverageProducesTheSameFingerprintRegardlessOfLabels() {
-        String first = CashPaymentFingerprint.of(7L, Currency.ARS, List.of(covered(1, "80000.00")), ars("20000.00"));
-        String second = CashPaymentFingerprint.of(7L, Currency.ARS,
-                List.of(new CashPaymentPreview.CoveredInvoice(1L, "Otro concepto", LocalDate.of(2030, 1, 1), ars("80000.00"))), ars("20000.00"));
+        String first = fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00")), List.of(), "20000.00");
+        String second = fingerprint(7L, Currency.ARS, "100000.00",
+                List.of(new CashPaymentPreview.CoveredInvoice(1L, "Otro concepto", LocalDate.of(2030, 1, 1), ars("80000.00"))), List.of(), "20000.00");
 
         assertThat(first).isEqualTo(second).hasSize(64);
     }
 
     @Test
-    void anyChangeInTheCoveredInvoicesTheLeftoverTheStudentOrTheCurrencyChangesIt() {
-        String base = CashPaymentFingerprint.of(7L, Currency.ARS, List.of(covered(1, "80000.00")), ars("20000.00"));
+    void anyChangeInTheAmountTheCoverageTheLeftoverTheStudentOrTheCurrencyChangesIt() {
+        String base = fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00")), List.of(), "20000.00");
 
-        assertThat(CashPaymentFingerprint.of(7L, Currency.ARS, List.of(covered(2, "80000.00")), ars("20000.00"))).isNotEqualTo(base);
-        assertThat(CashPaymentFingerprint.of(7L, Currency.ARS, List.of(covered(1, "80000.00"), covered(2, "80000.00")), ars("20000.00"))).isNotEqualTo(base);
-        assertThat(CashPaymentFingerprint.of(7L, Currency.ARS, List.of(covered(1, "80000.00")), ars("20000.01"))).isNotEqualTo(base);
-        assertThat(CashPaymentFingerprint.of(8L, Currency.ARS, List.of(covered(1, "80000.00")), ars("20000.00"))).isNotEqualTo(base);
-        assertThat(CashPaymentFingerprint.of(7L, Currency.USD, List.of(covered(1, "80000.00")), ars("20000.00"))).isNotEqualTo(base);
-        assertThat(CashPaymentFingerprint.of(7L, Currency.ARS, List.of(), ars("100000.00"))).isNotEqualTo(base);
+        assertThat(fingerprint(7L, Currency.ARS, "90000.00", List.of(covered(1, "80000.00")), List.of(), "20000.00")).isNotEqualTo(base);
+        assertThat(fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(2, "80000.00")), List.of(), "20000.00")).isNotEqualTo(base);
+        assertThat(fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00"), covered(2, "80000.00")), List.of(), "20000.00")).isNotEqualTo(base);
+        assertThat(fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00")), List.of(), "20000.01")).isNotEqualTo(base);
+        assertThat(fingerprint(8L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00")), List.of(), "20000.00")).isNotEqualTo(base);
+        assertThat(fingerprint(7L, Currency.USD, "100000.00", List.of(covered(1, "80000.00")), List.of(), "20000.00")).isNotEqualTo(base);
+        assertThat(fingerprint(7L, Currency.ARS, "100000.00", List.of(), List.of(), "100000.00")).isNotEqualTo(base);
+    }
+
+    @Test
+    void theInvoiceCoveredByTheRemainingCreditPassIsPartOfTheFingerprint() {
+        String paidByCash = fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00")), List.of(), "20000.00");
+        String paidByRemainingCredit = fingerprint(7L, Currency.ARS, "100000.00", List.of(), List.of(covered(1, "80000.00")), "20000.00");
+        String withOnlineInvoice = fingerprint(7L, Currency.ARS, "100000.00", List.of(covered(1, "80000.00")), List.of(covered(2, "20000.00")), "0.00");
+
+        assertThat(paidByRemainingCredit).isNotEqualTo(paidByCash);
+        assertThat(withOnlineInvoice).isNotEqualTo(paidByCash);
     }
 }

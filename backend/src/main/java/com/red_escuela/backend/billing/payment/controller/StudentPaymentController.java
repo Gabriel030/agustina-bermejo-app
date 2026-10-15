@@ -43,8 +43,8 @@ public class StudentPaymentController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
-            @ApiResponse(responseCode = "400", description = "IDEMPOTENCY_KEY_INVALID, CASH_PAYMENT_AMOUNT_INVALID, CASH_PAYMENT_RECEIPT_NUMBER_INVALID, PAYMENT_DATE_IN_FUTURE, CASH_PAYMENT_DATE_TOO_OLD (más de 5 días atrás para el administrativo), CASH_PAYMENT_BACKDATE_REASON_REQUIRED (director, más de 5 días atrás sin motivo)"),
-            @ApiResponse(responseCode = "404", description = "El alumno no existe"),
+            @ApiResponse(responseCode = "400", description = "IDEMPOTENCY_KEY_INVALID, CASH_PAYMENT_AMOUNT_INVALID, CASH_PAYMENT_RECEIPT_NUMBER_INVALID, PAYMENT_DATE_IN_FUTURE, CASH_PAYMENT_DATE_TOO_OLD (más de 5 días atrás para el administrativo), CASH_PAYMENT_BACKDATE_REASON_REQUIRED (director, más de 5 días atrás sin motivo), CASH_PAYMENT_BACKDATE_REASON_INVALID (motivo de más de 500 caracteres)"),
+            @ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe"),
             @ApiResponse(responseCode = "409", description = "IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido) o CASH_PAYMENT_PREVIEW_OUTDATED (la cuenta cambió desde la vista previa: pedirla de nuevo)")})
     public CashPaymentResponse registerCashPayment(@PathVariable Long studentId, @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                    @Valid @RequestBody RegisterCashPaymentRequest request) {

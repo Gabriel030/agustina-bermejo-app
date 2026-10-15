@@ -31,6 +31,7 @@ class CashPaymentRejectionsTest {
             "PAYMENT_DATE_IN_FUTURE,PaymentDateInFutureException",
             "CASH_PAYMENT_DATE_TOO_OLD,CashPaymentDateTooOldException",
             "CASH_PAYMENT_BACKDATE_REASON_REQUIRED,CashPaymentBackdateReasonRequiredException",
+            "CASH_PAYMENT_BACKDATE_REASON_INVALID,CashPaymentBackdateReasonInvalidException",
             "CASH_PAYMENT_PREVIEW_OUTDATED,CashPaymentPreviewOutdatedException"})
     void everyViolationCodeMapsToItsOwnException(String code, String exceptionName) {
         RuntimeException rejection = CashPaymentRejections.rejectionOf(List.of(new PolicyViolation(code, "motivo")));

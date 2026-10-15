@@ -40,6 +40,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
     private static final Logger log = LoggerFactory.getLogger(RegisterCashPaymentOperation.class);
 
     private final PolicySet<CashPaymentCheck> registrationPolicies;
+    private final PolicySet<CashPaymentCheck> datingPolicies;
     private final PolicySet<CashPaymentPreviewCheck> previewPolicies;
     private final StudentExistenceLookup students;
     private final StudentCurrentAccountService accountService;
@@ -49,11 +50,13 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
     private final PaymentRepository payments;
     private final Clock clock;
 
-    public RegisterCashPaymentOperation(PolicySet<CashPaymentCheck> cashPaymentRegistrationPolicySet, PolicySet<CashPaymentPreviewCheck> cashPaymentPreviewPolicySet,
+    public RegisterCashPaymentOperation(PolicySet<CashPaymentCheck> cashPaymentRegistrationPolicySet, PolicySet<CashPaymentCheck> cashPaymentDatingPolicySet,
+                                        PolicySet<CashPaymentPreviewCheck> cashPaymentPreviewPolicySet,
                                         StudentExistenceLookup students, StudentCurrentAccountService accountService,
                                         CurrentAccountAllocationService allocationService, CashPaymentPlanner planner, PaymentGatewayRegistry gateways,
                                         PaymentRepository payments, Clock clock) {
         this.registrationPolicies = cashPaymentRegistrationPolicySet;
+        this.datingPolicies = cashPaymentDatingPolicySet;
         this.previewPolicies = cashPaymentPreviewPolicySet;
         this.students = students;
         this.accountService = accountService;
@@ -76,7 +79,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
 
     @Override
     public List<String> validationMoments() {
-        return List.of(registrationPolicies.moment(), previewPolicies.moment());
+        return List.of(registrationPolicies.moment(), datingPolicies.moment(), previewPolicies.moment());
     }
 
     @Override
@@ -86,20 +89,22 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
 
     @Override
     public void requireValidContext(RegisterCashPaymentCommand command) {
-        LocalDate today = LocalDate.now(clock);
-        registrationPolicies.evaluateRulesUntilFirstViolation(new CashPaymentCheck(command.amount(), paidOnOf(command, today), today, command.requestedByDirector(),
+        registrationPolicies.evaluateRulesUntilFirstViolation(new CashPaymentCheck(command.amount(), null, null, command.requestedByDirector(),
                 command.backdateReason(), command.receiptNumber(), command.idempotencyKey())).throwIfDenied(CashPaymentRejections::rejectionOf);
-        students.requireExistingStudent(command.studentId());
     }
 
     @Override
     public CashPaymentRegistrationResult processOperation(RegisterCashPaymentCommand command) {
         LocalDate today = LocalDate.now(clock);
         LocalDate paidOn = paidOnOf(command, today);
+        students.requireExistingStudent(command.studentId());
+        datingPolicies.evaluateRulesUntilFirstViolation(new CashPaymentCheck(command.amount(), paidOn, today, command.requestedByDirector(),
+                command.backdateReason(), command.receiptNumber(), command.idempotencyKey())).throwIfDenied(CashPaymentRejections::rejectionOf);
         Currency currency = command.amount().currency();
         StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(command.studentId(), currency);
         gateways.findGatewayDeclaring(PaymentGatewayCode.MANUAL, currency, Set.of());
         NonNegativeMoney amount = NonNegativeMoney.of(command.amount());
+        planner.lockOpenInvoicesOfLockedAccount(account.getId());
         CashPaymentPlanner.CashPaymentCandidates candidates = planner.findCandidatesOfAccount(account.getId());
         CashPaymentPreview current = planner.previewCashPayment(command.studentId(), currency, candidates, account.getUnallocatedCreditAmount(), amount);
         previewPolicies.evaluateRulesUntilFirstViolation(new CashPaymentPreviewCheck(command.previewFingerprint(), current.fingerprint()))
@@ -107,22 +112,27 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
         Payment payment = payments.save(Payment.registerApprovedCashPayment(account, amount, paidOn, new CashPaymentDetails(textOrNull(command.receiptNumber())),
                 command.idempotencyKey(), command.actor(), textOrNull(command.backdateReason())));
         accountService.recordPaymentReceivedCredit(account, payment.getId(), amount, paidOn, "Pago en efectivo " + payment.getId());
-        AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditToOldestInvoicesSkipping(account, today, command.actor(),
-                candidates.skippedInvoiceIds());
-        List<CashPaymentRegistrationResult.AllocatedInvoice> allocatedInvoices = IntStream.range(0, allocated.allocations().size())
-                .mapToObj(index -> new CashPaymentRegistrationResult.AllocatedInvoice(allocated.settledInvoices().get(index).getId(),
-                        allocated.allocations().get(index).getAmount()))
-                .toList();
-        log.info("Pago en efectivo registrado: pago={}, cuenta={}, monto={}, paidOn={}, facturas={}, actor={}", payment.getId(), account.getId(),
+        List<CashPaymentRegistrationResult.AllocatedInvoice> allocatedInvoices = allocatedInvoicesOf(allocationService
+                .allocateAccountCreditToOldestInvoicesSkipping(account, today, command.actor(), candidates.skippedInvoiceIds()));
+        List<CashPaymentRegistrationResult.AllocatedInvoice> allocatedFromRemainingCredit = allocatedInvoicesOf(allocationService
+                .allocateAccountCreditToOldestInvoices(account, today, command.actor()));
+        log.info("Pago en efectivo registrado: pago={}, cuenta={}, monto={}, paidOn={}, facturas={}, facturasConSaldoRestante={}, actor={}", payment.getId(), account.getId(),
                 amount.value().amount(), paidOn, allocatedInvoices.stream().map(CashPaymentRegistrationResult.AllocatedInvoice::invoiceId).toList(),
-                command.actor().personId());
+                allocatedFromRemainingCredit.stream().map(CashPaymentRegistrationResult.AllocatedInvoice::invoiceId).toList(), command.actor().personId());
         return new CashPaymentRegistrationResult(payment.getId(), account.getId(), amount, paidOn, payment.getRegisteredAt(), allocatedInvoices,
-                account.getUnallocatedCreditAmount());
+                allocatedFromRemainingCredit, account.getUnallocatedCreditAmount());
     }
 
     @Override
     public List<? extends DomainEvent> domainEventsOf(RegisterCashPaymentCommand command, CashPaymentRegistrationResult result) {
         return List.of(PaymentApprovedEvent.approvedFor(result.paymentId(), result.studentCurrentAccountId(), result.paidOn(), result.amount()));
+    }
+
+    private static List<CashPaymentRegistrationResult.AllocatedInvoice> allocatedInvoicesOf(AccountCreditAllocationResult allocated) {
+        return IntStream.range(0, allocated.allocations().size())
+                .mapToObj(index -> new CashPaymentRegistrationResult.AllocatedInvoice(allocated.settledInvoices().get(index).getId(),
+                        allocated.allocations().get(index).getAmount()))
+                .toList();
     }
 
     private static LocalDate paidOnOf(RegisterCashPaymentCommand command, LocalDate today) {

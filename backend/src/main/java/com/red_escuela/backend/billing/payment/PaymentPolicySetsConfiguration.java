@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.payment;
 
 import com.red_escuela.backend.billing.payment.policy.CashPaymentAmountPolicy;
+import com.red_escuela.backend.billing.payment.policy.CashPaymentBackdateReasonLengthPolicy;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentBackdateReasonPolicy;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentCheck;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentDateNotInFuturePolicy;
@@ -37,7 +38,12 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<CashPaymentCheck> cashPaymentRegistrationPolicySet() {
         return PolicySet.named("PAYMENT_REGISTRATION", List.of(new IdempotencyKeyFormatPolicy(), new CashPaymentAmountPolicy(),
-                new CashPaymentReceiptNumberPolicy(), new CashPaymentDateNotInFuturePolicy(), new CashPaymentDateWithinAdministrativeWindowPolicy(),
+                new CashPaymentReceiptNumberPolicy(), new CashPaymentBackdateReasonLengthPolicy()));
+    }
+
+    @Bean
+    public PolicySet<CashPaymentCheck> cashPaymentDatingPolicySet() {
+        return PolicySet.named("CASH_PAYMENT_DATING", List.of(new CashPaymentDateNotInFuturePolicy(), new CashPaymentDateWithinAdministrativeWindowPolicy(),
                 new CashPaymentBackdateReasonPolicy()));
     }
 

@@ -15,11 +15,17 @@ public final class CashPaymentFingerprint {
     private CashPaymentFingerprint() {
     }
 
-    public static String of(Long studentId, Currency currency, List<CashPaymentPreview.CoveredInvoice> coveredInvoices, NonNegativeMoney unallocatedAfterwards) {
-        String covered = coveredInvoices.stream()
-                .map(invoice -> invoice.invoiceId() + "=" + invoice.amount().value().amount().toPlainString())
-                .collect(Collectors.joining(","));
-        String canonical = studentId + "|" + currency + "|" + covered + "|" + unallocatedAfterwards.value().amount().toPlainString();
+    public static String of(Long studentId, Currency currency, NonNegativeMoney amount, List<CashPaymentPreview.CoveredInvoice> coveredInvoices,
+                            List<CashPaymentPreview.CoveredInvoice> coveredByRemainingCredit, NonNegativeMoney unallocatedAfterwards) {
+        return digestOf(studentId + "|" + currency + "|" + amount.value().amount().toPlainString() + "|" + describe(coveredInvoices) + "|"
+                + describe(coveredByRemainingCredit) + "|" + unallocatedAfterwards.value().amount().toPlainString());
+    }
+
+    private static String describe(List<CashPaymentPreview.CoveredInvoice> invoices) {
+        return invoices.stream().map(invoice -> invoice.invoiceId() + "=" + invoice.amount().value().amount().toPlainString()).collect(Collectors.joining(","));
+    }
+
+    private static String digestOf(String canonical) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canonical.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
