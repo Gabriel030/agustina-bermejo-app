@@ -334,6 +334,15 @@ public final class BillingInvariantChecker {
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
                     where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s)
                 """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"))));
+        found.addAll(violations("I-11c two debit notes of the same origin and month without a reversal of the payment between them", """
+                select 'origin ' || a.origin_invoice_id || ' month ' || date_trunc('month', a.period_start)::date
+                from late_fee_charge a join late_fee_charge b on b.origin_invoice_id = a.origin_invoice_id and b.period_start > a.period_start
+                  and date_trunc('month', b.period_start) = date_trunc('month', a.period_start)
+                where b.debit_note_id > ? and not exists (
+                    select 1 from payment_allocation r
+                    where r.invoice_id = a.origin_invoice_id and r.reverses_allocation_id is not null and r.allocated_on >= a.period_end
+                      and r.allocated_on <= (select d.issue_date from invoice d where d.id = b.debit_note_id))
+                """, baselineInvoiceId));
         found.addAll(violations("I-11d late fee over a debit note or over a charge that does not accrue", """
                 select 'debit note ' || c.debit_note_id || ' origin ' || c.origin_invoice_id
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
@@ -359,6 +368,41 @@ public final class BillingInvariantChecker {
                     where sc.invoice_id = o.id and sc.status_kind = 'PAYMENT' and sc.to_status = 'PAYMENT_UNDER_REVIEW')
                 """, baselineInvoiceId));
         return found;
+    }
+
+    public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {
+        String cutoff = """
+                case when o.payment_status = 'PAID' then (
+                    select a.effective_date from payment_allocation a
+                    where a.invoice_id = o.id and a.reverses_allocation_id is null
+                      and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id))
+                else (date_trunc('month', ?::date) - interval '1 day')::date end""";
+        return violations("I-11h a chargeable day of the origin is not covered by any debit note", """
+                select 'origin ' || c.origin_invoice_id || ' day ' || g.day::date
+                from (select o.id as origin_invoice_id, o.due_date as due_date, %1$s as cutoff,
+                             (select min(v.id) from configuration_version v where v.scope = 'LATE_PAYMENT') as late_payment_version_id
+                      from invoice o
+                      where o.id > ? and o.document_type = 'INVOICE' and o.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
+                        and o.payment_status in ('PAID', 'OVERDUE')) c
+                cross join lateral generate_series(c.due_date + 1, c.cutoff, interval '1 day') g(day)
+                where c.cutoff > c.due_date + coalesce((%2$s ->> 'gracePeriodDays')::int, 0)
+                  and coalesce(%3$s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %4$s
+                  and not exists (select 1 from late_fee_charge x where x.origin_invoice_id = c.origin_invoice_id and g.day::date between x.period_start and x.period_end)
+                """.formatted(cutoff, termsOn("c.due_date"), termsOn("g.day::date"), frozenOn("g.day::date")), today, baselineInvoiceId);
+    }
+
+    public void assertLateFeeInvariantsHold() {
+        List<String> found = lateFeesRespectTheRedefinedI11();
+        if (!found.isEmpty()) {
+            throw new AssertionError("Billing invariants violated:\n" + String.join("\n", found));
+        }
+    }
+
+    public void assertLateFeesAreCompleteAt(java.time.LocalDate today) {
+        List<String> found = lateFeesCoverEveryChargeableDayAt(today);
+        if (!found.isEmpty()) {
+            throw new AssertionError("Billing invariants violated:\n" + String.join("\n", found));
+        }
     }
 
     public void assertAllBillingInvariantsHold() {
