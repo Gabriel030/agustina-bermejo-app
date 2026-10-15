@@ -6,7 +6,7 @@ export const AMOUNT_ERROR_MESSAGES = {
   TOO_MANY_DECIMALS: 'El monto admite hasta 2 decimales.',
   TOO_LARGE: 'El monto supera el máximo permitido (9.999.999.999,99).',
   INVALID: 'El monto no es válido. Ejemplo: 1.500,50',
-  AMBIGUOUS: '¿Quisiste decir 0,50 o 500? Escribí el monto con coma decimal.',
+  AMBIGUOUS: 'Escribí el monto sin ceros a la izquierda y con coma decimal. Ejemplo: 0,50.',
 };
 
 function splitIntegerAndFraction(text) {

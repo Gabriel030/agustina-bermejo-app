@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
@@ -501,7 +501,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     await user.type(within(dialog).getByLabelText('Monto'), '0.500');
     await user.click(within(dialog).getByRole('button', { name: 'Revisar cobro' }));
 
-    expect(await within(dialog).findByText(/¿Quisiste decir 0,50 o 500\?/)).toBeInTheDocument();
+    expect(await within(dialog).findByText(/Escribí el monto sin ceros a la izquierda/)).toBeInTheDocument();
   });
 
   async function failConfirmWithNetworkError(user) {
@@ -558,11 +558,75 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     await fillAmountAndReview(user, dialog);
     const confirm = await within(dialog).findByRole('button', { name: 'Confirmar cobro' });
 
-    fireEvent.click(confirm);
-    fireEvent.click(confirm);
+    act(() => {
+      confirm.click();
+      confirm.click();
+    });
 
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(registers).toBe(1);
+  });
+
+  it('refreshes the student account after a network error without closing the dialog', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const { overviewCalls } = await failConfirmWithNetworkError(user);
+
+    await vi.waitFor(() => expect(overviewCalls()).toBeGreaterThan(1));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('blocks charging while the student account reloads after an unknown outcome', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const { dialog } = await failConfirmWithNetworkError(user);
+    server.use(
+      http.get(`${API}/students/2/billing-overview`, async () => {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        return HttpResponse.json([]);
+      }),
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Cerrar y revisar estado de cuenta' }));
+
+    const entry = await screen.findByRole('button', { name: /Cobrar en efectivo/ });
+    expect(entry).toBeDisabled();
+    await vi.waitFor(() => expect(entry).toBeEnabled(), { timeout: 3000 });
+  });
+
+  it('blocks charging with a visible retry when the student account cannot be reloaded', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const { dialog } = await failConfirmWithNetworkError(user);
+    server.use(http.get(`${API}/students/2/billing-overview`, () => HttpResponse.json({}, { status: 500 })));
+    await user.click(within(dialog).getByRole('button', { name: 'Cerrar y revisar estado de cuenta' }));
+
+    expect(await screen.findByText(/No pudimos actualizar la deuda del alumno/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cobrar en efectivo/ })).toBeDisabled();
+    expect(screen.queryByText('Deuda')).not.toBeInTheDocument();
+  });
+
+  it('asks for the preview once when the review button is tapped twice', async () => {
+    let previews = 0;
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, async () => {
+        previews += 1;
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        return HttpResponse.json(previewOf());
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await user.type(within(dialog).getByLabelText('Monto'), '52800');
+    const review = within(dialog).getByRole('button', { name: 'Revisar cobro' });
+
+    act(() => {
+      review.click();
+      review.click();
+    });
+
+    await within(dialog).findByText('Cuota mensual · sep 2026');
+    expect(previews).toBe(1);
   });
 
   it('lets the director backdate only with a reason, shown just when the date needs it', async () => {

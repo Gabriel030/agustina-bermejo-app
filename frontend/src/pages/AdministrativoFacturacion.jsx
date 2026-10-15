@@ -217,10 +217,17 @@ function TabFacturacion() {
   const [showCashPayment, setShowCashPayment] = useState(false);
 
   const { data: alumnos, isLoading: loadingAlumnos } = useAlumnos({ search: searchDebounced });
-  const { data: overview, isLoading: loadingOverview } = useAdminBillingOverview(selectedStudent?.id);
+  const {
+    data: overview,
+    isLoading: loadingOverview,
+    isFetching: fetchingOverview,
+    isError: overviewFailed,
+    refetch: refetchOverview,
+  } = useAdminBillingOverview(selectedStudent?.id);
+  const debtIsCurrent = !fetchingOverview && !overviewFailed;
 
   const showResults = searchDebounced.length >= 2;
-  const debt = outstandingDebtOf(overview);
+  const debt = debtIsCurrent ? outstandingDebtOf(overview) : null;
 
   function handleSelect(alumno) {
     setSelectedStudent(alumno);
@@ -246,7 +253,7 @@ function TabFacturacion() {
                 </div>
               )}
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={loadingOverview}>
+                <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={!debtIsCurrent}>
                   <CreditCard size={14} className="mr-1.5" />
                   Cobrar en efectivo
                 </Button>
@@ -293,6 +300,15 @@ function TabFacturacion() {
             </div>
           )}
         </GlassCard>
+      )}
+
+      {selectedStudent && overviewFailed && (
+        <div role="alert" className="flex flex-col gap-2 rounded-xl bg-danger-bg px-4 py-3 text-sm text-danger sm:flex-row sm:items-center sm:justify-between">
+          <span>No pudimos actualizar la deuda del alumno. Hasta recargarla no se puede cobrar.</span>
+          <Button variant="outline" onClick={() => refetchOverview()}>
+            Reintentar
+          </Button>
+        </div>
       )}
 
       {selectedStudent && showCashPayment && (
