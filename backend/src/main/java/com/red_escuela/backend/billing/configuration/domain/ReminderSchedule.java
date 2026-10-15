@@ -31,4 +31,8 @@ public record ReminderSchedule(boolean followsGroupSchedule, List<ReminderNotice
     public List<ReminderNotice> orderedNotices() {
         return notices.stream().sorted(TIMELINE_ORDER).toList();
     }
+
+    public ReminderSchedule sortedByTimeline() {
+        return new ReminderSchedule(followsGroupSchedule, orderedNotices(), sendingOverrides);
+    }
 }
