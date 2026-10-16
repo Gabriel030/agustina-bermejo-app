@@ -41,6 +41,9 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     @Query("select e.id from ProgramEnrollment e where e.program.id = :programId and e.status in :statuses order by e.id")
     List<Long> findIdsByProgramIdAndStatusIn(@Param("programId") Long programId, @Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
 
+    @Query("select count(e) from ProgramEnrollment e where e.program.id = :programId and e.status in :statuses")
+    long countByProgramIdAndStatusIn(@Param("programId") Long programId, @Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
+
     @Query("select distinct e.student.id from ProgramEnrollment e where e.status in :statuses")
     List<Long> findDistinctStudentIdsByStatusIn(@Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
 
