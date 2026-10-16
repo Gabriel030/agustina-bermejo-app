@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.service;
 
+import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
@@ -11,11 +12,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class InvoiceViewLoader {
@@ -23,12 +26,14 @@ public class InvoiceViewLoader {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final PaymentAllocationRepository paymentAllocationRepository;
+    private final InvoicePaymentShareSource paymentShareSource;
 
     public InvoiceViewLoader(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                             PaymentAllocationRepository paymentAllocationRepository) {
+                             PaymentAllocationRepository paymentAllocationRepository, InvoicePaymentShareSource paymentShareSource) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.paymentAllocationRepository = paymentAllocationRepository;
+        this.paymentShareSource = paymentShareSource;
     }
 
     @Transactional(readOnly = true)
@@ -47,13 +52,23 @@ public class InvoiceViewLoader {
         Map<Long, CourseEnrollment> courses = courseEnrollmentRepository.findAllById(invoices.stream()
                 .flatMap(invoice -> invoice.findCourseEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(CourseEnrollment::getId, Function.identity()));
-        Map<Long, List<PaymentAllocation>> allocations = paymentAllocationRepository
-                .findByInvoiceIdInWithPayments(invoices.stream().map(Invoice::getId).toList()).stream()
-                .collect(Collectors.groupingBy(allocation -> allocation.getInvoice().getId()));
+        List<Long> invoiceIds = invoices.stream().map(Invoice::getId).toList();
+        Map<Long, List<InvoicePaymentShare>> shares = new HashMap<>(paymentShareSource.findCurrentSharesByInvoiceId(invoiceIds));
+        paymentAllocationRepository.findByInvoiceIdInWithPayments(invoiceIds)
+                .forEach(allocation -> shares.merge(allocation.getInvoice().getId(), List.of(legacyShareOf(allocation)),
+                        (current, legacy) -> Stream.concat(current.stream(), legacy.stream()).toList()));
         return invoices.stream()
                 .map(invoice -> new InvoiceView(invoice, invoice.findProgramEnrollmentId().map(programs::get).orElse(null),
-                        invoice.findCourseEnrollmentId().map(courses::get).orElse(null), allocations.getOrDefault(invoice.getId(), List.of())))
+                        invoice.findCourseEnrollmentId().map(courses::get).orElse(null), shares.getOrDefault(invoice.getId(), List.of())))
                 .toList();
+    }
+
+    private static InvoicePaymentShare legacyShareOf(PaymentAllocation allocation) {
+        Payment payment = allocation.getPayment();
+        return new InvoicePaymentShare(payment.getId(), payment.getStatus().name(), payment.getMethod().name(),
+                payment.getCardType() == null ? null : payment.getCardType().name(), payment.getCardInstallments(),
+                allocation.getAmountApplied(), payment.getAmount(), payment.getPaidAt(), payment.getExternalReference(), payment.getNotes(),
+                payment.getRegisteredBy().getName() + " " + payment.getRegisteredBy().getLastname());
     }
 
     @Transactional(readOnly = true)

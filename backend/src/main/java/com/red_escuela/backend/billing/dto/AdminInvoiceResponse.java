@@ -1,10 +1,9 @@
 package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
+import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
-import com.red_escuela.backend.billing.entity.PaymentStatus;
 import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;
@@ -30,10 +29,10 @@ public record AdminInvoiceResponse(
         Map<Long, Long> receiptIdByPaymentId = receipts.stream()
                 .filter(receipt -> receipt.getPaymentId() != null)
                 .collect(Collectors.toMap(receipt -> receipt.getPaymentId(), BankTransferReceipt::getId, (first, second) -> first));
-        List<AdminInvoicePaymentResponse> payments = view.allocations().stream()
-                .filter(allocation -> allocation.getPayment().getStatus() == PaymentStatus.CONFIRMED)
-                .sorted(Comparator.comparing((PaymentAllocation a) -> a.getPayment().getPaidAt()).reversed())
-                .map(allocation -> AdminInvoicePaymentResponse.from(allocation, receiptIdByPaymentId))
+        List<AdminInvoicePaymentResponse> payments = view.paymentShares().stream()
+                .filter(InvoicePaymentShare::isConfirmed)
+                .sorted(Comparator.comparing((InvoicePaymentShare share) -> share.paidAt()).reversed())
+                .map(share -> AdminInvoicePaymentResponse.from(share, receiptIdByPaymentId))
                 .toList();
         return new AdminInvoiceResponse(
                 base.id(), base.invoiceNumber(), base.invoiceType(), base.documentType(), base.documentStatus(),

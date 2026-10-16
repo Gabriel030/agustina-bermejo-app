@@ -56,7 +56,7 @@ public class PaymentGatewayRegistry {
         return gateway;
     }
 
-    private boolean isEnabledByConfiguration(PaymentGatewayCode code) {
+    public boolean isEnabledByConfiguration(PaymentGatewayCode code) {
         return code == PaymentGatewayCode.MERCADO_PAGO && configRepository.findFirstByOrderByIdAsc().map(PaymentGatewayConfig::isMpEnabled).orElse(false);
     }
 }
