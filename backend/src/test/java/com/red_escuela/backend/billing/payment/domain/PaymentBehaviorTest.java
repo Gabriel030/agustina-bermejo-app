@@ -185,4 +185,31 @@ class PaymentBehaviorTest {
         assertThat(card.getGatewayRawStatusDetail()).isEqualTo("pending_waiting_payment");
         assertThat(card.statusChanges().get(1).getGatewayRawStatus()).isNull();
     }
+
+    @Test
+    @Tag("D-256")
+    void anApprovedGatewayPaymentIsBornApprovedWithTheRawStatusAndTheGatewayReference() {
+        Payment card = Payment.registerApprovedGatewayPayment(arsAccount(), ars("5000.00"), PaymentGatewayCode.MERCADO_PAGO,
+                new CardPaymentDetails(CardPaymentType.DEBIT, 1, null), "mp-77", new GatewayRawStatus("approved", "accredited"), PAID_ON, ACTOR);
+
+        assertThat(card.getStatus()).isEqualTo(PaymentStatus.APPROVED);
+        assertThat(card.getGateway()).isEqualTo(PaymentGatewayCode.MERCADO_PAGO);
+        assertThat(card.getMethodType()).isEqualTo(PaymentMethodType.CARD);
+        assertThat(card.getGatewayPaymentId()).isEqualTo("mp-77");
+        assertThat(card.getGatewayRawStatus()).isEqualTo("approved");
+        assertThat(card.getApprovedAmount()).isEqualTo(ars("5000.00"));
+        assertThat(card.getPaidOn()).isEqualTo(PAID_ON);
+        assertThat(card.statusChanges()).singleElement().extracting(PaymentStatusChange::getEvent).isEqualTo(PaymentEvent.GATEWAY_PAYMENT_REGISTERED_AS_APPROVED.name());
+    }
+
+    @Test
+    @Tag("D-256")
+    void aGatewayPaymentCannotBeRegisteredThroughTheManualGatewayNorWithoutItsReference() {
+        CardPaymentDetails details = new CardPaymentDetails(CardPaymentType.CREDIT, 1, null);
+
+        assertThatThrownBy(() -> Payment.registerApprovedGatewayPayment(arsAccount(), ars("5000.00"), PaymentGatewayCode.MANUAL, details, "x",
+                GatewayRawStatus.none(), PAID_ON, ACTOR)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Payment.registerApprovedGatewayPayment(arsAccount(), ars("5000.00"), PaymentGatewayCode.MERCADO_PAGO, details, null,
+                GatewayRawStatus.none(), PAID_ON, ACTOR)).isInstanceOf(NullPointerException.class);
+    }
 }

@@ -1,10 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentreceipt;
 
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.entity.Payment;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
@@ -20,7 +16,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 @UseCase
 public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCase {
@@ -46,10 +41,8 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         receipt.approve(decidedBy);
 
         Invoice invoice = receipt.getInvoice();
-        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
-                PaymentMethod.TRANSFER, false, null, null, null, null), decidedBy);
-        receipt.setPayment(payment);
+        Long paymentId = registerPaymentUseCase.registerApprovedBankTransferPayment(invoice.getId(), paymentReceiptFinder.reviewerIdOf(receipt));
+        paymentReceiptFinder.linkApprovedPayment(receipt, paymentId);
 
         if (invoice.getPaymentStatus() != InvoicePaymentStatus.PAID) {
             receipt.markAsAppliedToOlderDebt();

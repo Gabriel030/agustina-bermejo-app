@@ -17,4 +17,12 @@ public class PaymentReceiptFinder {
     public BankTransferReceipt findOrThrow(Long id) {
         return bankTransferReceiptRepository.findById(id).orElseThrow(() -> new PaymentReceiptNotFoundException(id));
     }
+
+    public Long reviewerIdOf(BankTransferReceipt receipt) {
+        return receipt.getReviewedBy().getId();
+    }
+
+    public void linkApprovedPayment(BankTransferReceipt receipt, Long paymentId) {
+        receipt.setPaymentId(paymentId);
+    }
 }

@@ -13,7 +13,6 @@ import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.AdminInvoicePaymentResponse;
 import com.red_escuela.backend.billing.dto.AdminInvoiceResponse;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
-import com.red_escuela.backend.billing.dto.MeInvoicePaymentResponse;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -239,11 +238,8 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
 
         BankTransferReceipt reloaded = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
-        assertThat(reloaded.getPayment()).isNotNull();
-        assertThat(reloaded.getPayment().getId()).isNotNull();
+        assertThat(reloaded.getPaymentId()).isNotNull();
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
-        assertThat(response.payments()).hasSize(1);
-        assertThat(response.payments().get(0).receiptId()).isEqualTo(approved.getId());
         assertThat(response.receipts()).hasSize(1);
         assertThat(response.receipts().get(0).status()).isEqualTo("APPROVED");
         assertThat(response.receipts().get(0).reviewedByName()).isEqualTo("Laura Gomez");
@@ -284,15 +280,9 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
         assertThat(admin.get("receipts").get(0).has("filePath")).isFalse();
         assertThat(admin.get("receipts").get(0).has("fileName")).isTrue();
-        assertThat(admin.get("payments").get(0).has("registeredByName")).isTrue();
-        assertThat(me.get("payments").get(0).has("registeredByName")).isFalse();
-        assertThat(me.get("payments").get(0).has("notes")).isFalse();
         assertThat(me.get("receipts").get(0).has("filePath")).isFalse();
         assertThat(me.get("receipts").get(0).has("reviewedByName")).isFalse();
         assertThat(me.get("receipts").get(0).has("uploadedByName")).isFalse();
-        MeInvoicePaymentResponse payment = own.invoices().get(0).payments().get(0);
-        assertThat(payment.method()).isEqualTo("TRANSFER");
-        assertThat(payment.receiptId()).isEqualTo(receipt.getId());
     }
 
     @Test

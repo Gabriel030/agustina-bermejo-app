@@ -6,7 +6,7 @@ import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.entity.CardType;
+import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
@@ -55,12 +55,12 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
         return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments(), toCardType(payment.getPaymentTypeId())));
     }
 
-    static CardType toCardType(String paymentTypeId) {
+    static CardPaymentType toCardType(String paymentTypeId) {
         if ("credit_card".equals(paymentTypeId)) {
-            return CardType.CREDIT;
+            return CardPaymentType.CREDIT;
         }
         if ("debit_card".equals(paymentTypeId)) {
-            return CardType.DEBIT;
+            return CardPaymentType.DEBIT;
         }
         return null;
     }

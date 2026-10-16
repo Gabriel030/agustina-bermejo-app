@@ -53,9 +53,8 @@ public class BankTransferReceipt {
     @JoinColumn(name = "uploaded_by_id")
     private Person uploadedBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id")
-    private Payment payment;
+    @Column(name = "payment_id")
+    private Long paymentId;
 
     @PrePersist
     void onCreate() {

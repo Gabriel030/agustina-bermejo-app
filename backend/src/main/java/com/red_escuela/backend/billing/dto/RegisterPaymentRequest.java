@@ -14,5 +14,11 @@ public record RegisterPaymentRequest(
         String rejectionReason,
         String externalReference,
         Integer cardInstallments,
-        String notes) {
+        String notes,
+        String cardType) {
+
+    public RegisterPaymentRequest(List<PaymentAllocationRequest> allocations, PaymentMethod method, boolean rejected, String rejectionReason,
+                                  String externalReference, Integer cardInstallments, String notes) {
+        this(allocations, method, rejected, rejectionReason, externalReference, cardInstallments, notes, null);
+    }
 }
