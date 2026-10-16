@@ -2,10 +2,6 @@ package com.red_escuela.backend.billing.support;
 
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
-import com.red_escuela.backend.billing.entity.Payment;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.ChargeKey;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -19,7 +15,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
-import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
@@ -86,25 +81,23 @@ public final class BillingTestFixtures {
         return inTransaction(() -> payInTransaction(reload(invoice), effectiveDate, allocatedOn));
     }
 
+    public static Long registerApprovedGatewayPayment(Long invoiceId, Money amount) {
+        return bean(com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort.class).registerApprovedMercadoPagoPayment(
+                invoiceId, amount, 1, null, "mp-fixture-" + UUID.randomUUID());
+    }
+
+    public static Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId) {
+        return bean(com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort.class).registerApprovedBankTransferPayment(invoiceId, reviewerPersonId);
+    }
+
     private static Invoice payInTransaction(Invoice invoice, LocalDate effectiveDate, LocalDate paidOn) {
-        Long studentId = bean(InvoiceRepository.class).findOwnerStudentIdByInvoiceId(invoice.getId()).orElseThrow();
-        Student student = bean(com.red_escuela.backend.identity.repository.StudentRepository.class).findById(studentId).orElseThrow();
         Money amount = invoice.getAmounts().outstandingAmount().value();
-        Payment payment = new Payment();
-        payment.setAmount(amount);
-        payment.setMethod(PaymentMethod.CASH);
-        payment.setStatus(PaymentStatus.CONFIRMED);
-        payment.setRegisteredBy(student.getPerson());
-        payment.setPaidAt(LocalDateTime.now());
-        payment = bean(PaymentRepository.class).save(payment);
-        invoice.allocateFullInvoicePayment(NonNegativeMoney.of(amount), paidOn, ACTOR);
-        PaymentAllocation allocation = new PaymentAllocation();
-        allocation.setPayment(payment);
-        allocation.setInvoice(invoice);
-        allocation.setAmountApplied(amount);
-        payment.getAllocations().add(allocation);
         StudentCurrentAccountService accounts = bean(StudentCurrentAccountService.class);
         StudentCurrentAccount account = accounts.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
+        com.red_escuela.backend.billing.payment.domain.Payment payment = bean(com.red_escuela.backend.billing.payment.repository.PaymentRepository.class).save(
+                com.red_escuela.backend.billing.payment.domain.Payment.registerApprovedCashPayment(account, NonNegativeMoney.of(amount), paidOn,
+                        new com.red_escuela.backend.billing.payment.domain.CashPaymentDetails(null), UUID.randomUUID().toString(), ACTOR));
+        invoice.allocateFullInvoicePayment(NonNegativeMoney.of(amount), paidOn, ACTOR);
         com.red_escuela.backend.billing.account.domain.CurrentAccountEntry credit = accounts.recordPaymentReceivedCredit(account, payment.getId(),
                 NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
         bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).saveWithSources(

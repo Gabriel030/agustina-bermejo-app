@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationS
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.payment.domain.ApprovedPaymentRegistrationResult;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentFixtures;

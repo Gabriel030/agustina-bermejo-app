@@ -24,7 +24,6 @@ import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
-import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService;
@@ -102,7 +101,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
 
     @Autowired
-    private PaymentRepository legacyPaymentRepository;
+    private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -351,7 +350,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     private void mercadoPagoPays(Long invoiceId, long amount) {
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, legacyPaymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(registrationPort,
                 mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(amount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
         service.process("", "request-" + System.nanoTime(), "mp-" + System.nanoTime());

@@ -6,7 +6,7 @@ import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;

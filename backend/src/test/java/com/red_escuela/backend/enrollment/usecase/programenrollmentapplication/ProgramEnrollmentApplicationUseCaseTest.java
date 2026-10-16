@@ -25,8 +25,6 @@ import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplication
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -66,10 +64,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     private RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
 
     @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
-
-    @Autowired
-    private com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
+    private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -313,8 +308,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         String mpPaymentId = "mp-" + System.nanoTime();
-        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(invoiceRepository, legacyPaymentRepository,
-                registerPaymentUseCase,
+        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(registrationPort,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
                         new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
                 new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true));

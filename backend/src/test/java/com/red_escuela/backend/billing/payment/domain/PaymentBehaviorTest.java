@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.domain;
 
+import com.red_escuela.backend.billing.operation.CardPaymentType;
+
 import com.red_escuela.backend.billing.payment.exception.IllegalPaymentStatusTransitionException;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invoice.exception.StudentCurrentAccountCurrencyMismatchException;

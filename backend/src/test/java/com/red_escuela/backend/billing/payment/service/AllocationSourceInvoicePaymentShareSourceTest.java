@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.account.service.AllocationSourceQueryServ
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShares;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentFixtures;

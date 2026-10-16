@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.payment.domain.ApprovedPaymentRegistrationResult;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.operation.ApproveBankTransferReceiptCommand;
@@ -39,17 +39,21 @@ public class ApprovedPaymentRegistrationAdapter implements ApprovedPaymentRegist
     }
 
     @Override
+    public void lockMercadoPagoPaymentUntilTransactionEnds(String mercadoPagoPaymentId) {
+        payments.lockGatewayPaymentUntilTransactionEnds(mercadoPagoPaymentId);
+    }
+
+    @Override
     public boolean isMercadoPagoPaymentRegistered(String mercadoPagoPaymentId) {
         return payments.existsByGatewayAndGatewayPaymentId(PaymentGatewayCode.MERCADO_PAGO, mercadoPagoPaymentId);
     }
 
     @Override
-    public Long registerApprovedMercadoPagoPayment(Long reportedInvoiceId, Money amount, Integer installments, String cardType, String mercadoPagoPaymentId) {
+    public Long registerApprovedMercadoPagoPayment(Long reportedInvoiceId, Money amount, Integer installments, CardPaymentType cardType, String mercadoPagoPaymentId) {
         ReportedInvoiceLookup.ReportedInvoice invoice = invoices.findReportedInvoice(reportedInvoiceId);
         Set<Long> programAdmissionInvoiceIds = invoice.programAdmission() ? Set.of(reportedInvoiceId) : Set.of();
-        CardPaymentType type = cardType == null ? null : CardPaymentType.valueOf(cardType);
         RegisterGatewayPaymentCommand command = new RegisterGatewayPaymentCommand(invoice.studentCurrentAccountId(), reportedInvoiceId, programAdmissionInvoiceIds,
-                amount, PaymentGatewayCode.MERCADO_PAGO, new CardPaymentDetails(type, installments, null), mercadoPagoPaymentId,
+                amount, PaymentGatewayCode.MERCADO_PAGO, new CardPaymentDetails(cardType, installments, null), mercadoPagoPaymentId,
                 new GatewayRawStatus(APPROVED_RAW_STATUS, null), StatusChangeActor.ofPerson(invoice.ownerPersonId()));
         return pipeline.runOperation(gatewayOperation, command).resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("Unexpected authorization request " + requestId)).paymentId();
     }
