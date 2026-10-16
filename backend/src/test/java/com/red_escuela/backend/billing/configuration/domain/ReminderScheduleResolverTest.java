@@ -99,7 +99,6 @@ class ReminderScheduleResolverTest {
 
     @Test
     @Tag("D-391")
-    @Tag("D-403")
     void sixEmailNoticesInOneMonthAreAllResolvedWithoutAnyCap() {
         List<ReminderNotice> six = List.of(
                 emailNotice("a", -6), emailNotice("b", -5), emailNotice("c", -4), emailNotice("d", -3), emailNotice("e", -2), emailNotice("f", -1));
