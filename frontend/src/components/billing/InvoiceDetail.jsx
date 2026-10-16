@@ -31,7 +31,7 @@ function PaymentBlock({ payment }) {
   return (
     <div className="rounded-xl border border-border p-3 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="font-mono font-semibold tabular-nums text-ink">{formatMoney(payment.amountApplied)}</span>
+        <span className="font-semibold tabular-nums text-ink">{formatMoney(payment.amountApplied)}</span>
         <span className="text-ink-soft">
           {paymentMethodLabel(payment.method, payment.cardType, payment.cardInstallments)}
         </span>
@@ -71,7 +71,7 @@ function CreditNoteBlock({ creditNote }) {
   return (
     <div className="rounded-xl border border-border p-3 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="font-mono font-semibold tabular-nums text-ink">{formatMoney(creditNote.amount)}</span>
+        <span className="font-semibold tabular-nums text-ink">{formatMoney(creditNote.amount)}</span>
         <span className="text-ink-soft">Nota de crédito {creditNote.creditNoteNumber}</span>
       </div>
     </div>
@@ -140,7 +140,7 @@ export function InvoiceLinesBreakdown({ invoice }) {
       {(hasDiscount || lines.length > 1) && (
         <div className="flex justify-between gap-4 border-t border-border pt-1.5">
           <span className="font-medium text-ink-soft">Total</span>
-          <span className="font-mono font-semibold tabular-nums text-ink">{formatMoney(invoice.totalAmount)}</span>
+          <span className="font-semibold tabular-nums text-ink">{formatMoney(invoice.totalAmount)}</span>
         </div>
       )}
     </div>
