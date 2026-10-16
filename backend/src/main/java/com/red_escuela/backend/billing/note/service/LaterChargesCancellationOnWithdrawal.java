@@ -50,8 +50,8 @@ public class LaterChargesCancellationOnWithdrawal {
         if (facts.cause() != WithdrawalCause.VOLUNTARY) {
             return;
         }
+        invoiceAccess.findAccountIdsOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId()).stream().sorted().forEach(accountService::lockStudentCurrentAccount);
         List<Invoice> invoices = invoiceAccess.findInvoicesOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId());
-        invoices.stream().map(Invoice::getStudentCurrentAccountId).distinct().sorted().forEach(accountService::lockStudentCurrentAccount);
         Set<Long> withPendingRequest = invoiceAccess.findInvoiceIdsWithPendingAuthorizationRequest(invoices.stream().map(Invoice::getId).toList());
         WithdrawalCancellationPlan plan = new WithdrawalCancellationPlanner(YearMonth.from(facts.effectiveDate()), facts.registeredOn(), invoiceAccess::findTermStartOfTemplate)
                 .planFor(invoices, withPendingRequest);

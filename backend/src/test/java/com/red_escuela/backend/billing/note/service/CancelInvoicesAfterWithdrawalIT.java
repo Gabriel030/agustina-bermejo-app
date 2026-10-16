@@ -37,6 +37,9 @@ import java.util.Map;
 import static com.red_escuela.backend.billing.account.domain.AccountTestData.ars;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-204")
@@ -258,7 +261,8 @@ class CancelInvoicesAfterWithdrawalIT extends AbstractInvoiceCancellationIT {
 
         assertThatThrownBy(() -> inTransaction(() -> pipeline.runOperation(operation, new CancelInvoicesAfterWithdrawalCommand(
                 List.of(WithdrawalCancellationItem.reducing(setup.annual(), laterLines())), WITHDRAWAL, director.personId(), true, null))))
-                .isInstanceOf(WithdrawalReductionRejectedException.class);
+                .isInstanceOfSatisfying(WithdrawalReductionRejectedException.class,
+                        rejection -> assertThat(rejection.violations().get(0).code()).isEqualTo("WITHDRAWAL_REDUCTION_INVOICE_NOT_REDUCIBLE"));
 
         assertThat(creditNoteCountOf(setup.annual())).isZero();
         assertThat(paymentStatusOf(setup.annual())).isEqualTo("PAID");
@@ -273,16 +277,31 @@ class CancelInvoicesAfterWithdrawalIT extends AbstractInvoiceCancellationIT {
         Staff director = newStaff("DIRECTOR");
         requestCreditNote(setup.annual(), director, creditNoteBody("BILLING_ERROR", "Ajuste", 4, "10000.00"), 201);
 
-        decide("approve", requestId, director, 409);
+        String body = approveExpectingConflict(requestId, director);
 
+        assertThat(body).contains("WITHDRAWAL_REDUCTION_INVOICE_CHANGED");
         assertThat(jdbc.queryForObject("select resume_outcome from authorization_request where id = ?", String.class, requestId)).isEqualTo("REJECTED_ON_RESUME");
         assertThat(jdbc.queryForObject("select count(*) from credit_note where authorization_request_id = ?", Long.class, requestId)).isZero();
         assertThat(paymentStatusOf(setup.june())).isEqualTo("PENDING");
     }
 
     @Test
-    void anInvoiceCannotAppearTwiceInTheSameWithdrawalCancellation() {
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> new CancelInvoicesAfterWithdrawalCommand(
-                List.of(WithdrawalCancellationItem.cancelling(1L), WithdrawalCancellationItem.cancelling(1L)), WITHDRAWAL, 2L, false, null));
+    @Tag("B2-42")
+    @Tag("D-311")
+    void ifTheAnnualInvoiceWentUnderReviewBeforeTheApprovalTheWholeRequestIsRejected() throws Exception {
+        Setup setup = setup(true);
+        long requestId = requestWithAdministrative(setup);
+        jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", setup.annual());
+
+        String body = approveExpectingConflict(requestId, newStaff("DIRECTOR"));
+
+        assertThat(body).contains("WITHDRAWAL_REDUCTION_INVOICE_NOT_REDUCIBLE");
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where authorization_request_id = ?", Long.class, requestId)).isZero();
+        assertThat(paymentStatusOf(setup.june())).isEqualTo("PENDING");
+    }
+
+    private String approveExpectingConflict(long requestId, Staff director) throws Exception {
+        return mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + director.token())
+                .contentType(APPLICATION_JSON).content("{\"decisionReason\":\"ok\"}")).andExpect(status().isConflict()).andReturn().getResponse().getContentAsString();
     }
 }

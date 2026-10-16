@@ -64,6 +64,9 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     List<Long> findOpenIssuedInvoiceIdsByAccountOrderedById(@Param("accountId") Long accountId);
 
+    @Query("select distinct l.invoice.studentCurrentAccountId from InvoiceLine l where l.programEnrollmentId = :programEnrollmentId or l.courseEnrollmentId = :courseEnrollmentId")
+    List<Long> findAccountIdsOfEnrollment(@Param("programEnrollmentId") Long programEnrollmentId, @Param("courseEnrollmentId") Long courseEnrollmentId);
+
     @Query(value = """
             select distinct ari.invoice_id from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
             where ar.status = 'PENDING' and ari.invoice_id in (:invoiceIds)

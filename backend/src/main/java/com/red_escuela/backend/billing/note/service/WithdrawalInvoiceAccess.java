@@ -22,6 +22,10 @@ public class WithdrawalInvoiceAccess {
         this.termStarts = termStarts;
     }
 
+    public List<Long> findAccountIdsOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId) {
+        return invoiceQueries.findAccountIdsOfEnrollment(programEnrollmentId, courseEnrollmentId);
+    }
+
     public List<Invoice> findInvoicesOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId) {
         return invoiceQueries.findInvoicesOfEnrollment(programEnrollmentId, courseEnrollmentId);
     }
