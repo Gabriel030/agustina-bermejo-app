@@ -9,8 +9,7 @@ public final class ReminderScheduleResolver {
     }
 
     public static ResolvedReminderSchedule resolve(Optional<ReminderScheduleVersion> exception, Optional<ReminderScheduleVersion> group,
-                                                   CollectionReminderSettings globalSettings, Long globalSettingsVersionId,
-                                                   Optional<ReminderMilestoneDates> dates) {
+                                                   CollectionReminderSettings globalSettings, Long globalSettingsVersionId) {
         Optional<ReminderScheduleVersion> activeException = exception.filter(version -> !version.schedule().followsGroupSchedule());
         CollectionReminderSettings groupSettings = group.map(version -> version.schedule().sendingOverrides().overlayOn(globalSettings)).orElse(globalSettings);
         CollectionReminderSettings settings = activeException.map(version -> version.schedule().sendingOverrides().overlayOn(groupSettings)).orElse(groupSettings);
@@ -19,9 +18,8 @@ public final class ReminderScheduleResolver {
         Optional<ReminderScheduleVersion> chosen = activeException.isPresent() ? activeException : group;
         ReminderSchedule schedule = chosen.map(ReminderScheduleVersion::schedule).orElseGet(ReminderSchedule::initial);
         List<ReminderNotice> notices = schedule.orderedNotices();
-        List<TrimmedReminder> trimmed = dates.map(milestoneDates -> ReminderEmailCapTrimmer.trimmedBy(notices, settings, milestoneDates)).orElse(List.of());
         return new ResolvedReminderSchedule(source, chosen.map(ReminderScheduleVersion::versionId).orElse(null),
                 activeException.map(ReminderScheduleVersion::versionId).orElse(null), group.map(ReminderScheduleVersion::versionId).orElse(null),
-                globalSettingsVersionId, notices, settings, trimmed);
+                globalSettingsVersionId, notices, settings);
     }
 }

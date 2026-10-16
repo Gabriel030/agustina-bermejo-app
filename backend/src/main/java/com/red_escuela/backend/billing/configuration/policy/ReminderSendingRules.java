@@ -19,12 +19,6 @@ public final class ReminderSendingRules {
         if (settings.dailyEmailCap() != null && settings.dailyEmailCap() < 1) {
             return "El tope diario de mails debe ser al menos 1.";
         }
-        if (settings.minDaysBetweenEmails() != null && settings.minDaysBetweenEmails() < 1) {
-            return "El espaciado mínimo entre mails debe ser al menos 1 día.";
-        }
-        if (settings.maxReminderEmailsPerMonth() != null && settings.maxReminderEmailsPerMonth() < 1) {
-            return "El máximo mensual de mails por alumno debe ser al menos 1.";
-        }
         if (settings.postWithdrawalSummaryMonths() != null
                 && (settings.postWithdrawalSummaryMonths() < MIN_POST_WITHDRAWAL_MONTHS || settings.postWithdrawalSummaryMonths() > MAX_POST_WITHDRAWAL_MONTHS)) {
             return "Los meses de resumen posterior a la baja deben estar entre 1 y 24.";

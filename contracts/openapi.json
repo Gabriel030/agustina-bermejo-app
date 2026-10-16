@@ -1225,14 +1225,6 @@
           "emailWindowStart" : {
             "type" : "string"
           },
-          "maxReminderEmailsPerMonth" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "minDaysBetweenEmails" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "postWithdrawalSummaryMonths" : {
             "format" : "int32",
             "type" : "integer"
@@ -1241,7 +1233,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "maxReminderEmailsPerMonth", "minDaysBetweenEmails", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
+        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
         "type" : "object"
       },
       "CollectionReminderSettingsVersionResponse" : {
@@ -5738,14 +5730,6 @@
           "emailWindowStart" : {
             "type" : "string"
           },
-          "maxReminderEmailsPerMonth" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "minDaysBetweenEmails" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "postWithdrawalSummaryMonths" : {
             "format" : "int32",
             "type" : "integer"
@@ -5754,7 +5738,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "maxReminderEmailsPerMonth", "minDaysBetweenEmails", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
+        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
         "type" : "object"
       },
       "RemoveReminderScheduleExceptionRequest" : {

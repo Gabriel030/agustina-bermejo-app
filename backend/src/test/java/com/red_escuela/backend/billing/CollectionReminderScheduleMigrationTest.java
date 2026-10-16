@@ -68,7 +68,9 @@ class CollectionReminderScheduleMigrationTest {
             String global = jdbc.queryForObject("select config_values::text from configuration_version where scope = 'COLLECTION_REMINDERS'", String.class);
             assertThat(global).doesNotContain("emissionReminderEnabled", "daysAfterIssueReminder", "daysBeforeDueReminder", "daysAfterDueReminder",
                     "daysBeforeSuspensionReminder");
-            assertThat(ConfigurationValuesCodec.fromJson(global)).isEqualTo(CollectionReminderSettings.initial());
+            String globalWithoutCaps = jdbc.queryForObject("select (config_values - 'minDaysBetweenEmails' - 'maxReminderEmailsPerMonth')::text from configuration_version "
+                    + "where scope = 'COLLECTION_REMINDERS'", String.class);
+            assertThat(ConfigurationValuesCodec.fromJson(globalWithoutCaps)).isEqualTo(CollectionReminderSettings.initial());
 
             jdbc.update("insert into program (name, status, total_years, currency) values ('Enfermería', true, 3, 'ARS')");
             Long programId = jdbc.queryForObject("select max(id) from program", Long.class);
