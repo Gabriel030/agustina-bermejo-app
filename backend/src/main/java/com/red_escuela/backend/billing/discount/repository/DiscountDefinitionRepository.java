@@ -14,6 +14,8 @@ import java.util.Optional;
 
 public interface DiscountDefinitionRepository extends JpaRepository<DiscountDefinition, Long> {
 
+    Optional<DiscountDefinition> findFirstByDiscountTypeAndStatusOrderByIdAsc(DiscountDefinitionType discountType, DiscountDefinitionStatus status);
+
     @Query("select d.status from DiscountDefinition d where d.id = :id")
     Optional<DiscountDefinitionStatus> findStatusById(@Param("id") Long id);
 
