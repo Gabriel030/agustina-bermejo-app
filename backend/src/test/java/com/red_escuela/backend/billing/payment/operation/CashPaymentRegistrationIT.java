@@ -66,8 +66,6 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
     MeterRegistry meterRegistry;
     @Autowired
     ApplicationEvents applicationEvents;
-    @Autowired
-    com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
 
     String administrative;
     String director;
@@ -562,31 +560,6 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
         assertThat(result.getResponse().getStatus()).isEqualTo(404);
         assertThat(jsonOf(result).get("code").asText()).isEqualTo("STUDENT_NOT_FOUND");
-    }
-
-    @Test
-    @Tag("D-136")
-    void legacyAndV2PaymentsAlternateWithoutSharingAnId() throws Exception {
-        Debtor debtor = debtor();
-        Person registrar = newStaffPerson();
-        List<Long> ids = new java.util.ArrayList<>();
-        for (int round = 0; round < 3; round++) {
-            ids.add(inTransaction(() -> {
-                com.red_escuela.backend.billing.entity.Payment legacy = new com.red_escuela.backend.billing.entity.Payment();
-                legacy.setAmount(com.red_escuela.backend.shared.domain.Money.of(new BigDecimal("10.00"), Currency.ARS));
-                legacy.setMethod(com.red_escuela.backend.billing.entity.PaymentMethod.CASH);
-                legacy.setRegisteredBy(entityManager.find(Person.class, registrar.getId()));
-                legacy.setPaidAt(LocalDateTime.of(2027, 4, 1, 10, 0));
-                legacy.setStatus(com.red_escuela.backend.billing.entity.PaymentStatus.CONFIRMED);
-                return legacyPaymentRepository.save(legacy).getId();
-            }));
-            MvcResult v2 = registerArs(debtor.studentId(), "key-alternate-" + round, "10.00", null, null, administrative);
-            assertThat(v2.getResponse().getStatus()).isEqualTo(201);
-            ids.add(jsonOf(v2).get("paymentId").asLong());
-        }
-
-        assertThat(ids).doesNotHaveDuplicates();
-        assertThat(ids).isSorted();
     }
 
     @Test

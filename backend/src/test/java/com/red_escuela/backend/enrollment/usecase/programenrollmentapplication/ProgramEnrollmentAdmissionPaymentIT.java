@@ -3,10 +3,7 @@ package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
@@ -14,7 +11,6 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
@@ -70,7 +66,6 @@ import static org.mockito.Mockito.reset;
 class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private RequestProgramEnrollmentApplicationUseCase requestUseCase;
     @Autowired private ApproveProgramEnrollmentApplicationUseCase approveUseCase;
-    @Autowired private RegisterPaymentUseCase registerPaymentUseCase;
     @Autowired private ProgramEnrollmentApplicationRepository applicationRepository;
     @Autowired private ProgramEnrollmentRepository programEnrollmentRepository;
     @Autowired private InvoiceRepository invoiceRepository;
@@ -167,12 +162,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
 
     private void payInFull(Invoice invoice) {
         Person payer = persistPreceptor();
-        transactionTemplate.executeWithoutResult(status -> {
-            Invoice managed = invoiceRepository.findById(invoice.getId()).orElseThrow();
-            registerPaymentUseCase.register(new RegisterPaymentRequest(
-                    List.of(new PaymentAllocationRequest(managed.getId(), managed.getAmounts().outstandingAmount().value())),
-                    PaymentMethod.TRANSFER, false, null, null, null, null), payer);
-        });
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), payer.getId());
     }
 
     private boolean isEnrolled(ProgramEnrollmentApplication application) {
@@ -457,14 +447,8 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         ProgramEnrollmentApplication application = requestApplication();
         Invoice admission = approve(application);
         Invoice olderDebt = persistOverdueDebt(application, 10000);
-        Person payer = persistPreceptor();
 
-        transactionTemplate.executeWithoutResult(status -> {
-            Invoice managed = invoiceRepository.findById(admission.getId()).orElseThrow();
-            registerPaymentUseCase.creditPaymentToAccountAndSettleInvoiceIfCovered(new RegisterPaymentRequest(
-                    List.of(new PaymentAllocationRequest(managed.getId(), managed.getAmounts().outstandingAmount().value())),
-                    PaymentMethod.TRANSFER, false, null, null, null, null), payer);
-        });
+        BillingTestFixtures.registerApprovedGatewayPayment(admission.getId(), admission.getAmounts().outstandingAmount().value());
 
         assertThatInvoice(invoiceRepository.findById(admission.getId()).orElseThrow()).isPaid();
         assertThatInvoice(invoiceRepository.findById(olderDebt.getId()).orElseThrow()).isOverdue();
