@@ -298,6 +298,25 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(content)).andExpect(status().isAccepted());
     }
 
+    @Test
+    @Tag("D-391")
+    void oldRequestsWithTheRetiredCapsInSendingOverridesAreAcceptedAndNothingIsStored() throws Exception {
+        String director = tokenWithRole("DIRECTOR");
+        String content = "{\"schedule\":{\"notices\":" + standardNotices(-1) + ",\"sendingOverrides\":{\"dailyEmailCap\":200,\"minDaysBetweenEmails\":3,"
+                + "\"maxReminderEmailsPerMonth\":4}},\"effectiveFrom\":\"" + TODAY.plusDays(1) + "\",\"changeReason\":\"motivo\"}";
+
+        postTo("/PROGRAMS/validation", director, content).andExpect(status().is2xxSuccessful());
+        postTo("/PROGRAMS/exceptions/" + nursingId + "/validation", director, content).andExpect(status().is2xxSuccessful());
+        postTo("/PROGRAMS/changes", director, content).andExpect(status().isCreated());
+        postTo("/PROGRAMS/exceptions/" + nursingId + "/changes", director, content).andExpect(status().isCreated());
+
+        assertThat(jdbcTemplate.queryForObject("select count(*) from configuration_version where scope = 'PROGRAM_REMINDER_SCHEDULE' and topic_key <> scope", Long.class))
+                .isPositive();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from configuration_version where config_values::text like '%minDaysBetweenEmails%' "
+                + "or config_values::text like '%maxReminderEmailsPerMonth%'", Long.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from configuration_version where config_values::text like '%\"dailyEmailCap\": 200%'", Long.class)).isPositive();
+    }
+
     @ParameterizedTest(name = "{0}")
     @Tag("D-110")
     @ValueSource(strings = {"PRECEPTOR", "ALUMNO", "DOCENTE"})

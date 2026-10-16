@@ -72,7 +72,7 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
 
     private static String body(int dailyCap, int postWithdrawalMonths, String start, String end, LocalDate effectiveFrom) {
         return "{\"values\":{\"suspensionNoticeEnabled\":true,\"postWithdrawalSummaryMonths\":" + postWithdrawalMonths + ","
-                + "\"minDaysBetweenEmails\":3,\"maxReminderEmailsPerMonth\":4,\"emailWindowStart\":\"" + start + "\",\"emailWindowEnd\":\"" + end
+                + "\"emailWindowStart\":\"" + start + "\",\"emailWindowEnd\":\"" + end
                 + "\",\"dailyEmailCap\":" + dailyCap + ",\"contactListDaysOverdue\":14,\"contactListOverdueInstallments\":2},\"effectiveFrom\":\"" + effectiveFrom
                 + "\",\"changeReason\":\"motivo\"}";
     }

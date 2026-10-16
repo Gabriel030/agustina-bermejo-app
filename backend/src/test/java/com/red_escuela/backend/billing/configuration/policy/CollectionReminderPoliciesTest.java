@@ -18,9 +18,9 @@ class CollectionReminderPoliciesTest {
     private final CollectionReminderSettingsCoherencePolicy coherence = new CollectionReminderSettingsCoherencePolicy();
     private final CollectionReminderEffectiveFromNextDayPolicy nextDay = new CollectionReminderEffectiveFromNextDayPolicy();
 
-    private static CollectionReminderSettings settings(int months, int spacing, int monthlyMax, LocalTime start, LocalTime end, int cap, int contactDays,
+    private static CollectionReminderSettings settings(int months, LocalTime start, LocalTime end, int cap, int contactDays,
                                                        int contactInstallments) {
-        return new CollectionReminderSettings(true, months, spacing, monthlyMax, start, end, cap, contactDays, contactInstallments);
+        return new CollectionReminderSettings(true, months, start, end, cap, contactDays, contactInstallments);
     }
 
     @Test
@@ -29,26 +29,24 @@ class CollectionReminderPoliciesTest {
         CollectionReminderSettings initial = CollectionReminderSettings.initial();
 
         assertThat(coherence.evaluateRule(initial).allowed()).isTrue();
-        assertThat(initial).isEqualTo(new CollectionReminderSettings(true, 6, 3, 4, LocalTime.of(9, 0), LocalTime.of(11, 0), 250, 14, 2));
+        assertThat(initial).isEqualTo(new CollectionReminderSettings(true, 6, LocalTime.of(9, 0), LocalTime.of(11, 0), 250, 14, 2));
     }
 
     @ParameterizedTest(name = "{0}")
     @Tag("D-351")
     @Tag("D-373")
     @CsvSource({
-            "months 0,0,3,4,09:00,11:00,250,14,2",
-            "months 25,25,3,4,09:00,11:00,250,14,2",
-            "window inverted,6,3,4,11:00,09:00,250,14,2",
-            "window empty,6,3,4,09:00,09:00,250,14,2",
-            "cap 0,6,3,4,09:00,11:00,0,14,2",
-            "spacing 0,6,0,4,09:00,11:00,250,14,2",
-            "monthly max 0,6,3,0,09:00,11:00,250,14,2",
-            "negative months,-1,3,4,09:00,11:00,250,14,2",
-            "contact days 0,6,3,4,09:00,11:00,250,0,2",
-            "contact installments 0,6,3,4,09:00,11:00,250,14,0"})
-    void incoherentSettingsAreDeniedWithTheDeclaredCode(String label, int months, int spacing, int monthlyMax, LocalTime start, LocalTime end, int cap,
+            "months 0,0,09:00,11:00,250,14,2",
+            "months 25,25,09:00,11:00,250,14,2",
+            "window inverted,6,11:00,09:00,250,14,2",
+            "window empty,6,09:00,09:00,250,14,2",
+            "cap 0,6,09:00,11:00,0,14,2",
+            "negative months,-1,09:00,11:00,250,14,2",
+            "contact days 0,6,09:00,11:00,250,0,2",
+            "contact installments 0,6,09:00,11:00,250,14,0"})
+    void incoherentSettingsAreDeniedWithTheDeclaredCode(String label, int months, LocalTime start, LocalTime end, int cap,
                                                         int contactDays, int contactInstallments) {
-        PolicyVerdict verdict = coherence.evaluateRule(settings(months, spacing, monthlyMax, start, end, cap, contactDays, contactInstallments));
+        PolicyVerdict verdict = coherence.evaluateRule(settings(months, start, end, cap, contactDays, contactInstallments));
 
         assertThat(verdict.allowed()).isFalse();
         assertThat(verdict.code()).isEqualTo("INVALID_COLLECTION_REMINDER_SETTINGS");
@@ -60,7 +58,7 @@ class CollectionReminderPoliciesTest {
     @Tag("D-373")
     @CsvSource({"1", "24"})
     void postWithdrawalMonthBoundsAreInclusive(int months) {
-        assertThat(coherence.evaluateRule(settings(months, 1, 1, LocalTime.of(9, 0), LocalTime.of(9, 1), 1, 1, 1)).allowed()).isTrue();
+        assertThat(coherence.evaluateRule(settings(months, LocalTime.of(9, 0), LocalTime.of(9, 1), 1, 1, 1)).allowed()).isTrue();
     }
 
     @ParameterizedTest(name = "vigencia {0} con hoy {1} permitida={2}")
