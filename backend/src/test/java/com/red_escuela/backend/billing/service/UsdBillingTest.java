@@ -167,6 +167,16 @@ class UsdBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aStudentCannotCreateTheMercadoPagoPreferenceOfSomeoneElsesInvoice() {
+        Student owner = persistStudent("pref.owner." + System.nanoTime());
+        Student intruder = persistStudent("pref.intruder." + System.nanoTime());
+        Invoice invoice = persistInvoice(persistCourseEnrollment(owner, Currency.ARS), ars(10000), InvoicePaymentStatus.PENDING);
+
+        assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), intruder.getId())))
+                .isInstanceOf(com.red_escuela.backend.billing.exception.InvoiceNotFoundException.class);
+    }
+
+    @Test
     @Tag("D-097")
     void anInstallmentInUsdPaidInUsdIsSettled() {
         Person admin = persistPerson("admin.usd1." + System.nanoTime());

@@ -63,6 +63,7 @@ import java.util.Optional;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
@@ -313,11 +314,13 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         assertThat(overview.get(0).invoices().get(1).payments()).hasSize(1);
     }
 
-    private void mercadoPagoPays(Long invoiceId, long amount) {
+    private Long mercadoPagoPays(Long invoiceId, long amount) {
+        String mpPaymentId = "mp-" + System.nanoTime();
         ProcessMpWebhookService service = new ProcessMpWebhookService(registrationPort,
-                mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(amount)), 1)),
+                id -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(amount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
-        service.process("", "request-" + System.nanoTime(), "mp-" + System.nanoTime());
+        service.process("", "request-" + System.nanoTime(), mpPaymentId);
+        return jdbc.queryForObject("select id from payment where gateway_payment_id = ?", Long.class, mpPaymentId);
     }
 
     private Money sumOfAppliedAmounts(AdminInvoiceResponse response) {
@@ -330,14 +333,14 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Person recorder = persistPerson("admin.detail7." + System.nanoTime(), "Ana", "Ruiz");
         Student student = persistStudent();
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
-        mercadoPagoPays(invoice.getId(), 4000);
-        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), recorder.getId());
+        Long gatewayPaymentId = mercadoPagoPays(invoice.getId(), 4000);
+        Long transferPaymentId = BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), recorder.getId());
 
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
 
         assertThat(response.paymentStatus()).isEqualTo("PAID");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method).containsExactlyInAnyOrder("TRANSFER", "MERCADO_PAGO");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::amountApplied).containsExactlyInAnyOrder(ars(6000), ars(4000));
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method, AdminInvoicePaymentResponse::amountApplied, AdminInvoicePaymentResponse::paymentId)
+                .containsExactlyInAnyOrder(tuple("TRANSFER", ars(6000), transferPaymentId), tuple("MERCADO_PAGO", ars(4000), gatewayPaymentId));
         assertThat(sumOfAppliedAmounts(response)).isEqualTo(response.paidAmount());
     }
 
@@ -347,15 +350,15 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Student student = persistStudent();
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice first = persistInvoice(enrollment, ars(10000), 0);
-        mercadoPagoPays(first.getId(), 14000);
+        Long leftoverPaymentId = mercadoPagoPays(first.getId(), 14000);
         Invoice second = persistInvoice(enrollment, ars(10000), 1);
-        mercadoPagoPays(second.getId(), 6000);
+        Long newPaymentId = mercadoPagoPays(second.getId(), 6000);
 
         AdminInvoiceResponse response = adminInvoice(student, second.getId());
 
         assertThat(response.paymentStatus()).isEqualTo("PAID");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method).containsExactly("MERCADO_PAGO", "MERCADO_PAGO");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::amountApplied).containsExactly(ars(6000), ars(4000));
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method, AdminInvoicePaymentResponse::amountApplied, AdminInvoicePaymentResponse::paymentId)
+                .containsExactlyInAnyOrder(tuple("MERCADO_PAGO", ars(6000), newPaymentId), tuple("MERCADO_PAGO", ars(4000), leftoverPaymentId));
         assertThat(sumOfAppliedAmounts(response)).isEqualTo(response.paidAmount());
     }
 

@@ -11,6 +11,9 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
+import com.red_escuela.backend.billing.payment.dto.RegisterCashPaymentRequest;
+import com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase;
+import com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
@@ -21,16 +24,16 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,8 +60,8 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private CourseEnrollmentAdmissionPaymentListener admissionPaymentListener;
     @Autowired private RoleRepository roleRepository;
     @Autowired private TransactionTemplate transactionTemplate;
-    @Autowired private com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase previewCashPaymentUseCase;
-    @Autowired private com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase registerCashPaymentUseCase;
+    @Autowired private PreviewCashPaymentUseCase previewCashPaymentUseCase;
+    @Autowired private RegisterCashPaymentUseCase registerCashPaymentUseCase;
     @Autowired private EntityManager entityManager;
 
     private Person persistPerson(String dni) {
@@ -182,7 +185,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         try {
             String fingerprint = previewCashPaymentUseCase.previewCashPayment(student.getId(), amount).fingerprint();
             registerCashPaymentUseCase.registerCashPayment(student.getId(),
-                    new com.red_escuela.backend.billing.payment.dto.RegisterCashPaymentRequest(amount, null, null, null, fingerprint), "cash-admission-" + System.nanoTime());
+                    new RegisterCashPaymentRequest(amount, null, null, null, fingerprint), "cash-admission-" + System.nanoTime());
         } finally {
             SecurityContextHolder.clearContext();
         }

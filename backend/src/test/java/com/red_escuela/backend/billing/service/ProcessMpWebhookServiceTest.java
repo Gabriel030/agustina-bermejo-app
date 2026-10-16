@@ -115,6 +115,10 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistPendingInvoice(BigDecimal amount) {
+        return persistPendingInvoice(ars(amount));
+    }
+
+    private Invoice persistPendingInvoice(com.red_escuela.backend.shared.domain.Money baseAmount) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         String username = "mp.webhook." + System.nanoTime();
@@ -155,7 +159,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = courseEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(amount)).build();
+        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(baseAmount).build();
         return invoice;
     }
 
@@ -527,6 +531,19 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(com.red_escuela.backend.billing.exception.InvoiceNotFoundException.class);
 
         assertThat(mpPayments(mpPaymentId)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-097")
+    void aPaymentReportedInArsForAnInvoiceOfAnAccountInUsdFailsAndRegistersNothing() {
+        Invoice invoice = persistPendingInvoice(com.red_escuela.backend.shared.domain.TestMoney.usd(100));
+        String mpPaymentId = "currency-" + System.nanoTime();
+
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(100)).process("", "request-1", mpPaymentId)))
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.StudentCurrentAccountCurrencyMismatchException.class);
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
     }
 
     @Test
