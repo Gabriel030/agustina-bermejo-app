@@ -86,7 +86,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         invoiceRepository.flush();
         accountService.recordInvoiceIssuedDebit(account, issued, context.facts().issueDate());
         allocationService.allocateAccountCreditToOldestInvoices(account, context.facts().issueDate(), request.actor());
-        context.winningDiscount().ifPresent(this::markDiscountAsApplied);
+        context.winningDiscounts().values().forEach(this::markDiscountAsApplied);
         return new InvoiceIssued(issued);
     }
 

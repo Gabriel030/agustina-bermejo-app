@@ -3,8 +3,10 @@ package com.red_escuela.backend.billing.invoice.domain.issuing;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDiscountDraft;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 
+import java.time.Instant;
 import java.util.Objects;
 
 public record InvoiceDiscountCandidate(
@@ -17,12 +19,14 @@ public record InvoiceDiscountCandidate(
         NonNegativeMoney discountAmount,
         Integer installmentNumber,
         Integer installmentsTotal,
-        Long sourceInstallmentId) {
+        Long sourceInstallmentId,
+        int lineNumber,
+        Integer priority,
+        Instant grantedAt,
+        MonetaryAdjustment calculation,
+        DiscountCandidateOrigin origin) {
 
-    public InvoiceDiscountCandidate(DiscountType discountType, Long sourceId, Long studentDiscountId, String discountName, InvoiceType applicableInvoiceType,
-                                    NonNegativeMoney baseAmount, NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
-        this(discountType, sourceId, studentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount, installmentNumber, installmentsTotal, null);
-    }
+    private static final int FIRST_LINE_NUMBER = 1;
 
     public InvoiceDiscountCandidate {
         Objects.requireNonNull(discountType, "discountType");
@@ -31,18 +35,26 @@ public record InvoiceDiscountCandidate(
         Objects.requireNonNull(applicableInvoiceType, "applicableInvoiceType");
         Objects.requireNonNull(baseAmount, "baseAmount");
         Objects.requireNonNull(discountAmount, "discountAmount");
+        Objects.requireNonNull(origin, "origin");
+        if (lineNumber < FIRST_LINE_NUMBER) {
+            throw new IllegalArgumentException("lineNumber must be at least " + FIRST_LINE_NUMBER);
+        }
     }
 
-    public boolean offersMoreThan(InvoiceDiscountCandidate rival) {
-        int byAmount = discountAmount.value().amount().compareTo(rival.discountAmount.value().amount());
-        if (byAmount != 0) {
-            return byAmount > 0;
-        }
-        int bySourceId = sourceId.compareTo(rival.sourceId);
-        if (bySourceId != 0) {
-            return bySourceId < 0;
-        }
-        return discountType.compareTo(rival.discountType) < 0;
+    public static InvoiceDiscountCandidate ofLegacySource(DiscountCandidateOrigin origin, DiscountType discountType, Long sourceId, Long studentDiscountId,
+                                                          String discountName, InvoiceType applicableInvoiceType, NonNegativeMoney baseAmount,
+                                                          NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal,
+                                                          Long sourceInstallmentId) {
+        return new InvoiceDiscountCandidate(discountType, sourceId, studentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount,
+                installmentNumber, installmentsTotal, sourceInstallmentId, FIRST_LINE_NUMBER, null, null, null, origin);
+    }
+
+    public int typeRank() {
+        return switch (discountType) {
+            case SCHOLARSHIP -> 1;
+            case PROMOTION, INDIVIDUAL, COHORT_ENTRY -> 2;
+            case ANNUAL_UPFRONT -> 3;
+        };
     }
 
     public InvoiceDiscountDraft toDiscountDraft() {

@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.invoice.service.legacy;
 
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
@@ -63,9 +64,9 @@ public class PromotionDiscountCandidateStrategy implements InvoiceDiscountCandid
 
     private InvoiceDiscountCandidate candidateOf(Promotion promotion, String planDescription, BenefitUsage usage, NonNegativeMoney base, InvoiceIssuingRequest request) {
         String name = "Promoción: " + promotion.getDescription() + " (plan " + planDescription + ")";
-        return new InvoiceDiscountCandidate(DiscountType.PROMOTION, usage.benefit().getId(), usage.benefit().getId(),
+        return InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_PROMOTION, DiscountType.PROMOTION, usage.benefit().getId(), usage.benefit().getId(),
                 name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name, request.invoiceType(), base,
-                DiscountAmounts.discountOf(usage.benefit().getValue(), base), (int) usage.alreadyApplied() + 1, usage.benefit().getInvoiceScopeCount());
+                DiscountAmounts.discountOf(usage.benefit().getValue(), base), (int) usage.alreadyApplied() + 1, usage.benefit().getInvoiceScopeCount(), null);
     }
 
     private record BenefitUsage(PromotionBenefit benefit, long alreadyApplied) {

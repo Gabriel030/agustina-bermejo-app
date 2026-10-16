@@ -6,8 +6,10 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCan
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Component
 public class InvoiceDiscountCalculator {
@@ -18,18 +20,17 @@ public class InvoiceDiscountCalculator {
         this.discountSelectionPolicies = discountSelectionPolicies;
     }
 
-    public Optional<InvoiceDiscountCandidate> selectBestDiscountForInvoice(InvoiceType invoiceType, List<InvoiceDiscountCandidate> candidates) {
-        List<InvoiceDiscountCandidate> sameInvoiceType = candidates.stream()
-                .filter(candidate -> candidate.applicableInvoiceType() == invoiceType)
-                .toList();
-        return candidates.stream()
+    public Map<Integer, InvoiceDiscountCandidate> selectBestDiscountPerInvoiceLine(InvoiceType invoiceType, List<InvoiceDiscountCandidate> candidates) {
+        Map<Integer, InvoiceDiscountCandidate> winnerByLine = new TreeMap<>();
+        candidates.stream()
                 .filter(candidate -> discountSelectionPolicies
-                        .evaluateRulesUntilFirstViolation(new DiscountContest(invoiceType, candidate, rivalsOf(candidate, sameInvoiceType)))
+                        .evaluateRulesUntilFirstViolation(new DiscountContest(invoiceType, candidate, rivalsOf(candidate, candidates)))
                         .allowed())
-                .findFirst();
+                .forEach(candidate -> winnerByLine.putIfAbsent(candidate.lineNumber(), candidate));
+        return Collections.unmodifiableMap(winnerByLine);
     }
 
-    private List<InvoiceDiscountCandidate> rivalsOf(InvoiceDiscountCandidate candidate, List<InvoiceDiscountCandidate> sameInvoiceType) {
-        return sameInvoiceType.stream().filter(other -> other != candidate).toList();
+    private List<InvoiceDiscountCandidate> rivalsOf(InvoiceDiscountCandidate candidate, List<InvoiceDiscountCandidate> candidates) {
+        return candidates.stream().filter(other -> other != candidate).toList();
     }
 }
