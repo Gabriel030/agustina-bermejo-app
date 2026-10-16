@@ -592,8 +592,9 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 - Validaciones (momentos): —
 - Pre-procesamiento (en orden): —
-- Eventos que publica: PaymentApprovedEvent, PaymentLeftAsAccountCreditEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Eventos que publica: PaymentApprovedEvent, GatewayPaymentArrivedWithGatewayDisabledEvent, PaymentLeftAsAccountCreditEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
+- Post-procesamiento de GatewayPaymentArrivedWithGatewayDisabledEvent: GatewayPaymentArrivedWithGatewayDisabledNotificationListener#notifySecretariat
 - Post-procesamiento de PaymentLeftAsAccountCreditEvent: PaymentLeftAsAccountCreditNotificationListener#notifySecretariat, PaymentLeftAsAccountCreditNotificationListener#notifyStudent
 - Post-procesamiento de AccountCreditAllocatedEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice

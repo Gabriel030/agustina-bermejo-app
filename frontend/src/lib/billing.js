@@ -85,6 +85,11 @@ export function formatDateTime(value) {
   return time ? `${formatDate(value)} ${time}` : formatDate(value);
 }
 
+export function formatPaymentMoment(value) {
+  if (!value) return '';
+  return value.endsWith('T00:00:00') || value.endsWith('T00:00') ? formatDate(value) : formatDateTime(value);
+}
+
 export const PAYMENT_METHOD_LABELS = {
   CASH: 'Efectivo',
   TRANSFER: 'Transferencia bancaria',
