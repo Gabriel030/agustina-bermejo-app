@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.payment.repository;
 
 import com.red_escuela.backend.billing.payment.domain.BankTransferPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.CashPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
 import com.red_escuela.backend.billing.payment.domain.Payment;

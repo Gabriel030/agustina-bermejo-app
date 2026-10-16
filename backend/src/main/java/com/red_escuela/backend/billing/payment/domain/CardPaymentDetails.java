@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.domain;
 
+import com.red_escuela.backend.billing.operation.CardPaymentType;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public record CardPaymentDetails(CardPaymentType cardType, Integer installments, String lastFourDigits) implements PaymentMethodDetails {

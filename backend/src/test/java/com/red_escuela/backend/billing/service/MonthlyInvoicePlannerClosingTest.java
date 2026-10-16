@@ -1,24 +1,22 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
+
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.ScholarshipScope;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
@@ -71,8 +69,6 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private EnrollmentFeeRequirementService requirementService;
     @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
-    @Autowired
     private UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     @Autowired
     private ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
@@ -115,8 +111,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     private void pay(Career career, Invoice invoice, long amount) {
-        registerPaymentUseCase.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(invoice.getId(), ars(amount))),
-                PaymentMethod.CASH, false, null, null, null, null), director(career));
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), director(career).getId());
     }
 
     private MockMultipartFile receiptFile() {
@@ -259,8 +254,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
                 new RequestProgramEnrollmentApplicationCommand(student, career.programId(), cohort));
         ProgramEnrollmentApplication approved = approveApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
         Long admissionInvoiceId = approved.getAdmissionInvoice().getId();
-        registerPaymentUseCase.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(admissionInvoiceId, ars(5000))),
-                PaymentMethod.CASH, false, null, null, null, null), preceptor);
+        BillingTestFixtures.registerApprovedBankTransferPayment(admissionInvoiceId, preceptor.getId());
         Long enrollment = org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(30)).until(() -> transactionTemplate.execute(status ->
                 entityManager.createQuery("select e.id from ProgramEnrollment e where e.student.id = :id", Long.class)
                         .setParameter("id", student.getId()).getResultList().stream().findFirst().orElse(null)), java.util.Objects::nonNull);

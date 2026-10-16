@@ -3,15 +3,12 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -37,7 +34,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.List;
 
 import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,9 +49,6 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
-
-    @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -176,9 +169,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(5000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+        BillingTestFixtures.registerApprovedBankTransferPayment(deudaVieja.getId(), admin.getId());
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
@@ -187,17 +178,14 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-136")
-    void aPartialPaymentIsRejectedAndTheDebtStillBlocks() {
+    void anAmountBelowTheInvoiceStaysAsCreditAndTheDebtStillBlocks() {
         Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");
         Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
-        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(2000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin))
-                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException.class);
+        BillingTestFixtures.registerApprovedGatewayPayment(deudaVieja.getId(), ars(2000));
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
@@ -260,9 +248,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(StudentInDebtException.class);
 
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(5000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+        BillingTestFixtures.registerApprovedBankTransferPayment(deudaVieja.getId(), admin.getId());
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
@@ -279,8 +265,6 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     private void payInFull(Person registrant, Invoice debt) {
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(debt.getId(), debt.getAmounts().outstandingAmount().value())),
-                PaymentMethod.CASH, false, null, null, null, null), registrant);
+        BillingTestFixtures.registerApprovedBankTransferPayment(debt.getId(), registrant.getId());
     }
 }

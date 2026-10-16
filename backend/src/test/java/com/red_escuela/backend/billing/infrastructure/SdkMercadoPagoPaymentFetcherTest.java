@@ -8,7 +8,7 @@ import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;

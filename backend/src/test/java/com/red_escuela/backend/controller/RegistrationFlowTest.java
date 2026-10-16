@@ -31,9 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -84,9 +82,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
-
-    @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     private Long persistInstitution() {
         Institution institution = new Institution();
@@ -326,10 +321,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
                 .isEmpty();
 
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                java.util.List.of(new PaymentAllocationRequest(persisted.getAdmissionInvoice().getId(),
-                        persisted.getAdmissionInvoice().getAmounts().outstandingAmount().value())),
-                PaymentMethod.TRANSFER, false, null, null, null, null), persisted.getDecidedBy());
+        BillingTestFixtures.registerApprovedBankTransferPayment(persisted.getAdmissionInvoice().getId(), persisted.getDecidedBy().getId());
         entityManager.flush();
         entityManager.clear();
 

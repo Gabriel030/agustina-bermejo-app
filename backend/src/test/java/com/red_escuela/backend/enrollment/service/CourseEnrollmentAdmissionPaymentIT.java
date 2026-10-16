@@ -3,17 +3,13 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
@@ -55,7 +51,6 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private InvoiceRepository invoiceRepository;
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     @Autowired private ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
-    @Autowired private RegisterPaymentUseCase registerPaymentUseCase;
     @Autowired private CourseEnrollmentAdmissionPaymentListener admissionPaymentListener;
     @Autowired private RoleRepository roleRepository;
     @Autowired private TransactionTemplate transactionTemplate;
@@ -157,19 +152,14 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-235")
-    void payingTheCourseAdmissionInvoiceAtTheCounterEnrollsTheStudent() {
+    void payingTheCourseAdmissionInvoiceEnrollsTheStudent() {
         Student student = persistStudent();
         Course course = persistPricedCourse();
         Person admin = persistAdministrative();
         CourseEnrollmentApplication application = request(student, course);
         Long invoiceId = application.getInvoiceId();
 
-        transactionTemplate.executeWithoutResult(status -> {
-            Invoice managed = invoiceRepository.findById(invoiceId).orElseThrow();
-            registerPaymentUseCase.register(new RegisterPaymentRequest(
-                    List.of(new PaymentAllocationRequest(invoiceId, managed.getAmounts().outstandingAmount().value())),
-                    PaymentMethod.CASH, false, null, null, null, null), admin);
-        });
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoiceId, admin.getId());
 
         awaitEnrollments(student, 1);
     }
