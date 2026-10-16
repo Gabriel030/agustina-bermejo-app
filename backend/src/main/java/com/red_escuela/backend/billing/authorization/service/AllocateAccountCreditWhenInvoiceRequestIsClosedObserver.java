@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.authorization.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
@@ -26,7 +27,8 @@ import java.util.Set;
 @Component
 public class AllocateAccountCreditWhenInvoiceRequestIsClosedObserver implements AuthorizationRequestObserver {
     private static final Logger log = LoggerFactory.getLogger(AllocateAccountCreditWhenInvoiceRequestIsClosedObserver.class);
-    private static final Set<BillingOperationType> INVOICE_REQUEST_TYPES = Set.of(BillingOperationType.ISSUE_CREDIT_NOTE, BillingOperationType.CANCEL_INVOICE);
+    private static final Set<BillingOperationType> INVOICE_REQUEST_TYPES = Set.of(BillingOperationType.ISSUE_CREDIT_NOTE, BillingOperationType.CANCEL_INVOICE,
+            BillingOperationType.CANCEL_INVOICES_AFTER_WITHDRAWAL);
     private static final String PROCESS_NAME = "INVOICE_REQUEST_CLOSED_ALLOCATION";
 
     private final AuthorizationRequestRepository requests;
@@ -101,7 +103,8 @@ public class AllocateAccountCreditWhenInvoiceRequestIsClosedObserver implements 
     private Long invoiceIdOf(Long requestId) {
         String payload = requests.findById(requestId).orElseThrow().getOperationPayload();
         try {
-            return objectMapper.readTree(payload).path("invoiceId").asLong();
+            JsonNode root = objectMapper.readTree(payload);
+            return root.has("invoiceId") ? root.path("invoiceId").asLong() : root.path("items").path(0).path("invoiceId").asLong();
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Stored operation context cannot be read for the authorization request " + requestId, e);
         }

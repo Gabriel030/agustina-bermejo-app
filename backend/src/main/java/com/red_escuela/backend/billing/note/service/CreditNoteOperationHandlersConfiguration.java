@@ -40,6 +40,11 @@ public class CreditNoteOperationHandlersConfiguration {
     }
 
     @Bean
+    public OperationPreHandlers cancelInvoicesAfterWithdrawalPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
+        return new OperationPreHandlers(BillingOperationType.CANCEL_INVOICES_AFTER_WITHDRAWAL, List.of(directorAuthorizationHandler));
+    }
+
+    @Bean
     public PolicySet<InvoiceCancellationContext> invoiceCancellationPolicySet() {
         return PolicySet.named("INVOICE_CANCELLATION", List.of(
                 new CancellationJustificationPolicy(),

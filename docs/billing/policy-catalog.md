@@ -509,6 +509,13 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: CreditNoteIssuedEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
 
+## Operación CANCEL_INVOICES_AFTER_WITHDRAWAL
+
+- Validaciones (momentos): CREDIT_NOTE_ISSUING, INVOICE_CANCELLATION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: CreditNoteIssuedEvent
+- Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
+
 ## Operación CHANGE_BILLING_CONFIGURATION
 
 - Validaciones (momentos): BILLING_CONFIGURATION_CHANGE, BILLING_CONFIGURATION_PROPOSAL, CONFIGURATION_PROPOSAL_APPROVAL, YEAR_BILLING_CONFIGURATION, YEAR_BILLING_CONFIGURATION_FREEZE, LATE_PAYMENT_TERMS, ISSUANCE_SETTINGS, ANNUAL_UPFRONT_SETTINGS, COLLECTION_REMINDER_SETTINGS, COLLECTION_REMINDER_EFFECTIVE_FROM, COLLECTION_REMINDER_SCHEDULE, COLLECTION_REMINDER_SCHEDULE_CHANGE
