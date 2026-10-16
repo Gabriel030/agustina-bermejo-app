@@ -957,6 +957,15 @@
         "required" : [ "justification", "reason" ],
         "type" : "object"
       },
+      "CancelPriceVersionRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "CargarAsistenciaRequest" : {
         "properties" : {
           "classDate" : {
@@ -1083,6 +1092,25 @@
           }
         },
         "required" : [ "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "ChangePriceRequest" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "changeReason" : {
+            "type" : "string"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "marketingDiscount" : {
+            "$ref" : "#/components/schemas/MarketingDiscountRequest"
+          }
+        },
+        "required" : [ "amount", "changeReason", "effectiveFrom", "marketingDiscount" ],
         "type" : "object"
       },
       "ChangeReminderScheduleRequest" : {
@@ -3937,6 +3965,22 @@
         "required" : [ "cutOffAt", "feeType", "promotionDescription", "promotionRedemptionId", "remaining", "scopeCount", "studentName", "used" ],
         "type" : "object"
       },
+      "MarketingDiscountRequest" : {
+        "properties" : {
+          "fixedAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "percent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
+          "type" : {
+            "enum" : [ "PERCENTAGE", "FIXED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "fixedAmount", "percent", "type" ],
+        "type" : "object"
+      },
       "MeEnrollmentBillingStatusResponse" : {
         "properties" : {
           "enrollmentId" : {
@@ -4647,6 +4691,80 @@
           }
         },
         "required" : [ "adjustments", "amountDue", "baseAmount", "creditNotesUsedAsFreeCredit", "feeType", "invoiceId", "paymentsApplied", "period", "priceRevisionDescription", "remainingBalance", "status" ],
+        "type" : "object"
+      },
+      "PriceChangeValidationResponse" : {
+        "properties" : {
+          "violations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyViolation"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "violations" ],
+        "type" : "object"
+      },
+      "PriceVersionResponse" : {
+        "properties" : {
+          "baseAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "cancellationReason" : {
+            "type" : "string"
+          },
+          "cancelledById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "changeReason" : {
+            "type" : "string"
+          },
+          "decidedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "directPublication" : {
+            "type" : "boolean"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "finalAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "marketingDiscountAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "marketingDiscountFixedAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "marketingDiscountPercent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
+          "marketingDiscountType" : {
+            "enum" : [ "PERCENTAGE", "FIXED" ],
+            "type" : "string"
+          },
+          "priceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "proposedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "baseAmount", "cancellationReason", "cancelledById", "changeReason", "decidedById", "directPublication", "effectiveFrom", "finalAmount", "id", "marketingDiscountAmount", "marketingDiscountFixedAmount", "marketingDiscountPercent", "marketingDiscountType", "priceId", "proposedById", "status" ],
         "type" : "object"
       },
       "ProductRef" : {
@@ -21295,6 +21413,243 @@
           }
         },
         "tags" : [ "mp-webhook-controller" ]
+      }
+    },
+    "/price-versions/{priceVersionId}/cancellation" : {
+      "post" : {
+        "operationId" : "Price_cancelScheduledPriceVersion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "priceVersionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelPriceVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PriceVersionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "price-controller" ]
+      }
+    },
+    "/prices/{priceId}/versions" : {
+      "post" : {
+        "operationId" : "Price_publishPriceVersion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "priceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePriceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PriceVersionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "price-controller" ]
+      }
+    },
+    "/prices/{priceId}/versions/validation" : {
+      "post" : {
+        "operationId" : "Price_validatePriceChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "priceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePriceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PriceChangeValidationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "price-controller" ]
       }
     },
     "/program-enrollment-applications" : {
