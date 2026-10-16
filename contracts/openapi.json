@@ -235,6 +235,12 @@
       },
       "AdminInvoiceResponse" : {
         "properties" : {
+          "creditNotes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceBreakdownCreditNoteResponse"
+            },
+            "type" : "array"
+          },
           "creditedAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
@@ -336,7 +342,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
         "type" : "object"
       },
       "AdmissionInvoiceSummary" : {
@@ -3773,6 +3779,12 @@
       },
       "InvoiceResponse" : {
         "properties" : {
+          "creditNotes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceBreakdownCreditNoteResponse"
+            },
+            "type" : "array"
+          },
           "creditedAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
@@ -3862,7 +3874,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "productRef", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "productRef", "studentDni", "studentId", "subjectId", "totalAmount" ],
         "type" : "object"
       },
       "JustificarAsistenciaRequest" : {
@@ -4076,6 +4088,12 @@
       },
       "MeInvoiceResponse" : {
         "properties" : {
+          "creditNotes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceBreakdownCreditNoteResponse"
+            },
+            "type" : "array"
+          },
           "creditedAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
@@ -4177,7 +4195,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
         "type" : "object"
       },
       "MetricValue" : { },

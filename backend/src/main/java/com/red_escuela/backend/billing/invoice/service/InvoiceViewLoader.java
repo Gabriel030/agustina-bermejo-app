@@ -21,12 +21,14 @@ public class InvoiceViewLoader {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final InvoicePaymentShareSource paymentShareSource;
+    private final InvoiceCreditNoteShareSource creditNoteShareSource;
 
     public InvoiceViewLoader(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                             InvoicePaymentShareSource paymentShareSource) {
+                             InvoicePaymentShareSource paymentShareSource, InvoiceCreditNoteShareSource creditNoteShareSource) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.paymentShareSource = paymentShareSource;
+        this.creditNoteShareSource = creditNoteShareSource;
     }
 
     @Transactional(readOnly = true)
@@ -47,9 +49,11 @@ public class InvoiceViewLoader {
                 .collect(Collectors.toMap(CourseEnrollment::getId, Function.identity()));
         List<Long> invoiceIds = invoices.stream().map(Invoice::getId).toList();
         Map<Long, List<InvoicePaymentShare>> shares = paymentShareSource.findCurrentSharesByInvoiceId(invoiceIds).resolvedByInvoiceId();
+        Map<Long, List<InvoiceCreditNoteSourceShare>> creditNotes = creditNoteShareSource.findCurrentCreditNoteSharesByInvoiceId(invoiceIds);
         return invoices.stream()
                 .map(invoice -> new InvoiceView(invoice, invoice.findProgramEnrollmentId().map(programs::get).orElse(null),
-                        invoice.findCourseEnrollmentId().map(courses::get).orElse(null), shares.getOrDefault(invoice.getId(), List.of())))
+                        invoice.findCourseEnrollmentId().map(courses::get).orElse(null), shares.getOrDefault(invoice.getId(), List.of()),
+                        creditNotes.getOrDefault(invoice.getId(), List.of())))
                 .toList();
     }
 

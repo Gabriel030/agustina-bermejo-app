@@ -69,6 +69,8 @@ describe('descuentos del renglón', () => {
   it('marca como expandible una factura con descuento o anulada', () => {
     expect(hasInvoiceDetail({ lines: [{ discount: {} }] })).toBe(true);
     expect(hasInvoiceDetail({ lines: [{ discount: null }] })).toBe(false);
+    expect(hasInvoiceDetail({ lines: [{ discount: null }], creditNotes: [{ creditNoteId: 1 }] })).toBe(true);
+    expect(hasInvoiceDetail({ lines: [{ discount: null }], creditNotes: [] })).toBe(false);
     expect(hasInvoiceDetail({ lines: [{ discount: null }, { discount: null }] })).toBe(true);
     expect(hasInvoiceDetail({ lines: [], documentStatus: 'DISCARDED' })).toBe(true);
   });
