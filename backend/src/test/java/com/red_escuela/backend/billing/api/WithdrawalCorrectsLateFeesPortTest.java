@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.api;
 
 import com.red_escuela.backend.billing.events.EnrollmentWithdrawnForBillingEvent;
+import com.red_escuela.backend.billing.note.service.LaterChargesCancellationOnWithdrawal;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import org.junit.jupiter.api.Tag;
@@ -21,9 +22,14 @@ class WithdrawalCorrectsLateFeesPortTest {
     @Test
     void theWithdrawalOnlyPublishesTheEventWithTheRegistrationDateAndWritesNothingElse() {
         ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
-        WithdrawalCorrectsLateFeesPort port = new WithdrawalCorrectsLateFeesPort(publisher);
+        LaterChargesCancellationOnWithdrawal laterCharges = mock(LaterChargesCancellationOnWithdrawal.class);
+        WithdrawalCorrectsLateFeesPort port = new WithdrawalCorrectsLateFeesPort(publisher, laterCharges);
+        WithdrawnEnrollmentFacts facts = WithdrawnEnrollmentFacts.ofCourseEnrollment(7L, 20L, LocalDate.of(2027, 4, 28), LocalDate.of(2027, 5, 3), WithdrawalCause.VOLUNTARY);
 
-        port.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(7L, 20L, LocalDate.of(2027, 4, 28), LocalDate.of(2027, 5, 3), WithdrawalCause.VOLUNTARY));
+        port.registerWithdrawalForBilling(facts);
+
+        verify(laterCharges).cancelLaterChargesOf(facts);
+        verifyNoMoreInteractions(laterCharges);
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(publisher).publishEvent(captor.capture());

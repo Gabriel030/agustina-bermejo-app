@@ -20,6 +20,10 @@ import com.red_escuela.backend.billing.note.policy.CreditNoteFullDebtRequiresCan
 import com.red_escuela.backend.billing.note.policy.CreditNoteReferencesIssuedInvoicePolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteRefundWithinPaidAmountPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteWithinOutstandingAmountPolicy;
+import com.red_escuela.backend.billing.note.policy.WithdrawalLineReductionContext;
+import com.red_escuela.backend.billing.note.policy.WithdrawalReductionInvoiceUnpaidPolicy;
+import com.red_escuela.backend.billing.note.policy.WithdrawalReductionLeavesDebtPolicy;
+import com.red_escuela.backend.billing.note.policy.WithdrawalReductionLinesUnchangedPolicy;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +41,11 @@ public class CreditNoteOperationHandlersConfiguration {
     @Bean
     public OperationPreHandlers cancelInvoicePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
         return new OperationPreHandlers(BillingOperationType.CANCEL_INVOICE, List.of(directorAuthorizationHandler));
+    }
+
+    @Bean
+    public OperationPreHandlers cancelInvoicesAfterWithdrawalPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
+        return new OperationPreHandlers(BillingOperationType.CANCEL_INVOICES_AFTER_WITHDRAWAL, List.of(directorAuthorizationHandler));
     }
 
     @Bean
@@ -62,5 +71,13 @@ public class CreditNoteOperationHandlersConfiguration {
                 new CreditNoteWithinOutstandingAmountPolicy(),
                 new CreditNoteLinesWithinCreditableAmountPolicy(),
                 new CreditNoteFullDebtRequiresCancellationPolicy()));
+    }
+
+    @Bean
+    public PolicySet<WithdrawalLineReductionContext> withdrawalLineReductionPolicySet() {
+        return PolicySet.named("WITHDRAWAL_LINE_REDUCTION", List.of(
+                new WithdrawalReductionInvoiceUnpaidPolicy(),
+                new WithdrawalReductionLinesUnchangedPolicy(),
+                new WithdrawalReductionLeavesDebtPolicy()));
     }
 }
