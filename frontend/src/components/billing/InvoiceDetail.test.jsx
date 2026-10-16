@@ -37,4 +37,31 @@ describe('InvoiceDetail', () => {
     );
     expect(screen.getByText(/· Emitida/)).toBeInTheDocument();
   });
+
+  it('shows each credit note that financed the invoice as Nota de crédito N with its amount', () => {
+    const invoice = {
+      ...invoiceFixture(),
+      creditNotes: [
+        { creditNoteId: 7, creditNoteNumber: 'NC-0000007', amount: { amount: '2000.00', currency: 'ARS' }, description: 'Nota de crédito NC-0000007' },
+        { creditNoteId: 8, creditNoteNumber: 'NC-0000008', amount: { amount: '500.00', currency: 'ARS' }, description: 'Nota de crédito NC-0000008' },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <InvoiceDetail invoice={invoice} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Nota de crédito NC-0000007')).toBeInTheDocument();
+    expect(screen.getByText('Nota de crédito NC-0000008')).toBeInTheDocument();
+    expect(screen.getAllByText(/Nota de crédito NC-/)).toHaveLength(2);
+  });
+
+  it('shows no credit note block when the invoice has no credit note sources', () => {
+    render(
+      <MemoryRouter>
+        <InvoiceDetail invoice={{ ...invoiceFixture(), creditNotes: [] }} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/Nota de crédito/)).not.toBeInTheDocument();
+  });
 });

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
@@ -128,12 +129,30 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-035")
+    @Tag("D-214")
+    void breakdownOfAnInvoiceIssuedBeforeAPriceIncreaseKeepsTheLinePriceVersionAndItsBaseAmount() {
+        Person director = persistPerson("director.breakdown30." + System.nanoTime());
+        Course course = persistCourse();
+        Long firstVersion = PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        CourseEnrollment enrollment = persistCourseEnrollment("99000430", course);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now().plusDays(10));
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(12000), LocalDate.now().minusDays(1), director.getId());
+
+        PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(invoice.getId());
+
+        assertThat(invoice.getPrimaryLine().getPriceVersionId()).isEqualTo(firstVersion);
+        assertThat(breakdown.priceRevisionDescription()).isEqualTo("Cuota mensual 2026");
+        assertThat(breakdown.baseAmount()).isEqualTo(ars(10000));
+    }
+
+    @Test
     @Tag("D-376")
     void breakdownIncludesPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());
         Course course = persistCourse();
 
-        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
 
         CourseEnrollment enrollment = persistCourseEnrollment("99000401", course);
         Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now());
@@ -176,7 +195,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     private Invoice paidInvoiceOfANewEnrollment(String dni) {
         Person director = persistPerson("director.integrity." + dni + System.nanoTime());
         Course course = persistCourse();
-        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota", ars(10000), LocalDate.now().minusYears(1), director.getId());
         CourseEnrollment enrollment = persistCourseEnrollment(dni, course);
         Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now());
         BillingTestFixtures.payInvoiceInFull(invoice);
