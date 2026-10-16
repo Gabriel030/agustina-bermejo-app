@@ -414,6 +414,10 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
                         .content("{\"amount\":{\"amount\":1e30,\"currency\":\"ARS\"},\"effectiveFrom\":\"" + TODAY + "\",\"changeReason\":\"motivo\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.violations[0].code").value("PRICE_AMOUNT_TOO_LARGE"));
+        mockMvc.perform(post("/prices/{priceId}/versions/validation", priceId).header("Authorization", "Bearer " + directorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":{\"amount\":1e30,\"currency\":\"ARS\"},\"effectiveFrom\":\"" + TODAY + "\",\"changeReason\":\"motivo\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.violations[0].code").value("PRICE_AMOUNT_TOO_LARGE"));
         impact(directorToken, 9999999999L, TODAY, null).andExpect(status().isOk());
     }
 

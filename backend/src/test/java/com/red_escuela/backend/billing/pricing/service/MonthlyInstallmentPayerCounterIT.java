@@ -168,7 +168,7 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-327")
-    void onlyProgramEnrollmentsThatIssueNormalMonthlyInstallmentsAreCounted() {
+    void onlyEnrolledProgramEnrollmentsThatIssueNormalMonthlyInstallmentsAreCountedAndPausedOnesAreNotBecauseTheyAreNotBilledByDefault() {
         for (int paying = 0; paying < 4; paying++) {
             programEnrollment(program, ProgramEnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.UP_TO_DATE, monthlyProgramOption, null);
         }
@@ -186,7 +186,7 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         programEnrollment(otherProgram, ProgramEnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.UP_TO_DATE, otherProgramOption, null);
         entityManager.flush();
 
-        assertThat(counter.countProgramEnrollmentsPayingMonthlyInstallments(program.getId(), SEPTEMBER)).isEqualTo(6);
+        assertThat(counter.countProgramEnrollmentsPayingMonthlyInstallments(program.getId(), SEPTEMBER)).isEqualTo(5);
     }
 
     @Test

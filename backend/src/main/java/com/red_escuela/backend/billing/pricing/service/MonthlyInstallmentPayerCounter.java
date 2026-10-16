@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.pricing.service;
 
+import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.billing.planning.domain.PaymentPlanCoverage;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +22,7 @@ public class MonthlyInstallmentPayerCounter {
     public long countProgramEnrollmentsPayingMonthlyInstallments(Long programId, YearMonth month) {
         Set<Long> paying = new HashSet<>(selectionRepository.findProgramEnrollmentIdsPayingMonthlyInstallments(programId, month));
         selectionRepository.findAnnualUpfrontSelectionsOfProgram(programId, month).stream()
-                .filter(row -> month.isAfter(((YearMonth) row[1]).plusMonths((Integer) row[2] - 1L)))
+                .filter(row -> new PaymentPlanCoverage(PaymentPlanCadence.ANNUAL_UPFRONT, (YearMonth) row[1], (Integer) row[2]).isAnnualScopeExpiredAt(month))
                 .forEach(row -> paying.add((Long) row[0]));
         return paying.size();
     }

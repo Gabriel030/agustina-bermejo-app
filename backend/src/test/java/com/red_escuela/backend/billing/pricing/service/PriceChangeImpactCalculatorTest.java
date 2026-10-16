@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.pricing.domain.MarketingDiscount;
 import com.red_escuela.backend.billing.pricing.domain.Price;
 import com.red_escuela.backend.billing.pricing.domain.PriceChangeImpact;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
-import com.red_escuela.backend.billing.pricing.service.MonthlyInstallmentPayerCounter;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
@@ -18,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
@@ -59,7 +59,7 @@ class PriceChangeImpactCalculatorTest {
     @Tag("D-274")
     void aCourseInstallmentCountsTheActiveEnrollmentsOfTheCourseAndNotOfAnyProgram() {
         priceWithCurrent(Price.forCourse(9L, FeeType.MONTHLY_INSTALLMENT, Currency.ARS, "Cuota mensual"), 100000);
-        when(counter.countCourseEnrollmentsPayingMonthlyInstallments(eq(9L), any())).thenReturn(40L);
+        when(counter.countCourseEnrollmentsPayingMonthlyInstallments(eq(9L), eq(YearMonth.of(2027, 8)))).thenReturn(40L);
 
         PriceChangeImpact impact = calculator.calculatePriceChangeImpact(7L, ars(120000), null, TODAY.plusDays(10));
 
@@ -77,6 +77,7 @@ class PriceChangeImpactCalculatorTest {
 
         PriceChangeImpact impact = calculator.calculatePriceChangeImpact(7L, ars(50000), null, TODAY);
 
+        verify(counter).countProgramEnrollmentsPayingMonthlyInstallments(3L, YearMonth.of(2027, 8));
         assertThat(impact.currentFinalAmount()).isNull();
         assertThat(impact.currentMonthlyIncome()).isEqualTo(Money.zero(Currency.ARS));
         assertThat(impact.monthlyIncomeDifference()).isEqualTo(Money.of(BigDecimal.valueOf(100000), Currency.ARS));
@@ -119,5 +120,17 @@ class PriceChangeImpactCalculatorTest {
         assertThat(impact.affectedStudents()).isZero();
         verify(counter, never()).countProgramEnrollmentsPayingMonthlyInstallments(any(), any());
         verify(counter, never()).countCourseEnrollmentsPayingMonthlyInstallments(any(), any());
+    }
+
+    @Test
+    @Tag("D-327")
+    void theEnrollmentsAreCountedForTheMonthOfTheStartDate() {
+        priceWithCurrent(Price.forProgram(3L, FeeType.MONTHLY_INSTALLMENT, Currency.ARS, "Cuota mensual"), 100000);
+        when(counter.countProgramEnrollmentsPayingMonthlyInstallments(eq(3L), eq(YearMonth.of(2027, 10)))).thenReturn(7L);
+
+        PriceChangeImpact impact = calculator.calculatePriceChangeImpact(7L, ars(110000), null, LocalDate.of(2027, 10, 1));
+
+        assertThat(impact.affectedStudents()).isEqualTo(7);
+        verify(counter).countProgramEnrollmentsPayingMonthlyInstallments(3L, YearMonth.of(2027, 10));
     }
 }

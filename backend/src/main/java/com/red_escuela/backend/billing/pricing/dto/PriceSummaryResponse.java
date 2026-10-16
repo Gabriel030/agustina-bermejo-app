@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.pricing.dto;
 
-import org.springframework.lang.Nullable;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.pricing.domain.Price;
 import com.red_escuela.backend.shared.domain.Currency;
+import org.springframework.lang.Nullable;
 
 import java.time.LocalDate;
 

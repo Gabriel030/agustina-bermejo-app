@@ -1,11 +1,11 @@
 package com.red_escuela.backend.billing.pricing.dto;
 
-import org.springframework.lang.Nullable;
 import com.red_escuela.backend.billing.pricing.domain.MarketingDiscountType;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersion;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionStatus;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.Percentage;
+import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDate;

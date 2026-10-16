@@ -76,4 +76,23 @@ class PriceVersionPoliciesTest {
         assertThatThrownBy(() -> new PriceVersionDraft(Currency.ARS, BASE, MarketingDiscountType.PERCENTAGE, Percentage.ofPoints(BigDecimal.TEN), BASE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void theMaximumAmountOfTheColumnIsAcceptedAndOneCentMoreIsRejected() {
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.ARS, ars("9999999999.99")))).isEmpty();
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.ARS, ars("10000000000.00")))).containsExactly("PRICE_AMOUNT_TOO_LARGE");
+    }
+
+    @Test
+    void aFixedDiscountAboveTheMaximumAmountIsRejectedEvenWhenTheBaseFits() {
+        Money maximum = ars("9999999999.99");
+        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, maximum, maximum))).isEmpty();
+        assertThat(violationCodesOf(PriceVersionDraft.withFixedDiscount(Currency.ARS, maximum, ars("10000000000.00")))).contains("PRICE_AMOUNT_TOO_LARGE");
+    }
+
+    @Test
+    void theMaximumAmountAppliesToEveryCurrency() {
+        Money tooMuch = Money.of(new BigDecimal("10000000000.00"), Currency.USD);
+        assertThat(violationCodesOf(PriceVersionDraft.withoutDiscount(Currency.USD, tooMuch))).containsExactly("PRICE_AMOUNT_TOO_LARGE");
+    }
 }

@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.pricing.dto;
 
-import org.springframework.lang.Nullable;
 import com.red_escuela.backend.billing.pricing.domain.PriceChangeImpact;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import org.springframework.lang.Nullable;
 
 import java.time.LocalDate;
 

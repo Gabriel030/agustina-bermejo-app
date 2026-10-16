@@ -9,7 +9,6 @@ import com.red_escuela.backend.billing.pricing.exception.PriceNotFoundException;
 import com.red_escuela.backend.billing.pricing.policy.ChangePriceCommand;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
-import com.red_escuela.backend.billing.pricing.service.MonthlyInstallmentPayerCounter;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

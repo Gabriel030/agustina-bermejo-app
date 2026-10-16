@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.pricing.dto;
 
-import org.springframework.lang.Nullable;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionEvent;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionStatus;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionStatusChange;
+import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 
