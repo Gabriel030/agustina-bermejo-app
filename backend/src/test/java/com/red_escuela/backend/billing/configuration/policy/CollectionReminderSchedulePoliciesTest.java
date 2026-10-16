@@ -174,7 +174,7 @@ class CollectionReminderSchedulePoliciesTest {
     void followsGroupIsOnlyValidInAnExceptionTopicWithAnEmptyList() {
         ReminderSchedule following = ReminderSchedule.followingGroup();
         ReminderSchedule followingWithNotices = new ReminderSchedule(true, ReminderSchedule.initial().notices(), null);
-        ReminderSchedule followingWithOverrides = new ReminderSchedule(true, List.of(), new ReminderSendingOverrides(null, null, null, null, null, null, 100, null, null));
+        ReminderSchedule followingWithOverrides = new ReminderSchedule(true, List.of(), new ReminderSendingOverrides(null, null, null, null, 100, null, null));
 
         assertThat(followsGroup.evaluateRule(new ReminderScheduleCheck(following, true)).allowed()).isTrue();
         assertThat(followsGroup.evaluateRule(new ReminderScheduleCheck(following, false)).allowed()).isFalse();
@@ -189,20 +189,18 @@ class CollectionReminderSchedulePoliciesTest {
         LocalTime nine = LocalTime.of(9, 0);
         LocalTime eleven = LocalTime.of(11, 0);
         return Stream.of(
-                Arguments.of("window start alone", new ReminderSendingOverrides(null, null, null, null, nine, null, null, null, null), false),
-                Arguments.of("window end alone", new ReminderSendingOverrides(null, null, null, null, null, eleven, null, null, null), false),
-                Arguments.of("window inverted", new ReminderSendingOverrides(null, null, null, null, eleven, nine, null, null, null), false),
-                Arguments.of("window ok", new ReminderSendingOverrides(null, null, null, null, nine, eleven, null, null, null), true),
-                Arguments.of("cap 0", new ReminderSendingOverrides(null, null, null, null, null, null, 0, null, null), false),
-                Arguments.of("cap 1", new ReminderSendingOverrides(null, null, null, null, null, null, 1, null, null), true),
-                Arguments.of("spacing 0", new ReminderSendingOverrides(null, null, 0, null, null, null, null, null, null), false),
-                Arguments.of("monthly max 0", new ReminderSendingOverrides(null, null, null, 0, null, null, null, null, null), false),
-                Arguments.of("months 0", new ReminderSendingOverrides(null, 0, null, null, null, null, null, null, null), false),
-                Arguments.of("months 25", new ReminderSendingOverrides(null, 25, null, null, null, null, null, null, null), false),
-                Arguments.of("months 1", new ReminderSendingOverrides(null, 1, null, null, null, null, null, null, null), true),
-                Arguments.of("months 24", new ReminderSendingOverrides(null, 24, null, null, null, null, null, null, null), true),
-                Arguments.of("contact days 0", new ReminderSendingOverrides(null, null, null, null, null, null, null, 0, null), false),
-                Arguments.of("contact installments 0", new ReminderSendingOverrides(null, null, null, null, null, null, null, null, 0), false),
+                Arguments.of("window start alone", new ReminderSendingOverrides(null, null, nine, null, null, null, null), false),
+                Arguments.of("window end alone", new ReminderSendingOverrides(null, null, null, eleven, null, null, null), false),
+                Arguments.of("window inverted", new ReminderSendingOverrides(null, null, eleven, nine, null, null, null), false),
+                Arguments.of("window ok", new ReminderSendingOverrides(null, null, nine, eleven, null, null, null), true),
+                Arguments.of("cap 0", new ReminderSendingOverrides(null, null, null, null, 0, null, null), false),
+                Arguments.of("cap 1", new ReminderSendingOverrides(null, null, null, null, 1, null, null), true),
+                Arguments.of("months 0", new ReminderSendingOverrides(null, 0, null, null, null, null, null), false),
+                Arguments.of("months 25", new ReminderSendingOverrides(null, 25, null, null, null, null, null), false),
+                Arguments.of("months 1", new ReminderSendingOverrides(null, 1, null, null, null, null, null), true),
+                Arguments.of("months 24", new ReminderSendingOverrides(null, 24, null, null, null, null, null), true),
+                Arguments.of("contact days 0", new ReminderSendingOverrides(null, null, null, null, null, 0, null), false),
+                Arguments.of("contact installments 0", new ReminderSendingOverrides(null, null, null, null, null, null, 0), false),
                 Arguments.of("nothing defined", ReminderSendingOverrides.none(), true));
     }
 
