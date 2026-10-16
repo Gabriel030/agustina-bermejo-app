@@ -299,6 +299,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | CashPaymentReceiptNumberPolicy | CASH_PAYMENT_RECEIPT_NUMBER_INVALID | D-136 |
 | 4 | CashPaymentBackdateReasonLengthPolicy | CASH_PAYMENT_BACKDATE_REASON_INVALID | D-266 |
 
+## Momento PRICE_CHANGE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | PriceChangeReasonPolicy | CHANGE_REASON_REQUIRED | D-095 |
+| 2 | EffectiveDateNotRetroactivePolicy | RETROACTIVE_EFFECTIVE_DATE | D-059, D-111 |
+
 ## Momento PRICE_VERSION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -306,6 +313,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | PriceCurrencyPolicy | CURRENCY_MISMATCH | D-097, D-240 |
 | 2 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
 | 3 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+
+## Momento PRICE_VERSION_CANCELLATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | PriceCancellationReasonPolicy | CANCELLATION_REASON_REQUIRED | D-115 |
+| 2 | ScheduledPriceVersionCancellablePolicy | VERSION_ALREADY_EFFECTIVE | D-115 |
 
 ## Momento PROGRAM_INVOICE_PLANNING_ELIGIBILITY
 
@@ -509,12 +523,24 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: CreditNoteIssuedEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
 
+## Operación CANCEL_PRICE_VERSION
+
+- Validaciones (momentos): PRICE_VERSION_CANCELLATION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: —
+
 ## Operación CHANGE_BILLING_CONFIGURATION
 
 - Validaciones (momentos): BILLING_CONFIGURATION_CHANGE, BILLING_CONFIGURATION_PROPOSAL, CONFIGURATION_PROPOSAL_APPROVAL, YEAR_BILLING_CONFIGURATION, YEAR_BILLING_CONFIGURATION_FREEZE, LATE_PAYMENT_TERMS, ISSUANCE_SETTINGS, ANNUAL_UPFRONT_SETTINGS, COLLECTION_REMINDER_SETTINGS, COLLECTION_REMINDER_EFFECTIVE_FROM, COLLECTION_REMINDER_SCHEDULE, COLLECTION_REMINDER_SCHEDULE_CHANGE
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: ConfigurationChangeDecidedEvent
 - Post-procesamiento de ConfigurationChangeDecidedEvent: BillingOperationNotificationListener#notifyConfigurationChangeDecided
+
+## Operación CHANGE_PRICE
+
+- Validaciones (momentos): PRICE_CHANGE, PRICE_VERSION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: —
 
 ## Operación CLOSE_DISCOUNT_DEFINITION
 

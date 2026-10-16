@@ -1,5 +1,11 @@
 package com.red_escuela.backend.billing.pricing;
 
+import com.red_escuela.backend.billing.configuration.policy.EffectiveDateNotRetroactivePolicy;
+import com.red_escuela.backend.billing.pricing.policy.PriceCancellationReasonPolicy;
+import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
+import com.red_escuela.backend.billing.pricing.policy.PriceChangeReasonPolicy;
+import com.red_escuela.backend.billing.pricing.policy.PriceVersionCancellationCheck;
+import com.red_escuela.backend.billing.pricing.policy.ScheduledPriceVersionCancellablePolicy;
 import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountFixedNotAboveBasePolicy;
 import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountNotNegativePolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceCurrencyPolicy;
@@ -21,5 +27,21 @@ public class PricingPolicySetsConfiguration {
                 new MarketingDiscountNotNegativePolicy(),
                 new MarketingDiscountFixedNotAboveBasePolicy());
         return PolicySet.named("PRICE_VERSION", ordered);
+    }
+
+    @Bean
+    public PolicySet<PriceChangeCheck> priceChangePolicySet() {
+        List<Policy<PriceChangeCheck>> ordered = List.of(
+                new PriceChangeReasonPolicy(),
+                new EffectiveDateNotRetroactivePolicy<>());
+        return PolicySet.named("PRICE_CHANGE", ordered);
+    }
+
+    @Bean
+    public PolicySet<PriceVersionCancellationCheck> priceVersionCancellationPolicySet() {
+        List<Policy<PriceVersionCancellationCheck>> ordered = List.of(
+                new PriceCancellationReasonPolicy(),
+                new ScheduledPriceVersionCancellablePolicy());
+        return PolicySet.named("PRICE_VERSION_CANCELLATION", ordered);
     }
 }

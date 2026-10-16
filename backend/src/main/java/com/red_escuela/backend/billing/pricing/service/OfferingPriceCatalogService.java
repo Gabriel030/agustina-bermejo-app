@@ -52,7 +52,7 @@ public class OfferingPriceCatalogService implements OfferingPriceCatalog {
     private void publishPriceVersion(Price price, Money amount, Long actorPersonId, String changeReason, boolean initialVersion) {
         policyEvaluator.requireValidPriceVersion(PriceVersionDraft.withoutDiscount(price.getCurrency(), amount));
         try {
-            price.retireEffectiveVersions(actorPersonId, Instant.now(clock));
+            price.makeRoomForVersionStartingOn(LocalDate.now(clock), LocalDate.now(clock), actorPersonId, Instant.now(clock));
             priceRepository.saveAndFlush(price);
             price.publishPriceVersion(NonNegativeMoney.of(amount), null, LocalDate.now(clock), changeReason, actorPersonId, initialVersion,
                     LocalDate.now(clock), Instant.now(clock));
@@ -65,7 +65,7 @@ public class OfferingPriceCatalogService implements OfferingPriceCatalog {
         }
     }
 
-    private static boolean isConcurrentPriceWrite(RuntimeException exception) {
+    static boolean isConcurrentPriceWrite(RuntimeException exception) {
         if (exception instanceof ObjectOptimisticLockingFailureException) {
             return true;
         }
