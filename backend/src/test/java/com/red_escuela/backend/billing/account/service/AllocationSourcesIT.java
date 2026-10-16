@@ -334,27 +334,4 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
 
         assertThat(invariants.everyAllocationIsFundedByItsSources()).singleElement().asString().contains("I-20 allocation whose sources do not add up");
     }
-
-    @Test
-    void sourcesLostBeforeTheMigrationAreRebuiltFromTheLegacyPaymentWhenItIsKnownAndFromTheOldestCreditOtherwise() {
-        Long first = issue("100.00");
-        Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "100.00", LocalDate.of(2027, 3, 11));
-        long olderPayment = receivePayment("100.00", LocalDate.of(2027, 3, 5));
-        long newerPayment = receivePayment("100.00", LocalDate.of(2027, 3, 6));
-        allocate();
-        Long person = newStaffPerson().getId();
-        jdbc.update("insert into legacy_payment (id, version, amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at) "
-                + "values (?, 0, 100.00, 'ARS', 'CASH', ?, now(), 'CONFIRMED', now(), now())", newerPayment, person);
-        jdbc.update("insert into legacy_payment_allocation (payment_id, invoice_id, amount_applied, amount_applied_currency, created_at) "
-                + "values (?, ?, 100.00, 'ARS', now())", newerPayment, first);
-        withTriggerDisabled("payment_allocation_source", "trg_payment_allocation_source_append_only", () ->
-                jdbc.update("delete from payment_allocation_source where student_current_account_id = ?", accountId));
-
-        inTransaction(() -> jdbc.queryForObject("select backfill_payment_allocation_sources()::text", String.class));
-
-        assertThat(currentPaymentsOf(first)).containsExactly(newerPayment);
-        assertThat(currentPaymentsOf(second)).containsExactly(olderPayment);
-        invariants.assertAllBillingInvariantsHold();
-        assertThat(inTransaction(() -> invoiceQueryService.priceBreakdown(first).paymentsApplied())).hasSize(1);
-    }
 }

@@ -54,6 +54,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Autowired
     private AddressRepository addressRepository;
 
     @Autowired
@@ -179,7 +182,6 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     @Test
     @Tag("D-136")
     void anAmountBelowTheInvoiceStaysAsCreditAndTheDebtStillBlocks() {
-        Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");
         Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
@@ -189,6 +191,10 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
+        Invoice reloaded = invoiceRepository.findById(deudaVieja.getId()).orElseThrow();
+        assertThat(reloaded.getPaymentStatus()).isNotEqualTo(InvoicePaymentStatus.PAID);
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class,
+                reloaded.getStudentCurrentAccountId())).isEqualByComparingTo("2000");
     }
 
     @Test

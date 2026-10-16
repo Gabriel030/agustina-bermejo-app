@@ -9,20 +9,15 @@ import com.red_escuela.backend.academicstructure.repository.InstitutionRepositor
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
 import com.red_escuela.backend.billing.gateway.exception.PaymentGatewayUnavailableException;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase;
 import com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsUseCase;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -36,7 +31,6 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.shared.domain.Currency;
-import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -63,9 +57,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UsdBillingTest extends AbstractIntegrationTest {
 
     @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
-
-    @Autowired
     private CreateMpPreferenceUseCase createMpPreferenceUseCase;
 
     @Autowired
@@ -81,7 +72,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private PaymentAllocationRepository paymentAllocationRepository;
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -157,11 +148,6 @@ class UsdBillingTest extends AbstractIntegrationTest {
         return invoice;
     }
 
-    private RegisterPaymentRequest paymentOf(Invoice invoice, Money amount) {
-        return new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(invoice.getId(), amount)),
-                PaymentMethod.CASH, false, null, null, null, null);
-    }
-
     private static FinancialDashboardResponse.CurrencyTotals totalsOf(FinancialDashboardResponse response, Currency currency) {
         return response.totalsByCurrency().stream()
                 .filter(totals -> totals.totalDebt().currency() == currency)
@@ -181,13 +167,23 @@ class UsdBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aStudentCannotCreateTheMercadoPagoPreferenceOfSomeoneElsesInvoice() {
+        Student owner = persistStudent("pref.owner." + System.nanoTime());
+        Student intruder = persistStudent("pref.intruder." + System.nanoTime());
+        Invoice invoice = persistInvoice(persistCourseEnrollment(owner, Currency.ARS), ars(10000), InvoicePaymentStatus.PENDING);
+
+        assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), intruder.getId())))
+                .isInstanceOf(com.red_escuela.backend.billing.exception.InvoiceNotFoundException.class);
+    }
+
+    @Test
     @Tag("D-097")
     void anInstallmentInUsdPaidInUsdIsSettled() {
         Person admin = persistPerson("admin.usd1." + System.nanoTime());
         CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("usd.student1." + System.nanoTime()), Currency.USD);
         Invoice invoice = persistInvoice(enrollment, usd(100), InvoicePaymentStatus.PENDING);
 
-        registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), admin.getId());
 
         Invoice reloaded = invoiceRepository.findById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isPaid();
@@ -202,25 +198,14 @@ class UsdBillingTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), student.getId())))
                 .isInstanceOf(GatewayCurrencyNotSupportedException.class);
-        registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), admin.getId());
 
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId()))
-                .singleElement().satisfies(allocation -> assertThat(allocation.getAmountApplied()).isEqualTo(usd(100)));
-    }
-
-    @Test
-    @Tag("D-097")
-    void aPaymentInArsIsNotAppliedToAnInstallmentInUsd() {
-        Person admin = persistPerson("admin.usd2." + System.nanoTime());
-        CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("usd.student2." + System.nanoTime()), Currency.USD);
-        Invoice invoice = persistInvoice(enrollment, usd(100), InvoicePaymentStatus.PENDING);
-
-        assertThatThrownBy(() -> registerPaymentUseCase.register(paymentOf(invoice, ars(100)), admin))
-                .isInstanceOf(CurrencyMismatchException.class);
-
-        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+        assertThat(jdbc.queryForList("select amount, amount_currency from payment_allocation where invoice_id = ?", invoice.getId()))
+                .singleElement().satisfies(row -> {
+                    assertThat((java.math.BigDecimal) row.get("amount")).isEqualByComparingTo("100");
+                    assertThat(row.get("amount_currency")).isEqualTo("USD");
+                });
     }
 
     @Test

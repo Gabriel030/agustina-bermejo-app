@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.operation;
 
-import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.shared.domain.Money;
 
 public interface ApprovedPaymentRegistrationPort {
