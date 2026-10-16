@@ -62,9 +62,6 @@ public class LateFeeCharge {
     @Column(name = "settlement_allocation_id", updatable = false)
     private Long settlementAllocationId;
 
-    @Column(name = "settlement_credit_note_id", updatable = false)
-    private Long settlementCreditNoteId;
-
     @Column(name = "fact_date", nullable = false, updatable = false)
     private LocalDate factDate;
 
@@ -85,7 +82,7 @@ public class LateFeeCharge {
     private LocalDateTime createdAt;
 
     private LateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned, Long latePaymentVersionId,
-                          Percentage dailyRate, NonNegativeMoney baseAmount, Optional<LateFeeSettlementSource> settlementSource) {
+                          Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
         this.debitNoteId = Objects.requireNonNull(debitNoteId, "debitNoteId");
         this.originInvoiceId = Objects.requireNonNull(originInvoiceId, "originInvoiceId");
         this.studentCurrentAccountId = Objects.requireNonNull(studentCurrentAccountId, "studentCurrentAccountId");
@@ -93,8 +90,7 @@ public class LateFeeCharge {
         this.periodEnd = planned.period().lastDay();
         this.chargedDays = planned.chargedDays();
         this.cutoffKind = planned.kind();
-        this.settlementAllocationId = settlementSource.flatMap(LateFeeSettlementSource::allocationId).orElse(null);
-        this.settlementCreditNoteId = settlementSource.flatMap(LateFeeSettlementSource::creditNoteId).orElse(null);
+        this.settlementAllocationId = settlementAllocationId.orElse(null);
         this.factDate = planned.period().lastDay();
         this.latePaymentVersionId = Objects.requireNonNull(latePaymentVersionId, "latePaymentVersionId");
         this.dailyRate = dailyRate;
@@ -107,13 +103,13 @@ public class LateFeeCharge {
     }
 
     public static LateFeeCharge recordLateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned,
-                                                    Long latePaymentVersionId, Percentage dailyRate, NonNegativeMoney baseAmount, Optional<LateFeeSettlementSource> settlementSource) {
+                                                    Long latePaymentVersionId, Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
         Objects.requireNonNull(planned, "planned");
-        Objects.requireNonNull(settlementSource, "settlementSource");
-        if ((planned.kind() == LateFeeCutoffKind.SETTLEMENT) != settlementSource.isPresent()) {
-            throw new IllegalArgumentException("Only a settlement late fee records the allocation or credit note that cut it");
+        Objects.requireNonNull(settlementAllocationId, "settlementAllocationId");
+        if ((planned.kind() == LateFeeCutoffKind.SETTLEMENT) != settlementAllocationId.isPresent()) {
+            throw new IllegalArgumentException("Only a settlement late fee records the allocation that cut it");
         }
         return new LateFeeCharge(debitNoteId, originInvoiceId, studentCurrentAccountId, planned, latePaymentVersionId,
-                Objects.requireNonNull(dailyRate, "dailyRate"), Objects.requireNonNull(baseAmount, "baseAmount"), settlementSource);
+                Objects.requireNonNull(dailyRate, "dailyRate"), Objects.requireNonNull(baseAmount, "baseAmount"), settlementAllocationId);
     }
 }

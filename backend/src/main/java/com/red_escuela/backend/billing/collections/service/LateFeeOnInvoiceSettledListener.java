@@ -8,13 +8,10 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.util.Set;
 
 @Component
 public class LateFeeOnInvoiceSettledListener {
     private static final String HANDLER_NAME = "LateFeeOnInvoiceSettledListener";
-    private static final Set<String> SETTLING_CAUSES = Set.of(InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name(),
-            InvoicePaymentEvent.DEBT_REDUCTION_CREDIT_NOTE_SETTLED_INVOICE.name());
 
     private final LateFeeAccrualService accrualService;
     private final ProcessedEffectGuard effectGuard;
@@ -26,7 +23,7 @@ public class LateFeeOnInvoiceSettledListener {
 
     @ApplicationModuleListener
     public void reconcileLateFeesOfSettledInvoice(InvoicePaidDomainEvent event) {
-        if (!SETTLING_CAUSES.contains(event.cause())) {
+        if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {
             return;
         }
         effectGuard.runEffectOnce(event, HANDLER_NAME, () -> accrualService.reconcileLateFeesOfSettledInvoice(event.invoiceId(), issueDateOf(event)));

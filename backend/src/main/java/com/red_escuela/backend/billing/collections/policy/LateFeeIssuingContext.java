@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.collections.policy;
 
-import com.red_escuela.backend.billing.collections.domain.LateFeeSettlementSource;
 import com.red_escuela.backend.billing.collections.domain.PlannedLateFeePeriod;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
@@ -12,7 +11,7 @@ import java.util.function.Predicate;
 
 public record LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, PlannedLateFeePeriod period, Long dueDateVersionId,
                                     LatePaymentTerms dueDateTerms, Predicate<LocalDate> frozenOn, Optional<LocalDate> enrollmentEndDate,
-                                    NonNegativeMoney lateFeeAmount, LocalDate issueDate, Optional<LateFeeSettlementSource> settlementSource) {
+                                    NonNegativeMoney lateFeeAmount, LocalDate issueDate, Optional<Long> settlementAllocationId) {
 
     public LateFeeIssuingContext {
         Objects.requireNonNull(origin, "origin");
@@ -24,7 +23,7 @@ public record LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteD
         Objects.requireNonNull(enrollmentEndDate, "enrollmentEndDate");
         Objects.requireNonNull(lateFeeAmount, "lateFeeAmount");
         Objects.requireNonNull(issueDate, "issueDate");
-        Objects.requireNonNull(settlementSource, "settlementSource");
+        Objects.requireNonNull(settlementAllocationId, "settlementAllocationId");
     }
 
     public LocalDate debitNoteDueDate() {
