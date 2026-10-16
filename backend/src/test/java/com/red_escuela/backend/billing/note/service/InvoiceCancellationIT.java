@@ -459,7 +459,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         long withdrawnRequest = pendingRequestId(requestCreditNote(withdrawn.invoiceId(), administrative, creditNoteBody("BILLING_ERROR", "Error", 1, "1000.00"), 202));
         for (Scenario scenario : List.of(rejected, withdrawn)) {
             inTransaction(() -> {
-                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), BillingTestFixtures.seedApprovedPaymentRow(scenario.accountId()), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
+                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), BillingTestFixtures.seedApprovedPaymentRow(scenario.accountId(), ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
                 return null;
             });
             assertThat(paymentStatusOf(scenario.invoiceId())).isEqualTo("PENDING");

@@ -50,7 +50,7 @@ class CurrentAccountAllocationEndpointIT extends AbstractCurrentAccountIT {
         Long march = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 3, 10));
         issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 4, 10));
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars("82000.00"), LocalDate.of(2027, 4, 1), "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars("82000.00")), ars("82000.00"), LocalDate.of(2027, 4, 1), "Pago");
             return null;
         });
         String token = tokenWithRole("ADMINISTRATIVO");
@@ -71,7 +71,7 @@ class CurrentAccountAllocationEndpointIT extends AbstractCurrentAccountIT {
         Long accountId = newAccountId(studentId, Currency.ARS);
         issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 3, 10));
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars("80000.00"), LocalDate.of(2027, 4, 1), "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 4, 1), "Pago");
             return null;
         });
         String token = tokenWithRole("DIRECTOR");

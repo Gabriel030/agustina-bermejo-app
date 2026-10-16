@@ -63,7 +63,7 @@ class CurrentAccountAllocationCommandSequencesIT extends AbstractCurrentAccountI
                     case ISSUE_INVOICE -> issueAdministrativeFeeWithLedgerDebit(accountId, command.amount().toPlainString(), date);
                     case RECEIVE_CREDIT -> {
                         inTransaction(() -> {
-                            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars(command.amount().toPlainString()), date, "Pago");
+                            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(command.amount().toPlainString())), ars(command.amount().toPlainString()), date, "Pago");
                             return null;
                         });
                         creditedInTotal = creditedInTotal.add(command.amount());

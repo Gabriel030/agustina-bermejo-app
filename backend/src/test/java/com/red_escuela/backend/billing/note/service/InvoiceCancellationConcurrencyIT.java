@@ -48,7 +48,7 @@ class InvoiceCancellationConcurrencyIT extends AbstractInvoiceCancellationIT {
             start.await();
             return inTransaction(() -> {
                 var account = service.lockStudentCurrentAccount(accountId);
-                service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars(amount), LocalDate.of(2027, 3, 11), "Pago");
+                service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars(amount)), ars(amount), LocalDate.of(2027, 3, 11), "Pago");
                 return allocationService.allocateAccountCreditToOldestInvoices(account, LocalDate.of(2027, 3, 11), ACTOR);
             });
         };

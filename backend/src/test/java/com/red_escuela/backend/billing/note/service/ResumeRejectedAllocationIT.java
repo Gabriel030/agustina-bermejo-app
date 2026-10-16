@@ -38,7 +38,7 @@ class ResumeRejectedAllocationIT extends AbstractInvoiceCancellationIT {
         long requestId = pendingRequestId(requestCancellation(scenario.invoiceId(), administrative, cancellationBody("CANCELLATION", "Baja"), 202));
         requestCancellation(scenario.invoiceId(), director, cancellationBody("CANCELLATION", "Baja directa"), 201);
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), BillingTestFixtures.seedApprovedPaymentRow(scenario.accountId()), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), BillingTestFixtures.seedApprovedPaymentRow(scenario.accountId(), ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
             return null;
         });
         assertThat(paymentStatusOf(otherInvoiceId)).isEqualTo("PENDING");

@@ -108,7 +108,7 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
             } catch (InterruptedException exception) {
                 throw new IllegalStateException(exception);
             }
-            return service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars("10.00"), DAY, "Pago");
+            return service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars("10.00")), ars("10.00"), DAY, "Pago");
         }));
         assertThat(holderHasLock.await(30, TimeUnit.SECONDS)).isTrue();
         Future<Long> waiter = pool.submit(() -> inTransaction(() -> service.lockStudentCurrentAccount(accountId).getLastEntrySequence()));

@@ -6,9 +6,12 @@ import org.flywaydb.core.api.FlywayException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,6 +60,19 @@ class LegacyPaymentDropMigrationTest {
                 + "values (?, 'ARS', ?, 'CREDIT', 'PAYMENT_RECEIVED', 100.00, 'ARS', 100.00, 'ARS', 'IN_FAVOR', current_date, now(), 'Pago', 100.00, 'ARS', ?)", accountId, sequence, paymentId);
     }
 
+    private static void migrateToExpectingAbort(DriverManagerDataSource dataSource, String message) {
+        assertThatThrownBy(() -> migrateTo(dataSource, "123"))
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining(message);
+    }
+
+    private static Long insertSecondAccount(JdbcTemplate jdbc) {
+        Long addressId = insertAndReturnId(jdbc, "address", "insert into address default values");
+        Long otherPerson = insertAndReturnId(jdbc, "person", "insert into person (name, last_name, dni, email, username, address_id) "
+                + "values ('Other', 'Person', '30111223', 'other@example.com', 'other.person', ?)", addressId);
+        return insertAccount(jdbc, otherPerson);
+    }
+
     @Test
     @Tag("D-144")
     @Tag("D-376")
@@ -70,9 +86,7 @@ class LegacyPaymentDropMigrationTest {
             Long accountId = insertAccount(jdbc, personId);
             insertPaymentEntry(jdbc, accountId, 1, 987654L);
 
-            assertThatThrownBy(() -> migrateTo(dataSource, "123"))
-                    .isInstanceOf(FlywayException.class)
-                    .hasMessageContaining("current account entr");
+            migrateToExpectingAbort(dataSource, "current account entr");
             assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name = 'legacy_payment'", Long.class)).isEqualTo(1L);
         }
     }
@@ -80,7 +94,51 @@ class LegacyPaymentDropMigrationTest {
     @Test
     @Tag("D-144")
     @Tag("D-376")
-    void theDropPassesWithValidEntriesAndTheForeignKeyRejectsOrphanAndForeignAccountPayments() {
+    void theDropAbortsWhenAnAccountEntryPointsToAPaymentOfAnotherAccount() {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
+            postgres.start();
+            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            migrateTo(dataSource, PREVIOUS_VERSION);
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            Long personId = insertPerson(jdbc);
+            Long accountId = insertAccount(jdbc, personId);
+            Long otherAccountId = insertSecondAccount(jdbc);
+            Long otherAccountPaymentId = insertPayment(jdbc, otherAccountId, personId);
+            insertPaymentEntry(jdbc, accountId, 1, otherAccountPaymentId);
+
+            migrateToExpectingAbort(dataSource, "current account entr");
+        }
+    }
+
+    @Test
+    @Tag("D-144")
+    @Tag("D-376")
+    void theDropAbortsWhenAnAllocationSourceHasNoPaymentBehindIt() {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
+            postgres.start();
+            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            migrateTo(dataSource, PREVIOUS_VERSION);
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            Long personId = insertPerson(jdbc);
+            Long accountId = insertAccount(jdbc, personId);
+            jdbc.execute((ConnectionCallback<Void>) connection -> {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("set session_replication_role = replica");
+                    statement.execute("insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, amount, "
+                            + "amount_currency, recorded_at) values (1, " + accountId + ", 1, 555, 10.00, 'ARS', now())");
+                    statement.execute("set session_replication_role = origin");
+                }
+                return null;
+            });
+
+            migrateToExpectingAbort(dataSource, "allocation source");
+        }
+    }
+
+    @Test
+    @Tag("D-144")
+    @Tag("D-376")
+    void theDropPassesWithValidEntriesAndTheCompositeForeignKeyRejectsOrphanAndForeignAccountPayments() {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
@@ -95,16 +153,12 @@ class LegacyPaymentDropMigrationTest {
 
             assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name in ('legacy_payment', 'legacy_payment_allocation')", Long.class)).isZero();
             assertThat(jdbc.queryForObject("select count(*) from pg_constraint where conname = 'fk_current_account_entry_payment'", Long.class)).isEqualTo(1L);
-            assertThatThrownBy(() -> insertPaymentEntry(jdbc, accountId, 2, 987654L)).isInstanceOf(DataIntegrityViolationException.class);
-            Long otherAccountId = insertAccountOfAnotherStudent(jdbc);
-            assertThatThrownBy(() -> insertPaymentEntry(jdbc, otherAccountId, 1, paymentId)).isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> insertPaymentEntry(jdbc, accountId, 2, 987654L))
+                    .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("fk_current_account_entry_payment");
+            Long otherAccountId = insertSecondAccount(jdbc);
+            Long otherAccountPaymentId = insertPayment(jdbc, otherAccountId, personId);
+            assertThatThrownBy(() -> insertPaymentEntry(jdbc, accountId, 2, otherAccountPaymentId))
+                    .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("fk_current_account_entry_payment");
         }
-    }
-
-    private static Long insertAccountOfAnotherStudent(JdbcTemplate jdbc) {
-        Long addressId = insertAndReturnId(jdbc, "address", "insert into address default values");
-        Long otherPerson = insertAndReturnId(jdbc, "person", "insert into person (name, last_name, dni, email, username, address_id) "
-                + "values ('Other', 'Person', '30111223', 'other@example.com', 'other.person', ?)", addressId);
-        return insertAccount(jdbc, otherPerson);
     }
 }

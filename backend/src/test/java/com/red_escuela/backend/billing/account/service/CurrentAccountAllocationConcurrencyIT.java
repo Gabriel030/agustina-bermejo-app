@@ -66,7 +66,7 @@ class CurrentAccountAllocationConcurrencyIT extends AbstractCurrentAccountIT {
                     start.await();
                     return inTransaction(() -> {
                         var account = service.lockStudentCurrentAccount(accountId);
-                        service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars("80000.00"), LocalDate.of(2027, 4, 1), "Pago");
+                        service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 4, 1), "Pago");
                         return allocationService.allocateAccountCreditToOldestInvoices(account, LocalDate.of(2027, 4, 1), ACTOR);
                     });
                 }));

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -54,7 +55,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void aBrokenDataIntegrityIsAServerErrorLoggedAtErrorLevel(CapturedOutput output) throws Exception {
-        mockMvc.perform(get("/broken-integrity")).andExpect(status().isInternalServerError());
+        mockMvc.perform(get("/broken-integrity")).andExpect(status().isInternalServerError()).andExpect(content().string(""));
 
         assertThat(output).contains("ERROR").contains("Payment 404 referenced by an allocation source does not exist");
     }

@@ -138,7 +138,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
 
     protected void seedAllocation(Long accountId, Long invoiceId, Currency currency, String amount, LocalDate effectiveDate) {
         NonNegativeMoney money = NonNegativeMoney.of(new BigDecimal(amount), currency);
-        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId);
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId, money);
         inTransaction(() -> {
             Long entryId = service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, money, effectiveDate, "Pago de prueba").getId();
             Long allocationId = jdbc.queryForObject("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, "

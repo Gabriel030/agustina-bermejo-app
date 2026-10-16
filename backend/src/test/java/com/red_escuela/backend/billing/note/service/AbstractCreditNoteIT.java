@@ -76,7 +76,7 @@ public abstract class AbstractCreditNoteIT extends AbstractCurrentAccountIT {
     protected void payAccount(Long accountId, String amount, LocalDate paidOn) {
         inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
-            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars(amount), paidOn, "Pago");
+            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars(amount)), ars(amount), paidOn, "Pago");
             allocationService.allocateAccountCreditToOldestInvoices(account, paidOn, ACTOR);
             return null;
         });

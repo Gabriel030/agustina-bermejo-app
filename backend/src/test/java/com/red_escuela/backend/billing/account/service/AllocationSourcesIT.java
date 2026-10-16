@@ -52,7 +52,7 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
     }
 
     private long receivePayment(String amount, LocalDate paidOn) {
-        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId);
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(amount));
         inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, ars(amount), paidOn, "Pago"));
         return paymentId;
     }

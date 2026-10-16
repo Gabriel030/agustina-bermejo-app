@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
 import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
 import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
+import com.red_escuela.backend.billing.note.exception.CreditNoteSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
@@ -180,7 +181,7 @@ public class InvoiceQueryService {
         return sources.stream().map(source -> {
             String number = numbers.get(source.getCreditNoteId());
             if (number == null) {
-                throw new IllegalStateException("Credit note " + source.getCreditNoteId() + " referenced by an allocation source does not exist");
+                throw new CreditNoteSourceIntegrityException(source.getCreditNoteId());
             }
             return new PriceBreakdownCreditNoteResponse(source.getCreditNoteId(), number, source.getAmount().value(), "Nota de crédito " + number);
         }).toList();

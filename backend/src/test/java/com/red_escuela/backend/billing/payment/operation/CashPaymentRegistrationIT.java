@@ -268,7 +268,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         assertThat(jdbc.queryForObject("select count(*) from idempotency_record", Long.class)).isNotNull();
         inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(debtor.accountId());
-            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars("80000.00"), TODAY, "Transferencia aprobada");
+            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars("80000.00")), ars("80000.00"), TODAY, "Transferencia aprobada");
             allocationService.allocateAccountCreditToOldestInvoices(account, TODAY, ACTOR);
             return null;
         });
@@ -302,7 +302,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
         String fingerprintFor100k = fingerprintOf(debtor.studentId(), "100000.00");
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(debtor.accountId()), BillingTestFixtures.seedApprovedPaymentRow(debtor.accountId()), ars("10000.00"), TODAY, "Saldo que entra");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(debtor.accountId()), BillingTestFixtures.seedApprovedPaymentRow(debtor.accountId(), ars("10000.00")), ars("10000.00"), TODAY, "Saldo que entra");
             return null;
         });
         long paymentsBefore = paymentsOf(debtor.accountId());

@@ -30,7 +30,7 @@ class InvoiceIssuingWithAccountCreditIT extends AbstractInvoiceIssuingIT {
     private void creditAccount(Long studentId, String amount) {
         transactionTemplate.executeWithoutResult(status -> {
             StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(studentId, Currency.ARS);
-            accountService.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars(amount), LocalDate.of(2027, 3, 1), "Pago");
+            accountService.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars(amount)), ars(amount), LocalDate.of(2027, 3, 1), "Pago");
         });
     }
 
