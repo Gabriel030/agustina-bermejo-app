@@ -32,8 +32,8 @@ public class PromotionDiscountCandidateStrategy implements InvoiceDiscountCandid
     }
 
     @Override
-    public DiscountType discountType() {
-        return DiscountType.PROMOTION;
+    public DiscountCandidateOrigin origin() {
+        return DiscountCandidateOrigin.LEGACY_PROMOTION;
     }
 
     @Override

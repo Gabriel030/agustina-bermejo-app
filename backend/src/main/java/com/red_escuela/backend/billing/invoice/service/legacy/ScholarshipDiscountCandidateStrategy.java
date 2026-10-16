@@ -32,8 +32,8 @@ public class ScholarshipDiscountCandidateStrategy implements InvoiceDiscountCand
     }
 
     @Override
-    public DiscountType discountType() {
-        return DiscountType.SCHOLARSHIP;
+    public DiscountCandidateOrigin origin() {
+        return DiscountCandidateOrigin.LEGACY_SCHOLARSHIP;
     }
 
     @Override

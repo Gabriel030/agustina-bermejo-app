@@ -14,6 +14,7 @@ public final class InvoiceIssuingContext {
     private final InvoiceIssuingFacts facts;
     private List<InvoiceDiscountCandidate> discountCandidates = List.of();
     private Map<Integer, InvoiceDiscountCandidate> winningDiscounts = Map.of();
+    private Runnable discountReselection = () -> { };
 
     public InvoiceIssuingContext(InvoiceIssuingRequest request, InvoiceIssuingFacts facts) {
         this.request = Objects.requireNonNull(request, "request");
@@ -42,6 +43,14 @@ public final class InvoiceIssuingContext {
 
     public Map<Integer, InvoiceDiscountCandidate> winningDiscounts() {
         return winningDiscounts;
+    }
+
+    public void attachDiscountReselection(Runnable reselection) {
+        this.discountReselection = Objects.requireNonNull(reselection, "reselection");
+    }
+
+    public void reselectDiscounts() {
+        discountReselection.run();
     }
 
     public void recordDiscountSelection(List<InvoiceDiscountCandidate> candidates, Map<Integer, InvoiceDiscountCandidate> winnerByLine) {

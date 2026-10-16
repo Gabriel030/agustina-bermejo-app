@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 
 import java.util.Objects;
@@ -12,11 +13,12 @@ public record InvoiceDiscountDraft(
         NonNegativeMoney discountAmount,
         Integer installmentNumber,
         Integer installmentsTotal,
-        Long sourceInstallmentId) {
+        Long sourceInstallmentId,
+        MonetaryAdjustment calculation) {
 
     public InvoiceDiscountDraft(DiscountType discountType, String concept, Long studentDiscountId, NonNegativeMoney baseAmount,
                                 NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
-        this(discountType, concept, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, null);
+        this(discountType, concept, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, null, null);
     }
 
 

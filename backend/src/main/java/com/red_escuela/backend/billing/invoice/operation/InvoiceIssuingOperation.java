@@ -1,9 +1,7 @@
 package com.red_escuela.backend.billing.invoice.operation;
 
-import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
-import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult.InvoiceIssued;
@@ -24,10 +22,8 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.springframework.stereotype.Component;
 
-import java.util.EnumMap;
 import java.util.Optional;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingContext, InvoiceIssued> {
@@ -37,7 +33,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
     private final CurrentAccountAllocationService allocationService;
     private final InvoiceRepository invoiceRepository;
     private final InvoiceNumberGenerator numberGenerator;
-    private final Map<DiscountType, InvoiceDiscountCandidateStrategy> strategiesByType = new EnumMap<>(DiscountType.class);
+    private final InvoiceDiscountStrategiesByOrigin strategiesByOrigin;
 
     public InvoiceIssuingOperation(PolicySet<InvoiceIssuingContext> issuingPolicies, StudentCurrentAccountService accountService,
                                    CurrentAccountAllocationService allocationService, InvoiceRepository invoiceRepository, InvoiceNumberGenerator numberGenerator,
@@ -47,7 +43,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         this.allocationService = allocationService;
         this.invoiceRepository = invoiceRepository;
         this.numberGenerator = numberGenerator;
-        strategies.forEach(strategy -> strategiesByType.put(strategy.discountType(), strategy));
+        this.strategiesByOrigin = new InvoiceDiscountStrategiesByOrigin(strategies);
     }
 
     @Override
@@ -79,6 +75,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
     public InvoiceIssued processOperation(InvoiceIssuingContext context) {
         InvoiceIssuingRequest request = context.request();
         StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(request.studentId(), context.facts().offeringCurrency());
+        context.reselectDiscounts();
         Invoice invoice = InvoiceDraftAssembler.assembleDraftInvoice(context, account.getId());
         invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), context.facts().issueDate(), request.dueDate(),
                 context.facts().studentSnapshot(), request.actor());
@@ -86,7 +83,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         invoiceRepository.flush();
         accountService.recordInvoiceIssuedDebit(account, issued, context.facts().issueDate());
         allocationService.allocateAccountCreditToOldestInvoices(account, context.facts().issueDate(), request.actor());
-        context.winningDiscounts().values().forEach(this::markDiscountAsApplied);
+        strategiesByOrigin.markWinnersAsApplied(context.winningDiscounts().values());
         return new InvoiceIssued(issued);
     }
 
@@ -103,9 +100,5 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
                     paid.businessDate()));
             default -> Optional.empty();
         };
-    }
-
-    private void markDiscountAsApplied(InvoiceDiscountCandidate winner) {
-        strategiesByType.get(winner.discountType()).markDiscountAsApplied(winner);
     }
 }
