@@ -70,6 +70,8 @@ class PriceSameDateAndActivationTest {
         assertThat(dueToday.getCancellationReason()).isNull();
         assertThat(dueToday.getStatusChanges()).extracting(PriceVersionStatusChange::getToStatus)
                 .containsExactly(PriceVersionStatus.SCHEDULED, PriceVersionStatus.EFFECTIVE, PriceVersionStatus.SUPERSEDED);
+        assertThat(dueToday.getStatusChanges().get(1).getActorPersonId()).isEqualTo(DIRECTOR);
+        assertThat(dueToday.getStatusChanges().get(1).getActorProcess()).isNull();
         assertThat(replacement.getStatus()).isEqualTo(PriceVersionStatus.EFFECTIVE);
         assertThat(amountOn(price, SEPTEMBER_FIRST)).isEqualTo(125000);
     }

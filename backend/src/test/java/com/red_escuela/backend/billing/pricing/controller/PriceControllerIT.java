@@ -31,6 +31,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +58,7 @@ class PriceControllerIT extends AbstractIntegrationTest {
     private PriceReader priceReader;
 
     private String directorToken;
+    private String administrativeToken;
     private long programId;
     private long priceId;
 
@@ -64,7 +66,7 @@ class PriceControllerIT extends AbstractIntegrationTest {
     void setUp() throws Exception {
         MutableClock.INSTANCE.setDate(TODAY);
         directorToken = tokenWithRole("DIRECTOR");
-        String administrativeToken = tokenWithRole("ADMINISTRATIVO");
+        administrativeToken = tokenWithRole("ADMINISTRATIVO");
         String response = mockMvc.perform(post("/programs").header("Authorization", "Bearer " + administrativeToken).contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("name", "Carrera de precios " + System.nanoTime(), "totalYears", 3, "totalCreditsRequired", 100,
                                 "price", Map.of("amount", 100000, "currency", "ARS")))))
@@ -201,6 +203,19 @@ class PriceControllerIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select status from price_version where id = ?", String.class, morning)).isEqualTo("SUPERSEDED");
         assertThat(count("select count(*) from price_version where price_id = ? and status = 'EFFECTIVE'", priceId)).isEqualTo(1);
         assertThat(amountOn(TODAY)).isEqualTo(112000);
+    }
+
+    @Test
+    @Tag("D-115")
+    @Tag("D-110")
+    void theAdministrativeEditingTheProgramPriceIs409WhileTheDirectorsVersionStartsTodayAndTheJobHasNotRun() throws Exception {
+        long scheduledId = idOf(publish(directorToken, 150000, TODAY.plusDays(1)).andExpect(status().isCreated()));
+        MutableClock.INSTANCE.setDate(TODAY.plusDays(1));
+        assertThat(count("select count(*) from price_version where id = ? and status = 'SCHEDULED'", scheduledId)).isEqualTo(1);
+
+        mockMvc.perform(put("/programs/{id}", programId).header("Authorization", "Bearer " + administrativeToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"price\":{\"amount\":170000,\"currency\":\"ARS\"}}"))
+                .andExpect(status().isConflict());
     }
 
     @Test

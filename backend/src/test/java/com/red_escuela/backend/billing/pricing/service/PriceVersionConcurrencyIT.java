@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.pricing.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -9,6 +10,8 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.AfterEach;
@@ -65,6 +68,10 @@ class PriceVersionConcurrencyIT extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private PriceVersionActivator activator;
+    @Autowired
+    private PriceReader priceReader;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private String adminToken;
     private String directorToken;
@@ -72,6 +79,7 @@ class PriceVersionConcurrencyIT extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         MutableClock.INSTANCE.setDate(TODAY);
+        jdbc.update("update price_version set status = 'CANCELLED', cancellation_reason = 'cleanup', cancelled_at = now() where status = 'SCHEDULED'");
         adminToken = jwtService.generateAccessToken(person("ADMINISTRATIVO"));
         directorToken = jwtService.generateAccessToken(person("DIRECTOR"));
     }
@@ -239,24 +247,97 @@ class PriceVersionConcurrencyIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aPublicationForTheDayOfAScheduledVersionSupersedesItAfterActivatingItAndNeverCancelsItEvenBeforeTheJobRuns() throws Exception {
+        LocalDate dueDay = TODAY.plusDays(1);
+        long priceId = createPrice();
+        long scheduledId = versionIdOf(publish(priceId, 120000, dueDay));
+        MutableClock.INSTANCE.setDate(dueDay);
+
+        assertThat(publish(priceId, 125000, dueDay).getStatus()).isEqualTo(201);
+
+        assertThat(statusOf(scheduledId)).isEqualTo("SUPERSEDED");
+        assertThat(count("select count(*) from price_version_status_change where price_version_id = ? and to_status = 'CANCELLED'", scheduledId)).isZero();
+        assertThat(count("select count(*) from price_version_status_change where price_version_id = ? and event = 'REACH_START' and actor_person_id is not null",
+                scheduledId)).isEqualTo(1);
+        assertConsistentHistory(priceId);
+        assertThat(activator.activateDueVersions().versionsActivated()).isZero();
+    }
+
+    @Test
+    void oneFailingPriceDoesNotRollBackTheActivationOfTheOthersAndIsRetriedTheNextDay() throws Exception {
+        LocalDate dueDay = TODAY.plusDays(1);
+        long failingPrice = createPrice();
+        long failingVersion = versionIdOf(publish(failingPrice, 120000, dueDay));
+        long healthyPrice = createPrice();
+        long healthyVersion = versionIdOf(publish(healthyPrice, 130000, dueDay));
+        MutableClock.INSTANCE.setDate(dueDay);
+        double failuresBefore = meterRegistry.counter("billing_price_version_activation_failed_total").count();
+        jdbc.execute("create function test_reject_price_activation() returns trigger language plpgsql as $$ begin "
+                + "raise exception 'activation rejected by test'; end; $$");
+        jdbc.execute("create trigger trg_test_reject_price_activation before update on price_version for each row "
+                + "when (new.id = " + failingVersion + " and new.status = 'EFFECTIVE') execute function test_reject_price_activation()");
+        try {
+            PriceActivationOutcome outcome = activator.activateDueVersions();
+
+            assertThat(outcome.pricesFailed()).isEqualTo(1);
+            assertThat(outcome.pricesActivated()).isEqualTo(1);
+            assertThat(outcome.versionsActivated()).isEqualTo(1);
+            assertThat(statusOf(healthyVersion)).isEqualTo("EFFECTIVE");
+            assertThat(statusOf(failingVersion)).isEqualTo("SCHEDULED");
+            assertThat(meterRegistry.counter("billing_price_version_activation_failed_total").count()).isEqualTo(failuresBefore + 1);
+            assertThat(count("select count(*) from batch_execution_log where job_name = 'ActivateDuePriceVersionsJob' and status = 'PARTIAL_FAILURE' "
+                    + "and failed_count = 1 and errors like ?", "%price=" + failingPrice + "%")).isEqualTo(1);
+        } finally {
+            jdbc.execute("drop trigger trg_test_reject_price_activation on price_version");
+            jdbc.execute("drop function test_reject_price_activation()");
+        }
+
+        MutableClock.INSTANCE.setDate(dueDay.plusDays(1));
+        PriceActivationOutcome retry = activator.activateDueVersions();
+
+        assertThat(retry.pricesFailed()).isZero();
+        assertThat(retry.versionsActivated()).isEqualTo(1);
+        assertThat(statusOf(failingVersion)).isEqualTo("EFFECTIVE");
+        assertConsistentHistory(failingPrice);
+        assertConsistentHistory(healthyPrice);
+    }
+
+    @Test
     void activatingOneDayOfPricesWalksThemAllAndLeavesTheNextDayUntouched() throws Exception {
         LocalDate septemberFirst = LocalDate.of(2027, 9, 1);
         LocalDate octoberFirst = LocalDate.of(2027, 10, 1);
         long priceId = createPrice();
+        long first = jdbc.queryForObject("select id from price_version where price_id = ? order by id limit 1", Long.class, priceId);
         long october = versionIdOf(publish(priceId, 120000, octoberFirst));
         long september = versionIdOf(publish(priceId, 110000, septemberFirst));
+        OfferingReference offering = OfferingReference.ofProgram(jdbc.queryForObject("select program_id from price where id = ?", Long.class, priceId));
+
+        assertThat(amountOn(offering, LocalDate.of(2027, 8, 31))).isEqualTo(100000);
+        assertThat(amountOn(offering, LocalDate.of(2027, 9, 15))).isEqualTo(110000);
+        assertThat(amountOn(offering, octoberFirst)).isEqualTo(120000);
 
         MutableClock.INSTANCE.setDate(septemberFirst);
-        activator.activateDueVersions();
+        assertThat(activator.activateDueVersions().versionsActivated()).isEqualTo(1);
         assertThat(statusOf(september)).isEqualTo("EFFECTIVE");
         assertThat(statusOf(october)).isEqualTo("SCHEDULED");
+        assertThat(statusOf(first)).isEqualTo("SUPERSEDED");
+        assertThat(activator.activateDueVersions().versionsActivated()).isZero();
 
         MutableClock.INSTANCE.setDate(octoberFirst);
-        activator.activateDueVersions();
+        assertThat(activator.activateDueVersions().versionsActivated()).isEqualTo(1);
         assertThat(statusOf(october)).isEqualTo("EFFECTIVE");
         assertThat(statusOf(september)).isEqualTo("SUPERSEDED");
-        assertThat(count("select count(*) from price_version_status_change c join price_version v on v.id = c.price_version_id "
-                + "where v.price_id = ? and c.actor_process = 'PriceVersionActivation'", priceId)).isEqualTo(4);
+        assertThat(activator.activateDueVersions().versionsActivated()).isZero();
+        assertThat(count("select count(*) from price_version_status_change where price_version_id = ? and event = 'REACH_START' and actor_process = 'PriceVersionActivation'",
+                september)).isEqualTo(1);
+        assertThat(count("select count(*) from price_version_status_change where price_version_id = ? and event = 'SUPERSEDE' and actor_process = 'PriceVersionActivation'",
+                first)).isEqualTo(1);
+        assertThat(count("select count(*) from price_version_status_change where price_version_id in (?, ?) and event in ('REACH_START', 'SUPERSEDE') "
+                + "and actor_process = 'PriceVersionActivation'", october, september)).isEqualTo(3);
         assertConsistentHistory(priceId);
+    }
+
+    private long amountOn(OfferingReference offering, LocalDate date) {
+        return priceReader.requirePriceVersionEffectiveOn(offering, FeeType.MONTHLY_INSTALLMENT, date).finalAmount().value().amount().longValue();
     }
 }

@@ -146,7 +146,7 @@ public class Price {
                 .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && version.getEffectiveFrom().equals(effectiveFrom))
                 .forEach(version -> {
                     if (alreadyInForce) {
-                        version.reachStart(now);
+                        version.reachStartCausedBy(causedById, now);
                     } else {
                         version.cancel(causedById, SAME_DATE_REPLACEMENT_REASON, now);
                     }
