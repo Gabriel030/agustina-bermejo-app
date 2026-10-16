@@ -194,6 +194,28 @@ class StudentDiscountPoliciesTest {
                 StudentDiscountGrantCheck.DefinitionFault.NONE, null, null, overlap, enrollmentFeeIssued);
     }
 
+    @Test
+    void theCoherencePolicyRejectsAnUnsupportedTypeAZeroAdjustmentAZeroCapAndAnInvalidReason() {
+        StudentDiscountCoherencePolicy policy = new StudentDiscountCoherencePolicy();
+        MonetaryAdjustment zeroPercent = new MonetaryAdjustment.Proportional(Percentage.ofPoints(BigDecimal.ZERO));
+        MonetaryAdjustment zeroAmount = new MonetaryAdjustment.Nominal(Money.of(BigDecimal.ZERO, Currency.ARS));
+
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.PROMOTION, HALF, null, "motivo")))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, null, null, "motivo")))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, zeroPercent, null, "motivo")))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, zeroAmount, null, "motivo")))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, HALF, NonNegativeMoney.zero(Currency.ARS), "motivo")))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, HALF, null, null)))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, HALF, null, "  ")))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, HALF, null, "x".repeat(401))))).isEqualTo("INVALID_STUDENT_DISCOUNT");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.SCHOLARSHIP, HALF, null, "x".repeat(400))))).isEqualTo("ALLOWED");
+        assertThat(code(policy.evaluateRule(coherence(DiscountType.INDIVIDUAL, HALF, NonNegativeMoney.of(new BigDecimal("1.00"), Currency.ARS), "motivo")))).isEqualTo("ALLOWED");
+    }
+
+    private StudentDiscountGrantCheck coherence(DiscountType type, MonetaryAdjustment calculation, NonNegativeMoney cap, String reason) {
+        return new StudentDiscountGrantCheck(type, InvoiceType.MONTHLY_INSTALLMENT, calculation, cap, Currency.ARS, NEXT, NEXT, NEXT, false, reason);
+    }
+
     private StudentDiscountGrantCheck withDeadline(java.time.LocalDate deadline, java.time.LocalDate today) {
         return new StudentDiscountGrantCheck(DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, HALF, null, Currency.ARS, NEXT, NEXT, NEXT, false, "motivo",
                 StudentDiscountGrantCheck.DefinitionFault.NONE, deadline, today);
