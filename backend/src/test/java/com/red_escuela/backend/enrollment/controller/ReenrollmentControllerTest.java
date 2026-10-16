@@ -27,6 +27,7 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +42,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -153,17 +155,43 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void waiveDecisionIsNoLongerAcceptedAndTheDebtIsNeverForgiven() throws Exception {
+    @Tag("C-18")
+    @Tag("D-251")
+    void reinstatingAWithdrawnEnrollmentIsNotAnOperationAnymore() throws Exception {
         Student student = persistStudent("88020001");
         Program program = persistProgram();
         persistOldWithdrawnCycleWithDebt(student, program);
-
         String token = tokenWithRole("administrativo.reenrollment." + System.nanoTime(), "ADMINISTRATIVO");
 
         mockMvc.perform(post("/students/{studentId}/reenrollment/program/{programId}", student.getId(), program.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
+                        .content("{}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/students/{studentId}/reenrollment/course/{courseId}", student.getId(), 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Tag("C-19")
+    @Tag("D-251")
+    void waiveDecisionIsNotAcceptedAndTheDebtIsNeverForgiven() throws Exception {
+        Student student = persistStudent("88020002");
+        Program program = persistProgram();
+        persistOldWithdrawnCycleWithDebt(student, program);
+        String token = tokenWithRole("director.reenrollment." + System.nanoTime(), "DIRECTOR");
+
+        mockMvc.perform(post("/students/{studentId}/reenrollment/program/{programId}", student.getId(), program.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
                         .content("{\"decision\":\"WAIVE\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(invoiceRepository.existsByStudentIdAndPaymentStatus(student.getId(), InvoicePaymentStatus.OVERDUE)).isTrue();
     }
 }

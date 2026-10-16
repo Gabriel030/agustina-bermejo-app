@@ -7,6 +7,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 
 import com.tngtech.archunit.lang.CompositeArchRule;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -179,6 +180,15 @@ public final class ArchitectureRules {
                         .and(target(name("applyCreditNote")).or(target(name("allocateFullInvoicePayment"))).or(target(name("reversePaymentAllocation")))
                                 .or(target(name("markInvoiceAsOverdue"))).or(target(name("issueInvoice")))))
                 .because("a withdrawal or a graduation never touches invoices, credit notes or the current account; billing decides through its port (D-142, D-296)");
+    }
+
+    public static ArchRule enrollmentReadsStudentDebtOnlyThroughTheDebtGuard() {
+        return noClasses().that().resideInAPackage("..enrollment..")
+                .should().callMethodWhere(target(owner(assignableTo(InvoiceRepository.class)))
+                        .and(target(name("existsByStudentIdAndPaymentStatus"))
+                                .or(target(name("existsOpenInvoiceOfWithdrawnEnrollmentByStudentId")))
+                                .or(target(name("existsOpenInvoiceOfWithdrawnEnrollmentInPendingRequestByStudentId")))))
+                .because("the debt that blocks a new enrollment is decided only by EnrollmentDebtGuard and its policy (D-142, D-314)");
     }
 
     public static ArchRule policiesArePure() {

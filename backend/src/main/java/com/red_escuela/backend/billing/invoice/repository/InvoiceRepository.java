@@ -169,6 +169,36 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     boolean existsByStudentIdAndPaymentStatus(@Param("studentId") Long studentId, @Param("status") InvoicePaymentStatus status);
 
+    @Query(value = """
+            select exists (
+              select 1 from invoice i
+              join student_current_account a on a.id = i.student_current_account_id
+              where a.student_id = :studentId
+                and i.document_status = 'ISSUED'
+                and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
+                and exists (select 1 from invoice_line l
+                            where l.invoice_id = i.id
+                              and (l.program_enrollment_id in (select pe.id from program_enrollment pe where pe.status = 'WITHDRAWN')
+                                   or l.course_enrollment_id in (select ce.id from course_enrollment ce where ce.status = 'WITHDRAWN'))))
+            """, nativeQuery = true)
+    boolean existsOpenInvoiceOfWithdrawnEnrollmentByStudentId(@Param("studentId") Long studentId);
+
+    @Query(value = """
+            select exists (
+              select 1 from invoice i
+              join student_current_account a on a.id = i.student_current_account_id
+              where a.student_id = :studentId
+                and i.document_status = 'ISSUED'
+                and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
+                and exists (select 1 from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
+                            where ari.invoice_id = i.id and ar.status = 'PENDING')
+                and exists (select 1 from invoice_line l
+                            where l.invoice_id = i.id
+                              and (l.program_enrollment_id in (select pe.id from program_enrollment pe where pe.status = 'WITHDRAWN')
+                                   or l.course_enrollment_id in (select ce.id from course_enrollment ce where ce.status = 'WITHDRAWN'))))
+            """, nativeQuery = true)
+    boolean existsOpenInvoiceOfWithdrawnEnrollmentInPendingRequestByStudentId(@Param("studentId") Long studentId);
+
     @Query("select a.studentId from StudentCurrentAccount a, Invoice i where i.id = :invoiceId and a.id = i.studentCurrentAccountId")
     Optional<Long> findOwnerStudentIdByInvoiceId(@Param("invoiceId") Long invoiceId);
 
