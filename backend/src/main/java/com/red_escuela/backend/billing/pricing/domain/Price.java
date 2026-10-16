@@ -180,6 +180,20 @@ public class Price {
                 .max(RESOLUTION_ORDER);
     }
 
+    public Optional<PriceVersion> findNextScheduledVersionAfter(LocalDate date) {
+        return versions.stream()
+                .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && version.getEffectiveFrom().isAfter(date))
+                .min(RESOLUTION_ORDER);
+    }
+
+    public Optional<PriceVersion> findOpenProposal() {
+        return versions.stream().filter(PriceVersion::isOpenProposal).max(RESOLUTION_ORDER);
+    }
+
+    public List<PriceVersion> versionsNewestFirst() {
+        return versions.stream().sorted(RESOLUTION_ORDER.reversed()).toList();
+    }
+
     public List<PriceVersion> getVersions() {
         return List.copyOf(versions);
     }
