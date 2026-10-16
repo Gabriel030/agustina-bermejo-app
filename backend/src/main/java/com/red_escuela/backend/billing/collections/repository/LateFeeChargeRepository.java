@@ -20,21 +20,31 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
 
     @Query(value = """
             select i.id from invoice i
-            join payment_allocation a on a.invoice_id = i.id and a.reverses_allocation_id is null
-              and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
+            join (
+                select a.invoice_id as invoice_id, a.effective_date as settled_on, lpad(to_hex(a.id), 32, '0')::uuid as marker
+                from payment_allocation a
+                where a.reverses_allocation_id is null and a.allocated_on >= :since
+                  and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
+                union all
+                select n.invoice_id, n.issue_date, (lpad('1', 16, '0') || lpad(to_hex(n.id), 16, '0'))::uuid
+                from credit_note n
+                where n.issue_date >= :since and n.reason <> 'CANCELLATION' and n.offset_amount > 0
+                  and n.id = (select max(m.id) from credit_note m where m.invoice_id = n.invoice_id and m.reason <> 'CANCELLATION' and m.offset_amount > 0)
+                  and not exists (select 1 from payment_allocation c where c.invoice_id = n.invoice_id and c.reverses_allocation_id is null
+                                  and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = c.id))
+            ) s on s.invoice_id = i.id
             where i.payment_status = 'PAID' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
-              and i.id > :lastId and a.allocated_on >= :since
-              and a.effective_date > i.due_date + coalesce(
+              and i.id > :lastId
+              and s.settled_on > i.due_date + coalesce(
                     (select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
                      where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= i.due_date
                      order by v.effective_from desc, v.decided_at desc, v.id desc limit 1),
                     (select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
                      where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
                      order by v.effective_from asc, v.decided_at asc, v.id asc limit 1), 0)
-              and (not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date)
-                   or (exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end > a.effective_date)
-                       and not exists (select 1 from processed_effect p where p.handler_name = 'LateFeeOverchargeRecorder'
-                                       and p.event_id = lpad(to_hex(a.id), 32, '0')::uuid))) 
+              and (not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= s.settled_on)
+                   or (exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end > s.settled_on)
+                       and not exists (select 1 from processed_effect p where p.handler_name = 'LateFeeOverchargeRecorder' and p.event_id = s.marker)))
             order by i.id asc
             limit :pageSize
             """, nativeQuery = true)

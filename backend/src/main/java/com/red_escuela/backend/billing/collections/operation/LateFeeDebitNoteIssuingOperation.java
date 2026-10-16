@@ -98,7 +98,7 @@ public class LateFeeDebitNoteIssuingOperation implements BillingOperation<LateFe
         Invoice issued = debitNoteIssuer.issueLateFeeDebitNote(header, line, context.issueDate(), context.debitNoteDueDate(), context.draft().recipient(), ACTOR);
         accountService.recordDebitNoteIssuedDebit(account, issued, context.issueDate());
         LateFeeCharge charge = chargeRepository.save(LateFeeCharge.recordLateFeeCharge(issued.getId(), origin.invoiceId(), account.getId(), context.period(),
-                context.dueDateVersionId(), context.dueDateTerms().dailyLateFeeRate(), origin.finalLinePrice(), context.settlementAllocationId()));
+                context.dueDateVersionId(), context.dueDateTerms().dailyLateFeeRate(), origin.finalLinePrice(), context.settlementSource()));
         allocationService.allocateAccountCreditToOldestInvoices(account, context.issueDate(), ACTOR);
         recordIssuance(context, issued);
         return new LateFeeDebitNoteIssued(issued, charge);
@@ -115,10 +115,10 @@ public class LateFeeDebitNoteIssuingOperation implements BillingOperation<LateFe
     private void recordIssuance(LateFeeIssuingContext context, Invoice issued) {
         LateFeeAccrualPeriod period = context.period().period();
         long daysLate = ChronoUnit.DAYS.between(period.lastDay(), context.issueDate());
-        log.info("Recargo emitido: nota={}, origen={}, periodo={}..{}, diasCobrados={}, diasDelPeriodo={}, tasaDiaria={}, base={}, monto={}, corte={}, imputacion={}, versionMora={}, diasDeDemora={}",
+        log.info("Recargo emitido: nota={}, origen={}, periodo={}..{}, diasCobrados={}, diasDelPeriodo={}, tasaDiaria={}, base={}, monto={}, corte={}, fuenteDelSaldado={}, versionMora={}, diasDeDemora={}",
                 issued.getInvoiceNumber().value(), context.origin().invoiceNumber(), period.firstDay(), period.lastDay(), context.period().chargedDays(), period.days(),
                 context.dueDateTerms().dailyLateFeeRate().fraction(), context.origin().finalLinePrice().value().amount(), context.lateFeeAmount().value().amount(),
-                context.period().kind(), context.settlementAllocationId().orElse(null), context.dueDateVersionId(), daysLate);
+                context.period().kind(), context.settlementSource().orElse(null), context.dueDateVersionId(), daysLate);
         if (daysLate > LateFeeIssuedEvent.ISSUING_WINDOW_DAYS) {
             log.warn("Recargo emitido fuera del plazo de {} días de la RG 4540: nota={}, origen={}, periodo={}..{}, fechaHecho={}, emitido={}",
                     LateFeeIssuedEvent.ISSUING_WINDOW_DAYS, issued.getInvoiceNumber().value(), context.origin().invoiceNumber(), period.firstDay(), period.lastDay(),

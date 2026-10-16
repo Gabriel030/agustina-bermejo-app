@@ -15,6 +15,20 @@ import com.red_escuela.backend.billing.account.service.StudentCurrentAccountServ
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.CreditNoteApplicationKind;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceCreditNoteApplication;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceLineCredit;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidEvent;
+import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
+import com.red_escuela.backend.billing.note.domain.CreditNote;
+import com.red_escuela.backend.billing.note.domain.CreditNoteLineRequest;
+import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
+import com.red_escuela.backend.billing.note.service.CreditNoteNumberGenerator;
+import com.red_escuela.backend.shared.time.MutableClock;
+import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
@@ -73,6 +87,14 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     protected PaymentAllocationRepository allocationRepository;
     @Autowired
     protected TransactionTemplate transactionTemplate;
+    @Autowired
+    private InvoiceCreditAccessService invoiceAccess;
+    @Autowired
+    private CreditNoteRepository creditNoteRepository;
+    @Autowired
+    private CreditNoteNumberGenerator creditNoteNumberGenerator;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
     @Autowired
     private AddressRepository addressRepository;
     @Autowired
@@ -179,6 +201,28 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
             allocationService.reverseAllocation(account, current, businessDate, graceDays, "Contracargo", ACTOR);
             accountService.recordPaymentReversalDebit(account, credit, businessDate, "Contracargo");
         });
+    }
+
+    protected Long settleByDebtReductionCreditNote(Invoice origin, LocalDate date) {
+        MutableClock.INSTANCE.setDate(date);
+        Long creditNoteId = transactionTemplate.execute(status -> {
+            StudentCurrentAccount account = accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId());
+            Invoice locked = invoiceAccess.lockInvoice(origin.getId()).orElseThrow();
+            NonNegativeMoney outstanding = locked.getAmounts().outstandingAmount();
+            CreditNote note = CreditNote.issueCreditNoteForInvoice(locked, CreditNoteReason.BILLING_ERROR, "Beca retroactiva",
+                    List.of(new CreditNoteLineRequest(1, outstanding)), creditNoteNumberGenerator.nextCreditNoteNumber(), date, date, null, ACTOR);
+            locked.applyCreditNote(new InvoiceCreditNoteApplication(CreditNoteApplicationKind.DEBT_REDUCTION, note.getOffsetAmount(), note.getFreeCreditAmount(),
+                    note.getLines().stream().map(line -> new InvoiceLineCredit(line.getInvoiceLineNumber(), line.getAmount())).toList()), date, ACTOR);
+            creditNoteRepository.save(note);
+            accountService.recordCreditNoteIssuedCredit(account, note.getId(), note.getOffsetAmount(), note.getFreeCreditAmount(), date, "Nota de crédito de prueba");
+            if (locked.pullRecordedDomainEvents().stream().anyMatch(InvoicePaidEvent.class::isInstance)) {
+                eventPublisher.publishEvent(InvoicePaidDomainEvent.paidFor(locked.getId(), account.getId(),
+                        InvoicePaymentEvent.DEBT_REDUCTION_CREDIT_NOTE_SETTLED_INVOICE.name(), date));
+            }
+            return note.getId();
+        });
+        awaitEventsDrained();
+        return creditNoteId;
     }
 
     protected void awaitEventsDrained() {

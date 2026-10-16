@@ -434,9 +434,12 @@ public final class BillingInvariantChecker {
     public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {
         String cutoff = """
                 case when o.payment_status = 'PAID' then (
-                    select a.effective_date from payment_allocation a
-                    where a.invoice_id = o.id and a.reverses_allocation_id is null
-                      and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id))
+                    select coalesce(
+                        (select a.effective_date from payment_allocation a
+                         where a.invoice_id = o.id and a.reverses_allocation_id is null
+                           and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)),
+                        (select n.issue_date from credit_note n
+                         where n.id = (select max(m.id) from credit_note m where m.invoice_id = o.id and m.reason <> 'CANCELLATION' and m.offset_amount > 0))))
                 else (date_trunc('month', ?::date) - interval '1 day')::date end""";
         return violations("I-11h a chargeable day of the origin is not covered by any debit note", """
                 select 'origin ' || c.origin_invoice_id || ' day ' || g.day::date

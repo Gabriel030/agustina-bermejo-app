@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
 import com.red_escuela.backend.billing.collections.domain.DailyLateFeeSchedule;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
@@ -33,22 +32,22 @@ public class LateFeeContextLoader {
     private final LatePaymentVersionResolver versionResolver;
     private final LateFeeFreezeResolver freezeResolver;
     private final LateFeeCalculationStrategy calculationStrategy;
-    private final InvoiceSettlementQueryService settlementQuery;
+    private final LateFeeSettlementResolver settlementResolver;
     private final LateFeeAccrualPlanner planner = new LateFeeAccrualPlanner();
 
     public LateFeeContextLoader(LatePaymentVersionResolver versionResolver, LateFeeFreezeResolver freezeResolver,
-                                LateFeeCalculationStrategy calculationStrategy, InvoiceSettlementQueryService settlementQuery) {
+                                LateFeeCalculationStrategy calculationStrategy, LateFeeSettlementResolver settlementResolver) {
         this.versionResolver = versionResolver;
         this.freezeResolver = freezeResolver;
         this.calculationStrategy = calculationStrategy;
-        this.settlementQuery = settlementQuery;
+        this.settlementResolver = settlementResolver;
     }
 
     public Optional<ResolvedLateFeeCutoff> resolveCutoff(Invoice origin, LocalDate businessDate) {
         return switch (origin.getPaymentStatus()) {
             case OVERDUE, PAYMENT_UNDER_REVIEW -> Optional.of(new ResolvedLateFeeCutoff(LateFeeCutoff.closingOfMonthBefore(businessDate), Optional.empty()));
-            case PAID -> settlementQuery.findCurrentSettlementOfInvoice(origin.getId())
-                    .map(settlement -> new ResolvedLateFeeCutoff(LateFeeCutoff.settledOn(settlement.paymentDate()), Optional.of(settlement.allocationId())));
+            case PAID -> settlementResolver.findSettlementOfInvoice(origin.getId())
+                    .map(settlement -> new ResolvedLateFeeCutoff(LateFeeCutoff.settledOn(settlement.settledOn()), Optional.of(settlement.source())));
             default -> Optional.empty();
         };
     }
@@ -80,7 +79,7 @@ public class LateFeeContextLoader {
         return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
                 dueDateVersion.get().versionId(), dueDateTerms, frozenOn, freeze.enrollmentEndDate(),
                 calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
-                resolvedCutoff.get().settlementAllocationId())).toList();
+                resolvedCutoff.get().settlementSource())).toList();
     }
 
     public Optional<Predicate<LocalDate>> findChargedDayPredicate(Invoice origin, LatePaymentTimeline timeline) {
