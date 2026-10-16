@@ -26,7 +26,7 @@ public class InvoiceDiscountEnrichmentHandler implements PreProcessingHandler<In
         List<InvoiceDiscountCandidate> candidates = strategies.stream()
                 .flatMap(strategy -> strategy.findDiscountCandidatesForInvoice(context).stream())
                 .toList();
-        context.recordDiscountSelection(candidates, calculator.selectBestDiscountForInvoice(context.request().invoiceType(), candidates));
+        context.recordDiscountSelection(candidates, calculator.selectBestDiscountPerInvoiceLine(context.request().invoiceType(), candidates));
         return PreProcessingResult.proceed();
     }
 }

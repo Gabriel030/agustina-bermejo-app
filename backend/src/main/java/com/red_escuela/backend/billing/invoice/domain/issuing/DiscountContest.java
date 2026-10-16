@@ -9,4 +9,8 @@ public record DiscountContest(InvoiceType invoiceType, InvoiceDiscountCandidate 
     public DiscountContest {
         rivals = List.copyOf(rivals);
     }
+
+    public int lineNumber() {
+        return candidate.lineNumber();
+    }
 }

@@ -24,7 +24,7 @@ final class InvoiceDraftAssembler {
                 context.chargeKey().value(), context.facts().chargeAmount(), request.templateId(), request.enrollmentFeeSlot(),
                 context.facts().marketingDiscountAmount());
         Invoice draft = createDraftOfType(header, line, request);
-        context.winningDiscount().ifPresent(winner -> draft.addDiscountToDraftLine(1, winner.toDiscountDraft()));
+        context.winningDiscounts().forEach((lineNumber, winner) -> draft.addDiscountToDraftLine(lineNumber, winner.toDiscountDraft()));
         return draft;
     }
 

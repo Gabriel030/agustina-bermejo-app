@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.invoice.operation;
 
 import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountContest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
-import com.red_escuela.backend.billing.invoice.policy.issuing.BestDiscountPerInvoiceTypePolicy;
+import com.red_escuela.backend.billing.invoice.policy.issuing.BestDiscountPerInvoiceLinePolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.ChargeKeyNotAlreadyUsedPolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.ChargeRecipientMatchesEnrollmentPolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.DiscountMatchesInvoiceTypePolicy;
@@ -38,7 +38,7 @@ public class InvoiceIssuingOperationConfiguration {
 
     @Bean
     public PolicySet<DiscountContest> invoiceDiscountSelectionPolicySet() {
-        List<Policy<DiscountContest>> ordered = List.of(new DiscountMatchesInvoiceTypePolicy(), new BestDiscountPerInvoiceTypePolicy());
+        List<Policy<DiscountContest>> ordered = List.of(new DiscountMatchesInvoiceTypePolicy(), new BestDiscountPerInvoiceLinePolicy());
         return PolicySet.named("INVOICE_DISCOUNT_SELECTION", ordered);
     }
 
