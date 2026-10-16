@@ -311,8 +311,9 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | PriceCurrencyPolicy | CURRENCY_MISMATCH | D-097, D-240 |
-| 2 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
-| 3 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+| 2 | PriceAmountWithinLimitPolicy | PRICE_AMOUNT_TOO_LARGE | D-214 |
+| 3 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
+| 4 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
 
 ## Momento PRICE_VERSION_CANCELLATION
 
