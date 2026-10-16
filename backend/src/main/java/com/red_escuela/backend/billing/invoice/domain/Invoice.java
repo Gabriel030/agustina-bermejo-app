@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
+import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceDiscardedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent;
@@ -190,6 +191,12 @@ public class Invoice {
 
     public Integer getEnrollmentFeeSlot() {
         return getPrimaryLine().getEnrollmentFeeSlot();
+    }
+
+    public void requirePayable() {
+        if (!isPayable()) {
+            throw new InvoiceNotPayableException(id, paymentStatus == null ? documentStatus.name() : paymentStatus.name());
+        }
     }
 
     public boolean isPayable() {

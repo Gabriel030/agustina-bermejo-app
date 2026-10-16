@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.payment.domain;
 
 public enum PaymentEvent {
     CASH_PAYMENT_REGISTERED,
+    GATEWAY_PAYMENT_REGISTERED_AS_APPROVED,
     PENDING_ONLINE_PAYMENT_CREATED,
     PENDING_BANK_TRANSFER_CREATED,
     PAYMENT_HOLD_AUTHORIZED,

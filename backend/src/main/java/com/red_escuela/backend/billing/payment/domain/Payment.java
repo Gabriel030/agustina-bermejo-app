@@ -181,6 +181,22 @@ public class Payment {
         return payment;
     }
 
+    public static Payment registerApprovedGatewayPayment(StudentCurrentAccount account, NonNegativeMoney amount, PaymentGatewayCode gateway,
+                                                         PaymentMethodDetails details, String gatewayPaymentId, GatewayRawStatus rawStatus,
+                                                         LocalDate paidOn, StatusChangeActor actor) {
+        Objects.requireNonNull(paidOn, "paidOn");
+        Objects.requireNonNull(gatewayPaymentId, "gatewayPaymentId");
+        if (!gateway.isOnlineProvider()) {
+            throw new IllegalArgumentException("An approved gateway payment needs an online gateway");
+        }
+        Payment payment = new Payment(account, amount, gateway, details, null, actor);
+        payment.gatewayPaymentId = gatewayPaymentId;
+        payment.approvedAmount = amount;
+        payment.paidOn = paidOn;
+        payment.changeStatus(PaymentEvent.GATEWAY_PAYMENT_REGISTERED_AS_APPROVED, actor, null, rawStatus);
+        return payment;
+    }
+
     public static Payment createPendingBankTransferPayment(StudentCurrentAccount account, NonNegativeMoney declaredAmount,
                                                            BankTransferPaymentDetails details, String idempotencyKey, StatusChangeActor actor) {
         Payment payment = new Payment(account, declaredAmount, PaymentGatewayCode.MANUAL, details, idempotencyKey, actor);

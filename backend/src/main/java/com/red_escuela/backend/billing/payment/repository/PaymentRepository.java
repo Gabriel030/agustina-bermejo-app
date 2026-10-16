@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.payment.repository;
 
 import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import org.springframework.data.repository.Repository;
 
 import java.util.Collection;
@@ -16,4 +17,6 @@ public interface PaymentRepository extends Repository<Payment, Long> {
     List<Payment> findByIdIn(Collection<Long> ids);
 
     List<Payment> findByStudentCurrentAccountIdInOrderByRegisteredAtDescIdDesc(Collection<Long> studentCurrentAccountIds);
+
+    boolean existsByGatewayAndGatewayPaymentId(PaymentGatewayCode gateway, String gatewayPaymentId);
 }

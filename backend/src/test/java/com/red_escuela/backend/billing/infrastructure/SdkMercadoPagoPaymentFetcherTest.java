@@ -8,7 +8,7 @@ import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
-import com.red_escuela.backend.billing.entity.CardType;
+import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;
@@ -51,8 +51,8 @@ class SdkMercadoPagoPaymentFetcherTest {
     @Test
     @Tag("D-079")
     void theGatewayPaymentTypeIsMappedToCreditOrDebitAndAnythingElseToNull() {
-        assertEquals(com.red_escuela.backend.billing.entity.CardType.CREDIT, SdkMercadoPagoPaymentFetcher.toCardType("credit_card"));
-        assertEquals(com.red_escuela.backend.billing.entity.CardType.DEBIT, SdkMercadoPagoPaymentFetcher.toCardType("debit_card"));
+        assertEquals(CardPaymentType.CREDIT, SdkMercadoPagoPaymentFetcher.toCardType("credit_card"));
+        assertEquals(CardPaymentType.DEBIT, SdkMercadoPagoPaymentFetcher.toCardType("debit_card"));
         assertEquals(null, SdkMercadoPagoPaymentFetcher.toCardType("account_money"));
         assertEquals(null, SdkMercadoPagoPaymentFetcher.toCardType(null));
     }
@@ -84,7 +84,7 @@ class SdkMercadoPagoPaymentFetcherTest {
         assertThat(fetched.get().reportedAllocation().invoiceId()).isEqualTo(45L);
         assertThat(fetched.get().reportedAllocation().amountApplied()).isEqualTo(Money.of(new BigDecimal("1500.50"), Currency.ARS));
         assertThat(fetched.get().installments()).isEqualTo(3);
-        assertThat(fetched.get().cardType()).isEqualTo(CardType.CREDIT);
+        assertThat(fetched.get().cardType()).isEqualTo(CardPaymentType.CREDIT);
     }
 
     @Test
@@ -97,7 +97,7 @@ class SdkMercadoPagoPaymentFetcherTest {
 
             Mockito.verify(construction.constructed().get(0)).get(1234567L);
             assertThat(fetched.orElseThrow().reportedAllocation().amountApplied().currency()).isEqualTo(Currency.USD);
-            assertThat(fetched.get().cardType()).isEqualTo(CardType.DEBIT);
+            assertThat(fetched.get().cardType()).isEqualTo(CardPaymentType.DEBIT);
         }
     }
 

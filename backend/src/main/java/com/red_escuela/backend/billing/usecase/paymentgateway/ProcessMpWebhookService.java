@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.usecase.paymentgateway;
 
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -55,7 +54,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
         }
 
         paymentRepository.lockExternalReferenceUntilTransactionEnds(mpPaymentId);
-        if (paymentRepository.existsByExternalReference(mpPaymentId)) {
+        if (registerPaymentUseCase.isMercadoPagoPaymentRegistered(mpPaymentId)) {
             log.warn("Webhook de Mercado Pago ignorado, el pago ya estaba acreditado: pagoMp={}", mpPaymentId);
             return;
         }
@@ -78,11 +77,11 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
                 null,
                 mpPaymentId,
                 approved.get().installments(),
-                null
+                null,
+                java.util.Objects.toString(approved.get().cardType(), null)
         );
 
-        Payment payment = registerPaymentUseCase.creditPaymentToAccountAndSettleInvoiceIfCovered(request, owner);
-        payment.setCardType(approved.get().cardType());
+        registerPaymentUseCase.registerApprovedMercadoPagoPayment(request);
         log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
     }
 }

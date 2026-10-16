@@ -11,13 +11,15 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
-import com.red_escuela.backend.billing.repository.PaymentRepository;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
+import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
+import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
+import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
+import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -49,6 +51,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 
 import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
@@ -68,10 +71,10 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
-    private PaymentAllocationRepository paymentAllocationRepository;
+    private com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
 
     @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -158,10 +161,23 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         return invoice;
     }
 
+    private ProcessMpWebhookService serviceFetching(com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher fetcher, MpWebhookSignatureVerifier verifier) {
+        return new ProcessMpWebhookService(invoiceRepository, legacyPaymentRepository, registerPaymentUseCase, fetcher, verifier);
+    }
+
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
-                mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
+        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
+    }
+
+    private List<Payment> mpPayments(String mpPaymentId) {
+        List<Long> ids = jdbc.queryForList("select id from payment where gateway = 'MERCADO_PAGO' and gateway_payment_id = ?", Long.class, mpPaymentId);
+        return paymentRepository.findByIdIn(ids);
+    }
+
+    private long activeAllocationsOf(Long invoiceId) {
+        return jdbc.queryForObject("select count(*) from payment_allocation a where a.invoice_id = ? and not exists "
+                + "(select 1 from payment_allocation r where r.reverses_allocation_id = a.id) and a.reverses_allocation_id is null", Long.class, invoiceId);
     }
 
     @Test
@@ -175,10 +191,10 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
 
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+        assertThat(activeAllocationsOf(invoice.getId())).isZero();
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
-        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).singleElement()
-                .satisfies(payment -> assertThat(payment.getAmount()).isEqualTo(ars(BigDecimal.valueOf(4000))));
+        assertThat(mpPayments(mpPaymentId)).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount().value()).isEqualTo(ars(BigDecimal.valueOf(4000))));
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
         assertThat(jdbc.queryForList("select entry_type, direction, amount from current_account_entry where student_current_account_id = ? order by sequence_number", accountId))
                 .extracting(row -> row.get("entry_type") + ":" + row.get("direction") + ":" + ((BigDecimal) row.get("amount")).setScale(0))
@@ -208,23 +224,42 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-376")
+    @Tag("D-256")
+    void aMercadoPagoPaymentSettlingAnInvoiceLeavesItsAllocationSourcePointingToTheRegisteredPayment() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = "source-" + System.nanoTime();
+        long legacyPaymentsBefore = jdbc.queryForObject("select count(*) from legacy_payment", Long.class);
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request-1", mpPaymentId));
+
+        Long paymentId = mpPayments(mpPaymentId).get(0).getId();
+        assertThat(jdbc.queryForList("select s.payment_id, s.amount from payment_allocation_source s join payment_allocation a on a.id = s.payment_allocation_id where a.invoice_id = ?",
+                invoice.getId())).singleElement().satisfies(source -> {
+                    assertThat(source.get("payment_id")).isEqualTo(paymentId);
+                    assertThat((BigDecimal) source.get("amount")).isEqualByComparingTo("10000");
+                });
+        assertThat(jdbc.queryForObject("select count(*) from legacy_payment", Long.class)).isEqualTo(legacyPaymentsBefore);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
     @Tag("D-079")
     void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
-                id -> Optional.of(new MercadoPagoApprovedPayment(
-                        new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6,
-                        com.red_escuela.backend.billing.entity.CardType.CREDIT)),
+        ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
+                        new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
                 new MpWebhookSignatureVerifier("", true));
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
 
-        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference()))
-                .singleElement().satisfies(payment -> {
-                    assertThat(payment.getCardType()).isEqualTo(com.red_escuela.backend.billing.entity.CardType.CREDIT);
-                    assertThat(payment.getCardInstallments()).isEqualTo(6);
-                });
+        assertThat(mpPayments(mpPaymentId)).singleElement().satisfies(payment -> {
+            assertThat(payment.getGateway()).isEqualTo(PaymentGatewayCode.MERCADO_PAGO);
+            assertThat(payment.getStatus()).isEqualTo(PaymentStatus.APPROVED);
+            assertThat(payment.getGatewayRawStatus()).isEqualTo("approved");
+            assertThat(payment.getMethodDetails()).isEqualTo(new CardPaymentDetails(CardPaymentType.CREDIT, 6, null));
+        });
     }
 
     @Test
@@ -241,8 +276,8 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
         assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
                 .isEqualByComparingTo("5000");
-        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).singleElement()
-                .satisfies(payment -> assertThat(payment.getAmount()).isEqualTo(ars(BigDecimal.valueOf(15000))));
+        assertThat(mpPayments(mpPaymentId)).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount().value()).isEqualTo(ars(BigDecimal.valueOf(15000))));
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -258,11 +293,11 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
                 .process("", "request-2", secondPaymentId));
 
-        assertThat(paymentRepository.findAll()).filteredOn(p -> secondPaymentId.equals(p.getExternalReference())).hasSize(1);
+        assertThat(mpPayments(secondPaymentId)).hasSize(1);
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
         assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
                 .isEqualByComparingTo("10000");
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        assertThat(activeAllocationsOf(invoice.getId())).isEqualTo(1);
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -294,7 +329,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
 
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        assertThat(activeAllocationsOf(invoice.getId())).isEqualTo(1);
         assertThat(jdbc.queryForObject("select coalesce(sum(amount), 0) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", BigDecimal.class, accountId))
                 .isEqualByComparingTo("20000");
         assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
@@ -329,7 +364,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         }
 
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
-        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).hasSize(1);
+        assertThat(mpPayments(mpPaymentId)).hasSize(1);
         assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId))
                 .isEqualTo(1L);
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
@@ -419,8 +454,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void anInvalidSignatureLogsWarnWithoutLeakingTheSecretOrTheSignature(CapturedOutput output) {
         String secret = "super-secret-webhook-key";
         String signature = "ts=1,v1=deadbeefdeadbeef";
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
-                mpPaymentId -> Optional.empty(), new MpWebhookSignatureVerifier(secret, false));
+        ProcessMpWebhookService service = serviceFetching(mpPaymentId -> Optional.empty(), new MpWebhookSignatureVerifier(secret, false));
 
         assertThatThrownBy(() -> service.process(signature, "request-1", "123456"))
                 .isInstanceOf(InvalidMpWebhookSignatureException.class);
@@ -456,7 +490,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(4000)).process("", "request-2", mpPaymentId));
 
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
-        assertThat(paymentRepository.findAll()).filteredOn(payment -> mpPaymentId.equals(payment.getExternalReference())).hasSize(1);
+        assertThat(mpPayments(mpPaymentId)).hasSize(1);
         assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isEqualByComparingTo("4000");
         invariants.assertAllBillingInvariantsHold();
     }
@@ -490,10 +524,10 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 .allSatisfy(failure -> assertThat(failure).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class));
 
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
-        assertThat(paymentRepository.findAll()).filteredOn(payment -> mpPaymentId.equals(payment.getExternalReference())).hasSize(1);
+        assertThat(mpPayments(mpPaymentId)).hasSize(1);
         assertThat(jdbc.queryForObject("select coalesce(sum(amount),0) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", BigDecimal.class, accountId)).isEqualByComparingTo("10000");
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        assertThat(activeAllocationsOf(invoice.getId())).isEqualTo(1);
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -507,7 +541,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request", mpPaymentId));
 
         Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+        assertThat(activeAllocationsOf(invoice.getId())).isZero();
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoice.getId())).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isEqualByComparingTo("10000");
     }
