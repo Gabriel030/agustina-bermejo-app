@@ -19,8 +19,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(OutputCaptureExtension.class)
 class GlobalExceptionHandlerTest {
 
+    static class BrokenLinkException extends DataIntegrityBrokenException {
+        BrokenLinkException() {
+            super("Payment 404 referenced by an allocation source does not exist");
+        }
+    }
+
     @RestController
     static class ThrowingController {
+        @GetMapping("/broken-integrity")
+        void brokenIntegrity() {
+            throw new BrokenLinkException();
+        }
+
         @GetMapping("/illegal-state")
         void illegalState() {
             throw new IllegalStateException("Invoice 7 en estado PAID no puede cancelarse");
@@ -40,6 +51,13 @@ class GlobalExceptionHandlerTest {
     private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController())
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
+
+    @Test
+    void aBrokenDataIntegrityIsAServerErrorLoggedAtErrorLevel(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/broken-integrity")).andExpect(status().isInternalServerError());
+
+        assertThat(output).contains("ERROR").contains("Payment 404 referenced by an allocation source does not exist");
+    }
 
     @Test
     void anIllegalStateIsAConflictWithItsCodeInsteadOfAServerError(CapturedOutput output) throws Exception {
