@@ -85,8 +85,8 @@ class WithdrawalCancellationPlannerTest {
         assertThat(plan.requestItems()).hasSize(1);
         WithdrawalCancellationItem item = plan.requestItems().get(0);
         assertThat(item.kind()).isEqualTo(WithdrawalCancellationKind.REDUCE_LINES);
-        assertThat(item.lineNumbers()).hasSize(7);
-        assertThat(annual.getLines().stream().filter(line -> item.lineNumbers().contains(line.getLineNumber())).map(line -> line.getPeriod()))
+        assertThat(item.lines()).hasSize(7).allMatch(line -> line.amount().equals(ars("80000.00").value()));
+        assertThat(annual.getLines().stream().filter(line -> item.lines().stream().anyMatch(reduced -> reduced.lineNumber() == line.getLineNumber())).map(line -> line.getPeriod()))
                 .containsExactlyInAnyOrder(YearMonth.of(2027, 6), YearMonth.of(2027, 7), YearMonth.of(2027, 8), YearMonth.of(2027, 9), YearMonth.of(2027, 10),
                         YearMonth.of(2027, 11), YearMonth.of(2027, 12));
     }

@@ -12,6 +12,9 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.note.domain.CancelInvoicesAfterWithdrawalCommand;
 import com.red_escuela.backend.billing.note.domain.WithdrawalCancellationItem;
+import com.red_escuela.backend.billing.note.domain.WithdrawalLineAmount;
+import com.red_escuela.backend.billing.note.exception.WithdrawalReductionRejectedException;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.support.PriceFixtures;
@@ -34,6 +37,7 @@ import java.util.Map;
 import static com.red_escuela.backend.billing.account.domain.AccountTestData.ars;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-204")
 @Tag("D-247")
@@ -99,10 +103,14 @@ class CancelInvoicesAfterWithdrawalIT extends AbstractInvoiceCancellationIT {
         return new Setup(scenario.studentId(), scenario.accountId(), scenario.invoiceId(), june, july, annual);
     }
 
+    private List<WithdrawalLineAmount> laterLines() {
+        return List.of(4, 5, 6, 7, 8, 9, 10).stream().map(number -> new WithdrawalLineAmount(number, ars("80000.00").value())).toList();
+    }
+
     private CancelInvoicesAfterWithdrawalCommand commandFor(Setup setup, Staff requester, boolean director) {
         List<WithdrawalCancellationItem> items = new ArrayList<>(List.of(WithdrawalCancellationItem.cancelling(setup.june()), WithdrawalCancellationItem.cancelling(setup.july())));
         if (setup.annual() != null) {
-            items.add(WithdrawalCancellationItem.reducing(setup.annual(), List.of(4, 5, 6, 7, 8, 9, 10)));
+            items.add(WithdrawalCancellationItem.reducing(setup.annual(), laterLines()));
         }
         return new CancelInvoicesAfterWithdrawalCommand(items, WITHDRAWAL, requester.personId(), director, null);
     }
@@ -220,5 +228,61 @@ class CancelInvoicesAfterWithdrawalIT extends AbstractInvoiceCancellationIT {
         assertThat(paymentStatusOf(setup.june())).isEqualTo("PENDING");
         assertThat(paymentStatusOf(setup.july())).isEqualTo("CANCELLED");
         assertThat(creditNoteCountOf(setup.june())).isZero();
+    }
+
+    @Test
+    @Tag("B3-01")
+    void approvingWithCreditOnTheAccountCancelsEveryInvoiceAndKeepsTheCredit() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Setup setup = setup(false);
+        long requestId = requestWithAdministrative(setup);
+        payAccount(setup.accountId(), "400000.00", LocalDate.of(2027, 3, 11));
+
+        decide("approve", requestId, newStaff("DIRECTOR"), 200);
+
+        assertThat(paymentStatusOf(setup.june())).isEqualTo("CANCELLED");
+        assertThat(paymentStatusOf(setup.july())).isEqualTo("CANCELLED");
+        assertThat(paymentStatusOf(setup.currentMonth())).isEqualTo("PAID");
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where authorization_request_id = ?", Long.class, requestId)).isEqualTo(2L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("B2-40")
+    @Tag("D-236")
+    void aPaidAnnualInvoiceIsNeverReducedNorRefunded() {
+        Setup setup = setup(true);
+        BillingTestFixtures.payInvoiceInFull(invoiceRepository.findById(setup.annual()).orElseThrow());
+        Staff director = newStaff("DIRECTOR");
+        authenticateAs(director, "DIRECTOR");
+
+        assertThatThrownBy(() -> inTransaction(() -> pipeline.runOperation(operation, new CancelInvoicesAfterWithdrawalCommand(
+                List.of(WithdrawalCancellationItem.reducing(setup.annual(), laterLines())), WITHDRAWAL, director.personId(), true, null))))
+                .isInstanceOf(WithdrawalReductionRejectedException.class);
+
+        assertThat(creditNoteCountOf(setup.annual())).isZero();
+        assertThat(paymentStatusOf(setup.annual())).isEqualTo("PAID");
+    }
+
+    @Test
+    @Tag("B2-41")
+    @Tag("D-253")
+    void ifAnAnnualLineChangedBeforeTheApprovalTheWholeRequestIsRejected() throws Exception {
+        Setup setup = setup(true);
+        long requestId = requestWithAdministrative(setup);
+        Staff director = newStaff("DIRECTOR");
+        requestCreditNote(setup.annual(), director, creditNoteBody("BILLING_ERROR", "Ajuste", 4, "10000.00"), 201);
+
+        decide("approve", requestId, director, 409);
+
+        assertThat(jdbc.queryForObject("select resume_outcome from authorization_request where id = ?", String.class, requestId)).isEqualTo("REJECTED_ON_RESUME");
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where authorization_request_id = ?", Long.class, requestId)).isZero();
+        assertThat(paymentStatusOf(setup.june())).isEqualTo("PENDING");
+    }
+
+    @Test
+    void anInvoiceCannotAppearTwiceInTheSameWithdrawalCancellation() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> new CancelInvoicesAfterWithdrawalCommand(
+                List.of(WithdrawalCancellationItem.cancelling(1L), WithdrawalCancellationItem.cancelling(1L)), WITHDRAWAL, 2L, false, null));
     }
 }

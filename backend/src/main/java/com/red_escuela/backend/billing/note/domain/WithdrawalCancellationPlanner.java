@@ -55,7 +55,8 @@ public final class WithdrawalCancellationPlanner {
             return;
         }
         if (laterLines.size() < chargedLines.size()) {
-            requestItems.add(WithdrawalCancellationItem.reducing(invoice.getId(), laterLines.stream().map(InvoiceLine::getLineNumber).toList()));
+            requestItems.add(WithdrawalCancellationItem.reducing(invoice.getId(),
+                    laterLines.stream().map(line -> new WithdrawalLineAmount(line.getLineNumber(), line.calculateCreditableAmount().value())).toList()));
         } else if (laterLines.stream().allMatch(line -> line.getFeeType() == FeeType.ENROLLMENT_FEE)) {
             automatic.add(invoice.getId());
         } else {

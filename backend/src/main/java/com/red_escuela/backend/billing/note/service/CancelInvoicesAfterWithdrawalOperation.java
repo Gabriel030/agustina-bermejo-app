@@ -9,33 +9,31 @@ import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessServic
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CancelInvoicesAfterWithdrawalCommand;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
-import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
-import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineRequest;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
-import com.red_escuela.backend.billing.note.domain.CreditableLineFacts;
 import com.red_escuela.backend.billing.note.domain.CreditedInvoiceFacts;
-import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
 import com.red_escuela.backend.billing.note.domain.WithdrawalCancellationItem;
 import com.red_escuela.backend.billing.note.domain.WithdrawalCancellationKind;
 import com.red_escuela.backend.billing.note.exception.CreditNoteInvoiceNotFoundException;
-import com.red_escuela.backend.billing.note.policy.CreditNoteIssuingContext;
-import com.red_escuela.backend.billing.note.policy.CreditNoteIssuingRejections;
+import com.red_escuela.backend.billing.note.exception.WithdrawalReductionRejectedException;
+import com.red_escuela.backend.billing.note.policy.WithdrawalLineReductionContext;
 import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class CancelInvoicesAfterWithdrawalOperation implements BillingOperation<CancelInvoicesAfterWithdrawalCommand, List<CreditNote>> {
@@ -46,23 +44,21 @@ public class CancelInvoicesAfterWithdrawalOperation implements BillingOperation<
     private final CurrentAccountAllocationService allocationService;
     private final CreditNoteRepository creditNoteRepository;
     private final CreditNoteNumberGenerator numberGenerator;
-    private final PolicySet<CreditNoteIssuingContext> issuingPolicies;
+    private final PolicySet<WithdrawalLineReductionContext> reductionPolicies;
     private final CancelInvoiceOperation cancelInvoiceOperation;
-    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public CancelInvoicesAfterWithdrawalOperation(InvoiceCreditAccessService invoices, StudentCurrentAccountService accountService,
                                                   CurrentAccountAllocationService allocationService, CreditNoteRepository creditNoteRepository,
-                                                  CreditNoteNumberGenerator numberGenerator, PolicySet<CreditNoteIssuingContext> issuingPolicies,
-                                                  CancelInvoiceOperation cancelInvoiceOperation, ApplicationEventPublisher eventPublisher, Clock clock) {
+                                                  CreditNoteNumberGenerator numberGenerator, PolicySet<WithdrawalLineReductionContext> reductionPolicies,
+                                                  CancelInvoiceOperation cancelInvoiceOperation, Clock clock) {
         this.invoices = invoices;
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.creditNoteRepository = creditNoteRepository;
         this.numberGenerator = numberGenerator;
-        this.issuingPolicies = issuingPolicies;
+        this.reductionPolicies = reductionPolicies;
         this.cancelInvoiceOperation = cancelInvoiceOperation;
-        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -78,7 +74,7 @@ public class CancelInvoicesAfterWithdrawalOperation implements BillingOperation<
 
     @Override
     public List<String> validationMoments() {
-        return List.of(issuingPolicies.moment(), cancelInvoiceOperation.validationMoments().get(0));
+        return List.of(reductionPolicies.moment(), cancelInvoiceOperation.validationMoments().get(0));
     }
 
     @Override
@@ -93,7 +89,7 @@ public class CancelInvoicesAfterWithdrawalOperation implements BillingOperation<
                 cancelInvoiceOperation.requireValidContext(cancellationOf(command, item));
             } else {
                 Invoice invoice = invoices.findInvoice(item.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(item.invoiceId()));
-                requireReducible(command, item, invoice);
+                requireReducible(item, invoice);
             }
         }
     }
@@ -101,10 +97,15 @@ public class CancelInvoicesAfterWithdrawalOperation implements BillingOperation<
     @Override
     public List<CreditNote> processOperation(CancelInvoicesAfterWithdrawalCommand command) {
         List<CreditNote> notes = new ArrayList<>();
+        Set<Long> accountIds = new LinkedHashSet<>();
         for (WithdrawalCancellationItem item : command.items()) {
+            accountIds.add(invoices.findAccountIdOf(item.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(item.invoiceId())));
             notes.add(item.kind() == WithdrawalCancellationKind.CANCEL_INVOICE
-                    ? cancelInvoiceOperation.processOperation(cancellationOf(command, item)) : reduceInvoiceLines(command, item));
+                    ? cancelInvoiceOperation.cancelWithoutAllocatingCredit(cancellationOf(command, item)) : reduceInvoiceLines(command, item));
         }
+        StatusChangeActor actor = StatusChangeActor.ofPerson(command.requestedByPersonId());
+        accountIds.stream().sorted().forEach(accountId -> allocationService.allocateAccountCreditToOldestInvoices(accountService.lockStudentCurrentAccount(accountId),
+                LocalDate.now(clock), actor));
         log.info("Cancelación de períodos posteriores a la baja: facturas={}, notasDeCredito={}, authorizationRequestId={}", command.items().size(), notes.size(),
                 command.authorizationRequestId());
         return notes;
@@ -128,29 +129,22 @@ public class CancelInvoicesAfterWithdrawalOperation implements BillingOperation<
         Long accountId = invoices.findAccountIdOf(item.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(item.invoiceId()));
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoices.lockInvoice(item.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(item.invoiceId()));
-        requireReducible(command, item, invoice);
+        requireReducible(item, invoice);
         LocalDate businessDate = LocalDate.now(clock);
         StatusChangeActor actor = StatusChangeActor.ofPerson(command.requestedByPersonId());
-        CreditedInvoiceFacts facts = CreditedInvoiceFacts.of(invoice);
-        List<CreditNoteLineRequest> lineRequests = item.lineNumbers().stream()
-                .map(lineNumber -> new CreditNoteLineRequest(lineNumber, facts.findLine(lineNumber).map(CreditableLineFacts::creditableAmount).orElseThrow())).toList();
+        List<CreditNoteLineRequest> lineRequests = item.lines().stream()
+                .map(line -> new CreditNoteLineRequest(line.lineNumber(), NonNegativeMoney.of(line.amount()))).toList();
         CreditNote note = CreditNote.issueCreditNoteForInvoice(invoice, CreditNoteReason.CANCELLATION, command.justification(), lineRequests,
                 numberGenerator.nextCreditNoteNumber(), businessDate, businessDate, command.authorizationRequestId(), actor);
         invoice.applyCreditNote(note.toInvoiceCreditNoteApplication(invoice.getAmounts().outstandingAmount()), businessDate, actor);
         creditNoteRepository.save(note);
         accountService.recordCreditNoteIssuedCredit(account, note.getId(), note.getOffsetAmount(), note.getFreeCreditAmount(), businessDate,
                 "Baja: reducción de períodos posteriores de la factura " + note.getInvoiceNumber() + " (nota de crédito " + note.getCreditNoteNumber().value() + ")");
-        allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, actor);
         return note;
     }
 
-    private void requireReducible(CancelInvoicesAfterWithdrawalCommand command, WithdrawalCancellationItem item, Invoice invoice) {
-        CreditedInvoiceFacts facts = CreditedInvoiceFacts.of(invoice);
-        List<CreditNoteLineAmount> lines = item.lineNumbers().stream()
-                .map(lineNumber -> new CreditNoteLineAmount(lineNumber, facts.findLine(lineNumber).map(line -> line.creditableAmount().value()).orElse(facts.outstandingAmount().value())))
-                .toList();
-        IssueCreditNoteCommand reductionAsCreditNote = new IssueCreditNoteCommand(item.invoiceId(), CreditNoteReason.BILLING_ERROR, command.justification(), lines,
-                CreditNoteDestination.ofInvoiceStatus(invoice.getPaymentStatus()), command.requestedByPersonId(), command.requestedByDirector(), command.authorizationRequestId());
-        issuingPolicies.evaluateRulesUntilFirstViolation(new CreditNoteIssuingContext(reductionAsCreditNote, facts)).throwIfDenied(CreditNoteIssuingRejections::rejectionOf);
+    private void requireReducible(WithdrawalCancellationItem item, Invoice invoice) {
+        reductionPolicies.evaluateRulesUntilFirstViolation(new WithdrawalLineReductionContext(item, CreditedInvoiceFacts.of(invoice)))
+                .throwIfDenied(WithdrawalReductionRejectedException::new);
     }
 }

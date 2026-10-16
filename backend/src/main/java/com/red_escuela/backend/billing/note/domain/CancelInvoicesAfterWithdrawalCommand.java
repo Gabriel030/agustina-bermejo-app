@@ -21,6 +21,9 @@ public record CancelInvoicesAfterWithdrawalCommand(List<WithdrawalCancellationIt
         if (items.isEmpty()) {
             throw new IllegalArgumentException("A withdrawal cancellation needs at least one invoice");
         }
+        if (items.stream().map(WithdrawalCancellationItem::invoiceId).distinct().count() != items.size()) {
+            throw new IllegalArgumentException("An invoice appears once in a withdrawal cancellation");
+        }
     }
 
     public String justification() {

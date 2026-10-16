@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CancelInvoicesAfterWithdrawalCommand;
@@ -31,15 +32,17 @@ public class LaterChargesCancellationOnWithdrawal {
     private final BillingOperationPipeline pipeline;
     private final CancelInvoicesAfterWithdrawalOperation operation;
     private final CreditNoteActorResolver actorResolver;
+    private final StudentCurrentAccountService accountService;
 
     public LaterChargesCancellationOnWithdrawal(WithdrawalInvoiceAccess invoiceAccess, CancelInvoiceOperation cancelInvoiceOperation,
                                                  BillingOperationPipeline pipeline, CancelInvoicesAfterWithdrawalOperation operation,
-                                                 CreditNoteActorResolver actorResolver) {
+                                                 CreditNoteActorResolver actorResolver, StudentCurrentAccountService accountService) {
         this.invoiceAccess = invoiceAccess;
         this.cancelInvoiceOperation = cancelInvoiceOperation;
         this.pipeline = pipeline;
         this.operation = operation;
         this.actorResolver = actorResolver;
+        this.accountService = accountService;
     }
 
     @Transactional
@@ -48,6 +51,7 @@ public class LaterChargesCancellationOnWithdrawal {
             return;
         }
         List<Invoice> invoices = invoiceAccess.findInvoicesOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId());
+        invoices.stream().map(Invoice::getStudentCurrentAccountId).distinct().sorted().forEach(accountService::lockStudentCurrentAccount);
         Set<Long> withPendingRequest = invoiceAccess.findInvoiceIdsWithPendingAuthorizationRequest(invoices.stream().map(Invoice::getId).toList());
         WithdrawalCancellationPlan plan = new WithdrawalCancellationPlanner(YearMonth.from(facts.effectiveDate()), facts.registeredOn(), invoiceAccess::findTermStartOfTemplate)
                 .planFor(invoices, withPendingRequest);
@@ -55,12 +59,12 @@ public class LaterChargesCancellationOnWithdrawal {
             return;
         }
         invoiceAccess.discardDraftInvoices(plan.draftInvoiceIds(), DRAFT_DISCARD_REASON, StatusChangeActor.ofProcess(DRAFT_DISCARD_PROCESS));
-        plan.automaticInvoiceIds().forEach(invoiceId -> pipeline.runOperation(cancelInvoiceOperation,
-                CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.FUTURE_ENROLLMENT_FEE_ON_WITHDRAWAL, FEE_CANCELLATION_JUSTIFICATION)));
         if (!plan.requestItems().isEmpty()) {
             pipeline.runOperation(operation, new CancelInvoicesAfterWithdrawalCommand(plan.requestItems(), facts.effectiveDate(), actorResolver.currentPersonId(),
                     actorResolver.currentActorIsDirector(), null));
         }
+        plan.automaticInvoiceIds().forEach(invoiceId -> pipeline.runOperation(cancelInvoiceOperation,
+                CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.FUTURE_ENROLLMENT_FEE_ON_WITHDRAWAL, FEE_CANCELLATION_JUSTIFICATION)));
         log.info("Cargos posteriores a la baja: inscripcionPrograma={}, inscripcionCurso={}, pedido={}, matriculasCanceladas={}, borradoresDescartados={}",
                 facts.programEnrollmentId(), facts.courseEnrollmentId(), plan.requestItems().size(), plan.automaticInvoiceIds().size(), plan.draftInvoiceIds().size());
     }

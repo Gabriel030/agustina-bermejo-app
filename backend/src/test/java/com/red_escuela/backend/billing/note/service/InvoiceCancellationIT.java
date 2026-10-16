@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.note.service;
 
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDraftHeader;
@@ -212,7 +213,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         Scenario scenario = unpaidInvoice("80000.00");
         Staff administrative = newStaff("ADMINISTRATIVO");
         long requestId = pendingRequestId(requestCancellation(scenario.invoiceId(), administrative, cancellationBody("BILLING_ERROR", "Error"), 202));
-        payAccount(scenario.accountId(), "80000.00", LocalDate.of(2027, 3, 11));
+        BillingTestFixtures.payInvoiceInFull(invoiceRepository.findById(scenario.invoiceId()).orElseThrow());
 
         MvcResult result = mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + newStaff("DIRECTOR").token())
                 .contentType(APPLICATION_JSON).content("{\"decisionReason\":\"ok\"}")).andExpect(status().isConflict()).andReturn();
@@ -282,7 +283,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         authorizationRequestExpirer.expireDueRequests();
 
         assertThat(jdbc.queryForObject("select status from authorization_request where id = ?", String.class, requestId)).isEqualTo("PENDING");
-        payAccount(scenario.accountId(), "80000.00", LocalDate.of(2027, 3, 11));
+        BillingTestFixtures.payInvoiceInFull(invoiceRepository.findById(scenario.invoiceId()).orElseThrow());
         decide("approve", requestId, director, 409);
         assertThat(jdbc.queryForObject("select resume_outcome from authorization_request where id = ?", String.class, requestId)).isEqualTo("REJECTED_ON_RESUME");
     }
