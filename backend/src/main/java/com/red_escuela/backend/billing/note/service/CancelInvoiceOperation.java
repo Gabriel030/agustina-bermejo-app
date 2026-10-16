@@ -83,6 +83,17 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
 
     @Override
     public CreditNote processOperation(CancelInvoiceCommand command) {
+        CreditNote note = cancelWithoutAllocatingCredit(command);
+        allocateAccountCreditOf(note.getInvoiceId(), command.actor());
+        return note;
+    }
+
+    public void allocateAccountCreditOf(Long invoiceId, StatusChangeActor actor) {
+        Long accountId = invoices.findAccountIdOf(invoiceId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(invoiceId));
+        allocationService.allocateAccountCreditToOldestInvoices(accountService.lockStudentCurrentAccount(accountId), LocalDate.now(clock), actor);
+    }
+
+    public CreditNote cancelWithoutAllocatingCredit(CancelInvoiceCommand command) {
         Long accountId = invoices.findAccountIdOf(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoices.lockInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
@@ -96,7 +107,6 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
         accountService.recordCreditNoteIssuedCredit(account, note.getId(), note.getOffsetAmount(), note.getFreeCreditAmount(), businessDate,
                 "Cancelación de la factura " + note.getInvoiceNumber() + " (nota de crédito " + note.getCreditNoteNumber().value() + ")");
         invoice.pullRecordedDomainEvents().stream().filter(InvoiceCancelledEvent.class::isInstance).forEach(eventPublisher::publishEvent);
-        allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, actor);
         log.info("Factura cancelada: numero={}, notaDeCredito={}, motivo={}, claveLiberada={}, origenDeSistema={}, authorizationRequestId={}", note.getInvoiceNumber(),
                 note.getCreditNoteNumber().value(), note.getReason(), command.releasesChargeKeys(), command.systemOrigin(), note.getAuthorizationRequestId());
         return note;

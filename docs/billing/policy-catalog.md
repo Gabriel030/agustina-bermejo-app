@@ -349,6 +349,14 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | RevocationReasonRequiredPolicy | REVOCATION_REASON_REQUIRED | D-284 |
 
+## Momento WITHDRAWAL_LINE_REDUCTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | WithdrawalReductionInvoiceUnpaidPolicy | WITHDRAWAL_REDUCTION_INVOICE_NOT_REDUCIBLE | D-204, D-248, D-236, D-253 |
+| 2 | WithdrawalReductionLinesUnchangedPolicy | WITHDRAWAL_REDUCTION_INVOICE_CHANGED | D-204, D-248, D-253 |
+| 3 | WithdrawalReductionLeavesDebtPolicy | WITHDRAWAL_REDUCTION_WOULD_CLEAR_DEBT | D-248, D-142, D-127 |
+
 ## Momento YEAR_BILLING_CONFIGURATION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -519,6 +527,13 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 ## Operación CANCEL_INVOICE
 
 - Validaciones (momentos): INVOICE_CANCELLATION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: CreditNoteIssuedEvent
+- Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
+
+## Operación CANCEL_INVOICES_AFTER_WITHDRAWAL
+
+- Validaciones (momentos): WITHDRAWAL_LINE_REDUCTION, INVOICE_CANCELLATION
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: CreditNoteIssuedEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent

@@ -16,6 +16,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -123,7 +127,13 @@ class EnrollmentWithdrawalSequencesIT extends AbstractCreditNoteIT {
     private void withdrawAndAssertUnpaidInvoicesUntouched(Long enrollmentId, Long accountId, Long staffPersonId, boolean voluntary, long seed) {
         Map<String, Object> before = unpaidInvoicesState(accountId);
         EnrollmentWithdrawal withdrawal = voluntary ? EnrollmentWithdrawal.voluntaryRegisteredBy(null, staffPersonId) : EnrollmentWithdrawal.forNonpayment();
-        programEnrollmentService.withdraw(enrollmentId, withdrawal);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(staffPersonId.toString(), null, List.of(new SimpleGrantedAuthority("ROLE_ADMINISTRATIVO"))));
+        try {
+            programEnrollmentService.withdraw(enrollmentId, withdrawal);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
         assertThat(unpaidInvoicesState(accountId)).as("seed %d enrollment %d", seed, enrollmentId).isEqualTo(before);
     }
 }
