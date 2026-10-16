@@ -127,6 +127,6 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
                 .contains("### PaymentStatusStateMachine")
                 .contains("Transiciones válidas: 7 de 25")
                 .contains("Transiciones válidas: 18 de 78")
-                .contains("Transiciones válidas: 14 de 96");
+                .contains("Transiciones válidas: 15 de 104");
     }
 }
