@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.AbstractCurrentAccountIT;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
@@ -75,7 +76,7 @@ public abstract class AbstractCreditNoteIT extends AbstractCurrentAccountIT {
     protected void payAccount(Long accountId, String amount, LocalDate paidOn) {
         inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
-            service.recordPaymentReceivedCredit(account, nextExternalId(), ars(amount), paidOn, "Pago");
+            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars(amount), paidOn, "Pago");
             allocationService.allocateAccountCreditToOldestInvoices(account, paidOn, ACTOR);
             return null;
         });

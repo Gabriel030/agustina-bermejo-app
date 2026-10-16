@@ -106,6 +106,13 @@ public class GlobalExceptionHandler {
                 exception.getMessage(), exception);
     }
 
+    @ExceptionHandler(DataIntegrityBrokenException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public void handleDataIntegrityBroken(DataIntegrityBrokenException exception) {
+        log.error("Integridad de datos rota {} [{}]: {}", ErrorCodeResponse.of(exception).code(), correlation(),
+                exception.getMessage(), exception);
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleIllegalState(IllegalStateException exception) {

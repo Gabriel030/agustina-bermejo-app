@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
 import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
 import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
 import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -195,11 +196,14 @@ public class InvoiceQueryService {
             Long paymentId = source.getPaymentId();
             Money amount = source.getAmount().value();
             Payment payment = accountPayments.get(paymentId);
-            if (payment != null && payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
-                return new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
-                        payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay());
+            if (payment == null) {
+                throw PaymentSourceIntegrityException.missing(paymentId);
             }
-            throw new IllegalStateException("Payment " + paymentId + " referenced by an allocation source does not exist");
+            if (!payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
+                throw PaymentSourceIntegrityException.ofAnotherAccount(paymentId);
+            }
+            return new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
+                    payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay());
         }).toList();
     }
 

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountBalanceSide;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntryType;
@@ -65,7 +66,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
             service.recordInvoiceIssuedDebit(account, invoiceRepository.findById(invoiceId).orElseThrow(), DAY);
-            service.recordPaymentReceivedCredit(account, nextExternalId(), ars("30000.00"), DAY, "Pago");
+            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars("30000.00"), DAY, "Pago");
             return null;
         });
         invariants.assertAllBillingInvariantsHold();
@@ -87,7 +88,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
             Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
             service.recordInvoiceIssuedDebit(account, invoice, DAY);
-            service.recordPaymentReceivedCredit(account, nextExternalId(), ars("30000.00"), DAY, "Pago");
+            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars("30000.00"), DAY, "Pago");
             return null;
         });
 
@@ -165,7 +166,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         Long paymentEntryId = inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
             service.recordInvoiceIssuedDebit(account, invoiceRepository.findById(invoiceId).orElseThrow(), DAY);
-            return service.recordPaymentReceivedCredit(account, nextExternalId(), ars("1200000.00"), DAY, "Pago").getId();
+            return service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars("1200000.00"), DAY, "Pago").getId();
         });
         assertThat(loadAccount(accountId).calculateSignedBalance().amount()).isEqualByComparingTo("100000.00");
 
@@ -192,10 +193,10 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
 
         assertThatThrownBy(() -> inTransaction(() -> {
             StudentCurrentAccount unlocked = accountRepository.findById(accountId).orElseThrow();
-            return service.recordPaymentReceivedCredit(unlocked, 1L, ars("10.00"), DAY, "Pago");
+            return service.recordPaymentReceivedCredit(unlocked, BillingTestFixtures.seedApprovedPaymentRow(unlocked.getId()), ars("10.00"), DAY, "Pago");
         })).isInstanceOf(IllegalStateException.class);
         StudentCurrentAccount detached = loadAccount(accountId);
-        assertThatThrownBy(() -> service.recordPaymentReceivedCredit(detached, 1L, ars("10.00"), DAY, "Pago")).isInstanceOf(IllegalTransactionStateException.class);
+        assertThatThrownBy(() -> service.recordPaymentReceivedCredit(detached, BillingTestFixtures.seedApprovedPaymentRow(detached.getId()), ars("10.00"), DAY, "Pago")).isInstanceOf(IllegalTransactionStateException.class);
 
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).isEmpty();
     }
@@ -208,7 +209,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         assertThatThrownBy(() -> inTransaction(() -> {
             StudentCurrentAccount unlocked = accountRepository.findById(accountId).orElseThrow();
             entityManager.lock(unlocked, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
-            return service.recordPaymentReceivedCredit(unlocked, nextExternalId(), ars("10.00"), DAY, "Pago");
+            return service.recordPaymentReceivedCredit(unlocked, BillingTestFixtures.seedApprovedPaymentRow(unlocked.getId()), ars("10.00"), DAY, "Pago");
         })).isInstanceOf(IllegalStateException.class).hasMessageContaining("must be locked");
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).isEmpty();
     }
@@ -220,7 +221,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
 
         assertThatThrownBy(() -> inTransaction(() -> {
             StudentCurrentAccount unlocked = accountRepository.findById(accountId).orElseThrow();
-            return service.recordPaymentReceivedCredit(unlocked, nextExternalId(), ars("10.00"), DAY, "Pago");
+            return service.recordPaymentReceivedCredit(unlocked, BillingTestFixtures.seedApprovedPaymentRow(unlocked.getId()), ars("10.00"), DAY, "Pago");
         })).isInstanceOf(IllegalStateException.class);
     }
 
@@ -237,10 +238,10 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
 
             assertThatThrownBy(() -> nestedTransaction.execute(status -> {
                 StudentCurrentAccount unlockedInNested = accountRepository.findById(accountId).orElseThrow();
-                return service.recordPaymentReceivedCredit(unlockedInNested, nextExternalId(), ars("10.00"), DAY, "Pago anidado");
+                return service.recordPaymentReceivedCredit(unlockedInNested, BillingTestFixtures.seedApprovedPaymentRow(unlockedInNested.getId()), ars("10.00"), DAY, "Pago anidado");
             })).isInstanceOf(IllegalStateException.class).hasMessageContaining("must be locked");
 
-            return service.recordPaymentReceivedCredit(lockedByOuter, nextExternalId(), ars("10.00"), DAY, "Pago externo");
+            return service.recordPaymentReceivedCredit(lockedByOuter, BillingTestFixtures.seedApprovedPaymentRow(lockedByOuter.getId()), ars("10.00"), DAY, "Pago externo");
         });
 
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId))
@@ -250,7 +251,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
     @Test
     void theEntriesCannotBeUpdatedNorDeleted() {
         Long accountId = newAccountId(newStudentId(), Currency.ARS);
-        Long entryId = inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("10.00"), DAY, "Pago").getId());
+        Long entryId = inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars("10.00"), DAY, "Pago").getId());
 
         assertThatThrownBy(() -> jdbc.update("update current_account_entry set concept = 'otro' where id = ?", entryId)).isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> jdbc.update("delete from current_account_entry where id = ?", entryId)).isInstanceOf(DataIntegrityViolationException.class);
@@ -263,9 +264,9 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         Long accountId = newAccountId(newStudentId(), Currency.ARS);
 
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 11, 0, 30));
-        inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("10.00"), ApplicationTime.today(), "Pago"));
+        inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars("10.00"), ApplicationTime.today(), "Pago"));
         MutableClock.INSTANCE.setInstant(java.time.Instant.parse("2027-03-11T02:30:00Z"));
-        inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("10.00"), ApplicationTime.today(), "Pago"));
+        inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars("10.00"), ApplicationTime.today(), "Pago"));
 
         List<CurrentAccountEntry> entries = entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId);
         assertThat(entries.get(0).getEffectiveDate()).isEqualTo(LocalDate.of(2027, 3, 11));
@@ -287,7 +288,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
                 LocalDate today = ApplicationTime.today();
                 String amount = (random.nextInt(90000) + 1) + "." + String.format("%02d", random.nextInt(100));
                 int kind = random.nextInt(5);
-                long id = nextExternalId();
+                long id = BillingTestFixtures.seedApprovedPaymentRow(accountId);
                 switch (kind) {
                     case 0 -> {
                         Long invoiceId = newIssuedInvoiceId(accountId, Currency.ARS, amount);
@@ -330,7 +331,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
     @Test
     void anEntryTypeIsPersistedWithItsDirection() {
         Long accountId = newAccountId(newStudentId(), Currency.ARS);
-        CurrentAccountEntry entry = inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("10.00"), DAY, "Pago"));
+        CurrentAccountEntry entry = inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), ars("10.00"), DAY, "Pago"));
 
         CurrentAccountEntry loaded = entryRepository.findById(entry.getId()).orElseThrow();
 

@@ -663,8 +663,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         publishDefaults(2117);
         Invoice origin = installmentDueOn(d(2117, 3, 11), ars(100000));
         Long accountId = reload(origin).getStudentCurrentAccountId();
-        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(accountId),
-                System.nanoTime(), NonNegativeMoney.of(ars(5000)), d(2117, 3, 17), "Pago"));
+        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId), NonNegativeMoney.of(ars(5000)), d(2117, 3, 17), "Pago"));
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
 
         reconcile(origin, d(2117, 4, 1));

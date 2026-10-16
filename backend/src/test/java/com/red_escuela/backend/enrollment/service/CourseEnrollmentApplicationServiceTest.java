@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -211,7 +212,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistPriceRevision(course, BigDecimal.valueOf(15000), persistPersonBase("DIR" + System.nanoTime()));
         entityManager.flush();
         StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(student.getId(), Currency.ARS);
-        accountService.recordPaymentReceivedCredit(account, System.nanoTime(), NonNegativeMoney.of(new BigDecimal("20000.00"), Currency.ARS), LocalDate.now(), "Saldo a favor");
+        accountService.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), NonNegativeMoney.of(new BigDecimal("20000.00"), Currency.ARS), LocalDate.now(), "Saldo a favor");
         entityManager.flush();
 
         CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(

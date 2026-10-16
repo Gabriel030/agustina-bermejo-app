@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.repository;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -271,7 +272,6 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
 
     @Test
     void theAccountAndEntryTablesRejectTheirInvalidRows() {
-        long firstPaymentId = System.currentTimeMillis();
         long student = newPersistedStudent();
         jdbc.update("""
                 insert into student_current_account (student_id, currency, balance_amount, balance_amount_currency, balance_side,
@@ -299,6 +299,8 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
                 """, student));
 
         long account = insertAccount("ARS");
+        long firstPaymentId = BillingTestFixtures.seedApprovedPaymentRow(account);
+        long secondPaymentId = BillingTestFixtures.seedApprovedPaymentRow(account);
         expectViolation("ck_current_account_entry_direction_by_type", () -> entry(account, 1, "CREDIT", "INVOICE_ISSUED", 10, "OWES", 10, "invoice_id", insert("invoice", issuedInvoice(account))));
         expectViolation("ck_current_account_entry_source_by_type", () -> entry(account, 1, "DEBIT", "INVOICE_ISSUED", 10, "OWES", 10));
         expectViolation("ck_current_account_entry_zero_side", () -> entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "ZERO", 10, "payment_id", firstPaymentId));
@@ -309,7 +311,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         });
         expectViolation("uk_current_account_entry_sequence", () -> {
             entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", firstPaymentId);
-            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 20, "payment_id", firstPaymentId + 1);
+            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 20, "payment_id", secondPaymentId);
         });
         expectViolation("uk_current_account_entry_payment_credit", () -> {
             entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", firstPaymentId);
@@ -363,7 +365,8 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
     @Test
     void theEntryTableIsAppendOnly() {
         long account = insertAccount("ARS");
-        Long id = transactionTemplate.execute(status -> insert("current_account_entry", entryRow(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", System.nanoTime())));
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(account);
+        Long id = transactionTemplate.execute(status -> insert("current_account_entry", entryRow(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", paymentId)));
 
         assertThatThrownBy(() -> jdbc.update("update current_account_entry set concept = 'x' where id = ?", id))
                 .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("append-only");

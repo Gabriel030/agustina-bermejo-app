@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.invoice.operation;
 
+import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -26,8 +28,10 @@ class InvoiceIssuingWithAccountCreditIT extends AbstractInvoiceIssuingIT {
     }
 
     private void creditAccount(Long studentId, String amount) {
-        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(
-                accountService.findOrOpenAndLockStudentCurrentAccount(studentId, Currency.ARS), System.nanoTime(), ars(amount), LocalDate.of(2027, 3, 1), "Pago"));
+        transactionTemplate.executeWithoutResult(status -> {
+            StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(studentId, Currency.ARS);
+            accountService.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars(amount), LocalDate.of(2027, 3, 1), "Pago");
+        });
     }
 
     private BigDecimal unallocatedCreditOf(Long studentId) {

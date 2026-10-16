@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.payment.domain.CashPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
+import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.identity.api.PersonNameLookup;
 import com.red_escuela.backend.shared.domain.Money;
@@ -62,8 +63,9 @@ public class AllocationSourceInvoicePaymentShareSource implements InvoicePayment
                 }
                 Payment payment = paymentsById.get(paymentId);
                 if (payment == null) {
-                    throw new IllegalStateException("Payment " + paymentId + " referenced by an allocation source does not exist");
-                } else if (payment.getStatus() == PaymentStatus.APPROVED && payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
+                    throw PaymentSourceIntegrityException.missing(paymentId);
+                }
+                if (payment.getStatus() == PaymentStatus.APPROVED && payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
                     appliedByAccountPayment.merge(paymentId, source.getAmount().value(), Money::plus);
                 }
             }

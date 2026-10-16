@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentFixtures;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
+import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.identity.api.PersonNameLookup;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -150,7 +151,8 @@ class AllocationSourceInvoicePaymentShareSourceTest {
         givenPayments(cash);
 
         assertThatThrownBy(() -> shareSource.findCurrentSharesByInvoiceId(List.of(1L)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("404");
+                .isInstanceOf(PaymentSourceIntegrityException.class)
+                .hasMessageContaining("404")
+                .hasMessageContaining("does not exist");
     }
 }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository;
@@ -51,7 +52,7 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
     }
 
     private long receivePayment(String amount, LocalDate paidOn) {
-        long paymentId = nextExternalId();
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId);
         inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, ars(amount), paidOn, "Pago"));
         return paymentId;
     }

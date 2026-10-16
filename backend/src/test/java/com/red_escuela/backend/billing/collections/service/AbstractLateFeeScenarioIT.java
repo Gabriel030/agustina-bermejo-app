@@ -158,7 +158,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
 
     protected CurrentAccountEntry receiveMoney(Invoice origin, String amount, LocalDate paidOn) {
         return transactionTemplate.execute(status -> accountService.recordPaymentReceivedCredit(
-                accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), EXTERNAL_IDS.incrementAndGet(), NonNegativeMoney.of(ars(amount)), paidOn, "Pago"));
+                accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), BillingTestFixtures.seedApprovedPaymentRow(origin.getStudentCurrentAccountId()), NonNegativeMoney.of(ars(amount)), paidOn, "Pago"));
     }
 
     protected void allocateOn(Invoice origin, LocalDate businessDate) {

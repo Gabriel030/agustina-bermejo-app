@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
@@ -47,7 +48,7 @@ class InvoiceCancellationConcurrencyIT extends AbstractInvoiceCancellationIT {
             start.await();
             return inTransaction(() -> {
                 var account = service.lockStudentCurrentAccount(accountId);
-                service.recordPaymentReceivedCredit(account, nextExternalId(), ars(amount), LocalDate.of(2027, 3, 11), "Pago");
+                service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId()), ars(amount), LocalDate.of(2027, 3, 11), "Pago");
                 return allocationService.allocateAccountCreditToOldestInvoices(account, LocalDate.of(2027, 3, 11), ACTOR);
             });
         };
