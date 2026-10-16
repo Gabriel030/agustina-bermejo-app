@@ -22,6 +22,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -115,6 +116,7 @@ public class PriceVersion {
     private String cancellationReason;
 
     @OneToMany(mappedBy = "priceVersion", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     @OrderBy("id asc")
     private List<PriceVersionStatusChange> statusChanges = new ArrayList<>();
 

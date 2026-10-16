@@ -4725,7 +4725,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "affectedStudents", "currentFinalAmount", "currentMonthlyIncome", "effectiveFrom", "monthlyIncomeDifference", "monthlyMarketingDiscountCost", "proposedFinalAmount", "proposedMonthlyIncome", "reachesActiveEnrollments" ],
+        "required" : [ "affectedStudents", "currentMonthlyIncome", "effectiveFrom", "monthlyIncomeDifference", "monthlyMarketingDiscountCost", "proposedFinalAmount", "proposedMonthlyIncome", "reachesActiveEnrollments" ],
         "type" : "object"
       },
       "PriceChangeValidationResponse" : {
@@ -4744,7 +4744,7 @@
         "properties" : {
           "courseId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "currency" : {
             "enum" : [ "ARS", "USD" ],
@@ -4772,10 +4772,10 @@
           },
           "programId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
-        "required" : [ "courseId", "currency", "currentVersion", "description", "feeType", "nextScheduledVersion", "openProposal", "priceId", "programId" ],
+        "required" : [ "currency", "description", "feeType", "priceId" ],
         "type" : "object"
       },
       "PriceVersionHistoryEntryResponse" : {
@@ -4784,29 +4784,29 @@
             "$ref" : "#/components/schemas/Money"
           },
           "cancellationReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "cancelledAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "cancelledById" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "changeReason" : {
             "type" : "string"
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "decidedById" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "decisionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "directPublication" : {
             "type" : "boolean"
@@ -4836,11 +4836,11 @@
           },
           "marketingDiscountType" : {
             "enum" : [ "PERCENTAGE", "FIXED" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "previousVersionId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "priceId" : {
             "format" : "int64",
@@ -4865,7 +4865,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "baseAmount", "cancellationReason", "cancelledAt", "cancelledById", "changeReason", "decidedAt", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "finalAmount", "id", "initialVersion", "marketingDiscountAmount", "marketingDiscountFixedAmount", "marketingDiscountPercent", "marketingDiscountType", "previousVersionId", "priceId", "proposedAt", "proposedById", "status", "statusChanges" ],
+        "required" : [ "baseAmount", "changeReason", "directPublication", "effectiveFrom", "finalAmount", "id", "initialVersion", "marketingDiscountAmount", "priceId", "proposedAt", "proposedById", "status", "statusChanges" ],
         "type" : "object"
       },
       "PriceVersionResponse" : {
@@ -4934,10 +4934,10 @@
         "properties" : {
           "actorPersonId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "actorProcess" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "changedAt" : {
             "format" : "date-time",
@@ -4949,17 +4949,17 @@
           },
           "fromStatus" : {
             "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "toStatus" : {
             "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
             "type" : "string"
           }
         },
-        "required" : [ "actorPersonId", "actorProcess", "changedAt", "event", "fromStatus", "reason", "toStatus" ],
+        "required" : [ "changedAt", "event", "toStatus" ],
         "type" : "object"
       },
       "ProductRef" : {

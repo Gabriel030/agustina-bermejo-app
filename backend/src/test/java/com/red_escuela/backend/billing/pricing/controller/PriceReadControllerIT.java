@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.pricing.domain.Price;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.billing.entity.PaymentPlanOption;
+import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
@@ -17,6 +21,8 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -33,6 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.EnumMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,11 +75,15 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
     private String administrativeToken;
     private long programId;
     private long priceId;
+    private long directorPersonId;
+    private final Map<PaymentPlanCadence, PaymentPlanOption> planOptions = new EnumMap<>(PaymentPlanCadence.class);
 
     @BeforeEach
     void setUp() throws Exception {
         MutableClock.INSTANCE.setDate(TODAY);
-        directorToken = tokenWithRole("DIRECTOR");
+        Person director = persistPerson("DIRECTOR");
+        directorPersonId = director.getId();
+        directorToken = jwtService.generateAccessToken(director);
         administrativeToken = tokenWithRole("ADMINISTRATIVO");
         String response = mockMvc.perform(post("/programs").header("Authorization", "Bearer " + administrativeToken).contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("name", "Carrera de lectura " + System.nanoTime(), "totalYears", 3, "totalCreditsRequired", 100,
@@ -103,7 +115,21 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(persistPerson(roleName));
     }
 
+    private PaymentPlanOption planOption(PaymentPlanCadence cadence) {
+        PaymentPlanOption option = new PaymentPlanOption();
+        option.setProgram(entityManager.find(Program.class, programId));
+        option.setDescription(cadence.name());
+        option.setCadence(cadence);
+        option.setCreatedBy(entityManager.find(Person.class, directorPersonId));
+        entityManager.persist(option);
+        return option;
+    }
+
     private void enrollStudentInTheProgram(ProgramEnrollmentStatus status) {
+        enrollStudentInTheProgram(status, EnrollmentPaymentStatus.UP_TO_DATE, PaymentPlanCadence.MONTHLY);
+    }
+
+    private void enrollStudentInTheProgram(ProgramEnrollmentStatus status, EnrollmentPaymentStatus payment, PaymentPlanCadence cadence) {
         Institution institution = new Institution();
         institution.setName("Instituto " + System.nanoTime());
         entityManager.persist(institution);
@@ -116,8 +142,16 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(entityManager.find(Program.class, programId));
         enrollment.setStatus(status);
+        enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
+        PaymentPlanSelection selection = new PaymentPlanSelection();
+        selection.setProgramEnrollment(enrollment);
+        selection.setPaymentPlanOption(planOptions.computeIfAbsent(cadence, this::planOption));
+        selection.setEffectiveFrom(YearMonth.of(2027, 8));
+        selection.setScopeMonths(cadence == PaymentPlanCadence.ANNUAL_UPFRONT ? 12 : null);
+        selection.setCreatedBy(entityManager.find(Person.class, directorPersonId));
+        entityManager.persist(selection);
         entityManager.flush();
     }
 
@@ -275,24 +309,28 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-274")
-    @Tag("D-240")
-    void theImpactCountsOnlyTheActiveEnrollmentsOfTheOfferingAndReportsTheMonthlyDifference() throws Exception {
-        enrollStudentInTheProgram(ProgramEnrollmentStatus.ENROLLED);
-        enrollStudentInTheProgram(ProgramEnrollmentStatus.ENROLLED);
-        enrollStudentInTheProgram(ProgramEnrollmentStatus.PAUSED);
+    @Tag("D-327")
+    void theImpactCountsOnlyTheEnrollmentsThatPayNormalInstallmentsAndReportsTheMonthlyDifference() throws Exception {
+        for (int payer = 0; payer < 40; payer++) {
+            enrollStudentInTheProgram(ProgramEnrollmentStatus.ENROLLED);
+        }
+        enrollStudentInTheProgram(ProgramEnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.SUSPENDED, PaymentPlanCadence.MONTHLY);
+        enrollStudentInTheProgram(ProgramEnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.SUSPENDED, PaymentPlanCadence.MONTHLY);
         enrollStudentInTheProgram(ProgramEnrollmentStatus.WITHDRAWN);
-        enrollStudentInTheProgram(ProgramEnrollmentStatus.COMPLETED);
+        for (int paidYear = 0; paidYear < 3; paidYear++) {
+            enrollStudentInTheProgram(ProgramEnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.UP_TO_DATE, PaymentPlanCadence.ANNUAL_UPFRONT);
+        }
 
         for (String token : new String[]{directorToken, administrativeToken}) {
             impact(token, 120000, LocalDate.of(2027, 9, 1), null)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.reachesActiveEnrollments").value(true))
-                    .andExpect(jsonPath("$.affectedStudents").value(3))
+                    .andExpect(jsonPath("$.affectedStudents").value(40))
                     .andExpect(jsonPath("$.currentFinalAmount.amount").value(100000.0))
                     .andExpect(jsonPath("$.proposedFinalAmount.amount").value(120000.0))
-                    .andExpect(jsonPath("$.currentMonthlyIncome.amount").value(300000.0))
-                    .andExpect(jsonPath("$.proposedMonthlyIncome.amount").value(360000.0))
-                    .andExpect(jsonPath("$.monthlyIncomeDifference.amount").value(60000.0))
+                    .andExpect(jsonPath("$.currentMonthlyIncome.amount").value(4000000.0))
+                    .andExpect(jsonPath("$.proposedMonthlyIncome.amount").value(4800000.0))
+                    .andExpect(jsonPath("$.monthlyIncomeDifference.amount").value(800000.0))
                     .andExpect(jsonPath("$.monthlyMarketingDiscountCost.amount").value(0.0));
         }
     }
@@ -358,5 +396,44 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
 
         assertThat(jdbc.queryForObject("select count(*) from price_version where price_id = ?", Long.class, priceId)).isEqualTo(versionsBefore);
+    }
+
+    @Test
+    @Tag("D-111")
+    @Tag("D-214")
+    void theImpactOfAStartInThePastIsRejectedAsRetroactiveJustLikeThePublicationAndAHugeAmountIs400() throws Exception {
+        impact(directorToken, 120000, TODAY.minusDays(1), null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.violations[0].code").value("RETROACTIVE_EFFECTIVE_DATE"));
+        impact(directorToken, 120000, TODAY, null).andExpect(status().isOk());
+        mockMvc.perform(post("/prices/{priceId}/versions/impact", priceId).header("Authorization", "Bearer " + directorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":{\"amount\":1e30,\"currency\":\"ARS\"},\"effectiveFrom\":\"" + TODAY + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.violations[0].code").value("PRICE_AMOUNT_TOO_LARGE"));
+        mockMvc.perform(post("/prices/{priceId}/versions", priceId).header("Authorization", "Bearer " + directorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":{\"amount\":1e30,\"currency\":\"ARS\"},\"effectiveFrom\":\"" + TODAY + "\",\"changeReason\":\"motivo\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.violations[0].code").value("PRICE_AMOUNT_TOO_LARGE"));
+        impact(directorToken, 9999999999L, TODAY, null).andExpect(status().isOk());
+    }
+
+    @Test
+    @Tag("D-214")
+    void theHistoryLoadsTheStatusChangesOfAllTheVersionsInAFixedNumberOfStatements() throws Exception {
+        for (int version = 1; version <= 12; version++) {
+            publish(100000 + version * 1000L, TODAY.plusDays(version));
+        }
+        entityManager.flush();
+        entityManager.clear();
+        Statistics statistics = entityManager.getEntityManagerFactory().unwrap(SessionFactory.class).getStatistics();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+
+        mockMvc.perform(get("/prices/{priceId}/versions", priceId).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(13)));
+
+        assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(6);
+        statistics.setStatisticsEnabled(false);
     }
 }
