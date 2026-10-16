@@ -7,7 +7,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "DISCOUNT_OUTBID_BY_A_BETTER_ONE", decisions = {"D-073", "D-295", "D-301", "D-384", "D-385"})
+@PolicyRule(violationCodes = "DISCOUNT_OUTBID_BY_A_BETTER_ONE", decisions = {"D-073", "D-285", "D-295", "D-301", "D-384", "D-385"})
 public final class BestDiscountPerInvoiceLinePolicy implements Policy<DiscountContest> {
 
     private final DiscountCandidateRanking ranking = new DiscountCandidateRanking();

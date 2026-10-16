@@ -145,7 +145,6 @@
 0.01 com/red_escuela/backend/billing/invoice/domain/PaymentUnderReviewTest
 0.01 com/red_escuela/backend/billing/invoice/domain/ZeroTotalInvoiceTest
 0.01 com/red_escuela/backend/billing/invoice/operation/InvoiceDiscountCalculatorTest
-0.19 com/red_escuela/backend/billing/invoice/operation/InvoiceDiscountSelectionProperties
 0.98 com/red_escuela/backend/billing/invoice/operation/InvoiceIssuingConcurrencyIT
 1.42 com/red_escuela/backend/billing/invoice/operation/InvoiceIssuingOperationIT
 0.87 com/red_escuela/backend/billing/invoice/operation/InvoiceIssuingReviewFixesIT

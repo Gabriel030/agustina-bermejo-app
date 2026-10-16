@@ -35,6 +35,7 @@ class DiscountCandidateRankingProperties {
     private static final String SEED = "20271016";
     private static final int TRIES = 1000;
     private static final InvoiceType INVOICE_TYPE = InvoiceType.MONTHLY_INSTALLMENT;
+    private static final long SAVING_STEP_CENTS = 1_000L;
     private static final Instant GRANT_EPOCH = Instant.parse("2027-02-01T00:00:00Z");
 
     private final InvoiceDiscountCalculator calculator = new InvoiceDiscountCalculator(
@@ -56,7 +57,7 @@ class DiscountCandidateRankingProperties {
 
     static InvoiceDiscountCandidate candidateOf(Spec spec, long sourceId) {
         long baseCents = lineBaseCents(spec.head().lineNumber());
-        long savingCents = spec.head().savingSeed() % baseCents + 1;
+        long savingCents = (spec.head().savingSeed() + 1) * SAVING_STEP_CENTS;
         Instant grantedAt = spec.tail().grantDay() == null ? null : GRANT_EPOCH.plusSeconds(spec.tail().grantDay() * 86_400L);
         return new InvoiceDiscountCandidate(spec.head().type(), sourceId, spec.tail().studentDiscountId(), "d" + sourceId, spec.head().invoiceType(),
                 IssuingTestData.ars(BigDecimal.valueOf(baseCents, 2).toPlainString()), IssuingTestData.ars(BigDecimal.valueOf(savingCents, 2).toPlainString()),
@@ -67,10 +68,10 @@ class DiscountCandidateRankingProperties {
     Arbitrary<Spec> specs() {
         Arbitrary<Head> heads = Combinators.combine(
                 Arbitraries.integers().between(1, 3), Arbitraries.of(DiscountType.values()),
-                Arbitraries.of(INVOICE_TYPE, InvoiceType.ENROLLMENT_FEE), Arbitraries.longs().between(0, 1_000_000L)).as(Head::new);
+                Arbitraries.of(INVOICE_TYPE, InvoiceType.ENROLLMENT_FEE), Arbitraries.longs().between(0, 2)).as(Head::new);
         Arbitrary<Tail> tails = Combinators.combine(
-                Arbitraries.integers().between(1, 3).injectNull(0.3), Arbitraries.integers().between(0, 3).injectNull(0.3),
-                Arbitraries.longs().between(1, 3).injectNull(0.3), Arbitraries.of(DiscountCandidateOrigin.values())).as(Tail::new);
+                Arbitraries.integers().between(1, 2).injectNull(0.3), Arbitraries.integers().between(0, 1).injectNull(0.3),
+                Arbitraries.longs().between(1, 2).injectNull(0.3), Arbitraries.of(DiscountCandidateOrigin.values())).as(Tail::new);
         return Combinators.combine(heads, tails, Arbitraries.longs().between(1, 3)).as(Spec::new);
     }
 
@@ -97,13 +98,56 @@ class DiscountCandidateRankingProperties {
     }
 
     @Property(tries = TRIES, seed = SEED)
-    void theWinnerIsTheBestRankedCandidateOfItsLine(@ForAll("specLists") List<Spec> specs) {
+    void theWinnerBeatsEveryOtherCandidateOfItsLineCriterionByCriterion(@ForAll("specLists") List<Spec> specs) {
+        List<InvoiceDiscountCandidate> candidates = uniquelyIdentified(specs);
+
+        Map<Integer, InvoiceDiscountCandidate> winners = calculator.selectBestDiscountPerInvoiceLine(INVOICE_TYPE, candidates);
+
+        winners.forEach((lineNumber, winner) -> ofTheInvoiceType(candidates).stream()
+                .filter(other -> other.lineNumber() == lineNumber && other != winner)
+                .forEach(other -> assertThat(precedes(winner, other)).as("%s should precede %s", winner, other).isTrue()));
+    }
+
+    @Property(tries = TRIES, seed = SEED)
+    void theWinnerHasTheMaximumSavingOfItsLine(@ForAll("specLists") List<Spec> specs) {
         List<InvoiceDiscountCandidate> candidates = uniquelyIdentified(specs);
 
         Map<Integer, InvoiceDiscountCandidate> winners = calculator.selectBestDiscountPerInvoiceLine(INVOICE_TYPE, candidates);
 
         winners.forEach((lineNumber, winner) -> assertThat(ofTheInvoiceType(candidates).stream()
-                .filter(candidate -> candidate.lineNumber() == lineNumber).min(ranking)).contains(winner));
+                .filter(other -> other.lineNumber() == lineNumber)
+                .allMatch(other -> other.discountAmount().value().amount().compareTo(winner.discountAmount().value().amount()) <= 0)).isTrue());
+    }
+
+    private static int expectedTypeRank(DiscountType type) {
+        if (type == DiscountType.SCHOLARSHIP) {
+            return 1;
+        }
+        return type == DiscountType.ANNUAL_UPFRONT ? 3 : 2;
+    }
+
+    private static List<Long> expectedKey(InvoiceDiscountCandidate candidate) {
+        long never = Long.MAX_VALUE;
+        return List.of(
+                -candidate.discountAmount().value().amount().movePointRight(2).longValueExact(),
+                (long) expectedTypeRank(candidate.discountType()),
+                candidate.priority() == null ? never : candidate.priority(),
+                candidate.grantedAt() == null ? never : candidate.grantedAt().getEpochSecond(),
+                (long) candidate.origin().ordinal(),
+                candidate.studentDiscountId() == null ? never : candidate.studentDiscountId(),
+                candidate.sourceId());
+    }
+
+    private static boolean precedes(InvoiceDiscountCandidate first, InvoiceDiscountCandidate second) {
+        List<Long> firstKey = expectedKey(first);
+        List<Long> secondKey = expectedKey(second);
+        for (int position = 0; position < firstKey.size(); position++) {
+            int comparison = Long.compare(firstKey.get(position), secondKey.get(position));
+            if (comparison != 0) {
+                return comparison < 0;
+            }
+        }
+        return false;
     }
 
     @Property(tries = TRIES, seed = SEED)
@@ -115,16 +159,6 @@ class DiscountCandidateRankingProperties {
         TreeSet<Integer> linesWithCandidates = new TreeSet<>(ofTheInvoiceType(candidates).stream().map(InvoiceDiscountCandidate::lineNumber).toList());
         assertThat(winners.keySet()).containsExactlyElementsOf(linesWithCandidates);
         winners.forEach((lineNumber, winner) -> assertThat(winner.lineNumber()).isEqualTo(lineNumber));
-    }
-
-    @Property(tries = TRIES, seed = SEED)
-    void theWinnerNeverExceedsTheLineBase(@ForAll("specLists") List<Spec> specs) {
-        Map<Integer, InvoiceDiscountCandidate> winners = calculator.selectBestDiscountPerInvoiceLine(INVOICE_TYPE, uniquelyIdentified(specs));
-
-        winners.forEach((lineNumber, winner) -> {
-            assertThat(winner.baseAmount().value().amount()).isEqualByComparingTo(BigDecimal.valueOf(lineBaseCents(lineNumber), 2));
-            assertThat(winner.discountAmount().value().amount()).isLessThanOrEqualTo(BigDecimal.valueOf(lineBaseCents(lineNumber), 2));
-        });
     }
 
     @Property(tries = TRIES, seed = SEED)

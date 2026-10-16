@@ -196,7 +196,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | DiscountMatchesInvoiceTypePolicy | DISCOUNT_NOT_APPLICABLE_TO_INVOICE_TYPE | D-129 |
-| 2 | BestDiscountPerInvoiceLinePolicy | DISCOUNT_OUTBID_BY_A_BETTER_ONE | D-073, D-295, D-301, D-384, D-385 |
+| 2 | BestDiscountPerInvoiceLinePolicy | DISCOUNT_OUTBID_BY_A_BETTER_ONE | D-073, D-285, D-295, D-301, D-384, D-385 |
 
 ## Momento INVOICE_ISSUING
 
