@@ -33,6 +33,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.repository.AddressRepository;
+import com.red_escuela.backend.billing.events.GatewayPaymentArrivedWithGatewayDisabledEvent;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -434,6 +435,51 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
 
         assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent.class)).singleElement()
                 .satisfies(event -> assertThat(event.amount()).isEqualByComparingTo("4000"));
+    }
+
+    private void withMercadoPagoEnabled(boolean enabled, Runnable scenario) {
+        Boolean original = jdbc.queryForObject("select mp_enabled from payment_gateway_config order by id limit 1", Boolean.class);
+        jdbc.update("update payment_gateway_config set mp_enabled = ?", enabled);
+        try {
+            scenario.run();
+        } finally {
+            jdbc.update("update payment_gateway_config set mp_enabled = ?", original);
+        }
+    }
+
+    @Test
+    @Tag("D-256")
+    void aMercadoPagoPaymentWithTheGatewayTurnedOffIsCreditedAllocatedAndAnnouncedToAdministrationOnce() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = "old-link-" + System.nanoTime();
+        applicationEvents.clear();
+
+        withMercadoPagoEnabled(false, () -> {
+            transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request-1", mpPaymentId));
+            transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request-2", mpPaymentId));
+        });
+
+        assertThat(mpPayments(mpPaymentId)).singleElement().satisfies(payment -> assertThat(payment.getStatus().name()).isEqualTo("APPROVED"));
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        assertThat(applicationEvents.stream(GatewayPaymentArrivedWithGatewayDisabledEvent.class)).singleElement()
+                .satisfies(event -> {
+                    assertThat(event.reportedInvoiceId()).isEqualTo(invoice.getId());
+                    assertThat(event.paymentId()).isEqualTo(mpPayments(mpPaymentId).get(0).getId());
+                    assertThat(event.amount()).isEqualByComparingTo("10000");
+                });
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-256")
+    void aMercadoPagoPaymentWithTheGatewayTurnedOnDoesNotAnnounceAnythingToAdministration() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        applicationEvents.clear();
+
+        withMercadoPagoEnabled(true, () -> transactionTemplate.executeWithoutResult(
+                status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request-1", "on-" + System.nanoTime())));
+
+        assertThat(applicationEvents.stream(GatewayPaymentArrivedWithGatewayDisabledEvent.class)).isEmpty();
     }
 
     @Test

@@ -8,7 +8,7 @@ import {
   RECEIPT_STATUS_CONFIG,
   discountLabel,
   formatDate,
-  formatDateTime,
+  formatPaymentMoment,
   formatMoney,
   formatSignedMoney,
   invoiceConcept,
@@ -35,7 +35,7 @@ function PaymentBlock({ payment }) {
         <span className="text-ink-soft">
           {paymentMethodLabel(payment.method, payment.cardType, payment.cardInstallments)}
         </span>
-        <span className="text-ink-faint">{formatDateTime(payment.paidAt)}</span>
+        <span className="text-ink-faint">{formatPaymentMoment(payment.paidAt)}</span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-faint">
         {payment.externalReference && (
