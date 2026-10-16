@@ -3,8 +3,6 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -13,9 +11,6 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.Payment;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -27,7 +22,6 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
@@ -37,7 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -58,13 +51,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 class PaymentConcurrencyTest extends AbstractIntegrationTest {
     @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
-
-    @Autowired
     private InvoiceRepository invoiceRepository;
-
-    @Autowired
-    private PaymentAllocationRepository paymentAllocationRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -154,97 +141,48 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         return invoice;
     }
 
-    private Payment ejecutarPagoConcurrente(Long invoiceId, BigDecimal monto, Person admin,
-                                             CountDownLatch listos, CountDownLatch arranca) throws Exception {
-        listos.countDown();
-        arranca.await();
-        return registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoiceId, ars(monto))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+    private Long payConcurrently(Long invoiceId, Person admin, CountDownLatch ready, CountDownLatch go) throws Exception {
+        ready.countDown();
+        go.await();
+        return BillingTestFixtures.registerApprovedBankTransferPayment(invoiceId, admin.getId());
     }
 
     @Test
-    void twoAdministrativesRegisteringPaymentOnTheSameInstallmentInParallelDoesNotDuplicateTheBalance() throws Exception {
+    @Tag("D-136")
+    void twoAdministrativesApprovingPaymentOnTheSameInstallmentInParallelDoesNotDuplicateTheBalance() throws Exception {
         Person admin1 = persistPerson("admin.concurrencia1." + System.nanoTime());
         Person admin2 = persistPerson("admin.concurrencia2." + System.nanoTime());
         Student student = persistStudent("98000001");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000));
 
-        CountDownLatch listos = new CountDownLatch(2);
-        CountDownLatch arranca = new CountDownLatch(1);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        Callable<Payment> intento1 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(10000), admin1, listos, arranca);
-        Callable<Payment> intento2 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(10000), admin2, listos, arranca);
+        Future<Long> result1 = executor.submit(() -> payConcurrently(invoice.getId(), admin1, ready, go));
+        Future<Long> result2 = executor.submit(() -> payConcurrently(invoice.getId(), admin2, ready, go));
+        ready.await(5, TimeUnit.SECONDS);
+        go.countDown();
 
-        Future<Payment> resultado1 = executor.submit(intento1);
-        Future<Payment> resultado2 = executor.submit(intento2);
-        listos.await(5, TimeUnit.SECONDS);
-        arranca.countDown();
-
-        int exitos = 0;
-        int rechazosPorSaldo = 0;
-        for (Future<Payment> resultado : List.of(resultado1, resultado2)) {
+        int successes = 0;
+        int rejections = 0;
+        for (Future<Long> result : List.of(result1, result2)) {
             try {
-                resultado.get(30, TimeUnit.SECONDS);
-                exitos++;
+                result.get(30, TimeUnit.SECONDS);
+                successes++;
             } catch (ExecutionException e) {
                 assertThat(e.getCause()).isInstanceOf(InvoiceNotPayableException.class);
-                rechazosPorSaldo++;
+                rejections++;
             }
         }
         executor.shutdown();
 
-        assertThat(exitos).isEqualTo(1);
-        assertThat(rechazosPorSaldo).isEqualTo(1);
+        assertThat(successes).isEqualTo(1);
+        assertThat(rejections).isEqualTo(1);
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
-        assertThat(allocations).hasSize(1);
-        assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(10000));
-        assertTheLedgerHoldsExactlyOneReceivedPaymentFor(invoice);
-    }
-
-    @Test
-    @Tag("D-136")
-    void twoConcurrentFullPaymentsOfTheSameInvoiceLeaveOnlyOneAllocation() throws Exception {
-        Person admin1 = persistPerson("admin.concurrencia3." + System.nanoTime());
-        Person admin2 = persistPerson("admin.concurrencia4." + System.nanoTime());
-        Student student = persistStudent("98000002");
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, ars(1000));
-
-        CountDownLatch listos = new CountDownLatch(2);
-        CountDownLatch arranca = new CountDownLatch(1);
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        Callable<Payment> intento1 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(1000), admin1, listos, arranca);
-        Callable<Payment> intento2 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(1000), admin2, listos, arranca);
-
-        Future<Payment> resultado1 = executor.submit(intento1);
-        Future<Payment> resultado2 = executor.submit(intento2);
-        listos.await(5, TimeUnit.SECONDS);
-        arranca.countDown();
-
-        int exitos = 0;
-        int rechazosPorSaldo = 0;
-        for (Future<Payment> resultado : List.of(resultado1, resultado2)) {
-            try {
-                resultado.get(30, TimeUnit.SECONDS);
-                exitos++;
-            } catch (ExecutionException e) {
-                assertThat(e.getCause()).isInstanceOf(InvoiceNotPayableException.class);
-                rechazosPorSaldo++;
-            }
-        }
-        executor.shutdown();
-
-        assertThat(exitos).isEqualTo(1);
-        assertThat(rechazosPorSaldo).isEqualTo(1);
-        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
-        assertThat(allocations).hasSize(1);
-        assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(1000));
+        assertThat(jdbc.queryForList("select amount from payment_allocation where invoice_id = ?", java.math.BigDecimal.class, invoice.getId()))
+                .singleElement().satisfies(amount -> assertThat(amount).isEqualByComparingTo("10000"));
         assertTheLedgerHoldsExactlyOneReceivedPaymentFor(invoice);
     }
 }

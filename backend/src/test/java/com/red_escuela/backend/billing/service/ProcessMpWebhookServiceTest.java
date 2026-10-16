@@ -227,7 +227,6 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void aMercadoPagoPaymentSettlingAnInvoiceLeavesItsAllocationSourcePointingToTheRegisteredPayment() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = "source-" + System.nanoTime();
-        long legacyPaymentsBefore = jdbc.queryForObject("select count(*) from legacy_payment", Long.class);
 
         transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request-1", mpPaymentId));
 
@@ -237,7 +236,6 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                     assertThat(source.get("payment_id")).isEqualTo(paymentId);
                     assertThat((BigDecimal) source.get("amount")).isEqualByComparingTo("10000");
                 });
-        assertThat(jdbc.queryForObject("select count(*) from legacy_payment", Long.class)).isEqualTo(legacyPaymentsBefore);
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -507,6 +505,28 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 .contains("Webhook de Mercado Pago rechazado por firma inválida")
                 .doesNotContain(secret)
                 .doesNotContain("deadbeefdeadbeef");
+    }
+
+    @Test
+    void aPaymentTheGatewayDoesNotReportAsApprovedIsIgnoredAndRegistersNothing(CapturedOutput output) {
+        String mpPaymentId = "pending-" + System.nanoTime();
+        ProcessMpWebhookService service = serviceFetching(id -> Optional.empty(), new MpWebhookSignatureVerifier("", true));
+
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
+        assertThat(output.getOut()).contains("el pago no está aprobado").contains("pagoMp=" + mpPaymentId);
+    }
+
+    @Test
+    void anApprovedPaymentReportedForAnInvoiceThatDoesNotExistFailsAndRegistersNothing() {
+        String mpPaymentId = "ghost-" + System.nanoTime();
+        ProcessMpWebhookService service = serviceReporting(Long.MAX_VALUE, BigDecimal.valueOf(10000));
+
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId)))
+                .isInstanceOf(com.red_escuela.backend.billing.exception.InvoiceNotFoundException.class);
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
     }
 
     @Test

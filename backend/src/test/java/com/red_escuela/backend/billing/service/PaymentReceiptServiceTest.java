@@ -21,10 +21,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
@@ -126,9 +123,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private NotificationRepository notificationRepository;
-
-    @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
@@ -250,7 +244,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     @Test
     @Tag("D-376")
     void approvingARealReceiptCreatesAnApprovedTransferPaymentLinkedToTheReceiptWithItsAllocationSource() {
-        long legacyPaymentsBefore = jdbcTemplate.queryForObject("select count(*) from legacy_payment", Long.class);
         Person admin = persistPerson("admin.d376." + System.nanoTime());
         Student student = persistStudent("97376001");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
@@ -271,7 +264,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
                     assertThat(source.get("payment_id")).isEqualTo(paymentId);
                     assertThat((java.math.BigDecimal) source.get("amount")).isEqualByComparingTo("10000");
                 });
-        assertThat(jdbcTemplate.queryForObject("select count(*) from legacy_payment", Long.class)).isEqualTo(legacyPaymentsBefore);
     }
 
     @Test
@@ -530,9 +522,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+        BillingTestFixtures.payInvoiceInFull(invoice);
 
         assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin))
                 .isInstanceOf(InvoiceNotPayableException.class);

@@ -25,7 +25,10 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -54,6 +57,8 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private CourseEnrollmentAdmissionPaymentListener admissionPaymentListener;
     @Autowired private RoleRepository roleRepository;
     @Autowired private TransactionTemplate transactionTemplate;
+    @Autowired private com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase previewCashPaymentUseCase;
+    @Autowired private com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase registerCashPaymentUseCase;
     @Autowired private EntityManager entityManager;
 
     private Person persistPerson(String dni) {
@@ -162,6 +167,29 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         BillingTestFixtures.registerApprovedBankTransferPayment(invoiceId, admin.getId());
 
         awaitEnrollments(student, 1);
+    }
+
+    @Test
+    @Tag("D-235")
+    void payingTheCourseAdmissionInvoiceAtTheCounterWithCashEnrollsTheStudent() {
+        Student student = persistStudent();
+        Course course = persistPricedCourse();
+        Person admin = persistAdministrative();
+        CourseEnrollmentApplication application = request(student, course);
+        Long invoiceId = application.getInvoiceId();
+        Money amount = invoiceRepository.findById(invoiceId).orElseThrow().getAmounts().outstandingAmount().value();
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(admin.getId().toString(), null, "ROLE_ADMINISTRATIVO"));
+        try {
+            String fingerprint = previewCashPaymentUseCase.previewCashPayment(student.getId(), amount).fingerprint();
+            registerCashPaymentUseCase.registerCashPayment(student.getId(),
+                    new com.red_escuela.backend.billing.payment.dto.RegisterCashPaymentRequest(amount, null, null, null, fingerprint), "cash-admission-" + System.nanoTime());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        awaitEnrollments(student, 1);
+        assertThat(invoiceRepository.findById(invoiceId).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
+        assertThat(applicationRepository.findByStudentIdOrderByIdDesc(student.getId()).get(0).getCourseEnrollment()).isNotNull();
     }
 
     @Test
