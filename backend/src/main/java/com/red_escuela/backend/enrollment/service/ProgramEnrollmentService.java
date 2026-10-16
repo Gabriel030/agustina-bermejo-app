@@ -50,7 +50,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.billing.service.ScholarshipService;
-import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
+import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
 
 @Service
@@ -64,7 +64,7 @@ public class ProgramEnrollmentService {
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
-    private final StudentDebtResolutionService studentDebtResolutionService;
+    private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
@@ -79,7 +79,7 @@ public class ProgramEnrollmentService {
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
-            StudentDebtResolutionService studentDebtResolutionService,
+            EnrollmentDebtGuard enrollmentDebtGuard,
             ScholarshipService scholarshipService,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
@@ -93,7 +93,7 @@ public class ProgramEnrollmentService {
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
-        this.studentDebtResolutionService = studentDebtResolutionService;
+        this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.scholarshipService = scholarshipService;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -102,7 +102,7 @@ public class ProgramEnrollmentService {
 
     @Transactional
     public ProgramEnrollment enroll(Long studentId, CreateProgramEnrollmentRequest request) {
-        studentDebtResolutionService.verifyNoDebt(studentId);
+        verifyStudentHasNoOutstandingDebt(studentId);
         return createEnrollment(studentId, request, true, true, null);
     }
 
@@ -314,6 +314,10 @@ public class ProgramEnrollmentService {
         }
         enrollment.setCurrentBillingTemplate(template);
         return programEnrollmentRepository.save(enrollment);
+    }
+
+    public void verifyStudentHasNoOutstandingDebt(Long studentId) {
+        enrollmentDebtGuard.verifyNoOutstandingDebt(studentId);
     }
 
     public void validateStudentCanEnrollInProgram(Student student, Program program) {

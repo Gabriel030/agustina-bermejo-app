@@ -43,7 +43,7 @@ import java.util.Optional;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.service.ScholarshipService;
-import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
+import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 
 @Service
 public class CourseEnrollmentService {
@@ -54,7 +54,7 @@ public class CourseEnrollmentService {
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final PersonRoleGranter personRoleGranter;
-    private final StudentDebtResolutionService studentDebtResolutionService;
+    private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
@@ -66,7 +66,7 @@ public class CourseEnrollmentService {
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
+            PersonRoleGranter personRoleGranter, EnrollmentDebtGuard enrollmentDebtGuard,
             ScholarshipService scholarshipService,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
@@ -78,7 +78,7 @@ public class CourseEnrollmentService {
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.personRoleGranter = personRoleGranter;
-        this.studentDebtResolutionService = studentDebtResolutionService;
+        this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.scholarshipService = scholarshipService;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -96,7 +96,7 @@ public class CourseEnrollmentService {
     public CourseEnrollment enroll(Long studentId, CreateCourseEnrollmentRequest request) {
         Student student = studentRepository.findByIdForUpdate(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
-        studentDebtResolutionService.verifyNoDebt(studentId);
+        enrollmentDebtGuard.verifyNoOutstandingDebt(studentId);
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         validateCanEnroll(student, course);

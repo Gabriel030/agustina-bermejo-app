@@ -129,7 +129,6 @@ com.red_escuela.backend.billing.exception.PromotionAlreadyClosedException
 com.red_escuela.backend.billing.exception.PromotionNotFoundException
 com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException
 com.red_escuela.backend.billing.exception.ScholarshipNotFoundException
-com.red_escuela.backend.billing.exception.StudentInDebtException
 com.red_escuela.backend.billing.exception.UpfrontWindowClosedException
 com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment
 com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher
@@ -183,7 +182,6 @@ com.red_escuela.backend.billing.service.PromotionRedeemer
 com.red_escuela.backend.billing.service.RecurringFeeWindowService
 com.red_escuela.backend.billing.service.ScholarshipGrantSupport
 com.red_escuela.backend.billing.service.ScholarshipService
-com.red_escuela.backend.billing.service.StudentDebtResolutionService
 com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService
 com.red_escuela.backend.billing.service.YearBillingConfigurationApplier
 com.red_escuela.backend.billing.service.YearBillingConfiguredEvent
