@@ -119,7 +119,3 @@ datasource ya configurado. Va aparte del `docker-compose.yml` principal a
 propósito: no hace falta levantar el monitoreo cada vez que se trabaja en la
 app. Requiere el backend corriendo en el host con `ACTUATOR_USER` y
 `ACTUATOR_PASSWORD` seteadas.
-
-## 📝 Licencia
-
-Este proyecto está bajo la Licencia MIT.
