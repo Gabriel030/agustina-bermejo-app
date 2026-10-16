@@ -67,6 +67,17 @@ function PaymentBlock({ payment }) {
   );
 }
 
+function CreditNoteBlock({ creditNote }) {
+  return (
+    <div className="rounded-xl border border-border p-3 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="font-mono font-semibold tabular-nums text-ink">{formatMoney(creditNote.amount)}</span>
+        <span className="text-ink-soft">Nota de crédito {creditNote.creditNoteNumber}</span>
+      </div>
+    </div>
+  );
+}
+
 function ReceiptBlock({ receipt, onViewReceipt }) {
   const status = RECEIPT_STATUS_CONFIG[receipt.status] ?? { label: receipt.status, tone: 'neutral' };
   return (
@@ -140,6 +151,7 @@ export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false, show
   const lines = invoice.lines ?? [];
   const showBreakdown = lines.some((line) => line.discount != null) || lines.length > 1;
   const payments = invoice.payments ?? [];
+  const creditNotes = invoice.creditNotes ?? [];
   const receipts = invoice.receipts ?? [];
   const pendingReceipt = receipts.some((receipt) => receipt.status === 'PENDING_REVIEW');
 
@@ -169,6 +181,9 @@ export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false, show
       {showBreakdown && <InvoiceLinesBreakdown invoice={invoice} />}
       {payments.map((payment) => (
         <PaymentBlock key={payment.paymentId} payment={payment} />
+      ))}
+      {creditNotes.map((creditNote) => (
+        <CreditNoteBlock key={creditNote.creditNoteId} creditNote={creditNote} />
       ))}
       {receipts.map((receipt) => (
         <ReceiptBlock key={receipt.id} receipt={receipt} onViewReceipt={onViewReceipt} />

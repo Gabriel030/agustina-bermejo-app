@@ -128,6 +128,24 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-035")
+    @Tag("D-214")
+    void breakdownOfAnInvoiceIssuedBeforeAPriceIncreaseKeepsTheLineVersionAndItsAmount() {
+        Person director = persistPerson("director.breakdown30." + System.nanoTime());
+        Course course = persistCourse();
+        Long firstVersion = com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        CourseEnrollment enrollment = persistCourseEnrollment("99000430", course);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now().plusDays(10));
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026 con aumento", ars(12000), LocalDate.now().minusDays(1), director.getId());
+
+        PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(invoice.getId());
+
+        assertThat(invoice.getPrimaryLine().getPriceVersionId()).isEqualTo(firstVersion);
+        assertThat(breakdown.priceRevisionDescription()).isEqualTo("Cuota mensual 2026");
+        assertThat(breakdown.baseAmount()).isEqualTo(ars(10000));
+    }
+
+    @Test
     @Tag("D-376")
     void breakdownIncludesPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
+import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
@@ -21,7 +22,8 @@ public record MeInvoiceResponse(
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod,
-        List<MeInvoicePaymentResponse> payments, List<MeInvoiceReceiptResponse> receipts) {
+        List<MeInvoicePaymentResponse> payments, List<MeInvoiceReceiptResponse> receipts,
+        List<PriceBreakdownCreditNoteResponse> creditNotes) {
 
     public static MeInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts) {
         InvoiceResponse base = InvoiceResponse.from(view);
@@ -42,6 +44,7 @@ public record MeInvoiceResponse(
                 base.studentId(), base.studentDni(), base.productRef(),
                 base.description(), base.subjectId(), base.examBoardRegistrationId(),
                 base.paymentDate(), base.paymentMethod(),
-                payments, receipts.stream().map(MeInvoiceReceiptResponse::from).toList());
+                payments, receipts.stream().map(MeInvoiceReceiptResponse::from).toList(),
+                base.creditNotes());
     }
 }

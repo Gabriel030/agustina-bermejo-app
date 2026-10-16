@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
+import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceAmounts;
@@ -22,7 +23,8 @@ public record InvoiceResponse(
         String issuingReason, String discardedReason,
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
-        LocalDateTime paymentDate, String paymentMethod) {
+        LocalDateTime paymentDate, String paymentMethod,
+        List<PriceBreakdownCreditNoteResponse> creditNotes) {
 
     public static InvoiceResponse from(InvoiceView view) {
         Invoice invoice = view.invoice();
@@ -53,6 +55,8 @@ public record InvoiceResponse(
                 invoice.getIssuingReason().name(), invoice.getDiscardedReason(),
                 studentId, studentDni, productRef,
                 line.getConcept(), line.getSubjectId(), line.getExamBoardRegistrationId(),
-                latest == null ? null : latest.paidAt(), latest == null ? null : latest.method());
+                latest == null ? null : latest.paidAt(), latest == null ? null : latest.method(),
+                view.creditNoteShares().stream().map(share -> new PriceBreakdownCreditNoteResponse(share.creditNoteId(), share.creditNoteNumber(),
+                        share.amountApplied(), "Nota de crédito " + share.creditNoteNumber())).toList());
     }
 }

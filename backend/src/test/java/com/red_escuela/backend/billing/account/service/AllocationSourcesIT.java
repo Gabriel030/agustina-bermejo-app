@@ -4,7 +4,12 @@ import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository;
+import com.red_escuela.backend.billing.dto.AdminInvoiceResponse;
+import com.red_escuela.backend.billing.dto.InvoiceResponse;
+import com.red_escuela.backend.billing.dto.MeInvoiceResponse;
 import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -37,6 +42,10 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
     private PaymentAllocationRepository allocationRepository;
     @Autowired
     private InvoiceQueryService invoiceQueryService;
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+    @Autowired
+    private InvoiceViewLoader invoiceViewLoader;
 
     private BillingInvariantChecker invariants;
     private Long accountId;
@@ -144,6 +153,49 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
         });
         assertThat(inTransaction(() -> invoiceQueryService.priceBreakdown(invoice).paymentsApplied())).isEmpty();
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void theInvoiceViewListsTheCreditNoteAndThePaymentThatFinancedItInEveryResponse() {
+        long creditNote = receiveCreditNote("2000.00", LocalDate.of(2027, 3, 5));
+        Long invoice = issue("5000.00");
+        long payment = receivePayment("3000.00", LocalDate.of(2027, 3, 12));
+        allocate();
+        String number = jdbc.queryForObject("select credit_note_number from credit_note where id = ?", String.class, creditNote);
+
+        List<Object> responses = inTransaction(() -> {
+            var view = invoiceViewLoader.loadInvoiceView(invoiceRepository.findInvoiceWithLinesById(invoice).orElseThrow());
+            return List.<Object>of(InvoiceResponse.from(view), MeInvoiceResponse.of(view, List.of()), AdminInvoiceResponse.of(view, List.of()));
+        });
+
+        InvoiceResponse base = (InvoiceResponse) responses.get(0);
+        List<PriceBreakdownCreditNoteResponse> meNotes = ((MeInvoiceResponse) responses.get(1)).creditNotes();
+        List<PriceBreakdownCreditNoteResponse> adminNotes = ((AdminInvoiceResponse) responses.get(2)).creditNotes();
+        for (List<PriceBreakdownCreditNoteResponse> notes : List.of(base.creditNotes(), meNotes, adminNotes)) {
+            assertThat(notes).singleElement().satisfies(note -> {
+                assertThat(note.creditNoteId()).isEqualTo(creditNote);
+                assertThat(note.creditNoteNumber()).isEqualTo(number);
+                assertThat(note.description()).isEqualTo("Nota de crédito " + number);
+                assertThat(note.amount().amount()).isEqualByComparingTo("2000.00");
+            });
+        }
+        assertThat(((MeInvoiceResponse) responses.get(1)).payments()).singleElement().satisfies(share -> {
+            assertThat(share.paymentId()).isEqualTo(payment);
+            assertThat(share.amountApplied().amount()).isEqualByComparingTo("3000.00");
+        });
+        assertThat(((AdminInvoiceResponse) responses.get(2)).payments()).extracting(share -> share.paymentId()).containsExactly(payment);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void anInvoiceFinancedOnlyByPaymentsHasNoCreditNotesInItsView() {
+        Long invoice = issue("3000.00");
+        receivePayment("3000.00", LocalDate.of(2027, 3, 5));
+        allocate();
+
+        InvoiceResponse response = inTransaction(() -> InvoiceResponse.from(invoiceViewLoader.loadInvoiceView(invoiceRepository.findInvoiceWithLinesById(invoice).orElseThrow())));
+
+        assertThat(response.creditNotes()).isEmpty();
     }
 
     @Test
