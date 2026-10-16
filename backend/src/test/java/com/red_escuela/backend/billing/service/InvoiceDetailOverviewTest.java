@@ -24,6 +24,7 @@ import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
+import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService;
@@ -53,9 +54,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -66,6 +69,7 @@ import java.util.Optional;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -95,10 +99,10 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+    private JdbcTemplate jdbc;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
+    private PaymentRepository legacyPaymentRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -326,14 +330,14 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
             Invoice invoice = persistInvoice(enrollment, ars(10000), i);
             if (i % 2 == 0) {
                 registerPaymentUseCase.register(request(PaymentMethod.CASH, null, null, null,
-                        new PaymentAllocationRequest(invoice.getId(), ars(10000))), recorder);
+                        new PaymentAllocationRequest(invoice.getId(), ars(10000))), persistPerson("admin.detail6." + i + "." + System.nanoTime(), "Ana" + i, "Ruiz"));
             } else {
                 BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
                 approvePaymentReceiptUseCase.approve(receipt.getId(), recorder);
             }
         }
 
-        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(60)).untilAsserted(() -> assertThat(
+        await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(
                 jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Long.class)).isZero());
 
         List<AdminEnrollmentBillingStatusResponse> overview = QueryCountAssertions.assertAtMostQueries(
@@ -369,8 +373,8 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
 
         assertThat(response.paymentStatus()).isEqualTo("PAID");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method).containsExactlyInAnyOrder("CASH", "MERCADO_PAGO");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::amountApplied).containsExactlyInAnyOrder(ars(4000), ars(6000));
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method).containsExactly("CASH", "MERCADO_PAGO");
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::amountApplied).containsExactly(ars(6000), ars(4000));
         assertThat(sumOfAppliedAmounts(response)).isEqualTo(response.paidAmount());
     }
 
@@ -389,8 +393,29 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         AdminInvoiceResponse response = adminInvoice(student, second.getId());
 
         assertThat(response.paymentStatus()).isEqualTo("PAID");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method).containsExactlyInAnyOrder("CASH", "MERCADO_PAGO");
-        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::amountApplied).containsExactlyInAnyOrder(ars(4000), ars(6000));
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method).containsExactly("MERCADO_PAGO", "CASH");
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::amountApplied).containsExactly(ars(6000), ars(4000));
         assertThat(sumOfAppliedAmounts(response)).isEqualTo(response.paidAmount());
+    }
+
+    @Test
+    @Tag("D-376")
+    void aPaidInvoiceWhoseAllocationHasNoSourcesShowsNoPaymentsAndDoesNotFail() {
+        Person recorder = persistPerson("admin.detail9." + System.nanoTime(), "Ana", "Ruiz");
+        Student student = persistStudent();
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
+        registerPaymentUseCase.register(request(PaymentMethod.CASH, null, null, null, new PaymentAllocationRequest(invoice.getId(), ars(10000))), recorder);
+        jdbc.execute("alter table payment_allocation_source disable trigger user");
+        try {
+            jdbc.update("delete from payment_allocation_source where payment_allocation_id in (select id from payment_allocation where invoice_id = ?)", invoice.getId());
+        } finally {
+            jdbc.execute("alter table payment_allocation_source enable trigger user");
+        }
+
+        AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
+
+        assertThat(response.paymentStatus()).isEqualTo("PAID");
+        assertThat(response.payments()).isEmpty();
+        assertThat(response.paymentDate()).isNull();
     }
 }
