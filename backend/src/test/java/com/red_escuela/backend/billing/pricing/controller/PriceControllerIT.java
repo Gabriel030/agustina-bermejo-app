@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.pricing.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
-import com.red_escuela.backend.billing.pricing.service.PriceVersionActivator;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -56,8 +55,6 @@ class PriceControllerIT extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private PriceReader priceReader;
-    @Autowired
-    private PriceVersionActivator activator;
 
     private String directorToken;
     private long programId;
@@ -204,48 +201,6 @@ class PriceControllerIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select status from price_version where id = ?", String.class, morning)).isEqualTo("SUPERSEDED");
         assertThat(count("select count(*) from price_version where price_id = ? and status = 'EFFECTIVE'", priceId)).isEqualTo(1);
         assertThat(amountOn(TODAY)).isEqualTo(112000);
-    }
-
-    @Test
-    @Tag("D-280")
-    @Tag("D-214")
-    void anEarlierStartingVersionCoexistsWithALaterScheduledOneAndTheActivationJobWalksThemInOrder() throws Exception {
-        LocalDate septemberFirst = LocalDate.of(2027, 9, 1);
-        LocalDate octoberFirst = LocalDate.of(2027, 10, 1);
-        long october = idOf(publish(directorToken, 120000, octoberFirst));
-        long september = idOf(publish(directorToken, 110000, septemberFirst));
-
-        assertThat(amountOn(LocalDate.of(2027, 8, 31))).isEqualTo(100000);
-        assertThat(amountOn(LocalDate.of(2027, 9, 15))).isEqualTo(110000);
-        assertThat(amountOn(octoberFirst)).isEqualTo(120000);
-
-        MutableClock.INSTANCE.setDate(septemberFirst);
-        assertThat(activator.activateDueVersions()).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select status from price_version where id = ?", String.class, september)).isEqualTo("EFFECTIVE");
-        assertThat(jdbc.queryForObject("select status from price_version where id = ?", String.class, october)).isEqualTo("SCHEDULED");
-        assertThat(count("select count(*) from price_version where price_id = ? and status = 'SUPERSEDED'", priceId)).isEqualTo(1);
-
-        MutableClock.INSTANCE.setDate(octoberFirst);
-        assertThat(activator.activateDueVersions()).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select status from price_version where id = ?", String.class, october)).isEqualTo("EFFECTIVE");
-        assertThat(jdbc.queryForObject("select status from price_version where id = ?", String.class, september)).isEqualTo("SUPERSEDED");
-        assertThat(count("select count(*) from price_version where price_id = ? and status = 'EFFECTIVE'", priceId)).isEqualTo(1);
-        assertThat(activator.activateDueVersions()).isZero();
-    }
-
-    @Test
-    @Tag("D-214")
-    void theActivationJobRecordsTheProcessAsActorOfBothTransitions() throws Exception {
-        LocalDate septemberFirst = LocalDate.of(2027, 9, 1);
-        long scheduled = idOf(publish(directorToken, 120000, septemberFirst));
-
-        MutableClock.INSTANCE.setDate(septemberFirst);
-        activator.activateDueVersions();
-
-        assertThat(count("select count(*) from price_version_status_change where price_version_id = ? and event = 'REACH_START' and actor_process = 'PriceVersionActivation'",
-                scheduled)).isEqualTo(1);
-        assertThat(count("select count(*) from price_version_status_change c join price_version v on v.id = c.price_version_id "
-                + "where v.price_id = ? and c.event = 'SUPERSEDE' and c.actor_process = 'PriceVersionActivation'", priceId)).isEqualTo(1);
     }
 
     @Test

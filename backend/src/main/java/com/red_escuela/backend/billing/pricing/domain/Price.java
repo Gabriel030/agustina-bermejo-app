@@ -87,7 +87,9 @@ public class Price {
         requireDiscountFitsPrice(baseAmount, discount);
         requireNotRetroactive(effectiveFrom, today);
         Long previousId = findVersionEffectiveOn(today).map(PriceVersion::getId).orElse(null);
-        makeRoomForVersionStartingOn(effectiveFrom, today, publisherId, now);
+        if (!effectiveFrom.isAfter(today)) {
+            supersedeEffectiveVersions(publisherId, now);
+        }
         PriceVersion version = PriceVersion.publish(this, baseAmount, discount, effectiveFrom, changeReason, publisherId, initialVersion, today, previousId, now);
         versions.add(version);
         return version;
@@ -139,9 +141,16 @@ public class Price {
     }
 
     public void makeRoomForVersionStartingOn(LocalDate effectiveFrom, LocalDate today, Long causedById, Instant now) {
+        boolean alreadyInForce = !effectiveFrom.isAfter(today);
         versions.stream()
                 .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && version.getEffectiveFrom().equals(effectiveFrom))
-                .forEach(version -> version.cancel(causedById, SAME_DATE_REPLACEMENT_REASON, now));
+                .forEach(version -> {
+                    if (alreadyInForce) {
+                        version.reachStart(now);
+                    } else {
+                        version.cancel(causedById, SAME_DATE_REPLACEMENT_REASON, now);
+                    }
+                });
         if (!effectiveFrom.isAfter(today)) {
             supersedeEffectiveVersions(causedById, now);
         }

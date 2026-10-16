@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.pricing.exception.PriceVersionNotFoundExc
 import com.red_escuela.backend.billing.pricing.policy.CancelPriceVersionCommand;
 import com.red_escuela.backend.billing.pricing.policy.PriceVersionCancellationCheck;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
+import com.red_escuela.backend.billing.pricing.repository.PriceVersionCancellationState;
 import com.red_escuela.backend.billing.pricing.repository.PriceVersionRepository;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
@@ -29,10 +30,12 @@ public class CancelPriceVersionOperation implements BillingOperation<CancelPrice
     private final PriceRepository priceRepository;
     private final PriceVersionRepository priceVersionRepository;
     private final PriceVersionPolicyEvaluator policyEvaluator;
+    private final PriceLocker priceLocker;
     private final Clock clock;
 
     public CancelPriceVersionOperation(PriceRepository priceRepository, PriceVersionRepository priceVersionRepository,
-                                       PriceVersionPolicyEvaluator policyEvaluator, Clock clock) {
+                                       PriceVersionPolicyEvaluator policyEvaluator, PriceLocker priceLocker, Clock clock) {
+        this.priceLocker = priceLocker;
         this.priceRepository = priceRepository;
         this.priceVersionRepository = priceVersionRepository;
         this.policyEvaluator = policyEvaluator;
@@ -61,14 +64,16 @@ public class CancelPriceVersionOperation implements BillingOperation<CancelPrice
 
     @Override
     public void requireValidContext(CancelPriceVersionCommand command) {
-        PriceVersion version = findVersion(command);
-        policyEvaluator.requireCancellablePriceVersion(new PriceVersionCancellationCheck(version.getStatus(), version.getEffectiveFrom(), LocalDate.now(clock), command.reason()));
+        PriceVersionCancellationState state = findState(command);
+        policyEvaluator.requireCancellablePriceVersion(new PriceVersionCancellationCheck(state.status(), state.effectiveFrom(), LocalDate.now(clock), command.reason()));
     }
 
     @Override
     public PriceVersion processOperation(CancelPriceVersionCommand command) {
-        PriceVersion version = findVersion(command);
-        Price price = version.getPrice();
+        Price price = priceLocker.lockForUpdate(findState(command).priceId());
+        PriceVersion version = price.getVersions().stream().filter(candidate -> candidate.getId().equals(command.priceVersionId())).findFirst()
+                .orElseThrow(() -> new PriceVersionNotFoundException(command.priceVersionId()));
+        policyEvaluator.requireCancellablePriceVersion(new PriceVersionCancellationCheck(version.getStatus(), version.getEffectiveFrom(), LocalDate.now(clock), command.reason()));
         try {
             price.cancelScheduledVersion(version, command.cancelledByPersonId(), command.reason(), Instant.now(clock));
             priceRepository.flush();
@@ -88,7 +93,7 @@ public class CancelPriceVersionOperation implements BillingOperation<CancelPrice
         return List.of();
     }
 
-    private PriceVersion findVersion(CancelPriceVersionCommand command) {
-        return priceVersionRepository.findById(command.priceVersionId()).orElseThrow(() -> new PriceVersionNotFoundException(command.priceVersionId()));
+    private PriceVersionCancellationState findState(CancelPriceVersionCommand command) {
+        return priceVersionRepository.findCancellationStateById(command.priceVersionId()).orElseThrow(() -> new PriceVersionNotFoundException(command.priceVersionId()));
     }
 }

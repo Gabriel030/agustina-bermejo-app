@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.pricing.exception.PriceNotFoundException;
 import com.red_escuela.backend.billing.pricing.policy.ChangePriceCommand;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
+import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +28,11 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
 
     private final PriceRepository priceRepository;
     private final PriceVersionPolicyEvaluator policyEvaluator;
+    private final PriceLocker priceLocker;
     private final Clock clock;
 
-    public ChangePriceOperation(PriceRepository priceRepository, PriceVersionPolicyEvaluator policyEvaluator, Clock clock) {
+    public ChangePriceOperation(PriceRepository priceRepository, PriceVersionPolicyEvaluator policyEvaluator, PriceLocker priceLocker, Clock clock) {
+        this.priceLocker = priceLocker;
         this.priceRepository = priceRepository;
         this.policyEvaluator = policyEvaluator;
         this.clock = clock;
@@ -57,14 +60,14 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
 
     @Override
     public void requireValidContext(ChangePriceCommand command) {
-        Price price = findPrice(command);
+        Currency currency = priceRepository.findCurrencyById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()));
         policyEvaluator.requireValidPriceChange(new PriceChangeCheck(command.effectiveFrom(), LocalDate.now(clock), command.changeReason()));
-        policyEvaluator.requireValidPriceVersion(command.toDraft(price.getCurrency()));
+        policyEvaluator.requireValidPriceVersion(command.toDraft(currency));
     }
 
     @Override
     public PriceVersion processOperation(ChangePriceCommand command) {
-        Price price = findPrice(command);
+        Price price = priceLocker.lockForUpdate(command.priceId());
         LocalDate today = LocalDate.now(clock);
         Instant now = Instant.now(clock);
         try {
@@ -87,9 +90,5 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     @Override
     public List<? extends DomainEvent> domainEventsOf(ChangePriceCommand command, PriceVersion version) {
         return List.of();
-    }
-
-    private Price findPrice(ChangePriceCommand command) {
-        return priceRepository.findById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()));
     }
 }

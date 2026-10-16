@@ -35,6 +35,7 @@ class PriceSameDateAndActivationTest {
     }
 
     private static PriceVersion publish(Price price, long amount, LocalDate start, Instant at) {
+        price.makeRoomForVersionStartingOn(start, TODAY, DIRECTOR, at);
         return price.publishPriceVersion(ars(amount), null, start, "cambio", DIRECTOR, false, TODAY, at);
     }
 
@@ -53,6 +54,23 @@ class PriceSameDateAndActivationTest {
         assertThat(first.getCancellationReason()).isEqualTo("Reemplazada por otra versión con la misma fecha de inicio.");
         assertThat(first.getCancelledById()).isEqualTo(DIRECTOR);
         assertThat(second.getStatus()).isEqualTo(PriceVersionStatus.SCHEDULED);
+        assertThat(amountOn(price, SEPTEMBER_FIRST)).isEqualTo(125000);
+    }
+
+    @Test
+    void aScheduledVersionThatAlreadyRulesByItsDateIsSupersededNotCancelledWhenAnotherStartsTheSameDay() {
+        Price price = priceWithEffectiveVersion(100000);
+        PriceVersion dueToday = publish(price, 120000, SEPTEMBER_FIRST, NOW.plusSeconds(1));
+        Instant later = NOW.plusSeconds(100);
+
+        price.makeRoomForVersionStartingOn(SEPTEMBER_FIRST, SEPTEMBER_FIRST, DIRECTOR, later);
+        PriceVersion replacement = price.publishPriceVersion(ars(125000), null, SEPTEMBER_FIRST, "cambio", DIRECTOR, false, SEPTEMBER_FIRST, later);
+
+        assertThat(dueToday.getStatus()).isEqualTo(PriceVersionStatus.SUPERSEDED);
+        assertThat(dueToday.getCancellationReason()).isNull();
+        assertThat(dueToday.getStatusChanges()).extracting(PriceVersionStatusChange::getToStatus)
+                .containsExactly(PriceVersionStatus.SCHEDULED, PriceVersionStatus.EFFECTIVE, PriceVersionStatus.SUPERSEDED);
+        assertThat(replacement.getStatus()).isEqualTo(PriceVersionStatus.EFFECTIVE);
         assertThat(amountOn(price, SEPTEMBER_FIRST)).isEqualTo(125000);
     }
 
