@@ -158,6 +158,10 @@ public class PriceVersion {
         moveTo(PriceVersionEvent.REACH_START, StatusChangeActor.ofProcess(ACTIVATION_PROCESS), now, null);
     }
 
+    void reachStartCausedBy(Long personId, Instant now) {
+        moveTo(PriceVersionEvent.REACH_START, StatusChangeActor.ofPerson(personId), now, null);
+    }
+
     void supersedeByActivation(Instant now) {
         moveTo(PriceVersionEvent.SUPERSEDE, StatusChangeActor.ofProcess(ACTIVATION_PROCESS), now, null);
     }

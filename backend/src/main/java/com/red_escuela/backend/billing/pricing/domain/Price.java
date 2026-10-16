@@ -34,6 +34,7 @@ import java.util.Set;
 @Table(name = "price")
 public class Price {
     private static final Set<PriceVersionStatus> RESOLVABLE = Set.of(PriceVersionStatus.SCHEDULED, PriceVersionStatus.EFFECTIVE, PriceVersionStatus.SUPERSEDED);
+    private static final String SAME_DATE_REPLACEMENT_REASON = "Reemplazada por otra versión con la misma fecha de inicio.";
     private static final Comparator<PriceVersion> RESOLUTION_ORDER = Comparator
             .comparing(PriceVersion::getEffectiveFrom)
             .thenComparing(PriceVersion::getDecidedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
@@ -137,6 +138,35 @@ public class Price {
         requireOwnVersion(version);
         versions.stream().filter(candidate -> candidate.getStatus() == PriceVersionStatus.EFFECTIVE).forEach(candidate -> candidate.supersedeByActivation(now));
         version.reachStart(now);
+    }
+
+    public void makeRoomForVersionStartingOn(LocalDate effectiveFrom, LocalDate today, Long causedById, Instant now) {
+        boolean alreadyInForce = !effectiveFrom.isAfter(today);
+        versions.stream()
+                .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && version.getEffectiveFrom().equals(effectiveFrom))
+                .forEach(version -> {
+                    if (alreadyInForce) {
+                        version.reachStartCausedBy(causedById, now);
+                    } else {
+                        version.cancel(causedById, SAME_DATE_REPLACEMENT_REASON, now);
+                    }
+                });
+        if (!effectiveFrom.isAfter(today)) {
+            supersedeEffectiveVersions(causedById, now);
+        }
+    }
+
+    public List<PriceVersion> activateDueVersions(LocalDate today, Instant now) {
+        List<PriceVersion> due = versions.stream()
+                .filter(version -> version.getStatus() == PriceVersionStatus.SCHEDULED && !version.getEffectiveFrom().isAfter(today))
+                .sorted(RESOLUTION_ORDER)
+                .toList();
+        due.forEach(version -> version.reachStart(now));
+        Optional<PriceVersion> newest = versions.stream().filter(version -> version.getStatus() == PriceVersionStatus.EFFECTIVE).max(RESOLUTION_ORDER);
+        versions.stream()
+                .filter(version -> version.getStatus() == PriceVersionStatus.EFFECTIVE && !version.equals(newest.orElse(null)))
+                .forEach(version -> version.supersedeByActivation(now));
+        return due;
     }
 
     public void retireEffectiveVersions(Long causedById, Instant now) {
