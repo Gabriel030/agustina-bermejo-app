@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-097")
 @Tag("D-284")
 @Tag("D-384")
+@Tag("D-389")
+@Tag("D-401")
+@Tag("D-402")
 class StudentDiscountPoliciesTest {
     private static final YearMonth NEXT = YearMonth.of(2027, 4);
     private static final MonetaryAdjustment HALF = new MonetaryAdjustment.Proportional(Percentage.ofPoints(new BigDecimal("50")));
@@ -155,6 +158,40 @@ class StudentDiscountPoliciesTest {
         assertThat(code(policy.evaluateRule(withDeadline(deadline, deadline)))).isEqualTo("STUDENT_DISCOUNT_PROPOSAL_EXPIRED");
         assertThat(code(policy.evaluateRule(withDeadline(deadline, java.time.LocalDate.of(2027, 3, 5))))).isEqualTo("STUDENT_DISCOUNT_PROPOSAL_EXPIRED");
         assertThat(code(policy.evaluateRule(withDeadline(null, java.time.LocalDate.of(2027, 3, 5))))).isEqualTo("ALLOWED");
+    }
+
+    @Test
+    void aRevocationProposalIsRejectedOnTheFirstDayOfTheNextMonthAndAcceptedTheDayBefore() {
+        RevocationProposalNotExpiredPolicy policy = new RevocationProposalNotExpiredPolicy();
+        java.time.LocalDate deadline = java.time.LocalDate.of(2027, 4, 1);
+
+        assertThat(code(policy.evaluateRule(new StudentDiscountRevocationCheck("motivo", deadline, java.time.LocalDate.of(2027, 3, 31))))).isEqualTo("ALLOWED");
+        assertThat(code(policy.evaluateRule(new StudentDiscountRevocationCheck("motivo", deadline, deadline)))).isEqualTo("STUDENT_DISCOUNT_PROPOSAL_EXPIRED");
+        assertThat(code(policy.evaluateRule(new StudentDiscountRevocationCheck("motivo", null, deadline)))).isEqualTo("ALLOWED");
+        assertThat(code(policy.evaluateRule(new StudentDiscountRevocationCheck("motivo")))).isEqualTo("ALLOWED");
+    }
+
+    @Test
+    void anOverlapWithAnActiveDiscountIsRejectedAndNoOverlapIsAccepted() {
+        StudentDiscountNoOverlapPolicy policy = new StudentDiscountNoOverlapPolicy();
+        StudentDiscountGrantCheck.OverlappingDiscount overlap = new StudentDiscountGrantCheck.OverlappingDiscount(7L, YearMonth.of(2027, 3), YearMonth.of(2027, 12));
+
+        assertThat(code(policy.evaluateRule(withOverlap(overlap, false)))).isEqualTo("STUDENT_DISCOUNT_OVERLAP");
+        assertThat(policy.evaluateRule(withOverlap(overlap, false)).toString()).contains("n.º 7");
+        assertThat(code(policy.evaluateRule(withOverlap(null, false)))).isEqualTo("ALLOWED");
+    }
+
+    @Test
+    void anIssuedEnrollmentFeeBlocksTheGrantAndAnUnissuedOneDoesNot() {
+        EnrollmentFeeDiscountBeforeIssuePolicy policy = new EnrollmentFeeDiscountBeforeIssuePolicy();
+
+        assertThat(code(policy.evaluateRule(withOverlap(null, true)))).isEqualTo("ENROLLMENT_FEE_ALREADY_ISSUED");
+        assertThat(code(policy.evaluateRule(withOverlap(null, false)))).isEqualTo("ALLOWED");
+    }
+
+    private StudentDiscountGrantCheck withOverlap(StudentDiscountGrantCheck.OverlappingDiscount overlap, boolean enrollmentFeeIssued) {
+        return new StudentDiscountGrantCheck(DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, HALF, null, Currency.ARS, NEXT, NEXT, NEXT, false, "motivo",
+                StudentDiscountGrantCheck.DefinitionFault.NONE, null, null, overlap, enrollmentFeeIssued);
     }
 
     private StudentDiscountGrantCheck withDeadline(java.time.LocalDate deadline, java.time.LocalDate today) {

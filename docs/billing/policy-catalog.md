@@ -343,12 +343,15 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 6 | StudentDiscountCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
 | 7 | ScholarshipStartsAtNextInstallmentPolicy | SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT | D-238 |
 | 8 | ScholarshipNotAvailableWithAnnualUpfrontPolicy | SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT | D-158, D-388 |
+| 9 | StudentDiscountNoOverlapPolicy | STUDENT_DISCOUNT_OVERLAP | D-401 |
+| 10 | EnrollmentFeeDiscountBeforeIssuePolicy | ENROLLMENT_FEE_ALREADY_ISSUED | D-402 |
 
 ## Momento STUDENT_DISCOUNT_REVOCATION
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | RevocationReasonRequiredPolicy | REVOCATION_REASON_REQUIRED | D-284 |
+| 2 | RevocationProposalNotExpiredPolicy | STUDENT_DISCOUNT_PROPOSAL_EXPIRED | D-389 |
 
 ## Momento WITHDRAWAL_LINE_REDUCTION
 

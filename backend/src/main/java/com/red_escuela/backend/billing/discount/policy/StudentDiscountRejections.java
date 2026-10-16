@@ -3,11 +3,13 @@ package com.red_escuela.backend.billing.discount.policy;
 import com.red_escuela.backend.billing.discount.exception.CurrencyMismatchException;
 import com.red_escuela.backend.billing.discount.exception.DiscountDefinitionClosedException;
 import com.red_escuela.backend.billing.discount.exception.DiscountInvoiceTypeMismatchException;
+import com.red_escuela.backend.billing.discount.exception.EnrollmentFeeAlreadyIssuedException;
 import com.red_escuela.backend.billing.discount.exception.InvalidScholarshipPeriodException;
 import com.red_escuela.backend.billing.discount.exception.InvalidStudentDiscountException;
 import com.red_escuela.backend.billing.discount.exception.RevocationReasonRequiredException;
 import com.red_escuela.backend.billing.discount.exception.ScholarshipNotAvailableWithAnnualUpfrontException;
 import com.red_escuela.backend.billing.discount.exception.ScholarshipStartBeforeNextInstallmentException;
+import com.red_escuela.backend.billing.discount.exception.StudentDiscountOverlapException;
 import com.red_escuela.backend.billing.discount.exception.StudentDiscountProposalExpiredException;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 
@@ -26,6 +28,8 @@ public final class StudentDiscountRejections {
             case "INVALID_SCHOLARSHIP_PERIOD" -> new InvalidScholarshipPeriodException(violations);
             case "REVOCATION_REASON_REQUIRED" -> new RevocationReasonRequiredException(violations);
             case "STUDENT_DISCOUNT_PROPOSAL_EXPIRED" -> new StudentDiscountProposalExpiredException(violations);
+            case "STUDENT_DISCOUNT_OVERLAP" -> new StudentDiscountOverlapException(violations);
+            case "ENROLLMENT_FEE_ALREADY_ISSUED" -> new EnrollmentFeeAlreadyIssuedException(violations);
             case "DISCOUNT_DEFINITION_CLOSED" -> new DiscountDefinitionClosedException(violations);
             case "CURRENCY_MISMATCH" -> new CurrencyMismatchException(violations);
             default -> new InvalidStudentDiscountException(violations);

@@ -8,8 +8,10 @@ import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCoherencePolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountScopeMatchesTypePolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountTypeAvailableInCatalogPolicy;
+import com.red_escuela.backend.billing.discount.policy.EnrollmentFeeDiscountBeforeIssuePolicy;
 import com.red_escuela.backend.billing.discount.policy.InstallmentCountOnlyForMonthlyInstallmentsPolicy;
 import com.red_escuela.backend.billing.discount.policy.ProposalNotExpiredPolicy;
+import com.red_escuela.backend.billing.discount.policy.RevocationProposalNotExpiredPolicy;
 import com.red_escuela.backend.billing.discount.policy.RevocationReasonRequiredPolicy;
 import com.red_escuela.backend.billing.discount.policy.ScholarshipNotAvailableWithAnnualUpfrontPolicy;
 import com.red_escuela.backend.billing.discount.policy.ScholarshipOnlyForMonthlyInstallmentsPolicy;
@@ -19,6 +21,7 @@ import com.red_escuela.backend.billing.discount.policy.StudentDiscountCurrencyPo
 import com.red_escuela.backend.billing.discount.policy.StudentDiscountDefinitionPolicy;
 import com.red_escuela.backend.billing.discount.policy.StudentDiscountGrantCheck;
 import com.red_escuela.backend.billing.discount.policy.StudentDiscountInvoiceTypePolicy;
+import com.red_escuela.backend.billing.discount.policy.StudentDiscountNoOverlapPolicy;
 import com.red_escuela.backend.billing.discount.policy.StudentDiscountPeriodRangePolicy;
 import com.red_escuela.backend.billing.discount.policy.StudentDiscountRevocationCheck;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -59,12 +62,14 @@ public class DiscountPolicySetsConfiguration {
                 new StudentDiscountPeriodRangePolicy(),
                 new StudentDiscountCurrencyPolicy(),
                 new ScholarshipStartsAtNextInstallmentPolicy(),
-                new ScholarshipNotAvailableWithAnnualUpfrontPolicy());
+                new ScholarshipNotAvailableWithAnnualUpfrontPolicy(),
+                new StudentDiscountNoOverlapPolicy(),
+                new EnrollmentFeeDiscountBeforeIssuePolicy());
         return PolicySet.named("STUDENT_DISCOUNT_GRANTING", ordered);
     }
 
     @Bean
     public PolicySet<StudentDiscountRevocationCheck> studentDiscountRevocationPolicySet() {
-        return PolicySet.named("STUDENT_DISCOUNT_REVOCATION", List.of(new RevocationReasonRequiredPolicy()));
+        return PolicySet.named("STUDENT_DISCOUNT_REVOCATION", List.of(new RevocationReasonRequiredPolicy(), new RevocationProposalNotExpiredPolicy()));
     }
 }

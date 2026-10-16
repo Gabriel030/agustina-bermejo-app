@@ -20,6 +20,10 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
     @Query("select d from StudentDiscount d where d.id = :id")
     Optional<StudentDiscount> findByIdForUpdate(@Param("id") Long id);
 
+    List<StudentDiscount> findByProgramEnrollmentIdAndStatus(Long programEnrollmentId, StudentDiscountStatus status);
+
+    List<StudentDiscount> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, StudentDiscountStatus status);
+
     List<StudentDiscount> findByProgramEnrollmentIdOrderByIdDesc(Long programEnrollmentId);
 
     List<StudentDiscount> findByCourseEnrollmentIdOrderByIdDesc(Long courseEnrollmentId);

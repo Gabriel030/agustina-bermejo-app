@@ -67,7 +67,8 @@ public class RevokeStudentDiscountOperation implements BillingOperation<RevokeSt
 
     @Override
     public void requireValidContext(RevokeStudentDiscountCommand command) {
-        revocationPolicies.evaluateAllRules(new StudentDiscountRevocationCheck(command.reason())).throwIfDenied(StudentDiscountRejections::rejectionOf);
+        revocationPolicies.evaluateAllRules(new StudentDiscountRevocationCheck(command.reason(),
+                command.requestedByDirector() ? null : command.authorizationExpiresOn(), LocalDate.now(clock))).throwIfDenied(StudentDiscountRejections::rejectionOf);
         StudentDiscountStateMachine.requireTargetFor(repository.findStatusById(command.studentDiscountId())
                 .orElseThrow(() -> new StudentDiscountNotFoundException(command.studentDiscountId())), StudentDiscountEvent.DISCOUNT_REVOKED);
     }

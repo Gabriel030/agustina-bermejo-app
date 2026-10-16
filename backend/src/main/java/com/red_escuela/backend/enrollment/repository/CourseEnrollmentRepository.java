@@ -49,4 +49,13 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from CourseEnrollment e where e.id = :id")
     java.util.Optional<CourseEnrollment> findByIdForUpdate(@Param("id") Long id);
+
+    interface CourseTermDates {
+        java.time.LocalDateTime getStartDate();
+
+        java.time.LocalDateTime getEndDate();
+    }
+
+    @Query("select t.startDate as startDate, t.endDate as endDate from CourseEnrollment e join e.course c join c.term t where e.id = :id")
+    Optional<CourseTermDates> findCourseTermDates(@Param("id") Long id);
 }
