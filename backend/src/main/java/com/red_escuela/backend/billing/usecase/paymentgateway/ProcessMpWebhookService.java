@@ -1,44 +1,31 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
-import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentRepository;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
-import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @UseCase
 public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
     private static final Logger log = LoggerFactory.getLogger(ProcessMpWebhookService.class);
 
-    private final InvoiceRepository invoiceRepository;
-    private final PaymentRepository paymentRepository;
-    private final RegisterPaymentUseCase registerPaymentUseCase;
+    private final ApprovedPaymentRegistrationPort registrationPort;
     private final MercadoPagoPaymentFetcher mercadoPagoPaymentFetcher;
     private final MpWebhookSignatureVerifier signatureVerifier;
 
     public ProcessMpWebhookService(
-            InvoiceRepository invoiceRepository,
-            PaymentRepository paymentRepository,
-            RegisterPaymentUseCase registerPaymentUseCase,
+            ApprovedPaymentRegistrationPort registrationPort,
             MercadoPagoPaymentFetcher mercadoPagoPaymentFetcher,
             MpWebhookSignatureVerifier signatureVerifier) {
-        this.invoiceRepository = invoiceRepository;
-        this.paymentRepository = paymentRepository;
-        this.registerPaymentUseCase = registerPaymentUseCase;
+        this.registrationPort = registrationPort;
         this.mercadoPagoPaymentFetcher = mercadoPagoPaymentFetcher;
         this.signatureVerifier = signatureVerifier;
     }
@@ -53,8 +40,8 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
             throw e;
         }
 
-        paymentRepository.lockExternalReferenceUntilTransactionEnds(mpPaymentId);
-        if (registerPaymentUseCase.isMercadoPagoPaymentRegistered(mpPaymentId)) {
+        registrationPort.lockMercadoPagoPaymentUntilTransactionEnds(mpPaymentId);
+        if (registrationPort.isMercadoPagoPaymentRegistered(mpPaymentId)) {
             log.warn("Webhook de Mercado Pago ignorado, el pago ya estaba acreditado: pagoMp={}", mpPaymentId);
             return;
         }
@@ -66,22 +53,8 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
         }
 
         PaymentAllocationRequest reportedAllocation = approved.get().reportedAllocation();
-        Long invoiceId = reportedAllocation.invoiceId();
-        Person owner = invoiceRepository.findOwnerPersonByInvoiceId(invoiceId)
-                .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-
-        RegisterPaymentRequest request = new RegisterPaymentRequest(
-                List.of(reportedAllocation),
-                PaymentMethod.MERCADO_PAGO,
-                false,
-                null,
-                mpPaymentId,
-                approved.get().installments(),
-                null,
-                java.util.Objects.toString(approved.get().cardType(), null)
-        );
-
-        registerPaymentUseCase.registerApprovedMercadoPagoPayment(request);
-        log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
+        registrationPort.registerApprovedMercadoPagoPayment(reportedAllocation.invoiceId(), reportedAllocation.amountApplied(),
+                approved.get().installments(), approved.get().cardType(), mpPaymentId);
+        log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, reportedAllocation.invoiceId(), reportedAllocation.amountApplied());
     }
 }

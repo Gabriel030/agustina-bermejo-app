@@ -15,7 +15,7 @@ import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
-import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
@@ -72,10 +72,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
-
-    @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
+    private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -163,7 +160,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceFetching(com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher fetcher, MpWebhookSignatureVerifier verifier) {
-        return new ProcessMpWebhookService(invoiceRepository, legacyPaymentRepository, registerPaymentUseCase, fetcher, verifier);
+        return new ProcessMpWebhookService(registrationPort, fetcher, verifier);
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {

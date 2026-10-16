@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
+
 import com.red_escuela.backend.shared.domain.Grade;
 
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
@@ -9,13 +11,10 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
@@ -23,7 +22,6 @@ import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -79,9 +77,6 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
 
     @Autowired
     private VerifyGraduationRequestDebtUseCase verifyGraduationRequestDebtUseCase;
-
-    @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private EntityManager entityManager;
@@ -311,9 +306,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId()))
                 .isInstanceOf(PendingDebtException.class);
 
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(unpaid.getId(), balance)),
-                PaymentMethod.CASH, false, null, null, null, null), billed.director());
+        BillingTestFixtures.registerApprovedBankTransferPayment(unpaid.getId(), billed.director().getId());
 
         assertThat(verifyGraduationRequestDebtUseCase.verify(request.getId()).getStatus())
                 .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);

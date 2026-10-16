@@ -12,7 +12,6 @@ import com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
@@ -56,8 +55,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final CurrentStudentService currentStudentService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
-    @Autowired
-    private ApprovedPaymentRegistrationPort registrationPort;
 
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
                                    StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
@@ -199,23 +196,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         log.info("Pago acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}, facturas saldadas={}",
                 payment.getId(), request.method(), received.amount(), reportedInvoiceId, allocated.settledInvoices().stream().map(Invoice::getId).toList());
         return payment;
-    }
-
-    @Override
-    public Long registerApprovedMercadoPagoPayment(RegisterPaymentRequest request) {
-        PaymentAllocationRequest reported = request.allocations().get(0);
-        return registrationPort.registerApprovedMercadoPagoPayment(reported.invoiceId(), reported.amountApplied(), request.cardInstallments(), request.cardType(),
-                request.externalReference());
-    }
-
-    @Override
-    public Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId) {
-        return registrationPort.registerApprovedBankTransferPayment(invoiceId, reviewerPersonId);
-    }
-
-    @Override
-    public boolean isMercadoPagoPaymentRegistered(String mercadoPagoPaymentId) {
-        return registrationPort.isMercadoPagoPaymentRegistered(mercadoPagoPaymentId) || paymentRepository.existsByExternalReference(mercadoPagoPaymentId);
     }
 
     private void lockAccountsOfInvoicesInAscendingOrder(List<PaymentAllocationRequest> allocations) {

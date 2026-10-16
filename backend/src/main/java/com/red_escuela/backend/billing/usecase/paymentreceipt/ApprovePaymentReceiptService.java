@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
+import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.events.PaymentReceiptAppliedToOlderDebtEvent;
@@ -22,15 +22,15 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
     private static final Logger log = LoggerFactory.getLogger(ApprovePaymentReceiptService.class);
     private final BankTransferReceiptRepository bankTransferReceiptRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
-    private final RegisterPaymentUseCase registerPaymentUseCase;
+    private final ApprovedPaymentRegistrationPort registrationPort;
     private final ApplicationEventPublisher eventPublisher;
 
     public ApprovePaymentReceiptService(BankTransferReceiptRepository bankTransferReceiptRepository,
-                                         PaymentReceiptFinder paymentReceiptFinder, RegisterPaymentUseCase registerPaymentUseCase,
+                                         PaymentReceiptFinder paymentReceiptFinder, ApprovedPaymentRegistrationPort registrationPort,
                                          ApplicationEventPublisher eventPublisher) {
         this.bankTransferReceiptRepository = bankTransferReceiptRepository;
         this.paymentReceiptFinder = paymentReceiptFinder;
-        this.registerPaymentUseCase = registerPaymentUseCase;
+        this.registrationPort = registrationPort;
         this.eventPublisher = eventPublisher;
     }
 
@@ -41,7 +41,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         receipt.approve(decidedBy);
 
         Invoice invoice = receipt.getInvoice();
-        Long paymentId = registerPaymentUseCase.registerApprovedBankTransferPayment(invoice.getId(), paymentReceiptFinder.reviewerIdOf(receipt));
+        Long paymentId = registrationPort.registerApprovedBankTransferPayment(invoice.getId(), paymentReceiptFinder.reviewerIdOf(receipt));
         paymentReceiptFinder.linkApprovedPayment(receipt, paymentId);
 
         if (invoice.getPaymentStatus() != InvoicePaymentStatus.PAID) {
