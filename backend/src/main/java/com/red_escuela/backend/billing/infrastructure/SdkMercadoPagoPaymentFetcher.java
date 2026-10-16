@@ -1,11 +1,11 @@
 package com.red_escuela.backend.billing.infrastructure;
 
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -49,7 +49,7 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
             log.warn("Pago de Mercado Pago ignorado, moneda no soportada: pagoMp={}, moneda={}", mpPaymentId, payment.getCurrencyId());
             return Optional.empty();
         }
-        PaymentAllocationRequest reported = new PaymentAllocationRequest(
+        ReportedGatewayAllocation reported = new ReportedGatewayAllocation(
                 Long.parseLong(payment.getExternalReference()),
                 Money.of(payment.getTransactionAmount(), currency.get()));
         return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments(), toCardType(payment.getPaymentTypeId())));

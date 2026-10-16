@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
@@ -52,7 +52,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
             return;
         }
 
-        PaymentAllocationRequest reportedAllocation = approved.get().reportedAllocation();
+        ReportedGatewayAllocation reportedAllocation = approved.get().reportedAllocation();
         registrationPort.registerApprovedMercadoPagoPayment(reportedAllocation.invoiceId(), reportedAllocation.amountApplied(),
                 approved.get().installments(), approved.get().cardType(), mpPaymentId);
         log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, reportedAllocation.invoiceId(), reportedAllocation.amountApplied());

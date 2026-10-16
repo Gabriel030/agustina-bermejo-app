@@ -126,7 +126,7 @@ factura se emite con `billing.invoice.service.InvoiceIssuingService` (la
 operación `ISSUE_INVOICE`); las lecturas con el JSON de siempre pasan por
 `InvoiceView`/`InvoiceViewLoader`, que es también el único punto de `billing`
 que carga inscripciones. Una factura se paga completa o no se paga (D-136):
-`RegisterPaymentService` es el puente de cobro hasta la fase de pagos.
+El cobro vive en `billing.payment` y `billing.operation` (efectivo, Mercado Pago y comprobante entran por `ApprovedPaymentRegistrationPort` y las operaciones de pago); el servicio de cobro legado ya no existe.
 
 El código nuevo de facturación nace con el subdominio como primer nivel del
 paquete (`billing.configuration`, `billing.operation`, y los que cree cada fase

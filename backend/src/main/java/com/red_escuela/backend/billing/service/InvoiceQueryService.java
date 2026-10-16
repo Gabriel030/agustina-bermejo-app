@@ -47,20 +47,17 @@ public class InvoiceQueryService {
     private final AllocationSourceQueryService allocationSources;
     private final CreditNoteRepository creditNoteRepository;
     private final PaymentRepository paymentRepository;
-    private final com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
     private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
                                PriceReader priceReader, AllocationSourceQueryService allocationSources, CreditNoteRepository creditNoteRepository,
-                               PaymentRepository paymentRepository,
-                               com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository, Clock clock) {
+                               PaymentRepository paymentRepository, Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.priceReader = priceReader;
         this.allocationSources = allocationSources;
         this.creditNoteRepository = creditNoteRepository;
         this.paymentRepository = paymentRepository;
-        this.legacyPaymentRepository = legacyPaymentRepository;
         this.clock = clock;
     }
 
@@ -194,8 +191,6 @@ public class InvoiceQueryService {
         }
         Set<Long> paymentIds = sources.stream().map(PaymentAllocationSource::getPaymentId).collect(Collectors.toSet());
         Map<Long, Payment> accountPayments = paymentRepository.findByIdIn(paymentIds).stream().collect(Collectors.toMap(Payment::getId, Function.identity()));
-        Map<Long, com.red_escuela.backend.billing.entity.Payment> legacyPayments = legacyPaymentRepository.findAllById(paymentIds).stream()
-                .collect(Collectors.toMap(com.red_escuela.backend.billing.entity.Payment::getId, Function.identity()));
         return sources.stream().map(source -> {
             Long paymentId = source.getPaymentId();
             Money amount = source.getAmount().value();
@@ -204,11 +199,7 @@ public class InvoiceQueryService {
                 return new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
                         payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay());
             }
-            com.red_escuela.backend.billing.entity.Payment legacy = legacyPayments.get(paymentId);
-            if (legacy == null) {
-                throw new IllegalStateException("Payment " + paymentId + " referenced by an allocation source does not exist");
-            }
-            return new PriceBreakdownPaymentResponse(paymentId, amount, legacy.getMethod().name(), legacy.getPaidAt());
+            throw new IllegalStateException("Payment " + paymentId + " referenced by an allocation source does not exist");
         }).toList();
     }
 

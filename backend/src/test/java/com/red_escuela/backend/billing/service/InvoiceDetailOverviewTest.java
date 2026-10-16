@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +15,6 @@ import com.red_escuela.backend.billing.dto.AdminInvoicePaymentResponse;
 import com.red_escuela.backend.billing.dto.AdminInvoiceResponse;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.MeInvoicePaymentResponse;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -317,7 +317,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     private Long mercadoPagoPays(Long invoiceId, long amount) {
         String mpPaymentId = "mp-" + System.nanoTime();
         ProcessMpWebhookService service = new ProcessMpWebhookService(registrationPort,
-                id -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(amount)), 1)),
+                id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(amount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
         service.process("", "request-" + System.nanoTime(), mpPaymentId);
         return jdbc.queryForObject("select id from payment where gateway_payment_id = ?", Long.class, mpPaymentId);

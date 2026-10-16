@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.payment.service;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
 import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
-import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShares;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
 import com.red_escuela.backend.billing.operation.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
@@ -24,6 +23,7 @@ import java.util.Map;
 
 import static com.red_escuela.backend.billing.payment.domain.PaymentFixtures.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -134,9 +134,9 @@ class AllocationSourceInvoicePaymentShareSourceTest {
 
     @Test
     @Tag("D-376")
-    void creditNoteSourcesAndUnknownOrUnapprovedPaymentsAreNotListedAsPayments() {
+    void creditNoteSourcesAndUnapprovedPaymentsAreNotListedAsPayments() {
         Payment pending = withId(PaymentFixtures.pendingBankTransfer(), 33L);
-        givenSources(1L, creditNoteSource("1000.00"), source(33L, "2000.00"), source(404L, "3000.00"));
+        givenSources(1L, creditNoteSource("1000.00"), source(33L, "2000.00"));
         givenPayments(pending);
 
         assertThat(shareSource.findCurrentSharesByInvoiceId(List.of(1L)).resolvedByInvoiceId()).isEmpty();
@@ -144,15 +144,13 @@ class AllocationSourceInvoicePaymentShareSourceTest {
 
     @Test
     @Tag("D-376")
-    void aSourceWhoseIdIsNotAnAccountPaymentIsHandedBackAsLegacyAndNotDropped() {
+    void aSourceWhosePaymentDoesNotExistFailsInsteadOfBeingDropped() {
         Payment cash = withId(PaymentFixtures.cashPayment(), 30L);
-        givenSources(1L, source(30L, "2000.00"), source(404L, "3000.00"), source(404L, "500.00"));
+        givenSources(1L, source(30L, "2000.00"), source(404L, "3000.00"));
         givenPayments(cash);
 
-        InvoicePaymentShares shares = shareSource.findCurrentSharesByInvoiceId(List.of(1L));
-
-        assertThat(shares.resolvedByInvoiceId().get(1L)).extracting(InvoicePaymentShare::paymentId).containsExactly(30L);
-        assertThat(shares.unresolvedAppliedByPaymentIdByInvoiceId().get(1L)).containsOnlyKeys(404L);
-        assertThat(shares.unresolvedAppliedByPaymentIdByInvoiceId().get(1L).get(404L)).isEqualTo(ars("3500.00").value());
+        assertThatThrownBy(() -> shareSource.findCurrentSharesByInvoiceId(List.of(1L)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("404");
     }
 }
