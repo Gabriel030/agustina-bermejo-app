@@ -8,7 +8,6 @@ import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +30,7 @@ public record AdminInvoiceResponse(
                 .collect(Collectors.toMap(receipt -> receipt.getPaymentId(), BankTransferReceipt::getId, (first, second) -> first));
         List<AdminInvoicePaymentResponse> payments = view.paymentShares().stream()
                 .filter(InvoicePaymentShare::isConfirmed)
-                .sorted(Comparator.comparing((InvoicePaymentShare share) -> share.paidAt()).reversed())
+                .sorted(InvoicePaymentShare.CHRONOLOGICAL.reversed())
                 .map(share -> AdminInvoicePaymentResponse.from(share, receiptIdByPaymentId))
                 .toList();
         return new AdminInvoiceResponse(

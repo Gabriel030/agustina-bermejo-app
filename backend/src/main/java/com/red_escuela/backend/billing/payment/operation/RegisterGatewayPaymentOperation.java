@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.payment.domain.ApprovedPaymentRegistrationResult;
 import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.gateway.PaymentGatewayRegistry;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.shared.domain.Money;
@@ -88,7 +89,7 @@ public class RegisterGatewayPaymentOperation implements BillingOperation<Registe
         log.info("Pago de pasarela acreditado en la cuenta corriente: pago={}, pasarela={}, monto={}, factura={}, facturas saldadas={}", payment.getId(),
                 command.gateway(), command.amount().amount(), command.reportedInvoiceId(), allocated.settledInvoices().stream().map(invoice -> invoice.getId()).toList());
         return new ApprovedPaymentRegistrationResult(payment.getId(), account.getId(), today, amount, command.reportedInvoiceId(), leftAsCredit,
-                command.actor().personId(), !gatewayRegistry.isEnabledByConfiguration(command.gateway()));
+                command.actor().personId(), command.gateway() == PaymentGatewayCode.MERCADO_PAGO && !gatewayRegistry.isEnabledByConfiguration(command.gateway()));
     }
 
     @Override

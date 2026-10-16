@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.payment.service;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
 import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
+import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShares;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.CardPaymentType;
 import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
@@ -83,7 +84,7 @@ class AllocationSourceInvoicePaymentShareSourceTest {
         givenSources(1L, source(30L, "30000.00"), source(30L, "20000.00"));
         givenPayments(cash);
 
-        List<InvoicePaymentShare> shares = shareSource.findCurrentSharesByInvoiceId(List.of(1L)).get(1L);
+        List<InvoicePaymentShare> shares = shareSource.findCurrentSharesByInvoiceId(List.of(1L)).resolvedByInvoiceId().get(1L);
 
         assertThat(shares).hasSize(1);
         assertThat(shares.get(0).amountApplied()).isEqualTo(ars("50000.00").value());
@@ -101,7 +102,7 @@ class AllocationSourceInvoicePaymentShareSourceTest {
         givenSources(1L, source(31L, "80000.00"));
         givenPayments(card);
 
-        InvoicePaymentShare share = shareSource.findCurrentSharesByInvoiceId(List.of(1L)).get(1L).get(0);
+        InvoicePaymentShare share = shareSource.findCurrentSharesByInvoiceId(List.of(1L)).resolvedByInvoiceId().get(1L).get(0);
 
         assertThat(share.method()).isEqualTo("MERCADO_PAGO");
         assertThat(share.cardType()).isEqualTo("CREDIT");
@@ -121,7 +122,7 @@ class AllocationSourceInvoicePaymentShareSourceTest {
         givenSources(1L, source(32L, "5000.00"), foreign);
         givenPayments(transfer);
 
-        List<InvoicePaymentShare> shares = shareSource.findCurrentSharesByInvoiceId(List.of(1L)).get(1L);
+        List<InvoicePaymentShare> shares = shareSource.findCurrentSharesByInvoiceId(List.of(1L)).resolvedByInvoiceId().get(1L);
 
         assertThat(shares).singleElement().satisfies(share -> {
             assertThat(share.method()).isEqualTo("TRANSFER");
@@ -138,17 +139,20 @@ class AllocationSourceInvoicePaymentShareSourceTest {
         givenSources(1L, creditNoteSource("1000.00"), source(33L, "2000.00"), source(404L, "3000.00"));
         givenPayments(pending);
 
-        assertThat(shareSource.findCurrentSharesByInvoiceId(List.of(1L))).isEmpty();
+        assertThat(shareSource.findCurrentSharesByInvoiceId(List.of(1L)).resolvedByInvoiceId()).isEmpty();
     }
 
     @Test
     @Tag("D-376")
-    void sharesComeOrderedByPaymentDateThenId() {
-        Payment later = mercadoPagoCard();
-        Payment earlier = withId(PaymentFixtures.cashPayment(), 30L);
-        givenSources(1L, source(31L, "1000.00"), source(30L, "2000.00"));
-        givenPayments(later, earlier);
+    void aSourceWhoseIdIsNotAnAccountPaymentIsHandedBackAsLegacyAndNotDropped() {
+        Payment cash = withId(PaymentFixtures.cashPayment(), 30L);
+        givenSources(1L, source(30L, "2000.00"), source(404L, "3000.00"), source(404L, "500.00"));
+        givenPayments(cash);
 
-        assertThat(shareSource.findCurrentSharesByInvoiceId(List.of(1L)).get(1L)).extracting(InvoicePaymentShare::paymentId).containsExactly(30L, 31L);
+        InvoicePaymentShares shares = shareSource.findCurrentSharesByInvoiceId(List.of(1L));
+
+        assertThat(shares.resolvedByInvoiceId().get(1L)).extracting(InvoicePaymentShare::paymentId).containsExactly(30L);
+        assertThat(shares.unresolvedAppliedByPaymentIdByInvoiceId().get(1L)).containsOnlyKeys(404L);
+        assertThat(shares.unresolvedAppliedByPaymentIdByInvoiceId().get(1L).get(404L)).isEqualTo(ars("3500.00").value());
     }
 }

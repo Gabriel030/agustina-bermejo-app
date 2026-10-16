@@ -25,8 +25,16 @@ public class GatewayPaymentArrivedWithGatewayDisabledNotificationListener {
     public void notifySecretariat(GatewayPaymentArrivedWithGatewayDisabledEvent event) {
         effectGuard.runEffectOnce(event, SECRETARIAT_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
                 NotificationType.GATEWAY_PAYMENT_WITH_GATEWAY_OFF,
-                "Entró un pago online de " + event.currency() + " " + event.amount() + " (factura " + event.reportedInvoiceId()
-                        + ") con la pasarela " + event.gateway() + " apagada, de un link generado antes. Se acreditó en la cuenta del alumno y se imputó; revisá que esté bien.",
+                "Entró un pago de " + event.currency() + " " + event.amount() + " por " + gatewayLabelOf(event.gateway())
+                        + " con la pasarela apagada" + invoiceSuffixOf(event.reportedInvoiceId()) + ". Quedó acreditado en la cuenta del alumno.",
                 List.of(NotificationTopic.ENROLLMENT_SECRETARIAT), "Payment", event.paymentId())));
+    }
+
+    private static String gatewayLabelOf(String gateway) {
+        return "MERCADO_PAGO".equals(gateway) ? "Mercado Pago" : gateway;
+    }
+
+    private static String invoiceSuffixOf(Long reportedInvoiceId) {
+        return reportedInvoiceId == null ? "" : " (factura " + reportedInvoiceId + ")";
     }
 }

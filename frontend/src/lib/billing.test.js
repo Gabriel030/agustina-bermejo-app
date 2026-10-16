@@ -3,6 +3,7 @@ import {
   ADJUSTMENT_TYPE_LABELS,
   INVOICE_DOCUMENT_STATUS_LABELS,
   discountLabel,
+  formatPaymentMoment,
   hasInvoiceDetail,
   invoiceDisplayStatus,
   invoiceStatusInfo,
@@ -70,5 +71,19 @@ describe('descuentos del renglón', () => {
     expect(hasInvoiceDetail({ lines: [{ discount: null }] })).toBe(false);
     expect(hasInvoiceDetail({ lines: [{ discount: null }, { discount: null }] })).toBe(true);
     expect(hasInvoiceDetail({ lines: [], documentStatus: 'DISCARDED' })).toBe(true);
+  });
+});
+
+describe('formatPaymentMoment', () => {
+  it('shows only the date when the payment has no time of day', () => {
+    expect(formatPaymentMoment('2027-04-20T00:00:00')).toBe('20/04/2027');
+  });
+
+  it('shows date and time when the payment has a real time', () => {
+    expect(formatPaymentMoment('2027-04-20T09:05:00')).toBe('20/04/2027 09:05');
+  });
+
+  it('shows nothing without a value', () => {
+    expect(formatPaymentMoment(null)).toBe('');
   });
 });

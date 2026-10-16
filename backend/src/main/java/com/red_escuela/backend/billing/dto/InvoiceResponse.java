@@ -12,7 +12,6 @@ import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 public record InvoiceResponse(
@@ -42,7 +41,7 @@ public record InvoiceResponse(
             studentDni = programEnrollment.getStudent().getPerson().getDni();
             productRef = new ProductRef("PROGRAM", programEnrollment.getProgram().getId(), programEnrollment.getId());
         }
-        InvoicePaymentShare latest = view.paymentShares().stream().max(Comparator.comparing(InvoicePaymentShare::paidAt)).orElse(null);
+        InvoicePaymentShare latest = view.paymentShares().stream().max(InvoicePaymentShare.CHRONOLOGICAL).orElse(null);
         InvoiceAmounts amounts = invoice.getAmounts();
         return new InvoiceResponse(
                 invoice.getId(), invoice.getInvoiceNumber() == null ? null : invoice.getInvoiceNumber().value(),
