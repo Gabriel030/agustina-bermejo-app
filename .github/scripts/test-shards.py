@@ -7,7 +7,7 @@ Uso:
   test-shards.py update <log> [<log> ...]     regenera timings.txt desde logs de surefire ("Time elapsed")
   test-shards.py update-xml <dir> [<dir> ...] [--out archivo]
                                               regenera timings.txt desde TEST-*.xml de surefire (busca recursivo)
-  test-shards.py list <indice> [<cantidad>]   lista las clases del shard (cantidad por defecto 5, como la CI)
+  test-shards.py list <indice> [<cantidad>]   lista las clases del shard (cantidad por defecto 6, como la CI)
   test-shards.py run <indice> [<cantidad>]    corre el shard en local con el semaforo (backend/: ./mvnw test -Dtest=...)
   test-shards.py accumulate <dir> [<dir> ...] --out <dir> [--history <dir>]
                                               suma las medidas de esta corrida (TEST-*.xml) al historial de las ultimas
@@ -230,7 +230,7 @@ def shard_classes(index, count):
 
 
 def list_shard(args):
-    count = int(args[1]) if len(args) > 1 else 5
+    count = int(args[1]) if len(args) > 1 else 6
     for name in shard_classes(int(args[0]), count):
         print(name.replace('/', '.'))
 
@@ -238,7 +238,7 @@ def list_shard(args):
 def run_shard(args):
     import subprocess
     index = int(args[0])
-    count = int(args[1]) if len(args) > 1 else 5
+    count = int(args[1]) if len(args) > 1 else 6
     selection = ','.join(shard_classes(index, count))
     slot = os.path.expanduser('~/.claude/epica18/ci-slot.sh')
     owner = 'shard-%d' % index
