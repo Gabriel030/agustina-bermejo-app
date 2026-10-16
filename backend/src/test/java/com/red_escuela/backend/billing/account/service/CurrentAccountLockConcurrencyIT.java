@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
@@ -107,7 +108,7 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
             } catch (InterruptedException exception) {
                 throw new IllegalStateException(exception);
             }
-            return service.recordPaymentReceivedCredit(account, nextExternalId(), ars("10.00"), DAY, "Pago");
+            return service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars("10.00")), ars("10.00"), DAY, "Pago");
         }));
         assertThat(holderHasLock.await(30, TimeUnit.SECONDS)).isTrue();
         Future<Long> waiter = pool.submit(() -> inTransaction(() -> service.lockStudentCurrentAccount(accountId).getLastEntrySequence()));
@@ -128,7 +129,7 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
         for (int i = 0; i < 4; i++) {
             Long invoiceId = newIssuedInvoiceId(accountId, Currency.ARS, (100 + i) + ".00");
             tasks.add(debitOf(accountId, invoiceId));
-            long paymentId = nextExternalId();
+            long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId);
             String amount = (50 + i) + ".00";
             tasks.add(() -> inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, ars(amount), DAY, "Pago")));
         }
@@ -147,7 +148,7 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
         CyclicBarrier bothLoaded = new CyclicBarrier(2);
         List<Callable<Object>> tasks = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
-            long paymentId = nextExternalId();
+            long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId);
             tasks.add(() -> inTransaction(() -> {
                 StudentCurrentAccount account = accountRepository.findById(accountId).orElseThrow();
                 try {

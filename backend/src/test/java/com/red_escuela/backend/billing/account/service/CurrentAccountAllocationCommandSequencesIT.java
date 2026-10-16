@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.junit.jupiter.api.Tag;
@@ -62,7 +63,7 @@ class CurrentAccountAllocationCommandSequencesIT extends AbstractCurrentAccountI
                     case ISSUE_INVOICE -> issueAdministrativeFeeWithLedgerDebit(accountId, command.amount().toPlainString(), date);
                     case RECEIVE_CREDIT -> {
                         inTransaction(() -> {
-                            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars(command.amount().toPlainString()), date, "Pago");
+                            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(command.amount().toPlainString())), ars(command.amount().toPlainString()), date, "Pago");
                             return null;
                         });
                         creditedInTotal = creditedInTotal.add(command.amount());

@@ -54,7 +54,6 @@ public final class BillingInvariantChecker {
         List<String> found = new ArrayList<>();
         found.addAll(violations("I-06 negative allocation", "select 'allocation ' || id from payment_allocation where amount < 0"));
         found.addAll(violations("I-06 negative payment", "select 'payment ' || id from payment where amount < 0"));
-        found.addAll(violations("I-06 negative legacy payment", "select 'legacy payment ' || id from legacy_payment where amount < 0"));
         found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where total_amount < 0"));
         found.addAll(violations("I-06 negative price", "select 'price version ' || id from price_version where amount < 0"));
         return found;

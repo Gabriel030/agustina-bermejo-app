@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
@@ -7,7 +8,6 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -168,7 +168,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
+        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
 
@@ -249,7 +249,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
-                        new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
+                        new ReportedGatewayAllocation(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
                 new MpWebhookSignatureVerifier("", true));
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));

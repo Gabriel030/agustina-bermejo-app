@@ -100,7 +100,7 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
         issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 3, 10));
         Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 4, 10));
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago previo");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago previo");
             return null;
         });
 
@@ -144,7 +144,7 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
             issueAdministrativeFeeWithLedgerDebit(roundAccountId, "80000.00", LocalDate.of(2027, 3, 10));
             Long second = issueAdministrativeFeeWithLedgerDebit(roundAccountId, "80000.00", LocalDate.of(2027, 4, 10));
             inTransaction(() -> {
-                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(roundAccountId), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago");
+                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(roundAccountId), BillingTestFixtures.seedApprovedPaymentRow(roundAccountId, ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago");
                 return allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(roundAccountId), LocalDate.of(2027, 3, 9), ACTOR);
             });
             CountDownLatch start = new CountDownLatch(1);

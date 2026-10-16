@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
@@ -24,7 +25,6 @@ import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedExce
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -310,7 +310,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         String mpPaymentId = "mp-" + System.nanoTime();
         var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(registrationPort,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
-                        new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
+                        new ReportedGatewayAllocation(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
                 new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true));
 
         service.process("", "req", mpPaymentId);

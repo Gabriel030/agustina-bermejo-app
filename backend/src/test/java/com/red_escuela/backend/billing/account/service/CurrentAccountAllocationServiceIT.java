@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationResult;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.exception.InsufficientAccountCreditException;
@@ -94,7 +95,7 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
 
     private void receiveCredit(String amount, LocalDate paidOn) {
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars(amount), paidOn, "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(amount)), ars(amount), paidOn, "Pago");
             return null;
         });
     }
@@ -391,7 +392,7 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
         Long otherAccountId = newAccountId(newStudentId(), Currency.ARS);
         issueAdministrativeFeeWithLedgerDebit(otherAccountId, "100.00", LocalDate.of(2027, 3, 10));
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(otherAccountId), nextExternalId(), ars("100.00"), TODAY, "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(otherAccountId), BillingTestFixtures.seedApprovedPaymentRow(otherAccountId, ars("100.00")), ars("100.00"), TODAY, "Pago");
             return allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(otherAccountId), TODAY, ACTOR);
         });
         PaymentAllocation foreign = allocationRepository.findCurrentAllocationsByAccountNewestFirst(otherAccountId).get(0);

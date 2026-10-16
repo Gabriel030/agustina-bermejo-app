@@ -95,7 +95,6 @@ export const PAYMENT_METHOD_LABELS = {
   TRANSFER: 'Transferencia bancaria',
   CARD: 'Tarjeta',
   MERCADO_PAGO: 'Mercado Pago',
-  CREDIT_BALANCE: 'Saldo a favor',
 };
 
 const CARD_TYPE_LABELS = {
