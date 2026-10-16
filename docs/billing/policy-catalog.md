@@ -316,6 +316,25 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | StudyPlanNotCompletedPolicy | PLAN_COMPLETED | D-038 |
 | 4 | PaymentPlanChosenPolicy | NO_PAYMENT_PLAN | D-050 |
 
+## Momento STUDENT_DISCOUNT_GRANTING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | StudentDiscountCoherencePolicy | INVALID_STUDENT_DISCOUNT | D-075, D-384 |
+| 2 | ProposalNotExpiredPolicy | STUDENT_DISCOUNT_PROPOSAL_EXPIRED | D-238, D-180 |
+| 3 | StudentDiscountDefinitionPolicy | INVALID_STUDENT_DISCOUNT, DISCOUNT_DEFINITION_CLOSED | D-217, D-384 |
+| 4 | StudentDiscountInvoiceTypePolicy | DISCOUNT_INVOICE_TYPE_MISMATCH | D-129, D-157, D-384 |
+| 5 | StudentDiscountPeriodRangePolicy | INVALID_SCHOLARSHIP_PERIOD | D-282, D-384 |
+| 6 | StudentDiscountCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
+| 7 | ScholarshipStartsAtNextInstallmentPolicy | SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT | D-238 |
+| 8 | ScholarshipNotAvailableWithAnnualUpfrontPolicy | SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT | D-158, D-388 |
+
+## Momento STUDENT_DISCOUNT_REVOCATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | RevocationReasonRequiredPolicy | REVOCATION_REASON_REQUIRED | D-284 |
+
 ## Momento YEAR_BILLING_CONFIGURATION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -375,6 +394,18 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 | CLOSED | — | — |
 
 Transiciones válidas: 2 de 6. Pares inválidos: (sin estado) × DEFINITION_CLOSED; ACTIVE × DEFINITION_CREATED; CLOSED × DEFINITION_CREATED; CLOSED × DEFINITION_CLOSED.
+
+### StudentDiscountStateMachine
+
+| Desde \ Evento | DISCOUNT_GRANTED | LAST_INSTALLMENT_CONSUMED | CONSUMPTION_RETURNED | DISCOUNT_REVOKED | ENROLLMENT_ENDED |
+|---|---|---|---|---|---|
+| (sin estado) | ACTIVE | — | — | — | — |
+| ACTIVE | — | EXHAUSTED | ACTIVE | REVOKED | ENDED |
+| EXHAUSTED | — | — | ACTIVE | — | — |
+| REVOKED | — | — | — | — | — |
+| ENDED | — | — | — | — | — |
+
+Transiciones válidas: 6 de 25. Pares inválidos: (sin estado) × LAST_INSTALLMENT_CONSUMED; (sin estado) × CONSUMPTION_RETURNED; (sin estado) × DISCOUNT_REVOKED; (sin estado) × ENROLLMENT_ENDED; ACTIVE × DISCOUNT_GRANTED; EXHAUSTED × DISCOUNT_GRANTED; EXHAUSTED × LAST_INSTALLMENT_CONSUMED; EXHAUSTED × DISCOUNT_REVOKED; EXHAUSTED × ENROLLMENT_ENDED; REVOKED × DISCOUNT_GRANTED; REVOKED × LAST_INSTALLMENT_CONSUMED; REVOKED × CONSUMPTION_RETURNED; REVOKED × DISCOUNT_REVOKED; REVOKED × ENROLLMENT_ENDED; ENDED × DISCOUNT_GRANTED; ENDED × LAST_INSTALLMENT_CONSUMED; ENDED × CONSUMPTION_RETURNED; ENDED × DISCOUNT_REVOKED; ENDED × ENROLLMENT_ENDED.
 
 ### InvoiceDocumentStatusStateMachine
 
@@ -496,6 +527,12 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: LatePaymentSettingsCreatedEvent
 - Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated
 
+## Operación GRANT_STUDENT_DISCOUNT
+
+- Validaciones (momentos): STUDENT_DISCOUNT_GRANTING
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: —
+
 ## Operación ISSUE_CREDIT_NOTE
 
 - Validaciones (momentos): CREDIT_NOTE_ISSUING
@@ -535,3 +572,9 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de PaymentApprovedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
+## Operación REVOKE_STUDENT_DISCOUNT
+
+- Validaciones (momentos): STUDENT_DISCOUNT_REVOCATION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: —

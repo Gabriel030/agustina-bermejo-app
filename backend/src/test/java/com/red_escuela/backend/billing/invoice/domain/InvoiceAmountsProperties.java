@@ -50,7 +50,7 @@ class InvoiceAmountsProperties {
             invoice.addChargeLineToDraft(InvoiceTestData.monthlyLine(money(spec.cents()).value().amount().toPlainString(), "KEY" + index));
             long discount = Math.min(spec.cents(), Math.round(spec.cents() * spec.discountPercent() / 100.0));
             if (discount > 0) {
-                invoice.addDiscountToDraftLine(index, new InvoiceDiscountDraft(DiscountType.MANUAL, "Manual", null, money(spec.cents()), money(discount), null, null));
+                invoice.addDiscountToDraftLine(index, new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "Manual", null, money(spec.cents()), money(discount), null, null));
             }
             linesCents += spec.cents();
             discountCents += discount;

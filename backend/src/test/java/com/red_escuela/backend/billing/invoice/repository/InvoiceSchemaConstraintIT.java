@@ -243,7 +243,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
     private Map<String, Object> discountRow(long lineId, int base, int discount) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("invoice_line_id", lineId);
-        row.put("discount_type", "MANUAL");
+        row.put("discount_type", "INDIVIDUAL");
         row.put("concept", "Manual");
         row.put("currency", "ARS");
         row.put("base_amount", base);

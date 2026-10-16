@@ -5,5 +5,5 @@ public enum DiscountType {
     PROMOTION,
     ANNUAL_UPFRONT,
     COHORT_ENTRY,
-    MANUAL
+    INDIVIDUAL
 }

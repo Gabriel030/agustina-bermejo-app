@@ -69,8 +69,8 @@ class InvoiceDraftDiscountTest {
     @Test
     void aDiscountInAnotherCurrencyIsRejected() {
         Invoice draft = monthlyDraft("80000.00");
-        InvoiceDiscountDraft usdAmount = new InvoiceDiscountDraft(DiscountType.MANUAL, "USD", null, ars("80000.00"), usd("10.00"), null, null);
-        InvoiceDiscountDraft usdBase = new InvoiceDiscountDraft(DiscountType.MANUAL, "USD", null, usd("80000.00"), ars("10.00"), null, null);
+        InvoiceDiscountDraft usdAmount = new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "USD", null, ars("80000.00"), usd("10.00"), null, null);
+        InvoiceDiscountDraft usdBase = new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "USD", null, usd("80000.00"), ars("10.00"), null, null);
 
         assertThatThrownBy(() -> draft.addDiscountToDraftLine(1, usdAmount)).isInstanceOf(StudentCurrentAccountCurrencyMismatchException.class);
         assertThatThrownBy(() -> draft.addDiscountToDraftLine(1, usdBase)).isInstanceOf(StudentCurrentAccountCurrencyMismatchException.class);
@@ -100,17 +100,17 @@ class InvoiceDraftDiscountTest {
 
     @Test
     void invalidDiscountDraftsAreRejected() {
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, ars("1.00"), ars("0.00"), null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, " ", null, ars("1.00"), ars("1.00"), null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x".repeat(201), null, ars("1.00"), ars("1.00"), null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, ars("1.00"), ars("1.00"), null, 3)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, ars("1.00"), ars("1.00"), 0, 3)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, ars("1.00"), ars("1.00"), 4, 3)).isInstanceOf(IllegalArgumentException.class);
-        assertThat(new InvoiceDiscountDraft(DiscountType.MANUAL, "x".repeat(200), null, ars("1.00"), ars("1.00"), 3, 3)).isNotNull();
-        assertThat(new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, ars("1.00"), ars("1.00"), 1, null)).isNotNull();
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, ars("1.00"), ars("0.00"), null, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, " ", null, ars("1.00"), ars("1.00"), null, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x".repeat(201), null, ars("1.00"), ars("1.00"), null, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, ars("1.00"), ars("1.00"), null, 3)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, ars("1.00"), ars("1.00"), 0, 3)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, ars("1.00"), ars("1.00"), 4, 3)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x".repeat(200), null, ars("1.00"), ars("1.00"), 3, 3)).isNotNull();
+        assertThat(new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, ars("1.00"), ars("1.00"), 1, null)).isNotNull();
         assertThatThrownBy(() -> new InvoiceDiscountDraft(null, "x", null, ars("1.00"), ars("1.00"), null, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, null, ars("1.00"), null, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.MANUAL, "x", null, ars("1.00"), null, null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, null, ars("1.00"), null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InvoiceDiscountDraft(DiscountType.INDIVIDUAL, "x", null, ars("1.00"), null, null, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

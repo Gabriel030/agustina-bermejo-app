@@ -6,7 +6,7 @@ const DISCOUNT_LABELS = {
   PROMOTION: 'Promociones',
   ANNUAL_UPFRONT: 'Pago anual',
   COHORT_ENTRY: 'Ingreso por cohorte',
-  MANUAL: 'Manual',
+  INDIVIDUAL: 'Descuento individual',
   MARKETING: 'Marketing',
 };
 
