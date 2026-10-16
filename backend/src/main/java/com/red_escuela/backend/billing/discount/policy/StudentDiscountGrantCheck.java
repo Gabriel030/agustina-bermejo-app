@@ -13,7 +13,10 @@ import java.util.Objects;
 public record StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
                                         Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod,
                                         boolean annualUpfrontCoversRange, String reason, DefinitionFault definitionFault, LocalDate approvalDeadline,
-                                        LocalDate today) {
+                                        LocalDate today, OverlappingDiscount overlappingDiscount, boolean enrollmentFeeAlreadyIssued) {
+
+    public record OverlappingDiscount(Long id, YearMonth from, YearMonth to) {
+    }
 
     public enum DefinitionFault {
         NONE,
@@ -25,15 +28,21 @@ public record StudentDiscountGrantCheck(DiscountType discountType, InvoiceType i
 
     public StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
                                      Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod, boolean annualUpfrontCoversRange, String reason) {
-        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, DefinitionFault.NONE, null, null);
+        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, DefinitionFault.NONE, null, null, null, false);
     }
 
     public StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
                                      Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod, boolean annualUpfrontCoversRange, String reason,
                                      DefinitionFault definitionFault) {
-        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, definitionFault, null, null);
+        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, definitionFault, null, null, null, false);
     }
 
+    public StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
+                                     Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod, boolean annualUpfrontCoversRange, String reason,
+                                     DefinitionFault definitionFault, LocalDate approvalDeadline, LocalDate today) {
+        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, definitionFault,
+                approvalDeadline, today, null, false);
+    }
 
     public StudentDiscountGrantCheck {
         Objects.requireNonNull(discountType, "discountType");

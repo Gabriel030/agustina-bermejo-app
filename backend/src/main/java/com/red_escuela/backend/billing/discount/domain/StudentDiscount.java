@@ -176,6 +176,15 @@ public class StudentDiscount {
         moveTo(StudentDiscountEvent.CONSUMPTION_RETURNED, actor, now, null);
     }
 
+    public boolean overlapsRangeOfSameKind(DiscountType type, InvoiceType invoiceType, YearMonth from, YearMonth to) {
+        return status == StudentDiscountStatus.ACTIVE && discountType == type && applicableInvoiceType == invoiceType
+                && !fromPeriod.isAfter(to) && !toPeriod.isBefore(from);
+    }
+
+    public boolean coversLectiveYearOfSameKind(DiscountType type, InvoiceType invoiceType, LectiveYearSpan lectiveYear) {
+        return status == StudentDiscountStatus.ACTIVE && discountType == type && applicableInvoiceType == invoiceType && lectiveYear.contains(fromPeriod);
+    }
+
     public ScholarshipPeriodRange periodRange() {
         return new ScholarshipPeriodRange(fromPeriod, toPeriod);
     }
