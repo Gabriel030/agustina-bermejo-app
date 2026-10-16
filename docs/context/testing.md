@@ -125,7 +125,7 @@ está arriba.
 
 ## Presupuesto de tiempo y pirámide de tests
 
-El CI del backend corre en 5 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada PR pasa por presupuestos **bloqueantes** que miden la corrida real.
+El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada PR pasa por presupuestos **bloqueantes** que miden la corrida real.
 
 ### Presupuestos
 
@@ -174,7 +174,7 @@ Los tiempos para repartir clases entre shards no se editan a mano: cada push a `
 Cada fallo de CI dice en qué shard ocurrió (`backend-tests (N)`). Para correr exactamente las mismas clases, con el mismo algoritmo y los mismos tiempos que la CI:
 
 ```bash
-python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 5)
+python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 6)
 python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con ./mvnw test
 ```
 
