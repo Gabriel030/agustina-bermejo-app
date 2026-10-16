@@ -48,6 +48,10 @@ public record Money(
         return new Money(amount.multiply(rate.fraction()), currency);
     }
 
+    public Money multipliedBy(long quantity) {
+        return new Money(amount.multiply(BigDecimal.valueOf(quantity)), currency);
+    }
+
     public boolean isNegative() {
         return amount.signum() < 0;
     }

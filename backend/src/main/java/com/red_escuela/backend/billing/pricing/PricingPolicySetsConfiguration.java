@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.pricing;
 
 import com.red_escuela.backend.billing.configuration.policy.EffectiveDateNotRetroactivePolicy;
+import com.red_escuela.backend.billing.pricing.policy.PriceAmountWithinLimitPolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceCancellationReasonPolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeReasonPolicy;
@@ -24,6 +25,7 @@ public class PricingPolicySetsConfiguration {
     public PolicySet<PriceVersionDraft> priceVersionPolicySet() {
         List<Policy<PriceVersionDraft>> ordered = List.of(
                 new PriceCurrencyPolicy(),
+                new PriceAmountWithinLimitPolicy(),
                 new MarketingDiscountNotNegativePolicy(),
                 new MarketingDiscountFixedNotAboveBasePolicy());
         return PolicySet.named("PRICE_VERSION", ordered);
