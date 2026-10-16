@@ -743,6 +743,37 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void anEnrollmentFeeDiscountOfAnEarlierMonthIsRejectedWhenALaterOneOfTheSameLectiveYearExists() {
+        useCohortLearner();
+        grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), YearMonth.of(2027, 6), null, "Hermano"));
+
+        assertThatThrownBy(() -> grant(director, individual(InvoiceType.ENROLLMENT_FEE, percent("10"), YearMonth.of(2027, 4), null, "Otro")))
+                .isInstanceOf(StudentDiscountOverlapException.class);
+        assertThat(discountsOfLearner()).isEqualTo(1L);
+    }
+
+    @Test
+    void explicitSingleMonthEnrollmentFeeDiscountsOfTheSameLectiveYearOverlap() {
+        useCohortLearner();
+        grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), YearMonth.of(2027, 4), YearMonth.of(2027, 4), "Hermano"));
+
+        assertThatThrownBy(() -> grant(director, individual(InvoiceType.ENROLLMENT_FEE, percent("10"), YearMonth.of(2027, 7), YearMonth.of(2027, 7), "Otro")))
+                .isInstanceOf(StudentDiscountOverlapException.class);
+        assertThat(discountsOfLearner()).isEqualTo(1L);
+    }
+
+    @Test
+    void anAdministrativeEnrollmentFeeProposalIsRejectedAtApprovalWhenTheDirectorGrantedAnotherOfTheSameLectiveYearMeanwhile() {
+        useCohortLearner();
+        Long requestId = proposeGrant(individual(InvoiceType.ENROLLMENT_FEE, percent("10"), YearMonth.of(2027, 4), null, "Propuesta"));
+        grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), YearMonth.of(2027, 8), null, "Director"));
+        authenticateAs(director);
+
+        assertThatThrownBy(() -> approveRequest.approve(requestId, "ok")).isInstanceOf(StudentDiscountOverlapException.class);
+        assertThat(discountsOfLearner()).isEqualTo(1L);
+    }
+
+    @Test
     void anIndividualDiscountOnTheEnrollmentFeeOfACourseIsRejectedOnceItIsIssued() {
         Long courseEnrollmentId = newCourseEnrollment();
         StudentDiscountGrantRequest onFee = individual(InvoiceType.ENROLLMENT_FEE, percent("30"), YearMonth.of(2027, 4), YearMonth.of(2027, 4), "Hermano");
