@@ -123,6 +123,7 @@ export const RECEIPT_STATUS_CONFIG = {
 export function hasInvoiceDetail(invoice) {
   return (
     (invoice.payments?.length ?? 0) > 0 ||
+    (invoice.creditNotes?.length ?? 0) > 0 ||
     (invoice.receipts?.length ?? 0) > 0 ||
     (invoice.lines ?? []).some((line) => line.discount != null) ||
     (invoice.lines ?? []).length > 1 ||
