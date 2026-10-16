@@ -181,6 +181,10 @@ public class StudentDiscount {
                 && !fromPeriod.isAfter(to) && !toPeriod.isBefore(from);
     }
 
+    public boolean coversLectiveYearOfSameKind(DiscountType type, InvoiceType invoiceType, LectiveYearSpan lectiveYear) {
+        return status == StudentDiscountStatus.ACTIVE && discountType == type && applicableInvoiceType == invoiceType && lectiveYear.contains(fromPeriod);
+    }
+
     public ScholarshipPeriodRange periodRange() {
         return new ScholarshipPeriodRange(fromPeriod, toPeriod);
     }

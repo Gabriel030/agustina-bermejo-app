@@ -296,6 +296,29 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
                 """, Long.class, invoiceId, feeType.name(), java.sql.Date.valueOf(period.atDay(1)), "K" + System.nanoTime(), programEnrollmentId, courseEnrollmentId);
     }
 
+    private Long newTemplateWithTerm(int year, LocalDate start, LocalDate end) {
+        Long templateId = factory.newTemplate(offering, year);
+        jdbc.update("update term set start_date = ?, end_date = ? where id = (select term_id from program_year_billing_template where id = ?)",
+                java.sql.Timestamp.valueOf(start.atStartOfDay()), java.sql.Timestamp.valueOf(end.atTime(23, 59)), templateId);
+        return templateId;
+    }
+
+    private Long newCohortLearnerOn(Long templateId, Long currentTemplateId) {
+        Long cohortId = factory.newCohort(templateId, CohortIntake.FIRST, LocalDate.of(2027, 3, 1), Percentage.ofPoints(BigDecimal.ZERO));
+        learner = factory.newLearner(offering, cohortId);
+        if (currentTemplateId != null) {
+            jdbc.update("update program_enrollment set current_billing_template_id = ? where id = ?", currentTemplateId, learner.programEnrollmentId());
+        }
+        return learner.studentId();
+    }
+
+    private void deleteDiscountsOfStudent(Long studentId) {
+        jdbc.execute("alter table student_discount_status_change disable trigger trg_student_discount_status_change_append_only");
+        jdbc.update("delete from student_discount_status_change where student_discount_id in (select id from student_discount where student_id = ?)", studentId);
+        jdbc.update("delete from student_discount where student_id = ?", studentId);
+        jdbc.execute("alter table student_discount_status_change enable trigger trg_student_discount_status_change_append_only");
+    }
+
     private void deleteDiscountsOfCourse(Long courseEnrollmentId) {
         jdbc.execute("alter table student_discount_status_change disable trigger trg_student_discount_status_change_append_only");
         jdbc.update("delete from student_discount_status_change where student_discount_id in (select id from student_discount where course_enrollment_id = ?)", courseEnrollmentId);
@@ -650,12 +673,85 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void twoIndividualDiscountsOnTheEnrollmentFeeOfTheSameLectiveYearOverlapEvenInDifferentMonths() {
+        useCohortLearner();
+
+        grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), YearMonth.of(2027, 4), null, "Hermano"));
+
+        assertThatThrownBy(() -> grant(director, individual(InvoiceType.ENROLLMENT_FEE, percent("10"), YearMonth.of(2027, 5), null, "Otro")))
+                .isInstanceOf(StudentDiscountOverlapException.class);
+        assertThat(discountsOfLearner()).isEqualTo(1L);
+    }
+
+    @Test
+    void theLectiveYearIsPickedFromTheCurrentBillingTemplateEvenWhenTheCohortTemplateAlsoCoversThePeriod() {
+        Long templateA = newTemplateWithTerm(2027, LocalDate.of(2027, 3, 1), LocalDate.of(2027, 12, 31));
+        Long templateB = newTemplateWithTerm(2028, LocalDate.of(2027, 7, 1), LocalDate.of(2028, 6, 30));
+
+        Long studentOnB = newCohortLearnerOn(templateA, templateB);
+        YearMonth endForCurrentB = grantAsDirector(scholarship("50", YearMonth.of(2027, 9), null)).getToPeriod();
+        deleteDiscountsOfStudent(studentOnB);
+
+        newCohortLearnerOn(templateB, templateA);
+        YearMonth endForCurrentA = grantAsDirector(scholarship("50", YearMonth.of(2027, 9), null)).getToPeriod();
+
+        assertThat(endForCurrentB).isEqualTo(YearMonth.of(2028, 6));
+        assertThat(endForCurrentA).isEqualTo(YearMonth.of(2027, 12));
+    }
+
+    @Test
+    void twoSimultaneousOverlappingGrantsLeaveExactlyOneActiveDiscount() throws Exception {
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < 6; round++) {
+                learner = factory.newLearner(offering, null);
+                EnrollmentReference target = enrollment();
+                Long studentId = learner.studentId();
+                java.util.concurrent.CyclicBarrier barrier = new java.util.concurrent.CyclicBarrier(2);
+                List<java.util.concurrent.Future<Throwable>> attempts = new ArrayList<>();
+                for (String percent : new String[]{"40", "20"}) {
+                    attempts.add(executor.submit(() -> {
+                        authenticateAs(director);
+                        barrier.await();
+                        try {
+                            pipeline.runOperation(grantOperation, GrantStudentDiscountCommand.byPerson(target, scholarship(percent, YearMonth.of(2027, 4), YearMonth.of(2027, 12)),
+                                    director.getId(), true));
+                            return null;
+                        } catch (Throwable failure) {
+                            return failure;
+                        } finally {
+                            SecurityContextHolder.clearContext();
+                        }
+                    }));
+                }
+                List<Throwable> failures = new ArrayList<>();
+                for (java.util.concurrent.Future<Throwable> attempt : attempts) {
+                    Throwable failure = attempt.get();
+                    if (failure != null) {
+                        failures.add(failure);
+                    }
+                }
+
+                assertThat(discountsOfLearner()).as("round " + round).isEqualTo(1L);
+                assertThat(failures).as("round " + round).hasSize(1);
+                assertThat(failures.get(0)).isInstanceOf(StudentDiscountOverlapException.class);
+                deleteDiscountsOfStudent(studentId);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     void anIndividualDiscountOnTheEnrollmentFeeOfACourseIsRejectedOnceItIsIssued() {
         Long courseEnrollmentId = newCourseEnrollment();
         StudentDiscountGrantRequest onFee = individual(InvoiceType.ENROLLMENT_FEE, percent("30"), YearMonth.of(2027, 4), YearMonth.of(2027, 4), "Hermano");
-        insertLiveLine(courseStudentId, FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 3), null, courseEnrollmentId);
+        Long feeLine = insertLiveLine(courseStudentId, FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 3), null, courseEnrollmentId);
 
         assertThatThrownBy(() -> grantOnCourse(courseEnrollmentId, onFee)).isInstanceOf(EnrollmentFeeAlreadyIssuedException.class);
+        releaseChargeKey(feeLine);
+        assertThat(grantOnCourse(courseEnrollmentId, onFee).getApplicableInvoiceType()).isEqualTo(InvoiceType.ENROLLMENT_FEE);
+        deleteDiscountsOfCourse(courseEnrollmentId);
     }
 
     @Test
