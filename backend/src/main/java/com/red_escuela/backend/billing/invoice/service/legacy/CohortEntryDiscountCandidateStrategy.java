@@ -31,8 +31,8 @@ public class CohortEntryDiscountCandidateStrategy implements InvoiceDiscountCand
     }
 
     @Override
-    public DiscountType discountType() {
-        return DiscountType.COHORT_ENTRY;
+    public DiscountCandidateOrigin origin() {
+        return DiscountCandidateOrigin.LEGACY_COHORT_ENTRY;
     }
 
     @Override
