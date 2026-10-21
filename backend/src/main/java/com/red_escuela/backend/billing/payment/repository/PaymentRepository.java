@@ -22,6 +22,16 @@ public interface PaymentRepository extends Repository<Payment, Long> {
 
     boolean existsByGatewayAndGatewayPaymentId(PaymentGatewayCode gateway, String gatewayPaymentId);
 
+    @Query(value = """
+            select exists (select 1 from payment
+                           where method_type = 'BANK_TRANSFER' and status not in ('REJECTED', 'CANCELLED')
+                             and method_details ->> 'operationNumber' = :operationNumber
+                             and method_details ->> 'transferDate' = :transferDate
+                             and amount = :amount)
+            """, nativeQuery = true)
+    boolean existsActiveBankTransfer(@Param("operationNumber") String operationNumber, @Param("transferDate") String transferDate,
+                                     @Param("amount") java.math.BigDecimal amount);
+
     @Query(value = "select count(*) from (select pg_advisory_xact_lock(hashtext(:reference))) as acquired", nativeQuery = true)
     long lockGatewayPaymentUntilTransactionEnds(@Param("reference") String reference);
 }

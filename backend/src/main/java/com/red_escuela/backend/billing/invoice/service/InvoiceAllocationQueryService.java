@@ -21,6 +21,11 @@ public class InvoiceAllocationQueryService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    public List<Invoice> findInvoicesByIds(java.util.Collection<Long> invoiceIds) {
+        return invoiceRepository.findByIdIn(invoiceIds);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public void lockOpenInvoicesOfAccountInIdOrder(Long studentCurrentAccountId) {
         invoiceRepository.findOpenIssuedInvoiceIdsByAccountOrderedById(studentCurrentAccountId).forEach(invoiceRepository::lockInvoiceRowById);
     }

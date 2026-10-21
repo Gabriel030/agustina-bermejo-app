@@ -8,6 +8,32 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | AnnualUpfrontSettingsCoherencePolicy | INVALID_ANNUAL_UPFRONT_SETTINGS | D-155, D-156 |
 
+## Momento BANK_TRANSFER_RECEIPT_DETAILS
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | BankTransferReceiptDetailsRequiredPolicy | BANK_TRANSFER_AMOUNT_INVALID, BANK_TRANSFER_DATE_REQUIRED, BANK_TRANSFER_DATE_IN_FUTURE, BANK_TRANSFER_OPERATION_NUMBER_REQUIRED, BANK_TRANSFER_OPERATION_NUMBER_TOO_LONG, BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED, BANK_TRANSFER_ORIGIN_ACCOUNT_TOO_LONG, BANK_TRANSFER_HOLDER_NAME_REQUIRED, BANK_TRANSFER_HOLDER_NAME_TOO_LONG, BANK_TRANSFER_BANK_NAME_TOO_LONG, BANK_TRANSFER_RECEIPT_FILE_REQUIRED, BANK_TRANSFER_INVOICES_REQUIRED | D-267, D-083, D-097, D-320 |
+
+## Momento BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | IdempotencyKeyFormatPolicy | IDEMPOTENCY_KEY_INVALID | D-136 |
+
+## Momento BANK_TRANSFER_RECEIPT_PROTECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ReceiptUploadedByDueDatePolicy | INVOICE_ALREADY_OVERDUE, RECEIPT_UPLOADED_AFTER_DUE_DATE, TRANSFER_AFTER_DUE_DATE | D-154, D-186, D-153 |
+
+## Momento BANK_TRANSFER_RECEIPT_REGISTRATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | SelectedInvoicesBelongToAccountPolicy | INVOICE_CURRENCY_MISMATCH, INVOICE_OF_ANOTHER_ACCOUNT, INVOICE_NOT_PAYABLE_BY_RECEIPT | D-097, D-153 |
+| 2 | DuplicateBankTransferPolicy | POSSIBLE_DUPLICATE_BANK_TRANSFER | D-269 |
+| 3 | ReceiptCoversOldestInvoicesFirstPolicy | INVOICE_ALREADY_UNDER_REVIEW, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST | D-153, D-260 |
+
 ## Momento BILLING_CONFIGURATION_CHANGE
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -643,3 +669,10 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Validaciones (momentos): STUDENT_DISCOUNT_REVOCATION
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: —
+
+## Operación SUBMIT_BANK_TRANSFER_RECEIPT
+
+- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, BANK_TRANSFER_RECEIPT_DETAILS, BANK_TRANSFER_RECEIPT_REGISTRATION, BANK_TRANSFER_RECEIPT_PROTECTION
+- Pre-procesamiento (en orden): IdempotencyKeyHandler
+- Eventos que publica: BankTransferReceiptSubmittedEvent
+- Post-procesamiento de BankTransferReceiptSubmittedEvent: —
