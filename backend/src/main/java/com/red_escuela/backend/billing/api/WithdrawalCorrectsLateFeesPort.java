@@ -24,8 +24,8 @@ public class WithdrawalCorrectsLateFeesPort implements EnrollmentWithdrawalBilli
 
     @Override
     public void registerWithdrawalForBilling(WithdrawnEnrollmentFacts facts) {
-        discountEnrollmentEnd.endActiveDiscountsOf(facts);
         laterChargesCancellation.cancelLaterChargesOf(facts);
+        discountEnrollmentEnd.endActiveDiscountsOf(facts);
         eventPublisher.publishEvent(EnrollmentWithdrawnForBillingEvent.withdrawnFor(facts.studentId(), facts.programEnrollmentId(), facts.courseEnrollmentId(),
                 facts.effectiveDate(), facts.registeredOn(), facts.cause().name()));
     }

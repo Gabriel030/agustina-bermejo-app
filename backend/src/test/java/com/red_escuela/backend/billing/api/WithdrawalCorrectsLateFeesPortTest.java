@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class WithdrawalCorrectsLateFeesPortTest {
 
     @Test
-    void theWithdrawalEndsTheDiscountsCancelsTheLaterChargesAndPublishesTheEventWithTheRegistrationDate() {
+    void theWithdrawalCancelsTheLaterChargesBeforeEndingTheDiscountsAndPublishesTheEventWithTheRegistrationDate() {
         ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
         LaterChargesCancellationOnWithdrawal laterCharges = mock(LaterChargesCancellationOnWithdrawal.class);
         StudentDiscountEnrollmentEndService discountEnd = mock(StudentDiscountEnrollmentEndService.class);
@@ -33,8 +33,8 @@ class WithdrawalCorrectsLateFeesPortTest {
         port.registerWithdrawalForBilling(facts);
 
         InOrder order = inOrder(discountEnd, laterCharges);
-        order.verify(discountEnd).endActiveDiscountsOf(facts);
         order.verify(laterCharges).cancelLaterChargesOf(facts);
+        order.verify(discountEnd).endActiveDiscountsOf(facts);
         verifyNoMoreInteractions(discountEnd, laterCharges);
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
