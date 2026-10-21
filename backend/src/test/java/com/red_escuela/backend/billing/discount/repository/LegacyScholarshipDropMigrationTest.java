@@ -98,14 +98,14 @@ class LegacyScholarshipDropMigrationTest {
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
             migrateTo(dataSource, "130");
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-            LegacyScholarship legacy = insertLegacyScholarshipWithAnAppliedInstallment(jdbc, "CANCELLED");
+            LegacyScholarship legacy = insertLegacyScholarshipWithAnAppliedInstallment(jdbc, "INACTIVE");
 
             migrateTo(dataSource, "132");
 
             assertThat(tableExists(jdbc, "scholarship")).isFalse();
             assertThat(tableExists(jdbc, "scholarship_installment")).isFalse();
             assertThat(jdbc.queryForObject("select discount_amount from invoice_discount where id = ?", BigDecimal.class, legacy.invoiceDiscountId())).isEqualByComparingTo("30");
-            assertThat(jdbc.queryForObject("select student_discount_id from invoice_discount where id = ?", Long.class, legacy.invoiceDiscountId())).isEqualTo(legacy.id());
+            assertThat(jdbc.queryForObject("select student_discount_id from invoice_discount where id = ?", Long.class, legacy.invoiceDiscountId())).isNull();
             assertThat(jdbc.queryForObject("select count(*) from pg_trigger where tgname = 'trg_invoice_discount_immutable_when_issued' and tgenabled = 'O'", Long.class))
                     .isEqualTo(1L);
         }

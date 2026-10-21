@@ -136,6 +136,11 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("32000.00"));
         assertThat(jdbc.queryForObject("select count(*) from invoice_discount where discount_type = 'SCHOLARSHIP' and student_discount_id = ?", Long.class, scholarshipId)).isZero();
         assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, scholarshipId)).isEqualTo("ACTIVE");
+        Invoice april = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 4), LocalDate.of(2027, 4, 11), LocalDate.of(2027, 4, 1))));
+        Invoice may = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 5), LocalDate.of(2027, 5, 11), LocalDate.of(2027, 5, 1))));
+        assertThat(april.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(benefitId);
+        assertThat(may.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(scholarshipId);
+        assertThat(may.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("3 de 3");
         invariants.assertAllBillingInvariantsHold();
     }
 
