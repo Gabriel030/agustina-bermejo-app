@@ -12,6 +12,7 @@ import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-375")
+@SlowTest(reason = "Thirteen scenarios that each seed enrollments and invoices, withdraw with a past end date and wait for the asynchronous correction events against Postgres")
 class LateFeeCorrectionAfterWithdrawalIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
