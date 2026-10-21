@@ -8,6 +8,8 @@ import com.red_escuela.backend.billing.discount.operation.AbstractStudentDiscoun
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +46,8 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
     private JwtService jwtService;
     @Autowired
     private StudentRepository studentRepository;
+    @Autowired
+    private ProgramEnrollmentService programEnrollmentService;
 
     private String studentToken(Long studentId) {
         return transactionTemplate.execute(status -> {
@@ -160,5 +165,28 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
 
         JsonNode reissued = discountNode(read("/me/student-discounts", token), scholarship);
         assertThat(texts(reissued.get("appliedInstallments"), "period")).containsExactly("2027-03");
+    }
+
+    @Test
+    void aVoluntaryWithdrawalEndsTheActiveDiscountsAndLeavesTheRevokedAndEndedOnesIntact() throws Exception {
+        StudentDiscount revoked = grantAsDirector(scholarship("50", MARCH, MAY));
+        revokeAsDirector(revoked.getId(), "Ya no corresponde");
+        StudentDiscount active = grantAsDirector(scholarship("40", JULY, YearMonth.of(2027, 12)));
+        StudentDiscount alreadyEnded = grantAsDirector(individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), APRIL, APRIL, "Hermano"));
+        jdbc.update("update student_discount set status = 'ENDED' where id = ?", alreadyEnded.getId());
+        Integer historyOfEndedBefore = jdbc.queryForObject("select count(*) from student_discount_status_change where student_discount_id = ?", Integer.class, alreadyEnded.getId());
+
+        programEnrollmentService.withdraw(learner.programEnrollmentId(), EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.of(2027, 3, 1), director.getId()));
+
+        JsonNode mine = read("/me/student-discounts", studentToken(learner.studentId()));
+        assertThat(discountNode(mine, active).get("status").asText()).isEqualTo("ENDED");
+        assertThat(discountNode(mine, revoked).get("status").asText()).isEqualTo("REVOKED");
+        assertThat(discountNode(mine, alreadyEnded).get("status").asText()).isEqualTo("ENDED");
+        assertThat(jdbc.queryForObject("select count(*) from student_discount_status_change where student_discount_id = ?", Integer.class, alreadyEnded.getId()))
+                .isEqualTo(historyOfEndedBefore);
+        assertThat(jdbc.queryForList("select event from student_discount_status_change where student_discount_id = ? order by id", String.class, revoked.getId()))
+                .containsExactly("DISCOUNT_GRANTED", "DISCOUNT_REVOKED");
+        assertThat(jdbc.queryForList("select event from student_discount_status_change where student_discount_id = ? order by id", String.class, active.getId()))
+                .containsExactly("DISCOUNT_GRANTED", "ENROLLMENT_ENDED");
     }
 }

@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,7 +61,7 @@ class StudentDiscountEnrollmentEndServiceTest {
         order.verify(lock).lockDiscountsOf(EnrollmentReference.ofCourse(20L));
         order.verify(repository).findByCourseEnrollmentIdAndStatusInForUpdate(20L, ACTIVE_ONLY);
         order.verify(repository).saveAll(List.of(first, second));
-        verify(repository, never()).findByProgramEnrollmentIdAndStatusInForUpdate(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyCollection());
+        verify(repository, never()).findByProgramEnrollmentIdAndStatusInForUpdate(anyLong(), anyCollection());
     }
 
     @Test

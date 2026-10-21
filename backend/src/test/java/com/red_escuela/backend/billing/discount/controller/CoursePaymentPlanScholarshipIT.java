@@ -10,6 +10,8 @@ import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -32,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -70,6 +73,10 @@ class CoursePaymentPlanScholarshipIT extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private IssuingScenarioFactory factory;
+    @Autowired
+    private CourseEnrollmentService courseEnrollmentService;
+
+    private Long directorId;
 
     private String directorToken;
     private String administrativeToken;
@@ -83,6 +90,7 @@ class CoursePaymentPlanScholarshipIT extends AbstractIntegrationTest {
         directorToken = tokenWithRole("DIRECTOR");
         administrativeToken = tokenWithRole("ADMINISTRATIVO");
         Person director = personWithRole("DIRECTOR");
+        directorId = director.getId();
         Long studentId = factory.newStudent(factory.newProgram(Currency.ARS, 80000, 50000));
         Term term = new Term();
         term.setYear(2027);
@@ -167,7 +175,7 @@ class CoursePaymentPlanScholarshipIT extends AbstractIntegrationTest {
     private Map<String, Object> discountBody(String type, String from, String to) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("type", type);
-        body.put("percent", new java.math.BigDecimal("50"));
+        body.put("percent", new BigDecimal("50"));
         body.put("fromPeriod", from);
         body.put("toPeriod", to);
         body.put("reason", "Situación económica");
@@ -218,5 +226,19 @@ class CoursePaymentPlanScholarshipIT extends AbstractIntegrationTest {
         chooseSinglePayment().andExpect(status().isCreated());
 
         grantToTheCourseEnrollment("INDIVIDUAL").andExpect(status().isCreated()).andExpect(jsonPath("$.type").value("INDIVIDUAL"));
+    }
+
+    @Test
+    void aCourseWithdrawalEndsTheActiveDiscountsOfThatCourseEnrollment() throws Exception {
+        grantToTheCourseEnrollment("SCHOLARSHIP").andExpect(status().isCreated());
+        grantToTheCourseEnrollment("INDIVIDUAL").andExpect(status().isCreated());
+
+        courseEnrollmentService.withdraw(courseEnrollmentId, EnrollmentWithdrawal.voluntaryRegisteredBy(TODAY, directorId));
+
+        mockMvc.perform(get("/course-enrollments/" + courseEnrollmentId + "/student-discounts").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[0].status").value("ENDED"))
+                .andExpect(jsonPath("$[1].status").value("ENDED"));
+        assertThat(jdbc.queryForObject("select count(*) from student_discount_status_change where event = 'ENROLLMENT_ENDED' and actor_process = 'ENROLLMENT_ENDED'", Long.class))
+                .isGreaterThanOrEqualTo(2L);
     }
 }
