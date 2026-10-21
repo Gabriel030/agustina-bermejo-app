@@ -78,11 +78,11 @@ class LegacyScholarshipDropMigrationTest {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "127");
+            migrateTo(dataSource, "130");
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             insertLegacyScholarshipWithAnAppliedInstallment(jdbc, "ACTIVE");
 
-            assertThatThrownBy(() -> migrateTo(dataSource, "128")).hasMessageContaining("ACTIVE legacy scholarships");
+            assertThatThrownBy(() -> migrateTo(dataSource, "132")).hasMessageContaining("ACTIVE legacy scholarships");
 
             assertThat(tableExists(jdbc, "scholarship")).isTrue();
             assertThat(tableExists(jdbc, "scholarship_installment")).isTrue();
@@ -96,11 +96,11 @@ class LegacyScholarshipDropMigrationTest {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "127");
+            migrateTo(dataSource, "130");
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             LegacyScholarship legacy = insertLegacyScholarshipWithAnAppliedInstallment(jdbc, "CANCELLED");
 
-            migrateTo(dataSource, "128");
+            migrateTo(dataSource, "132");
 
             assertThat(tableExists(jdbc, "scholarship")).isFalse();
             assertThat(tableExists(jdbc, "scholarship_installment")).isFalse();
@@ -116,12 +116,12 @@ class LegacyScholarshipDropMigrationTest {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "127");
+            migrateTo(dataSource, "130");
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             assertThat(jdbc.queryForObject("select count(*) from information_schema.columns where table_name = 'invoice_discount' and column_name = 'source_installment_id'", Long.class))
                     .isEqualTo(1L);
 
-            migrateTo(dataSource, "128");
+            migrateTo(dataSource, "132");
 
             assertThat(jdbc.queryForObject("select count(*) from information_schema.columns where table_name = 'invoice_discount' and column_name = 'source_installment_id'", Long.class))
                     .isZero();
