@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.testsupport.SlowTest;
 import io.micrometer.core.instrument.MeterRegistry;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SlowTest(reason = "Twenty-one settlement scenarios that each seed overdue invoices and run the real late fee reconciliation and payment events against Postgres")
 class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
     @Autowired

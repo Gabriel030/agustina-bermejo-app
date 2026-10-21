@@ -20,6 +20,7 @@ import com.red_escuela.backend.billing.discount.policy.StudentDiscountRejections
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.service.AnnualUpfrontCoverageReader;
+import com.red_escuela.backend.billing.discount.service.EnrollmentDiscountLock;
 import com.red_escuela.backend.billing.discount.service.EnrollmentFeeIssuanceReader;
 import com.red_escuela.backend.billing.discount.service.EnrollmentLectiveYearReader;
 import com.red_escuela.backend.billing.discount.service.NextMonthlyInstallmentPeriodQuery;
@@ -34,7 +35,6 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -57,13 +57,13 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
     private final AnnualUpfrontCoverageReader annualUpfrontReader;
     private final EnrollmentLectiveYearReader lectiveYearReader;
     private final EnrollmentFeeIssuanceReader enrollmentFeeReader;
-    private final JdbcTemplate jdbc;
+    private final EnrollmentDiscountLock enrollmentLock;
     private final Clock clock;
 
     public GrantStudentDiscountOperation(PolicySet<StudentDiscountGrantCheck> grantPolicies, BillingEnrollmentLookup enrollmentLookup,
                                          DiscountDefinitionRepository definitionRepository, StudentDiscountRepository repository,
                                          NextMonthlyInstallmentPeriodQuery nextInstallmentQuery, AnnualUpfrontCoverageReader annualUpfrontReader, EnrollmentLectiveYearReader lectiveYearReader,
-                                         EnrollmentFeeIssuanceReader enrollmentFeeReader, JdbcTemplate jdbc, Clock clock) {
+                                         EnrollmentFeeIssuanceReader enrollmentFeeReader, EnrollmentDiscountLock enrollmentLock, Clock clock) {
         this.grantPolicies = grantPolicies;
         this.enrollmentLookup = enrollmentLookup;
         this.definitionRepository = definitionRepository;
@@ -72,7 +72,7 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
         this.annualUpfrontReader = annualUpfrontReader;
         this.lectiveYearReader = lectiveYearReader;
         this.enrollmentFeeReader = enrollmentFeeReader;
-        this.jdbc = jdbc;
+        this.enrollmentLock = enrollmentLock;
         this.clock = clock;
     }
 
@@ -103,7 +103,7 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
 
     @Override
     public StudentDiscount processOperation(GrantStudentDiscountCommand command) {
-        lockEnrollmentDiscounts(command.enrollment());
+        enrollmentLock.lockDiscountsOf(command.enrollment());
         StudentDiscountGrant grant = prepareGrant(command);
         StudentDiscount saved = repository.saveAndFlush(
                 StudentDiscount.grantStudentDiscount(grant, command.requestedByPersonId(), command.authorizationRequestId(), Instant.now(clock)));
@@ -116,11 +116,6 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
     @Override
     public List<? extends DomainEvent> domainEventsOf(GrantStudentDiscountCommand command, StudentDiscount discount) {
         return List.of();
-    }
-
-    private void lockEnrollmentDiscounts(EnrollmentReference enrollment) {
-        long key = enrollment.id() * 2 + (enrollment.kind() == EnrollmentKind.PROGRAM ? 0 : 1);
-        jdbc.queryForObject("select pg_advisory_xact_lock(?)::text", String.class, key);
     }
 
     private StudentDiscountGrant prepareGrant(GrantStudentDiscountCommand command) {

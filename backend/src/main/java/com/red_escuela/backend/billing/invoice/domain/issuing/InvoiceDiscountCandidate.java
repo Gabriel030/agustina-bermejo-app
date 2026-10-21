@@ -58,6 +58,6 @@ public record InvoiceDiscountCandidate(
     }
 
     public InvoiceDiscountDraft toDiscountDraft() {
-        return new InvoiceDiscountDraft(discountType, discountName, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, sourceInstallmentId);
+        return new InvoiceDiscountDraft(discountType, discountName, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, sourceInstallmentId, calculation);
     }
 }

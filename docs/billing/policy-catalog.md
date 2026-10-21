@@ -47,6 +47,14 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | CollectionReminderEffectiveFromNextDayPolicy | EFFECTIVE_FROM_BEFORE_NEXT_DAY | D-350 |
 
+## Momento COLLECTION_REMINDER_ELIGIBILITY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ReminderEligibleInvoicePolicy | INVOICE_NOT_REMINDABLE | D-354, D-242, D-052, D-149, D-131 |
+| 2 | ReceiptUnderReviewSuppressesReminderPolicy | RECEIPT_UNDER_REVIEW | D-346, D-186 |
+| 3 | PendingCancellationSuppressesReminderPolicy | PENDING_CANCELLATION_REQUEST | D-247, D-354 |
+
 ## Momento COLLECTION_REMINDER_SCHEDULE
 
 | Orden | Policy | Códigos de violación | Decisiones |
