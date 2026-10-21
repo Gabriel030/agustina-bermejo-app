@@ -64,6 +64,43 @@ class BankTransferReceiptConcurrencyIT extends AbstractBankTransferReceiptIT {
     }
 
     @Test
+    @Tag("D-260")
+    void uploadWaitsForTheAccountLockBeforeItTouchesAnyInvoice() throws Exception {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        CountDownLatch accountLocked = new CountDownLatch(1);
+        CountDownLatch releaseAccount = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> holder = executor.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                service.lockStudentCurrentAccount(debtor.accountId());
+                accountLocked.countDown();
+                try {
+                    releaseAccount.await(60, TimeUnit.SECONDS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(accountLocked.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<?> upload = executor.submit(() -> submit(command(debtor, List.of(march), "80000.00", TODAY, "OP-ACCOUNT-LOCK")));
+
+            org.awaitility.Awaitility.await().atMost(20, TimeUnit.SECONDS).until(() -> jdbc.queryForObject(
+                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class) > 0);
+            assertThat(upload.isDone()).isFalse();
+            assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
+            releaseAccount.countDown();
+
+            holder.get(30, TimeUnit.SECONDS);
+            upload.get(60, TimeUnit.SECONDS);
+        } finally {
+            releaseAccount.countDown();
+            executor.shutdownNow();
+        }
+
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
+    }
+
+    @Test
     @Tag("D-154")
     @Tag("D-153")
     void uploadAtMidnightVersusOverdueSweepStaysCoherent() throws Exception {

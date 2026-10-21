@@ -9,7 +9,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
         "BANK_TRANSFER_OPERATION_NUMBER_REQUIRED", "BANK_TRANSFER_OPERATION_NUMBER_TOO_LONG", "BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED",
         "BANK_TRANSFER_ORIGIN_ACCOUNT_TOO_LONG", "BANK_TRANSFER_HOLDER_NAME_REQUIRED", "BANK_TRANSFER_HOLDER_NAME_TOO_LONG",
         "BANK_TRANSFER_BANK_NAME_TOO_LONG", "BANK_TRANSFER_RECEIPT_FILE_REQUIRED", "BANK_TRANSFER_INVOICES_REQUIRED"},
-        decisions = {"D-267", "D-083", "D-097", "D-320"})
+        decisions = {"D-267", "D-136", "D-097"})
 public final class BankTransferReceiptDetailsRequiredPolicy implements Policy<BankTransferReceiptDetailsCheck> {
 
     @Override

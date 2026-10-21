@@ -15,7 +15,14 @@ import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Value;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +42,9 @@ abstract class AbstractBankTransferReceiptIT extends AbstractCurrentAccountIT {
     @Autowired
     ConfigurationVersionRepository configurationVersionRepository;
 
+    @Value("${app.uploads.directory}")
+    String uploadsDirectory;
+    final List<String> storedPaths = new CopyOnWriteArrayList<>();
     final AtomicInteger storedFiles = new AtomicInteger();
     final AtomicInteger keyCounter = new AtomicInteger();
     Person staff;
@@ -71,7 +81,24 @@ abstract class AbstractBankTransferReceiptIT extends AbstractCurrentAccountIT {
     SubmitBankTransferReceiptCommand command(Debtor debtor, List<Long> invoiceIds, String amount, LocalDate transferDate, String operationNumber, String key,
                                              String fileSha256) {
         return new SubmitBankTransferReceiptCommand(debtor.studentId(), invoiceIds, ars(amount), transferDate, operationNumber, "0170099220000067797370", "Ana Pérez",
-                "Banco Nación", fileSha256, studentId -> "students/" + studentId + "/comprobantes_" + storedFiles.incrementAndGet() + ".pdf", key, actor);
+                "Banco Nación", fileSha256, this::storeRealFile, key, actor);
+    }
+
+    String storeRealFile(Long studentId) {
+        String relativePath = "students/" + studentId + "/comprobantes_" + storedFiles.incrementAndGet() + "_" + System.nanoTime() + ".pdf";
+        try {
+            Path file = Path.of(uploadsDirectory).resolve(relativePath);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, "comprobante");
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
+        }
+        storedPaths.add(relativePath);
+        return relativePath;
+    }
+
+    long filesStillOnDisk() {
+        return storedPaths.stream().filter(path -> Files.exists(Path.of(uploadsDirectory).resolve(path))).count();
     }
 
     SubmitBankTransferReceiptCommand command(Debtor debtor, List<Long> invoiceIds, String amount, LocalDate transferDate, String operationNumber) {

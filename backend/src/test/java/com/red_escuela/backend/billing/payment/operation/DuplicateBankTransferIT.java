@@ -113,6 +113,8 @@ class DuplicateBankTransferIT extends AbstractBankTransferReceiptIT {
 
         assertThat(jdbc.queryForObject("select count(*) from payment where method_details ->> 'operationNumber' = 'OP-RACE'", Long.class)).isEqualTo(1L);
         assertThat(paymentStatusOfInvoice(secondInvoice)).isEqualTo("PENDING");
+        assertThat(storedFiles.get()).isEqualTo(2);
+        assertThat(filesStillOnDisk()).isEqualTo(1);
     }
 
     @Test

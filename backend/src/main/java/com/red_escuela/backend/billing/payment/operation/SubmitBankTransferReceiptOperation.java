@@ -31,6 +31,7 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
+import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -64,6 +65,7 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
     private final PaymentRepository payments;
     private final PaymentCheckoutItemRepository checkoutItems;
     private final BankTransferReceiptRecordRepository receipts;
+    private final TransactionBoundFileCleanup fileCleanup;
     private final Clock clock;
 
     public SubmitBankTransferReceiptOperation(PolicySet<CashPaymentCheck> bankTransferReceiptIdempotencyKeyPolicySet,
@@ -71,7 +73,9 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
                                               PolicySet<BankTransferReceiptRegistrationCheck> bankTransferReceiptRegistrationPolicySet,
                                               PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet, StudentExistenceLookup students,
                                               StudentCurrentAccountService accountService, InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
-                                              PaymentCheckoutItemRepository checkoutItems, BankTransferReceiptRecordRepository receipts, Clock clock) {
+                                              PaymentCheckoutItemRepository checkoutItems, BankTransferReceiptRecordRepository receipts, TransactionBoundFileCleanup fileCleanup,
+                                              Clock clock) {
+        this.fileCleanup = fileCleanup;
         this.idempotencyKeyPolicies = bankTransferReceiptIdempotencyKeyPolicySet;
         this.detailsPolicies = bankTransferReceiptDetailsPolicySet;
         this.registrationPolicies = bankTransferReceiptRegistrationPolicySet;
@@ -137,6 +141,7 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
         List<PlannedCheckoutItem> plan = BankTransferReceiptSelectionPlanner.planItems(selectedFacts, command.declaredAmount(), today, command.transferDate(),
                 facts -> protectionPolicies.evaluateRulesUntilFirstViolation(new ReceiptProtectionCheck(facts)).allowed());
         String filePath = command.fileStorage().storeReceiptFileOf(command.studentId());
+        fileCleanup.deleteIfRolledBack(filePath);
         Payment payment = savePendingPayment(account, declaredAmount, details, command);
         List<PaymentCheckoutItem> items = checkoutItems.saveAll(plan.stream().map(planned -> PaymentCheckoutItem.of(payment.getId(), account.getId(), planned)).toList());
         plan.stream().filter(PlannedCheckoutItem::protectedFromOverdue)

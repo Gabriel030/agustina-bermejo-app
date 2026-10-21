@@ -128,8 +128,13 @@ class BankTransferReceiptPaymentLinkMigrationTest {
                     .hasMessageContaining("uk_payment_bank_transfer_duplicate");
 
             jdbc.update("update payment set status = 'REJECTED', rejection_reason = 'x' where id = ?", first);
+            Long second = insertPayment(jdbc, account[0], personId, "OP-DUP");
+            jdbc.update("update payment set status = 'CANCELLED' where id = ?", second);
             insertPayment(jdbc, account[0], personId, "OP-DUP");
-            assertThat(jdbc.queryForObject("select count(*) from payment where method_details ->> 'operationNumber' = 'OP-DUP'", Long.class)).isEqualTo(2L);
+            insertPayment(jdbc, account[0], personId, null);
+            insertPayment(jdbc, account[0], personId, null);
+            assertThat(jdbc.queryForObject("select count(*) from payment where method_details ->> 'operationNumber' = 'OP-DUP'", Long.class)).isEqualTo(3L);
+            assertThat(jdbc.queryForObject("select count(*) from payment where method_details ->> 'operationNumber' is null", Long.class)).isEqualTo(2L);
         }
     }
 }

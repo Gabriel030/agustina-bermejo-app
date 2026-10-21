@@ -33,6 +33,13 @@ class SelectedInvoicesBelongToAccountPolicyTest {
     }
 
     @Test
+    void aForeignInvoiceInAnotherCurrencyIsReportedAsForeignAndNeverRevealsItsCurrency() {
+        ReceiptInvoiceFact foreignUsd = new ReceiptInvoiceFact(1L, ACCOUNT + 1, Currency.USD, true, InvoicePaymentStatus.PENDING, DUE, ars("100.00"));
+
+        assertThat(policy.evaluateRule(check(foreignUsd)).code()).isEqualTo("INVOICE_OF_ANOTHER_ACCOUNT");
+    }
+
+    @Test
     void rejectsInvoiceOfAnotherCurrency() {
         ReceiptInvoiceFact usd = new ReceiptInvoiceFact(1L, ACCOUNT, Currency.USD, true, InvoicePaymentStatus.PENDING, DUE, ars("100.00"));
 

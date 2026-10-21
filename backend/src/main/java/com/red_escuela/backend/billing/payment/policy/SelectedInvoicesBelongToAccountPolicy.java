@@ -16,11 +16,11 @@ public final class SelectedInvoicesBelongToAccountPolicy implements Policy<BankT
     @Override
     public PolicyVerdict evaluateRule(BankTransferReceiptRegistrationCheck check) {
         for (ReceiptInvoiceFact invoice : check.selectedInvoices()) {
-            if (invoice.currency() != check.declaredCurrency()) {
-                return PolicyVerdict.deny(ruleName(), "INVOICE_CURRENCY_MISMATCH", "El monto y las facturas tienen que estar en la misma moneda.");
-            }
             if (!invoice.studentCurrentAccountId().equals(check.studentCurrentAccountId())) {
                 return PolicyVerdict.deny(ruleName(), "INVOICE_OF_ANOTHER_ACCOUNT", "La factura no pertenece a la cuenta del alumno.");
+            }
+            if (invoice.currency() != check.declaredCurrency()) {
+                return PolicyVerdict.deny(ruleName(), "INVOICE_CURRENCY_MISMATCH", "El monto y las facturas tienen que estar en la misma moneda.");
             }
             if (!invoice.isOpenToReceipt() && !invoice.isUnderReview()) {
                 return PolicyVerdict.deny(ruleName(), "INVOICE_NOT_PAYABLE_BY_RECEIPT", "La factura no está emitida o ya no tiene saldo por pagar.");
