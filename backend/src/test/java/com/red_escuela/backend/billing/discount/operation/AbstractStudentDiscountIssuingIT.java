@@ -73,6 +73,8 @@ abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrationTest 
     @Autowired
     protected com.red_escuela.backend.billing.note.usecase.CancelInvoiceBySystemUseCase systemCancellation;
     @Autowired
+    protected com.red_escuela.backend.billing.note.service.CancelInvoiceOperation cancelOperation;
+    @Autowired
     protected TransactionTemplate transactionTemplate;
     @Autowired
     protected JdbcTemplate jdbc;
@@ -207,6 +209,11 @@ abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrationTest 
         authenticateAs(director);
         return ((BillingOperationOutcome.Processed<StudentDiscount>) pipeline.runOperation(revokeOperation,
                 new RevokeStudentDiscountCommand(studentDiscountId, reason, director.getId(), true, LocalDate.now(MutableClock.INSTANCE)))).result();
+    }
+
+    protected void cancelAsDirector(Long invoiceId, com.red_escuela.backend.billing.note.domain.CreditNoteReason reason) {
+        authenticateAs(director);
+        pipeline.runOperation(cancelOperation, com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand.byPerson(invoiceId, reason, "Matrícula anulada", director.getId(), true));
     }
 
     protected InvoiceIssuingRequest installmentOf(IssuingScenarioFactory.Learner target, YearMonth period) {

@@ -254,13 +254,15 @@ class StudentDiscountIssuingConcurrencyIT extends AbstractStudentDiscountIssuing
                 }
                 ready.await();
                 go.countDown();
+                List<Long> invoiceIds = new ArrayList<>();
                 for (Future<Long> future : issues) {
-                    resultOf(future);
+                    invoiceIds.add(resultOf(future));
                 }
 
                 assertThat(discountRowsOf(onFee.getId())).as("round %d", round).isEqualTo(1L);
-                long discountedFees = discountsOn(racer, FeeType.ENROLLMENT_FEE, MARCH).size() + discountsOn(racer, FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 8)).size();
-                assertThat(discountedFees).isEqualTo(1L);
+                Long discountedInvoiceId = jdbc.queryForObject("select l.invoice_id from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where d.student_discount_id = ?",
+                        Long.class, onFee.getId());
+                assertThat(discountedInvoiceId).as("the first fee to take the lock gets the discount, round %d", round).isEqualTo(invoiceIds.stream().min(Long::compare).orElseThrow());
             }
             invariants.assertAllBillingInvariantsHold();
         } catch (ExecutionException failure) {
