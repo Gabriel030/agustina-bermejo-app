@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeChargeCorrection;
+import com.red_escuela.backend.billing.collections.domain.LateFeeCorrectionCause;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCorrectionFiscalWindow;
 import com.red_escuela.backend.billing.collections.exception.LateFeeCorrectionRejectedException;
 import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
@@ -14,12 +15,12 @@ import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
+import com.red_escuela.backend.billing.note.domain.LateFeeCorrectionCreditNoteKind;
 import com.red_escuela.backend.billing.note.service.LateFeeCorrectionCreditNoteIssuer;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
-import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -36,7 +37,6 @@ import java.util.Optional;
 @Component
 public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<IssueLateFeeCorrectionCommand, Optional<LateFeeCorrectionIssued>> {
     private static final Logger log = LoggerFactory.getLogger(LateFeeCorrectionCreditNoteOperation.class);
-    private static final StatusChangeActor ACTOR = StatusChangeActor.ofProcess(LateFeeCorrectionCreditNoteIssuer.PROCESS_NAME);
     private static final DateTimeFormatter DAY_MONTH_YEAR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final PolicySet<LateFeeCorrectionContext> correctionPolicies;
@@ -105,13 +105,13 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
                     debitNote.getInvoiceNumber().value(), planned.value().amount(), credit.value().amount());
             meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", debitNote.getCurrency().name()).increment();
         }
-        CreditNote note = creditNoteIssuer.issueCorrectionCreditNote(debitNote, credit, justificationOf(command, debitNote), command.factDate());
+        LateFeeCorrectionCreditNoteKind kind = kindOf(command.cause());
+        CreditNote note = creditNoteIssuer.issueCorrectionCreditNote(debitNote, credit, justificationOf(command, debitNote), command.factDate(), kind);
         LocalDate businessDate = LocalDate.now(clock);
         accountService.recordCreditNoteIssuedCredit(account, note.getId(), note.getOffsetAmount(), note.getFreeCreditAmount(), businessDate,
-                "Corrección del recargo " + note.getInvoiceNumber() + " (nota de crédito " + note.getCreditNoteNumber().value() + ")");
-        allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, ACTOR);
-        LateFeeChargeCorrection correction = correctionRepository.save(LateFeeChargeCorrection.recordBackdatedWithdrawalCorrection(command.lateFeeChargeId(),
-                debitNote.getId(), account.getId(), note.getId(), command.correction(), command.enrollmentEndDate()));
+                ledgerDescriptionOf(command.cause()) + note.getInvoiceNumber() + " (nota de crédito " + note.getCreditNoteNumber().value() + ")");
+        allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, kind.actor());
+        LateFeeChargeCorrection correction = correctionRepository.save(correctionRecordOf(command, debitNote, account, note));
         recordCorrection(note, correction, debitNote);
         return Optional.of(new LateFeeCorrectionIssued(note, correction));
     }
@@ -124,7 +124,7 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
             List<DomainEvent> events = new ArrayList<>();
             events.add(CreditNoteIssuedEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
                     studentPersonId, null, note.getReason().name(), note.getTotalAmount().value().amount(), note.getCurrency().name(), note.getIssueDate()));
-            if (LateFeeCorrectionFiscalWindow.isOutside(command.factDate(), note.getIssueDate())) {
+            if (command.cause() == LateFeeCorrectionCause.BACKDATED_WITHDRAWAL && LateFeeCorrectionFiscalWindow.isOutside(command.factDate(), note.getIssueDate())) {
                 events.add(LateFeeCorrectionIssuedAfterFiscalWindowEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(),
                         note.getInvoiceNumber(), command.factDate(), note.getIssueDate()));
             }
@@ -141,16 +141,44 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
                 debitNote.getDocumentStatus(), debitNote.getPaymentStatus())).throwIfDenied(LateFeeCorrectionRejectedException::new);
     }
 
+    private static LateFeeCorrectionCreditNoteKind kindOf(LateFeeCorrectionCause cause) {
+        return cause.isPaymentDate() ? LateFeeCorrectionCreditNoteKind.AFTER_PAYMENT_DATE : LateFeeCorrectionCreditNoteKind.AFTER_WITHDRAWAL;
+    }
+
+    private static String ledgerDescriptionOf(LateFeeCorrectionCause cause) {
+        return cause.isPaymentDate() ? "Anulación del recargo " : "Corrección del recargo ";
+    }
+
+    private static LateFeeChargeCorrection correctionRecordOf(IssueLateFeeCorrectionCommand command, Invoice debitNote, StudentCurrentAccount account, CreditNote note) {
+        if (command.cause().isPaymentDate()) {
+            return LateFeeChargeCorrection.recordPaymentDateCorrection(command.lateFeeChargeId(), debitNote.getId(), account.getId(), note.getId(), command.correction(),
+                    command.settlementAllocationId(), command.referenceDate(), command.cause());
+        }
+        return LateFeeChargeCorrection.recordBackdatedWithdrawalCorrection(command.lateFeeChargeId(), debitNote.getId(), account.getId(), note.getId(), command.correction(),
+                command.referenceDate());
+    }
+
     private String justificationOf(IssueLateFeeCorrectionCommand command, Invoice debitNote) {
-        return "Corrección del recargo por mora: " + command.correction().correctedDays() + " días posteriores a la baja informada del "
-                + DAY_MONTH_YEAR.format(command.enrollmentEndDate()) + " (" + debitNote.getInvoiceNumber().value() + ")";
+        String invoiceNumber = debitNote.getInvoiceNumber().value();
+        String referenceDay = DAY_MONTH_YEAR.format(command.referenceDate());
+        return switch (command.cause()) {
+            case BACKDATED_WITHDRAWAL -> "Corrección del recargo por mora: " + command.correction().correctedDays() + " días posteriores a la baja informada del "
+                    + referenceDay + " (" + invoiceNumber + ")";
+            case PAYMENT_DATED_BEFORE_CHARGED_DAYS -> "Anulación del recargo por mora: " + command.correction().correctedDays() + " días posteriores al pago del "
+                    + referenceDay + " (" + invoiceNumber + ")";
+            case PAYMENT_WITHIN_GRACE -> "Anulación del recargo por mora: pago del " + referenceDay + " dentro de la gracia (" + invoiceNumber + ")";
+        };
     }
 
     private void recordCorrection(CreditNote note, LateFeeChargeCorrection correction, Invoice debitNote) {
-        log.info("Recargo corregido por baja: notaDeDébito={}, notaDeCrédito={}, dias={}, desde={}, hasta={}, fin={}, monto={}",
+        log.info("Recargo corregido: causa={}, notaDeDébito={}, notaDeCrédito={}, dias={}, desde={}, hasta={}, fechaDeReferencia={}, monto={}", correction.getCause(),
                 debitNote.getInvoiceNumber().value(), note.getCreditNoteNumber().value(), correction.getCorrectedDays(), correction.getFirstCorrectedDay(),
-                correction.getLastCorrectedDay(), correction.getEnrollmentEndDate(), note.getTotalAmount().value().amount());
+                correction.getLastCorrectedDay(), correction.getCause().isPaymentDate() ? correction.getPaymentDate() : correction.getEnrollmentEndDate(),
+                note.getTotalAmount().value().amount());
         String currency = note.getCurrency().name();
+        if (correction.getCause().isPaymentDate()) {
+            meterRegistry.counter("billing_late_fees_overcharged_days_total").increment(correction.getCorrectedDays());
+        }
         meterRegistry.counter("billing_late_fee_corrections_total", "currency", currency, "cause", correction.getCause().name()).increment();
         meterRegistry.counter("billing_late_fee_corrections_amount_total", "currency", currency).increment(note.getTotalAmount().value().amount().doubleValue());
         meterRegistry.counter("billing_late_fee_corrections_days_total", "currency", currency).increment(correction.getCorrectedDays());

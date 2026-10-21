@@ -26,7 +26,7 @@ public class LateFeeWithdrawalCorrectionService {
 
     public LateFeeCorrectionOutcome correctLateFeeCharge(Long chargeId, LocalDate today) {
         LocalDate registeredOn = chargeRepository.findEnrollmentEndRegistrationDateOfCharge(chargeId).map(LocalDate::parse).orElse(today);
-        return issuer.correctLateFeeChargeInNewTransaction(chargeId, registeredOn);
+        return issuer.correctLateFeeChargeAfterWithdrawalInNewTransaction(chargeId, registeredOn);
     }
 
     public LateFeeCorrectionOutcome correctLateFeeOfDebitNote(Long debitNoteId, LocalDate today) {
@@ -41,7 +41,7 @@ public class LateFeeWithdrawalCorrectionService {
         int failed = 0;
         for (Long chargeId : chargeIds) {
             try {
-                if (issuer.correctLateFeeChargeInNewTransaction(chargeId, factDate) == LateFeeCorrectionOutcome.CORRECTED) {
+                if (issuer.correctLateFeeChargeAfterWithdrawalInNewTransaction(chargeId, factDate) == LateFeeCorrectionOutcome.CORRECTED) {
                     corrected++;
                 }
             } catch (RuntimeException e) {

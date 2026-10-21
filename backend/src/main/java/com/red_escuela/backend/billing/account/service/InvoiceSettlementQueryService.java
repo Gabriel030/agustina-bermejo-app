@@ -18,6 +18,6 @@ public class InvoiceSettlementQueryService {
     @Transactional(readOnly = true)
     public Optional<InvoiceSettlement> findCurrentSettlementOfInvoice(Long invoiceId) {
         return allocationRepository.findCurrentAllocationByInvoiceId(invoiceId)
-                .map(allocation -> new InvoiceSettlement(allocation.getId(), allocation.getEffectiveDate()));
+                .map(allocation -> new InvoiceSettlement(allocation.getId(), allocation.getEffectiveDate(), allocation.getAllocatedOn()));
     }
 }
