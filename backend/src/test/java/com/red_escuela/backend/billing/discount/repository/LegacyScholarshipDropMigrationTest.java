@@ -65,7 +65,7 @@ class LegacyScholarshipDropMigrationTest {
                 values (?, 'SCHOLARSHIP', 'Beca', 'ARS', 100, 'ARS', 30, 'ARS', ?, ?) returning id
                 """, Long.class, lineId, scholarshipId, installmentId);
         jdbc.update("update invoice set document_status = 'ISSUED', payment_status = 'PENDING', invoice_number = ?, issue_date = date '2026-03-03', "
-                + "due_date = date '2026-03-13', student_snapshot = cast('{\"fullName\":\"Ana\"}' as jsonb) where id = ?", "F-" + username, invoiceId);
+                + "due_date = date '2026-03-13', student_snapshot = cast('{\"fullName\":\"Ana\"}' as jsonb) where id = ?", "F-" + (System.nanoTime() % 1_000_000_000L), invoiceId);
         return new LegacyScholarship(scholarshipId, installmentId, discountId);
     }
 
