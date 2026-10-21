@@ -35,7 +35,7 @@ class BillingDecisionRegistryTest {
     void parsesEveryRowOfTheRepositoryRegistry() {
         DecisionRegistry registry = DecisionRegistry.readFile(Path.of("../docs/billing/decision-registry.md"));
 
-        assertThat(registry.size()).isEqualTo(331);
+        assertThat(registry.size()).isEqualTo(336);
         assertThat(registry.find("D-001")).isPresent();
         assertThat(registry.find("D-177")).isPresent();
         assertThat(registry.find("D-170").orElseThrow().implementation()).isEqualTo("implementada");

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -18,6 +19,11 @@ public class InvoiceAllocationQueryService {
     @Transactional(propagation = Propagation.MANDATORY)
     public List<Invoice> listOpenInvoicesOfAccount(Long studentCurrentAccountId) {
         return invoiceRepository.findOpenIssuedInvoicesByAccountOrderedForAllocation(studentCurrentAccountId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<Invoice> findInvoicesByIds(Collection<Long> invoiceIds) {
+        return invoiceRepository.findByIdIn(invoiceIds);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
