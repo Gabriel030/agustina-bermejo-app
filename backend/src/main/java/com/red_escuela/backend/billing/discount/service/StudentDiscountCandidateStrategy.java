@@ -30,14 +30,14 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
     private final EnrollmentStudentDiscountReader discountReader;
     private final EnrollmentLectiveYearReader lectiveYearReader;
     private final BillingEnrollmentLookup enrollmentLookup;
-    private final StudentDiscountConsumptionReader consumptionReader;
+    private final EnrollmentFeeIssuanceReader enrollmentFeeReader;
 
     public StudentDiscountCandidateStrategy(EnrollmentStudentDiscountReader discountReader, EnrollmentLectiveYearReader lectiveYearReader,
-                                            BillingEnrollmentLookup enrollmentLookup, StudentDiscountConsumptionReader consumptionReader) {
+                                            BillingEnrollmentLookup enrollmentLookup, EnrollmentFeeIssuanceReader enrollmentFeeReader) {
         this.discountReader = discountReader;
         this.lectiveYearReader = lectiveYearReader;
         this.enrollmentLookup = enrollmentLookup;
-        this.consumptionReader = consumptionReader;
+        this.enrollmentFeeReader = enrollmentFeeReader;
     }
 
     @Override
@@ -73,7 +73,8 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
         }
         Optional<LectiveYearSpan> lectiveYear = invoiceType == InvoiceType.ENROLLMENT_FEE ? findLectiveYearOfEnrollmentFee(enrollment.get(), request) : Optional.empty();
         return discounts.stream()
-                .filter(discount -> invoiceType == InvoiceType.ENROLLMENT_FEE ? isFirstEnrollmentFeeOfLectiveYear(discount, lectiveYear) : discount.coversPeriod(request.period()))
+                .filter(discount -> invoiceType == InvoiceType.ENROLLMENT_FEE
+                        ? isFirstLiveEnrollmentFeeOfLectiveYear(discount, enrollment.get(), lectiveYear) : discount.coversPeriod(request.period()))
                 .map(discount -> candidateOf(discount, context))
                 .filter(candidate -> !candidate.discountAmount().value().isZero())
                 .toList();
@@ -93,10 +94,10 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
         return facts.flatMap(enrollmentFacts -> lectiveYearReader.findLectiveYearCovering(enrollment, enrollmentFacts, request.period()));
     }
 
-    private boolean isFirstEnrollmentFeeOfLectiveYear(StudentDiscount discount, Optional<LectiveYearSpan> lectiveYear) {
+    private boolean isFirstLiveEnrollmentFeeOfLectiveYear(StudentDiscount discount, EnrollmentReference enrollment, Optional<LectiveYearSpan> lectiveYear) {
         return discount.getStatus() == StudentDiscountStatus.ACTIVE
                 && lectiveYear.map(span -> span.contains(discount.getFromPeriod())).orElse(false)
-                && !consumptionReader.isAlreadyConsumed(discount);
+                && !enrollmentFeeReader.enrollmentFeeIssuedIn(enrollment, lectiveYear);
     }
 
     private InvoiceDiscountCandidate candidateOf(StudentDiscount discount, InvoiceIssuingContext context) {

@@ -71,6 +71,8 @@ abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrationTest 
     @Autowired
     protected IssuingScenarioFactory factory;
     @Autowired
+    protected com.red_escuela.backend.billing.note.usecase.CancelInvoiceBySystemUseCase systemCancellation;
+    @Autowired
     protected TransactionTemplate transactionTemplate;
     @Autowired
     protected JdbcTemplate jdbc;

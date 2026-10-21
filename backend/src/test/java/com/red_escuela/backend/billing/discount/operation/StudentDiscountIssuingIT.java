@@ -3,8 +3,8 @@ package com.red_escuela.backend.billing.discount.operation;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.entity.ScholarshipScope;
-import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -270,7 +270,7 @@ class StudentDiscountIssuingIT extends AbstractStudentDiscountIssuingIT {
     }
 
     @Test
-    void anEnrollmentFeeDiscountThatLosesToTheEntryDiscountIsStillAvailableForTheNextFee() {
+    void anEnrollmentFeeDiscountThatLosesToTheEntryDiscountIsLostForTheYearAndTheSecondFeeIsFullPrice() {
         useCohortLearner(Percentage.ofPoints(new BigDecimal("80")));
         StudentDiscount onFee = grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), MARCH, null, "Hermano"));
 
@@ -282,9 +282,25 @@ class StudentDiscountIssuingIT extends AbstractStudentDiscountIssuingIT {
         Map<String, Object> entry = onlyDiscountOn(FeeType.ENROLLMENT_FEE, MARCH);
         assertThat(entry.get("discount_type")).isEqualTo("COHORT_ENTRY");
         assertThat(amount(entry.get("discount_amount"))).isEqualByComparingTo("40000.00");
-        Map<String, Object> second = onlyDiscountOn(FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 8));
-        assertThat(second.get("student_discount_id")).isEqualTo(onFee.getId());
-        assertThat(amount(second.get("discount_amount"))).isEqualByComparingTo("15000.00");
+        assertThat(discountsOn(FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 8))).isEmpty();
+        assertThat(discountRowsOf(onFee.getId())).isZero();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void cancellingTheFirstEnrollmentFeeAndIssuingItAgainCarriesTheIndividualDiscountAgain() {
+        useCohortLearner(Percentage.ofPoints(BigDecimal.ZERO));
+        StudentDiscount onFee = grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), MARCH, null, "Hermano"));
+        today(LocalDate.of(2027, 3, 1));
+        Long first = issue(enrollmentFeeOf(learner, 1, MARCH, false));
+        assertThat(onlyDiscountOn(FeeType.ENROLLMENT_FEE, MARCH).get("student_discount_id")).isEqualTo(onFee.getId());
+
+        systemCancellation.cancelInvoiceWithoutDirector(first, SystemCancellationOrigin.FUTURE_ENROLLMENT_FEE_ON_WITHDRAWAL, "Matricula mal emitida");
+        Long second = issue(enrollmentFeeOf(learner, 1, MARCH, false));
+
+        assertThat(second).isNotEqualTo(first);
+        List<Map<String, Object>> discounts = discountsOn(FeeType.ENROLLMENT_FEE, MARCH);
+        assertThat(discounts).hasSize(2).allSatisfy(row -> assertThat(row.get("student_discount_id")).isEqualTo(onFee.getId()));
         invariants.assertAllBillingInvariantsHold();
     }
 

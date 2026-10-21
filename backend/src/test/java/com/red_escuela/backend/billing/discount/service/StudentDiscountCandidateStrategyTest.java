@@ -61,8 +61,8 @@ class StudentDiscountCandidateStrategyTest {
     private final EnrollmentStudentDiscountReader discountReader = mock(EnrollmentStudentDiscountReader.class);
     private final EnrollmentLectiveYearReader lectiveYearReader = mock(EnrollmentLectiveYearReader.class);
     private final BillingEnrollmentLookup enrollmentLookup = mock(BillingEnrollmentLookup.class);
-    private final StudentDiscountConsumptionReader consumptionReader = mock(StudentDiscountConsumptionReader.class);
-    private final StudentDiscountCandidateStrategy strategy = new StudentDiscountCandidateStrategy(discountReader, lectiveYearReader, enrollmentLookup, consumptionReader);
+    private final EnrollmentFeeIssuanceReader enrollmentFeeReader = mock(EnrollmentFeeIssuanceReader.class);
+    private final StudentDiscountCandidateStrategy strategy = new StudentDiscountCandidateStrategy(discountReader, lectiveYearReader, enrollmentLookup, enrollmentFeeReader);
 
     private static MonetaryAdjustment percent(String points) {
         return new MonetaryAdjustment.Proportional(Percentage.ofPoints(new BigDecimal(points)));
@@ -204,11 +204,11 @@ class StudentDiscountCandidateStrategyTest {
 
     @Test
     @Tag("D-405")
-    void anEnrollmentFeeDiscountAlreadyConsumedByTheFirstFeeOfTheYearIsNotACandidateForTheSecondOne() {
+    void anEnrollmentFeeDiscountIsNotACandidateWhenALiveEnrollmentFeeOfTheLectiveYearWasIssuedBefore() {
         StudentDiscount discount = individual(7L, InvoiceType.ENROLLMENT_FEE, "30", YearMonth.of(2027, 4), YearMonth.of(2027, 4));
         unlockedDiscounts(discount);
         lectiveYearOfEnrollmentFeeIs(YEAR_2027);
-        when(consumptionReader.isAlreadyConsumed(discount)).thenReturn(false, true);
+        when(enrollmentFeeReader.enrollmentFeeIssuedIn(ENROLLMENT, Optional.of(YEAR_2027))).thenReturn(false, true);
 
         assertThat(strategy.findDiscountCandidatesForInvoice(enrollmentFee(YearMonth.of(2027, 3)))).hasSize(1);
         assertThat(strategy.findDiscountCandidatesForInvoice(enrollmentFee(YearMonth.of(2027, 8)))).isEmpty();
@@ -226,7 +226,7 @@ class StudentDiscountCandidateStrategyTest {
         assertThat(strategy.findDiscountCandidatesForInvoice(first)).singleElement().satisfies(candidate -> assertThat(candidate.discountAmount()).isEqualTo(ars("12000.00")));
         assertThat(strategy.findDiscountCandidatesForInvoice(second)).hasSize(1);
         assertThat(strategy.findDiscountCandidatesForInvoice(outside)).isEmpty();
-        verifyNoInteractions(consumptionReader);
+        verifyNoInteractions(enrollmentFeeReader);
     }
 
     @Test
