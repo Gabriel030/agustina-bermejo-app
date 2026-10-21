@@ -1,5 +1,13 @@
 package com.red_escuela.backend.billing.payment;
 
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsCheck;
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRegistrationCheck;
+import com.red_escuela.backend.billing.payment.policy.DuplicateBankTransferPolicy;
+import com.red_escuela.backend.billing.payment.policy.ReceiptCoversOldestInvoicesFirstPolicy;
+import com.red_escuela.backend.billing.payment.policy.ReceiptProtectionCheck;
+import com.red_escuela.backend.billing.payment.policy.ReceiptUploadedByDueDatePolicy;
+import com.red_escuela.backend.billing.payment.policy.SelectedInvoicesBelongToAccountPolicy;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentAmountPolicy;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentBackdateReasonLengthPolicy;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentBackdateReasonPolicy;
@@ -55,6 +63,27 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<CashPaymentPreviewCheck> cashPaymentPreviewPolicySet() {
         return PolicySet.named("CASH_PAYMENT_PREVIEW", List.of(new CashPaymentPreviewIsCurrentPolicy()));
+    }
+
+    @Bean
+    public PolicySet<CashPaymentCheck> bankTransferReceiptIdempotencyKeyPolicySet() {
+        return PolicySet.named("BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY", List.of(new IdempotencyKeyFormatPolicy()));
+    }
+
+    @Bean
+    public PolicySet<BankTransferReceiptDetailsCheck> bankTransferReceiptDetailsPolicySet() {
+        return PolicySet.named("BANK_TRANSFER_RECEIPT_DETAILS", List.of(new BankTransferReceiptDetailsRequiredPolicy()));
+    }
+
+    @Bean
+    public PolicySet<BankTransferReceiptRegistrationCheck> bankTransferReceiptRegistrationPolicySet() {
+        return PolicySet.named("BANK_TRANSFER_RECEIPT_REGISTRATION", List.of(new SelectedInvoicesBelongToAccountPolicy(), new DuplicateBankTransferPolicy(),
+                new ReceiptCoversOldestInvoicesFirstPolicy()));
+    }
+
+    @Bean
+    public PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet() {
+        return PolicySet.named("BANK_TRANSFER_RECEIPT_PROTECTION", List.of(new ReceiptUploadedByDueDatePolicy()));
     }
 
     @Bean
