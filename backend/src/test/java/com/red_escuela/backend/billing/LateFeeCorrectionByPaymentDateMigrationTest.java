@@ -64,7 +64,7 @@ class LateFeeCorrectionByPaymentDateMigrationTest {
                     String.class);
             assertThat(jdbc.queryForObject("select count(*) from late_fee_charge_correction where cause <> 'BACKDATED_WITHDRAWAL'", Long.class)).isZero();
 
-            jdbc = migrateTo(postgres, "129");
+            jdbc = migrateTo(postgres, "131");
 
             assertThat(jdbc.queryForObject("select id || ':' || first_corrected_day || ':' || corrected_days || ':' || cause || ':' || enrollment_end_date from late_fee_charge_correction",
                     String.class)).isEqualTo(before);
