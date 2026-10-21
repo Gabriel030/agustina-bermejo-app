@@ -9,10 +9,13 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEve
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
+import org.mockito.AdditionalAnswers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.util.AopTestUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -27,7 +30,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT {
 
@@ -37,16 +41,32 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
     private InvoiceSettlementQueryService settlementQuery;
     @Autowired
     private LateFeeOnInvoiceSettledListener settledListener;
-    @MockitoSpyBean
+    @Autowired
+    private LateFeeCorrectionIssuer issuer;
+
+    private LateFeeCorrectionIssuer issuerTarget;
+    private LateFeeSettlementCorrectionService serviceTarget;
+    private LateFeeChargeCorrectionRepository originalCorrectionRepository;
+    private LateFeeCorrectionIssuer originalIssuer;
     private LateFeeChargeCorrectionRepository correctionRepositorySpy;
-    @MockitoSpyBean
     private LateFeeCorrectionIssuer issuerSpy;
+
+    @BeforeEach
+    void installSpies() {
+        issuerTarget = AopTestUtils.getUltimateTargetObject(issuer);
+        serviceTarget = AopTestUtils.getUltimateTargetObject(settlementCorrectionService);
+        originalCorrectionRepository = (LateFeeChargeCorrectionRepository) ReflectionTestUtils.getField(issuerTarget, "correctionRepository");
+        originalIssuer = (LateFeeCorrectionIssuer) ReflectionTestUtils.getField(serviceTarget, "issuer");
+        correctionRepositorySpy = mock(LateFeeChargeCorrectionRepository.class, AdditionalAnswers.delegatesTo(originalCorrectionRepository));
+        issuerSpy = spy(issuerTarget);
+        ReflectionTestUtils.setField(issuerTarget, "correctionRepository", correctionRepositorySpy);
+    }
 
     @AfterEach
     void restore() {
         MutableClock.INSTANCE.reset();
-        reset(correctionRepositorySpy);
-        reset(issuerSpy);
+        ReflectionTestUtils.setField(issuerTarget, "correctionRepository", originalCorrectionRepository);
+        ReflectionTestUtils.setField(serviceTarget, "issuer", originalIssuer);
     }
 
     private void runTogether(List<Callable<Object>> tasks, CountDownLatch start) throws Exception {
@@ -109,10 +129,11 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
         InvoiceSettlement settlement = settlementQuery.findCurrentSettlementOfInvoice(origin.getId()).orElseThrow();
         MutableClock.INSTANCE.setDate(d(2409, 4, 2));
         doThrow(new IllegalStateException("boom")).when(issuerSpy).correctLateFeeChargeAfterPaymentDateInNewTransaction(anyLong(), any());
+        ReflectionTestUtils.setField(serviceTarget, "issuer", issuerSpy);
 
         assertThatThrownBy(() -> settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(origin.getId(), settlement)).isInstanceOf(IllegalStateException.class);
 
-        reset(issuerSpy);
+        ReflectionTestUtils.setField(serviceTarget, "issuer", issuerTarget);
         assertThat(settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(origin.getId(), settlement)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ? and reason = 'LATE_FEE_ANNULMENT'", Long.class, debitNoteId)).isEqualTo(1L);
     }
