@@ -8,7 +8,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "LATE_FEE_CORRECTION_TARGET_INVALID", decisions = {"D-244", "D-375"})
+@PolicyRule(violationCodes = "LATE_FEE_CORRECTION_TARGET_INVALID", decisions = {"D-244", "D-375", "D-378", "D-331"})
 public final class CorrectionTargetsLiveLateFeeDebitNotePolicy implements Policy<LateFeeCorrectionContext> {
 
     @Override

@@ -83,21 +83,12 @@ public class LateFeeContextLoader {
                 resolvedCutoff.get().settlementAllocationId())).toList();
     }
 
-    public Optional<Predicate<LocalDate>> findChargedDayPredicate(Invoice origin, LatePaymentTimeline timeline) {
-        return versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId())
-                .map(version -> resolveChargingDays(originFactsOf(origin), version.terms(), timeline).chargedOn());
-    }
-
     private ChargingDays resolveChargingDays(LateFeeOriginFacts facts, LatePaymentTerms dueDateTerms, LatePaymentTimeline timeline) {
         LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId(), dueDateTerms, timeline);
         return new ChargingDays(freeze, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled());
     }
 
     private record ChargingDays(LateFeeFreeze freeze, Predicate<LocalDate> enabledOn) {
-
-        Predicate<LocalDate> chargedOn() {
-            return day -> enabledOn.test(day) && !freeze.frozenOn().test(day);
-        }
     }
 
     private LateFeeOriginFacts originFactsOf(Invoice origin) {
