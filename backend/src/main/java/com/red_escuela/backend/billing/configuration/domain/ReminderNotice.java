@@ -1,9 +1,12 @@
 package com.red_escuela.backend.billing.configuration.domain;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -26,15 +29,31 @@ public record ReminderNotice(String noticeKey, ReminderMessageType messageType, 
         return channels.contains(ReminderChannel.EMAIL);
     }
 
-    public LocalDate firstDateFor(ReminderMilestoneDates dates) {
-        return dates.dateOf(milestone).plusDays(offsetDays);
+    public Optional<LocalDate> firstDateFor(ReminderMilestoneDates dates) {
+        return dates.dateOf(milestone).map(date -> date.plusDays(offsetDays));
     }
 
     public boolean isBeforeDueDate(ReminderMilestoneDates dates) {
-        return isBeforeDueDate(firstDateFor(dates), dates);
+        return firstDateFor(dates).map(first -> isBeforeDueDate(first, dates)).orElse(false);
     }
 
     public static boolean isBeforeDueDate(LocalDate occurrenceDate, ReminderMilestoneDates dates) {
         return occurrenceDate.isBefore(dates.dueDate());
+    }
+
+    public List<LocalDate> occurrenceDatesFor(ReminderMilestoneDates dates) {
+        Optional<LocalDate> first = firstDateFor(dates);
+        if (first.isEmpty()) {
+            return List.of();
+        }
+        List<LocalDate> occurrences = new ArrayList<>();
+        occurrences.add(first.get());
+        Optional<LocalDate> until = repetition == null || repetition.everyDays() <= 0 ? Optional.empty() : dates.dateOf(repetition.until());
+        if (until.isPresent()) {
+            for (LocalDate next = first.get().plusDays(repetition.everyDays()); next.isBefore(until.get()); next = next.plusDays(repetition.everyDays())) {
+                occurrences.add(next);
+            }
+        }
+        return occurrences;
     }
 }

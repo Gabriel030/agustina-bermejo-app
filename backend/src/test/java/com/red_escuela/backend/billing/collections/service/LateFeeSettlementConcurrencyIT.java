@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEve
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.testsupport.SlowTest;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import java.util.concurrent.Future;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SlowTest(reason = "Runs real threads against Postgres in eleven scenarios, each one seeding invoices and waiting for the asynchronous settlement events to drain")
 class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
