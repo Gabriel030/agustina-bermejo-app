@@ -49,6 +49,6 @@ public class CohortEntryDiscountCandidateStrategy implements InvoiceDiscountCand
         NonNegativeMoney base = context.facts().chargeAmount();
         NonNegativeMoney amount = DiscountAmounts.discountOf(new MonetaryAdjustment.Proportional(discount), base);
         return amount.value().isZero() ? List.of() : List.of(InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY, DiscountType.COHORT_ENTRY, cohort.getId(), null,
-                "Matrícula de ingreso con descuento de " + discount.points().stripTrailingZeros().toPlainString() + "%", InvoiceType.ENROLLMENT_FEE, base, amount, null, null, null));
+                "Matrícula de ingreso con descuento de " + discount.points().stripTrailingZeros().toPlainString() + "%", InvoiceType.ENROLLMENT_FEE, base, amount, null, null));
     }
 }

@@ -15,7 +15,6 @@ public interface AppliedStudentDiscountRepository extends JpaRepository<InvoiceD
             select new com.red_escuela.backend.billing.discount.domain.AppliedStudentDiscountInstallment(d.studentDiscountId, l.period, d.installmentNumber, d.installmentsTotal)
             from InvoiceDiscount d join d.invoiceLine l
             where d.studentDiscountId in :studentDiscountIds
-              and d.sourceInstallmentId is null
               and d.consumptionReleasedAt is null
               and l.chargeKeyReleasedAt is null
             order by l.period, d.id

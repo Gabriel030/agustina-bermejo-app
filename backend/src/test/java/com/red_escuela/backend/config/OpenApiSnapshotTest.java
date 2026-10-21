@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -97,6 +98,18 @@ class OpenApiSnapshotTest extends AbstractIntegrationTest {
             }
         }
         assertThat(anyEnum).as("ninguna propiedad publica un enum").isTrue();
+    }
+
+    @Test
+    @Tag("D-407")
+    void theContractNoLongerExposesTheLegacyScholarshipRoutesNorTheirSchemas() throws Exception {
+        JsonNode spec = MAPPER.readTree(fetchNormalizedSpec());
+
+        for (Map.Entry<String, JsonNode> path : spec.get("paths").properties()) {
+            assertThat(path.getKey()).as("ruta de becas legacy").doesNotEndWith("/scholarships");
+        }
+        assertThat(spec.at("/components/schemas").has("CreateScholarshipRequest")).isFalse();
+        assertThat(spec.at("/components/schemas").has("ScholarshipResponse")).isFalse();
     }
 
     @Test

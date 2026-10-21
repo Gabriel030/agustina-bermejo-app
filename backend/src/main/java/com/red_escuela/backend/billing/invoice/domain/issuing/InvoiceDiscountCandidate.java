@@ -19,7 +19,6 @@ public record InvoiceDiscountCandidate(
         NonNegativeMoney discountAmount,
         Integer installmentNumber,
         Integer installmentsTotal,
-        Long sourceInstallmentId,
         int lineNumber,
         Integer priority,
         Instant grantedAt,
@@ -43,10 +42,9 @@ public record InvoiceDiscountCandidate(
 
     public static InvoiceDiscountCandidate ofLegacySource(DiscountCandidateOrigin origin, DiscountType discountType, Long sourceId, Long studentDiscountId,
                                                           String discountName, InvoiceType applicableInvoiceType, NonNegativeMoney baseAmount,
-                                                          NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal,
-                                                          Long sourceInstallmentId) {
+                                                          NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
         return new InvoiceDiscountCandidate(discountType, sourceId, studentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount,
-                installmentNumber, installmentsTotal, sourceInstallmentId, FIRST_LINE_NUMBER, null, null, null, origin);
+                installmentNumber, installmentsTotal, FIRST_LINE_NUMBER, null, null, null, origin);
     }
 
     public int typeRank() {
@@ -58,6 +56,6 @@ public record InvoiceDiscountCandidate(
     }
 
     public InvoiceDiscountDraft toDiscountDraft() {
-        return new InvoiceDiscountDraft(discountType, discountName, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, sourceInstallmentId, calculation);
+        return new InvoiceDiscountDraft(discountType, discountName, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, calculation);
     }
 }

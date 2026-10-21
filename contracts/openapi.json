@@ -2404,28 +2404,6 @@
         "required" : [ "apellido", "email", "institutionId", "nombre", "telefono" ],
         "type" : "object"
       },
-      "CreateScholarshipRequest" : {
-        "properties" : {
-          "appliesTo" : {
-            "enum" : [ "INSTALLMENTS", "ENROLLMENT_FEE", "BOTH" ],
-            "type" : "string"
-          },
-          "installments" : {
-            "format" : "int32",
-            "minimum" : 1,
-            "type" : "integer"
-          },
-          "reason" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "value" : {
-            "$ref" : "#/components/schemas/MonetaryAdjustmentRequest"
-          }
-        },
-        "required" : [ "appliesTo", "installments", "reason", "value" ],
-        "type" : "object"
-      },
       "CreateSectionEnrollmentRequest" : {
         "properties" : {
           "sectionId" : {
@@ -5907,47 +5885,6 @@
           }
         },
         "required" : [ "classroomId", "dayOfWeek", "endTime", "startTime" ],
-        "type" : "object"
-      },
-      "ScholarshipResponse" : {
-        "properties" : {
-          "appliesTo" : {
-            "type" : "string"
-          },
-          "grantedAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "grantedByName" : {
-            "type" : "string"
-          },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "reason" : {
-            "type" : "string"
-          },
-          "remainingInstallments" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "totalInstallments" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "value" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/Nominal"
-            }, {
-              "$ref" : "#/components/schemas/Proportional"
-            } ]
-          }
-        },
-        "required" : [ "appliesTo", "grantedAt", "grantedByName", "id", "reason", "remainingInstallments", "status", "totalInstallments", "value" ],
         "type" : "object"
       },
       "SectionEnrollmentResponse" : {
@@ -11505,85 +11442,6 @@
           }
         },
         "tags" : [ "course-enrollment-controller" ]
-      }
-    },
-    "/course-enrollments/{id}/scholarships" : {
-      "post" : {
-        "operationId" : "Scholarship_grantForCourse",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateScholarshipRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ScholarshipResponse"
-                }
-              }
-            },
-            "description" : "Created"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "description" : "Too Many Requests"
-          },
-          "502" : {
-            "description" : "Bad Gateway"
-          }
-        },
-        "tags" : [ "scholarship-controller" ]
       }
     },
     "/course-enrollments/{id}/section-enrollments" : {
@@ -23203,85 +23061,6 @@
           }
         },
         "tags" : [ "program-enrollment-controller" ]
-      }
-    },
-    "/program-enrollments/{id}/scholarships" : {
-      "post" : {
-        "operationId" : "Scholarship_grantForProgram",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateScholarshipRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ScholarshipResponse"
-                }
-              }
-            },
-            "description" : "Created"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "description" : "Too Many Requests"
-          },
-          "502" : {
-            "description" : "Bad Gateway"
-          }
-        },
-        "tags" : [ "scholarship-controller" ]
       }
     },
     "/program-enrollments/{id}/section-enrollments" : {

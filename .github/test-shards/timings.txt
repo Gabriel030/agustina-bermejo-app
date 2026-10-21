@@ -238,7 +238,6 @@
 0.34 com/red_escuela/backend/billing/service/ProgramEnrollmentBillingSchedulerTest
 0.36 com/red_escuela/backend/billing/service/ProgramYearBillingTemplateServiceTest
 2.03 com/red_escuela/backend/billing/service/PromotionServiceTest
-0.89 com/red_escuela/backend/billing/service/ScholarshipServiceTest
 0.87 com/red_escuela/backend/billing/service/StudentDebtResolutionServiceTest
 0.67 com/red_escuela/backend/billing/service/UsdBillingTest
 0.68 com/red_escuela/backend/billing/service/VersionedCohortEntryDiscountIntegrationTest

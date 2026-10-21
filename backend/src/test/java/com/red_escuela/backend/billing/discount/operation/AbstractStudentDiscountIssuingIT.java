@@ -247,7 +247,7 @@ public abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrati
     protected List<Map<String, Object>> discountsOn(IssuingScenarioFactory.Learner target, FeeType feeType, YearMonth period) {
         return jdbc.queryForList("""
                 select l.period, l.fee_type, d.discount_type, d.student_discount_id, d.base_amount, d.discount_amount, d.installment_number, d.installments_total,
-                       d.source_installment_id, d.concept, d.consumption_released_at
+                       d.concept, d.consumption_released_at
                 from invoice_discount d join invoice_line l on l.id = d.invoice_line_id
                 where l.program_enrollment_id = ? and l.fee_type = ? and l.period = ? order by d.id
                 """, target.programEnrollmentId(), feeType.name(), Date.valueOf(period.atDay(1)));
@@ -264,7 +264,7 @@ public abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrati
     }
 
     protected long discountRowsOf(Long studentDiscountId) {
-        return jdbc.queryForObject("select count(*) from invoice_discount where student_discount_id = ? and source_installment_id is null", Long.class, studentDiscountId);
+        return jdbc.queryForObject("select count(*) from invoice_discount where student_discount_id = ?", Long.class, studentDiscountId);
     }
 
     protected static BigDecimal amount(Object value) {

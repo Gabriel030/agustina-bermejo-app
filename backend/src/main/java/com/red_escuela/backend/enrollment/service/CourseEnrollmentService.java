@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Optional;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
-import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
 @Service
@@ -55,7 +54,6 @@ public class CourseEnrollmentService {
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final PersonRoleGranter personRoleGranter;
     private final StudentDebtResolutionService studentDebtResolutionService;
-    private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final Clock clock;
@@ -67,7 +65,6 @@ public class CourseEnrollmentService {
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             Clock clock) {
@@ -79,7 +76,6 @@ public class CourseEnrollmentService {
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.personRoleGranter = personRoleGranter;
         this.studentDebtResolutionService = studentDebtResolutionService;
-        this.scholarshipService = scholarshipService;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
         this.clock = clock;
@@ -224,7 +220,6 @@ public class CourseEnrollmentService {
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
         courseEnrollmentRepository.save(enrollment);
-        scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
                 enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
         cancelModuleEnrollments(enrollment);
