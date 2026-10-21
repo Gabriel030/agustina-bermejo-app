@@ -22,19 +22,25 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
             select i.id from invoice i
             join payment_allocation a on a.invoice_id = i.id and a.reverses_allocation_id is null
               and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
-            where i.payment_status = 'PAID' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
-              and i.id > :lastId and a.allocated_on >= :since
-              and a.effective_date > i.due_date + coalesce(
+            cross join lateral (
+                select coalesce(
                     (select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
                      where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= i.due_date
                      order by v.effective_from desc, v.decided_at desc, v.id desc limit 1),
                     (select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
                      where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
-                     order by v.effective_from asc, v.decided_at asc, v.id asc limit 1), 0)
-              and (not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date)
-                   or (exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end > a.effective_date)
-                       and not exists (select 1 from processed_effect p where p.handler_name = 'LateFeeOverchargeRecorder'
-                                       and p.event_id = lpad(to_hex(a.id), 32, '0')::uuid))) 
+                     order by v.effective_from asc, v.decided_at asc, v.id asc limit 1), 0) as grace_days) g
+            where i.payment_status = 'PAID' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
+              and i.id > :lastId and a.allocated_on >= :since
+              and ((a.effective_date > i.due_date + g.grace_days
+                    and not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date))
+                   or exists (select 1 from late_fee_charge c
+                              cross join lateral generate_series(
+                                  greatest(c.period_start, case when a.effective_date <= i.due_date + g.grace_days then c.period_start else a.effective_date + 1 end),
+                                  c.period_end, interval '1 day') s(day)
+                              where c.origin_invoice_id = i.id
+                                and not exists (select 1 from late_fee_charge_correction k where k.late_fee_charge_id = c.id
+                                                and s.day::date between k.first_corrected_day and k.last_corrected_day)))
             order by i.id asc
             limit :pageSize
             """, nativeQuery = true)

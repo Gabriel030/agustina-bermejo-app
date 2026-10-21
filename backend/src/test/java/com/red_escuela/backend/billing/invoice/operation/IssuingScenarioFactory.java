@@ -12,9 +12,13 @@ import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.entity.Scholarship;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
+import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrant;
+import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -33,6 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.YearMonth;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -183,15 +188,14 @@ public class IssuingScenarioFactory {
         });
     }
 
-    public Long grantScholarship(Offering offering, Learner learner, Percentage rate, int installments, ScholarshipScope scope) {
+    public Long grantScholarship(Offering offering, Learner learner, Percentage rate, YearMonth from, YearMonth to) {
         return transactionTemplate.execute(status -> {
-            Scholarship scholarship = new Scholarship();
-            scholarship.setProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, learner.programEnrollmentId()));
-            scholarship.setValue(new MonetaryAdjustment.Proportional(rate));
-            scholarship.setReason("Beca " + rate.points().stripTrailingZeros().toPlainString() + "%");
-            scholarship.setAppliesTo(scope);
-            scholarship.setGrantedBy(entityManager.getReference(Person.class, offering.directorId()));
-            scholarship.addInstallments(installments);
+            Long definitionId = ((Number) entityManager.createNativeQuery(
+                    "select id from discount_definition where discount_type = 'SCHOLARSHIP' and status = 'ACTIVE' order by id limit 1").getSingleResult()).longValue();
+            StudentDiscountGrant grant = new StudentDiscountGrant(EnrollmentReference.ofProgram(learner.programEnrollmentId()), learner.studentId(), offering.currency(),
+                    definitionId, DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, new MonetaryAdjustment.Proportional(rate), null, 1,
+                    new ScholarshipPeriodRange(from, to), "Beca " + rate.points().stripTrailingZeros().toPlainString() + "%");
+            StudentDiscount scholarship = StudentDiscount.grantStudentDiscount(grant, offering.directorId(), null, Instant.parse("2027-02-01T10:00:00Z"));
             entityManager.persist(scholarship);
             return scholarship.getId();
         });

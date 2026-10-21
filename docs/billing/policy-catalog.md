@@ -254,8 +254,8 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | CorrectionTargetsLiveLateFeeDebitNotePolicy | LATE_FEE_CORRECTION_TARGET_INVALID | D-244, D-375 |
-| 2 | CorrectionDebitNoteNotUnderPaymentReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-375 |
+| 1 | CorrectionTargetsLiveLateFeeDebitNotePolicy | LATE_FEE_CORRECTION_TARGET_INVALID | D-244, D-375, D-378, D-331 |
+| 2 | CorrectionDebitNoteNotUnderPaymentReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-375, D-378 |
 
 ## Momento LATE_PAYMENT_SETTINGS
 

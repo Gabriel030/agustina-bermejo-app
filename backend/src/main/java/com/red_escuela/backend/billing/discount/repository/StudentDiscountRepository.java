@@ -25,6 +25,8 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
 
     List<StudentDiscount> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, StudentDiscountStatus status);
 
+    List<StudentDiscount> findByStudentIdOrderByIdDesc(Long studentId);
+
     List<StudentDiscount> findByProgramEnrollmentIdOrderByIdDesc(Long programEnrollmentId);
 
     List<StudentDiscount> findByCourseEnrollmentIdOrderByIdDesc(Long courseEnrollmentId);

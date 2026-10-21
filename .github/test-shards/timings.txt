@@ -79,7 +79,6 @@
 0.79 com/red_escuela/backend/billing/collections/domain/LateFeeSettlementProperties
 0.05 com/red_escuela/backend/billing/collections/policy/InvoiceIsPastDueDatePolicyTest
 0.01 com/red_escuela/backend/billing/collections/policy/LateFeePoliciesTest
-0.00 com/red_escuela/backend/billing/collections/repository/LateFeeOverchargeMarkerTest
 0.33 com/red_escuela/backend/billing/collections/service/InvoiceOverdueSweepStatusTest
 15.05 com/red_escuela/backend/billing/collections/service/LateFeeAccrualIT
 12.84 com/red_escuela/backend/billing/collections/service/LateFeeSettlementConcurrencyIT
@@ -239,7 +238,6 @@
 0.34 com/red_escuela/backend/billing/service/ProgramEnrollmentBillingSchedulerTest
 0.36 com/red_escuela/backend/billing/service/ProgramYearBillingTemplateServiceTest
 2.03 com/red_escuela/backend/billing/service/PromotionServiceTest
-0.89 com/red_escuela/backend/billing/service/ScholarshipServiceTest
 0.87 com/red_escuela/backend/billing/service/StudentDebtResolutionServiceTest
 0.67 com/red_escuela/backend/billing/service/UsdBillingTest
 0.68 com/red_escuela/backend/billing/service/VersionedCohortEntryDiscountIntegrationTest

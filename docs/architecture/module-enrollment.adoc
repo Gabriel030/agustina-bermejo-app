@@ -15,7 +15,6 @@
 * `c.r.b.a.repository.CourseSubjectRepository` (in Academic structure)
 * `c.r.b.a.repository.CourseSubjectSectionRepository` (in Academic structure)
 * `c.r.b.i.service.PersonRoleGranter` (in Identity)
-* `c.r.b.b.service.ScholarshipService` (in Billing)
 * `c.r.b.b.service.EnrollmentWithdrawalCreditService` (in Billing)
 * `c.r.b.a.repository.ProgramRepository` (in Academic structure)
 * `c.r.b.a.repository.ProgramSubjectRepository` (in Academic structure)

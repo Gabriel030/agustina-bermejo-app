@@ -86,7 +86,9 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     private ProgramEnrollmentRepository programEnrollmentRepository;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.ScholarshipRepository scholarshipRepository;
+    private com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository studentDiscountRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository discountDefinitionRepository;
 
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
@@ -209,25 +211,29 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void theOldCyclesScholarshipDoesNotCarryOverAutomaticallyOnReenrollment() {
+    void theOldCyclesStudentDiscountDoesNotCarryOverAutomaticallyOnReenrollment() {
         Person director = persistPerson("director.debt6." + System.nanoTime());
         Student student = persistStudent("88010010");
         Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
 
-        com.red_escuela.backend.billing.entity.Scholarship scholarship = new com.red_escuela.backend.billing.entity.Scholarship();
-        scholarship.setProgramEnrollment(cicloViejo);
-        scholarship.setValue(new com.red_escuela.backend.shared.domain.MonetaryAdjustment.Nominal(ars(2000)));
-        scholarship.setReason("Beca del ciclo viejo");
-        scholarship.setGrantedBy(director);
-        scholarship.addInstallments(3);
-        scholarshipRepository.save(scholarship);
+        Long definitionId = discountDefinitionRepository.findFirstByDiscountTypeAndStatusOrderByIdAsc(
+                com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType.SCHOLARSHIP, com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus.ACTIVE).orElseThrow().getId();
+        studentDiscountRepository.save(com.red_escuela.backend.billing.discount.domain.StudentDiscount.grantStudentDiscount(
+                new com.red_escuela.backend.billing.discount.domain.StudentDiscountGrant(
+                        com.red_escuela.backend.billing.discount.domain.EnrollmentReference.ofProgram(cicloViejo.getId()), student.getId(),
+                        com.red_escuela.backend.shared.domain.Currency.ARS, definitionId, com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP,
+                        com.red_escuela.backend.billing.invoice.domain.InvoiceType.MONTHLY_INSTALLMENT,
+                        new com.red_escuela.backend.shared.domain.MonetaryAdjustment.Nominal(ars(2000)), null, 1,
+                        new com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange(java.time.YearMonth.of(2027, 3), java.time.YearMonth.of(2027, 5)),
+                        "Beca del ciclo viejo"),
+                director.getId(), null, java.time.Instant.parse("2027-02-01T10:00:00Z")));
 
         payInFull(director, invoiceRepository.findInvoiceWithLinesById(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow());
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
-        assertThat(scholarshipRepository.findByProgramEnrollmentId(nuevaMatricula.getId())).isEmpty();
-        assertThat(scholarshipRepository.findByProgramEnrollmentId(cicloViejo.getId())).hasSize(1);
+        assertThat(studentDiscountRepository.findByProgramEnrollmentIdOrderByIdDesc(nuevaMatricula.getId())).isEmpty();
+        assertThat(studentDiscountRepository.findByProgramEnrollmentIdOrderByIdDesc(cicloViejo.getId())).hasSize(1);
     }
 
     @Test

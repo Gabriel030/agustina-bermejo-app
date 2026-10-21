@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.discount.operation;
 
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
@@ -210,44 +209,12 @@ class StudentDiscountIssuingIT extends AbstractStudentDiscountIssuingIT {
         assertThat(april.get("student_discount_id")).isEqualTo(scholarship.getId());
         assertThat(april.get("installment_number")).isEqualTo(2);
         assertThat(april.get("installments_total")).isEqualTo(4);
-        assertThat(april.get("source_installment_id")).isNull();
         assertThat(april.get("consumption_released_at")).isNull();
         assertThat(jdbc.queryForObject("""
                 select d.calculation is not null and d.calculation = s.calculation
                 from invoice_discount d join student_discount s on s.id = d.student_discount_id where d.id = (
                     select d2.id from invoice_discount d2 join invoice_line l on l.id = d2.invoice_line_id where l.program_enrollment_id = ?)
                 """, Boolean.class, learner.programEnrollmentId())).isTrue();
-        invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
-    void aLegacyScholarshipAndAStudentDiscountNeverStack() {
-        factory.grantScholarship(offering, learner, Percentage.ofPoints(new BigDecimal("30")), 3, ScholarshipScope.INSTALLMENTS);
-        StudentDiscount scholarship = grantAsDirector(scholarship("30", MARCH, JUNE));
-
-        issueInstallment(MARCH);
-
-        Map<String, Object> march = onlyDiscountOn(FeeType.MONTHLY_INSTALLMENT, MARCH);
-        assertThat(march.get("source_installment_id")).isNull();
-        assertThat(march.get("student_discount_id")).isEqualTo(scholarship.getId());
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment si join scholarship s on s.id = si.scholarship_id where s.program_enrollment_id = ? and si.status = 'APPLIED'",
-                Long.class, learner.programEnrollmentId())).isZero();
-        invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
-    void aBetterLegacyScholarshipWinsAndOnlyItsInstallmentIsConsumed() {
-        factory.grantScholarship(offering, learner, Percentage.ofPoints(new BigDecimal("50")), 3, ScholarshipScope.INSTALLMENTS);
-        StudentDiscount scholarship = grantAsDirector(scholarship("30", MARCH, JUNE));
-
-        issueInstallment(MARCH);
-
-        Map<String, Object> march = onlyDiscountOn(FeeType.MONTHLY_INSTALLMENT, MARCH);
-        assertThat(march.get("source_installment_id")).isNotNull();
-        assertThat(amount(march.get("discount_amount"))).isEqualByComparingTo("40000.00");
-        assertThat(discountRowsOf(scholarship.getId())).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment si join scholarship s on s.id = si.scholarship_id where s.program_enrollment_id = ? and si.status = 'APPLIED'",
-                Long.class, learner.programEnrollmentId())).isEqualTo(1L);
         invariants.assertAllBillingInvariantsHold();
     }
 

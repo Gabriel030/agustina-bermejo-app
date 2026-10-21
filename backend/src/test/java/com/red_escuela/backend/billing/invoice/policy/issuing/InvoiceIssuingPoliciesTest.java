@@ -148,17 +148,6 @@ class InvoiceIssuingPoliciesTest {
         assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, candidate, List.of(strongerRivalOfAnotherType))).allowed()).isTrue();
     }
 
-    @Test
-    @Tag("D-157")
-    void aScholarshipOnlyCoversMonthlyInstallments() {
-        ScholarshipDiscountAppliesPolicy policy = new ScholarshipDiscountAppliesPolicy();
-
-        assertThat(policy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(FeeType.MONTHLY_INSTALLMENT, true)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(FeeType.MONTHLY_INSTALLMENT, false)).code())
-                .isEqualTo("SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS");
-        assertThat(policy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(FeeType.ENROLLMENT_FEE, true)).allowed()).isFalse();
-    }
-
     @ParameterizedTest
     @Tag("D-074")
     @CsvSource({"2,0,true", "2,1,true", "2,2,false", "2,3,false", ",50,true"})

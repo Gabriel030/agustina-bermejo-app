@@ -339,6 +339,15 @@ public final class BillingInvariantChecker {
         return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, dayExpression);
     }
 
+    private static String afterThePaymentOfTheOrigin(String dayExpression) {
+        return """
+            exists (select 1 from payment_allocation pa join invoice po on po.id = pa.invoice_id
+                    where pa.invoice_id = c.origin_invoice_id and pa.reverses_allocation_id is null
+                      and not exists (select 1 from payment_allocation pr where pr.reverses_allocation_id = pa.id)
+                      and (pa.effective_date <= po.due_date + coalesce((%1$s ->> 'gracePeriodDays')::int, 0) or %2$s > pa.effective_date))
+            """.formatted(termsOn("po.due_date"), dayExpression);
+    }
+
     private static String termsOn(String dayExpression) {
         return """
             coalesce(
@@ -365,13 +374,13 @@ public final class BillingInvariantChecker {
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
                 where c.debit_note_id > ? and (date_trunc('month', c.period_start) <> date_trunc('month', c.period_end) or c.period_start <= o.due_date)
                 """, baselineInvoiceId));
-        found.addAll(violations("I-11c charged days differ from the days with charging enabled and not frozen", """
+        found.addAll(violations("I-11c charged days differ from the days with charging enabled, not frozen and not after the payment of the origin", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
                 where c.debit_note_id > %d and c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
-                    where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s)
-                """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"))));
+                    where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s and not %s)
+                """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"), afterThePaymentOfTheOrigin("g.day::date"))));
         found.addAll(violations("I-11c two debit notes of the same origin and month without a reversal of the payment between them", """
                 select 'origin ' || a.origin_invoice_id || ' month ' || date_trunc('month', a.period_start)::date
                 from late_fee_charge a join late_fee_charge b on b.origin_invoice_id = a.origin_invoice_id and b.period_start > a.period_start
@@ -410,13 +419,44 @@ public final class BillingInvariantChecker {
     }
 
     public List<String> lateFeeCorrectionsAreConsistent() {
+        List<String> found = new ArrayList<>(lateFeeCorrectionsAfterAWithdrawalAreConsistent());
+        found.addAll(lateFeeCorrectionsByPaymentDateAreConsistent());
+        return found;
+    }
+
+    public List<String> lateFeeCorrectionsByPaymentDateAreConsistent() {
+        return violations("I-11j late fee annulment by payment date outside its debit note, not after the payment (or inside the grace), with an allocation that is not the payment date of the origin, with another reason or recipient, or with a credit note above the complement, or below the complement while the line still had creditable balance after it", """
+                select 'correction ' || k.id || ' debit note ' || k.debit_note_id
+                from late_fee_charge_correction k
+                join late_fee_charge c on c.id = k.late_fee_charge_id
+                join invoice o on o.id = c.origin_invoice_id
+                join credit_note n on n.id = k.credit_note_id
+                join invoice d on d.id = k.debit_note_id
+                left join payment_allocation sa on sa.id = k.settlement_allocation_id
+                where k.debit_note_id > ? and k.cause <> 'BACKDATED_WITHDRAWAL' and (
+                    k.debit_note_id <> c.debit_note_id
+                    or k.first_corrected_day < c.period_start or k.last_corrected_day > c.period_end
+                    or sa.id is null or sa.invoice_id <> c.origin_invoice_id or sa.effective_date <> k.payment_date
+                    or not (k.first_corrected_day > k.payment_date
+                            or (k.cause = 'PAYMENT_WITHIN_GRACE' and k.payment_date <= o.due_date + coalesce((%1$s ->> 'gracePeriodDays')::int, 0)))
+                    or (k.cause = 'PAYMENT_WITHIN_GRACE' and k.payment_date > o.due_date + coalesce((%1$s ->> 'gracePeriodDays')::int, 0))
+                    or n.reason <> 'LATE_FEE_ANNULMENT' or n.invoice_id <> k.debit_note_id or n.recipient_snapshot is distinct from d.student_snapshot
+                    or n.total_amount > %2$s
+                    or (n.total_amount < %2$s and exists (select 1 from invoice_line l
+                                                          where l.invoice_id = d.id and (l.amount - l.discount_amount) - n.total_amount - (
+                                                              select coalesce(sum(cl.amount), 0) from credit_note_line cl join credit_note p on p.id = cl.credit_note_id
+                                                              where p.invoice_id = d.id and p.id < n.id and cl.invoice_line_number = l.line_number) > 0)))
+                """.formatted(termsOn("o.due_date"), CORRECTION_COMPLEMENT), baselineInvoiceId);
+    }
+
+    public List<String> lateFeeCorrectionsAfterAWithdrawalAreConsistent() {
         return violations("I-11i late fee correction outside its debit note, within the enrollment, or issued after the withdrawal was registered, or with a credit note above the complement, or below the complement while the line still had creditable balance after it", """
                 select 'correction ' || k.id || ' debit note ' || k.debit_note_id
                 from late_fee_charge_correction k
                 join late_fee_charge c on c.id = k.late_fee_charge_id
                 join credit_note n on n.id = k.credit_note_id
                 join invoice d on d.id = k.debit_note_id
-                where k.debit_note_id > ? and (
+                where k.debit_note_id > ? and k.cause = 'BACKDATED_WITHDRAWAL' and (
                     k.debit_note_id <> c.debit_note_id
                     or k.first_corrected_day < c.period_start or k.last_corrected_day > c.period_end
                     or %1$s is null or k.first_corrected_day <= %1$s

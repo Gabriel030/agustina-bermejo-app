@@ -11,7 +11,6 @@ com.red_escuela.backend.billing.controller.PaymentPlanOptionController
 com.red_escuela.backend.billing.controller.PaymentPlanSelectionController
 com.red_escuela.backend.billing.controller.ProgramYearBillingTemplateController
 com.red_escuela.backend.billing.controller.PromotionController
-com.red_escuela.backend.billing.controller.ScholarshipController
 com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse
 com.red_escuela.backend.billing.dto.AdminInvoicePaymentResponse
 com.red_escuela.backend.billing.dto.AdminInvoiceReceiptResponse
@@ -29,7 +28,6 @@ com.red_escuela.backend.billing.dto.CreateProgramCohortRequest
 com.red_escuela.backend.billing.dto.CreateProgramYearBillingTemplateRequest
 com.red_escuela.backend.billing.dto.CreatePromotionBenefitRequest
 com.red_escuela.backend.billing.dto.CreatePromotionRequest
-com.red_escuela.backend.billing.dto.CreateScholarshipRequest
 com.red_escuela.backend.billing.dto.DebtorSummaryResponse
 com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse
 com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse
@@ -57,7 +55,6 @@ com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse
 com.red_escuela.backend.billing.dto.PromotionBenefitResponse
 com.red_escuela.backend.billing.dto.PromotionResponse
 com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest
-com.red_escuela.backend.billing.dto.ScholarshipResponse
 com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest
 com.red_escuela.backend.billing.dto.UpdateEntryFeeDiscountRequest
 com.red_escuela.backend.billing.dto.UpdatePaymentGatewayConfigRequest
@@ -82,10 +79,6 @@ com.red_escuela.backend.billing.entity.Promotion
 com.red_escuela.backend.billing.entity.PromotionBenefit
 com.red_escuela.backend.billing.entity.PromotionRedemption
 com.red_escuela.backend.billing.entity.PromotionStatus
-com.red_escuela.backend.billing.entity.Scholarship
-com.red_escuela.backend.billing.entity.ScholarshipInstallment
-com.red_escuela.backend.billing.entity.ScholarshipScope
-com.red_escuela.backend.billing.entity.ScholarshipStatus
 com.red_escuela.backend.billing.exception.ChargeRejectedException
 com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException
 com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException
@@ -118,8 +111,6 @@ com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchExce
 com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException
 com.red_escuela.backend.billing.exception.PromotionAlreadyClosedException
 com.red_escuela.backend.billing.exception.PromotionNotFoundException
-com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException
-com.red_escuela.backend.billing.exception.ScholarshipNotFoundException
 com.red_escuela.backend.billing.exception.UpfrontWindowClosedException
 com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment
 com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher
@@ -138,7 +129,6 @@ com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository
 com.red_escuela.backend.billing.repository.PromotionBenefitUsage
 com.red_escuela.backend.billing.repository.PromotionRedemptionRepository
 com.red_escuela.backend.billing.repository.PromotionRepository
-com.red_escuela.backend.billing.repository.ScholarshipRepository
 com.red_escuela.backend.billing.service.AdHocInvoiceRequestResolver
 com.red_escuela.backend.billing.service.BillingConfigurationAlertService
 com.red_escuela.backend.billing.service.BillingPlanningConfiguration
@@ -169,8 +159,6 @@ com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService
 com.red_escuela.backend.billing.service.PromotionBuilder
 com.red_escuela.backend.billing.service.PromotionRedeemer
 com.red_escuela.backend.billing.service.RecurringFeeWindowService
-com.red_escuela.backend.billing.service.ScholarshipGrantSupport
-com.red_escuela.backend.billing.service.ScholarshipService
 com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService
 com.red_escuela.backend.billing.service.YearBillingConfigurationApplier
 com.red_escuela.backend.billing.service.YearBillingConfiguredEvent
@@ -252,7 +240,3 @@ com.red_escuela.backend.billing.usecase.promotion.FindActivePromotionsService
 com.red_escuela.backend.billing.usecase.promotion.FindActivePromotionsUseCase
 com.red_escuela.backend.billing.usecase.promotion.FindLostPromotionBenefitsService
 com.red_escuela.backend.billing.usecase.promotion.FindLostPromotionBenefitsUseCase
-com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseService
-com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseUseCase
-com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramService
-com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase

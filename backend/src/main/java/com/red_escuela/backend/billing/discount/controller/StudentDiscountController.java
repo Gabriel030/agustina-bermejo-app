@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.discount.dto.RevokeStudentDiscountRequest
 import com.red_escuela.backend.billing.discount.dto.StudentDiscountPendingAuthorizationResponse;
 import com.red_escuela.backend.billing.discount.dto.StudentDiscountResponse;
 import com.red_escuela.backend.billing.discount.usecase.GrantStudentDiscountUseCase;
+import com.red_escuela.backend.billing.discount.usecase.ListMyStudentDiscountsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ListStudentDiscountsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.RevokeStudentDiscountUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
@@ -31,11 +32,14 @@ public class StudentDiscountController {
     private final GrantStudentDiscountUseCase grantUseCase;
     private final RevokeStudentDiscountUseCase revokeUseCase;
     private final ListStudentDiscountsUseCase listUseCase;
+    private final ListMyStudentDiscountsUseCase listMyUseCase;
 
-    public StudentDiscountController(GrantStudentDiscountUseCase grantUseCase, RevokeStudentDiscountUseCase revokeUseCase, ListStudentDiscountsUseCase listUseCase) {
+    public StudentDiscountController(GrantStudentDiscountUseCase grantUseCase, RevokeStudentDiscountUseCase revokeUseCase, ListStudentDiscountsUseCase listUseCase,
+                                     ListMyStudentDiscountsUseCase listMyUseCase) {
         this.grantUseCase = grantUseCase;
         this.revokeUseCase = revokeUseCase;
         this.listUseCase = listUseCase;
+        this.listMyUseCase = listMyUseCase;
     }
 
     @PostMapping("/program-enrollments/{id}/student-discounts")
@@ -66,6 +70,12 @@ public class StudentDiscountController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<StudentDiscountResponse> listForCourseEnrollment(@PathVariable Long id) {
         return listUseCase.listStudentDiscounts(EnrollmentReference.ofCourse(id)).stream().map(StudentDiscountResponse::from).toList();
+    }
+
+    @GetMapping("/me/student-discounts")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public List<StudentDiscountResponse> listMyStudentDiscounts() {
+        return listMyUseCase.listMyStudentDiscounts().stream().map(StudentDiscountResponse::from).toList();
     }
 
     @PostMapping("/student-discounts/{id}/revocation")

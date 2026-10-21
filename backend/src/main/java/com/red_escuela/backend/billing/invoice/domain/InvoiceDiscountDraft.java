@@ -13,14 +13,12 @@ public record InvoiceDiscountDraft(
         NonNegativeMoney discountAmount,
         Integer installmentNumber,
         Integer installmentsTotal,
-        Long sourceInstallmentId,
         MonetaryAdjustment calculation) {
 
     public InvoiceDiscountDraft(DiscountType discountType, String concept, Long studentDiscountId, NonNegativeMoney baseAmount,
                                 NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
-        this(discountType, concept, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, null, null);
+        this(discountType, concept, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, null);
     }
-
 
     private static final int MAX_CONCEPT_LENGTH = 200;
 

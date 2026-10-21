@@ -17,10 +17,17 @@ import static org.mockito.Mockito.when;
 
 @Tag("D-158")
 @Tag("D-388")
+@Tag("D-408")
 class AnnualUpfrontCoverageReaderTest {
     private final PaymentPlanSelectionRepository repository = mock(PaymentPlanSelectionRepository.class);
     private final AnnualUpfrontCoverageReader reader = new AnnualUpfrontCoverageReader(repository);
     private final EnrollmentReference enrollment = EnrollmentReference.ofProgram(5L);
+
+    private PaymentPlanSelection closedSelection(YearMonth from, Integer scopeMonths, YearMonth effectiveTo) {
+        PaymentPlanSelection selection = selection(PaymentPlanCadence.ANNUAL_UPFRONT, from, scopeMonths);
+        selection.setEffectiveTo(effectiveTo);
+        return selection;
+    }
 
     private PaymentPlanSelection selection(PaymentPlanCadence cadence, YearMonth from, Integer scopeMonths) {
         PaymentPlanOption option = new PaymentPlanOption();
@@ -63,5 +70,38 @@ class AnnualUpfrontCoverageReaderTest {
     void aMissingRangeIsNeverCovered() {
         assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, null, YearMonth.of(2027, 8))).isFalse();
         assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 8), null)).isFalse();
+    }
+
+    @Test
+    void aClosedSelectionDoesNotCoverMonthsAfterItsEffectiveTo() {
+        when(repository.findByProgramEnrollmentIdOrderByEffectiveFrom(5L)).thenReturn(List.of(closedSelection(YearMonth.of(2027, 3), 10, YearMonth.of(2027, 6))));
+
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 6), YearMonth.of(2027, 6))).isTrue();
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 7), YearMonth.of(2027, 12))).isFalse();
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 5), YearMonth.of(2027, 9))).isTrue();
+    }
+
+    @Test
+    void coverageEndsAtTheEarlierOfScopeAndEffectiveTo() {
+        when(repository.findByProgramEnrollmentIdOrderByEffectiveFrom(5L)).thenReturn(List.of(closedSelection(YearMonth.of(2027, 3), 4, YearMonth.of(2027, 11))));
+
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 6), YearMonth.of(2027, 6))).isTrue();
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 7), YearMonth.of(2027, 11))).isFalse();
+    }
+
+    @Test
+    void aClosedSelectionStillCoversItsLastMonthWhenItClosesExactlyAtTheEndOfItsScope() {
+        when(repository.findByProgramEnrollmentIdOrderByEffectiveFrom(5L)).thenReturn(List.of(closedSelection(YearMonth.of(2027, 3), 4, YearMonth.of(2027, 6))));
+
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 6), YearMonth.of(2027, 6))).isTrue();
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(enrollment, YearMonth.of(2027, 7), YearMonth.of(2027, 7))).isFalse();
+    }
+
+    @Test
+    void aCourseSinglePaymentIsNeverTreatedAsAnnual() {
+        EnrollmentReference course = EnrollmentReference.ofCourse(9L);
+        when(repository.findByCourseEnrollmentIdOrderByEffectiveFrom(9L)).thenReturn(List.of(selection(PaymentPlanCadence.ANNUAL_UPFRONT, YearMonth.of(2027, 3), 10)));
+
+        assertThat(reader.annualUpfrontCoversAnyMonthOf(course, YearMonth.of(2027, 3), YearMonth.of(2027, 12))).isFalse();
     }
 }
