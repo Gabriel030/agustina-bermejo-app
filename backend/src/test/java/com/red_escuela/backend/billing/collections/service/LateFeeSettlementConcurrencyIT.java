@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepos
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,11 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
     private LateFeeChargeRepository chargeRepository;
     @Autowired
     private MeterRegistry meterRegistry;
+
+    @AfterEach
+    void resetClock() {
+        MutableClock.INSTANCE.reset();
+    }
 
     private void runInParallel(List<Callable<Object>> tasks) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(tasks.size());
@@ -147,29 +153,34 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
-    @Tag("D-332")
+    @Tag("D-378")
     @Tag("D-243")
-    void aSettlementWithExcessWhoseListenerNeverRanIsRecordedOnceByTheNightlyRun() {
+    void aSettlementWhoseListenerNeverRanIsAnnulledOnceByTheNightlyRun() {
         arrange(2236);
         publishDefaults(2236);
         Invoice origin = overdueInstallmentDueOn(d(2236, 3, 11));
         reconcile(origin, d(2236, 4, 2));
+        Long debitNoteId = (Long) chargesOf(origin).get(0).get("debit_note_id");
         BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2236, 3, 28), d(2236, 4, 2));
         double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
 
+        MutableClock.INSTANCE.setDate(d(2236, 4, 3));
         LateFeeAccrualResult first = accrualStep.accrueLateFees(d(2236, 4, 3));
+        MutableClock.INSTANCE.setDate(d(2236, 4, 4));
         LateFeeAccrualResult second = accrualStep.accrueLateFees(d(2236, 4, 4));
 
         assertThat(first.settlementCandidates()).isEqualTo(1);
         assertThat(second.settlementCandidates()).isZero();
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(3.0);
         assertThat(summaryOf(origin)).containsExactly("2236-03-12..2236-03-31:20:4000.00");
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ? and reason = 'LATE_FEE_ANNULMENT'", Long.class, debitNoteId)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ?", java.math.BigDecimal.class, debitNoteId)).isEqualByComparingTo("600.00");
         assertScenarioInvariants(d(2236, 4, 4));
     }
 
     @Test
     @Tag("D-331")
-    void aPaymentInsideTheGraceIsNotACandidateOfTheNightlyRecovery() {
+    void aPaymentInsideTheGraceWithoutChargedDaysIsNotACandidateOfTheNightlyRecovery() {
         arrange(2237);
         publish(10, "0.002", 10, true, true, d(2237, 1, 1));
         Invoice origin = overdueInstallmentDueOn(d(2237, 3, 11));
@@ -177,6 +188,30 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
 
         assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2237, 3, 1), 50)).doesNotContain(origin.getId());
         assertScenarioInvariants(d(2237, 3, 20));
+    }
+
+    @Test
+    @Tag("D-331")
+    @Tag("D-378")
+    void aPaymentInsideTheGraceWithChargedDaysIsACandidateOfTheNightlyRecoveryAndLeavesNoNetDay() {
+        arrange(2260);
+        publish(10, "0.002", 10, true, true, d(2260, 1, 1));
+        Invoice origin = overdueInstallmentDueOn(d(2260, 3, 11));
+        reconcile(origin, d(2260, 4, 2));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2260, 3, 20), d(2260, 4, 2));
+
+        assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2260, 3, 1), 50)).contains(origin.getId());
+        MutableClock.INSTANCE.setDate(d(2260, 4, 3));
+        accrualStep.accrueLateFees(d(2260, 4, 3));
+        MutableClock.INSTANCE.setDate(d(2260, 4, 4));
+        LateFeeAccrualResult second = accrualStep.accrueLateFees(d(2260, 4, 4));
+
+        assertThat(second.settlementCandidates()).isZero();
+        assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2260, 3, 1), 50)).doesNotContain(origin.getId());
+        assertThat(jdbc.queryForMap("select cause, corrected_days, payment_date::text as payment_date from late_fee_charge_correction where late_fee_charge_id = ?",
+                chargesOf(origin).get(0).get("id"))).containsEntry("cause", "PAYMENT_WITHIN_GRACE").containsEntry("corrected_days", 20).containsEntry("payment_date", "2260-03-20");
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, chargesOf(origin).get(0).get("debit_note_id"))).isEqualTo("CANCELLED");
+        assertScenarioInvariants(d(2260, 4, 4));
     }
 
     @Test

@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.collections.domain;
 
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.domain.Percentage;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -8,6 +11,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import net.jqwik.api.Tag;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -23,9 +27,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-332")
 @Tag("D-290")
 @Tag("D-140")
+@Tag("D-378")
 class LateFeeSettlementProperties {
     private static final LocalDate START = LocalDate.of(2027, 1, 1);
     private static final LateFeeAccrualPlanner PLANNER = new LateFeeAccrualPlanner();
+    private static final LateFeePaymentDateCorrectionCalculator PAYMENT_CORRECTION = new LateFeePaymentDateCorrectionCalculator(new DailySimpleLateFeeCalculator());
 
     enum Kind { ADVANCE, PAY, REVERSE }
 
@@ -36,7 +42,7 @@ class LateFeeSettlementProperties {
     }
 
     record Outcome(LocalDate dueDate, LocalDate lastDay, boolean paid, LocalDate paidOn, List<LateFeeAccrualPeriod> covered, List<LocalDate> issuedOn, List<LocalDate> reversalDates,
-                   Set<LocalDate> oracleChargedDays, int overchargedDaysReported, int overchargedDaysExpected) {
+                   Set<LocalDate> oracleChargedDays, int annulledDaysPlanned, int annulledDaysExpected) {
     }
 
     @Provide
@@ -60,8 +66,8 @@ class LateFeeSettlementProperties {
         LocalDate today = due.minusDays(15);
         boolean paid = false;
         LocalDate paidOn = null;
-        int overchargedReported = 0;
-        int overchargedExpected = 0;
+        int annulledPlanned = 0;
+        int annulledExpected = 0;
         for (Step step : scenario.steps()) {
             switch (step.kind()) {
                 case ADVANCE -> {
@@ -81,8 +87,10 @@ class LateFeeSettlementProperties {
                         oracleSettlement(oracle, due, scenario.graceDays(), paidOn, enabledOn, frozenOn);
                         LocalDate settledOn = paidOn;
                         Predicate<LocalDate> chargedOn = day -> enabledOn.test(day) && !frozenOn.test(day);
-                        overchargedReported = covered.stream().mapToInt(period -> period.chargedDaysAfter(settledOn, chargedOn)).sum();
-                        overchargedExpected = (int) covered.stream().flatMap(period -> period.firstDay().datesUntil(period.lastDay().plusDays(1))).filter(day -> day.isAfter(settledOn) && enabledOn.test(day) && !frozenOn.test(day)).count();
+                        boolean withinGrace = !schedule.isPastGraceOn(settledOn);
+                        annulledPlanned = covered.stream().mapToInt(period -> annulledDaysOf(period, settledOn, withinGrace, chargedOn)).sum();
+                        annulledExpected = (int) covered.stream().flatMap(period -> period.firstDay().datesUntil(period.lastDay().plusDays(1)))
+                                .filter(day -> (withinGrace || day.isAfter(settledOn)) && enabledOn.test(day) && !frozenOn.test(day)).count();
                     }
                 }
                 case REVERSE -> {
@@ -96,7 +104,17 @@ class LateFeeSettlementProperties {
                 }
             }
         }
-        return new Outcome(due, today, paid, paidOn, covered, issuedOn, reversalDates, oracle, overchargedReported, overchargedExpected);
+        return new Outcome(due, today, paid, paidOn, covered, issuedOn, reversalDates, oracle, annulledPlanned, annulledExpected);
+    }
+
+    private static int annulledDaysOf(LateFeeAccrualPeriod period, LocalDate paidOn, boolean withinGrace, Predicate<LocalDate> chargedOn) {
+        int chargedDays = (int) period.firstDay().datesUntil(period.lastDay().plusDays(1)).filter(chargedOn).count();
+        if (chargedDays == 0) {
+            return 0;
+        }
+        LateFeeChargeSnapshot charge = new LateFeeChargeSnapshot(1L, 2L, period, chargedDays, NonNegativeMoney.of(new BigDecimal("100000.00"), Currency.ARS),
+                Percentage.ofFraction(new BigDecimal("0.002")));
+        return PAYMENT_CORRECTION.planCorrectionOfDebitNote(charge, List.of(), paidOn, withinGrace, chargedOn).map(PlannedLateFeeCorrection::correctedDays).orElse(0);
     }
 
     private static void planClose(DailyLateFeeSchedule schedule, List<LateFeeAccrualPeriod> covered, List<LocalDate> issuedOn, LocalDate today, Predicate<LocalDate> enabledOn,
@@ -164,7 +182,7 @@ class LateFeeSettlementProperties {
         Set<LocalDate> charged = chargedDaysOf(outcome, enabledOn, frozenOn);
 
         assertThat(charged).isEqualTo(outcome.oracleChargedDays());
-        assertThat(outcome.overchargedDaysReported()).isEqualTo(outcome.overchargedDaysExpected());
+        assertThat(outcome.annulledDaysPlanned()).isEqualTo(outcome.annulledDaysExpected());
     }
 
     @Property(tries = 1000, seed = "20261013")

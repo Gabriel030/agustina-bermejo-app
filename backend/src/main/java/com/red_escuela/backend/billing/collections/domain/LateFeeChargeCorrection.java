@@ -52,11 +52,17 @@ public class LateFeeChargeCorrection {
     private int correctedDays;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "cause", nullable = false, updatable = false, length = 30)
+    @Column(name = "cause", nullable = false, updatable = false, length = 40)
     private LateFeeCorrectionCause cause;
 
-    @Column(name = "enrollment_end_date", nullable = false, updatable = false)
+    @Column(name = "enrollment_end_date", updatable = false)
     private LocalDate enrollmentEndDate;
+
+    @Column(name = "settlement_allocation_id", updatable = false)
+    private Long settlementAllocationId;
+
+    @Column(name = "payment_date", updatable = false)
+    private LocalDate paymentDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,6 +84,33 @@ public class LateFeeChargeCorrection {
         correction.correctedDays = planned.correctedDays();
         correction.cause = LateFeeCorrectionCause.BACKDATED_WITHDRAWAL;
         correction.enrollmentEndDate = enrollmentEndDate;
+        correction.createdAt = ApplicationTime.now();
+        return correction;
+    }
+
+    public static LateFeeChargeCorrection recordPaymentDateCorrection(Long lateFeeChargeId, Long debitNoteId, Long studentCurrentAccountId, Long creditNoteId,
+                                                                      PlannedLateFeeCorrection planned, Long settlementAllocationId, LocalDate paymentDate,
+                                                                      LateFeeCorrectionCause cause) {
+        Objects.requireNonNull(planned, "planned");
+        Objects.requireNonNull(paymentDate, "paymentDate");
+        Objects.requireNonNull(cause, "cause");
+        if (!cause.isPaymentDate()) {
+            throw new IllegalArgumentException("A payment date correction needs a payment date cause");
+        }
+        if (cause == LateFeeCorrectionCause.PAYMENT_DATED_BEFORE_CHARGED_DAYS && !planned.correctedRange().firstDay().isAfter(paymentDate)) {
+            throw new IllegalArgumentException("A corrected day must be after the payment date");
+        }
+        LateFeeChargeCorrection correction = new LateFeeChargeCorrection();
+        correction.lateFeeChargeId = Objects.requireNonNull(lateFeeChargeId, "lateFeeChargeId");
+        correction.debitNoteId = Objects.requireNonNull(debitNoteId, "debitNoteId");
+        correction.studentCurrentAccountId = Objects.requireNonNull(studentCurrentAccountId, "studentCurrentAccountId");
+        correction.creditNoteId = Objects.requireNonNull(creditNoteId, "creditNoteId");
+        correction.firstCorrectedDay = planned.correctedRange().firstDay();
+        correction.lastCorrectedDay = planned.correctedRange().lastDay();
+        correction.correctedDays = planned.correctedDays();
+        correction.cause = cause;
+        correction.settlementAllocationId = Objects.requireNonNull(settlementAllocationId, "settlementAllocationId");
+        correction.paymentDate = paymentDate;
         correction.createdAt = ApplicationTime.now();
         return correction;
     }

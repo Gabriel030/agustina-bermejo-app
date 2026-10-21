@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "PENDING_BANK_TRANSFER_ON_INVOICE", decisions = {"D-153", "D-375"})
+@PolicyRule(violationCodes = "PENDING_BANK_TRANSFER_ON_INVOICE", decisions = {"D-153", "D-375", "D-378"})
 public final class CorrectionDebitNoteNotUnderPaymentReviewPolicy implements Policy<LateFeeCorrectionContext> {
 
     @Override

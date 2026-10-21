@@ -5,6 +5,8 @@ import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import com.red_escuela.backend.shared.time.MutableClock;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,11 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
     private MeterRegistry meterRegistry;
+
+    @AfterEach
+    void resetClock() {
+        MutableClock.INSTANCE.reset();
+    }
 
     private void assertContiguousCoverage(Invoice origin, String firstDay, String lastDay) {
         List<Map<String, Object>> charges = chargesOf(origin);
@@ -216,19 +223,36 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
-    @Tag("D-243")
-    @Tag("D-332")
-    void paymentDatedBeforeAnIssuedCloseIssuesNothingAndRecordsTheExcess() {
+    @Tag("D-378")
+    @Tag("D-308")
+    @Tag("D-290")
+    void backdatedCashPaymentAnnulsOnlyTheDaysAfterThePaymentDate() {
         arrange(2212);
         publishDefaults(2212);
         Invoice origin = overdueInstallmentDueOn(d(2212, 3, 11));
         reconcile(origin, d(2212, 4, 2));
+        MutableClock.INSTANCE.setDate(d(2212, 4, 2));
         double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
+        Long debitNoteId = (Long) chargesOf(origin).get(0).get("debit_note_id");
 
         payInFull(origin, d(2212, 3, 28), d(2212, 4, 2));
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2212-03-12..2212-03-31:20:4000.00");
+        Map<String, Object> creditNote = jdbc.queryForMap("select * from credit_note where invoice_id = ?", debitNoteId);
+        assertThat(creditNote).containsEntry("reason", "LATE_FEE_ANNULMENT").containsEntry("issued_by_process", "LateFeePaymentDateCorrection");
+        assertThat((BigDecimal) creditNote.get("total_amount")).isEqualByComparingTo("600.00");
+        assertThat(creditNote.get("authorization_request_id")).isNull();
+        Map<String, Object> correction = jdbc.queryForMap("select * from late_fee_charge_correction where debit_note_id = ?", debitNoteId);
+        assertThat(correction).containsEntry("cause", "PAYMENT_DATED_BEFORE_CHARGED_DAYS").containsEntry("corrected_days", 3);
+        assertThat(correction.get("first_corrected_day").toString()).isEqualTo("2212-03-29");
+        assertThat(correction.get("last_corrected_day").toString()).isEqualTo("2212-03-31");
+        assertThat(correction.get("payment_date").toString()).isEqualTo("2212-03-28");
+        assertThat(correction.get("settlement_allocation_id")).isEqualTo(allocationRepository.findCurrentAllocationByInvoiceId(origin.getId()).orElseThrow().getId());
+        assertThat(jdbc.queryForMap("select document_status, payment_status, outstanding_amount from invoice where id = ?", debitNoteId))
+                .containsEntry("document_status", "ISSUED").containsEntry("payment_status", "PENDING");
+        assertThat(jdbc.queryForObject("select outstanding_amount from invoice where id = ?", BigDecimal.class, debitNoteId)).isEqualByComparingTo("3400.00");
+        assertThat(jdbc.queryForObject("select count(*) from authorization_request_invoice where invoice_id = ?", Long.class, debitNoteId)).isZero();
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(3.0);
         assertScenarioInvariants(d(2212, 4, 2));
     }
@@ -366,40 +390,44 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
-    @Tag("D-332")
+    @Tag("D-378")
     @Tag("D-380")
-    void excessOfAPaymentDatedBeforeAnIssuedCloseCountsChargedDaysAndNotCalendarDays() {
+    void annulmentOfAPaymentDatedBeforeAnIssuedCloseCountsChargedDaysAndNotCalendarDays() {
         arrange(2252);
         publish(0, "0.002", 10, true, true, d(2252, 1, 1));
         publish(0, "0.002", 10, true, false, d(2252, 3, 29));
         publish(0, "0.002", 10, true, true, d(2252, 3, 31));
         Invoice origin = overdueInstallmentDueOn(d(2252, 3, 11));
         reconcile(origin, d(2252, 4, 2));
+        MutableClock.INSTANCE.setDate(d(2252, 4, 2));
         double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
 
         payInFull(origin, d(2252, 3, 28), d(2252, 4, 2));
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2252-03-12..2252-03-31:18:3600.00");
+        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ?", BigDecimal.class, chargesOf(origin).get(0).get("debit_note_id"))).isEqualByComparingTo("200.00");
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(1.0);
         assertScenarioInvariants(d(2252, 4, 2));
     }
 
     @Test
     @Tag("D-293")
-    @Tag("D-332")
-    void excessOfAPaymentDatedBeforeAnIssuedCloseSkipsTheDaysFrozenByAWithdrawalRegisteredAfterTheClose() {
+    @Tag("D-378")
+    void annulmentOfAPaymentDatedBeforeAnIssuedCloseSkipsTheDaysFrozenByAWithdrawalRegisteredAfterTheClose() {
         arrange(2254);
         publishDefaults(2254);
         Invoice origin = overdueInstallmentDueOn(d(2254, 3, 11));
         reconcile(origin, d(2254, 4, 1));
         withdrawCourseEnrollmentOn(d(2254, 3, 25));
+        MutableClock.INSTANCE.setDate(d(2254, 4, 2));
         double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
 
         payInFull(origin, d(2254, 3, 20), d(2254, 4, 2));
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2254-03-12..2254-03-31:20:4000.00");
+        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ?", BigDecimal.class, chargesOf(origin).get(0).get("debit_note_id"))).isEqualByComparingTo("1000.00");
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(5.0);
     }
 }
