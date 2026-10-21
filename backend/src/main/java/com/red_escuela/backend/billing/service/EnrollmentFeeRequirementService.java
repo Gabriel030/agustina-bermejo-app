@@ -173,7 +173,8 @@ public class EnrollmentFeeRequirementService {
 
     private ObligationInvoiceFacts invoiceFactsOf(Invoice invoice) {
         return new ObligationInvoiceFacts(invoice.getPaymentStatus(),
-                receiptRepository.existsByInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW),
+                receiptRepository.existsByInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW)
+                        || receiptRepository.existsByCheckoutItemInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW),
                 !invoice.getAmounts().hasPaidAmount());
     }
 }

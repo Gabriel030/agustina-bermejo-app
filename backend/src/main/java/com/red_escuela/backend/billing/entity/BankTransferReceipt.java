@@ -63,8 +63,8 @@ public class BankTransferReceipt {
         }
     }
 
-    public Person payer() {
-        return uploadedBy;
+    public boolean hasPendingPayment() {
+        return paymentId != null && isPendingReview();
     }
 
     public boolean isPendingReview() {
@@ -73,7 +73,7 @@ public class BankTransferReceipt {
 
     public void approve(Person reviewer) {
         requirePendingReview();
-        if (!invoice.isPayable()) {
+        if (paymentId == null && !invoice.isPayable()) {
             throw new InvoiceNotPayableException(invoice.getId(), invoice.getPaymentStatus().name());
         }
         markReviewed(BankTransferReceiptStatus.APPROVED, reviewer);

@@ -2,7 +2,10 @@ package com.red_escuela.backend.billing.payment;
 
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptFileCheck;
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptFilePolicy;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRegistrationCheck;
+import com.red_escuela.backend.billing.payment.policy.LegacyReceiptNotPendingOnSelectedInvoicesPolicy;
 import com.red_escuela.backend.billing.payment.policy.DuplicateBankTransferPolicy;
 import com.red_escuela.backend.billing.payment.policy.ReceiptCoversOldestInvoicesFirstPolicy;
 import com.red_escuela.backend.billing.payment.policy.ReceiptProtectionCheck;
@@ -76,9 +79,14 @@ public class PaymentPolicySetsConfiguration {
     }
 
     @Bean
+    public PolicySet<BankTransferReceiptFileCheck> bankTransferReceiptFilePolicySet() {
+        return PolicySet.named("BANK_TRANSFER_RECEIPT_FILE", List.of(new BankTransferReceiptFilePolicy()));
+    }
+
+    @Bean
     public PolicySet<BankTransferReceiptRegistrationCheck> bankTransferReceiptRegistrationPolicySet() {
-        return PolicySet.named("BANK_TRANSFER_RECEIPT_REGISTRATION", List.of(new SelectedInvoicesBelongToAccountPolicy(), new DuplicateBankTransferPolicy(),
-                new ReceiptCoversOldestInvoicesFirstPolicy()));
+        return PolicySet.named("BANK_TRANSFER_RECEIPT_REGISTRATION", List.of(new SelectedInvoicesBelongToAccountPolicy(),
+                new LegacyReceiptNotPendingOnSelectedInvoicesPolicy(), new DuplicateBankTransferPolicy(), new ReceiptCoversOldestInvoicesFirstPolicy()));
     }
 
     @Bean

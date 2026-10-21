@@ -133,9 +133,10 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
                 command.holderName().strip(), command.transferDate());
         NonNegativeMoney declaredAmount = NonNegativeMoney.of(command.declaredAmount());
         boolean duplicateExists = payments.existsActiveBankTransfer(operationNumber, command.transferDate().toString(), declaredAmount.value().amount());
+        boolean legacyReceiptPending = receipts.existsLegacyPendingReceiptOnAnyInvoice(selectedById.keySet());
         registrationPolicies.evaluateRulesUntilFirstViolation(new BankTransferReceiptRegistrationCheck(account.getId(), currency,
                 selectedById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList(),
-                openById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList(), duplicateExists))
+                openById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList(), duplicateExists, legacyReceiptPending))
                 .throwIfDenied(BankTransferReceiptRejections::rejectionOf);
         List<ReceiptInvoiceFact> selectedFacts = selectedById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList();
         List<PlannedCheckoutItem> plan = BankTransferReceiptSelectionPlanner.planItems(selectedFacts, command.declaredAmount(), today, command.transferDate(),

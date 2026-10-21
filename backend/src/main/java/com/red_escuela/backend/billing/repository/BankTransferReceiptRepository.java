@@ -30,6 +30,25 @@ public interface BankTransferReceiptRepository extends JpaRepository<BankTransfe
             """)
     List<BankTransferReceipt> findByInvoiceIdsWithPeople(@Param("invoiceIds") Collection<Long> invoiceIds);
 
+    interface ReceiptOfCheckoutInvoice {
+        Long getInvoiceId();
+
+        BankTransferReceipt getReceipt();
+    }
+
+    @Query("""
+            select i.invoiceId as invoiceId, r as receipt from BankTransferReceipt r, PaymentCheckoutItem i
+            where r.paymentId = i.paymentId and i.invoiceId in :invoiceIds
+            order by r.uploadedAt desc, r.id desc
+            """)
+    List<ReceiptOfCheckoutInvoice> findByCheckoutItemInvoiceIds(@Param("invoiceIds") Collection<Long> invoiceIds);
+
+    @Query("""
+            select count(r) > 0 from BankTransferReceipt r, PaymentCheckoutItem i
+            where r.paymentId = i.paymentId and i.invoiceId = :invoiceId and r.status = :status
+            """)
+    boolean existsByCheckoutItemInvoiceIdAndStatus(@Param("invoiceId") Long invoiceId, @Param("status") BankTransferReceiptStatus status);
+
     List<BankTransferReceipt> findByStatusOrderByUploadedAtAsc(BankTransferReceiptStatus status);
 
     boolean existsByInvoiceIdAndStatus(Long invoiceId, BankTransferReceiptStatus status);

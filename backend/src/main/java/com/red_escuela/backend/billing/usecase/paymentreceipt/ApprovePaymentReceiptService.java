@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
 import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
+import com.red_escuela.backend.billing.operation.PendingBankTransferReviewPort;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.events.PaymentReceiptAppliedToOlderDebtEvent;
@@ -23,14 +24,16 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
     private final BankTransferReceiptRepository bankTransferReceiptRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
     private final ApprovedPaymentRegistrationPort registrationPort;
+    private final PendingBankTransferReviewPort pendingReviewPort;
     private final ApplicationEventPublisher eventPublisher;
 
     public ApprovePaymentReceiptService(BankTransferReceiptRepository bankTransferReceiptRepository,
                                          PaymentReceiptFinder paymentReceiptFinder, ApprovedPaymentRegistrationPort registrationPort,
-                                         ApplicationEventPublisher eventPublisher) {
+                                         PendingBankTransferReviewPort pendingReviewPort, ApplicationEventPublisher eventPublisher) {
         this.bankTransferReceiptRepository = bankTransferReceiptRepository;
         this.paymentReceiptFinder = paymentReceiptFinder;
         this.registrationPort = registrationPort;
+        this.pendingReviewPort = pendingReviewPort;
         this.eventPublisher = eventPublisher;
     }
 
@@ -38,17 +41,23 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
     @Transactional
     public BankTransferReceipt approve(Long id, Person decidedBy) {
         BankTransferReceipt receipt = paymentReceiptFinder.findOrThrow(id);
+        boolean hasPendingPayment = receipt.hasPendingPayment();
         receipt.approve(decidedBy);
 
         Invoice invoice = receipt.getInvoice();
-        Long paymentId = registrationPort.registerApprovedBankTransferPayment(invoice.getId(), paymentReceiptFinder.reviewerIdOf(receipt));
-        paymentReceiptFinder.linkApprovedPayment(receipt, paymentId);
+        if (hasPendingPayment) {
+            pendingReviewPort.approvePendingPayment(receipt.getPaymentId(), paymentReceiptFinder.reviewerIdOf(receipt));
+        } else {
+            Long paymentId = registrationPort.registerApprovedBankTransferPayment(invoice.getId(), paymentReceiptFinder.reviewerIdOf(receipt));
+            paymentReceiptFinder.linkApprovedPayment(receipt, paymentId);
+        }
+        Person payer = paymentReceiptFinder.payerOf(receipt);
 
         if (invoice.getPaymentStatus() != InvoicePaymentStatus.PAID) {
             receipt.markAsAppliedToOlderDebt();
             BankTransferReceipt applied = bankTransferReceiptRepository.save(receipt);
-            if (applied.payer() != null) {
-                eventPublisher.publishEvent(PaymentReceiptAppliedToOlderDebtEvent.appliedFor(applied.getId(), invoice.getId(), applied.payer().getId(),
+            if (payer != null) {
+                eventPublisher.publishEvent(PaymentReceiptAppliedToOlderDebtEvent.appliedFor(applied.getId(), invoice.getId(), payer.getId(),
                         invoice.getPeriod().format(DateTimeFormatter.ofPattern("MM/yyyy"))));
             }
             log.info("Comprobante aprobado y aplicado a deuda anterior: comprobante={}, factura={}", id, invoice.getId());
@@ -56,7 +65,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         }
 
         BankTransferReceipt saved = bankTransferReceiptRepository.save(receipt);
-        eventPublisher.publishEvent(new PaymentReceiptApprovedEvent(saved));
+        eventPublisher.publishEvent(new PaymentReceiptApprovedEvent(saved, payer));
         log.info("Comprobante de pago aprobado: comprobante={}, factura={}", id, invoice.getId());
         return saved;
     }
