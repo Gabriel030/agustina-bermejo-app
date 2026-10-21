@@ -51,27 +51,26 @@ public final class IssuingTestData {
     }
 
     public static InvoiceDiscountCandidate candidateOnLine(int lineNumber, DiscountType type, long sourceId, InvoiceType invoiceType, String base, String discount) {
-        return new InvoiceDiscountCandidate(type, sourceId, sourceId, type.name() + sourceId, invoiceType, ars(base), ars(discount), null, null, null,
+        return new InvoiceDiscountCandidate(type, sourceId, sourceId, type.name() + sourceId, invoiceType, ars(base), ars(discount), null, null,
                 lineNumber, null, null, null, legacyOriginOf(type));
     }
 
     public static InvoiceDiscountCandidate studentDiscountCandidate(DiscountType type, long sourceId, long studentDiscountId, String discount, Integer priority, Instant grantedAt) {
         return new InvoiceDiscountCandidate(type, sourceId, studentDiscountId, type.name() + sourceId, InvoiceType.MONTHLY_INSTALLMENT, ars("100.00"), ars(discount),
-                null, null, null, 1, priority, grantedAt, null, DiscountCandidateOrigin.STUDENT_DISCOUNT);
+                null, null, 1, priority, grantedAt, null, DiscountCandidateOrigin.STUDENT_DISCOUNT);
     }
 
     public static InvoiceDiscountCandidate withOrigin(InvoiceDiscountCandidate candidate, DiscountCandidateOrigin origin) {
         return new InvoiceDiscountCandidate(candidate.discountType(), candidate.sourceId(), candidate.studentDiscountId(), candidate.discountName(),
                 candidate.applicableInvoiceType(), candidate.baseAmount(), candidate.discountAmount(), candidate.installmentNumber(), candidate.installmentsTotal(),
-                candidate.sourceInstallmentId(), candidate.lineNumber(), candidate.priority(), candidate.grantedAt(), candidate.calculation(), origin);
+                candidate.lineNumber(), candidate.priority(), candidate.grantedAt(), candidate.calculation(), origin);
     }
 
     private static DiscountCandidateOrigin legacyOriginOf(DiscountType type) {
         return switch (type) {
-            case SCHOLARSHIP -> DiscountCandidateOrigin.LEGACY_SCHOLARSHIP;
             case PROMOTION -> DiscountCandidateOrigin.LEGACY_PROMOTION;
             case COHORT_ENTRY -> DiscountCandidateOrigin.LEGACY_COHORT_ENTRY;
-            case ANNUAL_UPFRONT, INDIVIDUAL -> DiscountCandidateOrigin.STUDENT_DISCOUNT;
+            case SCHOLARSHIP, ANNUAL_UPFRONT, INDIVIDUAL -> DiscountCandidateOrigin.STUDENT_DISCOUNT;
         };
     }
 }

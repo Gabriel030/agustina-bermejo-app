@@ -29,13 +29,13 @@ class InvoiceDiscountCandidateTest {
     @Test
     void aCandidateWithoutOriginIsRejected() {
         assertThatThrownBy(() -> new InvoiceDiscountCandidate(DiscountType.PROMOTION, 1L, 1L, "d", InvoiceType.MONTHLY_INSTALLMENT, ars("100.00"), ars("10.00"),
-                null, null, null, 1, null, null, null, null)).isInstanceOf(NullPointerException.class);
+                null, null, 1, null, null, null, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void aLegacySourceCandidateStartsOnTheFirstLineWithoutPriorityGrantOrCalculation() {
         var legacy = InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_PROMOTION, DiscountType.PROMOTION, 1L, 1L, "d",
-                InvoiceType.MONTHLY_INSTALLMENT, ars("100.00"), ars("10.00"), null, null, null);
+                InvoiceType.MONTHLY_INSTALLMENT, ars("100.00"), ars("10.00"), null, null);
 
         assertThat(legacy.lineNumber()).isEqualTo(1);
         assertThat(legacy.priority()).isNull();

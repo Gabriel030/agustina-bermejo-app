@@ -108,7 +108,7 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
         Integer installmentNumber = monthly ? discount.periodRange().ordinalOf(request.period()) : null;
         Integer installmentsTotal = monthly ? discount.periodRange().monthCount() : null;
         return new InvoiceDiscountCandidate(discount.getDiscountType(), discount.getId(), discount.getId(), nameOf(discount), discount.getApplicableInvoiceType(), base, saving,
-                installmentNumber, installmentsTotal, null, 1, discount.getPriority(), discount.getGrantedAt(), discount.getCalculation(),
+                installmentNumber, installmentsTotal, 1, discount.getPriority(), discount.getGrantedAt(), discount.getCalculation(),
                 DiscountCandidateOrigin.STUDENT_DISCOUNT);
     }
 

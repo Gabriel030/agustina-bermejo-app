@@ -61,7 +61,7 @@ class DiscountCandidateRankingProperties {
         Instant grantedAt = spec.tail().grantDay() == null ? null : GRANT_EPOCH.plusSeconds(spec.tail().grantDay() * 86_400L);
         return new InvoiceDiscountCandidate(spec.head().type(), sourceId, spec.tail().studentDiscountId(), "d" + sourceId, spec.head().invoiceType(),
                 IssuingTestData.ars(BigDecimal.valueOf(baseCents, 2).toPlainString()), IssuingTestData.ars(BigDecimal.valueOf(savingCents, 2).toPlainString()),
-                null, null, null, spec.head().lineNumber(), spec.tail().priority(), grantedAt, null, spec.tail().origin());
+                null, null, spec.head().lineNumber(), spec.tail().priority(), grantedAt, null, spec.tail().origin());
     }
 
     @Provide

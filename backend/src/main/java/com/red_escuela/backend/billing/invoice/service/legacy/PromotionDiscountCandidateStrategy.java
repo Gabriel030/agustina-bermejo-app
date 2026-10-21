@@ -66,7 +66,7 @@ public class PromotionDiscountCandidateStrategy implements InvoiceDiscountCandid
         String name = "Promoción: " + promotion.getDescription() + " (plan " + planDescription + ")";
         return InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_PROMOTION, DiscountType.PROMOTION, usage.benefit().getId(), usage.benefit().getId(),
                 name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name, request.invoiceType(), base,
-                DiscountAmounts.discountOf(usage.benefit().getValue(), base), (int) usage.alreadyApplied() + 1, usage.benefit().getInvoiceScopeCount(), null);
+                DiscountAmounts.discountOf(usage.benefit().getValue(), base), (int) usage.alreadyApplied() + 1, usage.benefit().getInvoiceScopeCount());
     }
 
     private record BenefitUsage(PromotionBenefit benefit, long alreadyApplied) {

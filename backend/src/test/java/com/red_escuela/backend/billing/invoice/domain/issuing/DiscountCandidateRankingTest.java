@@ -124,13 +124,13 @@ class DiscountCandidateRankingTest {
 
     private static InvoiceDiscountCandidate withoutStudentDiscountId(InvoiceDiscountCandidate base) {
         return new InvoiceDiscountCandidate(base.discountType(), base.sourceId(), null, base.discountName(), base.applicableInvoiceType(),
-                base.baseAmount(), base.discountAmount(), base.installmentNumber(), base.installmentsTotal(), base.sourceInstallmentId(), base.lineNumber(),
+                base.baseAmount(), base.discountAmount(), base.installmentNumber(), base.installmentsTotal(), base.lineNumber(),
                 base.priority(), base.grantedAt(), base.calculation(), base.origin());
     }
 
     private static InvoiceDiscountCandidate withPriority(InvoiceDiscountCandidate base, Integer priority, Instant grantedAt) {
         return new InvoiceDiscountCandidate(base.discountType(), base.sourceId(), base.studentDiscountId(), base.discountName(), base.applicableInvoiceType(),
-                base.baseAmount(), base.discountAmount(), base.installmentNumber(), base.installmentsTotal(), base.sourceInstallmentId(), base.lineNumber(),
+                base.baseAmount(), base.discountAmount(), base.installmentNumber(), base.installmentsTotal(), base.lineNumber(),
                 priority, grantedAt, base.calculation(), base.origin());
     }
 }

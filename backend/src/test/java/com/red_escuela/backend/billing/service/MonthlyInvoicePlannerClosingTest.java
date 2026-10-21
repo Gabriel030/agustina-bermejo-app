@@ -3,22 +3,27 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
+import com.red_escuela.backend.billing.discount.exception.DiscountInvoiceTypeMismatchException;
+import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountCommand;
+import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountOperation;
+import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
-import com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -78,7 +83,9 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private SelectPaymentPlanForProgramUseCase selectPaymentPlanUseCase;
     @Autowired
-    private GrantScholarshipForProgramUseCase grantScholarshipUseCase;
+    private BillingOperationPipeline pipeline;
+    @Autowired
+    private GrantStudentDiscountOperation grantStudentDiscountOperation;
     @Autowired
     private InvoicePlanningContextLoader contextLoader;
     @Autowired
@@ -313,33 +320,43 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
     @Test
     @Tag("D-157")
+    @Tag("D-384")
     void aScholarshipNeverDiscountsTheEnrollmentFeeAndOnlyDiscountsTheInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         today(date(2027, 1, 4));
         Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
-        Long forFee = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
-        Long forInstallments = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
+        Long scholarshipOnFee = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
+        Long individualOnFee = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
+        Long scholarshipOnInstallments = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
         authenticateAs(career);
-        grantScholarshipUseCase.grant(forFee, scholarship(ScholarshipScope.ENROLLMENT_FEE));
-        grantScholarshipUseCase.grant(forInstallments, scholarship(null));
+        assertThatThrownBy(() -> grantDiscount(career, scholarshipOnFee, DiscountType.SCHOLARSHIP, InvoiceType.ENROLLMENT_FEE))
+                .isInstanceOf(DiscountInvoiceTypeMismatchException.class);
+        grantDiscount(career, individualOnFee, DiscountType.INDIVIDUAL, InvoiceType.ENROLLMENT_FEE);
+        grantDiscount(career, scholarshipOnInstallments, DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT);
 
         today(date(2027, 2, 2));
         job.run();
         today(date(2027, 3, 2));
         job.run();
 
-        assertThat(amountDue(onlyFee(forFee))).isEqualTo(ars(5000));
-        assertThat(amountDue(invoices(forFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
-        assertThat(amountDue(onlyFee(forInstallments))).isEqualTo(ars(5000));
-        assertThat(amountDue(invoices(forInstallments, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(5000));
-        assertInvariants(forFee, y27);
-        assertInvariants(forInstallments, y27);
+        assertThat(amountDue(onlyFee(scholarshipOnFee))).isEqualTo(ars(5000));
+        assertThat(amountDue(invoices(scholarshipOnFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
+        assertThat(amountDue(onlyFee(individualOnFee))).isEqualTo(ars(2500));
+        assertThat(amountDue(invoices(individualOnFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
+        assertThat(amountDue(onlyFee(scholarshipOnInstallments))).isEqualTo(ars(5000));
+        assertThat(amountDue(invoices(scholarshipOnInstallments, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(5000));
+        assertInvariants(scholarshipOnFee, y27);
+        assertInvariants(individualOnFee, y27);
+        assertInvariants(scholarshipOnInstallments, y27);
     }
 
-    private CreateScholarshipRequest scholarship(ScholarshipScope scope) {
-        return new CreateScholarshipRequest(new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null,
-                Percentage.ofFraction(new BigDecimal("0.5"))), "Beca 50%", 3, scope);
+    private void grantDiscount(Career career, Long enrollmentId, DiscountType type, InvoiceType invoiceType) {
+        StudentDiscountGrantRequest request = new StudentDiscountGrantRequest(type, null,
+                new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.5"))), invoiceType, YearMonth.of(2027, 3),
+                invoiceType == InvoiceType.MONTHLY_INSTALLMENT ? YearMonth.of(2027, 5) : YearMonth.of(2027, 3), "Beca 50%");
+        pipeline.runOperation(grantStudentDiscountOperation,
+                GrantStudentDiscountCommand.byPerson(EnrollmentReference.ofProgram(enrollmentId), request, career.directorId(), true));
     }
 
     @Test

@@ -85,7 +85,7 @@ estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.from`).
 
 ## Paquete por feature: `billing`
 
-El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `Scholarship`,
+El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `StudentDiscount`,
 `Promotion`, `LatePaymentSettings`, `ProgramCohort`, `ProgramYearBillingTemplate`,
 etc. — todo lo de Fase 6.x del roadmap) vive en su propio paquete
 `com.red_escuela.backend.billing.*`. Es ~25% de todo el backend, bastante
@@ -97,14 +97,14 @@ acoplamiento cruzado es esperado, no un smell: `billing.*` importa
 cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
-(`invoice`, `payment`, `paymentreceipt`, `creditnote`, `scholarship`,
+(`invoice`, `payment`, `paymentreceipt`, `creditnote`,
 `promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:
 1. **Compartidos entre varios use cases** del mismo subdominio (evitan
    duplicar lógica): `PaymentPlanSelectionGuard`, `PromotionRedeemer`,
-   `ScholarshipGrantSupport`, `PaymentReceiptFinder`, etc.
+   `PaymentReceiptFinder`, etc.
 2. **Ya cohesivos de por sí**, no tenían el problema de "cajón de sastre"
    (varios métodos, pero todos sobre el mismo concepto — mismo criterio que
    `PersonFactory`/`CurrentPersonService` en `identity`): `InvoiceFactory`

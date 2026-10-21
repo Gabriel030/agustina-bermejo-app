@@ -49,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
 
@@ -65,7 +64,6 @@ public class ProgramEnrollmentService {
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final StudentDebtResolutionService studentDebtResolutionService;
-    private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final Clock clock;
@@ -80,7 +78,6 @@ public class ProgramEnrollmentService {
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             Clock clock) {
@@ -94,7 +91,6 @@ public class ProgramEnrollmentService {
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.studentDebtResolutionService = studentDebtResolutionService;
-        this.scholarshipService = scholarshipService;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
         this.clock = clock;
@@ -173,7 +169,6 @@ public class ProgramEnrollmentService {
         enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
                 withdrawal.registeredByPersonId());
         programEnrollmentRepository.save(enrollment);
-        scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(
                 enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
     }

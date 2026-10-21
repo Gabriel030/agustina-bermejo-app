@@ -75,9 +75,6 @@ public class InvoiceDiscount {
     @Column(name = "installments_total")
     private Integer installmentsTotal;
 
-    @Column(name = "source_installment_id")
-    private Long sourceInstallmentId;
-
     @Convert(converter = MonetaryAdjustmentConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "calculation", columnDefinition = "jsonb")
@@ -96,7 +93,6 @@ public class InvoiceDiscount {
         this.discountAmount = draft.discountAmount();
         this.installmentNumber = draft.installmentNumber();
         this.installmentsTotal = draft.installmentsTotal();
-        this.sourceInstallmentId = draft.sourceInstallmentId();
         this.calculation = draft.calculation();
     }
 

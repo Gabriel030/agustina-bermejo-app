@@ -9,7 +9,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedDomainEvent;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -102,7 +101,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
     void scholarshipHalfWinsOverPromotionAndOnlyTheWinnerConsumes() {
         var offering = program();
         var learner = factory.newLearner(offering, null);
-        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), 3, ScholarshipScope.INSTALLMENTS);
+        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
         Long benefitId = factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
@@ -113,7 +112,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(discount.describeInstallmentProgress()).contains("1 de 3");
         assertThat(discount.getStudentDiscountId()).isEqualTo(scholarshipId);
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("40000.00"));
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment where scholarship_id = ? and status = 'APPLIED'", Long.class, scholarshipId)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount where student_discount_id = ? and discount_type = 'SCHOLARSHIP'", Long.class, scholarshipId)).isEqualTo(1L);
         assertThat(jdbc.queryForObject("select count(*) from invoice_discount where discount_type = 'PROMOTION' and student_discount_id = ?", Long.class, benefitId)).isZero();
         assertThat((BigDecimal) entriesOf(learner.studentId(), Currency.ARS).get(0).get("amount")).isEqualByComparingTo("40000.00");
         invariants.assertAllBillingInvariantsHold();
@@ -123,10 +122,10 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
     @Tag("D-074")
     @Tag("D-282")
     @Tag("D-295")
-    void aBiggerPromotionBeatsTheLegacyScholarshipAndTheScholarshipInstallmentIsNotConsumed() {
+    void aBiggerPromotionBeatsTheScholarshipAndTheScholarshipMonthIsLost() {
         var offering = program();
         var learner = factory.newLearner(offering, null);
-        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), 3, ScholarshipScope.INSTALLMENTS);
+        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
         Long benefitId = factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("60"), 2);
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
@@ -135,9 +134,8 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(discount.getDiscountAmount()).isEqualTo(ars("48000.00"));
         assertThat(discount.getStudentDiscountId()).isEqualTo(benefitId);
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("32000.00"));
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment where scholarship_id = ? and status = 'APPLIED'", Long.class, scholarshipId)).isZero();
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment where scholarship_id = ? and status = 'PENDING'", Long.class, scholarshipId)).isEqualTo(3L);
         assertThat(jdbc.queryForObject("select count(*) from invoice_discount where discount_type = 'SCHOLARSHIP' and student_discount_id = ?", Long.class, scholarshipId)).isZero();
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, scholarshipId)).isEqualTo("ACTIVE");
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -146,7 +144,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
     void whenTheScholarshipEndsThePromotionStartsCounting() {
         var offering = program();
         var learner = factory.newLearner(offering, null);
-        factory.grantScholarship(offering, learner, percent("50"), 1, ScholarshipScope.INSTALLMENTS);
+        factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 3));
         Long benefitId = factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         Invoice march = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
@@ -168,7 +166,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
     void aFullScholarshipIssuesAZeroInvoiceAlreadyPaidWithoutAccountMovement() {
         var offering = program();
         var learner = factory.newLearner(offering, null);
-        factory.grantScholarship(offering, learner, percent("100"), 3, ScholarshipScope.INSTALLMENTS);
+        factory.grantScholarship(offering, learner, percent("100"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
         factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
@@ -187,11 +185,11 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
 
     @Test
     @Tag("D-157")
-    void aScholarshipCoveringBothScopesNeverDiscountsTheEnrollmentFee() {
+    void aScholarshipNeverDiscountsTheEnrollmentFee() {
         var offering = program();
         Long template = factory.newTemplate(offering, 2027);
         var learner = factory.newLearner(offering, null);
-        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), 3, ScholarshipScope.BOTH);
+        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(enrollmentFee(offering, learner, template, 1, YearMonth.of(2027, 3),
                 LocalDate.of(2027, 3, 11), null, false, InvoiceIssuingReason.MONTHLY_RUN)));
@@ -200,7 +198,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(invoice.getLines().get(0).getDiscount()).isNull();
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("50000.00"));
         assertThat(invoice.getLines().get(0).getChargeKey()).isEqualTo("PE:" + learner.programEnrollmentId() + ":ENROLLMENT_FEE:T" + template + ":S1");
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment where scholarship_id = ? and status = 'APPLIED'", Long.class, scholarshipId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount where student_discount_id = ?", Long.class, scholarshipId)).isZero();
     }
 
     @Test
@@ -351,10 +349,10 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
     }
 
     @Test
-    void aRollbackOfTheCallerTransactionLeavesNoInvoiceNoDebitAndNoScholarshipConsumption() {
+    void aRollbackOfTheCallerTransactionLeavesNoInvoiceNoDebitAndNoScholarshipDiscountRow() {
         var offering = program();
         var learner = factory.newLearner(offering, null);
-        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), 3, ScholarshipScope.INSTALLMENTS);
+        Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
         InvoiceIssuingRequest request = installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1));
 
         assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
@@ -364,6 +362,6 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
 
         assertThat(jdbc.queryForObject("select count(*) from invoice_line where charge_key = ?", Long.class, "PE:" + learner.programEnrollmentId() + ":MONTHLY_INSTALLMENT:2027-03")).isZero();
         assertThat(entriesOf(learner.studentId(), Currency.ARS)).isEmpty();
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment where scholarship_id = ? and status = 'APPLIED'", Long.class, scholarshipId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount where student_discount_id = ?", Long.class, scholarshipId)).isZero();
     }
 }

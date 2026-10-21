@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
-import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -57,10 +56,10 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
     void setUp() {
         EnrollmentWithdrawalDateResolver resolver = new EnrollmentWithdrawalDateResolver(clock);
         programService = new ProgramEnrollmentService(programRepository, null, null, null, null, null, null, null, null, null,
-                mock(ScholarshipService.class), resolver, port, clock);
+                resolver, port, clock);
         CourseRepository courses = mock(CourseRepository.class);
         courseService = new CourseEnrollmentService(courseRepository, null, courses, null, null, mock(CourseSubjectSectionEnrollmentRepository.class), null, null,
-                mock(ScholarshipService.class), resolver, port, clock);
+                resolver, port, clock);
         Student student = new Student();
         student.setId(STUDENT_ID);
         programEnrollment = new ProgramEnrollment();
