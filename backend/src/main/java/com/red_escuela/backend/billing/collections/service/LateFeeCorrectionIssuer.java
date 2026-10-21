@@ -1,14 +1,17 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.account.domain.InvoiceSettlement;
+import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.collections.domain.AppliedLateFeeCorrection;
+import com.red_escuela.backend.billing.collections.domain.DailyLateFeeSchedule;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCharge;
 import com.red_escuela.backend.billing.collections.domain.LateFeeChargeCorrection;
 import com.red_escuela.backend.billing.collections.domain.LateFeeFreeze;
+import com.red_escuela.backend.billing.collections.domain.LateFeePaymentDateCorrectionCalculator;
 import com.red_escuela.backend.billing.collections.domain.LateFeeWithdrawalCorrectionCalculator;
-import com.red_escuela.backend.billing.collections.domain.PlannedLateFeeCorrection;
 import com.red_escuela.backend.billing.collections.operation.IssueLateFeeCorrectionCommand;
 import com.red_escuela.backend.billing.collections.operation.LateFeeCorrectionCreditNoteOperation;
 import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
@@ -37,6 +40,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 @Service
 public class LateFeeCorrectionIssuer {
@@ -53,14 +57,16 @@ public class LateFeeCorrectionIssuer {
     private final PolicySet<LateFeeCorrectionContext> correctionPolicies;
     private final BillingOperationPipeline pipeline;
     private final LateFeeCorrectionCreditNoteOperation operation;
-    private final LateFeeWithdrawalCorrectionCalculator calculator;
+    private final LateFeeWithdrawalCorrectionCalculator withdrawalCalculator;
+    private final LateFeePaymentDateCorrectionCalculator paymentDateCalculator;
+    private final InvoiceSettlementQueryService settlementQuery;
     private final TransactionTemplate ownTransaction;
 
     public LateFeeCorrectionIssuer(LateFeeChargeRepository chargeRepository, LateFeeChargeCorrectionRepository correctionRepository,
                                    InvoiceCreditAccessService invoiceAccess, StudentCurrentAccountService accountService, LatePaymentVersionResolver versionResolver,
                                    LateFeeFreezeResolver freezeResolver, PolicySet<LateFeeCorrectionContext> lateFeeCorrectionPolicySet,
                                    BillingOperationPipeline pipeline, LateFeeCorrectionCreditNoteOperation operation, LateFeeCalculationStrategy calculationStrategy,
-                                   PlatformTransactionManager transactionManager) {
+                                   InvoiceSettlementQueryService settlementQuery, PlatformTransactionManager transactionManager) {
         this.chargeRepository = chargeRepository;
         this.correctionRepository = correctionRepository;
         this.invoiceAccess = invoiceAccess;
@@ -70,14 +76,43 @@ public class LateFeeCorrectionIssuer {
         this.correctionPolicies = lateFeeCorrectionPolicySet;
         this.pipeline = pipeline;
         this.operation = operation;
-        this.calculator = new LateFeeWithdrawalCorrectionCalculator(calculationStrategy);
+        this.withdrawalCalculator = new LateFeeWithdrawalCorrectionCalculator(calculationStrategy);
+        this.paymentDateCalculator = new LateFeePaymentDateCorrectionCalculator(calculationStrategy);
+        this.settlementQuery = settlementQuery;
         this.ownTransaction = new TransactionTemplate(transactionManager);
         this.ownTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
     }
 
-    public LateFeeCorrectionOutcome correctLateFeeChargeInNewTransaction(Long lateFeeChargeId, LocalDate factDate) {
+    public LateFeeCorrectionOutcome correctLateFeeChargeAfterWithdrawalInNewTransaction(Long lateFeeChargeId, LocalDate factDate) {
+        return runInNewTransaction(lateFeeChargeId, facts -> {
+            if (facts.freeze().enrollmentEndDate().isEmpty()) {
+                return Optional.empty();
+            }
+            LocalDate enrollmentEndDate = facts.freeze().enrollmentEndDate().get();
+            return withdrawalCalculator.planCorrectionOfDebitNote(facts.charge().toSnapshot(), facts.applied(), enrollmentEndDate, facts.freeze().frozenByRuleOfTheEndDate(),
+                    day -> facts.timeline().termsOn(day, facts.dueDateTerms()).lateFeeChargingEnabled())
+                    .map(planned -> IssueLateFeeCorrectionCommand.afterWithdrawal(facts.charge().getId(), facts.debitNote().getId(), facts.charge().getStudentCurrentAccountId(),
+                            planned, enrollmentEndDate, factDate));
+        });
+    }
+
+    public LateFeeCorrectionOutcome correctLateFeeChargeAfterPaymentDateInNewTransaction(Long lateFeeChargeId, InvoiceSettlement settlement) {
+        return runInNewTransaction(lateFeeChargeId, facts -> {
+            Optional<InvoiceSettlement> current = settlementQuery.findCurrentSettlementOfInvoice(facts.origin().getId());
+            if (current.isEmpty() || !current.get().allocationId().equals(settlement.allocationId())) {
+                return Optional.empty();
+            }
+            boolean paidWithinGrace = !new DailyLateFeeSchedule(facts.origin().getDueDate(), facts.dueDateTerms().gracePeriodDays()).isPastGraceOn(settlement.paymentDate());
+            return paymentDateCalculator.planCorrectionOfDebitNote(facts.charge().toSnapshot(), facts.applied(), settlement.paymentDate(), paidWithinGrace,
+                    day -> facts.timeline().termsOn(day, facts.dueDateTerms()).lateFeeChargingEnabled() && !facts.freeze().frozenOn().test(day))
+                    .map(planned -> IssueLateFeeCorrectionCommand.afterPaymentDate(facts.charge().getId(), facts.debitNote().getId(), facts.charge().getStudentCurrentAccountId(),
+                            planned, LateFeePaymentDateCorrectionCalculator.causeOf(paidWithinGrace), settlement.paymentDate(), settlement.allocationId(), settlement.allocatedOn()));
+        });
+    }
+
+    private LateFeeCorrectionOutcome runInNewTransaction(Long lateFeeChargeId, Function<LockedChargeFacts, Optional<IssueLateFeeCorrectionCommand>> planner) {
         try {
-            return ownTransaction.execute(status -> correctLateFeeChargeUnderLocks(lateFeeChargeId, factDate));
+            return ownTransaction.execute(status -> correctLateFeeChargeUnderLocks(lateFeeChargeId, planner));
         } catch (DataIntegrityViolationException e) {
             if (!violatesCorrectionUniqueness(e)) {
                 throw e;
@@ -87,7 +122,7 @@ public class LateFeeCorrectionIssuer {
         }
     }
 
-    private LateFeeCorrectionOutcome correctLateFeeChargeUnderLocks(Long lateFeeChargeId, LocalDate factDate) {
+    private LateFeeCorrectionOutcome correctLateFeeChargeUnderLocks(Long lateFeeChargeId, Function<LockedChargeFacts, Optional<IssueLateFeeCorrectionCommand>> planner) {
         LateFeeCharge charge = chargeRepository.findById(lateFeeChargeId).orElseThrow(() -> new IllegalStateException("Late fee charge not found: " + lateFeeChargeId));
         accountService.lockStudentCurrentAccount(charge.getStudentCurrentAccountId());
         Invoice debitNote = invoiceAccess.lockInvoice(charge.getDebitNoteId()).orElseThrow(() -> new InvoiceNotFoundException(charge.getDebitNoteId()));
@@ -100,14 +135,10 @@ public class LateFeeCorrectionIssuer {
         LatePaymentTimeline timeline = versionResolver.timelineUpTo(charge.getPeriodEnd());
         InvoiceLine originLine = origin.getPrimaryLine();
         LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(originLine.getProgramEnrollmentId(), originLine.getCourseEnrollmentId(), dueDateTerms, timeline);
-        if (freeze.enrollmentEndDate().isEmpty()) {
-            return LateFeeCorrectionOutcome.NOTHING_TO_CORRECT;
-        }
         List<AppliedLateFeeCorrection> applied = correctionRepository.findByLateFeeChargeIdOrderByFirstCorrectedDay(lateFeeChargeId).stream()
                 .map(LateFeeCorrectionIssuer::appliedOf).toList();
-        Optional<PlannedLateFeeCorrection> planned = calculator.planCorrectionOfDebitNote(charge.toSnapshot(), applied, freeze.enrollmentEndDate().get(),
-                freeze.frozenByRuleOfTheEndDate(), day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled());
-        if (planned.isEmpty()) {
+        Optional<IssueLateFeeCorrectionCommand> command = planner.apply(new LockedChargeFacts(charge, debitNote, origin, dueDateTerms, timeline, freeze, applied));
+        if (command.isEmpty()) {
             return LateFeeCorrectionOutcome.NOTHING_TO_CORRECT;
         }
         PolicyEvaluationResult evaluation = correctionPolicies.evaluateRulesUntilFirstViolation(new LateFeeCorrectionContext(debitNote.getId(), debitNote.getDocumentType(),
@@ -116,11 +147,13 @@ public class LateFeeCorrectionIssuer {
             log.warn("Corrección de recargo diferida hasta que se decida el comprobante o se resuelva la causa: nota de débito={}, codigos={}", debitNote.getInvoiceNumber().value(), evaluation.describeDenials());
             return debitNote.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW ? LateFeeCorrectionOutcome.DEFERRED : LateFeeCorrectionOutcome.NOTHING_TO_CORRECT;
         }
-        IssueLateFeeCorrectionCommand command = new IssueLateFeeCorrectionCommand(lateFeeChargeId, debitNote.getId(), charge.getStudentCurrentAccountId(), planned.get(),
-                freeze.enrollmentEndDate().get(), factDate);
-        return pipeline.runOperation(operation, command).resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException(
+        return pipeline.runOperation(operation, command.get()).resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException(
                 "Late fee correction does not wait for authorization: " + requestId)).isPresent()
                 ? LateFeeCorrectionOutcome.CORRECTED : LateFeeCorrectionOutcome.NOTHING_TO_CORRECT;
+    }
+
+    private record LockedChargeFacts(LateFeeCharge charge, Invoice debitNote, Invoice origin, LatePaymentTerms dueDateTerms, LatePaymentTimeline timeline, LateFeeFreeze freeze,
+                                     List<AppliedLateFeeCorrection> applied) {
     }
 
     private static AppliedLateFeeCorrection appliedOf(LateFeeChargeCorrection correction) {

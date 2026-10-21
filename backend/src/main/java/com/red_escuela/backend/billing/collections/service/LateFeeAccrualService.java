@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,14 +18,16 @@ public class LateFeeAccrualService {
     private final LateFeeCandidateFinder candidateFinder;
     private final LateFeeIssuer issuer;
     private final LatePaymentVersionResolver versionResolver;
-    private final LateFeeOverchargeRecorder overchargeRecorder;
+    private final InvoiceSettlementQueryService settlementQuery;
+    private final LateFeeSettlementCorrectionService settlementCorrectionService;
 
     public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer, LatePaymentVersionResolver versionResolver,
-                                 LateFeeOverchargeRecorder overchargeRecorder) {
+                                 InvoiceSettlementQueryService settlementQuery, LateFeeSettlementCorrectionService settlementCorrectionService) {
         this.candidateFinder = candidateFinder;
         this.issuer = issuer;
         this.versionResolver = versionResolver;
-        this.overchargeRecorder = overchargeRecorder;
+        this.settlementQuery = settlementQuery;
+        this.settlementCorrectionService = settlementCorrectionService;
     }
 
     public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate) {
@@ -33,7 +36,8 @@ public class LateFeeAccrualService {
 
     public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate, LatePaymentTimeline timeline) {
         int issued = reconcileLateFeesOfInvoice(originInvoiceId, businessDate, timeline);
-        overchargeRecorder.recordDaysChargedAfterThePaymentOfInvoice(originInvoiceId, timeline);
+        settlementQuery.findCurrentSettlementOfInvoice(originInvoiceId)
+                .ifPresent(settlement -> settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(originInvoiceId, settlement));
         return issued;
     }
 

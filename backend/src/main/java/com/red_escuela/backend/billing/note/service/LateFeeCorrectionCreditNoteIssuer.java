@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineRequest;
-import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.billing.note.domain.LateFeeCorrectionCreditNoteKind;
 import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -19,9 +19,6 @@ import java.util.List;
 
 @Component
 public class LateFeeCorrectionCreditNoteIssuer {
-    public static final String PROCESS_NAME = "LateFeeWithdrawalCorrection";
-    private static final StatusChangeActor ACTOR = StatusChangeActor.ofProcess(PROCESS_NAME);
-
     private final CreditNoteRepository creditNoteRepository;
     private final CreditNoteNumberGenerator numberGenerator;
     private final ApplicationEventPublisher eventPublisher;
@@ -36,23 +33,24 @@ public class LateFeeCorrectionCreditNoteIssuer {
     }
 
     public CreditNote issueCorrectionCreditNote(Invoice lockedDebitNote, NonNegativeMoney credit, String justification,
-                                                LocalDate factDate) {
+                                                LocalDate factDate, LateFeeCorrectionCreditNoteKind kind) {
+        StatusChangeActor actor = kind.actor();
         LocalDate businessDate = LocalDate.now(clock);
         boolean coversAllTheUnpaidDebt = lockedDebitNote.getPaymentStatus() != InvoicePaymentStatus.PAID
                 && credit.equals(lockedDebitNote.getAmounts().outstandingAmount());
         CreditNote note;
         InvoiceCreditNoteApplication application;
         if (coversAllTheUnpaidDebt) {
-            note = CreditNote.issueCancellationCreditNoteForInvoice(lockedDebitNote, CreditNoteReason.LATE_FEE_CORRECTION, justification,
-                    numberGenerator.nextCreditNoteNumber(), businessDate, factDate, null, ACTOR);
+            note = CreditNote.issueCancellationCreditNoteForInvoice(lockedDebitNote, kind.reason(), justification,
+                    numberGenerator.nextCreditNoteNumber(), businessDate, factDate, null, actor);
             application = note.toInvoiceCancellationApplication(false);
         } else {
-            note = CreditNote.issueCreditNoteForInvoice(lockedDebitNote, CreditNoteReason.LATE_FEE_CORRECTION, justification,
+            note = CreditNote.issueCreditNoteForInvoice(lockedDebitNote, kind.reason(), justification,
                     List.of(new CreditNoteLineRequest(lockedDebitNote.getPrimaryLine().getLineNumber(), credit)), numberGenerator.nextCreditNoteNumber(),
-                    businessDate, factDate, null, ACTOR);
+                    businessDate, factDate, null, actor);
             application = note.toInvoiceCreditNoteApplication(lockedDebitNote.getAmounts().outstandingAmount());
         }
-        lockedDebitNote.applyCreditNote(application, businessDate, ACTOR);
+        lockedDebitNote.applyCreditNote(application, businessDate, actor);
         creditNoteRepository.save(note);
         lockedDebitNote.pullRecordedDomainEvents().stream().filter(InvoiceCancelledEvent.class::isInstance).forEach(eventPublisher::publishEvent);
         return note;
