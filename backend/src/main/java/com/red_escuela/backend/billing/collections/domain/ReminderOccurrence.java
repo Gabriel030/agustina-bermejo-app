@@ -29,8 +29,12 @@ public record ReminderOccurrence(Long invoiceId, String noticeKey, ReminderMessa
         return channels.contains(ReminderChannel.IN_APP);
     }
 
-    public boolean fallsBeforeDueDate() {
-        return date.isBefore(dueDate);
+    public boolean inAppPrecedesDueDate() {
+        return sendsInApp() && date.isBefore(dueDate);
+    }
+
+    public boolean emailPrecedesDueDate(NonBusinessDays nonBusinessDays) {
+        return emailDate(nonBusinessDays).map(sendDate -> sendDate.isBefore(dueDate)).orElse(false);
     }
 
     public Optional<LocalDate> inAppDate() {

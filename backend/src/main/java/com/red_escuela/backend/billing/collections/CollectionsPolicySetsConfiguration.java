@@ -51,9 +51,9 @@ public class CollectionsPolicySetsConfiguration {
     @Bean
     public PolicySet<ReminderInvoiceFact> collectionReminderEligibilityPolicySet() {
         return PolicySet.named("COLLECTION_REMINDER_ELIGIBILITY", List.of(
+                new ReminderEligibleInvoicePolicy(),
                 new ReceiptUnderReviewSuppressesReminderPolicy(),
-                new PendingCancellationSuppressesReminderPolicy(),
-                new ReminderEligibleInvoicePolicy()));
+                new PendingCancellationSuppressesReminderPolicy()));
     }
 
     @Bean

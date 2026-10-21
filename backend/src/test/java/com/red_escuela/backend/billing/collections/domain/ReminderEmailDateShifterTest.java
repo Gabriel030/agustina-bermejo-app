@@ -72,6 +72,19 @@ class ReminderEmailDateShifterTest {
     }
 
     @Test
+    @Tag("D-372")
+    @Tag("D-342")
+    void emailPrecedesTheDueDateJudgedByTheShiftedSendDateAndInAppByTheNoticeDate() {
+        ReminderOccurrence saturdayNotice = new ReminderOccurrence(1L, "a", ReminderMessageType.BEFORE_DUE_REMINDER, EnumSet.of(ReminderChannel.IN_APP, ReminderChannel.EMAIL),
+                LocalDate.parse("2026-04-11"), LocalDate.parse("2026-04-13"));
+        NonBusinessDays holidayOnTheDueDate = new NonBusinessDays(Set.of(LocalDate.parse("2026-04-13")));
+
+        assertThat(saturdayNotice.inAppPrecedesDueDate()).isTrue();
+        assertThat(saturdayNotice.emailPrecedesDueDate(weekendsOnly)).isFalse();
+        assertThat(saturdayNotice.emailPrecedesDueDate(holidayOnTheDueDate)).isTrue();
+    }
+
+    @Test
     @Tag("D-342")
     void anOccurrenceWithoutEmailHasNoEmailDateAndOneWithoutInAppHasNoInAppDate() {
         ReminderOccurrence inAppOnly = new ReminderOccurrence(1L, "a", ReminderMessageType.ISSUANCE_NOTICE, EnumSet.of(ReminderChannel.IN_APP),

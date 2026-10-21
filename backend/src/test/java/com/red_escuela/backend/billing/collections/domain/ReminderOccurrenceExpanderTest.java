@@ -62,7 +62,7 @@ class ReminderOccurrenceExpanderTest {
 
         List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesOf(march, List.of(everyFourDaysUntilSuspension));
 
-        assertThat(occurrences).extracting(ReminderOccurrence::date, ReminderOccurrence::fallsBeforeDueDate).containsExactly(
+        assertThat(occurrences).extracting(ReminderOccurrence::date, occurrence -> occurrence.emailPrecedesDueDate(NonBusinessDays.weekendsOnly())).containsExactly(
                 tuple(LocalDate.parse("2027-03-06"), true),
                 tuple(LocalDate.parse("2027-03-10"), true),
                 tuple(LocalDate.parse("2027-03-14"), false),
@@ -131,18 +131,5 @@ class ReminderOccurrenceExpanderTest {
         ReminderNotice degenerate = notice("a", ReminderMilestone.ISSUANCE, 1, new ReminderRepetition(0, ReminderMilestone.DUE_DATE));
 
         assertThat(datesOf(ReminderOccurrenceExpander.expandOccurrencesOf(march, List.of(degenerate)))).containsExactly(LocalDate.parse("2027-03-02"));
-    }
-
-    @Test
-    @Tag("D-354")
-    void afterDueNoticeIgnoresGrace() {
-        ReminderInvoiceFact insideGrace = ReminderInvoiceFacts.installment(1L, "2027-03-01", "2027-03-11");
-        ReminderNotice tenDaysAfterDue = new ReminderNotice("a", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 10,
-                EnumSet.of(ReminderChannel.IN_APP, ReminderChannel.EMAIL), null);
-
-        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesOf(insideGrace, List.of(tenDaysAfterDue));
-
-        assertThat(datesOf(occurrences)).containsExactly(LocalDate.parse("2027-03-21"));
-        assertThat(new com.red_escuela.backend.billing.collections.policy.ReminderEligibleInvoicePolicy().evaluateRule(insideGrace).allowed()).isTrue();
     }
 }

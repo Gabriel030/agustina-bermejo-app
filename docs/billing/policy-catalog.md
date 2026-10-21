@@ -51,9 +51,9 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | ReceiptUnderReviewSuppressesReminderPolicy | RECEIPT_UNDER_REVIEW | D-346, D-186 |
-| 2 | PendingCancellationSuppressesReminderPolicy | PENDING_CANCELLATION_REQUEST | D-247, D-354 |
-| 3 | ReminderEligibleInvoicePolicy | INVOICE_NOT_REMINDABLE | D-354, D-242, D-052, D-149, D-131 |
+| 1 | ReminderEligibleInvoicePolicy | INVOICE_NOT_REMINDABLE | D-354, D-242, D-052, D-149, D-131 |
+| 2 | ReceiptUnderReviewSuppressesReminderPolicy | RECEIPT_UNDER_REVIEW | D-346, D-186 |
+| 3 | PendingCancellationSuppressesReminderPolicy | PENDING_CANCELLATION_REQUEST | D-247, D-354 |
 
 ## Momento COLLECTION_REMINDER_SCHEDULE
 
