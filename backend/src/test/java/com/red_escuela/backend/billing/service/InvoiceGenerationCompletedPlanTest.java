@@ -1,7 +1,5 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.support.BillingTestFixtures;
-
 import com.red_escuela.backend.shared.domain.Grade;
 
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
@@ -22,6 +20,7 @@ import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -48,7 +47,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.red_escuela.backend.shared.domain.Money;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -297,8 +295,6 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         assertThat(invoices).hasSize(1);
         Invoice unpaid = invoices.get(0);
         assertThatInvoice(unpaid).isPending();
-        Money balance = transactionTemplate.execute(status ->
-                invoiceRepository.findById(unpaid.getId()).orElseThrow().getAmounts().outstandingAmount().value());
 
         GraduationRequest request = requestGraduationUseCase.request(billed.enrollment().getId());
         SecurityContextHolder.getContext().setAuthentication(

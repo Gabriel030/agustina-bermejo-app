@@ -81,4 +81,41 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
     List<Long> findCourseEnrollmentIdsWithActivePlan(@Param("cadence") PaymentPlanCadence cadence,
                                                       @Param("status") EnrollmentStatus status,
                                                       @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
+
+    @Query("""
+            select distinct s.programEnrollment.id from PaymentPlanSelection s
+            where s.programEnrollment is not null
+              and s.programEnrollment.program.id = :programId
+              and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.MONTHLY
+              and s.programEnrollment.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED
+              and s.programEnrollment.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+              and s.effectiveFrom <= :month
+              and (s.effectiveTo is null or s.effectiveTo >= :month)
+            """)
+    List<Long> findProgramEnrollmentIdsPayingMonthlyInstallments(@Param("programId") Long programId, @Param("month") YearMonth month);
+
+    @Query("""
+            select s.programEnrollment.id, s.effectiveFrom, s.scopeMonths from PaymentPlanSelection s
+            where s.programEnrollment is not null
+              and s.programEnrollment.program.id = :programId
+              and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.ANNUAL_UPFRONT
+              and s.programEnrollment.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED
+              and s.programEnrollment.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+              and s.scopeMonths is not null
+              and s.effectiveFrom <= :month
+              and (s.effectiveTo is null or s.effectiveTo >= :month)
+            """)
+    List<Object[]> findAnnualUpfrontSelectionsOfProgram(@Param("programId") Long programId, @Param("month") YearMonth month);
+
+    @Query("""
+            select distinct s.courseEnrollment.id from PaymentPlanSelection s
+            where s.courseEnrollment is not null
+              and s.courseEnrollment.course.id = :courseId
+              and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.MONTHLY
+              and s.courseEnrollment.status = com.red_escuela.backend.enrollment.entity.EnrollmentStatus.ENROLLED
+              and s.courseEnrollment.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+              and s.effectiveFrom <= :month
+              and (s.effectiveTo is null or s.effectiveTo >= :month)
+            """)
+    List<Long> findCourseEnrollmentIdsPayingMonthlyInstallments(@Param("courseId") Long courseId, @Param("month") YearMonth month);
 }

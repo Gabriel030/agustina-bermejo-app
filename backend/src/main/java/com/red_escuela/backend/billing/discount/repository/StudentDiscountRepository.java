@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +21,23 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
     @Query("select d from StudentDiscount d where d.id = :id")
     Optional<StudentDiscount> findByIdForUpdate(@Param("id") Long id);
 
+    List<StudentDiscount> findByProgramEnrollmentIdAndStatus(Long programEnrollmentId, StudentDiscountStatus status);
+
+    List<StudentDiscount> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, StudentDiscountStatus status);
+
     List<StudentDiscount> findByProgramEnrollmentIdOrderByIdDesc(Long programEnrollmentId);
 
     List<StudentDiscount> findByCourseEnrollmentIdOrderByIdDesc(Long courseEnrollmentId);
+
+    List<StudentDiscount> findByProgramEnrollmentIdAndStatusInOrderByIdAsc(Long programEnrollmentId, Collection<StudentDiscountStatus> statuses);
+
+    List<StudentDiscount> findByCourseEnrollmentIdAndStatusInOrderByIdAsc(Long courseEnrollmentId, Collection<StudentDiscountStatus> statuses);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from StudentDiscount d where d.programEnrollmentId = :enrollmentId and d.status in :statuses order by d.id")
+    List<StudentDiscount> findByProgramEnrollmentIdAndStatusInForUpdate(@Param("enrollmentId") Long enrollmentId, @Param("statuses") Collection<StudentDiscountStatus> statuses);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from StudentDiscount d where d.courseEnrollmentId = :enrollmentId and d.status in :statuses order by d.id")
+    List<StudentDiscount> findByCourseEnrollmentIdAndStatusInForUpdate(@Param("enrollmentId") Long enrollmentId, @Param("statuses") Collection<StudentDiscountStatus> statuses);
 }

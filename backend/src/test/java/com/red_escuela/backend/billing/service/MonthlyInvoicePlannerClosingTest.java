@@ -1,7 +1,5 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.support.BillingTestFixtures;
-
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -44,6 +42,7 @@ import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
 import com.red_escuela.backend.billing.planning.domain.SlotWindow;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +109,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         return fees.get(0);
     }
 
-    private void pay(Career career, Invoice invoice, long amount) {
+    private void pay(Career career, Invoice invoice) {
         BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), director(career).getId());
     }
 
@@ -291,14 +290,14 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Invoice firstFee = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> i.getEnrollmentFeeSlot() == 1).findFirst().orElseThrow();
         Invoice secondFee = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> i.getEnrollmentFeeSlot() == 2).findFirst().orElseThrow();
         authenticateAs(career);
-        pay(career, firstFee, 5000);
+        pay(career, firstFee);
         today(date(2028, 2, 3));
         job.run();
         assertThatCode(() -> requireForTerm(enrollment, first)).doesNotThrowAnyException();
         assertThatThrownBy(() -> requireForTerm(enrollment, second)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         Invoice olderInstallment = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0);
-        pay(career, olderInstallment, olderInstallment.getAmounts().outstandingAmount().value().amount().longValueExact());
-        pay(career, secondFee, 5000);
+        pay(career, olderInstallment);
+        pay(career, secondFee);
         assertThatCode(() -> requireForTerm(enrollment, second)).doesNotThrowAnyException();
         List<Invoice> next = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> y28.templateId().equals(i.getTemplateId())).toList();
         assertThat(next).hasSize(1);

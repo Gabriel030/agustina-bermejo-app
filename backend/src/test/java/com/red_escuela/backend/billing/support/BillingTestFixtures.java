@@ -108,6 +108,23 @@ public final class BillingTestFixtures {
         return invoice;
     }
 
+    public static long seedApprovedPaymentRow(Long accountId) {
+        return seedApprovedPaymentRow(accountId, java.math.BigDecimal.ONE);
+    }
+
+    public static long seedApprovedPaymentRow(Long accountId, NonNegativeMoney amount) {
+        return seedApprovedPaymentRow(accountId, amount.value().amount());
+    }
+
+    private static long seedApprovedPaymentRow(Long accountId, java.math.BigDecimal amount) {
+        return bean(org.springframework.jdbc.core.JdbcTemplate.class).queryForObject(
+                "insert into payment (student_current_account_id, currency, status, gateway, method_type, amount, amount_currency, approved_amount, "
+                        + "approved_amount_currency, paid_on, refunded_amount, refunded_amount_currency, registered_at, started_at, method_details, registered_by_process) "
+                        + "select a.id, a.currency, 'APPROVED', 'MANUAL', 'CASH', ?, a.currency, ?, a.currency, current_date, 0, a.currency, now(), now(), "
+                        + "cast('{\"type\":\"CASH\"}' as jsonb), 'TEST' from student_current_account a where a.id = ? returning id",
+                Long.class, amount, amount, accountId);
+    }
+
     private static Invoice reload(Invoice invoice) {
         return bean(InvoiceRepository.class).findInvoiceWithLinesById(invoice.getId()).orElseThrow();
     }

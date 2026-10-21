@@ -1,9 +1,15 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository;
+import com.red_escuela.backend.billing.dto.AdminInvoiceResponse;
+import com.red_escuela.backend.billing.dto.InvoiceResponse;
+import com.red_escuela.backend.billing.dto.MeInvoiceResponse;
 import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -36,6 +42,10 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
     private PaymentAllocationRepository allocationRepository;
     @Autowired
     private InvoiceQueryService invoiceQueryService;
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+    @Autowired
+    private InvoiceViewLoader invoiceViewLoader;
 
     private BillingInvariantChecker invariants;
     private Long accountId;
@@ -51,7 +61,7 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
     }
 
     private long receivePayment(String amount, LocalDate paidOn) {
-        long paymentId = nextExternalId();
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(amount));
         inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, ars(amount), paidOn, "Pago"));
         return paymentId;
     }
@@ -143,6 +153,49 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
         });
         assertThat(inTransaction(() -> invoiceQueryService.priceBreakdown(invoice).paymentsApplied())).isEmpty();
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void theInvoiceViewListsTheCreditNoteAndThePaymentThatFinancedItInEveryResponse() {
+        long creditNote = receiveCreditNote("2000.00", LocalDate.of(2027, 3, 5));
+        Long invoice = issue("5000.00");
+        long payment = receivePayment("3000.00", LocalDate.of(2027, 3, 12));
+        allocate();
+        String number = jdbc.queryForObject("select credit_note_number from credit_note where id = ?", String.class, creditNote);
+
+        List<Object> responses = inTransaction(() -> {
+            var view = invoiceViewLoader.loadInvoiceView(invoiceRepository.findInvoiceWithLinesById(invoice).orElseThrow());
+            return List.<Object>of(InvoiceResponse.from(view), MeInvoiceResponse.of(view, List.of()), AdminInvoiceResponse.of(view, List.of()));
+        });
+
+        InvoiceResponse base = (InvoiceResponse) responses.get(0);
+        List<PriceBreakdownCreditNoteResponse> meNotes = ((MeInvoiceResponse) responses.get(1)).creditNotes();
+        List<PriceBreakdownCreditNoteResponse> adminNotes = ((AdminInvoiceResponse) responses.get(2)).creditNotes();
+        for (List<PriceBreakdownCreditNoteResponse> notes : List.of(base.creditNotes(), meNotes, adminNotes)) {
+            assertThat(notes).singleElement().satisfies(note -> {
+                assertThat(note.creditNoteId()).isEqualTo(creditNote);
+                assertThat(note.creditNoteNumber()).isEqualTo(number);
+                assertThat(note.description()).isEqualTo("Nota de crédito " + number);
+                assertThat(note.amount().amount()).isEqualByComparingTo("2000.00");
+            });
+        }
+        assertThat(((MeInvoiceResponse) responses.get(1)).payments()).singleElement().satisfies(share -> {
+            assertThat(share.paymentId()).isEqualTo(payment);
+            assertThat(share.amountApplied().amount()).isEqualByComparingTo("3000.00");
+        });
+        assertThat(((AdminInvoiceResponse) responses.get(2)).payments()).extracting(share -> share.paymentId()).containsExactly(payment);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void anInvoiceFinancedOnlyByPaymentsHasNoCreditNotesInItsView() {
+        Long invoice = issue("3000.00");
+        receivePayment("3000.00", LocalDate.of(2027, 3, 5));
+        allocate();
+
+        InvoiceResponse response = inTransaction(() -> InvoiceResponse.from(invoiceViewLoader.loadInvoiceView(invoiceRepository.findInvoiceWithLinesById(invoice).orElseThrow())));
+
+        assertThat(response.creditNotes()).isEmpty();
     }
 
     @Test
@@ -333,28 +386,5 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
                         + "actor_process, recorded_at) values (?, ?, 8000.00, 'ARS', ?, ?, 'TEST', ?)", accountId, invoice, TODAY, TODAY, LocalDateTime.now()));
 
         assertThat(invariants.everyAllocationIsFundedByItsSources()).singleElement().asString().contains("I-20 allocation whose sources do not add up");
-    }
-
-    @Test
-    void sourcesLostBeforeTheMigrationAreRebuiltFromTheLegacyPaymentWhenItIsKnownAndFromTheOldestCreditOtherwise() {
-        Long first = issue("100.00");
-        Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "100.00", LocalDate.of(2027, 3, 11));
-        long olderPayment = receivePayment("100.00", LocalDate.of(2027, 3, 5));
-        long newerPayment = receivePayment("100.00", LocalDate.of(2027, 3, 6));
-        allocate();
-        Long person = newStaffPerson().getId();
-        jdbc.update("insert into legacy_payment (id, version, amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at) "
-                + "values (?, 0, 100.00, 'ARS', 'CASH', ?, now(), 'CONFIRMED', now(), now())", newerPayment, person);
-        jdbc.update("insert into legacy_payment_allocation (payment_id, invoice_id, amount_applied, amount_applied_currency, created_at) "
-                + "values (?, ?, 100.00, 'ARS', now())", newerPayment, first);
-        withTriggerDisabled("payment_allocation_source", "trg_payment_allocation_source_append_only", () ->
-                jdbc.update("delete from payment_allocation_source where student_current_account_id = ?", accountId));
-
-        inTransaction(() -> jdbc.queryForObject("select backfill_payment_allocation_sources()::text", String.class));
-
-        assertThat(currentPaymentsOf(first)).containsExactly(newerPayment);
-        assertThat(currentPaymentsOf(second)).containsExactly(olderPayment);
-        invariants.assertAllBillingInvariantsHold();
-        assertThat(inTransaction(() -> invoiceQueryService.priceBreakdown(first).paymentsApplied())).hasSize(1);
     }
 }

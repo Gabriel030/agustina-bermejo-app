@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.invoice.service.legacy;
 
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
@@ -30,8 +31,8 @@ public class CohortEntryDiscountCandidateStrategy implements InvoiceDiscountCand
     }
 
     @Override
-    public DiscountType discountType() {
-        return DiscountType.COHORT_ENTRY;
+    public DiscountCandidateOrigin origin() {
+        return DiscountCandidateOrigin.LEGACY_COHORT_ENTRY;
     }
 
     @Override
@@ -47,7 +48,7 @@ public class CohortEntryDiscountCandidateStrategy implements InvoiceDiscountCand
         }
         NonNegativeMoney base = context.facts().chargeAmount();
         NonNegativeMoney amount = DiscountAmounts.discountOf(new MonetaryAdjustment.Proportional(discount), base);
-        return amount.value().isZero() ? List.of() : List.of(new InvoiceDiscountCandidate(DiscountType.COHORT_ENTRY, cohort.getId(), null,
-                "Matrícula de ingreso con descuento de " + discount.points().stripTrailingZeros().toPlainString() + "%", InvoiceType.ENROLLMENT_FEE, base, amount, null, null));
+        return amount.value().isZero() ? List.of() : List.of(InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY, DiscountType.COHORT_ENTRY, cohort.getId(), null,
+                "Matrícula de ingreso con descuento de " + discount.points().stripTrailingZeros().toPlainString() + "%", InvoiceType.ENROLLMENT_FEE, base, amount, null, null, null));
     }
 }

@@ -13,7 +13,6 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
 import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
-import com.red_escuela.backend.billing.configuration.domain.ReminderMilestoneDates;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleResolver;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
@@ -121,10 +120,6 @@ public class BillingConfigurationReader {
     }
 
     public ResolvedReminderSchedule reminderScheduleFor(ReminderScheduleTarget target, LocalDate date) {
-        return reminderScheduleFor(target, date, Optional.empty());
-    }
-
-    public ResolvedReminderSchedule reminderScheduleFor(ReminderScheduleTarget target, LocalDate date, Optional<ReminderMilestoneDates> milestoneDates) {
         Optional<ReminderScheduleVersion> exception = target.targetId() == null ? Optional.empty()
                 : findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId()), date);
         Optional<ReminderScheduleVersion> group = findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleGroup(target.group()), date);
@@ -132,7 +127,7 @@ public class BillingConfigurationReader {
         Optional<ConfigurationVersion> globalVersion = repository.findEffectiveVersion(globalTopic.scope().name(), globalTopic.key(), date);
         CollectionReminderSettings globalSettings = globalVersion.map(version -> CollectionReminderSettings.class.cast(version.values()))
                 .orElse(CollectionReminderSettings.initial());
-        return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null), milestoneDates);
+        return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null));
     }
 
     public List<ReminderScheduleTopicState> listReminderScheduleTopicsEffectiveOn(TeachingGroup group, LocalDate date) {

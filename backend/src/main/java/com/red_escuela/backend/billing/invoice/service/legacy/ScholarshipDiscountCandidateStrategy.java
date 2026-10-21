@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.invoice.service.legacy;
 
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
@@ -31,8 +32,8 @@ public class ScholarshipDiscountCandidateStrategy implements InvoiceDiscountCand
     }
 
     @Override
-    public DiscountType discountType() {
-        return DiscountType.SCHOLARSHIP;
+    public DiscountCandidateOrigin origin() {
+        return DiscountCandidateOrigin.LEGACY_SCHOLARSHIP;
     }
 
     @Override
@@ -69,7 +70,7 @@ public class ScholarshipDiscountCandidateStrategy implements InvoiceDiscountCand
                 .toList();
         ScholarshipInstallment next = nextPendingInstallmentOf(scholarship).orElseThrow();
         String name = "Beca: " + scholarship.getReason();
-        return new InvoiceDiscountCandidate(DiscountType.SCHOLARSHIP, scholarship.getId(), scholarship.getId(),
+        return InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_SCHOLARSHIP, DiscountType.SCHOLARSHIP, scholarship.getId(), scholarship.getId(),
                 name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name, InvoiceType.MONTHLY_INSTALLMENT, base,
                 DiscountAmounts.discountOf(scholarship.getValue(), base), live.indexOf(next) + 1, live.size(), next.getId());
     }

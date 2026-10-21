@@ -11,7 +11,9 @@ import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
 import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
 import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
+import com.red_escuela.backend.billing.note.exception.CreditNoteSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -47,20 +49,17 @@ public class InvoiceQueryService {
     private final AllocationSourceQueryService allocationSources;
     private final CreditNoteRepository creditNoteRepository;
     private final PaymentRepository paymentRepository;
-    private final com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
     private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
                                PriceReader priceReader, AllocationSourceQueryService allocationSources, CreditNoteRepository creditNoteRepository,
-                               PaymentRepository paymentRepository,
-                               com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository, Clock clock) {
+                               PaymentRepository paymentRepository, Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.priceReader = priceReader;
         this.allocationSources = allocationSources;
         this.creditNoteRepository = creditNoteRepository;
         this.paymentRepository = paymentRepository;
-        this.legacyPaymentRepository = legacyPaymentRepository;
         this.clock = clock;
     }
 
@@ -182,7 +181,7 @@ public class InvoiceQueryService {
         return sources.stream().map(source -> {
             String number = numbers.get(source.getCreditNoteId());
             if (number == null) {
-                throw new IllegalStateException("Credit note " + source.getCreditNoteId() + " referenced by an allocation source does not exist");
+                throw new CreditNoteSourceIntegrityException(source.getCreditNoteId());
             }
             return new PriceBreakdownCreditNoteResponse(source.getCreditNoteId(), number, source.getAmount().value(), "Nota de crédito " + number);
         }).toList();
@@ -194,21 +193,18 @@ public class InvoiceQueryService {
         }
         Set<Long> paymentIds = sources.stream().map(PaymentAllocationSource::getPaymentId).collect(Collectors.toSet());
         Map<Long, Payment> accountPayments = paymentRepository.findByIdIn(paymentIds).stream().collect(Collectors.toMap(Payment::getId, Function.identity()));
-        Map<Long, com.red_escuela.backend.billing.entity.Payment> legacyPayments = legacyPaymentRepository.findAllById(paymentIds).stream()
-                .collect(Collectors.toMap(com.red_escuela.backend.billing.entity.Payment::getId, Function.identity()));
         return sources.stream().map(source -> {
             Long paymentId = source.getPaymentId();
             Money amount = source.getAmount().value();
             Payment payment = accountPayments.get(paymentId);
-            if (payment != null && payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
-                return new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
-                        payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay());
+            if (payment == null) {
+                throw PaymentSourceIntegrityException.missing(paymentId);
             }
-            com.red_escuela.backend.billing.entity.Payment legacy = legacyPayments.get(paymentId);
-            if (legacy == null) {
-                throw new IllegalStateException("Payment " + paymentId + " referenced by an allocation source does not exist");
+            if (!payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
+                throw PaymentSourceIntegrityException.ofAnotherAccount(paymentId);
             }
-            return new PriceBreakdownPaymentResponse(paymentId, amount, legacy.getMethod().name(), legacy.getPaidAt());
+            return new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
+                    payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay());
         }).toList();
     }
 

@@ -79,12 +79,12 @@ class ConfigurationModelContractTest {
 
         assertThat(json).contains("\"type\":\"COLLECTION_REMINDERS\"", "\"emailWindowStart\":\"09:00:00\"", "\"dailyEmailCap\":250");
         assertThat(ConfigurationValuesCodec.fromJson("{\"type\":\"COLLECTION_REMINDERS\",\"suspensionNoticeEnabled\":true,"
-                + "\"postWithdrawalSummaryMonths\":6,\"minDaysBetweenEmails\":3,\"maxReminderEmailsPerMonth\":4,\"emailWindowStart\":\"09:00:00\","
+                + "\"postWithdrawalSummaryMonths\":6,\"emailWindowStart\":\"09:00:00\","
                 + "\"emailWindowEnd\":\"11:00:00\",\"dailyEmailCap\":250,\"contactListDaysOverdue\":14,\"contactListOverdueInstallments\":2}"))
                 .isEqualTo(CollectionReminderSettings.initial());
         assertThat(ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS).key()).isEqualTo("COLLECTION_REMINDERS");
         assertThatThrownBy(() -> new ConfigurationTopic(ConfigurationScope.COLLECTION_REMINDERS, 1L, null, null, null)).isInstanceOf(InvalidConfigurationValuesException.class);
-        assertThatThrownBy(() -> new CollectionReminderSettings(true, 6, 3, 4, null, java.time.LocalTime.of(11, 0), 250, 14, 2))
+        assertThatThrownBy(() -> new CollectionReminderSettings(true, 6, null, java.time.LocalTime.of(11, 0), 250, 14, 2))
                 .isInstanceOf(InvalidConfigurationValuesException.class);
     }
 
@@ -94,7 +94,7 @@ class ConfigurationModelContractTest {
     void reminderSchedulesRoundTripWithRepetitionOverridesAndStableChannelOrder() {
         ReminderNotice repeating = new ReminderNotice("weekly", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 7,
                 java.util.EnumSet.of(ReminderChannel.EMAIL, ReminderChannel.IN_APP), new ReminderRepetition(7, ReminderMilestone.SUSPENSION));
-        ReminderSendingOverrides overrides = new ReminderSendingOverrides(false, 12, null, null, LocalTime.of(10, 0), LocalTime.of(12, 0), 100, null, 3);
+        ReminderSendingOverrides overrides = new ReminderSendingOverrides(false, 12, LocalTime.of(10, 0), LocalTime.of(12, 0), 100, null, 3);
         ReminderSchedule schedule = new ReminderSchedule(false, List.of(repeating, ReminderSchedule.initial().notices().get(0)), overrides);
 
         for (ConfigurationValues sample : List.of(new ProgramReminderSchedule(schedule), new CourseReminderSchedule(schedule),

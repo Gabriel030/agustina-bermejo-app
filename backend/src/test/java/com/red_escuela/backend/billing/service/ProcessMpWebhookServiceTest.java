@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
@@ -7,7 +8,6 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -115,6 +115,10 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistPendingInvoice(BigDecimal amount) {
+        return persistPendingInvoice(ars(amount));
+    }
+
+    private Invoice persistPendingInvoice(com.red_escuela.backend.shared.domain.Money baseAmount) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         String username = "mp.webhook." + System.nanoTime();
@@ -155,7 +159,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = courseEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(amount)).build();
+        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(baseAmount).build();
         return invoice;
     }
 
@@ -164,7 +168,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
+        return serviceFetching(mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
 
@@ -227,7 +231,6 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void aMercadoPagoPaymentSettlingAnInvoiceLeavesItsAllocationSourcePointingToTheRegisteredPayment() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = "source-" + System.nanoTime();
-        long legacyPaymentsBefore = jdbc.queryForObject("select count(*) from legacy_payment", Long.class);
 
         transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request-1", mpPaymentId));
 
@@ -237,7 +240,6 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                     assertThat(source.get("payment_id")).isEqualTo(paymentId);
                     assertThat((BigDecimal) source.get("amount")).isEqualByComparingTo("10000");
                 });
-        assertThat(jdbc.queryForObject("select count(*) from legacy_payment", Long.class)).isEqualTo(legacyPaymentsBefore);
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -247,7 +249,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
         ProcessMpWebhookService service = serviceFetching(id -> Optional.of(new MercadoPagoApprovedPayment(
-                        new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
+                        new ReportedGatewayAllocation(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6, CardPaymentType.CREDIT)),
                 new MpWebhookSignatureVerifier("", true));
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
@@ -507,6 +509,41 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 .contains("Webhook de Mercado Pago rechazado por firma inválida")
                 .doesNotContain(secret)
                 .doesNotContain("deadbeefdeadbeef");
+    }
+
+    @Test
+    void aPaymentTheGatewayDoesNotReportAsApprovedIsIgnoredAndRegistersNothing(CapturedOutput output) {
+        String mpPaymentId = "pending-" + System.nanoTime();
+        ProcessMpWebhookService service = serviceFetching(id -> Optional.empty(), new MpWebhookSignatureVerifier("", true));
+
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
+        assertThat(output.getOut()).contains("el pago no está aprobado").contains("pagoMp=" + mpPaymentId);
+    }
+
+    @Test
+    void anApprovedPaymentReportedForAnInvoiceThatDoesNotExistFailsAndRegistersNothing() {
+        String mpPaymentId = "ghost-" + System.nanoTime();
+        ProcessMpWebhookService service = serviceReporting(Long.MAX_VALUE, BigDecimal.valueOf(10000));
+
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId)))
+                .isInstanceOf(com.red_escuela.backend.billing.exception.InvoiceNotFoundException.class);
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-097")
+    void aPaymentReportedInArsForAnInvoiceOfAnAccountInUsdFailsAndRegistersNothing() {
+        Invoice invoice = persistPendingInvoice(com.red_escuela.backend.shared.domain.TestMoney.usd(100));
+        String mpPaymentId = "currency-" + System.nanoTime();
+
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(100)).process("", "request-1", mpPaymentId)))
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.StudentCurrentAccountCurrencyMismatchException.class);
+
+        assertThat(mpPayments(mpPaymentId)).isEmpty();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
     }
 
     @Test

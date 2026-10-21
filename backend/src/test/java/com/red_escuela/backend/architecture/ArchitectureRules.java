@@ -60,8 +60,7 @@ public final class ArchitectureRules {
             + "|service\\.legacy\\.[A-Za-z]+"
             + "|service\\.(?:InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
 
-    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService"
-            + "," + ROOT + ".billing.account.service.CurrentAccountAllocationService";
+    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.account.service.CurrentAccountAllocationService";
 
     static final String DEBIT_NOTE_ISSUER_CLASS = ROOT + ".billing.invoice.operation.DebitNoteIssuer";
 

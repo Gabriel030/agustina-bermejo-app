@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -66,8 +67,6 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
     MeterRegistry meterRegistry;
     @Autowired
     ApplicationEvents applicationEvents;
-    @Autowired
-    com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
 
     String administrative;
     String director;
@@ -269,18 +268,19 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         assertThat(jdbc.queryForObject("select count(*) from idempotency_record", Long.class)).isNotNull();
         inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(debtor.accountId());
-            service.recordPaymentReceivedCredit(account, nextExternalId(), ars("80000.00"), TODAY, "Transferencia aprobada");
+            service.recordPaymentReceivedCredit(account, BillingTestFixtures.seedApprovedPaymentRow(account.getId(), ars("80000.00")), ars("80000.00"), TODAY, "Transferencia aprobada");
             allocationService.allocateAccountCreditToOldestInvoices(account, TODAY, ACTOR);
             return null;
         });
         long entriesAfterTransfer = entriesOf(debtor.accountId());
+        long paymentsAfterTransfer = paymentsOf(debtor.accountId());
 
         MvcResult outdated = register(debtor.studentId(), "key-outdated", bodyOf("ARS", "80000.00", null, null, null, preview.get("previewFingerprint").asText()),
                 administrative);
 
         assertThat(outdated.getResponse().getStatus()).isEqualTo(409);
         assertThat(jsonOf(outdated).get("code").asText()).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
-        assertThat(paymentsOf(debtor.accountId())).isZero();
+        assertThat(paymentsOf(debtor.accountId())).isEqualTo(paymentsAfterTransfer);
         assertThat(entriesOf(debtor.accountId())).isEqualTo(entriesAfterTransfer);
         assertThat(jdbc.queryForObject("select count(*) from idempotency_record where idempotency_key = ?", Long.class, "key-outdated")).isZero();
         assertThat(statusOfInvoice(march)).isEqualTo("PAID");
@@ -302,15 +302,16 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
         String fingerprintFor100k = fingerprintOf(debtor.studentId(), "100000.00");
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(debtor.accountId()), nextExternalId(), ars("10000.00"), TODAY, "Saldo que entra");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(debtor.accountId()), BillingTestFixtures.seedApprovedPaymentRow(debtor.accountId(), ars("10000.00")), ars("10000.00"), TODAY, "Saldo que entra");
             return null;
         });
+        long paymentsBefore = paymentsOf(debtor.accountId());
 
         MvcResult result = register(debtor.studentId(), "key-amount", bodyOf("ARS", "90000.00", null, null, null, fingerprintFor100k), administrative);
 
         assertThat(result.getResponse().getStatus()).isEqualTo(409);
         assertThat(jsonOf(result).get("code").asText()).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
-        assertThat(paymentsOf(debtor.accountId())).isZero();
+        assertThat(paymentsOf(debtor.accountId())).isEqualTo(paymentsBefore);
     }
 
     @Test
@@ -562,31 +563,6 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
         assertThat(result.getResponse().getStatus()).isEqualTo(404);
         assertThat(jsonOf(result).get("code").asText()).isEqualTo("STUDENT_NOT_FOUND");
-    }
-
-    @Test
-    @Tag("D-136")
-    void legacyAndV2PaymentsAlternateWithoutSharingAnId() throws Exception {
-        Debtor debtor = debtor();
-        Person registrar = newStaffPerson();
-        List<Long> ids = new java.util.ArrayList<>();
-        for (int round = 0; round < 3; round++) {
-            ids.add(inTransaction(() -> {
-                com.red_escuela.backend.billing.entity.Payment legacy = new com.red_escuela.backend.billing.entity.Payment();
-                legacy.setAmount(com.red_escuela.backend.shared.domain.Money.of(new BigDecimal("10.00"), Currency.ARS));
-                legacy.setMethod(com.red_escuela.backend.billing.entity.PaymentMethod.CASH);
-                legacy.setRegisteredBy(entityManager.find(Person.class, registrar.getId()));
-                legacy.setPaidAt(LocalDateTime.of(2027, 4, 1, 10, 0));
-                legacy.setStatus(com.red_escuela.backend.billing.entity.PaymentStatus.CONFIRMED);
-                return legacyPaymentRepository.save(legacy).getId();
-            }));
-            MvcResult v2 = registerArs(debtor.studentId(), "key-alternate-" + round, "10.00", null, null, administrative);
-            assertThat(v2.getResponse().getStatus()).isEqualTo(201);
-            ids.add(jsonOf(v2).get("paymentId").asLong());
-        }
-
-        assertThat(ids).doesNotHaveDuplicates();
-        assertThat(ids).isSorted();
     }
 
     @Test

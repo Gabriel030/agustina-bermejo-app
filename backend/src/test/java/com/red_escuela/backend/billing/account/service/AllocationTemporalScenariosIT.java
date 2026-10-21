@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.junit.jupiter.api.Tag;
@@ -43,7 +44,7 @@ class AllocationTemporalScenariosIT extends AbstractCurrentAccountIT {
         Long invoiceId = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", dueDate);
         LocalDate creditDate = dueDate.minusDays(3);
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("80000.00"), creditDate, "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars("80000.00")), ars("80000.00"), creditDate, "Pago");
             return allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(accountId), creditDate, ACTOR);
         });
 

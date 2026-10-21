@@ -47,4 +47,20 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from ProgramEnrollment e where e.id = :id")
     java.util.Optional<ProgramEnrollment> findByIdForUpdate(@Param("id") Long id);
+
+    interface BillingTemplateRef {
+        Long getProgramId();
+
+        Long getTemplateId();
+    }
+
+    @Query("""
+            select e.program.id as programId, coalesce(current.id, cohortTemplate.id) as templateId
+            from ProgramEnrollment e
+            left join e.currentBillingTemplate current
+            left join e.programCohort cohort
+            left join cohort.template cohortTemplate
+            where e.id = :id
+            """)
+    java.util.Optional<BillingTemplateRef> findBillingTemplateRef(@Param("id") Long id);
 }

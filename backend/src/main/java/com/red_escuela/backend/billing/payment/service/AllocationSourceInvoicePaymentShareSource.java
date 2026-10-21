@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.payment.domain.CashPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
+import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.identity.api.PersonNameLookup;
 import com.red_escuela.backend.shared.domain.Money;
@@ -47,16 +48,14 @@ public class AllocationSourceInvoicePaymentShareSource implements InvoicePayment
         Set<Long> paymentIds = sourcesByInvoice.values().stream().flatMap(List::stream)
                 .map(PaymentAllocationSource::getPaymentId).filter(Objects::nonNull).collect(Collectors.toSet());
         if (paymentIds.isEmpty()) {
-            return new InvoicePaymentShares(Map.of(), Map.of());
+            return new InvoicePaymentShares(Map.of());
         }
         Map<Long, Payment> paymentsById = payments.findByIdIn(paymentIds).stream().collect(Collectors.toMap(Payment::getId, Function.identity()));
         Map<Long, String> recorderNames = personNames.findFullNamesByPersonId(paymentsById.values().stream()
                 .map(Payment::getRegisteredByPersonId).filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<Long, List<InvoicePaymentShare>> resolved = new LinkedHashMap<>();
-        Map<Long, Map<Long, Money>> unresolved = new LinkedHashMap<>();
         sourcesByInvoice.forEach((invoiceId, sources) -> {
             Map<Long, Money> appliedByAccountPayment = new LinkedHashMap<>();
-            Map<Long, Money> appliedByLegacyPayment = new LinkedHashMap<>();
             for (PaymentAllocationSource source : sources) {
                 Long paymentId = source.getPaymentId();
                 if (paymentId == null) {
@@ -64,8 +63,9 @@ public class AllocationSourceInvoicePaymentShareSource implements InvoicePayment
                 }
                 Payment payment = paymentsById.get(paymentId);
                 if (payment == null) {
-                    appliedByLegacyPayment.merge(paymentId, source.getAmount().value(), Money::plus);
-                } else if (payment.getStatus() == PaymentStatus.APPROVED && payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
+                    throw PaymentSourceIntegrityException.missing(paymentId);
+                }
+                if (payment.getStatus() == PaymentStatus.APPROVED && payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
                     appliedByAccountPayment.merge(paymentId, source.getAmount().value(), Money::plus);
                 }
             }
@@ -74,11 +74,8 @@ public class AllocationSourceInvoicePaymentShareSource implements InvoicePayment
             if (!shares.isEmpty()) {
                 resolved.put(invoiceId, shares);
             }
-            if (!appliedByLegacyPayment.isEmpty()) {
-                unresolved.put(invoiceId, appliedByLegacyPayment);
-            }
         });
-        return new InvoicePaymentShares(resolved, unresolved);
+        return new InvoicePaymentShares(resolved);
     }
 
     private static InvoicePaymentShare shareOf(Payment payment, Money applied, Map<Long, String> recorderNames) {

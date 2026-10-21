@@ -14,4 +14,8 @@ public record StudentDiscountGrantRequest(DiscountType discountType, Long discou
         Objects.requireNonNull(discountType, "discountType");
         invoiceType = invoiceType == null ? InvoiceType.MONTHLY_INSTALLMENT : invoiceType;
     }
+
+    public StudentDiscountGrantRequest withToPeriod(YearMonth resolvedToPeriod) {
+        return new StudentDiscountGrantRequest(discountType, discountDefinitionId, calculation, invoiceType, fromPeriod, resolvedToPeriod, reason);
+    }
 }

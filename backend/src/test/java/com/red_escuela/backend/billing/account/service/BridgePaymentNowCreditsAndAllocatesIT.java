@@ -1,11 +1,7 @@
 package com.red_escuela.backend.billing.account.service;
 
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.Payment;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.time.MutableClock;
@@ -34,8 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
 
     @Autowired
-    private RegisterPaymentUseCase registerPayment;
-    @Autowired
     private CurrentAccountAllocationService allocationService;
 
     private BillingInvariantChecker invariants;
@@ -50,9 +44,8 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
         staff = newStaffPerson();
     }
 
-    private Payment payInCash(Long invoiceId, String amount) {
-        return registerPayment.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(invoiceId, ars(amount).value())),
-                PaymentMethod.CASH, false, null, null, null, null), staff);
+    private Long payByBankTransfer(Long invoiceId) {
+        return BillingTestFixtures.registerApprovedBankTransferPayment(invoiceId, staff.getId());
     }
 
     private String paymentStatusOf(Long invoiceId) {
@@ -64,15 +57,11 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
                 + "where student_current_account_id = ? order by id", accountId);
     }
 
-    private List<Map<String, Object>> legacyRowsOf(Payment payment) {
-        return jdbc.queryForList("select invoice_id, amount_applied from legacy_payment_allocation where payment_id = ?", payment.getId());
-    }
-
     @Test
-    void aCashPaymentCreditsTheAccountAndTheAllocationServiceSettlesTheInvoice() {
+    void aBankTransferPaymentCreditsTheAccountAndTheAllocationServiceSettlesTheInvoice() {
         Long invoiceId = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 4, 30));
 
-        Payment payment = payInCash(invoiceId, "80000.00");
+        payByBankTransfer(invoiceId);
 
         assertThat(paymentStatusOf(invoiceId)).isEqualTo("PAID");
         assertThat(amount("select unallocated_credit_amount from student_current_account where id = ?", accountId)).isEqualByComparingTo("0.00");
@@ -83,28 +72,12 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
         assertThat(rows.get(0).get("invoice_id")).isEqualTo(invoiceId);
         assertThat(rows.get(0).get("reverses_allocation_id")).isNull();
         assertThat(rows.get(0).get("actor_person_id")).isEqualTo(staff.getId());
-        assertThat(payment.getAllocations()).hasSize(1);
         invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
     @Tag("D-128")
-    void theLegacyAllocationTableOnlyReceivesTheLinkBetweenThePaymentAndTheInvoicesTheAllocationServiceSettled() {
-        Long invoiceId = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 4, 30));
-
-        Payment payment = payInCash(invoiceId, "80000.00");
-
-        List<Map<String, Object>> legacy = legacyRowsOf(payment);
-        assertThat(legacy).hasSize(1);
-        assertThat(legacy.get(0).get("invoice_id")).isEqualTo(invoiceId);
-        assertThat((java.math.BigDecimal) legacy.get(0).get("amount_applied")).isEqualByComparingTo("80000.00");
-        assertThat(jdbc.queryForObject("select count(*) from legacy_payment_allocation where invoice_id = ?", Long.class, invoiceId)).isEqualTo(1L);
-        invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
-    @Tag("D-128")
-    void aPaymentOnANewerInvoiceWhileAnOlderOneIsOverdueLeavesTheCreditUnallocatedAndWritesNoLegacyRow() {
+    void aPaymentOnANewerInvoiceWhileAnOlderOneIsOverdueLeavesTheCreditUnallocated() {
         Long february = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 2, 10));
         Long enrollmentFee = issueAdministrativeFeeWithLedgerDebit(accountId, "50000.00", LocalDate.of(2027, 5, 10));
         inTransaction(() -> {
@@ -112,32 +85,29 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
             return null;
         });
 
-        Payment payment = payInCash(enrollmentFee, "50000.00");
+        payByBankTransfer(enrollmentFee);
 
         assertThat(paymentStatusOf(february)).isEqualTo("OVERDUE");
         assertThat(paymentStatusOf(enrollmentFee)).isEqualTo("PENDING");
         assertThat(allocationRows()).isEmpty();
-        assertThat(legacyRowsOf(payment)).isEmpty();
-        assertThat(payment.getAllocations()).isEmpty();
         assertThat(amount("select unallocated_credit_amount from student_current_account where id = ?", accountId)).isEqualByComparingTo("50000.00");
         invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
     @Tag("D-089")
-    void theLinksOfAPaymentNeverAddUpToMoreThanThePaymentWhenOlderCreditAlsoSettlesInvoices() {
+    void theSourcesOfAPaymentNeverAddUpToMoreThanThePaymentWhenOlderCreditAlsoSettlesInvoices() {
         issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 3, 10));
         Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 4, 10));
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago previo");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago previo");
             return null;
         });
 
-        Payment payment = payInCash(second, "80000.00");
+        Long paymentId = payByBankTransfer(second);
 
         assertThat(allocationRows()).hasSize(2);
-        assertThat(legacyRowsOf(payment)).hasSize(1);
-        assertThat(payment.getAllocations().stream().map(link -> link.getAmountApplied().amount()).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add))
+        assertThat(jdbc.queryForObject("select coalesce(sum(amount), 0) from payment_allocation_source where payment_id = ?", java.math.BigDecimal.class, paymentId))
                 .isEqualByComparingTo("80000.00");
         invariants.assertAllBillingInvariantsHold();
     }
@@ -150,10 +120,10 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
         try {
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-04-21T01:30:00Z"));
             Long late = issueAdministrativeFeeWithLedgerDebit(accountId, "10.00", LocalDate.of(2027, 5, 30));
-            payInCash(late, "10.00");
+            payByBankTransfer(late);
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-04-20T03:30:00Z"));
             Long early = issueAdministrativeFeeWithLedgerDebit(accountId, "20.00", LocalDate.of(2027, 5, 30));
-            payInCash(early, "20.00");
+            payByBankTransfer(early);
         } finally {
             TimeZone.setDefault(previous);
         }
@@ -174,7 +144,7 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
             issueAdministrativeFeeWithLedgerDebit(roundAccountId, "80000.00", LocalDate.of(2027, 3, 10));
             Long second = issueAdministrativeFeeWithLedgerDebit(roundAccountId, "80000.00", LocalDate.of(2027, 4, 10));
             inTransaction(() -> {
-                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(roundAccountId), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago");
+                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(roundAccountId), BillingTestFixtures.seedApprovedPaymentRow(roundAccountId, ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago");
                 return allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(roundAccountId), LocalDate.of(2027, 3, 9), ACTOR);
             });
             CountDownLatch start = new CountDownLatch(1);
@@ -182,7 +152,7 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
             try {
                 Future<?> payment = executor.submit(() -> {
                     start.await();
-                    return payInCash(second, "80000.00");
+                    return payByBankTransfer(second);
                 });
                 Future<?> reversal = executor.submit(() -> {
                     start.await();

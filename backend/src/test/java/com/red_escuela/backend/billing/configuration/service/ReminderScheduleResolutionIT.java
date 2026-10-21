@@ -133,7 +133,7 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
     }
 
     private void publishGroupAndNursingException() {
-        publish(ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.PROGRAMS), programSchedule(5, new ReminderSendingOverrides(null, null, null, null, null, null, 200, null, null)),
+        publish(ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.PROGRAMS), programSchedule(5, new ReminderSendingOverrides(null, null, null, null, 200, null, null)),
                 MARCH_FOURTH);
         publish(ConfigurationTopic.ofReminderScheduleException(TeachingGroup.PROGRAMS, nursingId), programSchedule(4, ReminderSendingOverrides.none()), MARCH_FOURTH);
     }
@@ -225,7 +225,7 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> publish(ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.PROGRAMS), new ProgramReminderSchedule(ReminderSchedule.followingGroup()),
                 MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderScheduleException.class);
         assertThatThrownBy(() -> publish(ConfigurationTopic.ofReminderScheduleException(TeachingGroup.PROGRAMS, nursingId), programSchedule(5,
-                new ReminderSendingOverrides(null, 0, null, null, null, null, null, null, null)), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderScheduleException.class);
+                new ReminderSendingOverrides(null, 0, null, null, null, null, null)), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderScheduleException.class);
         assertThat(jdbcTemplate.queryForObject("select count(*) from configuration_version where proposed_by_id = ?", Long.class, director.getId())).isZero();
     }
 

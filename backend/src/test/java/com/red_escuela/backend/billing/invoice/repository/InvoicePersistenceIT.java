@@ -255,10 +255,10 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void theLegacyInvoiceTablesNoLongerExistAndIncomingForeignKeysPointToTheNewInvoice() {
+    void theLegacyInvoiceTablesNoLongerExistAndPaymentAllocationsPointToTheNewInvoice() {
         assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name in ('legacy_invoice', 'invoice_adjustment')", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from pg_constraint where contype = 'f' and confrelid = 'invoice'::regclass "
-                + "and conrelid = 'legacy_payment_allocation'::regclass", Integer.class)).isGreaterThan(0);
+                + "and conrelid = 'payment_allocation'::regclass", Integer.class)).isGreaterThan(0);
         assertThat(Map.of("v", LocalDate.of(2027, 1, 1))).isNotEmpty();
     }
 

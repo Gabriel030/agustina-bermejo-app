@@ -32,6 +32,8 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     Optional<Invoice> findById(Long id);
 
+    List<Invoice> findByIdIn(Collection<Long> ids);
+
     @Query("select distinct i from Invoice i left join fetch i.lines l left join fetch l.discount where i.id = :id")
     Optional<Invoice> findInvoiceWithLinesById(@Param("id") Long id);
 

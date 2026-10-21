@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
@@ -31,14 +32,18 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
@@ -46,6 +51,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceQueryService invoiceQueryService;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -121,12 +129,30 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-035")
+    @Tag("D-214")
+    void breakdownOfAnInvoiceIssuedBeforeAPriceIncreaseKeepsTheLinePriceVersionAndItsBaseAmount() {
+        Person director = persistPerson("director.breakdown30." + System.nanoTime());
+        Course course = persistCourse();
+        Long firstVersion = PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        CourseEnrollment enrollment = persistCourseEnrollment("99000430", course);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now().plusDays(10));
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(12000), LocalDate.now().minusDays(1), director.getId());
+
+        PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(invoice.getId());
+
+        assertThat(invoice.getPrimaryLine().getPriceVersionId()).isEqualTo(firstVersion);
+        assertThat(breakdown.priceRevisionDescription()).isEqualTo("Cuota mensual 2026");
+        assertThat(breakdown.baseAmount()).isEqualTo(ars(10000));
+    }
+
+    @Test
     @Tag("D-376")
     void breakdownIncludesPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());
         Course course = persistCourse();
 
-        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
 
         CourseEnrollment enrollment = persistCourseEnrollment("99000401", course);
         Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now());
@@ -144,5 +170,83 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         });
         assertThat(breakdown.remainingBalance()).isEqualTo(ars(0));
         assertThat(breakdown.status()).isEqualTo("PAID");
+    }
+
+    private void withSourceUpdate(String sql, Runnable assertion, String restoreSql) {
+        runInReplicaSession(sql);
+        try {
+            assertion.run();
+        } finally {
+            runInReplicaSession(restoreSql);
+        }
+    }
+
+    private void runInReplicaSession(String sql) {
+        jdbc.execute((ConnectionCallback<Void>) connection -> {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("set session_replication_role = replica");
+                statement.execute(sql);
+                statement.execute("set session_replication_role = origin");
+            }
+            return null;
+        });
+    }
+
+    private Invoice paidInvoiceOfANewEnrollment(String dni) {
+        Person director = persistPerson("director.integrity." + dni + System.nanoTime());
+        Course course = persistCourse();
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota", ars(10000), LocalDate.now().minusYears(1), director.getId());
+        CourseEnrollment enrollment = persistCourseEnrollment(dni, course);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now());
+        BillingTestFixtures.payInvoiceInFull(invoice);
+        return invoice;
+    }
+
+    private Long sourceIdOf(Invoice invoice) {
+        return jdbc.queryForObject("select s.id from payment_allocation_source s join payment_allocation a on a.id = s.payment_allocation_id where a.invoice_id = ?", Long.class, invoice.getId());
+    }
+
+    @Test
+    @Tag("D-376")
+    void aSourceWhosePaymentDoesNotExistBreaksTheBreakdownWithAnIntegrityError() {
+        Invoice invoice = paidInvoiceOfANewEnrollment("99000411");
+        Long sourceId = sourceIdOf(invoice);
+        Long paymentId = jdbc.queryForObject("select payment_id from payment_allocation_source where id = ?", Long.class, sourceId);
+
+        withSourceUpdate("update payment_allocation_source set payment_id = 999999999 where id = " + sourceId, () ->
+                assertThatThrownBy(() -> invoiceQueryService.priceBreakdown(invoice.getId()))
+                        .isInstanceOf(com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException.class)
+                        .hasMessageContaining("999999999").hasMessageContaining("does not exist"),
+                "update payment_allocation_source set payment_id = " + paymentId + " where id = " + sourceId);
+    }
+
+    @Test
+    @Tag("D-376")
+    void aSourceWhosePaymentBelongsToAnotherAccountBreaksTheBreakdownWithAnIntegrityError() {
+        Invoice invoice = paidInvoiceOfANewEnrollment("99000412");
+        Invoice other = paidInvoiceOfANewEnrollment("99000413");
+        Long sourceId = sourceIdOf(invoice);
+        Long paymentId = jdbc.queryForObject("select payment_id from payment_allocation_source where id = ?", Long.class, sourceId);
+        Long otherPaymentId = BillingTestFixtures.seedApprovedPaymentRow(other.getStudentCurrentAccountId());
+
+        withSourceUpdate("update payment_allocation_source set payment_id = " + otherPaymentId + " where id = " + sourceId, () ->
+                assertThatThrownBy(() -> invoiceQueryService.priceBreakdown(invoice.getId()))
+                        .isInstanceOf(com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException.class)
+                        .hasMessageContaining("belongs to another account"),
+                "update payment_allocation_source set payment_id = " + paymentId + " where id = " + sourceId);
+    }
+
+    @Test
+    @Tag("D-376")
+    void aSourceWhoseCreditNoteDoesNotExistBreaksTheBreakdownWithAnIntegrityError() {
+        Invoice invoice = paidInvoiceOfANewEnrollment("99000414");
+        Long sourceId = sourceIdOf(invoice);
+        Long paymentId = jdbc.queryForObject("select payment_id from payment_allocation_source where id = ?", Long.class, sourceId);
+
+        withSourceUpdate("update payment_allocation_source set payment_id = null, credit_note_id = 999999999 where id = " + sourceId, () ->
+                assertThatThrownBy(() -> invoiceQueryService.priceBreakdown(invoice.getId()))
+                        .isInstanceOf(com.red_escuela.backend.billing.note.exception.CreditNoteSourceIntegrityException.class)
+                        .hasMessageContaining("999999999"),
+                "update payment_allocation_source set payment_id = " + paymentId + ", credit_note_id = null where id = " + sourceId);
     }
 }

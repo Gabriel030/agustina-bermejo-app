@@ -142,6 +142,18 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void installmentsOnlyBelongToMonthlyInstallmentDiscountsAndAnExhaustedRowNeedsThem() {
+        expectViolation("ck_student_discount_installments_monthly",
+                with(validRow(), "discount_type", "INDIVIDUAL", "discount_definition_id", null, "applicable_invoice_type", "ENROLLMENT_FEE", "installments_total", 3));
+        expectViolation("ck_student_discount_exhausted_has_installments", with(validRow(), "status", "EXHAUSTED"));
+        transactionTemplate.executeWithoutResult(status -> {
+            assertThat(insert(with(validRow(), "installments_total", 3))).isPositive();
+            assertThat(insert(with(validRow(), "installments_total", 3, "status", "EXHAUSTED"))).isPositive();
+            status.setRollbackOnly();
+        });
+    }
+
+    @Test
     void aRevokedRowNeedsEveryRevocationField() {
         Map<String, Object> complete = with(validRow(), "status", "REVOKED", "revoked_at", java.time.OffsetDateTime.parse("2027-04-10T10:00:00Z"),
                 "revoked_by_id", offering.directorId(), "revocation_reason", "motivo", "revoked_from_period", java.time.LocalDate.of(2027, 5, 1));

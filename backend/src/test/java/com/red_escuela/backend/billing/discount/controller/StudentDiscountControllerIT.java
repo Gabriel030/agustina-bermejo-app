@@ -119,12 +119,22 @@ class StudentDiscountControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE")).andExpect(jsonPath("$.type").value("SCHOLARSHIP")).andExpect(jsonPath("$.applicableInvoiceType").value("MONTHLY_INSTALLMENT")));
         assertThat(granted.get("fromPeriod").asText()).isEqualTo("2027-04");
 
-        JsonNode pending = readBody(postJson(grantPath(), administrativeToken, scholarshipBody("25", "2027-04", "2027-08")).andExpect(status().isAccepted())
+        JsonNode pending = readBody(postJson(grantPath(), administrativeToken, scholarshipBody("25", "2027-09", "2027-12")).andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.authorizationRequestId").isNumber()));
 
         assertThat(jdbc.queryForObject("select count(*) from student_discount where student_id = ?", Long.class, learner.studentId())).isEqualTo(1L);
         assertThat(jdbc.queryForObject("select operation_type from authorization_request where id = ?", String.class, pending.get("authorizationRequestId").asLong()))
                 .isEqualTo("GRANT_STUDENT_DISCOUNT");
+    }
+
+    @Test
+    void aProposalOverlappingAnActiveDiscountOfTheSameKindIsAConflictForBothRoles() throws Exception {
+        postJson(grantPath(), directorToken, scholarshipBody("50", "2027-04", "2027-12")).andExpect(status().isCreated());
+
+        postJson(grantPath(), directorToken, scholarshipBody("30", "2027-06", "2027-12")).andExpect(status().isConflict());
+        postJson(grantPath(), administrativeToken, scholarshipBody("30", "2027-06", "2027-12")).andExpect(status().isConflict());
+
+        assertThat(jdbc.queryForObject("select count(*) from student_discount where student_id = ?", Long.class, learner.studentId())).isEqualTo(1L);
     }
 
     @Test
