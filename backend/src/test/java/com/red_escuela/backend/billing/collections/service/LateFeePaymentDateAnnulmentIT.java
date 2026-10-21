@@ -152,6 +152,10 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
         assertScenarioInvariants(d(2404, 4, 2));
     }
 
+    private long creditNoteNumbersConsumed() {
+        return jdbc.queryForObject("select case when is_called then last_value else 0 end from credit_note_number_seq", Long.class);
+    }
+
     @Test
     @Tag("D-375")
     void paymentAnnulmentNeverOverlapsAWithdrawalCorrection() {
@@ -160,6 +164,7 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
         Invoice origin = overdueInstallmentDueOn(d(2405, 3, 11));
         reconcile(origin, d(2405, 4, 2));
         Long debitNoteId = debitNoteIdOf(origin, 0);
+        long numbersBefore = creditNoteNumbersConsumed();
         MutableClock.INSTANCE.setDate(d(2405, 4, 3));
         courseEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.voluntaryRegisteredBy(d(2405, 3, 25), person.getId()));
         awaitEventsDrained();
@@ -178,7 +183,33 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
         assertThat(corrections.get(1).get("first_corrected_day").toString()).isEqualTo("2405-03-26");
         assertThat(creditedTotalOf(debitNoteId)).isEqualByComparingTo("2200.00");
         assertThat(creditedTotalOf(debitNoteId)).isLessThanOrEqualTo(new BigDecimal("4000.00"));
+        assertThat(creditNoteNumbersConsumed() - numbersBefore).isEqualTo(2L);
         assertScenarioInvariants(d(2405, 4, 4));
+    }
+
+    @Test
+    @Tag("D-375")
+    void aWithdrawalRegisteredAfterThePaymentAnnulmentFindsItsDaysAlreadyCorrected() {
+        arrange(2410);
+        publishDefaults(2410);
+        Invoice origin = overdueInstallmentDueOn(d(2410, 3, 11));
+        reconcile(origin, d(2410, 4, 2));
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        MutableClock.INSTANCE.setDate(d(2410, 4, 3));
+        payInFull(origin, d(2410, 3, 20), d(2410, 4, 3));
+        awaitEventsDrained();
+        assertThat(correctionsOf(debitNoteId)).hasSize(1);
+        assertThat(correctionsOf(debitNoteId).get(0)).containsEntry("corrected_days", 11);
+        long numbersBefore = creditNoteNumbersConsumed();
+        MutableClock.INSTANCE.setDate(d(2410, 4, 4));
+
+        courseEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.voluntaryRegisteredBy(d(2410, 3, 25), person.getId()));
+        awaitEventsDrained();
+
+        assertThat(correctionsOf(debitNoteId)).hasSize(1);
+        assertThat(creditedTotalOf(debitNoteId)).isEqualByComparingTo("2200.00");
+        assertThat(creditNoteNumbersConsumed() - numbersBefore).isZero();
+        assertScenarioInvariants(d(2410, 4, 4));
     }
 
     @Test
