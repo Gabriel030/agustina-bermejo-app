@@ -497,6 +497,23 @@
         "required" : [ "audienceLabel", "body", "category", "createdAt", "createdBy", "expiresAt", "id", "scheduledFor", "sectionId", "sectionType", "sentAt", "status", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
+      "AppliedStudentDiscountInstallmentResponse" : {
+        "properties" : {
+          "installmentNumber" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "installmentsTotal" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "period" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "period" ],
+        "type" : "object"
+      },
       "AssignElectiveGroupRequest" : {
         "properties" : {
           "electiveGroupId" : {
@@ -6281,6 +6298,12 @@
             "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
             "type" : "string"
           },
+          "appliedInstallments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AppliedStudentDiscountInstallmentResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
           "authorizationRequestId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -6294,6 +6317,10 @@
           },
           "capPerInvoice" : {
             "$ref" : "#/components/schemas/Money"
+          },
+          "courseEnrollmentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "fromPeriod" : {
             "type" : "string"
@@ -6310,9 +6337,19 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "lostPeriods" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
           "priority" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "reason" : {
             "type" : "string"
@@ -21057,6 +21094,69 @@
           }
         },
         "tags" : [ "person-controller" ]
+      }
+    },
+    "/me/student-discounts" : {
+      "get" : {
+        "operationId" : "StudentDiscount_listMyStudentDiscounts",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/StudentDiscountResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-discount-controller" ]
       }
     },
     "/me/teaching-sections" : {

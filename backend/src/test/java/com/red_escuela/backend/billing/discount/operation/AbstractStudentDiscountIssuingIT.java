@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
-abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrationTest {
+public abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrationTest {
 
     protected static final StatusChangeActor ACTOR = StatusChangeActor.ofProcess("TEST_STUDENT_DISCOUNT_ISSUING");
 

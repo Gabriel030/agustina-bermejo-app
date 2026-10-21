@@ -266,4 +266,25 @@ public class KarateFixtures {
             return saved.getId();
         });
     }
+
+    public static Map<String, Object> createProgramLearnerWithPricing() {
+        var factory = context().getBean(com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory.class);
+        var transactionTemplate = new org.springframework.transaction.support.TransactionTemplate(
+                context().getBean(org.springframework.transaction.PlatformTransactionManager.class));
+        var studentRepository = context().getBean(StudentRepository.class);
+        var personRepository = context().getBean(PersonRepository.class);
+        var roleRepository = context().getBean(RoleRepository.class);
+        var jwtService = context().getBean(JwtService.class);
+        var learner = factory.newLearner(factory.newProgram(com.red_escuela.backend.shared.domain.Currency.ARS, 80000, 50000), null);
+        String accessToken = transactionTemplate.execute(status -> {
+            Person person = studentRepository.findById(learner.studentId()).orElseThrow().getPerson();
+            person.getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+            return jwtService.generateAccessToken(personRepository.save(person));
+        });
+        Map<String, Object> result = new HashMap<>();
+        result.put("studentId", learner.studentId());
+        result.put("programEnrollmentId", learner.programEnrollmentId());
+        result.put("accessToken", accessToken);
+        return result;
+    }
 }

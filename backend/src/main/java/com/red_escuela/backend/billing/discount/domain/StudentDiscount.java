@@ -190,8 +190,12 @@ public class StudentDiscount {
     }
 
     public boolean coversPeriod(YearMonth period) {
+        return rangeCoversPeriod(period) && status != StudentDiscountStatus.ENDED;
+    }
+
+    public boolean rangeCoversPeriod(YearMonth period) {
         boolean notRevokedBefore = revokedFromPeriod == null || period.isBefore(revokedFromPeriod);
-        return periodRange().contains(period) && notRevokedBefore && status != StudentDiscountStatus.ENDED;
+        return periodRange().contains(period) && notRevokedBefore;
     }
 
     private void moveTo(StudentDiscountEvent event, StatusChangeActor actor, Instant now, String reason) {
