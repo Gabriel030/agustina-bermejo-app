@@ -44,8 +44,12 @@ class LateFeeCorrectionByPaymentDateMigrationTest {
     }
 
     private static String paymentCorrection(int creditNoteId, int chargeId, String cause, String firstDay, String allocationId, String paymentDate) {
+        return paymentCorrectionWithEndDate(creditNoteId, chargeId, cause, firstDay, allocationId, paymentDate, "null");
+    }
+
+    private static String paymentCorrectionWithEndDate(int creditNoteId, int chargeId, String cause, String firstDay, String allocationId, String paymentDate, String endDate) {
         return "insert into late_fee_charge_correction (" + COLUMNS + ", settlement_allocation_id, payment_date) values (" + chargeId + ", 1, 1, " + creditNoteId + ", '" + firstDay
-                + "', '2027-03-31', 3, '" + cause + "', null, now(), " + allocationId + ", " + paymentDate + ")";
+                + "', '2027-03-31', 3, '" + cause + "', " + endDate + ", now(), " + allocationId + ", " + paymentDate + ")";
     }
 
     @Test
@@ -72,6 +76,8 @@ class LateFeeCorrectionByPaymentDateMigrationTest {
             assertThatThrownBy(() -> insertWithoutForeignKeys(migrated, paymentCorrection(103, 13, "PAYMENT_DATED_BEFORE_CHARGED_DAYS", "2027-03-29", "null", "'2027-03-28'")))
                     .hasMessageContaining("ck_late_fee_charge_correction_reference_by_cause");
             assertThatThrownBy(() -> insertWithoutForeignKeys(migrated, paymentCorrection(104, 14, "PAYMENT_WITHIN_GRACE", "2027-03-29", "55", "null")))
+                    .hasMessageContaining("ck_late_fee_charge_correction_reference_by_cause");
+            assertThatThrownBy(() -> insertWithoutForeignKeys(migrated, paymentCorrectionWithEndDate(109, 19, "PAYMENT_WITHIN_GRACE", "2027-03-29", "55", "'2027-03-20'", "'2027-03-10'")))
                     .hasMessageContaining("ck_late_fee_charge_correction_reference_by_cause");
             assertThatThrownBy(() -> insertWithoutForeignKeys(migrated, withdrawalCorrection(105, 15, "2027-03-29", "null")))
                     .hasMessageContaining("ck_late_fee_charge_correction");

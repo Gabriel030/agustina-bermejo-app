@@ -1,6 +1,20 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
+import com.red_escuela.backend.billing.account.domain.InvoiceSettlement;
+import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
+import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
+import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
+import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
+import com.red_escuela.backend.billing.note.service.IssueCreditNoteOperation;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
@@ -22,6 +36,19 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;
+
+    @Autowired
+    private LateFeeSettlementCorrectionService settlementCorrectionService;
+    @Autowired
+    private InvoiceSettlementQueryService settlementQuery;
+    @Autowired
+    private LateFeeAccrualStep accrualStep;
+    @Autowired
+    private BillingOperationPipeline pipeline;
+    @Autowired
+    private IssueCreditNoteOperation issueCreditNoteOperation;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     @AfterEach
     void resetClock() {
@@ -242,5 +269,80 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
         assertThat(jdbc.queryForObject("select invoice_id from payment_allocation where id = ?", Long.class, settlementAllocationId)).isEqualTo(origin.getId());
         assertThat(jdbc.queryForObject("select count(*) from authorization_request_invoice where invoice_id = ?", Long.class, debitNoteId)).isZero();
         assertScenarioInvariants(d(2406, 4, 2));
+    }
+
+    private long fiscalWindowNoticesHandled() {
+        return jdbc.queryForObject("select count(*) from processed_effect where handler_name = 'LateFeeCorrectionNotificationListener.notifySecretariatWhenIssuedAfterFiscalWindow'",
+                Long.class);
+    }
+
+    @Test
+    @Tag("D-290")
+    void aSettlementReversedBeforeTheAnnulmentIsNotAnnulledByItsStaleDate() {
+        arrange(2411);
+        publishDefaults(2411);
+        Invoice origin = overdueInstallmentDueOn(d(2411, 3, 11));
+        reconcile(origin, d(2411, 4, 2));
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        MutableClock.INSTANCE.setDate(d(2411, 4, 2));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2411, 3, 28), d(2411, 4, 2));
+        InvoiceSettlement stale = settlementQuery.findCurrentSettlementOfInvoice(origin.getId()).orElseThrow();
+        PaymentAllocation current = allocationRepository.findCurrentAllocationByInvoiceId(origin.getId()).orElseThrow();
+        transactionTemplate.executeWithoutResult(status -> allocationService.reverseAllocation(accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()),
+                current, d(2411, 4, 3), 0, "Contracargo", ACTOR));
+        awaitEventsDrained();
+        assertThat(settlementQuery.findCurrentSettlementOfInvoice(origin.getId())).isEmpty();
+
+        int annulled = settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(origin.getId(), stale);
+
+        assertThat(annulled).isZero();
+        assertThat(creditNotesOf(debitNoteId)).isEmpty();
+        assertThat(correctionsOf(debitNoteId)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-325")
+    void annulmentRecoveredAfterTheFiscalWindowNeverNotifiesAWithdrawalNoticeToTheSecretariat() {
+        arrange(2412);
+        publishDefaults(2412);
+        Invoice origin = overdueInstallmentDueOn(d(2412, 3, 11));
+        reconcile(origin, d(2412, 4, 2));
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2412, 3, 28), d(2412, 4, 2));
+        long noticesBefore = fiscalWindowNoticesHandled();
+        MutableClock.INSTANCE.setDate(d(2412, 4, 25));
+
+        accrualStep.accrueLateFees(d(2412, 4, 25));
+        awaitEventsDrained();
+
+        assertThat(creditedTotalOf(debitNoteId)).isEqualByComparingTo("600.00");
+        assertThat(creditNotesOf(debitNoteId).get(0).get("issue_date").toString()).isEqualTo("2412-04-25");
+        assertThat(fiscalWindowNoticesHandled()).isEqualTo(noticesBefore);
+    }
+
+    @Test
+    @Tag("D-099")
+    void annulmentCappedByAManualCreditIsRecordedOnceAndNotRetriedEveryNight() {
+        arrange(2413);
+        publishDefaults(2413);
+        Invoice origin = overdueInstallmentDueOn(d(2413, 3, 11));
+        reconcile(origin, d(2413, 4, 2));
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        pipeline.runOperation(issueCreditNoteOperation, new IssueCreditNoteCommand(debitNoteId, CreditNoteReason.BILLING_ERROR, "Error de carga",
+                List.of(new CreditNoteLineAmount(1, Money.of(new BigDecimal("3900.00"), Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, person.getId(), true, null));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2413, 3, 28), d(2413, 4, 2));
+        double cappedBefore = meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", "ARS").count();
+
+        MutableClock.INSTANCE.setDate(d(2413, 4, 3));
+        accrualStep.accrueLateFees(d(2413, 4, 3));
+        MutableClock.INSTANCE.setDate(d(2413, 4, 4));
+        accrualStep.accrueLateFees(d(2413, 4, 4));
+        MutableClock.INSTANCE.setDate(d(2413, 4, 5));
+        accrualStep.accrueLateFees(d(2413, 4, 5));
+
+        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ? and reason = 'LATE_FEE_ANNULMENT'", BigDecimal.class, debitNoteId))
+                .isEqualByComparingTo("100.00");
+        assertThat(correctionsOf(debitNoteId)).hasSize(1);
+        assertThat(meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", "ARS").count() - cappedBefore).isEqualTo(1.0);
     }
 }

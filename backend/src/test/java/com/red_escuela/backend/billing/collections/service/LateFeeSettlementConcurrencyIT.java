@@ -217,6 +217,27 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
+    @Tag("D-331")
+    @Tag("D-378")
+    void aPaymentOnTheLastDayOfTheGraceThatIsAlsoTheLastDayOfTheDebitNoteIsACandidateOfTheNightlyRecovery() {
+        arrange(2261);
+        publish(10, "0.002", 10, true, true, d(2261, 1, 1));
+        Invoice origin = overdueInstallmentDueOn(d(2261, 3, 21));
+        reconcile(origin, d(2261, 4, 2));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2261, 3, 31), d(2261, 4, 2));
+
+        assertThat(summaryOf(origin)).containsExactly("2261-03-22..2261-03-31:10:2000.00");
+        assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2261, 3, 1), 50)).contains(origin.getId());
+        MutableClock.INSTANCE.setDate(d(2261, 4, 3));
+        accrualStep.accrueLateFees(d(2261, 4, 3));
+
+        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ?", java.math.BigDecimal.class, chargesOf(origin).get(0).get("debit_note_id")))
+                .isEqualByComparingTo("2000.00");
+        assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2261, 3, 1), 50)).doesNotContain(origin.getId());
+        assertScenarioInvariants(d(2261, 4, 3));
+    }
+
+    @Test
     @Tag("D-325")
     void aLateRedeliveredPaymentEventIssuesWithTheRealDayButKeepsTheFactDate() {
         arrange(2238);

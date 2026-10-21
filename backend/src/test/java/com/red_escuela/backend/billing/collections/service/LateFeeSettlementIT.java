@@ -6,7 +6,13 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.testsupport.SlowTest;
 import io.micrometer.core.instrument.MeterRegistry;
+import com.red_escuela.backend.billing.payment.dto.RegisterCashPaymentRequest;
+import com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase;
+import com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.time.MutableClock;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -24,6 +30,23 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
     private MeterRegistry meterRegistry;
+
+    @Autowired
+    private PreviewCashPaymentUseCase previewCashPaymentUseCase;
+    @Autowired
+    private RegisterCashPaymentUseCase registerCashPaymentUseCase;
+
+    private void registerCashPaymentAsAdministrative(Invoice origin, LocalDate paidOn) {
+        Money amount = price();
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(person.getId().toString(), null, "ROLE_ADMINISTRATIVO"));
+        try {
+            String fingerprint = previewCashPaymentUseCase.previewCashPayment(student.getId(), amount).fingerprint();
+            registerCashPaymentUseCase.registerCashPayment(student.getId(), new RegisterCashPaymentRequest(amount, paidOn, null, "Cobro del mostrador cargado después", fingerprint),
+                    "cash-late-fee-" + System.nanoTime());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
 
     @AfterEach
     void resetClock() {
@@ -237,7 +260,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
         Long debitNoteId = (Long) chargesOf(origin).get(0).get("debit_note_id");
 
-        payInFull(origin, d(2212, 3, 28), d(2212, 4, 2));
+        registerCashPaymentAsAdministrative(origin, d(2212, 3, 28));
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2212-03-12..2212-03-31:20:4000.00");

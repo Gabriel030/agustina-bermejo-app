@@ -40,7 +40,7 @@ class LateFeePaymentDateCorrectionCalculatorTest {
     }
 
     @Test
-    void aPaymentInTheMiddleOfThePeriodCorrectsOnlyTheDaysAfterItAndKeepsThePaymentDay() {
+    void paymentDateCorrectionCalculatorPlansTheRightDays() {
         Optional<PlannedLateFeeCorrection> planned = plan(marchCharge("100000.00", "0.002", 20), List.of(), march(28), false, EVERY_DAY);
 
         assertThat(planned).isPresent();
@@ -113,7 +113,7 @@ class LateFeePaymentDateCorrectionCalculatorTest {
 
     @Test
     @Tag("D-099")
-    void theCreditIsTheHalfUpComplementOfTheNetDaysAndNotTheRoundingOfTheCorrectedDays() {
+    void annulmentCreditIsTheHalfUpComplementOfTheNetDays() {
         Optional<PlannedLateFeeCorrection> planned = plan(marchCharge("100001.00", "0.0017", 20), List.of(), march(28), false, EVERY_DAY);
 
         assertThat(planned.get().correctedDays()).isEqualTo(3);

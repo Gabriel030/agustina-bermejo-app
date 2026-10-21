@@ -22,6 +22,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
@@ -36,11 +39,14 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
     private LateFeeOnInvoiceSettledListener settledListener;
     @MockitoSpyBean
     private LateFeeChargeCorrectionRepository correctionRepositorySpy;
+    @MockitoSpyBean
+    private LateFeeCorrectionIssuer issuerSpy;
 
     @AfterEach
     void restore() {
         MutableClock.INSTANCE.reset();
         reset(correctionRepositorySpy);
+        reset(issuerSpy);
     }
 
     private void runTogether(List<Callable<Object>> tasks, CountDownLatch start) throws Exception {
@@ -89,5 +95,25 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
         assertThat(jdbc.queryForObject("select count(*) from late_fee_charge_correction where debit_note_id = ?", Long.class, debitNoteId)).isEqualTo(1L);
         assertThat(jdbc.queryForObject("select outstanding_amount from invoice where id = ?", java.math.BigDecimal.class, debitNoteId)).isEqualByComparingTo("3400.00");
         assertScenarioInvariants(d(2408, 4, 2));
+    }
+
+    @Test
+    @Tag("D-378")
+    void aFailedAnnulmentIsPropagatedSoTheEventIsRetriedAndTheRetryAnnulsOnce() {
+        arrange(2409);
+        publishDefaults(2409);
+        Invoice origin = overdueInstallmentDueOn(d(2409, 3, 11));
+        reconcile(origin, d(2409, 4, 2));
+        Long debitNoteId = (Long) chargesOf(origin).get(0).get("debit_note_id");
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2409, 3, 28), d(2409, 4, 2));
+        InvoiceSettlement settlement = settlementQuery.findCurrentSettlementOfInvoice(origin.getId()).orElseThrow();
+        MutableClock.INSTANCE.setDate(d(2409, 4, 2));
+        doThrow(new IllegalStateException("boom")).when(issuerSpy).correctLateFeeChargeAfterPaymentDateInNewTransaction(anyLong(), any());
+
+        assertThatThrownBy(() -> settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(origin.getId(), settlement)).isInstanceOf(IllegalStateException.class);
+
+        reset(issuerSpy);
+        assertThat(settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(origin.getId(), settlement)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ? and reason = 'LATE_FEE_ANNULMENT'", Long.class, debitNoteId)).isEqualTo(1L);
     }
 }
