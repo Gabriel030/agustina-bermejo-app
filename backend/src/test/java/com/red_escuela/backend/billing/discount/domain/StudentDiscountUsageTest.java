@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -90,7 +91,7 @@ class StudentDiscountUsageTest {
     void theLostMonthsComeSortedWhateverTheOrderOfTheIssuedOnes() {
         StudentDiscount scholarship = discount(InvoiceType.MONTHLY_INSTALLMENT, MARCH, DECEMBER);
 
-        StudentDiscountUsage usage = StudentDiscountUsage.of(scholarship, List.of(), Set.of(JUNE, MARCH, MAY));
+        StudentDiscountUsage usage = StudentDiscountUsage.of(scholarship, List.of(), new LinkedHashSet<>(List.of(JUNE, MARCH, MAY)));
 
         assertThat(usage.lostPeriods()).containsExactly(MARCH, MAY, JUNE);
     }
