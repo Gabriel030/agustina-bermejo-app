@@ -7,6 +7,7 @@ import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
 import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,6 +23,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-375")
+@SlowTest(reason = "Nine scenarios of the withdrawal correction backup that each seed enrollments and invoices and run the real events and reconciliation against Postgres")
 class LateFeeCorrectionBackupIT extends AbstractLateFeeCorrectionIT {
 
     @Autowired
