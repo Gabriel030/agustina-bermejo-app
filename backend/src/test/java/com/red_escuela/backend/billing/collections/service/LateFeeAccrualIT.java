@@ -45,6 +45,7 @@ import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,7 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest
 @ActiveProfiles("test")
 @RecordApplicationEvents
+@SlowTest(reason = "Twenty-nine accrual scenarios that each seed invoices and payments and run the real late fee reconciliation against Postgres")
 class LateFeeAccrualIT extends AbstractIntegrationTest {
     private static final StatusChangeActor ACTOR = new StatusChangeActor(null, "LateFeeAccrualIT");
 

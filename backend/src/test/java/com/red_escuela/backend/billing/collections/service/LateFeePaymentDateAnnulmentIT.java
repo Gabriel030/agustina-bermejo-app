@@ -20,6 +20,7 @@ import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-378")
+@SlowTest(reason = "Ten scenarios that each seed overdue invoices, annul payments by payment date and run the real late fee reconciliation and events against Postgres")
 class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
