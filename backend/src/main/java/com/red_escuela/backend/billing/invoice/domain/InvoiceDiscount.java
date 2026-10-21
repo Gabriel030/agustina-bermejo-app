@@ -1,10 +1,13 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,8 +21,10 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.Immutable;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Entity
@@ -73,6 +78,14 @@ public class InvoiceDiscount {
     @Column(name = "source_installment_id")
     private Long sourceInstallmentId;
 
+    @Convert(converter = MonetaryAdjustmentConverter.class)
+    @ColumnTransformer(write = "?::jsonb")
+    @Column(name = "calculation", columnDefinition = "jsonb")
+    private MonetaryAdjustment calculation;
+
+    @Column(name = "consumption_released_at", insertable = false, updatable = false)
+    private LocalDateTime consumptionReleasedAt;
+
     InvoiceDiscount(InvoiceLine invoiceLine, InvoiceDiscountDraft draft) {
         this.invoiceLine = invoiceLine;
         this.studentDiscountId = draft.studentDiscountId();
@@ -84,6 +97,7 @@ public class InvoiceDiscount {
         this.installmentNumber = draft.installmentNumber();
         this.installmentsTotal = draft.installmentsTotal();
         this.sourceInstallmentId = draft.sourceInstallmentId();
+        this.calculation = draft.calculation();
     }
 
     public Optional<String> describeInstallmentProgress() {
