@@ -1,11 +1,11 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,6 +14,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Tag("migration")
 class DailyLateFeeMigrationTest {
 
     private static void migrateTo(DriverManagerDataSource dataSource, String version) {
@@ -21,7 +22,6 @@ class DailyLateFeeMigrationTest {
     }
 
     private static JdbcTemplate seedMonthlyVersions(DriverManagerDataSource dataSource) {
-        migrateTo(dataSource, "93");
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         jdbc.update("insert into address default values");
         Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);
@@ -41,9 +41,7 @@ class DailyLateFeeMigrationTest {
     @Tag("D-210")
     @Tag("D-382")
     void migrationConvertsMonthlyToDailyRateAndDisablesCharging() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("93")) {
             JdbcTemplate jdbc = seedMonthlyVersions(dataSource);
             assertThat(jdbc.queryForObject("select count(*) from configuration_version where scope = 'LATE_PAYMENT' and config_values ->> 'lateFeeChargingEnabled' = 'true'", Long.class))
                     .isEqualTo(2L);
@@ -69,9 +67,7 @@ class DailyLateFeeMigrationTest {
     @Test
     @Tag("D-330")
     void migrationFailsWhenThereAreMonthlyLateFeeChargesToConvert() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("93")) {
             JdbcTemplate jdbc = seedMonthlyVersions(dataSource);
             Long versionId = jdbc.queryForObject("select min(id) from configuration_version where scope = 'LATE_PAYMENT'", Long.class);
             jdbc.execute("alter table late_fee_charge drop constraint fk_late_fee_charge_debit_note");

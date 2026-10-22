@@ -1,13 +1,13 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -15,16 +15,12 @@ import java.util.Map;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("migration")
 class MoneyCurrencyMigrationTest {
 
     @Test
     void existingBillingDataIsReadAfterTheMigrationWithTheSameValuesAndArsCurrency() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                    postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("78").load().migrate();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("78")) {
 
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into address default values");

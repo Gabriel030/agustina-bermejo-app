@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.discount.repository;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 
@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SlowTest(reason = "Migrates a real database through Flyway step by step to prove the legacy scholarship tables are dropped only when no legacy scholarship is active")
 @Tag("D-407")
 @Tag("D-384")
+@Tag("migration")
 class LegacyScholarshipDropMigrationTest {
 
     private static void migrateTo(DriverManagerDataSource dataSource, String target) {
@@ -75,10 +76,7 @@ class LegacyScholarshipDropMigrationTest {
 
     @Test
     void theMigrationFailsWhenAnActiveLegacyScholarshipExists() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "130");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("130")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             insertLegacyScholarshipWithAnAppliedInstallment(jdbc, "ACTIVE");
 
@@ -93,10 +91,7 @@ class LegacyScholarshipDropMigrationTest {
 
     @Test
     void theMigrationDropsTheLegacyTablesWhenNoneIsActive() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "130");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("130")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             LegacyScholarship legacy = insertLegacyScholarshipWithAnAppliedInstallment(jdbc, "INACTIVE");
 
@@ -113,10 +108,7 @@ class LegacyScholarshipDropMigrationTest {
 
     @Test
     void invoiceDiscountNoLongerHasTheSourceInstallmentColumn() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "130");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("130")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             assertThat(jdbc.queryForObject("select count(*) from information_schema.columns where table_name = 'invoice_discount' and column_name = 'source_installment_id'", Long.class))
                     .isEqualTo(1L);

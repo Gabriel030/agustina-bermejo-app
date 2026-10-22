@@ -1,12 +1,13 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Statement;
 
@@ -14,12 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SlowTest(reason = "Levanta su propio Postgres y migra por etapas para cargar una corrección de baja con la forma vieja antes de la migración de las correcciones por fecha de pago")
+@Tag("migration")
+@Tag("migration")
 class LateFeeCorrectionByPaymentDateMigrationTest {
     private static final String COLUMNS = "late_fee_charge_id, debit_note_id, student_current_account_id, credit_note_id, first_corrected_day, last_corrected_day, "
             + "corrected_days, cause, enrollment_end_date, created_at";
 
-    private static JdbcTemplate migrateTo(PostgreSQLContainer<?> postgres, String target) {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+    private static JdbcTemplate migrateTo(DriverManagerDataSource dataSource, String target) {
         Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target(target).load().migrate();
         return new JdbcTemplate(dataSource);
     }
@@ -56,15 +58,14 @@ class LateFeeCorrectionByPaymentDateMigrationTest {
     @Tag("D-378")
     @Tag("D-375")
     void migrationGeneralizesCorrectionCausesAndKeepsWithdrawalRows() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            JdbcTemplate jdbc = migrateTo(postgres, "127");
+        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("127")) {
+            JdbcTemplate jdbc = new JdbcTemplate(database);
             insertWithoutForeignKeys(jdbc, withdrawalCorrection(100, 10, "2027-03-29", "'2027-03-28'"));
             String before = jdbc.queryForObject("select id || ':' || first_corrected_day || ':' || corrected_days || ':' || cause || ':' || enrollment_end_date from late_fee_charge_correction",
                     String.class);
             assertThat(jdbc.queryForObject("select count(*) from late_fee_charge_correction where cause <> 'BACKDATED_WITHDRAWAL'", Long.class)).isZero();
 
-            jdbc = migrateTo(postgres, "131");
+            jdbc = migrateTo(database, "131");
 
             assertThat(jdbc.queryForObject("select id || ':' || first_corrected_day || ':' || corrected_days || ':' || cause || ':' || enrollment_end_date from late_fee_charge_correction",
                     String.class)).isEqualTo(before);
