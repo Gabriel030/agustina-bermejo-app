@@ -14,3 +14,10 @@ export function useDebtors(sortBy = 'DEBT_AGE') {
     queryFn: () => apiFetch(`/financial-dashboard/debtors?sortBy=${sortBy}`),
   });
 }
+
+export function useFirstBillingMonth() {
+  return useQuery({
+    queryKey: ['billing-metrics', 'first-month'],
+    queryFn: () => apiFetch('/billing/metrics/first-month'),
+  });
+}
