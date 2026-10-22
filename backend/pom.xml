@@ -275,6 +275,7 @@
 					</systemPropertyVariables>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
+					<forkedProcessExitTimeoutInSeconds>5</forkedProcessExitTimeoutInSeconds>
 					<systemPropertyVariables>
 						<test.fork>true</test.fork>
 					</systemPropertyVariables>
