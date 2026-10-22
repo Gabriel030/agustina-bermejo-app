@@ -25,6 +25,12 @@ describe('applicationProgress', () => {
     expect(Object.values(progress.stepValidity).every(Boolean)).toBe(true);
   });
 
+  it('una solicitud vencida corta el recorrido en el paso vencida', () => {
+    const progress = applicationProgress({ status: 'EXPIRED' });
+    expect(progress.pasos.map((step) => step.key)).toEqual(['submitted', 'expired']);
+    expect(progress.stepValidity.expired).toBe(false);
+  });
+
   it('una solicitud rechazada corta el recorrido en el paso rechazada', () => {
     const progress = applicationProgress({ status: 'REJECTED' });
     expect(progress.pasos.map((step) => step.key)).toEqual(['submitted', 'rejected']);

@@ -15,6 +15,7 @@ const ESTADOS = {
   APPROVED: { label: 'Aprobada', tone: 'success' },
   APPLIED_TO_DEBT: { label: 'Aplicado a deuda anterior', tone: 'warning' },
   REJECTED: { label: 'Rechazada', tone: 'danger' },
+  EXPIRED: { label: 'Vencida', tone: 'danger' },
   WAITLISTED: { label: 'En lista de espera', tone: 'neutral' },
 };
 
