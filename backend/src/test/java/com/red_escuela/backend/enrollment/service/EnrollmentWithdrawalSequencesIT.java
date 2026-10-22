@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.note.service.AbstractCreditNoteIT;
+import com.red_escuela.backend.billing.note.service.LeftOutInvoiceCancellationOnReceiptRejectionListener;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -11,11 +12,13 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.testsupport.SlowTest;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,10 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import java.util.stream.Collectors;
-import org.springframework.http.MediaType;
-
+import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,10 +43,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Tag("D-165")
 @Tag("D-296")
 @Tag("C-20")
+@SlowTest(reason = "Twelve random multi-step withdrawal sequences with real director approvals and a rejected-receipt cancellation, each on its own account")
 class EnrollmentWithdrawalSequencesIT extends AbstractCreditNoteIT {
 
     private static final LocalDate START = LocalDate.of(2027, 4, 1);
+    private static final AtomicInteger APPROVED_REQUESTS = new AtomicInteger();
+    private static final AtomicInteger NEXT_YEAR_FEES_CANCELLED_ON_REJECTION = new AtomicInteger();
 
+    @AfterAll
+    static void theSequencesExercisedTheDirectorApprovalAndTheRejectedReceiptCancellation() {
+        assertThat(APPROVED_REQUESTS.get()).as("requests approved by the director across the sequences").isPositive();
+        assertThat(NEXT_YEAR_FEES_CANCELLED_ON_REJECTION.get()).as("next year fees cancelled after a rejected receipt").isPositive();
+    }
+
+    @Autowired
+    private LeftOutInvoiceCancellationOnReceiptRejectionListener rejectionListener;
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
     @Autowired
@@ -92,6 +105,7 @@ class EnrollmentWithdrawalSequencesIT extends AbstractCreditNoteIT {
         MutableClock.INSTANCE.setDate(START);
         Long staffPersonId = newStaff("ADMINISTRATIVO").personId();
         int withdrawals = 0;
+        Long nextYearFee = seed % 3 == 0 ? nextYearFeeUnderReview(activeEnrollments.get(0)) : null;
 
         for (int step = 0; step < 8; step++) {
             int action = random.nextInt(5);
@@ -127,6 +141,47 @@ class EnrollmentWithdrawalSequencesIT extends AbstractCreditNoteIT {
             invariants.assertAllBillingInvariantsHold();
         }
         assertThat(withdrawals).isGreaterThanOrEqualTo(1);
+        if (nextYearFee != null) {
+            rejectTheReceiptAndAssertTheNextYearFee(activeEnrollments.get(0), nextYearFee, accountId, staffPersonId, seed);
+            invariants.assertAllBillingInvariantsHold();
+        }
+    }
+
+    private Long nextYearFeeUnderReview(Long enrollmentId) {
+        ProgramEnrollment enrollment = inTransaction(() -> {
+            ProgramEnrollment loaded = programEnrollmentRepository.findById(enrollmentId).orElseThrow();
+            loaded.getProgram().getName();
+            loaded.getStudent().getPerson().getName();
+            return loaded;
+        });
+        Long fee = enrollmentFeeOf(enrollment, templateStartingOn(enrollment.getProgram(), LocalDate.of(2028, 3, 1)), 2028);
+        inTransaction(() -> {
+            invoiceRepository.findById(fee).orElseThrow().markPaymentUnderReview(START, ACTOR, "Comprobante subido");
+            return null;
+        });
+        return fee;
+    }
+
+    private void rejectTheReceiptAndAssertTheNextYearFee(Long enrollmentId, Long fee, Long accountId, Long staffPersonId, long seed) {
+        boolean stillActive = !jdbc.queryForObject("select status from program_enrollment where id = ?", String.class, enrollmentId).equals("WITHDRAWN");
+        if (stillActive) {
+            withdrawAndAssertUnpaidInvoicesUntouched(enrollmentId, accountId, staffPersonId, true, seed);
+        }
+        boolean voluntary = jdbc.queryForObject("select withdrawn_by_person_id is not null from program_enrollment where id = ?", Boolean.class, enrollmentId);
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, fee)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        inTransaction(() -> {
+            invoiceRepository.findById(fee).orElseThrow().releasePaymentReviewWithoutLateTerms(MutableClock.INSTANCE.instant().atZone(MutableClock.INSTANCE.getZone()).toLocalDate(),
+                    ACTOR, "Comprobante rechazado");
+            return null;
+        });
+        inTransaction(() -> rejectionListener.cancelIfLeftOutOfWithdrawal(fee));
+
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, fee)).as("seed %d next year fee", seed)
+                .isEqualTo(voluntary ? "CANCELLED" : "PENDING");
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ?", Long.class, fee)).isEqualTo(voluntary ? 1L : 0L);
+        if (voluntary) {
+            NEXT_YEAR_FEES_CANCELLED_ON_REJECTION.incrementAndGet();
+        }
     }
 
     private void withdrawAndAssertUnpaidInvoicesUntouched(Long enrollmentId, Long accountId, Long staffPersonId, boolean voluntary, long seed) {
@@ -151,9 +206,11 @@ class EnrollmentWithdrawalSequencesIT extends AbstractCreditNoteIT {
             return;
         }
         List<Long> requestedInvoiceIds = jdbc.queryForList("select distinct ari.invoice_id from authorization_request_invoice ari "
-                + "where ari.authorization_request_id in (" + requestIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")", Long.class);
+                + "join authorization_request ar on ar.id = ari.authorization_request_id join invoice i on i.id = ari.invoice_id "
+                + "where ar.status = 'PENDING' and i.student_current_account_id = ?", Long.class, accountId);
         Staff director = newStaff("DIRECTOR");
         requestIds.forEach(requestId -> approveAsDirector(requestId, director));
+        APPROVED_REQUESTS.addAndGet(requestIds.size());
 
         assertThat(requestedInvoiceIds).isNotEmpty();
         requestedInvoiceIds.forEach(invoiceId -> assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoiceId))

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -18,7 +19,11 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReview
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.support.PriceFixtures;
+import com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
@@ -40,6 +45,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -67,6 +77,10 @@ class LeftOutInvoiceCancellationOnReceiptRejectionIT extends AbstractInvoiceCanc
     private ProgramEnrollmentRepository programEnrollmentRepository;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private WithdrawalFactsLookup withdrawalFacts;
+    @Autowired
+    private CourseEnrollmentRepository courseEnrollmentRepository;
 
     @AfterEach
     void clearAuthentication() {
@@ -85,44 +99,6 @@ class LeftOutInvoiceCancellationOnReceiptRejectionIT extends AbstractInvoiceCanc
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         return programEnrollmentRepository.save(enrollment);
-    }
-
-    private Long templateStartingOn(Program program, LocalDate start) {
-        Long creatorId = newStaffPerson().getId();
-        return inTransaction(() -> {
-            Term term = new Term();
-            term.setYear(start.getYear());
-            term.setStatus(StatusType.ACTIVE);
-            term.setStartDate(start.atStartOfDay());
-            term.setEndDate(LocalDate.of(start.getYear(), 12, 31).atStartOfDay());
-            entityManager.persist(term);
-            ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
-            template.setProgram(entityManager.find(Program.class, program.getId()));
-            template.setTerm(term);
-            TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
-            template.setCreatedBy(entityManager.find(Person.class, creatorId));
-            entityManager.persist(template);
-            return template.getId();
-        });
-    }
-
-    private Long enrollmentFeeOf(ProgramEnrollment enrollment, Long templateId, int year) {
-        Long accountId = newAccountId(enrollment.getStudent().getId(), Currency.ARS);
-        Long priceVersionId = PriceFixtures.persistPriceVersion(enrollment.getProgram().getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula",
-                ars("50000.00").value(), LocalDate.of(2000, 1, 1).plusDays(year), enrollment.getStudent().getPerson().getId());
-        return inTransaction(() -> {
-            Person person = studentPerson(enrollment.getStudent().getId());
-            StudentSnapshot snapshot = new StudentSnapshot(person.getName() + " " + person.getLastname(), person.getDni(), "Calle 1");
-            InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ENROLLMENT_FEE,
-                    InvoiceIssuingReason.MONTHLY_RUN, null);
-            InvoiceLineDraft line = new InvoiceLineDraft(FeeType.ENROLLMENT_FEE, "Matrícula " + year, YearMonth.of(year, 2), enrollment.getId(), null, null, null,
-                    priceVersionId, "PE:" + enrollment.getId() + ":ENROLLMENT_FEE:" + year, ars("50000.00"), templateId, 1);
-            Invoice draft = InvoiceFactory.createEnrollmentFeeInvoiceDraft(header, line, Optional.empty(), ACTOR);
-            draft.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), LocalDate.of(2027, 11, 1), LocalDate.of(2027, 12, 1), snapshot, ACTOR);
-            Invoice saved = invoiceRepository.save(draft);
-            service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), saved, LocalDate.of(2027, 11, 1));
-            return saved.getId();
-        });
     }
 
     private void putUnderReview(Long invoiceId) {
@@ -250,6 +226,111 @@ class LeftOutInvoiceCancellationOnReceiptRejectionIT extends AbstractInvoiceCanc
         assertThat(cancelAfterRejection(june.getId())).isFalse();
 
         assertThat(paymentStatusOf(june.getId())).isEqualTo("PENDING");
+    }
+
+    @Test
+    @Tag("D-247")
+    void anInvoiceWithAPendingDirectorRequestIsNotCancelledByTheSystemWhenItsReceiptIsRejected() throws Exception {
+        ProgramEnrollment enrollment = newProgramEnrollment(newStudentId());
+        Long fee = enrollmentFeeOf(enrollment, templateStartingOn(enrollment.getProgram(), LocalDate.of(2028, 3, 1)), 2028);
+        long requestId = pendingRequestId(requestCancellation(fee, newStaff("ADMINISTRATIVO"), cancellationBody("CANCELLATION", "Pedido previo"), 202));
+        putUnderReview(fee);
+        withdraw(enrollment, WITHDRAWAL_DAY);
+        releaseReview(fee);
+
+        assertThat(cancelAfterRejection(fee)).isFalse();
+
+        assertThat(paymentStatusOf(fee)).isEqualTo("PENDING");
+        assertThat(creditNoteCountOf(fee)).isZero();
+        assertThat(jdbc.queryForObject("select status from authorization_request where id = ?", String.class, requestId)).isEqualTo("PENDING");
+    }
+
+    @Test
+    @Tag("D-246")
+    void aWithdrawalForNonpaymentNeverCancelsTheInvoiceWhoseReceiptWasRejected() {
+        ProgramEnrollment enrollment = newProgramEnrollment(newStudentId());
+        Long fee = enrollmentFeeOf(enrollment, templateStartingOn(enrollment.getProgram(), LocalDate.of(2028, 3, 1)), 2028);
+        putUnderReview(fee);
+        MutableClock.INSTANCE.setDate(WITHDRAWAL_DAY);
+        programEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.forNonpayment());
+        releaseReview(fee);
+
+        assertThat(withdrawalFacts.findVoluntaryWithdrawalOfProgramEnrollment(enrollment.getId())).isEmpty();
+        assertThat(cancelAfterRejection(fee)).isFalse();
+
+        assertThat(paymentStatusOf(fee)).isEqualTo("PENDING");
+        assertThat(creditNoteCountOf(fee)).isZero();
+    }
+
+    @Test
+    void aVoluntarilyWithdrawnCourseEnrollmentIsFoundByTheLookupAndItsInvoiceIsNotCancelledByTheSystem() {
+        Long studentId = newStudentId();
+        Long courseEnrollmentId = inTransaction(() -> {
+            Term term = new Term();
+            term.setYear(2027);
+            term.setDescription("2027-1C " + System.nanoTime());
+            term.setStatus(StatusType.ACTIVE);
+            entityManager.persist(term);
+            Course course = new Course();
+            course.setTerm(term);
+            course.setName("Curso de baja " + System.nanoTime());
+            course.setIsActive(StatusType.ACTIVE);
+            entityManager.persist(course);
+            CourseEnrollment courseEnrollment = new CourseEnrollment();
+            courseEnrollment.setStudent(studentRepository.findById(studentId).orElseThrow());
+            courseEnrollment.setCourse(course);
+            courseEnrollment.setStatus(EnrollmentStatus.ENROLLED);
+            courseEnrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
+            return courseEnrollmentRepository.save(courseEnrollment).getId();
+        });
+        Invoice june = BillingTestFixtures.invoice().forCourseEnrollment(courseEnrollmentRepository.findById(courseEnrollmentId).orElseThrow())
+                .ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.of(2027, 6)).dueOn(LocalDate.of(2027, 6, 10)).withBaseAmount(ars("5000.00").value()).build();
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawal_effective_date = ?, withdrawal_registered_on = ?, withdrawn_by_person_id = ? where id = ?",
+                LocalDate.of(2027, 5, 15), LocalDate.of(2027, 5, 15), newStaff("ADMINISTRATIVO").personId(), courseEnrollmentId);
+
+        assertThat(withdrawalFacts.findVoluntaryWithdrawalOfCourseEnrollment(courseEnrollmentId)).isPresent();
+        assertThat(cancelAfterRejection(june.getId())).isFalse();
+
+        assertThat(paymentStatusOf(june.getId())).isEqualTo("PENDING");
+        assertThat(creditNoteCountOf(june.getId())).isZero();
+    }
+
+    @Test
+    void aWithdrawalConcurrentWithTheReleaseOfTheReceiptLeavesASingleCreditNote() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        ProgramEnrollment enrollment = newProgramEnrollment(newStudentId());
+        Long fee = enrollmentFeeOf(enrollment, templateStartingOn(enrollment.getProgram(), LocalDate.of(2028, 3, 1)), 2028);
+        putUnderReview(fee);
+        MutableClock.INSTANCE.setDate(WITHDRAWAL_DAY);
+        Long staffPersonId = newStaff("ADMINISTRATIVO").personId();
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<?> withdrawing = executor.submit(() -> {
+            start.await();
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(staffPersonId.toString(), null, List.of(new SimpleGrantedAuthority("ROLE_ADMINISTRATIVO"))));
+            try {
+                programEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.voluntaryRegisteredBy(null, staffPersonId));
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+            return null;
+        });
+        Future<?> rejecting = executor.submit(() -> {
+            start.await();
+            releaseReview(fee);
+            cancelAfterRejection(fee);
+            return null;
+        });
+        start.countDown();
+        withdrawing.get(60, TimeUnit.SECONDS);
+        rejecting.get(60, TimeUnit.SECONDS);
+        executor.shutdownNow();
+        cancelAfterRejection(fee);
+
+        assertThat(paymentStatusOf(fee)).isEqualTo("CANCELLED");
+        assertThat(creditNoteCountOf(fee)).isEqualTo(1L);
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test

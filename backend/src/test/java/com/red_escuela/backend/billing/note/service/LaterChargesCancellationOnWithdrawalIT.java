@@ -161,44 +161,6 @@ class LaterChargesCancellationOnWithdrawalIT extends AbstractInvoiceCancellation
         assertThat(paymentStatusOf(enrollment.june().getId())).isEqualTo("PENDING");
     }
 
-    private Long templateStartingOn(Program program, LocalDate start) {
-        Long creatorId = newStaffPerson().getId();
-        return inTransaction(() -> {
-            Term term = new Term();
-            term.setYear(start.getYear());
-            term.setStatus(StatusType.ACTIVE);
-            term.setStartDate(start.atStartOfDay());
-            term.setEndDate(LocalDate.of(start.getYear(), 12, 31).atStartOfDay());
-            entityManager.persist(term);
-            ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
-            template.setProgram(entityManager.find(Program.class, program.getId()));
-            template.setTerm(term);
-            TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
-            template.setCreatedBy(entityManager.find(Person.class, creatorId));
-            entityManager.persist(template);
-            return template.getId();
-        });
-    }
-
-    private Long enrollmentFeeOf(ProgramEnrollment enrollment, Long templateId, int year) {
-        Long accountId = newAccountId(enrollment.getStudent().getId(), Currency.ARS);
-        Long priceVersionId = PriceFixtures.persistPriceVersion(enrollment.getProgram().getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula",
-                ars("50000.00").value(), LocalDate.of(2000, 1, 1).plusDays(year), enrollment.getStudent().getPerson().getId());
-        return inTransaction(() -> {
-            Person person = studentPerson(enrollment.getStudent().getId());
-            StudentSnapshot snapshot = new StudentSnapshot(person.getName() + " " + person.getLastname(), person.getDni(), "Calle 1");
-            InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ENROLLMENT_FEE,
-                    InvoiceIssuingReason.MONTHLY_RUN, null);
-            InvoiceLineDraft line = new InvoiceLineDraft(FeeType.ENROLLMENT_FEE, "Matrícula " + year, YearMonth.of(year, 2), enrollment.getId(), null, null, null,
-                    priceVersionId, "PE:" + enrollment.getId() + ":ENROLLMENT_FEE:" + year, ars("50000.00"), templateId, 1);
-            Invoice draft = InvoiceFactory.createEnrollmentFeeInvoiceDraft(header, line, Optional.empty(), ACTOR);
-            draft.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), LocalDate.of(2027, 11, 1), LocalDate.of(2027, 12, 1), snapshot, ACTOR);
-            Invoice saved = invoiceRepository.save(draft);
-            service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), saved, LocalDate.of(2027, 11, 1));
-            return saved.getId();
-        });
-    }
-
     private Long nextYearEnrollmentFee(ProgramEnrollment enrollment, Long templateId) {
         return enrollmentFeeOf(enrollment, templateId, 2028);
     }

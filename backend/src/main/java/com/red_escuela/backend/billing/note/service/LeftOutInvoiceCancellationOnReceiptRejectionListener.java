@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReviewReleasedEvent;
+import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin;
 import com.red_escuela.backend.billing.note.domain.WithdrawalCancellationPlanner;
@@ -29,15 +30,17 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
     private static final String JUSTIFICATION = "Baja: el comprobante de la matrícula del año siguiente fue rechazado";
     private static final Set<InvoicePaymentStatus> UNPAID = Set.of(InvoicePaymentStatus.PENDING, InvoicePaymentStatus.OVERDUE);
 
+    private final InvoiceCreditAccessService invoices;
     private final WithdrawalInvoiceAccess invoiceAccess;
     private final WithdrawalFactsLookup withdrawalFacts;
     private final StudentCurrentAccountService accountService;
     private final BillingOperationPipeline pipeline;
     private final CancelInvoiceOperation cancelInvoiceOperation;
 
-    public LeftOutInvoiceCancellationOnReceiptRejectionListener(WithdrawalInvoiceAccess invoiceAccess, WithdrawalFactsLookup withdrawalFacts,
+    public LeftOutInvoiceCancellationOnReceiptRejectionListener(InvoiceCreditAccessService invoices, WithdrawalInvoiceAccess invoiceAccess, WithdrawalFactsLookup withdrawalFacts,
                                                          StudentCurrentAccountService accountService, BillingOperationPipeline pipeline,
                                                          CancelInvoiceOperation cancelInvoiceOperation) {
+        this.invoices = invoices;
         this.invoiceAccess = invoiceAccess;
         this.withdrawalFacts = withdrawalFacts;
         this.accountService = accountService;
@@ -52,22 +55,23 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean cancelIfLeftOutOfWithdrawal(Long invoiceId) {
-        Optional<Long> accountId = invoiceAccess.findAccountIdOfInvoice(invoiceId);
+        Optional<Long> accountId = invoices.findAccountIdOf(invoiceId);
         if (accountId.isEmpty()) {
             return false;
         }
         accountService.lockStudentCurrentAccount(accountId.get());
-        Optional<Invoice> locked = invoiceAccess.findInvoiceWithLines(invoiceId).filter(this::isStillOpenAndUnpaid);
+        Optional<Invoice> locked = invoices.lockInvoice(invoiceId).filter(this::isStillOpenAndUnpaid);
         if (locked.isEmpty()) {
             return false;
         }
         Invoice invoice = locked.get();
-        Optional<WithdrawnEnrollmentFacts> facts = findVoluntaryWithdrawalOf(invoice);
-        if (facts.isEmpty()) {
+        Optional<WithdrawnEnrollmentFacts> found = findVoluntaryWithdrawalOf(invoice);
+        if (found.isEmpty()) {
             return false;
         }
+        WithdrawnEnrollmentFacts withdrawal = found.get();
         Set<Long> withPendingRequest = invoiceAccess.findInvoiceIdsWithPendingAuthorizationRequest(List.of(invoiceId));
-        boolean automatic = new WithdrawalCancellationPlanner(YearMonth.from(facts.get().effectiveDate()), facts.get().registeredOn(), invoiceAccess::findTermStartOfTemplate)
+        boolean automatic = new WithdrawalCancellationPlanner(YearMonth.from(withdrawal.effectiveDate()), withdrawal.registeredOn(), invoiceAccess::findTermStartOfTemplate)
                 .planFor(List.of(invoice), withPendingRequest).automaticInvoiceIds().contains(invoiceId);
         if (!automatic) {
             return false;
@@ -75,7 +79,7 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
         pipeline.runOperation(cancelInvoiceOperation,
                 CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.REJECTED_RECEIPT_OF_INVOICE_LEFT_OUT_OF_WITHDRAWAL, JUSTIFICATION));
         log.info("Factura que quedó fuera de la baja anulada al rechazarse su comprobante: factura={}, inscripcionPrograma={}, inscripcionCurso={}", invoiceId,
-                facts.get().programEnrollmentId(), facts.get().courseEnrollmentId());
+                withdrawal.programEnrollmentId(), withdrawal.courseEnrollmentId());
         return true;
     }
 

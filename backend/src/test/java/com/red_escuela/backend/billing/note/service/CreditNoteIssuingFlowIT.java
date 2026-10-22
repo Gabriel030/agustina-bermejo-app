@@ -141,7 +141,9 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
         requestCreditNote(scenario.invoiceId(), director, creditNoteBody("BILLING_ERROR", "Error de carga", 1, "60000.00"), 201);
         long entriesBefore = ledgerEntryCount(scenario.accountId());
 
-        decide("approve", requestId, director, 409);
+        mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + director.token())
+                .contentType(APPLICATION_JSON).content("{\"decisionReason\":\"ok\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT"));
 
         assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ?", Long.class, scenario.invoiceId())).isEqualTo(1L);
         assertThat(ledgerEntryCount(scenario.accountId())).isEqualTo(entriesBefore);
