@@ -160,6 +160,7 @@ class DailyReminderDigestPlannerTest {
         assertThat(email.lines().get(0).notices()).extracting("noticeKey").containsExactlyInAnyOrder("after-due", "after-issue");
         assertThat(email.format()).isEqualTo(ReminderMessageFormat.DAILY_DIGEST);
         assertThat(email.leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
+        assertThat(email.priority()).isEqualTo(2);
     }
 
     @Test
@@ -297,7 +298,7 @@ class DailyReminderDigestPlannerTest {
 
         assertThat(both.emailMessages().get(0).priority()).isEqualTo(2);
         assertThat(both.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
-        assertThat(onlyBefore.emailMessages().get(0).priority()).isEqualTo(3);
+        assertThat(onlyBefore.emailMessages().get(0).priority()).isEqualTo(4);
         assertThat(onlyBefore.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.BEFORE_DUE_REMINDER);
     }
 
@@ -557,6 +558,7 @@ class DailyReminderDigestPlannerTest {
             assertThat(invoiceIdsOf(message)).containsExactly(1L, 2L);
             assertThat(highlightedIdsOf(message)).containsExactly(2L);
             assertThat(message.leadMessageType()).isEqualTo(ReminderMessageType.ISSUANCE_NOTICE);
+            assertThat(message.priority()).isEqualTo(3);
         }
     }
 

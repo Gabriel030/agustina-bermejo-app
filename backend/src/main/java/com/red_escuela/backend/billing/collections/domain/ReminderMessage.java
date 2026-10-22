@@ -30,7 +30,7 @@ public record ReminderMessage(ReminderMessageFormat format, ReminderMessageType 
         }
         ReminderMessageFormat format = formatOf(lines, messageTypes.size());
         ReminderMessageType lead = ReminderMessageSeverity.mostSevereOf(messageTypes);
-        return Optional.of(new ReminderMessage(format, lead, ReminderMessageSeverity.dispatchPriorityOf(lead), lines, imputationOrderDebt, creditByCurrency));
+        return Optional.of(new ReminderMessage(format, lead, ReminderMessageSeverity.dispatchPriorityOf(lead, format), lines, imputationOrderDebt, creditByCurrency));
     }
 
     private static ReminderMessageFormat formatOf(List<ReminderDigestLine> lines, int noticeCount) {

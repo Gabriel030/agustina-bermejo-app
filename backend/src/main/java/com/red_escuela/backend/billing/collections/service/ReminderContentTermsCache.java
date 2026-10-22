@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.collections.domain.ReminderLateFeeTerms;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.collections.domain.ReminderSuspensionRule;
 
 import java.time.LocalDate;
@@ -11,11 +11,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class ReminderContentTermsCache {
-    private final Map<LocalDate, Optional<ReminderLateFeeTerms>> lateFeeByDueDate = new HashMap<>();
+    private final Map<LocalDate, Optional<LatePaymentTerms>> termsByDueDate = new HashMap<>();
     private Optional<ReminderSuspensionRule> suspensionRule;
 
-    Optional<ReminderLateFeeTerms> lateFeeTermsOn(LocalDate dueDate, Function<LocalDate, Optional<ReminderLateFeeTerms>> loader) {
-        return lateFeeByDueDate.computeIfAbsent(dueDate, loader);
+    Optional<LatePaymentTerms> latePaymentTermsOn(LocalDate dueDate, Function<LocalDate, Optional<LatePaymentTerms>> loader) {
+        return termsByDueDate.computeIfAbsent(dueDate, loader);
     }
 
     Optional<ReminderSuspensionRule> suspensionRuleFrom(Supplier<Optional<ReminderSuspensionRule>> loader) {

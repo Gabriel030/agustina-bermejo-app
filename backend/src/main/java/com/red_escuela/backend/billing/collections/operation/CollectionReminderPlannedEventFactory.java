@@ -53,7 +53,7 @@ public final class CollectionReminderPlannedEventFactory {
         return new PlannedReminderLine(line.invoiceId(), line.originInvoiceId(), PlannedReminderInvoiceKind.valueOf(line.invoiceType().name()), line.debitNote(),
                 line.dueDate(), line.balance().value(), line.receiptUnderReview(), line.precedesDueDate(), notices, line.versions().scheduleVersionId(),
                 line.versions().exceptionVersionId(), line.versions().groupVersionId(), line.versions().globalSettingsVersionId(),
-                terms.findLateFeeOf(line.invoiceId()).map(lateFee -> new PlannedReminderLateFee(lateFee.dailyRate(), lateFee.graceDays())).orElse(null));
+                terms.findLateFeeOf(line.invoiceId()).map(lateFee -> new PlannedReminderLateFee(lateFee.dailyRate(), lateFee.graceDays(), lateFee.finalPrice().value())).orElse(null));
     }
 
     private static PlannedReminderNotice noticeOf(ReminderDigestNotice notice) {

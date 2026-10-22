@@ -40,10 +40,26 @@ class CollectionReminderDispatchPriorityTest {
     @EnumSource(PlannedReminderNoticeType.class)
     @Tag("D-343")
     void everyTypeHasADistinctPriorityFollowingTheAgreedOrder(PlannedReminderNoticeType type) {
-        assertThat(type.dispatchPriority()).isEqualTo(MOST_URGENT_FIRST.indexOf(type) + 1);
+        int expected = switch (type) {
+            case BEFORE_SUSPENSION_REMINDER -> 1;
+            case AFTER_DUE_REMINDER -> 2;
+            case BEFORE_DUE_REMINDER -> 4;
+            case AFTER_ISSUE_REMINDER -> 5;
+            case ISSUANCE_NOTICE -> 6;
+        };
+        assertThat(type.dispatchPriority()).isEqualTo(expected);
     }
 
     private static DispatchCandidate candidateOf(PlannedReminderNoticeType type) {
         return new DispatchCandidate(type.ordinal() + 1, List.of(new DispatchItem("item-" + type, TOMORROW, false, type.dispatchPriority())));
+    }
+
+    @org.junit.jupiter.api.Test
+    @Tag("D-343")
+    @Tag("D-347")
+    void aDebtSummaryGoesOutAfterAnAfterDueMailAndBeforeABeforeDueOne() {
+        int debtSummary = com.red_escuela.backend.billing.collections.domain.ReminderMessageSeverity.DEBT_SUMMARY_DISPATCH_PRIORITY;
+
+        assertThat(debtSummary).isGreaterThan(PlannedReminderNoticeType.AFTER_DUE_REMINDER.dispatchPriority()).isLessThan(PlannedReminderNoticeType.BEFORE_DUE_REMINDER.dispatchPriority());
     }
 }

@@ -104,7 +104,13 @@ class DebtSummaryTimelineIT extends AbstractReminderTimelineIT {
 
         assertThat(harness.emailDaysOf(student)).containsExactly(april(1), april(6), april(9));
         assertThat(harness.inAppDaysOf(student)).containsExactly(april(1), april(6), april(10));
-        assertThat(emailFormatOn(student, april(6))).isNotEqualTo("DEBT_SUMMARY");
+        assertThat(emailFormatOn(student, april(6))).isEqualTo("DAILY_DIGEST");
+        assertThat(jdbc.queryForObject("select email_messages->0->>'leadNoticeType' from collection_reminder where student_id = ? and business_date = ?", String.class,
+                student.getId(), april(6))).isEqualTo("AFTER_ISSUE_REMINDER");
+        assertThat(jdbc.queryForList("select l->>'invoiceKind' from collection_reminder c, jsonb_array_elements(c.email_messages->0->'blocks'->0->'lines') l "
+                + "where c.student_id = ? and c.business_date = ?", String.class, student.getId(), april(6))).containsExactly("LATE_FEE", "MONTHLY_INSTALLMENT");
+        assertThat(jdbc.queryForObject("select (email_messages->0->>'priority')::int from collection_reminder where student_id = ? and business_date = ?", Integer.class,
+                student.getId(), april(6))).isEqualTo(5);
     }
 
     @Test

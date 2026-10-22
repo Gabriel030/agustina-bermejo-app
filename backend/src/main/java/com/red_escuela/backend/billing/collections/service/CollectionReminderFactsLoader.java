@@ -109,15 +109,12 @@ public class CollectionReminderFactsLoader {
         Map<Long, ReminderLateFeeTerms> lateFeeByInvoiceId = new HashMap<>();
         for (ReminderInvoiceFact fact : context.facts().invoices()) {
             if (!fact.isDebitNote() && fact.invoiceType() != InvoiceType.LATE_FEE) {
-                cache.lateFeeTermsOn(fact.dueDate(), this::lateFeeTermsInEffectOn).ifPresent(terms -> lateFeeByInvoiceId.put(fact.invoiceId(), terms));
+                cache.latePaymentTermsOn(fact.dueDate(), this::latePaymentTermsInEffectOn).flatMap(terms -> ReminderLateFeeTerms.of(terms, fact.finalPriceOrBalance()))
+                        .ifPresent(terms -> lateFeeByInvoiceId.put(fact.invoiceId(), terms));
             }
         }
-        ReminderSuspensionRule suspensionRule = cache.suspensionRuleFrom(() -> latePaymentTermsInEffectOn(businessDate).map(ReminderSuspensionRule::of)).orElse(null);
+        ReminderSuspensionRule suspensionRule = cache.suspensionRuleFrom(() -> latePaymentTermsInEffectOn(businessDate).flatMap(ReminderSuspensionRule::of)).orElse(null);
         return new ReminderContentTerms(lateFeeByInvoiceId, suspensionRule);
-    }
-
-    private Optional<ReminderLateFeeTerms> lateFeeTermsInEffectOn(LocalDate dueDate) {
-        return latePaymentTermsInEffectOn(dueDate).flatMap(ReminderLateFeeTerms::of);
     }
 
     private Optional<LatePaymentTerms> latePaymentTermsInEffectOn(LocalDate date) {
@@ -140,7 +137,8 @@ public class CollectionReminderFactsLoader {
         return new ReminderInvoiceFact(row.invoiceId(), row.originInvoiceId(), InvoiceDocumentType.valueOf(row.documentType()), InvoiceType.valueOf(row.invoiceType()),
                 InvoiceDocumentStatus.valueOf(row.documentStatus()), InvoicePaymentStatus.valueOf(row.paymentStatus()), row.issueDate(), row.dueDate(), null,
                 NonNegativeMoney.of(row.outstandingAmount(), currency), row.programEnrollmentId(), row.courseEnrollmentId(), row.receiptUnderReview(),
-                row.openCancellationRequest(), suspended, row.issuedAfterPreviousRun());
+                row.openCancellationRequest(), suspended, row.issuedAfterPreviousRun(),
+                row.finalPrice() == null ? null : NonNegativeMoney.of(row.finalPrice(), currency));
     }
 
     private static boolean isSuspended(EnrollmentReminderTarget target) {

@@ -159,10 +159,27 @@ class CollectionReminderMessageComposerTest {
     }
 
     private static PlannedReminderLine lineWithLateFee(long invoiceId, LocalDate dueDate, PlannedReminderNoticeType noticeType) {
-        PlannedReminderLine base = line(invoiceId, dueDate, ars(100000), true, noticeType);
+        return lineWithLateFee(invoiceId, dueDate, noticeType, ars(100000));
+    }
+
+    private static PlannedReminderLine lineWithLateFee(long invoiceId, LocalDate dueDate, PlannedReminderNoticeType noticeType, Money balance) {
+        PlannedReminderLine base = line(invoiceId, dueDate, balance, true, noticeType);
         return new PlannedReminderLine(base.invoiceId(), null, base.invoiceKind(), false, dueDate, base.balance(), false, base.precedesDueDate(), base.notices(),
                 1L, null, null, 2L, new com.red_escuela.backend.billing.events.PlannedReminderLateFee(
-                com.red_escuela.backend.shared.domain.Percentage.ofPoints(new BigDecimal("0.17")), 5));
+                com.red_escuela.backend.shared.domain.Percentage.ofPoints(new BigDecimal("0.17")), 5, ars(100000)));
+    }
+
+    @Test
+    @Tag("D-345")
+    @Tag("D-330")
+    @Tag("D-297")
+    void theDailyAmountIsOverTheFinalPriceEvenWithAPartialPayment() {
+        PlannedReminderMessage message = ownNotice(PlannedReminderNoticeType.AFTER_DUE_REMINDER, false,
+                arsBlock(lineWithLateFee(1, LocalDate.of(2027, 3, 11), PlannedReminderNoticeType.AFTER_DUE_REMINDER, ars(40000))));
+
+        String body = composer.composeEmail(message, LocalDate.of(2027, 3, 21)).bodyText();
+
+        assertThat(body).contains("(ARS 170,00 por día)").contains("ARS 40.000,00");
     }
 
     private static PlannedReminderMessage withRule(PlannedReminderMessage message, int days, int invoices) {
@@ -221,7 +238,7 @@ class CollectionReminderMessageComposerTest {
     @Tag("D-345")
     void debtSummaryHasItsOwnSubjectListsTheDebtAndMentionsTheNewInstallment() {
         PlannedReminderMessage summary = new PlannedReminderMessage(com.red_escuela.backend.billing.events.PlannedReminderFormat.DEBT_SUMMARY,
-                PlannedReminderNoticeType.ISSUANCE_NOTICE, 5, false, java.util.List.of(arsBlock(
+                PlannedReminderNoticeType.ISSUANCE_NOTICE, 3, false, java.util.List.of(arsBlock(
                         line(1, OVERDUE_DUE_DATE, ars(80000), false),
                         line(2, UPCOMING_DUE_DATE, ars(100000), true, PlannedReminderNoticeType.ISSUANCE_NOTICE))), null);
 

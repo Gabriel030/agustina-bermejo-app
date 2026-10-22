@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.collections.domain;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public record ReminderSuspensionRule(int afterDays, int afterInvoiceCount) {
 
@@ -12,8 +13,11 @@ public record ReminderSuspensionRule(int afterDays, int afterInvoiceCount) {
         }
     }
 
-    public static ReminderSuspensionRule of(LatePaymentTerms terms) {
+    public static Optional<ReminderSuspensionRule> of(LatePaymentTerms terms) {
         Objects.requireNonNull(terms, "terms");
-        return new ReminderSuspensionRule(terms.suspensionAfterDays(), terms.suspensionAfterInvoiceCount());
+        if (terms.suspensionAfterDays() == 0) {
+            return Optional.empty();
+        }
+        return Optional.of(new ReminderSuspensionRule(terms.suspensionAfterDays(), terms.suspensionAfterInvoiceCount()));
     }
 }

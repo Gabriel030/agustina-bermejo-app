@@ -138,7 +138,7 @@ public class CollectionReminderMessageComposer {
         PlannedReminderLateFee lateFee = line.lateFee();
         LocalDate graceEnd = line.dueDate().plusDays(lateFee.graceDays());
         String charge = "un recargo de " + ratePointsOf(lateFee.dailyRate()) + " % por día desde el " + DAY.format(line.dueDate())
-                + " (" + formatted(line.balance().times(lateFee.dailyRate())) + " por día)";
+                + " (" + formatted(lateFee.finalPrice().times(lateFee.dailyRate())) + " por día)";
         String lead = kindLabelOf(line) + " con vencimiento el " + DAY.format(line.dueDate()) + ": ";
         return businessDate.isAfter(graceEnd) ? lead + "corre " + charge + "." : lead + "si se paga después del " + DAY.format(graceEnd) + ", corre " + charge + ".";
     }
