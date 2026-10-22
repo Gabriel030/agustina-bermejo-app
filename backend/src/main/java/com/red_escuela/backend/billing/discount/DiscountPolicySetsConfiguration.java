@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.discount;
 
+import com.red_escuela.backend.billing.discount.policy.CohortPromotionAcquisitionCheck;
+import com.red_escuela.backend.billing.discount.policy.OneCohortPromotionPerEnrollmentPolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountAvailabilityPeriodPolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountClosureCheck;
 import com.red_escuela.backend.billing.discount.policy.DiscountClosureReasonRequiredPolicy;
@@ -66,6 +68,11 @@ public class DiscountPolicySetsConfiguration {
                 new StudentDiscountNoOverlapPolicy(),
                 new EnrollmentFeeDiscountBeforeIssuePolicy());
         return PolicySet.named("STUDENT_DISCOUNT_GRANTING", ordered);
+    }
+
+    @Bean
+    public PolicySet<CohortPromotionAcquisitionCheck> cohortPromotionAcquisitionPolicySet() {
+        return PolicySet.named("COHORT_PROMOTION_ACQUISITION", List.of(new OneCohortPromotionPerEnrollmentPolicy()));
     }
 
     @Bean

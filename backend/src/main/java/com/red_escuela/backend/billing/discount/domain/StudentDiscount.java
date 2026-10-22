@@ -153,6 +153,30 @@ public class StudentDiscount {
         return discount;
     }
 
+    public static StudentDiscount acquireCohortPromotion(CohortPromotionAcquisition acquisition, Instant now) {
+        DiscountDefinition definition = acquisition.definition();
+        StudentDiscount discount = new StudentDiscount();
+        discount.programEnrollmentId = acquisition.enrollment().kind() == EnrollmentKind.PROGRAM ? acquisition.enrollment().id() : null;
+        discount.courseEnrollmentId = acquisition.enrollment().kind() == EnrollmentKind.COURSE ? acquisition.enrollment().id() : null;
+        discount.studentId = acquisition.studentId();
+        discount.currency = acquisition.currency();
+        discount.discountDefinitionId = definition.getId();
+        discount.discountType = DiscountType.COHORT_PROMOTION;
+        discount.applicableInvoiceType = definition.getApplicableInvoiceType();
+        discount.origin = StudentDiscountOrigin.COHORT_ACQUISITION;
+        discount.calculation = definition.getCalculation();
+        discount.capPerInvoice = definition.getCapPerInvoice();
+        discount.priority = definition.getPriority();
+        discount.installmentsTotal = definition.getInstallmentsTotal();
+        discount.fromPeriod = acquisition.referenceRange().from();
+        discount.toPeriod = acquisition.referenceRange().to();
+        discount.grantedAt = now;
+        discount.grantedById = acquisition.actorPersonId();
+        discount.reason = acquisition.reason();
+        discount.moveTo(StudentDiscountEvent.DISCOUNT_GRANTED, StatusChangeActor.ofPerson(acquisition.actorPersonId()), now, acquisition.reason());
+        return discount;
+    }
+
     public void revokeStudentDiscount(String reason, YearMonth nextInstallmentPeriod, StatusChangeActor actor, Instant now) {
         moveTo(StudentDiscountEvent.DISCOUNT_REVOKED, actor, now, reason);
         this.revokedAt = now;

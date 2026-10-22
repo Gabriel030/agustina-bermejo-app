@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.discount.service;
 
+import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.domain.CohortPromotionAcquisition;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.LectiveYearSpan;
 import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
@@ -354,5 +357,20 @@ class StudentDiscountCandidateStrategyTest {
 
         assertThat(strategy.findDiscountCandidatesForInvoice(installment(YearMonth.of(2027, 4)))).singleElement()
                 .satisfies(candidate -> assertThat(candidate.discountName()).hasSize(200).startsWith("Descuento individual: xxx"));
+    }
+
+    @Test
+    @Tag("D-240")
+    void aCohortPromotionAcquiredAtEnrollmentIsNotACandidateOfTheStudentDiscountStrategy() {
+        DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().withPercent("90").build(), 99L, GRANTED_AT);
+        ReflectionTestUtils.setField(definition, "id", 3L);
+        StudentDiscount acquired = StudentDiscount.acquireCohortPromotion(new CohortPromotionAcquisition(ENROLLMENT, 1L, Currency.ARS, definition,
+                new ScholarshipPeriodRange(YearMonth.of(2027, 3), YearMonth.of(2027, 5)), 99L, "Promoción"), GRANTED_AT);
+        ReflectionTestUtils.setField(acquired, "id", 8L);
+        unlockedDiscounts(acquired, scholarship(7L, "50", YearMonth.of(2027, 3), YearMonth.of(2027, 6)));
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(installment(YearMonth.of(2027, 4)))).extracting(InvoiceDiscountCandidate::studentDiscountId).containsExactly(7L);
+        assertThat(strategy.findDiscountCandidatesUnderEnrollmentLock(installment(YearMonth.of(2027, 4)))).extracting(InvoiceDiscountCandidate::studentDiscountId)
+                .containsExactly(7L);
     }
 }

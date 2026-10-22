@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-284")
 @Tag("D-384")
 @Tag("D-036")
+@Tag("D-386")
 class StudentDiscountSchemaIT extends AbstractIntegrationTest {
 
     @Autowired
@@ -203,5 +204,37 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
                 .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
         assertThat(jdbc.queryForObject("select discount_amount from invoice_discount where id = ?", java.math.BigDecimal.class, other)).isEqualByComparingTo("10");
         assertThat(jdbc.queryForObject("select consumption_released_at is null from invoice_discount where id = ?", Boolean.class, mixed)).isTrue();
+    }
+
+    private Long insertCohortPromotionDefinition() {
+        return jdbc.queryForObject("""
+                insert into discount_definition (name, discount_type, applicable_invoice_type, calculation, installments_total, available_from, priority, program_id, status,
+                    created_by_process, created_at, direct_publication)
+                values ('Cohorte esquema', 'COHORT_PROMOTION', 'MONTHLY_INSTALLMENT', cast('{"type":"PROPORTIONAL","ratePercent":10}' as jsonb), 3, date '2027-01-01', 1, ?,
+                    'ACTIVE', 'TEST', now(), true) returning id
+                """, Long.class, offering.programId());
+    }
+
+    private Map<String, Object> cohortAcquisitionRow(Long definitionId) {
+        return with(validRow(), "discount_definition_id", definitionId, "discount_type", "COHORT_PROMOTION", "origin", "COHORT_ACQUISITION", "installments_total", 3);
+    }
+
+    @Test
+    void anEnrollmentCanHoldOnlyOneCohortAcquisitionAndItsTypeAndOriginAlwaysGoTogether() {
+        Long definitionId = insertCohortPromotionDefinition();
+        long first = insert(cohortAcquisitionRow(definitionId));
+        try {
+            expectViolation("ux_student_discount_cohort_acquisition_program_enrollment", cohortAcquisitionRow(definitionId));
+            expectViolation("ck_student_discount_cohort_promotion_origin", with(validRow(), "origin", "COHORT_ACQUISITION"));
+            expectViolation("ck_student_discount_cohort_promotion_origin", with(cohortAcquisitionRow(definitionId), "origin", "DIRECT_GRANT"));
+            expectViolation("ck_student_discount_cohort_promotion_has_definition", with(cohortAcquisitionRow(definitionId), "discount_definition_id", null));
+            transactionTemplate.executeWithoutResult(status -> {
+                assertThat(insert(validRow())).isPositive();
+                status.setRollbackOnly();
+            });
+        } finally {
+            jdbc.update("delete from student_discount where id = ?", first);
+            jdbc.update("delete from discount_definition where id = ?", definitionId);
+        }
     }
 }
