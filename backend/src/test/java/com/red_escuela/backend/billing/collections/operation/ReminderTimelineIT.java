@@ -57,14 +57,14 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     }
 
     @Test
-    @Tag("D-359")
+    @Tag("D-368")
     @Tag("D-353")
     void baseInstallmentTimeline() {
         assertBaseInstallmentTimeline();
     }
 
     @Test
-    @Tag("D-359")
+    @Tag("D-368")
     @Tag("D-353")
     void baseInstallmentTimelineWithTheJvmDefaultZoneInUtc() {
         TimeZone previous = TimeZone.getDefault();
@@ -77,7 +77,7 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     }
 
     @Test
-    @Tag("D-359")
+    @Tag("D-368")
     @Tag("D-346")
     void paidOnTheEighthStopsAfterTheSixth() {
         ReminderTimelineHarness harness = newHarness();
@@ -101,7 +101,7 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     }
 
     @Test
-    @Tag("D-359")
+    @Tag("D-368")
     @Tag("D-342")
     void enrollmentFeeDueOnSaturdayRealCalendar() {
         ReminderTimelineHarness harness = newHarness();
@@ -121,7 +121,7 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     }
 
     @Test
-    @Tag("D-359")
+    @Tag("D-368")
     @Tag("D-342")
     void realCalendarMovesOnlyTheEmail() {
         ReminderTimelineHarness harness = newHarness();
@@ -141,7 +141,7 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     }
 
     @Test
-    @Tag("D-359")
+    @Tag("D-368")
     @Tag("D-288")
     void graceDoesNotMoveTheAfterDueNotice() {
         ReminderTimelineHarness harness = newHarness();
