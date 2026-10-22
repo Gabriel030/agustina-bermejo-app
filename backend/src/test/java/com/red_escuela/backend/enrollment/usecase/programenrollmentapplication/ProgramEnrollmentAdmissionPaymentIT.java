@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -433,7 +435,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         var receipt = uploadPaymentReceiptUseCase.upload(admission.getId(), application.getStudent().getId(),
                 new org.springframework.mock.web.MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
 
-        var approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
+        var approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer, PaymentVerification.none());
 
         assertThat(approved.getStatus()).isEqualTo(com.red_escuela.backend.billing.entity.BankTransferReceiptStatus.APPROVED);
         assertThatInvoice(invoiceRepository.findById(admission.getId()).orElseThrow()).isPaid();

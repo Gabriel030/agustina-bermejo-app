@@ -4,7 +4,10 @@ import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.operation.PendingBankTransferReviewPort;
+import com.red_escuela.backend.billing.operation.PendingTransferApprovalAssessment;
+import com.red_escuela.backend.billing.operation.PendingTransferApprovalOutcome;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.PaymentReceiptApprovedEvent;
 import com.red_escuela.backend.notification.PaymentReceiptRejectedEvent;
@@ -48,8 +51,12 @@ public class PaymentReceiptFinder {
         return receipt.hasPendingPayment();
     }
 
-    public void approvePendingPayment(BankTransferReceipt receipt) {
-        pendingReviewPort.approvePendingPayment(receipt.getPaymentId(), reviewerIdOf(receipt));
+    public PendingTransferApprovalAssessment assessApproval(BankTransferReceipt receipt, PaymentVerification verification) {
+        return pendingReviewPort.assessApproval(receipt.getPaymentId(), verification);
+    }
+
+    public PendingTransferApprovalOutcome approvePendingPayment(BankTransferReceipt receipt, PaymentVerification verification) {
+        return pendingReviewPort.approvePendingPayment(receipt.getPaymentId(), reviewerIdOf(receipt), verification);
     }
 
     public void rejectPendingPayment(BankTransferReceipt receipt, String reason) {

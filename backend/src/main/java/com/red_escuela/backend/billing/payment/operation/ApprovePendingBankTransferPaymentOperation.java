@@ -10,7 +10,13 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEve
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationResult;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+import com.red_escuela.backend.billing.payment.domain.BankTransferPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.PaymentCheckoutItem;
+import com.red_escuela.backend.billing.payment.policy.PaymentReviewRejections;
+import com.red_escuela.backend.billing.payment.policy.PaymentVerificationCheck;
+import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PendingBankTransferDecisionResult;
 import com.red_escuela.backend.billing.payment.repository.PaymentCheckoutItemRepository;
@@ -43,17 +49,19 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
     private final PaymentRepository payments;
     private final PaymentCheckoutItemRepository checkoutItems;
     private final PendingTransferReviewRelease reviewRelease;
+    private final PolicySet<PaymentVerificationCheck> verificationPolicies;
     private final Clock clock;
 
     public ApprovePendingBankTransferPaymentOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                                       InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments, PaymentCheckoutItemRepository checkoutItems,
-                                                      PendingTransferReviewRelease reviewRelease, Clock clock) {
+                                                      PendingTransferReviewRelease reviewRelease, PolicySet<PaymentVerificationCheck> paymentVerificationPolicySet, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.invoiceQueries = invoiceQueries;
         this.payments = payments;
         this.checkoutItems = checkoutItems;
         this.reviewRelease = reviewRelease;
+        this.verificationPolicies = paymentVerificationPolicySet;
         this.clock = clock;
     }
 
@@ -69,7 +77,7 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
 
     @Override
     public List<String> validationMoments() {
-        return List.of();
+        return List.of(verificationPolicies.moment());
     }
 
     @Override
@@ -79,6 +87,20 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
 
     @Override
     public void requireValidContext(ApprovePendingBankTransferPaymentCommand command) {
+        Payment payment = payments.findById(command.paymentId()).orElseThrow();
+        verificationPolicies.evaluateRulesUntilFirstViolation(verificationCheckOf(payment, command.verification(), LocalDate.now(clock)))
+                .throwIfDenied(PaymentReviewRejections::rejectionOf);
+    }
+
+    public static PaymentVerificationCheck verificationCheckOf(Payment payment, PaymentVerification verification, LocalDate today) {
+        return new PaymentVerificationCheck(verification.verifiedAmount(), verification.transferDate(), verification.reviewNote(), payment.getCurrency(), today);
+    }
+
+    public static LocalDate verifiedTransferDateOf(Payment payment, PaymentVerification verification) {
+        if (verification.transferDate() != null) {
+            return verification.transferDate();
+        }
+        return ((BankTransferPaymentDetails) payment.getMethodDetails()).transferDate();
     }
 
     @Override
@@ -90,23 +112,28 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         List<PaymentCheckoutItem> items = checkoutItems.findByPaymentIdOrderByPositionAsc(payment.getId());
         Map<Long, Invoice> invoicesById = invoiceQueries.findInvoicesByIds(items.stream().map(PaymentCheckoutItem::getInvoiceId).toList()).stream()
                 .collect(Collectors.toMap(Invoice::getId, Function.identity()));
-        NonNegativeMoney declaredAmount = payment.getAmount();
+        PaymentVerification verification = command.verification();
         LocalDate uploadDate = payment.getStartedAt().toLocalDate();
-        payment.approvePayment(declaredAmount, uploadDate, command.reviewer(), null);
+        if (!uploadDate.equals(verifiedTransferDateOf(payment, verification))) {
+            throw new IllegalStateException("The transfer date differs from the upload date: the receipt must be rejected before approving the payment");
+        }
+        NonNegativeMoney approvedAmount = verification.verifiedAmount() == null ? payment.getAmount() : NonNegativeMoney.of(verification.verifiedAmount());
+        payment.approvePayment(approvedAmount, uploadDate, command.reviewer(), verification.reviewNote());
         payments.save(payment);
-        recordPaymentCreditOnce(account, payment, declaredAmount, uploadDate);
+        recordPaymentCreditOnce(account, payment, approvedAmount, uploadDate);
         Set<Long> programAdmissionInvoiceIds = invoicesById.values().stream()
                 .filter(invoice -> invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission()).map(Invoice::getId).collect(Collectors.toSet());
-        allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.reviewer(), programAdmissionInvoiceIds);
+        AccountCreditAllocationResult allocation = allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.reviewer(), programAdmissionInvoiceIds);
         List<Long> released = reviewRelease.releaseProtectedItemsStillUnderReview(items, invoicesById, today, command.reviewer(), RELEASE_REASON);
         log.info("Pago pendiente por transferencia aprobado y acreditado: pago={}, cuenta={}, monto={}, fechaDeSubida={}, facturasLiberadasDeRevision={}", payment.getId(),
-                account.getId(), declaredAmount.value().amount(), uploadDate, released);
-        return new PendingBankTransferDecisionResult(payment.getId(), account.getId(), uploadDate, declaredAmount, released);
+                account.getId(), approvedAmount.value().amount(), uploadDate, released);
+        return new PendingBankTransferDecisionResult(payment.getId(), account.getId(), uploadDate, approvedAmount, released,
+                allocation.settledInvoices().stream().map(Invoice::getId).toList(), items.stream().map(PaymentCheckoutItem::getInvoiceId).toList());
     }
 
-    private void recordPaymentCreditOnce(StudentCurrentAccount account, Payment payment, NonNegativeMoney declaredAmount, LocalDate uploadDate) {
+    private void recordPaymentCreditOnce(StudentCurrentAccount account, Payment payment, NonNegativeMoney approvedAmount, LocalDate uploadDate) {
         try {
-            accountService.recordPaymentReceivedCredit(account, payment.getId(), declaredAmount, uploadDate, "Pago " + payment.getId());
+            accountService.recordPaymentReceivedCredit(account, payment.getId(), approvedAmount, uploadDate, "Pago " + payment.getId());
         } catch (DataIntegrityViolationException violation) {
             if (String.valueOf(violation.getMostSpecificCause().getMessage()).contains(PAYMENT_CREDIT_INDEX_NAME)) {
                 throw PaymentAlreadyApprovedException.concurrentApproval();

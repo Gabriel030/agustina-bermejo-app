@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
@@ -29,7 +31,7 @@ abstract class AbstractPendingTransferBridgeIT extends AbstractBankTransferRecei
     ApplicationEvents applicationEvents;
 
     BankTransferReceipt approve(BankTransferReceiptSubmissionResult submitted) {
-        return approveReceipt.approve(submitted.receiptId(), staff);
+        return approveReceipt.approve(submitted.receiptId(), staff, PaymentVerification.none());
     }
 
     BankTransferReceipt reject(BankTransferReceiptSubmissionResult submitted, String reason) {

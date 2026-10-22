@@ -2,14 +2,15 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
+import com.red_escuela.backend.billing.payment.dto.ApproveBankTransferReceiptRequest;
 import com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.GetPaymentReceiptFileUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.PaymentReceiptFile;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ListPendingPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -66,14 +67,16 @@ public class BankTransferReceiptController {
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BankTransferReceiptResponse approve(@PathVariable Long id) {
-        return receiptResponseAssembler.assembleBankTransferReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson()));
+    public BankTransferReceiptResponse approve(@PathVariable Long id, @RequestBody(required = false) ApproveBankTransferReceiptRequest request) {
+        PaymentVerification verification = request == null ? PaymentVerification.none() : request.toVerification();
+        return receiptResponseAssembler.assembleBankTransferReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson(), verification));
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BankTransferReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody RejectPaymentReceiptRequest request) {
+    public BankTransferReceiptResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectPaymentReceiptRequest request) {
+        String rejectionReason = request == null ? null : request.rejectionReason();
         return receiptResponseAssembler.assembleBankTransferReceiptResponse(
-                rejectPaymentReceiptUseCase.reject(id, request.rejectionReason(), currentPersonService.resolveCurrentPerson()));
+                rejectPaymentReceiptUseCase.reject(id, rejectionReason, currentPersonService.resolveCurrentPerson()));
     }
 }

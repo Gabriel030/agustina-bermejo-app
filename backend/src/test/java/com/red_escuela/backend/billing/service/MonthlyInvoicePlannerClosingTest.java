@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -233,7 +235,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
-        approvePaymentReceiptUseCase.approve(receipt.getId(), director(career));
+        approvePaymentReceiptUseCase.approve(receipt.getId(), director(career), PaymentVerification.none());
         assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PAID);
         assertThatCode(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section))).doesNotThrowAnyException();
         assertInvariants(enrollment, y27);
