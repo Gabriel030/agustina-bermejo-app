@@ -882,6 +882,13 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "invoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
           "invoicePeriod" : {
             "type" : "string"
           },
@@ -905,7 +912,40 @@
             "type" : "string"
           }
         },
-        "required" : [ "filePath", "id", "invoiceFeeType", "invoiceId", "invoicePeriod", "productName", "rejectionReason", "status", "studentDni", "studentName", "uploadedAt" ],
+        "required" : [ "filePath", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "productName", "rejectionReason", "status", "studentDni", "studentName", "uploadedAt" ],
+        "type" : "object"
+      },
+      "BankTransferReceiptSubmissionResponse" : {
+        "properties" : {
+          "declaredAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ItemResponse"
+            },
+            "type" : "array"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paymentStatus" : {
+            "type" : "string"
+          },
+          "receiptId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "receiptStatus" : {
+            "type" : "string"
+          },
+          "uploadDate" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "declaredAmount", "items", "paymentId", "paymentStatus", "receiptId", "receiptStatus", "uploadDate" ],
         "type" : "object"
       },
       "BillingConfigurationAlertResponse" : {
@@ -3862,6 +3902,26 @@
           }
         },
         "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "productRef", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "type" : "object"
+      },
+      "ItemResponse" : {
+        "properties" : {
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "outstandingAtSelection" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "position" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "protectedFromOverdue" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "invoiceId", "outstandingAtSelection", "position", "protectedFromOverdue" ],
         "type" : "object"
       },
       "JustificarAsistenciaRequest" : {
@@ -18102,6 +18162,149 @@
           }
         },
         "tags" : [ "me-invoice-controller" ]
+      },
+      "post" : {
+        "operationId" : "BankTransferReceiptSubmission_submitOwnReceipt",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "invoiceIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "declaredAmount",
+          "required" : false,
+          "schema" : {
+            "type" : "number"
+          }
+        }, {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "transferDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "operationNumber",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "originAccount",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "holderName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "bankName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BankTransferReceiptSubmissionResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "400: BANK_TRANSFER_DETAILS_REQUIRED con la violación del campo (BANK_TRANSFER_AMOUNT_INVALID, BANK_TRANSFER_DATE_REQUIRED, BANK_TRANSFER_DATE_IN_FUTURE, BANK_TRANSFER_OPERATION_NUMBER_REQUIRED, BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED, BANK_TRANSFER_HOLDER_NAME_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_REQUIRED, BANK_TRANSFER_INVOICES_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_TYPE_NOT_ALLOWED, BANK_TRANSFER_RECEIPT_FILE_CONTENT_MISMATCH), RECEIPT_INVOICE_CURRENCY_MISMATCH, RECEIPT_INVOICE_NOT_PAYABLE, IDEMPOTENCY_KEY_INVALID"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "La factura no existe o no es del alumno"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "POSSIBLE_DUPLICATE_BANK_TRANSFER, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST, INVOICE_ALREADY_UNDER_REVIEW, LEGACY_RECEIPT_PENDING_ON_INVOICE, IDEMPOTENCY_KEY_CONFLICT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "bank-transfer-receipt-submission-controller" ]
       }
     },
     "/me/course-enrollment-applications" : {
@@ -29153,6 +29356,159 @@
           }
         },
         "tags" : [ "student-controller" ]
+      }
+    },
+    "/students/{studentId}/bank-transfer-receipts" : {
+      "post" : {
+        "operationId" : "BankTransferReceiptSubmission_submitReceiptOnBehalfOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "invoiceIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "declaredAmount",
+          "required" : false,
+          "schema" : {
+            "type" : "number"
+          }
+        }, {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "transferDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "operationNumber",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "originAccount",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "holderName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "bankName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BankTransferReceiptSubmissionResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "400: BANK_TRANSFER_DETAILS_REQUIRED con la violación del campo (BANK_TRANSFER_AMOUNT_INVALID, BANK_TRANSFER_DATE_REQUIRED, BANK_TRANSFER_DATE_IN_FUTURE, BANK_TRANSFER_OPERATION_NUMBER_REQUIRED, BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED, BANK_TRANSFER_HOLDER_NAME_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_REQUIRED, BANK_TRANSFER_INVOICES_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_TYPE_NOT_ALLOWED, BANK_TRANSFER_RECEIPT_FILE_CONTENT_MISMATCH), RECEIPT_INVOICE_CURRENCY_MISMATCH, RECEIPT_INVOICE_NOT_PAYABLE, IDEMPOTENCY_KEY_INVALID"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "El alumno no existe o la factura no es de su cuenta"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "POSSIBLE_DUPLICATE_BANK_TRANSFER, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST, INVOICE_ALREADY_UNDER_REVIEW, LEGACY_RECEIPT_PENDING_ON_INVOICE, IDEMPOTENCY_KEY_CONFLICT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "bank-transfer-receipt-submission-controller" ]
       }
     },
     "/students/{studentId}/cash-payments" : {
