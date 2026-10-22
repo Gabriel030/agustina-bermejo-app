@@ -1,5 +1,13 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.planning.TestTemplateTerms;
+import com.red_escuela.backend.billing.support.PriceFixtures;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.shared.domain.StatusType;
+import java.util.Optional;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.AbstractCurrentAccountIT;
@@ -97,5 +105,43 @@ public abstract class AbstractCreditNoteIT extends AbstractCurrentAccountIT {
 
     protected long ledgerEntryCount(Long accountId) {
         return jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ?", Long.class, accountId);
+    }
+
+    protected Long templateStartingOn(Program program, LocalDate start) {
+        Long creatorId = newStaffPerson().getId();
+        return inTransaction(() -> {
+            Term term = new Term();
+            term.setYear(start.getYear());
+            term.setStatus(StatusType.ACTIVE);
+            term.setStartDate(start.atStartOfDay());
+            term.setEndDate(LocalDate.of(start.getYear(), 12, 31).atStartOfDay());
+            entityManager.persist(term);
+            ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
+            template.setProgram(entityManager.find(Program.class, program.getId()));
+            template.setTerm(term);
+            TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
+            template.setCreatedBy(entityManager.find(Person.class, creatorId));
+            entityManager.persist(template);
+            return template.getId();
+        });
+    }
+
+    protected Long enrollmentFeeOf(ProgramEnrollment enrollment, Long templateId, int year) {
+        Long accountId = newAccountId(enrollment.getStudent().getId(), Currency.ARS);
+        Long priceVersionId = PriceFixtures.persistPriceVersion(enrollment.getProgram().getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula",
+                ars("50000.00").value(), LocalDate.of(2000, 1, 1).plusDays(year), enrollment.getStudent().getPerson().getId());
+        return inTransaction(() -> {
+            Person person = studentRepository.findById(enrollment.getStudent().getId()).orElseThrow().getPerson();
+            StudentSnapshot snapshot = new StudentSnapshot(person.getName() + " " + person.getLastname(), person.getDni(), "Calle 1");
+            InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ENROLLMENT_FEE,
+                    InvoiceIssuingReason.MONTHLY_RUN, null);
+            InvoiceLineDraft line = new InvoiceLineDraft(FeeType.ENROLLMENT_FEE, "Matrícula " + year, YearMonth.of(year, 2), enrollment.getId(), null, null, null,
+                    priceVersionId, "PE:" + enrollment.getId() + ":ENROLLMENT_FEE:" + year, ars("50000.00"), templateId, 1);
+            Invoice draft = InvoiceFactory.createEnrollmentFeeInvoiceDraft(header, line, Optional.empty(), ACTOR);
+            draft.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), LocalDate.of(2027, 11, 1), LocalDate.of(2027, 12, 1), snapshot, ACTOR);
+            Invoice saved = invoiceRepository.save(draft);
+            service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), saved, LocalDate.of(2027, 11, 1));
+            return saved.getId();
+        });
     }
 }
