@@ -65,6 +65,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -402,9 +403,12 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
         ExecutorService pool = Executors.newFixedThreadPool(instances.size());
         try {
             List<Future<Integer>> runs = new ArrayList<>();
-            for (EmailDeliveryDispatchJob instance : instances) {
+            for (int position = 0; position < instances.size(); position++) {
+                EmailDeliveryDispatchJob instance = instances.get(position);
+                long startDelayMillis = position * 300L;
                 runs.add(pool.submit(() -> {
                     startTogether.await(30, TimeUnit.SECONDS);
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(startDelayMillis));
                     return instance.dispatchDueEmails();
                 }));
             }
@@ -424,15 +428,16 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     @Tag("D-343")
     void theSentCounterOfTheDayIsDiscountedFromTheCap() {
         LocalDate day = LocalDate.of(2037, 3, 3);
-        List<Long> mails = queueMany(5, day, LOWER, day.plusDays(20), false);
-
+        List<Long> morning = queueMany(2, day, LOWER, day.plusDays(20), false);
         at(day, 9, 0);
         jobWithCap(3).dispatchDueEmails();
+        List<Long> later = queueMany(3, day, LOWER, day.plusDays(20), false);
+
         at(day, 9, 10);
         jobWithCap(3).dispatchDueEmails();
 
-        assertThat(statusesOf(mails)).containsEntry(DeliveryStatus.SENT_SIMULATED, 3L).containsEntry(DeliveryStatus.DEFERRED, 2L);
-        assertThat(mails.subList(0, 3)).allMatch(id -> deliveryOf(id).getStatus() == DeliveryStatus.SENT_SIMULATED);
+        assertThat(statusesOf(morning)).containsOnlyKeys(DeliveryStatus.SENT_SIMULATED);
+        assertThat(statusesOf(later)).containsEntry(DeliveryStatus.SENT_SIMULATED, 1L).containsEntry(DeliveryStatus.DEFERRED, 2L);
     }
 
     @Test
@@ -449,11 +454,25 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
         assertThat(deliveryOf(late).getStatus()).isEqualTo(DeliveryStatus.DEFERRED);
     }
 
-    private static void sleepBriefly() {
+    @Test
+    @Tag("D-343")
+    void theInvariantFlagsTheSameMailSentTwice() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        LocalDate day = LocalDate.of(2038, 3, 3);
+        Long first = queue(day, LOWER, day.plusDays(20), false);
+        Long second = queue(day, LOWER, day.plusDays(20), false);
         try {
-            Thread.sleep(3);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
+            assertThat(invariants.noEmailIsSentTwice()).isEmpty();
+            jdbc.update("update notification_delivery set status = 'SENT_SIMULATED', status_reason = null, sent_at = now(), related_entity_id = 999999, subject = 'Igual', body_text = 'Igual' where id in (?, ?)",
+                    first, second);
+
+            assertThat(invariants.noEmailIsSentTwice()).hasSize(1).first().asString().contains("sent 2 times");
+        } finally {
+            jdbc.update("delete from notification_delivery where id in (?, ?)", first, second);
         }
+    }
+
+    private static void sleepBriefly() {
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(8));
     }
 }
