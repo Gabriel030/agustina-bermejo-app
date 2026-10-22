@@ -4,10 +4,15 @@ import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 public final class BankTransferReceiptSelectionPlanner {
+
+    private static final Comparator<ReceiptInvoiceFact> ADMISSION_FIRST_THEN_OLDEST_DUE = Comparator
+            .comparing((ReceiptInvoiceFact invoice) -> !invoice.programAdmission())
+            .thenComparing(ReceiptInvoiceFact.OLDEST_DUE_FIRST);
 
     private BankTransferReceiptSelectionPlanner() {
     }
@@ -15,6 +20,7 @@ public final class BankTransferReceiptSelectionPlanner {
     public static List<ReceiptInvoiceFact> selectableInOrder(List<ReceiptInvoiceFact> openInvoicesOfAccount) {
         return openInvoicesOfAccount.stream()
                 .filter(ReceiptInvoiceFact::isOpenToReceipt)
+                .filter(invoice -> !invoice.programAdmission())
                 .sorted(ReceiptInvoiceFact.OLDEST_DUE_FIRST)
                 .toList();
     }
@@ -22,7 +28,7 @@ public final class BankTransferReceiptSelectionPlanner {
     public static List<PlannedCheckoutItem> planItems(List<ReceiptInvoiceFact> selectedInvoices, Money declaredAmount, LocalDate uploadDate,
                                                       LocalDate transferDate, ReceiptProtectionRule protectionRule) {
         Objects.requireNonNull(declaredAmount, "declaredAmount");
-        List<ReceiptInvoiceFact> ordered = selectedInvoices.stream().sorted(ReceiptInvoiceFact.OLDEST_DUE_FIRST).toList();
+        List<ReceiptInvoiceFact> ordered = selectedInvoices.stream().sorted(ADMISSION_FIRST_THEN_OLDEST_DUE).toList();
         List<PlannedCheckoutItem> items = new ArrayList<>();
         Money remaining = declaredAmount;
         boolean stillCovering = true;

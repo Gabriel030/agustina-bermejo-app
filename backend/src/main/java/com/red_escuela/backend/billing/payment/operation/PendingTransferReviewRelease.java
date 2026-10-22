@@ -37,20 +37,19 @@ class PendingTransferReviewRelease {
             if (!item.isMarkedUnderReview() || invoice == null || invoice.getPaymentStatus() != InvoicePaymentStatus.PAYMENT_UNDER_REVIEW) {
                 continue;
             }
-            invoice.releasePaymentReview(decisionDate, gracePeriodDaysOf(invoice), actor, reason);
+            findLatePaymentTermsOf(invoice).ifPresentOrElse(
+                    terms -> invoice.releasePaymentReview(decisionDate, terms.gracePeriodDays(), actor, reason),
+                    () -> {
+                        log.warn("Factura id={} sin versión de mora aplicable: se libera la revisión sin evaluar su vencimiento", invoice.getId());
+                        invoice.releasePaymentReviewWithoutLateTerms(decisionDate, actor, reason);
+                    });
             invoice.pullRecordedDomainEvents().forEach(eventPublisher::publishEvent);
             released.add(invoice.getId());
         }
         return released;
     }
 
-    private int gracePeriodDaysOf(Invoice invoice) {
-        Optional<LatePaymentTerms> terms = configurationReader.findLatePaymentSettingsEffectiveOn(invoice.getDueDate())
-                .or(configurationReader::findFirstLatePaymentSettings);
-        if (terms.isEmpty()) {
-            log.warn("Factura id={} sin versión de mora aplicable: se libera la revisión sin días de gracia", invoice.getId());
-            return 0;
-        }
-        return terms.get().gracePeriodDays();
+    private Optional<LatePaymentTerms> findLatePaymentTermsOf(Invoice invoice) {
+        return configurationReader.findLatePaymentSettingsEffectiveOn(invoice.getDueDate()).or(configurationReader::findFirstLatePaymentSettings);
     }
 }

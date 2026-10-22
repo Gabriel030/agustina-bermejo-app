@@ -9,7 +9,7 @@ import java.util.Comparator;
 import java.util.Objects;
 
 public record ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, Currency currency, boolean issued, InvoicePaymentStatus paymentStatus,
-                                 LocalDate dueDate, Money outstanding) {
+                                 LocalDate dueDate, Money outstanding, boolean programAdmission) {
 
     public static final Comparator<ReceiptInvoiceFact> OLDEST_DUE_FIRST = Comparator
             .comparing(ReceiptInvoiceFact::dueDate, Comparator.nullsLast(Comparator.naturalOrder()))
@@ -19,6 +19,11 @@ public record ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, C
         Objects.requireNonNull(invoiceId, "invoiceId");
         Objects.requireNonNull(studentCurrentAccountId, "studentCurrentAccountId");
         Objects.requireNonNull(currency, "currency");
+    }
+
+    public ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, Currency currency, boolean issued, InvoicePaymentStatus paymentStatus,
+                              LocalDate dueDate, Money outstanding) {
+        this(invoiceId, studentCurrentAccountId, currency, issued, paymentStatus, dueDate, outstanding, false);
     }
 
     public boolean isUnderReview() {

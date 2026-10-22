@@ -89,6 +89,41 @@ class ReceiptCoversOldestInvoicesFirstPolicyTest {
     }
 
     @Test
+    @Tag("D-329")
+    void theProgramAdmissionInvoiceIsExemptFromTheOldestFirstPrefix() {
+        ReceiptInvoiceFact february = overdue(1, LocalDate.of(2027, 2, 10), "50000.00");
+        ReceiptInvoiceFact admission = ReceiptInvoiceFacts.programAdmission(2, MARCH, "80000.00");
+        List<ReceiptInvoiceFact> open = List.of(february, admission);
+
+        assertThat(policy.evaluateRule(check(open, admission)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(check(open, february, admission)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(check(open, february)).allowed()).isTrue();
+    }
+
+    @Test
+    @Tag("D-329")
+    void theAdmissionExemptionDoesNotLetTheStudentSkipAnOlderInstallment() {
+        ReceiptInvoiceFact february = overdue(1, LocalDate.of(2027, 2, 10), "50000.00");
+        ReceiptInvoiceFact admission = ReceiptInvoiceFacts.programAdmission(2, MARCH, "80000.00");
+        ReceiptInvoiceFact april = pending(3, APRIL, "50000.00");
+        List<ReceiptInvoiceFact> open = List.of(february, admission, april);
+
+        assertThat(policy.evaluateRule(check(open, admission, april)).code()).isEqualTo("RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST");
+        assertThat(policy.evaluateRule(check(open, april)).code()).isEqualTo("RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST");
+        assertThat(policy.evaluateRule(check(open, february, admission, april)).allowed()).isTrue();
+    }
+
+    @Test
+    @Tag("D-329")
+    void aNonAdmissionInvoiceStillCannotSkipAnOlderOneWhenNoAdmissionIsSelected() {
+        ReceiptInvoiceFact february = overdue(1, LocalDate.of(2027, 2, 10), "50000.00");
+        ReceiptInvoiceFact march = pending(2, MARCH, "80000.00");
+        ReceiptInvoiceFact admission = ReceiptInvoiceFacts.programAdmission(3, MAY, "80000.00");
+
+        assertThat(policy.evaluateRule(check(List.of(february, march, admission), march)).code()).isEqualTo("RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST");
+    }
+
+    @Test
     void anInvoiceThatIsNotOpenDoesNotCountAsSelectable() {
         ReceiptInvoiceFact notIssued = new ReceiptInvoiceFact(1L, ACCOUNT, Currency.ARS, false, null, MARCH, ReceiptInvoiceFacts.ars("1.00"));
         ReceiptInvoiceFact april = pending(2, APRIL, "80000.00");

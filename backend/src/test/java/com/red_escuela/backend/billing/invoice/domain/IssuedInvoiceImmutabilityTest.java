@@ -20,7 +20,7 @@ class IssuedInvoiceImmutabilityTest {
 
     private static final Set<String> ALLOWED_DRAFT_AND_PAYMENT_OPERATIONS = Set.of(
             "addChargeLineToDraft", "addDiscountToDraftLine", "submitDraftForPayment", "issueInvoice", "discardDraftInvoice",
-            "markPaymentUnderReview", "releasePaymentReview", "allocateFullInvoicePayment", "reversePaymentAllocation",
+            "markPaymentUnderReview", "releasePaymentReview", "releasePaymentReviewWithoutLateTerms", "allocateFullInvoicePayment", "reversePaymentAllocation",
             "applyCreditNote", "markInvoiceAsOverdue", "pullRecordedDomainEvents", "assignInvoiceToProgramEnrollment", "assignInvoiceToCourseEnrollment",
             "currency", "findProgramEnrollmentId", "findCourseEnrollmentId", "requirePayable");
 
