@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SlowTest(reason = "Starts a Postgres container and migrates real databases through Flyway to prove the template cloning and its sabotage detection")
 @Tag("migration")
 class MigrationTestDatabaseTest {
 
