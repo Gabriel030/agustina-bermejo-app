@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.ExplorationTier;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -27,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SlowTest(reason = "Runs random sequences of nightly runs, payments, receipts under review and withdrawals checking the billing invariants after every step")
 class LateFeeCorrectionSequencesIT extends AbstractLateFeeCorrectionIT {
 
-    private static final int SEQUENCES = 3;
+    private static final int SEQUENCES = ExplorationTier.sequences(1, 6);
 
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;
@@ -65,7 +66,7 @@ class LateFeeCorrectionSequencesIT extends AbstractLateFeeCorrectionIT {
 
     @Test
     void anySequenceOfNightlyRunsPaymentsReceiptsAndRetroactiveWithdrawalsKeepsTheBillingInvariantsAndLeavesNoDayAfterTheEndChargedNet() {
-        Random random = new Random(20261015L);
+        Random random = new Random(ExplorationTier.seed("LateFeeCorrectionSequencesIT", 20261015L));
         for (int sequence = 0; sequence < SEQUENCES; sequence++) {
             int year = 2200 + sequence;
             arrange(year);

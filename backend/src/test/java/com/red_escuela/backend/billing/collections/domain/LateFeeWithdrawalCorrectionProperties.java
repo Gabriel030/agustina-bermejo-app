@@ -51,7 +51,7 @@ class LateFeeWithdrawalCorrectionProperties {
                 NonNegativeMoney.of(BigDecimal.valueOf(c.baseCents(), 2), Currency.ARS), Percentage.ofFraction(BigDecimal.valueOf(c.rateTenThousandths(), 5)));
     }
 
-    @Property(tries = 400)
+    @Property
     void creditsPlusWhatRemainsAlwaysAddUpToTheTotalAndTheRemainingIsWhatTheEnabledDaysUpToTheEndWouldHaveCost(@ForAll("cases") Case c) {
         LateFeeChargeSnapshot charge = chargeOf(c);
         if (charge == null) {
@@ -86,7 +86,7 @@ class LateFeeWithdrawalCorrectionProperties {
         assertThat(remaining).isEqualByComparingTo(STRATEGY.calculateLateFee(charge.baseAmount(), charge.dailyRate(), daysUpToTheEnd).value().amount());
     }
 
-    @Property(tries = 200)
+    @Property
     void aCorrectionInTwoStepsLeavesTheSameRemainingAsOneStep(@ForAll("cases") Case c) {
         LateFeeChargeSnapshot charge = chargeOf(c);
         if (charge == null) {

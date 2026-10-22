@@ -89,7 +89,7 @@ class InvoicePaymentStatusProperties {
         return InvoicePaymentEvent.valueOf(invoice.getStatusChanges().get(invoice.getStatusChanges().size() - 1).getEvent());
     }
 
-    @Property(tries = 1000, seed = "20271007")
+    @Property(seed = "20271007")
     void everyStepEitherFollowsTheLiteralTableWithCoherentAmountsOrFailsWithoutChanges(@ForAll("operations") List<Integer> operations) {
         Invoice invoice = issuedMonthly("80000.00");
         for (int operation : operations) {

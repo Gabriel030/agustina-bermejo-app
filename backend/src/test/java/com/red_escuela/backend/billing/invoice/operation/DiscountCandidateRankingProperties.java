@@ -33,7 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DiscountCandidateRankingProperties {
 
     private static final String SEED = "20271016";
-    private static final int TRIES = 1000;
     private static final InvoiceType INVOICE_TYPE = InvoiceType.MONTHLY_INSTALLMENT;
     private static final long SAVING_STEP_CENTS = 1_000L;
     private static final Instant GRANT_EPOCH = Instant.parse("2027-02-01T00:00:00Z");
@@ -88,7 +87,7 @@ class DiscountCandidateRankingProperties {
         return candidates.stream().filter(candidate -> candidate.applicableInvoiceType() == INVOICE_TYPE).toList();
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void theWinnerDoesNotDependOnTheCandidateOrder(@ForAll("specLists") List<Spec> specs, @ForAll long shuffleSeed) {
         List<InvoiceDiscountCandidate> candidates = uniquelyIdentified(specs);
         List<InvoiceDiscountCandidate> shuffled = new ArrayList<>(candidates);
@@ -97,7 +96,7 @@ class DiscountCandidateRankingProperties {
         assertThat(calculator.selectBestDiscountPerInvoiceLine(INVOICE_TYPE, shuffled)).isEqualTo(calculator.selectBestDiscountPerInvoiceLine(INVOICE_TYPE, candidates));
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void theWinnerBeatsEveryOtherCandidateOfItsLineCriterionByCriterion(@ForAll("specLists") List<Spec> specs) {
         List<InvoiceDiscountCandidate> candidates = uniquelyIdentified(specs);
 
@@ -108,7 +107,7 @@ class DiscountCandidateRankingProperties {
                 .forEach(other -> assertThat(precedes(winner, other)).as("%s should precede %s", winner, other).isTrue()));
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void theWinnerHasTheMaximumSavingOfItsLine(@ForAll("specLists") List<Spec> specs) {
         List<InvoiceDiscountCandidate> candidates = uniquelyIdentified(specs);
 
@@ -150,7 +149,7 @@ class DiscountCandidateRankingProperties {
         return false;
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void atMostOneWinnerPerLine(@ForAll("specLists") List<Spec> specs) {
         List<InvoiceDiscountCandidate> candidates = uniquelyIdentified(specs);
 
@@ -161,14 +160,14 @@ class DiscountCandidateRankingProperties {
         winners.forEach((lineNumber, winner) -> assertThat(winner.lineNumber()).isEqualTo(lineNumber));
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void theWinnerAlwaysMatchesTheInvoiceType(@ForAll("specLists") List<Spec> specs) {
         Map<Integer, InvoiceDiscountCandidate> winners = calculator.selectBestDiscountPerInvoiceLine(INVOICE_TYPE, uniquelyIdentified(specs));
 
         assertThat(winners.values()).allSatisfy(winner -> assertThat(winner.applicableInvoiceType()).isEqualTo(INVOICE_TYPE));
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void theRankingIsATotalOrder(@ForAll("specs") Spec first, @ForAll("specs") Spec second, @ForAll("specs") Spec third) {
         InvoiceDiscountCandidate a = candidateOf(first, first.sourceId());
         InvoiceDiscountCandidate b = candidateOf(second, second.sourceId());

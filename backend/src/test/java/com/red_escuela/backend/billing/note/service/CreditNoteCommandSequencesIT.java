@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.testsupport.ExplorationTier;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
@@ -25,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-165")
 class CreditNoteCommandSequencesIT extends AbstractCreditNoteIT {
 
-    private static final int SEQUENCES = 20;
+    private static final int SEQUENCES = ExplorationTier.sequences(5, 40);
     private static final LocalDate BASE_DATE = LocalDate.of(2027, 4, 1);
 
     @Autowired
@@ -36,7 +37,7 @@ class CreditNoteCommandSequencesIT extends AbstractCreditNoteIT {
     @Test
     void anySequenceOfIssuesPaymentsAllocationsAndCreditNotesKeepsTheBillingInvariants() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
-        Random random = new Random(20261009L);
+        Random random = new Random(ExplorationTier.seed("CreditNoteCommandSequencesIT", 20261009L));
         Long requester = newStaffPerson().getId();
         int accepted = 0;
         int rejected = 0;

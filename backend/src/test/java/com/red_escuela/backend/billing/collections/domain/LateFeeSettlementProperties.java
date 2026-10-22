@@ -178,7 +178,7 @@ class LateFeeSettlementProperties {
         return charged;
     }
 
-    @Property(tries = 1000, seed = "20261012")
+    @Property(seed = "20261012")
     void plannerMatchesTheDayByDayOracleWithPaymentsAndReversals(@ForAll("scenarios") Scenario scenario) {
         Outcome outcome = simulate(scenario);
         LocalDate enabledFrom = START.plusDays(scenario.enabledFromOffsetDays());
@@ -192,7 +192,7 @@ class LateFeeSettlementProperties {
         assertThat(outcome.annulledDaysPlanned()).isEqualTo(outcome.annulledDaysExpected());
     }
 
-    @Property(tries = 1000, seed = "20261021")
+    @Property(seed = "20261021")
     void netChargedDaysMatchTheOracleWithBackdatedPayments(@ForAll("scenariosWithoutReversals") Scenario scenario) {
         Outcome outcome = simulate(scenario);
         LocalDate enabledFrom = START.plusDays(scenario.enabledFromOffsetDays());
@@ -210,7 +210,7 @@ class LateFeeSettlementProperties {
         assertThat(grossChargedDays - outcome.annulledDaysPlanned()).isEqualTo(expectedNet.size());
     }
 
-    @Property(tries = 1000, seed = "20261013")
+    @Property(seed = "20261013")
     void atMostOneDebitNotePerMonthUnlessAReversalHappenedBetweenThem(@ForAll("scenarios") Scenario scenario) {
         Outcome outcome = simulate(scenario);
 
@@ -227,7 +227,7 @@ class LateFeeSettlementProperties {
         }
     }
 
-    @Property(tries = 1000, seed = "20261014")
+    @Property(seed = "20261014")
     void everyChargeableDayUpToTheCutoffOfTheFinalStateIsCovered(@ForAll("scenarios") Scenario scenario) {
         Outcome outcome = simulate(scenario);
         LocalDate enabledFrom = START.plusDays(scenario.enabledFromOffsetDays());

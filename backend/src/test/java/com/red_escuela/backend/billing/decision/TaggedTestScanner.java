@@ -16,6 +16,9 @@ public final class TaggedTestScanner {
     private static final Pattern TAG = Pattern.compile("@Tag\\(\"((?:contradicts-)?D-\\d{3})\"\\)");
     private static final Pattern TEXT_BLOCK = Pattern.compile("(?s)\"\"\".*?\"\"\"");
     private static final Pattern DECLARATION = Pattern.compile("\\b(void|class)\\s");
+    private static final Pattern NIGHTLY_ANNOTATION = Pattern.compile("@NightlyTest\\(reason = \"[^\"]*\"\\)");
+    private static final Pattern OUTSIDE_PR_MARKER = Pattern.compile("@NightlyTest\\b|@Tag\\(\"(?:nightly|migration)\"\\)");
+    private static final Pattern CLASS_DECLARATION = Pattern.compile("\\bclass\\s");
     private static final Pattern DISABLED_CLASS =
             Pattern.compile("@Disabled[^\\n]*\\n(?:\\s*@[^\\n]*\\n)*\\s*(?:public |final |abstract )*class\\s");
 
@@ -41,7 +44,9 @@ public final class TaggedTestScanner {
     }
 
     private static List<TaggedTestUse> scanSource(String name, String rawContent) {
-        String content = TEXT_BLOCK.matcher(rawContent).replaceAll("");
+        String content = NIGHTLY_ANNOTATION.matcher(TEXT_BLOCK.matcher(rawContent).replaceAll("")).replaceAll("@NightlyTest");
+        Matcher firstClass = CLASS_DECLARATION.matcher(content);
+        boolean classOutsidePrTier = firstClass.find() && OUTSIDE_PR_MARKER.matcher(content.substring(0, firstClass.start())).find();
         boolean classDisabled = DISABLED_CLASS.matcher(content).find();
         List<TaggedTestUse> uses = new ArrayList<>();
         Matcher tag = TAG.matcher(content);
@@ -50,7 +55,8 @@ public final class TaggedTestScanner {
             int end = declaration.find(tag.end()) ? declaration.start() : content.length();
             int start = Math.max(content.lastIndexOf('}', tag.start()), Math.max(content.lastIndexOf('{', tag.start()), content.lastIndexOf(';', tag.start())));
             boolean disabled = classDisabled || content.substring(Math.max(start, 0), end).contains("@Disabled");
-            uses.add(new TaggedTestUse(tag.group(1), name, disabled));
+            boolean outsidePrTier = classOutsidePrTier || OUTSIDE_PR_MARKER.matcher(content.substring(Math.max(start, 0), end)).find();
+            uses.add(new TaggedTestUse(tag.group(1), name, disabled, outsidePrTier));
         }
         return uses;
     }

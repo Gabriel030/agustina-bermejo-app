@@ -30,7 +30,7 @@ class CurrentAccountBalanceProperties {
         return movement.list().ofMaxSize(60);
     }
 
-    @Property(tries = 1000, seed = "20261007")
+    @Property(seed = "20261007")
     void theSignedBalanceIsTheSumOfCreditsMinusTheSumOfDebitsAndZeroSideMeansZeroAmount(@ForAll("movements") List<Movement> sequence) {
         CurrentAccountBalance balance = CurrentAccountBalance.zero(Currency.ARS);
         BigDecimal expected = BigDecimal.ZERO;

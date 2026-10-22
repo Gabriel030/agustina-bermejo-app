@@ -76,7 +76,7 @@ class AllocationDomainProperties {
         return plan;
     }
 
-    @Property(tries = 1000, seed = "20261015")
+    @Property(seed = "20261015")
     void theScheduleKeepsTheOrderIdsAndAmountsOfThePlan(@ForAll("centAmounts") List<Long> amounts, @ForAll("centAmounts") List<Long> creditCents,
                                                         @ForAll("credit") long requestedCents) {
         long toAllocateCents = Math.min(requestedCents, totalOf(creditCents));
@@ -88,7 +88,7 @@ class AllocationDomainProperties {
         assertThat(schedule).extracting(ScheduledAllocation::amount).containsExactlyElementsOf(plan.stream().map(PlannedInvoiceAllocation::amount).toList());
     }
 
-    @Property(tries = 1000, seed = "20261015")
+    @Property(seed = "20261015")
     void eachEffectiveDateIsTheCreditThatCoversThePlanSoFar(@ForAll("centAmounts") List<Long> amounts,
                                                                            @ForAll("centAmounts") List<Long> creditCents,
                                                                            @ForAll("credit") long requestedCents) {
@@ -116,7 +116,7 @@ class AllocationDomainProperties {
         }
     }
 
-    @Property(tries = 1000, seed = "20261015")
+    @Property(seed = "20261015")
     void theSelectionIsAMinimalPrefixThatCoversWhatMustBeRemoved(@ForAll("centAmounts") List<Long> amounts, @ForAll("credit") long unallocatedCents,
                                                                   @ForAll("credit") long toRemoveCents) {
         List<PaymentAllocation> newestFirst = new ArrayList<>();

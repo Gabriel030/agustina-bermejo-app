@@ -30,6 +30,8 @@
 		<java.version>21</java.version>
 		<test.forkCount>2</test.forkCount>
 		<test.excludedGroups>docs</test.excludedGroups>
+		<test.exploration>pr</test.exploration>
+		<test.jqwik.tries>200</test.jqwik.tries>
 		<argLine></argLine>
 		<shedlock.version>6.10.0</shedlock.version>
 		<jqwik.version>1.9.3</jqwik.version>
@@ -267,6 +269,10 @@
 						<include>**/*Properties.java</include>
 					</includes>
 					<excludedGroups>${test.excludedGroups}</excludedGroups>
+					<systemPropertyVariables>
+						<test.exploration>${test.exploration}</test.exploration>
+						<jqwik.tries.default>${test.jqwik.tries}</jqwik.tries.default>
+					</systemPropertyVariables>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
 					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
@@ -307,6 +313,18 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>exploration-nightly</id>
+			<activation>
+				<property>
+					<name>test.exploration</name>
+					<value>nightly</value>
+				</property>
+			</activation>
+			<properties>
+				<test.jqwik.tries>1000</test.jqwik.tries>
+			</properties>
+		</profile>
 		<profile>
 			<id>mutation</id>
 			<build>
@@ -403,6 +421,9 @@
 							<coverageThreshold>0</coverageThreshold>
 							<failWhenNoMutations>false</failWhenNoMutations>
 							<threads>4</threads>
+							<jvmArgs>
+								<value>-Djqwik.tries.default=1000</value>
+							</jvmArgs>
 							<historyInputFile>${project.build.directory}/pit-history/history.bin</historyInputFile>
 							<historyOutputFile>${project.build.directory}/pit-history/history.bin</historyOutputFile>
 							<outputFormats>
