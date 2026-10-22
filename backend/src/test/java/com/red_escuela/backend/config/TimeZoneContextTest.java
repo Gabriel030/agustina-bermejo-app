@@ -1,5 +1,6 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
 import com.red_escuela.backend.shared.time.ClockConfig;
 import com.red_escuela.backend.shared.time.MutableClock;
@@ -7,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.ActiveProfiles;
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedSpyBeans
 class TimeZoneContextTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -43,7 +44,7 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
     @Autowired
     private Clock clock;
 
-    @MockitoSpyBean
+    @Autowired
     private MonthlyInstallmentIssuanceJob monthlyJob;
 
     @Test
