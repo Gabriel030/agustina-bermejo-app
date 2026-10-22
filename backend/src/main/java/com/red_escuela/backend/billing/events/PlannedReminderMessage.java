@@ -25,6 +25,6 @@ public record PlannedReminderMessage(PlannedReminderFormat format, PlannedRemind
         PlannedReminderNoticeType lead = noticeTypes.stream().max(Comparator.comparingInt(PlannedReminderNoticeType::ordinal)).orElseThrow();
         PlannedReminderFormat remainingFormat = noticeTypes.size() == 1 && remainingLines.size() == 1 ? PlannedReminderFormat.OWN_NOTICE : PlannedReminderFormat.DAILY_DIGEST;
         boolean remainingPrecedesDueDate = remainingLines.stream().filter(PlannedReminderLine::isHighlighted).allMatch(PlannedReminderLine::precedesDueDate);
-        return Optional.of(new PlannedReminderMessage(remainingFormat, lead, lead.ordinal() + 1, remainingPrecedesDueDate, remainingBlocks));
+        return Optional.of(new PlannedReminderMessage(remainingFormat, lead, lead.dispatchPriority(), remainingPrecedesDueDate, remainingBlocks));
     }
 }

@@ -33,11 +33,11 @@ public final class PlannedReminderFixtures {
     }
 
     public static PlannedReminderMessage digest(PlannedReminderNoticeType lead, boolean precedesDueDate, PlannedReminderBlock... blocks) {
-        return new PlannedReminderMessage(PlannedReminderFormat.DAILY_DIGEST, lead, lead.ordinal() + 1, precedesDueDate, List.of(blocks));
+        return new PlannedReminderMessage(PlannedReminderFormat.DAILY_DIGEST, lead, lead.dispatchPriority(), precedesDueDate, List.of(blocks));
     }
 
     public static PlannedReminderMessage ownNotice(PlannedReminderNoticeType lead, boolean precedesDueDate, PlannedReminderBlock... blocks) {
-        return new PlannedReminderMessage(PlannedReminderFormat.OWN_NOTICE, lead, lead.ordinal() + 1, precedesDueDate, List.of(blocks));
+        return new PlannedReminderMessage(PlannedReminderFormat.OWN_NOTICE, lead, lead.dispatchPriority(), precedesDueDate, List.of(blocks));
     }
 
     public static Money hundredThousand() {

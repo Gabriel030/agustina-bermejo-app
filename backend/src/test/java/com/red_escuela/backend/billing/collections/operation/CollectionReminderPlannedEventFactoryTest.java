@@ -57,7 +57,7 @@ class CollectionReminderPlannedEventFactoryTest {
         PlannedReminderMessage email = event.emailMessages().get(0);
         assertThat(email.format()).isEqualTo(PlannedReminderFormat.DAILY_DIGEST);
         assertThat(email.leadNoticeType()).isEqualTo(PlannedReminderNoticeType.AFTER_DUE_REMINDER);
-        assertThat(email.priority()).isEqualTo(4);
+        assertThat(email.priority()).isEqualTo(2);
         assertThat(email.precedesDueDate()).isFalse();
         PlannedReminderBlock block = email.blocks().get(0);
         assertThat(block.currency()).isEqualTo(Currency.ARS);
