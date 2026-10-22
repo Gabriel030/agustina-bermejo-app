@@ -127,6 +127,17 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("C-21")
+    @Tag("D-142")
+    @Tag("D-314")
+    void enrollmentReadsStudentDebtOnlyThroughTheDebtGuard() {
+        ArchitectureRules.enrollmentReadsStudentDebtOnlyThroughTheDebtGuard().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.enrollmentReadsStudentDebtOnlyThroughTheDebtGuard().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("DebtReadingFixture");
+    }
+
+    @Test
     @Tag("D-051")
     void policiesAndPlannersArePure() {
         ArchitectureRules.policiesArePure().check(MAIN_CLASSES);

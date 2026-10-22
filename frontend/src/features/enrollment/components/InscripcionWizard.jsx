@@ -88,7 +88,7 @@ const MENSAJES_ERROR_INSCRIPCION = {
   DNI_REQUIRED: 'Cargá tu documento para poder enviar la solicitud.',
   DNI_ALREADY_EXISTS: 'Ese documento ya está registrado en otra cuenta. Revisalo en tus datos personales.',
   INVALID_DOCUMENT_NUMBER: 'El número de documento no tiene un formato válido para el tipo elegido.',
-  STUDENT_IN_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
+  OUTSTANDING_DEBT_BLOCKS_REENROLLMENT: 'Tenés deuda pendiente. Regularizala antes de inscribirte; si está en un pedido del director, esperá su decisión.',
   PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
 };
 
