@@ -22,6 +22,13 @@ import com.red_escuela.backend.billing.payment.policy.CashPaymentPreviewIsCurren
 import com.red_escuela.backend.billing.payment.policy.CashPaymentReceiptNumberPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyFormatPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayAvailabilityContext;
+import com.red_escuela.backend.billing.payment.policy.PaymentRejectionCheck;
+import com.red_escuela.backend.billing.payment.policy.PaymentRejectionReasonRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.PaymentReviewNoteLengthPolicy;
+import com.red_escuela.backend.billing.payment.policy.PaymentVerificationCheck;
+import com.red_escuela.backend.billing.payment.policy.VerifiedPaymentAmountPolicy;
+import com.red_escuela.backend.billing.payment.policy.VerifiedPaymentCurrencyPolicy;
+import com.red_escuela.backend.billing.payment.policy.VerifiedPaymentDatePolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayAvailabilityPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityContext;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityPolicy;
@@ -97,5 +104,16 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<IdempotencyKeyReuseContext> idempotencyKeyReusePolicySet() {
         return PolicySet.named("IDEMPOTENCY_KEY_REUSE", List.of(new IdempotencyKeyReuseConsistencyPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PaymentVerificationCheck> paymentVerificationPolicySet() {
+        return PolicySet.named("PAYMENT_REVIEW", List.of(new VerifiedPaymentAmountPolicy(), new VerifiedPaymentCurrencyPolicy(), new VerifiedPaymentDatePolicy(),
+                new PaymentReviewNoteLengthPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet() {
+        return PolicySet.named("PAYMENT_REJECTION", List.of(new PaymentRejectionReasonRequiredPolicy()));
     }
 }
