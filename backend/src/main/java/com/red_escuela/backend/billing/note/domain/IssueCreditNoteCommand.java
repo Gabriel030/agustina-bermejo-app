@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.note.domain;
 
 import com.red_escuela.backend.billing.operation.DirectorApprovable;
+import com.red_escuela.backend.billing.operation.InvoiceTargetedRequest;
 import com.red_escuela.backend.billing.operation.ResumedFromAuthorizationRequest;
 
 import java.time.LocalDate;
@@ -9,7 +10,7 @@ import java.util.Objects;
 
 public record IssueCreditNoteCommand(Long invoiceId, CreditNoteReason reason, String justification, List<CreditNoteLineAmount> lines,
                                      CreditNoteDestination expectedDestination, Long requestedByPersonId, boolean requestedByDirector,
-                                     Long authorizationRequestId) implements DirectorApprovable, ResumedFromAuthorizationRequest<IssueCreditNoteCommand> {
+                                     Long authorizationRequestId) implements DirectorApprovable, InvoiceTargetedRequest, ResumedFromAuthorizationRequest<IssueCreditNoteCommand> {
 
     public IssueCreditNoteCommand {
         Objects.requireNonNull(invoiceId, "invoiceId");
@@ -17,6 +18,11 @@ public record IssueCreditNoteCommand(Long invoiceId, CreditNoteReason reason, St
         Objects.requireNonNull(expectedDestination, "expectedDestination");
         Objects.requireNonNull(requestedByPersonId, "requestedByPersonId");
         lines = lines == null ? List.of() : List.copyOf(lines);
+    }
+
+    @Override
+    public List<Long> targetedInvoiceIds() {
+        return List.of(invoiceId);
     }
 
     @Override

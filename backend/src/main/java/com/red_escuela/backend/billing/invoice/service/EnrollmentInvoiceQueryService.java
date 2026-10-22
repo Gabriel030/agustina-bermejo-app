@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -21,6 +22,16 @@ public class EnrollmentInvoiceQueryService {
     @Transactional(readOnly = true)
     public List<Long> findAccountIdsOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId) {
         return invoiceRepository.findAccountIdsOfEnrollment(programEnrollmentId, courseEnrollmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Long> findAccountIdOfInvoice(Long invoiceId) {
+        return invoiceRepository.findStudentCurrentAccountIdByInvoiceId(invoiceId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Invoice> findInvoiceWithLines(Long invoiceId) {
+        return invoiceRepository.findInvoiceWithLinesById(invoiceId);
     }
 
     @Transactional(readOnly = true)

@@ -29,7 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import java.util.stream.Collectors;
+import org.springframework.http.MediaType;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Tag("D-142")
 @Tag("D-147")
@@ -135,5 +140,42 @@ class EnrollmentWithdrawalSequencesIT extends AbstractCreditNoteIT {
             SecurityContextHolder.clearContext();
         }
         assertThat(unpaidInvoicesState(accountId)).as("seed %d enrollment %d", seed, enrollmentId).isEqualTo(before);
+        approvePendingRequestsAndAssertOnlyTheirInvoicesChange(accountId, before, seed);
+    }
+
+    private void approvePendingRequestsAndAssertOnlyTheirInvoicesChange(Long accountId, Map<String, Object> before, long seed) {
+        List<Long> requestIds = jdbc.queryForList("select distinct ari.authorization_request_id from authorization_request_invoice ari "
+                + "join authorization_request ar on ar.id = ari.authorization_request_id join invoice i on i.id = ari.invoice_id "
+                + "where ar.status = 'PENDING' and i.student_current_account_id = ? order by 1", Long.class, accountId);
+        if (requestIds.isEmpty()) {
+            return;
+        }
+        List<Long> requestedInvoiceIds = jdbc.queryForList("select distinct ari.invoice_id from authorization_request_invoice ari "
+                + "where ari.authorization_request_id in (" + requestIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")", Long.class);
+        Staff director = newStaff("DIRECTOR");
+        requestIds.forEach(requestId -> approveAsDirector(requestId, director));
+
+        assertThat(requestedInvoiceIds).isNotEmpty();
+        requestedInvoiceIds.forEach(invoiceId -> assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoiceId))
+                .as("seed %d invoice %d of the approved request", seed, invoiceId).isEqualTo("CANCELLED"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> invoicesBefore = (List<Map<String, Object>>) before.get("invoices");
+        List<Map<String, Object>> untouchedBefore = invoicesBefore.stream().filter(row -> !requestedInvoiceIds.contains(((Number) row.get("id")).longValue())).toList();
+        List<Long> untouchedIds = untouchedBefore.stream().map(row -> ((Number) row.get("id")).longValue()).toList();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> invoicesAfter = (List<Map<String, Object>>) unpaidInvoicesState(accountId).get("invoices");
+        assertThat(invoicesAfter.stream().filter(row -> untouchedIds.contains(((Number) row.get("id")).longValue())).toList())
+                .as("seed %d invoices outside the approved requests", seed).isEqualTo(untouchedBefore);
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where student_current_account_id = ?", Long.class, accountId))
+                .as("seed %d one credit note per cancelled invoice", seed).isEqualTo((long) requestedInvoiceIds.size());
+    }
+
+    private void approveAsDirector(Long requestId, Staff director) {
+        try {
+            mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + director.token())
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"decisionReason\":\"ok\"}")).andExpect(status().isOk());
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
     }
 }
