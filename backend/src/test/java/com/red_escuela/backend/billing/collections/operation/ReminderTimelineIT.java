@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderMessageType;
 import com.red_escuela.backend.billing.configuration.domain.ReminderMilestone;
 import com.red_escuela.backend.billing.configuration.domain.ReminderRepetition;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
@@ -30,6 +31,8 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
 
     @Autowired
     private ConfigurationVersionRepository configurationVersionRepository;
+    @Autowired
+    private BillingConfigurationReader configurationReader;
 
     private static LocalDate march(int day) {
         return LocalDate.of(2027, 3, day);
@@ -63,7 +66,7 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     @Test
     @Tag("D-359")
     @Tag("D-353")
-    void baseInstallmentTimelineWithTheJvmInUtc() {
+    void baseInstallmentTimelineWithTheJvmDefaultZoneInUtc() {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try {
@@ -81,14 +84,13 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
         Student student = newStudent();
         harness.track(student);
         CourseEnrollment enrollment = enrollInCourse(student, newCourse());
-        Invoice[] installment = new Invoice[1];
         harness.issuing(day -> {
             if (day.equals(march(3))) {
-                installment[0] = installmentOf(enrollment, march(3), march(12));
+                installmentOf(enrollment, march(3), march(12));
             }
         }).during(day -> {
             if (day.equals(march(8))) {
-                pay(installment[0], day);
+                pay(lastInvoiceOf(student), day);
             }
         });
 
@@ -143,8 +145,11 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     @Tag("D-288")
     void graceDoesNotMoveTheAfterDueNotice() {
         ReminderTimelineHarness harness = newHarness();
-        LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, newPerson("direccion", "DIRECTOR", true), 5, new BigDecimal("0.01"), 90, 99,
+        int scenarioGraceDays = 12;
+        assertThat(configurationReader.findLatePaymentSettingsEffectiveOn(marchOf2038(1)).map(terms -> terms.gracePeriodDays()).orElse(-1)).isNotEqualTo(scenarioGraceDays);
+        LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, newPerson("direccion", "DIRECTOR", true), scenarioGraceDays, new BigDecimal("0.01"), 90, 99,
                 LocalDate.of(2038, 2, 27));
+        assertThat(configurationReader.findLatePaymentSettingsEffectiveOn(marchOf2038(1)).map(terms -> terms.gracePeriodDays()).orElse(-1)).isEqualTo(scenarioGraceDays);
         Student student = newStudent();
         harness.track(student);
         CourseEnrollment enrollment = enrollInCourse(student, newCourse());
@@ -171,18 +176,16 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
         Student student = newStudent();
         harness.track(student);
         CourseEnrollment enrollment = enrollInCourse(student, newCourse());
-        Invoice[] installment = new Invoice[1];
-        Long[] receipt = new Long[1];
         harness.issuing(day -> {
             if (day.equals(march(1))) {
-                installment[0] = installmentOf(enrollment, march(1), march(11));
+                installmentOf(enrollment, march(1), march(11));
             }
         }).during(day -> {
             if (day.equals(march(15))) {
-                receipt[0] = uploadReceipt(installment[0]);
+                uploadReceipt(lastInvoiceOf(student));
             }
             if (day.equals(march(26))) {
-                rejectReceipt(receipt[0]);
+                rejectReceipt(lastReceiptOf(student));
             }
         });
 
@@ -202,17 +205,16 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
         Student student = newStudent();
         harness.track(student);
         CourseEnrollment enrollment = enrollInCourse(student, newCourse());
-        Invoice[] installment = new Invoice[1];
         harness.issuing(day -> {
             if (day.equals(march(1))) {
-                installment[0] = installmentOf(enrollment, march(1), march(11));
+                installmentOf(enrollment, march(1), march(11));
             }
         }).during(day -> {
             if (day.equals(march(5))) {
-                pay(installment[0], day);
+                pay(lastInvoiceOf(student), day);
             }
             if (day.equals(march(20))) {
-                revertPayment(installment[0], day, 5);
+                revertPayment(lastInvoiceOf(student), day, 5);
             }
         });
 
@@ -232,6 +234,8 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
         CourseEnrollment enrollment = enrollInCourse(student, course);
         publishCourseSchedule(course, LocalDate.of(2027, 2, 27), List.of(
                 notice("before-due", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -1, EnumSet.allOf(ReminderChannel.class), null)));
+        publishCourseSchedule(course, march(2), List.of(
+                notice("before-due", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -8, EnumSet.allOf(ReminderChannel.class), null)));
         publishCourseSchedule(course, march(4), List.of(
                 notice("before-due", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -2, EnumSet.allOf(ReminderChannel.class), null)));
         harness.issuing(day -> {
@@ -242,8 +246,8 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
 
         harness.run(march(1), march(31));
 
-        assertThat(harness.inAppDaysOf(student)).containsExactly(march(9));
-        assertThat(harness.emailDaysOf(student)).containsExactly(march(9));
+        assertThat(harness.inAppDaysOf(student)).containsExactly(march(3), march(9));
+        assertThat(harness.emailDaysOf(student)).containsExactly(march(3), march(9));
     }
 
     @Test
@@ -328,28 +332,52 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
     @Test
     @Tag("D-353")
     @Tag("D-403")
-    void reminderInvariantsFlagAPaidInvoiceAndTwoDigestsInTheSameRow() {
+    void installmentAndEnrollmentFeeDueTheSameDayShareOneMessagePerChannelAndDay() {
+        ReminderTimelineHarness harness = newHarness();
+        Student student = newStudent();
+        harness.track(student);
+        ProgramEnrollment enrollment = enrollInProgram(student);
+        harness.issuing(day -> {
+            if (day.equals(march(1))) {
+                installmentOf(enrollment, march(1), march(11));
+                enrollmentFeeOf(enrollment, march(1), march(11));
+            }
+        });
+
+        harness.run(march(1), march(31));
+
+        assertThat(harness.inAppDaysOf(student)).containsExactly(march(1), march(6), march(10), march(21));
+        assertThat(harness.emailDaysOf(student)).containsExactly(march(8), march(10), march(22));
+        assertThat(jdbc.queryForList("select business_date from collection_reminder where student_id = ? and (jsonb_array_length(in_app_messages) > 1 or jsonb_array_length(email_messages) > 1)",
+                LocalDate.class, student.getId())).isEmpty();
+        assertThat(jdbc.queryForObject("select jsonb_array_length(jsonb_path_query_array(email_messages, '$[*].blocks[*].lines[*]')) from collection_reminder where student_id = ? and business_date = ?",
+                Integer.class, student.getId(), march(10))).isEqualTo(2);
+    }
+
+    @Test
+    @Tag("D-353")
+    @Tag("D-403")
+    void reminderInvariantsFlagAPaidInvoiceAndTwoDigestsOfTheSameChannel() {
         BillingInvariantChecker checker = BillingInvariantChecker.startingNow(jdbc);
         ReminderTimelineHarness harness = newHarness();
         Student student = newStudent();
         harness.track(student);
         CourseEnrollment enrollment = enrollInCourse(student, newCourse());
-        Invoice[] installment = new Invoice[1];
         harness.issuing(day -> {
             if (day.equals(march(3))) {
-                installment[0] = installmentOf(enrollment, march(3), march(12));
+                installmentOf(enrollment, march(3), march(12));
             }
         });
         harness.run(march(3), march(8));
         assertThat(checker.reminderNoticesAreNotPlannedForSettledInvoicesOn(march(8))).isEmpty();
-        assertThat(checker.atMostOneReminderPerStudentAndDay()).isEmpty();
+        assertThat(checker.atMostOneDigestPerStudentDayAndChannel()).isEmpty();
 
-        pay(installment[0], march(8));
+        pay(lastInvoiceOf(student), march(8));
         jdbc.update("update collection_reminder set email_messages = replace(email_messages::text, 'OWN_NOTICE', 'DAILY_DIGEST')::jsonb "
                 + "|| replace(email_messages::text, 'OWN_NOTICE', 'DAILY_DIGEST')::jsonb where student_id = ? and business_date = ?", student.getId(), march(8));
 
         assertThat(checker.reminderNoticesAreNotPlannedForSettledInvoicesOn(march(8))).hasSize(3).allMatch(violation -> violation.startsWith("I-R2"));
-        assertThat(checker.atMostOneReminderPerStudentAndDay()).hasSize(1).allMatch(violation -> violation.startsWith("I-R1"));
+        assertThat(checker.atMostOneDigestPerStudentDayAndChannel()).hasSize(1).allMatch(violation -> violation.startsWith("I-R1"));
     }
 
     private int highlightedLinesOf(Student student, LocalDate day) {

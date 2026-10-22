@@ -226,6 +226,16 @@ abstract class AbstractReminderTimelineIT extends AbstractIntegrationTest {
         return invoice;
     }
 
+    protected Invoice lastInvoiceOf(Student student) {
+        return invoiceById(jdbc.queryForObject("select max(i.id) from invoice i join student_current_account a on a.id = i.student_current_account_id where a.student_id = ?",
+                Long.class, student.getId()));
+    }
+
+    protected Long lastReceiptOf(Student student) {
+        return jdbc.queryForObject("select max(b.id) from bank_transfer_receipt b join invoice i on i.id = b.invoice_id "
+                + "join student_current_account a on a.id = i.student_current_account_id where a.student_id = ?", Long.class, student.getId());
+    }
+
     protected Invoice invoiceById(Long invoiceId) {
         return invoiceRepository.findInvoiceWithLinesById(invoiceId).orElseThrow();
     }

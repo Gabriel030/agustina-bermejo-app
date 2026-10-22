@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.invariant;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -500,7 +501,7 @@ public final class BillingInvariantChecker {
                 """.formatted(ENROLLMENT_END_OF_ORIGIN, ENROLLMENT_REGISTRATION_OF_ORIGIN, CORRECTION_COMPLEMENT), baselineInvoiceId);
     }
 
-    public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {
+    public List<String> lateFeesCoverEveryChargeableDayAt(LocalDate today) {
         String cutoff = """
                 case when o.payment_status = 'PAID' then (
                     select a.effective_date from payment_allocation a
@@ -534,21 +535,15 @@ public final class BillingInvariantChecker {
         }
     }
 
-    public void assertLateFeesAreCompleteAt(java.time.LocalDate today) {
+    public void assertLateFeesAreCompleteAt(LocalDate today) {
         List<String> found = lateFeesCoverEveryChargeableDayAt(today);
         if (!found.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", found));
         }
     }
 
-    public List<String> atMostOneReminderPerStudentAndDay() {
-        return violations("I-R1 more than one collection reminder for the same student and day", """
-                select 'student ' || student_id || ' day ' || business_date || ' rows ' || count(*)
-                from collection_reminder
-                where id > ?
-                group by student_id, business_date
-                having count(*) > 1
-                union all
+    public List<String> atMostOneDigestPerStudentDayAndChannel() {
+        return violations("I-R1 more than one digest for the same student, day and channel (one row per student and day is guaranteed by uq_collection_reminder_student_day)", """
                 select 'reminder ' || r.id || ' student ' || r.student_id || ' day ' || r.business_date || ' carries ' || count(*) || ' digests in ' || m.channel
                 from collection_reminder r
                 cross join lateral (select 'IN_APP' as channel, e.message from jsonb_array_elements(r.in_app_messages) e(message)
@@ -557,10 +552,10 @@ public final class BillingInvariantChecker {
                 where r.id > ? and m.message ->> 'format' = 'DAILY_DIGEST'
                 group by r.id, r.student_id, r.business_date, m.channel
                 having count(*) > 1
-                """, baselineReminderId, baselineReminderId);
+                """, baselineReminderId);
     }
 
-    public List<String> reminderNoticesAreNotPlannedForSettledInvoicesOn(java.time.LocalDate day) {
+    public List<String> reminderNoticesAreNotPlannedForSettledInvoicesOn(LocalDate day) {
         return violations("I-R2 notice planned for an invoice that was settled, cancelled or under review that day", """
                 select 'reminder ' || r.id || ' day ' || r.business_date || ' ' || m.channel || ' invoice ' || i.id || ' ' || i.payment_status
                 from collection_reminder r
@@ -576,8 +571,8 @@ public final class BillingInvariantChecker {
                 """, baselineReminderId, day);
     }
 
-    public void assertReminderInvariantsHoldOn(java.time.LocalDate day) {
-        List<String> all = new ArrayList<>(atMostOneReminderPerStudentAndDay());
+    public void assertReminderInvariantsHoldOn(LocalDate day) {
+        List<String> all = new ArrayList<>(atMostOneDigestPerStudentDayAndChannel());
         all.addAll(reminderNoticesAreNotPlannedForSettledInvoicesOn(day));
         if (!all.isEmpty()) {
             throw new AssertionError("Reminder invariants violated:\n" + String.join("\n", all));
@@ -607,7 +602,7 @@ public final class BillingInvariantChecker {
         all.addAll(everyAllocationIsFundedByItsSources());
         all.addAll(noDebtDisappearsWithoutADocument());
         all.addAll(lateFeesRespectTheRedefinedI11());
-        all.addAll(atMostOneReminderPerStudentAndDay());
+        all.addAll(atMostOneDigestPerStudentDayAndChannel());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }
