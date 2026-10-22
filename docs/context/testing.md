@@ -184,7 +184,18 @@ El tier se elige con la propiedad `test.exploration` (`pr` por defecto, `nightly
 - **Cómo se lee el tier en un test:** `ExplorationTier.sequences(prCount, nightlyCount)` y `ExplorationTier.seed(owner, fixedSeed)` (`testsupport/ExplorationTier.java`). En nightly la semilla sale del reloj y se **loguea** (`Exploration seed of <test> in tier nightly: <n>`); para reproducir una falla: `-Dtest.exploration=nightly -Dtest.exploration.seed=<n>`.
 - **jqwik:** no pongas `tries =` en `@Property`; el valor sale de `jqwik.tries.default` (200 en `src/test/resources/junit-platform.properties`, 1000 en nightly). jqwik no tiene semilla global: la semilla fija sigue en el `@Property` y por eso en nightly se rota solo en las secuencias propias. PIT conserva 1000 intentos (`jvmArgs` del perfil `mutation`) hasta medir qué mutantes se pierden con menos.
 - **`@NightlyTest(reason = "...")`** (`testsupport/NightlyTest.java`, lleva `@Tag("nightly")`) marca tests de volumen o performance (400 facturas vencidas, 24 meses de datos). Se deshabilita solo con `ExecutionCondition`, sin depender de `excludedGroups`, así que ningún workflow puede ejecutarlos por error. Úsalo solo en tests que no llevan ningún `@Tag("D-xxx")` exclusivo (ver regla R5).
-- **`ModuleDocumentationTest`** sigue con `@Tag("docs")` (excluido por defecto con `test.excludedGroups=docs`): se corre solo en nightly y en release con `-Dtest.excludedGroups=none`.
+- **Grupos que el CI corre solo cuando corresponde** (`detect-changes.sh` decide, `ci.yml` los excluye con `-Dtest.excludedGroups`):
+
+| Grupo | Tests | PR contra `develop` | Push a `develop` | PR/push a `master` | Nightly |
+|---|---|---|---|---|---|
+| `migration` | los 19 tests `*Migration*` | solo si el diff toca `db/migration/**`, un test `*Migrat*`, `backend/pom.xml`, `scripts/` o `.github/` | siempre | siempre | siempre |
+| `karate` | `KarateSuiteTest` | siempre, salvo que el diff sea solo lógica de billing (ver abajo) | siempre | siempre | siempre |
+| `docs` | `ModuleDocumentationTest` | nunca | nunca | siempre | siempre |
+
+  Karate cubre endpoints de billing (`procesos-administrativos`: pagos, notas de crédito, cobranza, descuentos, comprobantes), por eso solo se saltea cuando todos los archivos del diff son `.md` o código de billing que **no** está en `controller`, `dto`, `api`, `usecase`, `service`, `events`, `gateway`, `infrastructure`, `entity` ni `repository` (main) ni en `billing/support` (tests). Cualquier otro archivo de backend, `contracts/`, `scripts/` o `.github/` lo activa.
+
+  Cuando el push a `develop` reutiliza los tests de un PR verde (mismo árbol) y ese PR se saltó `migration` o `karate`, el job `backend-extra-tests` corre solo esos grupos. El registro `tested-tree.json` del PR guarda qué grupos corrió; un registro sin esos campos cuenta como «no corrió».
+- **Nightly (`nightly-tests.yml`):** corre la suite completa en 6 shards con `-Dtest.exploration=nightly -Dtest.excludedGroups=none` (migration, Karate, docs y tests `@NightlyTest` incluidos). Se saltea si `develop` no cambió desde la última corrida verde. `schedule` solo corre desde la rama por defecto: hasta el próximo release se dispara a mano con `workflow_dispatch`.
 - **Regla R5 (`BillingDecisionCoverageTest`):** cada decisión D-xxx vigente implementada o parcial necesita **al menos un test del tier PR**, es decir, con su `@Tag("D-xxx")`, sin `@NightlyTest`, sin `@Tag("nightly")`, sin `@Tag("migration")` y sin `@Disabled`. Si movés el único test de una decisión a nightly, el build falla con `R5 D-xxx ... sin test del tier PR`. Agregá un test liviano de PR en vez de saltear la regla.
 
 ### Reglas para no pagar contextos y esperas de más

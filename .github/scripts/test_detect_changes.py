@@ -17,7 +17,7 @@ case "$*" in
   *"run download"*)
     target="${@: -1}"
     mkdir -p "$target"
-    echo "{\"tree\":\"${GH_RECORDED_TREE}\",\"pr\":\"${GH_RECORDED_PR:-7}\",\"backend\":\"${GH_BACKEND:-true}\",\"mutation\":\"${GH_MUTATION:-false}\",\"frontend\":\"${GH_FRONTEND:-true}\"}" > "$target/tested-tree.json";;
+    echo "{\"tree\":\"${GH_RECORDED_TREE}\",\"pr\":\"${GH_RECORDED_PR:-7}\",\"backend\":\"${GH_BACKEND:-true}\",\"mutation\":\"${GH_MUTATION:-false}\",\"frontend\":\"${GH_FRONTEND:-true}\"${GH_EXTRA_FIELDS:-}}" > "$target/tested-tree.json";;
 esac
 '''
 
@@ -166,6 +166,134 @@ class DetectChangesTest(unittest.TestCase):
         result = self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/9/merge', PR_BASE_SHA=self.base, PR_NUMBER='9')
         self.assertEqual('true', result['lockfile'])
         self.assertEqual('true', result['frontend'])
+
+    def pull_request(self, files, base_ref='develop', **env):
+        commit_files(self.repo, files, 'change')
+        return self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/9/merge', PR_BASE_SHA=self.base, PR_BASE_REF=base_ref, PR_NUMBER='9', **env)
+
+    def merge_backend_pull_request(self):
+        git(self.repo, 'checkout', '-q', '-b', 'pr')
+        commit_files(self.repo, {'backend/A.java': 'b'}, 'backend change')
+        git(self.repo, 'checkout', '-q', 'develop')
+        commit_files(self.repo, {'docs/x.md': 'x'}, 'docs')
+        git(self.repo, 'merge', '-q', '--no-ff', 'pr', '-m', 'Merge pull request #7')
+        return git(self.repo, 'rev-parse', 'HEAD^{tree}')
+
+    def test_pull_request_that_only_touches_a_migration_runs_migration_and_karate(self):
+        result = self.pull_request({'backend/src/main/resources/db/migration/V1__x.sql': 'x'})
+        self.assertEqual('true', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+        self.assertEqual('false', result['run_docs'])
+
+    def test_pull_request_that_only_touches_a_migration_test_runs_migration(self):
+        result = self.pull_request({'backend/src/test/java/com/red_escuela/backend/billing/PaymentModelMigrationTest.java': 'x'})
+        self.assertEqual('true', result['run_migration'])
+        self.assertEqual('false', result['run_karate'])
+
+    def test_pull_request_with_billing_logic_and_no_migration_skips_migration_and_karate(self):
+        result = self.pull_request({
+            'backend/src/main/java/com/red_escuela/backend/billing/invoice/domain/Invoice.java': 'x',
+            'backend/src/main/java/com/red_escuela/backend/billing/pricing/policy/Rule.java': 'x',
+            'backend/src/test/java/com/red_escuela/backend/billing/invoice/domain/InvoiceTest.java': 'x',
+        })
+        self.assertEqual('true', result['relevant'])
+        self.assertEqual('false', result['run_migration'])
+        self.assertEqual('false', result['run_karate'])
+
+    def test_pull_request_that_touches_a_billing_controller_runs_karate(self):
+        result = self.pull_request({'backend/src/main/java/com/red_escuela/backend/billing/payment/controller/PaymentController.java': 'x'})
+        self.assertEqual('false', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+
+    def test_pull_request_that_touches_the_billing_test_fixtures_runs_karate(self):
+        result = self.pull_request({'backend/src/test/java/com/red_escuela/backend/billing/support/BillingTestFixtures.java': 'x'})
+        self.assertEqual('true', result['run_karate'])
+
+    def test_pull_request_that_touches_non_billing_backend_code_runs_karate(self):
+        result = self.pull_request({'backend/src/main/java/com/red_escuela/backend/enrollment/domain/X.java': 'x'})
+        self.assertEqual('false', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+
+    def test_pull_request_that_touches_the_contract_runs_karate(self):
+        result = self.pull_request({'contracts/openapi.json': '{}'})
+        self.assertEqual('true', result['run_karate'])
+
+    def test_pull_request_that_only_touches_the_workflows_runs_migration_and_karate(self):
+        result = self.pull_request({'.github/workflows/ci.yml': 'x'})
+        self.assertEqual('true', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+
+    def test_pull_request_that_touches_the_pom_runs_migration(self):
+        result = self.pull_request({'backend/pom.xml': 'x'})
+        self.assertEqual('true', result['run_migration'])
+
+    def test_frontend_change_next_to_billing_logic_does_not_trigger_karate(self):
+        result = self.pull_request({
+            'frontend/a.js': 'z',
+            'backend/src/main/java/com/red_escuela/backend/billing/invoice/domain/Invoice.java': 'x',
+        })
+        self.assertEqual('false', result['run_karate'])
+
+    def test_pull_request_against_master_runs_every_group_including_docs(self):
+        result = self.pull_request({'backend/src/main/java/com/red_escuela/backend/billing/invoice/domain/Invoice.java': 'x'}, base_ref='master')
+        self.assertEqual('true', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+        self.assertEqual('true', result['run_docs'])
+
+    def test_push_to_develop_always_runs_migration_and_karate_but_not_docs(self):
+        commit_files(self.repo, {'backend/src/main/java/com/red_escuela/backend/billing/invoice/domain/Invoice.java': 'x'}, 'billing')
+        result = self.push(GH_LAST_PUSH_SHA=self.base)
+        self.assertEqual('true', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+        self.assertEqual('false', result['run_docs'])
+
+    def test_push_to_master_runs_docs(self):
+        result = self.run_script(GITHUB_EVENT_NAME='push', GITHUB_REF='refs/heads/master')
+        self.assertEqual('true', result['run_docs'])
+
+    def test_pull_request_without_a_diff_base_runs_every_group(self):
+        commit_files(self.repo, {'backend/src/main/java/com/red_escuela/backend/billing/invoice/domain/Invoice.java': 'x'}, 'billing')
+        result = self.run_script(GITHUB_EVENT_NAME='pull_request', GITHUB_REF='refs/pull/9/merge', PR_BASE_REF='develop', PR_NUMBER='9')
+        self.assertEqual('true', result['run_migration'])
+        self.assertEqual('true', result['run_karate'])
+
+    def test_pull_request_records_which_groups_it_ran(self):
+        out = os.path.join(self.root, 'tested')
+        self.pull_request({'backend/src/main/java/com/red_escuela/backend/billing/invoice/domain/Invoice.java': 'x'}, TESTED_TREE_DIR=out)
+        with open(os.path.join(out, 'tested-tree.json'), encoding='utf-8') as handle:
+            record = json.load(handle)
+        self.assertEqual('false', record['migration'])
+        self.assertEqual('false', record['karate'])
+
+    def test_push_that_reuses_a_pull_request_which_skipped_the_groups_runs_them_as_extras(self):
+        tree = self.merge_backend_pull_request()
+        fields = ',"migration":"false","karate":"false"'
+        result = self.push(GH_LAST_PUSH_SHA=self.base, GH_PR_RUN='4242', GH_RECORDED_TREE=tree, GH_FRONTEND='false', GH_EXTRA_FIELDS=fields)
+        self.assertEqual('true', result['reuse_backend'])
+        self.assertEqual('["migration","karate"]', result['extra_groups'])
+
+    def test_push_that_reuses_a_pull_request_with_a_record_from_before_the_groups_runs_them_as_extras(self):
+        tree = self.merge_backend_pull_request()
+        result = self.push(GH_LAST_PUSH_SHA=self.base, GH_PR_RUN='4242', GH_RECORDED_TREE=tree, GH_FRONTEND='false')
+        self.assertEqual('["migration","karate"]', result['extra_groups'])
+
+    def test_push_that_reuses_a_pull_request_which_ran_one_group_runs_only_the_other_as_extra(self):
+        tree = self.merge_backend_pull_request()
+        fields = ',"migration":"true","karate":"false"'
+        result = self.push(GH_LAST_PUSH_SHA=self.base, GH_PR_RUN='4242', GH_RECORDED_TREE=tree, GH_FRONTEND='false', GH_EXTRA_FIELDS=fields)
+        self.assertEqual('["karate"]', result['extra_groups'])
+
+    def test_push_that_reuses_a_pull_request_which_ran_the_groups_has_no_extras(self):
+        tree = self.merge_backend_pull_request()
+        fields = ',"migration":"true","karate":"true"'
+        result = self.push(GH_LAST_PUSH_SHA=self.base, GH_PR_RUN='4242', GH_RECORDED_TREE=tree, GH_FRONTEND='false', GH_EXTRA_FIELDS=fields)
+        self.assertEqual('true', result['reuse_backend'])
+        self.assertEqual('[]', result['extra_groups'])
+
+    def test_push_without_reuse_has_no_extras_because_the_shards_run_every_group(self):
+        self.merge_backend_pull_request()
+        result = self.push(GH_LAST_PUSH_SHA=self.base, GH_PR_RUN='4242', GH_RECORDED_TREE='deadbeef')
+        self.assertEqual('[]', result['extra_groups'])
 
 
 if __name__ == '__main__':
