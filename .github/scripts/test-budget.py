@@ -36,6 +36,7 @@ def add_limits(parser):
     parser.add_argument('--max-contexts', type=int, default=DEFAULT_MAX_CONTEXTS)
     parser.add_argument('--shard-limit', choices=['error', 'warn'], default='error')
     parser.add_argument('--test-root', default=TEST_ROOT)
+    parser.add_argument('--enforcement', choices=['block', 'warn'], default='block')
 
 
 def class_times(reports):
@@ -115,9 +116,7 @@ def check_shard(args):
         return 0
     for warning in warnings:
         print('::warning::BUDGET EXCEEDED: ' + warning)
-    for failure in failures:
-        print('::error::BUDGET EXCEEDED: ' + failure)
-    return 1 if failures else 0
+    return report_failures(failures, args.enforcement)
 
 
 def load_shards(directory):
@@ -240,9 +239,14 @@ def aggregate(args):
             'classes': {k: round(v, 2) for k, v in times.items()},
         }, handle, sort_keys=True)
     print('\n'.join(lines))
+    return report_failures(failures, args.enforcement)
+
+
+def report_failures(failures, enforcement):
+    level = 'error' if enforcement == 'block' else 'warning'
     for failure in failures:
-        print('::error::BUDGET EXCEEDED: ' + failure)
-    return 1 if failures else 0
+        print('::' + level + '::BUDGET EXCEEDED: ' + failure)
+    return 1 if failures and enforcement == 'block' else 0
 
 
 def main():

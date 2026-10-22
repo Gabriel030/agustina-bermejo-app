@@ -148,7 +148,13 @@ está arriba.
 
 ## Presupuesto de tiempo y pirámide de tests
 
-El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada PR pasa por presupuestos **bloqueantes** que miden la corrida real.
+El CI del backend corre en 6 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada corrida pasa por presupuestos que miden la corrida real.
+
+**Dónde bloquean (decisión de Gabriel, 22-oct-2026):**
+- **En un PR** (`--enforcement warn`), los presupuestos (por clase, por shard y por cantidad de contextos de Spring) son **advertencias**. Aparecen en el comentario del reporte y como `::warning::`, pero no ponen el PR en rojo.
+- **En un push a `develop`** (`--enforcement block`), bloquean como antes.
+
+Motivo: ~80 % de los rojos de los PRs de billing eran presupuestos (clases de 31-34 s, 25 contextos), no bugs, y cada uno costaba una vuelta más. Si un push a `develop` queda rojo por presupuesto, se corrige en un PR aparte, el mismo día.
 
 ### Presupuestos
 
