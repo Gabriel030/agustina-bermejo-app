@@ -1,6 +1,6 @@
-package com.red_escuela.backend.enrollment.service;
+package com.red_escuela.backend.billing.note.service;
 
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
+import com.red_escuela.backend.enrollment.api.AdmissionApplicationExpiryPort;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +15,12 @@ import java.util.List;
 public class AdmissionApplicationExpiryJob {
     private static final Logger log = LoggerFactory.getLogger(AdmissionApplicationExpiryJob.class);
 
-    private final ProgramEnrollmentApplicationRepository applicationRepository;
+    private final AdmissionApplicationExpiryPort applications;
     private final AdmissionApplicationExpiration expiration;
     private final Clock clock;
 
-    public AdmissionApplicationExpiryJob(ProgramEnrollmentApplicationRepository applicationRepository, AdmissionApplicationExpiration expiration, Clock clock) {
-        this.applicationRepository = applicationRepository;
+    public AdmissionApplicationExpiryJob(AdmissionApplicationExpiryPort applications, AdmissionApplicationExpiration expiration, Clock clock) {
+        this.applications = applications;
         this.expiration = expiration;
         this.clock = clock;
     }
@@ -29,7 +29,7 @@ public class AdmissionApplicationExpiryJob {
     @SchedulerLock(name = "AdmissionApplicationExpiryJob", lockAtMostFor = "PT30M")
     public void expireApplicationsWhoseAdmissionClosedUnpaid() {
         LocalDate today = LocalDate.now(clock);
-        List<Long> candidates = applicationRepository.findIdsOfApprovedWithAdmissionClosedBefore(today);
+        List<Long> candidates = applications.findApprovedApplicationIdsWithAdmissionClosedBefore(today);
         int expired = 0;
         int failed = 0;
         for (Long applicationId : candidates) {

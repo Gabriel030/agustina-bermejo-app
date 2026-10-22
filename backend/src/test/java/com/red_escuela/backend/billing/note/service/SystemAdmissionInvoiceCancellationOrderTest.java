@@ -3,10 +3,11 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.api.AdmissionReceiptLookup;
 import com.red_escuela.backend.billing.api.AdmissionReceiptSummary;
-import com.red_escuela.backend.billing.api.ExpiredAdmissionInvoiceCancellation.Outcome;
+import com.red_escuela.backend.billing.note.service.SystemAdmissionInvoiceCancellation.Outcome;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
@@ -33,7 +34,7 @@ class SystemAdmissionInvoiceCancellationOrderTest {
     private static final Long INVOICE_ID = 7L;
     private static final Long ACCOUNT_ID = 3L;
 
-    private final WithdrawalInvoiceAccess invoiceAccess = mock(WithdrawalInvoiceAccess.class);
+    private final InvoiceCreditAccessService invoiceAccess = mock(InvoiceCreditAccessService.class);
     private final StudentCurrentAccountService accountService = mock(StudentCurrentAccountService.class);
     private final AdmissionReceiptLookup receiptLookup = mock(AdmissionReceiptLookup.class);
     private final BillingOperationPipeline pipeline = mock(BillingOperationPipeline.class);
@@ -44,7 +45,7 @@ class SystemAdmissionInvoiceCancellationOrderTest {
         Invoice invoice = mock(Invoice.class);
         when(invoice.getDocumentStatus()).thenReturn(InvoiceDocumentStatus.ISSUED);
         when(invoice.getPaymentStatus()).thenReturn(InvoicePaymentStatus.OVERDUE);
-        when(invoiceAccess.findAccountIdOfInvoice(INVOICE_ID)).thenReturn(Optional.of(ACCOUNT_ID));
+        when(invoiceAccess.findAccountIdOf(INVOICE_ID)).thenReturn(Optional.of(ACCOUNT_ID));
         when(invoiceAccess.lockInvoice(INVOICE_ID)).thenReturn(Optional.of(invoice));
         return invoice;
     }

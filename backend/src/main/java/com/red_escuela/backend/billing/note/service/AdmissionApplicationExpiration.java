@@ -1,9 +1,7 @@
-package com.red_escuela.backend.enrollment.service;
+package com.red_escuela.backend.billing.note.service;
 
-import com.red_escuela.backend.billing.api.ExpiredAdmissionInvoiceCancellation;
-import com.red_escuela.backend.billing.api.ExpiredAdmissionInvoiceCancellation.Outcome;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
+import com.red_escuela.backend.billing.note.service.SystemAdmissionInvoiceCancellation.Outcome;
+import com.red_escuela.backend.enrollment.api.AdmissionApplicationExpiryPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,12 +15,12 @@ import java.util.Optional;
 public class AdmissionApplicationExpiration {
     private static final Logger log = LoggerFactory.getLogger(AdmissionApplicationExpiration.class);
 
-    private final ProgramEnrollmentApplicationRepository applicationRepository;
-    private final ExpiredAdmissionInvoiceCancellation invoiceCancellation;
+    private final AdmissionApplicationExpiryPort applications;
+    private final SystemAdmissionInvoiceCancellation invoiceCancellation;
     private final Clock clock;
 
-    public AdmissionApplicationExpiration(ProgramEnrollmentApplicationRepository applicationRepository, ExpiredAdmissionInvoiceCancellation invoiceCancellation, Clock clock) {
-        this.applicationRepository = applicationRepository;
+    public AdmissionApplicationExpiration(AdmissionApplicationExpiryPort applications, SystemAdmissionInvoiceCancellation invoiceCancellation, Clock clock) {
+        this.applications = applications;
         this.invoiceCancellation = invoiceCancellation;
         this.clock = clock;
     }
@@ -30,7 +28,7 @@ public class AdmissionApplicationExpiration {
     @Transactional
     public boolean expireWhenAdmissionClosedAndUnpaid(Long applicationId) {
         LocalDate today = LocalDate.now(clock);
-        Optional<Long> invoiceId = applicationRepository.findAdmissionInvoiceIdOfApprovedWithAdmissionClosedBefore(applicationId, today);
+        Optional<Long> invoiceId = applications.findAdmissionInvoiceIdOfApprovedApplicationWithAdmissionClosedBefore(applicationId, today);
         if (invoiceId.isEmpty()) {
             return false;
         }
@@ -38,8 +36,7 @@ public class AdmissionApplicationExpiration {
         if (outcome == Outcome.NOT_CANCELLABLE) {
             return false;
         }
-        ProgramEnrollmentApplication application = applicationRepository.findLockedById(applicationId).orElseThrow();
-        boolean expired = application.expireIfApproved();
+        boolean expired = applications.expireIfApproved(applicationId);
         if (!expired && outcome == Outcome.CANCELLED) {
             throw new IllegalStateException("The admission invoice was cancelled but the application " + applicationId + " could not be expired");
         }

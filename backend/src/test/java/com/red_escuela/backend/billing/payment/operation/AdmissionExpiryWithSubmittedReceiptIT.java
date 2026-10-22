@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.red_escuela.backend.billing.api.ExpiredAdmissionInvoiceCancellation;
-import com.red_escuela.backend.billing.api.ExpiredAdmissionInvoiceCancellation.Outcome;
+import com.red_escuela.backend.billing.note.service.SystemAdmissionInvoiceCancellation;
+import com.red_escuela.backend.billing.note.service.SystemAdmissionInvoiceCancellation.Outcome;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AdmissionExpiryWithSubmittedReceiptIT extends AbstractBankTransferReceiptIT {
 
     @Autowired
-    private ExpiredAdmissionInvoiceCancellation cancellation;
+    private SystemAdmissionInvoiceCancellation cancellation;
 
     private Outcome cancelWhenUnpaid(Long invoiceId) {
         return inTransaction(() -> cancellation.cancelWhenUnpaid(invoiceId));
