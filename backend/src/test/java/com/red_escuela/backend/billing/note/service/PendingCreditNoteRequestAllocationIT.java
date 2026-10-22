@@ -68,7 +68,7 @@ class PendingCreditNoteRequestAllocationIT extends AbstractInvoiceCancellationIT
         jdbc.update("delete from authorization_request_invoice where authorization_request_id = ?", requestId);
         assertThat(jdbc.queryForObject("select count(*) from authorization_request_invoice where authorization_request_id = ?", Long.class, requestId)).isZero();
 
-        String migration = StreamUtils.copyToString(new ClassPathResource("db/migration/V134__authorization_request_invoice_credit_notes.sql").getInputStream(), StandardCharsets.UTF_8);
+        String migration = StreamUtils.copyToString(new ClassPathResource("db/migration/V135__authorization_request_invoice_credit_notes.sql").getInputStream(), StandardCharsets.UTF_8);
         jdbc.execute(migration);
         jdbc.execute(migration);
 
