@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
+import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
@@ -32,15 +34,18 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
     private final PaymentRepository payments;
     private final PaymentCheckoutItemRepository checkoutItems;
     private final PendingTransferReviewRelease reviewRelease;
+    private final CurrentAccountAllocationService allocationService;
     private final Clock clock;
 
     public RejectPendingBankTransferPaymentOperation(StudentCurrentAccountService accountService, InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
-                                                     PaymentCheckoutItemRepository checkoutItems, PendingTransferReviewRelease reviewRelease, Clock clock) {
+                                                     PaymentCheckoutItemRepository checkoutItems, PendingTransferReviewRelease reviewRelease, CurrentAccountAllocationService allocationService,
+                                                     Clock clock) {
         this.accountService = accountService;
         this.invoiceQueries = invoiceQueries;
         this.payments = payments;
         this.checkoutItems = checkoutItems;
         this.reviewRelease = reviewRelease;
+        this.allocationService = allocationService;
         this.clock = clock;
     }
 
@@ -72,7 +77,7 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
     public PendingBankTransferDecisionResult processOperation(RejectPendingBankTransferPaymentCommand command) {
         LocalDate today = LocalDate.now(clock);
         Payment payment = payments.findById(command.paymentId()).orElseThrow();
-        accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
+        StudentCurrentAccount account = accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
         invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(payment.getStudentCurrentAccountId());
         List<PaymentCheckoutItem> items = checkoutItems.findByPaymentIdOrderByPositionAsc(payment.getId());
         Map<Long, Invoice> invoicesById = invoiceQueries.findInvoicesByIds(items.stream().map(PaymentCheckoutItem::getInvoiceId).toList()).stream()
@@ -80,6 +85,7 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
         payment.rejectPayment(command.rejectionReason(), command.reviewer());
         payments.save(payment);
         List<Long> released = reviewRelease.releaseProtectedItemsStillUnderReview(items, invoicesById, today, command.reviewer(), RELEASE_REASON);
+        allocationService.allocateAccountCreditToOldestInvoices(account, today, command.reviewer());
         log.warn("Pago pendiente por transferencia rechazado: pago={}, cuenta={}, facturasLiberadasDeRevision={}", payment.getId(), payment.getStudentCurrentAccountId(), released);
         return new PendingBankTransferDecisionResult(payment.getId(), payment.getStudentCurrentAccountId(), today, payment.getAmount(), released);
     }

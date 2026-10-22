@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.payment.domain.CashPaymentPreview;
 import com.red_escuela.backend.billing.payment.domain.CashPaymentRegistrationResult;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -60,11 +61,47 @@ class CashPaymentSkipsInvoicesUnderReviewIT extends AbstractPendingTransferBridg
         assertThat(unallocatedCreditOf(debtor)).isEqualByComparingTo("80000.00");
 
         reject(submitted, "Falta el titular");
-        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
-        inTransaction(() -> allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(debtor.accountId()), LocalDate.of(2027, 3, 9), actor));
 
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
         assertThat(unallocatedCreditOf(debtor)).isEqualByComparingTo("0");
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-320")
+    void aReceiptRejectedForADifferentTransferDateAlsoReleasesAndAllocatesTheIdleCredit() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(march), "80000.00", "OP-CASH-DATE");
+        registerCash(debtor, "80000.00", previewCashOf(debtor, "80000.00"));
+        assertThat(unallocatedCreditOf(debtor)).isEqualByComparingTo("80000.00");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> approve(submitted,
+                new com.red_escuela.backend.billing.operation.PaymentVerification(null, LocalDate.of(2027, 3, 8), null)))
+                .isInstanceOf(com.red_escuela.backend.billing.payment.exception.ReceiptTransferDateMismatchException.class);
+
+        assertThat(receiptStatus(submitted.receiptId())).isEqualTo("REJECTED");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(unallocatedCreditOf(debtor)).isEqualByComparingTo("0");
+    }
+
+    @Autowired
+    RegisterGatewayPaymentOperation gatewayOperation;
+
+    @Test
+    @Tag("D-261")
+    void aGatewayPaymentLeavesTheInvoiceUnderReviewUntouchedAndKeepsTheMoneyAsCreditWithoutError() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        submitOn(debtor, List.of(march), "80000.00", "OP-GATEWAY-SKIP");
+
+        RegisterGatewayPaymentCommand command = new RegisterGatewayPaymentCommand(debtor.accountId(), march, java.util.Set.of(), ars("80000.00"),
+                com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode.DLOCAL,
+                new com.red_escuela.backend.billing.payment.domain.CardPaymentDetails(com.red_escuela.backend.billing.operation.CardPaymentType.CREDIT, 1, null),
+                "gw-skip-1", new com.red_escuela.backend.billing.payment.domain.GatewayRawStatus("approved", "accredited"), actor);
+        pipeline.runOperation(gatewayOperation, command);
+
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(unallocatedCreditOf(debtor)).isEqualByComparingTo("80000.00");
     }
 }

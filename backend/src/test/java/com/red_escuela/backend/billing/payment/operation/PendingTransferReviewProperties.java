@@ -31,6 +31,8 @@ class PendingTransferReviewProperties extends AbstractPendingTransferBridgeIT {
     private final AtomicInteger approvedReceipts = new AtomicInteger();
     private final AtomicInteger rejectedReceipts = new AtomicInteger();
     private final AtomicInteger cashPayments = new AtomicInteger();
+    private final AtomicInteger scenariosWithOverdueInvoices = new AtomicInteger();
+    private final AtomicInteger scenariosWithTwoActiveAccounts = new AtomicInteger();
 
     private record Ledger(Debtor debtor, List<Long> invoices, List<Long> amounts) {
     }
@@ -112,7 +114,7 @@ class PendingTransferReviewProperties extends AbstractPendingTransferBridgeIT {
     }
 
     private void moveTheClockForwardAndMarkOverdueInvoices(Random random, List<Ledger> ledgers) {
-        MutableClock.INSTANCE.setDate(LocalDate.now(MutableClock.INSTANCE).plusDays(1 + random.nextInt(20)));
+        MutableClock.INSTANCE.setDate(LocalDate.now(MutableClock.INSTANCE).plusDays(15 + random.nextInt(30)));
         for (Ledger ledger : ledgers) {
             for (Long invoiceId : ledger.invoices()) {
                 if ("PENDING".equals(paymentStatusOfInvoice(invoiceId))) {
@@ -120,6 +122,16 @@ class PendingTransferReviewProperties extends AbstractPendingTransferBridgeIT {
                 }
             }
         }
+    }
+
+    private void cashWhileTheFirstInvoiceIsUnderReviewThenReject(Ledger ledger, int scenario) {
+        String amount = ledger.amounts().get(0) + ".00";
+        BankTransferReceiptSubmissionResult submitted = submit(command(ledger.debtor(), List.of(ledger.invoices().get(0)), amount, LocalDate.now(MutableClock.INSTANCE),
+                "OP-REVIEW-PROP-FIXED-" + scenario));
+        registerCash(ledger.debtor(), amount, previewCashOf(ledger.debtor(), amount));
+        reject(submitted, "Rechazo con crédito ocioso");
+        rejectedReceipts.incrementAndGet();
+        cashPayments.incrementAndGet();
     }
 
     private void assertReviewInvariantsOf(Ledger ledger) {
@@ -132,7 +144,13 @@ class PendingTransferReviewProperties extends AbstractPendingTransferBridgeIT {
         assertThat(jdbc.queryForList("select c.invoice_id from payment_checkout_item c join payment p on p.id = c.payment_id join invoice i on i.id = c.invoice_id "
                 + "where c.marked_under_review and p.status = 'PENDING' and i.payment_status <> 'PAYMENT_UNDER_REVIEW' and c.student_current_account_id = ?", accountId))
                 .as("invoice of a pending receipt that was paid or released by someone else").isEmpty();
-        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isNotNegative();
+        BigDecimal credit = jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId);
+        assertThat(credit).isNotNegative();
+        if (credit.signum() > 0) {
+            List<BigDecimal> oldestAllocatable = jdbc.queryForList("select outstanding_amount from invoice where student_current_account_id = ? and document_status = 'ISSUED' "
+                    + "and payment_status in ('PENDING', 'OVERDUE') and outstanding_amount > 0 order by due_date, issue_date, id limit 1", BigDecimal.class, accountId);
+            assertThat(oldestAllocatable).as("idle credit while the oldest allocatable invoice is covered by it").allSatisfy(outstanding -> assertThat(outstanding).isGreaterThan(credit));
+        }
     }
 
     @Test
@@ -146,20 +164,34 @@ class PendingTransferReviewProperties extends AbstractPendingTransferBridgeIT {
             Ledger second = ledgerWith(random, 2 + random.nextInt(2));
             List<Ledger> ledgers = List.of(first, second);
             List<BankTransferReceiptSubmissionResult> submitted = new ArrayList<>();
+            if (scenario % 2 == 0) {
+                cashWhileTheFirstInvoiceIsUnderReviewThenReject(first, scenario);
+                ledgers.forEach(this::assertReviewInvariantsOf);
+                invariants.assertAllBillingInvariantsHold();
+            }
             for (int step = 0; step < STEPS_PER_SCENARIO; step++) {
                 Ledger target = ledgers.get(random.nextInt(ledgers.size()));
                 int stepId = scenario * 100 + step;
-                switch (step < 3 ? 0 : random.nextInt(10)) {
+                switch (step < 2 ? 0 : step == 2 ? 9 : step == 3 ? 7 : random.nextInt(10)) {
                     case 0, 1, 2 -> uploadRandomReceipt(random, target, submitted, stepId);
-                    case 3, 4, 5 -> approveRandomPendingReceipt(random, submitted);
-                    case 6 -> rejectRandomPendingReceipt(random, submitted);
+                    case 3, 4 -> approveRandomPendingReceipt(random, submitted);
+                    case 5, 6 -> rejectRandomPendingReceipt(random, submitted);
                     case 7, 8 -> registerRandomCash(random, target);
                     default -> moveTheClockForwardAndMarkOverdueInvoices(random, ledgers);
                 }
                 ledgers.forEach(this::assertReviewInvariantsOf);
                 invariants.assertAllBillingInvariantsHold();
             }
+            if (ledgers.stream().anyMatch(ledger -> ledger.invoices().stream().anyMatch(id -> "OVERDUE".equals(paymentStatusOfInvoice(id))))) {
+                scenariosWithOverdueInvoices.incrementAndGet();
+            }
+            if (ledgers.stream().allMatch(ledger -> jdbc.queryForObject("select count(*) from payment where student_current_account_id = ?", Long.class,
+                    ledger.debtor().accountId()) > 0)) {
+                scenariosWithTwoActiveAccounts.incrementAndGet();
+            }
         }
+        assertThat(scenariosWithOverdueInvoices.get()).isGreaterThanOrEqualTo(3);
+        assertThat(scenariosWithTwoActiveAccounts.get()).isGreaterThanOrEqualTo(3);
         assertThat(approvedReceipts.get()).isPositive();
         assertThat(rejectedReceipts.get()).isPositive();
         assertThat(cashPayments.get()).isPositive();
