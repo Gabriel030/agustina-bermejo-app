@@ -449,6 +449,18 @@ public final class BillingInvariantChecker {
         return found;
     }
 
+    public List<String> noLateFeeDebitNoteStaysLiveOverACancelledInstallment() {
+        return violations("I-21 late fee debit note with balance left over a cancelled installment", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c
+                join invoice o on o.id = c.origin_invoice_id
+                join invoice d on d.id = c.debit_note_id
+                where c.debit_note_id > ? and o.payment_status = 'CANCELLED' and d.payment_status <> 'CANCELLED'
+                  and exists (select 1 from invoice_line l where l.invoice_id = d.id
+                              and (l.amount - l.discount_amount) - l.credited_amount - l.free_credited_amount > 0)
+                """, baselineInvoiceId);
+    }
+
     public List<String> lateFeeCorrectionsAreConsistent() {
         List<String> found = new ArrayList<>(lateFeeCorrectionsAfterAWithdrawalAreConsistent());
         found.addAll(lateFeeCorrectionsByPaymentDateAreConsistent());
@@ -602,6 +614,7 @@ public final class BillingInvariantChecker {
         all.addAll(everyAllocationIsFundedByItsSources());
         all.addAll(noDebtDisappearsWithoutADocument());
         all.addAll(lateFeesRespectTheRedefinedI11());
+        all.addAll(noLateFeeDebitNoteStaysLiveOverACancelledInstallment());
         all.addAll(atMostOneDigestPerStudentDayAndChannel());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
