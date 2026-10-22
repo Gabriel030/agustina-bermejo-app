@@ -1,7 +1,7 @@
 package com.red_escuela.backend.architecture.modulith;
 
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.red_escuela.backend.testsupport.SlowTest;
-import com.red_escuela.backend.BackendApplication;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
@@ -28,7 +28,7 @@ class ModuleDocumentationTest {
     @Test
     void writesModuleDiagramsAndCanvases() throws IOException {
         String outputFolder = Boolean.getBoolean(UPDATE_PROPERTY) ? COMMITTED_FOLDER : SCRATCH_FOLDER;
-        ApplicationModules modules = ApplicationModules.of(BackendApplication.class);
+        ApplicationModules modules = ImportedApplicationClasses.modules();
 
         new Documenter(modules, outputFolder)
                 .writeModulesAsPlantUml()

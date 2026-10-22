@@ -3,8 +3,6 @@ package com.red_escuela.backend.config;
 import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
 import com.red_escuela.backend.shared.time.ClockConfig;
 import com.red_escuela.backend.shared.time.MutableClock;
-import com.red_escuela.backend.shared.time.RawNowRule;
-import com.tngtech.archunit.core.domain.JavaClasses;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +20,6 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.TimeZone;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -137,15 +134,5 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
         } finally {
             TimeZone.setDefault(previous);
         }
-    }
-
-    @Test
-    void noRawNowInBilling() {
-        JavaClasses classes = RawNowRule.importMainClasses();
-
-        assertThat(RawNowRule.guardedViolations(classes)).isEmpty();
-
-        Set<String> offenders = RawNowRule.offendingClassesOutsideGuard(classes);
-        assertThat(offenders).isSubsetOf(RawNowRule.frozenBaseline());
     }
 }

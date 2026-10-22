@@ -1,10 +1,9 @@
 package com.red_escuela.backend.shared.time;
 
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,9 +29,7 @@ public final class RawNowRule {
     }
 
     public static JavaClasses importMainClasses() {
-        return new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages(ROOT);
+        return ImportedApplicationClasses.main();
     }
 
     public static Set<String> guardedViolations(JavaClasses classes) {
