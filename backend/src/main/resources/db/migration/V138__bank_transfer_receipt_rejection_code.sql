@@ -6,4 +6,4 @@ alter table bank_transfer_receipt add constraint ck_bank_transfer_receipt_reject
     check (rejection_code in ('REVIEWER_REJECTION', 'TRANSFER_DATE_MISMATCH'));
 
 alter table bank_transfer_receipt add constraint ck_bank_transfer_receipt_rejection_code_matches_status
-    check ((status = 'REJECTED') = (rejection_code is not null));
+    check (rejection_code is null or status = 'REJECTED');
