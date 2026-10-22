@@ -372,6 +372,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | StudyPlanNotCompletedPolicy | PLAN_COMPLETED | D-038 |
 | 4 | PaymentPlanChosenPolicy | NO_PAYMENT_PLAN | D-050 |
 
+## Momento REENROLLMENT_DEBT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | OutstandingDebtBlocksReenrollmentPolicy | DEBT_IN_PENDING_CANCELLATION_REQUEST, OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT, OVERDUE_INVOICE | D-065, D-142, D-314 |
+
 ## Momento STUDENT_DISCOUNT_GRANTING
 
 | Orden | Policy | Códigos de violación | Decisiones |
