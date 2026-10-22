@@ -292,7 +292,7 @@ class DailyReminderDigestPlannerTest {
         DailyReminderDigest both = plan("2027-03-15", schedules, List.of(beforeDue, overdue));
         DailyReminderDigest onlyBefore = plan("2027-03-15", Map.of(1L, schedules.get(1L), 2L, schedule()), List.of(beforeDue, overdue));
 
-        assertThat(both.emailMessages().get(0).priority()).isEqualTo(4);
+        assertThat(both.emailMessages().get(0).priority()).isEqualTo(2);
         assertThat(both.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
         assertThat(onlyBefore.emailMessages().get(0).priority()).isEqualTo(3);
         assertThat(onlyBefore.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.BEFORE_DUE_REMINDER);
@@ -317,7 +317,7 @@ class DailyReminderDigestPlannerTest {
         assertThat(regular.leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
         assertThat(invoiceIdsOf(warning)).containsExactly(2L);
         assertThat(warning.leadMessageType()).isEqualTo(ReminderMessageType.BEFORE_SUSPENSION_REMINDER);
-        assertThat(warning.priority()).isEqualTo(5);
+        assertThat(warning.priority()).isEqualTo(1);
         assertThat(digest.inAppMessages()).hasSize(1);
         assertThat(highlightedIdsOf(digest.inAppMessages().get(0))).containsExactly(1L, 2L);
     }

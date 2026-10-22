@@ -175,7 +175,7 @@ class CollectionReminderNotificationListenerIT extends AbstractIntegrationTest {
         assertThat(mails).extracting(mail -> mail.get("dedup_key")).doesNotHaveDuplicates()
                 .containsExactly("collection-reminder:" + student.getId() + ":2027-03-09:0", "collection-reminder:" + student.getId() + ":2027-03-09:1");
         assertThat(mails).extracting(mail -> mail.get("kind")).containsExactly("DAILY_DIGEST:AFTER_DUE_REMINDER", "OWN_NOTICE:BEFORE_SUSPENSION_REMINDER");
-        assertThat(mails).extracting(mail -> mail.get("priority")).containsExactly(4, 5);
+        assertThat(mails).extracting(mail -> mail.get("priority")).containsExactly(2, 1);
         assertThat(mails).extracting(mail -> mail.get("status")).containsOnly("QUEUED");
         assertThat(mails).extracting(mail -> mail.get("subject")).containsExactly("Tenés una cuota vencida", "Tenés cuotas impagas en tu inscripción");
     }
