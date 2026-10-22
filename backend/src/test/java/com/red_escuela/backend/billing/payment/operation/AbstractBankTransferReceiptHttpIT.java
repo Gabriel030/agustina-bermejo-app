@@ -105,7 +105,7 @@ abstract class AbstractBankTransferReceiptHttpIT extends AbstractBankTransferRec
         MockMultipartFile file = pdfFile("contenido-" + System.nanoTime());
         List<Long> invoiceIds;
         String declaredAmount;
-        String currency;
+        String currency = "ARS";
         String transferDate = "2027-03-09";
         String operationNumber = nextOperationNumber();
         String originAccount = "0170099220000067797370";
@@ -150,6 +150,7 @@ abstract class AbstractBankTransferReceiptHttpIT extends AbstractBankTransferRec
                 case "file" -> file = null;
                 case "invoiceIds" -> invoiceIds = null;
                 case "declaredAmount" -> declaredAmount = null;
+                case "currency" -> currency = null;
                 case "transferDate" -> transferDate = null;
                 case "operationNumber" -> operationNumber = null;
                 case "originAccount" -> originAccount = null;
@@ -179,7 +180,10 @@ abstract class AbstractBankTransferReceiptHttpIT extends AbstractBankTransferRec
             if (idempotencyKey != null) {
                 builder.header("Idempotency-Key", idempotencyKey);
             }
-            return (MockMultipartHttpServletRequestBuilder) builder.header("Authorization", "Bearer " + token);
+            if (token != null) {
+                builder.header("Authorization", "Bearer " + token);
+            }
+            return builder;
         }
 
         private void param(MockMultipartHttpServletRequestBuilder builder, String name, String value) {
