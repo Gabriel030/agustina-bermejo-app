@@ -39,7 +39,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | SelectedInvoicesBelongToAccountPolicy | INVOICE_CURRENCY_MISMATCH, INVOICE_OF_ANOTHER_ACCOUNT, INVOICE_NOT_PAYABLE_BY_RECEIPT | D-097, D-153 |
 | 2 | LegacyReceiptNotPendingOnSelectedInvoicesPolicy | LEGACY_RECEIPT_PENDING_ON_INVOICE | D-260 |
 | 3 | DuplicateBankTransferPolicy | POSSIBLE_DUPLICATE_BANK_TRANSFER | D-269 |
-| 4 | ReceiptCoversOldestInvoicesFirstPolicy | INVOICE_ALREADY_UNDER_REVIEW, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST | D-153, D-260 |
+| 4 | ReceiptCoversOldestInvoicesFirstPolicy | INVOICE_ALREADY_UNDER_REVIEW, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST | D-153, D-260, D-329 |
 
 ## Momento BILLING_CONFIGURATION_CHANGE
 

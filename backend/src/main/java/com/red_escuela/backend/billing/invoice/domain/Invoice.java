@@ -322,6 +322,14 @@ public class Invoice {
         }
     }
 
+    public void releasePaymentReviewWithoutLateTerms(LocalDate businessDate, StatusChangeActor actor, String reason) {
+        requireBusinessContext(businessDate, actor);
+        InvoicePaymentEvent event = InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_BEFORE_DUE_DATE_PASSED;
+        InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
+        changePaymentStatus(event, amounts, businessDate, actor, reason);
+        recordedDomainEvents.add(invoiceId -> new InvoicePaymentReviewReleasedEvent(invoiceId, businessDate));
+    }
+
     public void allocateFullInvoicePayment(NonNegativeMoney allocatedAmount, LocalDate businessDate, StatusChangeActor actor) {
         requireBusinessContext(businessDate, actor);
         Objects.requireNonNull(allocatedAmount, "allocatedAmount");

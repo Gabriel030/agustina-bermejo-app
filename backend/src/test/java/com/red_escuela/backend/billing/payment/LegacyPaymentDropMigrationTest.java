@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
@@ -9,7 +10,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Statement;
 
@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SlowTest(reason = "Migrates a real database through Flyway to the version before and after the legacy payment drop")
+@Tag("migration")
 class LegacyPaymentDropMigrationTest {
 
     private static final String LOCATIONS = "classpath:db/migration";
@@ -77,10 +78,7 @@ class LegacyPaymentDropMigrationTest {
     @Tag("D-144")
     @Tag("D-376")
     void theDropAbortsWhenAnAccountEntryPointsToALegacyPayment() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             Long accountId = insertAccount(jdbc, personId);
@@ -95,10 +93,7 @@ class LegacyPaymentDropMigrationTest {
     @Tag("D-144")
     @Tag("D-376")
     void theDropAbortsWhenAnAccountEntryPointsToAPaymentOfAnotherAccount() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             Long accountId = insertAccount(jdbc, personId);
@@ -114,10 +109,7 @@ class LegacyPaymentDropMigrationTest {
     @Tag("D-144")
     @Tag("D-376")
     void theDropAbortsWhenAnAllocationSourceHasNoPaymentBehindIt() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             Long accountId = insertAccount(jdbc, personId);
@@ -139,10 +131,7 @@ class LegacyPaymentDropMigrationTest {
     @Tag("D-144")
     @Tag("D-376")
     void theDropPassesWithValidEntriesAndTheCompositeForeignKeyRejectsOrphanAndForeignAccountPayments() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             Long accountId = insertAccount(jdbc, personId);

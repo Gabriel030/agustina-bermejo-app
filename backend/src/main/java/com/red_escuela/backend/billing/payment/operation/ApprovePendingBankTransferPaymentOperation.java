@@ -17,20 +17,24 @@ import com.red_escuela.backend.billing.payment.repository.PaymentCheckoutItemRep
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.event.DomainEvent;
+import com.red_escuela.backend.billing.payment.exception.PaymentAlreadyApprovedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
 public class ApprovePendingBankTransferPaymentOperation implements BillingOperation<ApprovePendingBankTransferPaymentCommand, PendingBankTransferDecisionResult> {
     private static final Logger log = LoggerFactory.getLogger(ApprovePendingBankTransferPaymentOperation.class);
+    private static final String PAYMENT_CREDIT_INDEX_NAME = "uk_current_account_entry_payment_credit";
     private static final String RELEASE_REASON = "El monto del comprobante aprobado no cubre esta factura";
 
     private final StudentCurrentAccountService accountService;
@@ -90,12 +94,25 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         LocalDate uploadDate = payment.getStartedAt().toLocalDate();
         payment.approvePayment(declaredAmount, uploadDate, command.reviewer(), null);
         payments.save(payment);
-        accountService.recordPaymentReceivedCredit(account, payment.getId(), declaredAmount, uploadDate, "Pago " + payment.getId());
-        allocationService.allocateAccountCreditToOldestInvoices(account, today, command.reviewer());
+        recordPaymentCreditOnce(account, payment, declaredAmount, uploadDate);
+        Set<Long> programAdmissionInvoiceIds = invoicesById.values().stream()
+                .filter(invoice -> invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission()).map(Invoice::getId).collect(Collectors.toSet());
+        allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.reviewer(), programAdmissionInvoiceIds);
         List<Long> released = reviewRelease.releaseProtectedItemsStillUnderReview(items, invoicesById, today, command.reviewer(), RELEASE_REASON);
         log.info("Pago pendiente por transferencia aprobado y acreditado: pago={}, cuenta={}, monto={}, fechaDeSubida={}, facturasLiberadasDeRevision={}", payment.getId(),
                 account.getId(), declaredAmount.value().amount(), uploadDate, released);
         return new PendingBankTransferDecisionResult(payment.getId(), account.getId(), uploadDate, declaredAmount, released);
+    }
+
+    private void recordPaymentCreditOnce(StudentCurrentAccount account, Payment payment, NonNegativeMoney declaredAmount, LocalDate uploadDate) {
+        try {
+            accountService.recordPaymentReceivedCredit(account, payment.getId(), declaredAmount, uploadDate, "Pago " + payment.getId());
+        } catch (DataIntegrityViolationException violation) {
+            if (String.valueOf(violation.getMostSpecificCause().getMessage()).contains(PAYMENT_CREDIT_INDEX_NAME)) {
+                throw PaymentAlreadyApprovedException.concurrentApproval();
+            }
+            throw violation;
+        }
     }
 
     @Override

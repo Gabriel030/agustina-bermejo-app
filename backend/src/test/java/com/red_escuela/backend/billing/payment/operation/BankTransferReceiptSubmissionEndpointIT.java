@@ -81,7 +81,8 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
             "originAccount,BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED",
             "holderName,BANK_TRANSFER_HOLDER_NAME_REQUIRED",
             "file,BANK_TRANSFER_RECEIPT_FILE_REQUIRED",
-            "invoiceIds,BANK_TRANSFER_INVOICES_REQUIRED"})
+            "invoiceIds,BANK_TRANSFER_INVOICES_REQUIRED",
+            "currency,BANK_TRANSFER_CURRENCY_REQUIRED"})
     @Tag("D-139")
     @Tag("D-267")
     void eachMissingFieldReturns400WithItsField(String missingField, String expectedViolation) throws Exception {
@@ -156,7 +157,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
     }
 
     @Test
-    @Tag("D-097")
+    @Tag("D-260")
     void aLegacyPendingReceiptOfAForeignInvoiceDoesNotChangeTheForeignInvoiceAnswer() throws Exception {
         Debtor student = debtor();
         Debtor other = debtor();
@@ -217,7 +218,6 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
     }
 
     @Test
-    @Tag("D-139")
     void replayDoesNotStoreASecondFile() throws Exception {
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
@@ -236,7 +236,6 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
     }
 
     @Test
-    @Tag("D-139")
     void theSameKeyWithAnotherFileConflictsWithoutStoringIt() throws Exception {
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
@@ -253,7 +252,6 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
     }
 
     @Test
-    @Tag("D-139")
     void aMissingIdempotencyKeyReturns400() throws Exception {
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
@@ -312,7 +310,6 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
     }
 
     @Test
-    @Tag("D-139")
     void aPdfPngAndJpegAreAccepted() throws Exception {
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
