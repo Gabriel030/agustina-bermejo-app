@@ -85,10 +85,14 @@ class CohortPromotionCandidateStrategyTest {
     }
 
     private static InvoiceIssuingContext context(FeeType feeType, LocalDate issueDate) {
+        return context(feeType, issueDate, "80000.00");
+    }
+
+    private static InvoiceIssuingContext context(FeeType feeType, LocalDate issueDate, String chargeAmount) {
         YearMonth period = YearMonth.from(issueDate);
         InvoiceIssuingRequest request = new InvoiceIssuingRequest(1L, 10L, null, 5L, null, null, feeType, period, issueDate.plusDays(10), issueDate,
                 InvoiceIssuingReason.MONTHLY_RUN, null, null, feeType == FeeType.ENROLLMENT_FEE ? 1 : null, false, null, "Cargo", null, null, null, ACTOR);
-        return new InvoiceIssuingContext(request, new InvoiceIssuingFacts(issueDate, Currency.ARS, NonNegativeMoney.of(new BigDecimal("80000.00"), Currency.ARS), 7L, null, null,
+        return new InvoiceIssuingContext(request, new InvoiceIssuingFacts(issueDate, Currency.ARS, NonNegativeMoney.of(new BigDecimal(chargeAmount), Currency.ARS), 7L, null, null,
                 new StudentSnapshot("Ana Perez", "123", null), true));
     }
 
@@ -193,12 +197,52 @@ class CohortPromotionCandidateStrategyTest {
 
     @Test
     @Tag("D-074")
-    void anExhaustedPromotionIsNotACandidate() {
+    void anExhaustedPromotionWithAllItsLiveUsesIsNotACandidate() {
         StudentDiscount promotion = acquire(monthlyPromotion(3));
         promotion.recordLastInstallmentConsumed(ACTOR, ENROLLED_AT);
+        liveUses(3);
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 8, 1)))).isEmpty();
+    }
+
+    @Test
+    @Tag("D-074")
+    void anExhaustedPromotionWhoseLastInstallmentWasReleasedIsACandidateAgainWithTheSameNumber() {
+        StudentDiscount promotion = acquire(monthlyPromotion(3));
+        promotion.recordLastInstallmentConsumed(ACTOR, ENROLLED_AT);
+        liveUses(2);
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 8, 1)))).singleElement()
+                .satisfies(candidate -> assertThat(candidate.installmentNumber()).isEqualTo(3));
+    }
+
+    @Test
+    @Tag("D-283")
+    void aReleasedLastInstallmentIsNotRestoredAfterTheAvailableUntilDate() {
+        StudentDiscount promotion = acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        promotion.recordLastInstallmentConsumed(ACTOR, ENROLLED_AT);
+        liveUses(2);
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).isEmpty();
+    }
+
+    @Test
+    @Tag("D-074")
+    void theCapPerInvoiceLimitsThePromotionSaving() {
+        acquire(monthlyPromotion(3).withCap("5000.00", Currency.ARS));
         liveUses(0);
 
-        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 3, 1)))).isEmpty();
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 3, 1)))).singleElement()
+                .satisfies(candidate -> assertThat(candidate.discountAmount()).isEqualTo(NonNegativeMoney.of(new BigDecimal("5000.00"), Currency.ARS)));
+    }
+
+    @Test
+    @Tag("D-074")
+    void aZeroChargeProducesNoCandidate() {
+        acquire(monthlyPromotion(3));
+        liveUses(0);
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 3, 1), "0.00"))).isEmpty();
     }
 
     @Test

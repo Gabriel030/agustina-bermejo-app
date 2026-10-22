@@ -73,7 +73,6 @@ com.red_escuela.backend.billing.exception.ChargeRejectedException
 com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException
 com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException
 com.red_escuela.backend.billing.exception.DuplicateChargeException
-com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException
 com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException
 com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException
 com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException

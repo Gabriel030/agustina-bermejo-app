@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.discount.service;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
-import com.red_escuela.backend.billing.discount.exception.DiscountDefinitionNotFoundException;
+import com.red_escuela.backend.billing.discount.domain.PromotionClosureTarget;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import org.springframework.stereotype.Component;
 
@@ -24,13 +24,8 @@ public class PromotionContractCloser {
     }
 
     public void closePromotionAndItsSiblings(Long promotionId) {
-        DiscountDefinition definition = repository.findById(promotionId).filter(found -> found.getDiscountType() == DiscountDefinitionType.COHORT_PROMOTION)
-                .orElseThrow(() -> new DiscountDefinitionNotFoundException(promotionId));
+        DiscountDefinition definition = PromotionClosureTarget.requireOpenPromotion(promotionId, repository.findById(promotionId)).definition();
         List<DiscountDefinition> active = repository.findCatalog(DiscountDefinitionType.COHORT_PROMOTION, DiscountDefinitionStatus.ACTIVE);
-        List<DiscountDefinition> toClose = translator.findSiblingsOf(definition, active.stream().filter(candidate -> candidate.getStatus() == definition.getStatus()).toList());
-        toClose.forEach(sibling -> operationRunner.runClosure(sibling.getId(), CLOSURE_REASON));
-        if (toClose.isEmpty()) {
-            operationRunner.runClosure(definition.getId(), CLOSURE_REASON);
-        }
+        translator.findSiblingsOf(definition, active).forEach(sibling -> operationRunner.runClosure(sibling.getId(), CLOSURE_REASON));
     }
 }

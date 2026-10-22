@@ -1,7 +1,11 @@
 package com.red_escuela.backend.billing.discount.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.support.PriceFixtures;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
@@ -196,5 +200,84 @@ class PromotionControllerIT extends AbstractIntegrationTest {
         mockMvc.perform(get("/reports/billing/promotions/lost-benefits").header("Authorization", "Bearer " + administrativeToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.promotionRedemptionId == " + promotionId + ")]").isEmpty());
+    }
+
+    private long createPromotionAndReturnId(Long programId, String description) throws Exception {
+        MvcResult created = mockMvc.perform(post("/programs/{id}/promotions", programId).header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(twoBenefitPromotion(description))).andExpect(status().isCreated()).andReturn();
+        return objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+    }
+
+    @Test
+    void closingAnAlreadyClosedPromotionAnswers409AndAnUnknownOneAnswers404() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 80000, 50000);
+        long id = createPromotionAndReturnId(offering.programId(), "Promo a cerrar");
+
+        mockMvc.perform(post("/promotions/{id}/close", id).header("Authorization", "Bearer " + directorToken)).andExpect(status().isNoContent());
+        mockMvc.perform(post("/promotions/{id}/close", id).header("Authorization", "Bearer " + directorToken)).andExpect(status().isConflict());
+        mockMvc.perform(post("/promotions/{id}/close", 987654321L).header("Authorization", "Bearer " + directorToken)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void closingOnePromotionDoesNotCloseAnIdenticalOneCreatedSeparately() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 80000, 50000);
+        long first = createPromotionAndReturnId(offering.programId(), "Promo gemela");
+        createPromotionAndReturnId(offering.programId(), "Promo gemela");
+
+        mockMvc.perform(post("/promotions/{id}/close", first).header("Authorization", "Bearer " + directorToken)).andExpect(status().isNoContent());
+
+        assertThat(jdbc.queryForObject("select count(*) from discount_definition where name = 'Promo gemela' and status = 'CLOSED'", Long.class)).isEqualTo(2L);
+        assertThat(jdbc.queryForObject("select count(*) from discount_definition where name = 'Promo gemela' and status = 'ACTIVE'", Long.class)).isEqualTo(2L);
+    }
+
+    @Test
+    void anInvertedEligibilityWindowIsRejected() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 80000, 50000);
+        String body = twoBenefitPromotion("Promo invertida").replace("\"2031-03-01\"", "\"2031-06-01\"");
+
+        mockMvc.perform(post("/programs/{id}/promotions", offering.programId()).header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void aFixedAmountInAnotherCurrencyThanTheProgramIsRejected() throws Exception {
+        var inDollars = factory.newProgram(Currency.USD, 300, 100);
+        Map<String, Object> benefit = Map.of("feeType", "ENROLLMENT_FEE", "value", Map.of("type", "NOMINAL", "amount", Map.of("amount", new BigDecimal("5000.00"), "currency", "ARS")));
+        String body = objectMapper.writeValueAsString(Map.of("description", "Promo en pesos", "eligibilityValidFrom", "2031-03-01", "eligibilityValidTo", "2031-04-30",
+                "benefits", List.of(benefit)));
+
+        mockMvc.perform(post("/programs/{id}/promotions", inDollars.programId()).header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("CURRENCY_MISMATCH"));
+    }
+
+    @Test
+    void aPromotionOfAnUnknownProgramOrCourseAnswers404() throws Exception {
+        mockMvc.perform(post("/programs/{id}/promotions", 987654321L).header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(twoBenefitPromotion("Promo"))).andExpect(status().isNotFound());
+        mockMvc.perform(post("/courses/{id}/promotions", 987654321L).header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(twoBenefitPromotion("Promo"))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void creatingAPromotionOfACourseScopesItToTheCourse() throws Exception {
+        Term term = new Term();
+        term.setYear(2031);
+        term.setStatus(StatusType.ACTIVE);
+        entityManager.persist(term);
+        Course course = new Course();
+        course.setName("Curso " + System.nanoTime());
+        course.setTerm(term);
+        course.setCapacity(20);
+        course.setIsActive(StatusType.ACTIVE);
+        entityManager.persist(course);
+        Long personId = jdbc.queryForObject("select min(id) from person", Long.class);
+        PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota del curso", Money.of(new BigDecimal("80000"), Currency.ARS),
+                TODAY.minusDays(1), personId);
+
+        mockMvc.perform(post("/courses/{id}/promotions", course.getId()).header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(twoBenefitPromotion("Promo de curso")))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.benefits", hasSize(2)));
+
+        assertThat(jdbc.queryForObject("select count(*) from discount_definition where name = 'Promo de curso' and course_id = ? and program_id is null", Long.class, course.getId())).isEqualTo(2L);
     }
 }

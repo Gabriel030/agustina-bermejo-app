@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 @Component
 public class PromotionContractTranslator {
     private static final int DEFAULT_PRIORITY = 1;
+    private static final Duration SAME_REQUEST_WINDOW = Duration.ofSeconds(2);
 
     private final PersonNameLookup personNames;
     private final Clock clock;
@@ -48,8 +50,7 @@ public class PromotionContractTranslator {
     }
 
     public List<PromotionResponse> toResponses(List<DiscountDefinition> definitions) {
-        Map<PromotionGroupKey, List<DiscountDefinition>> groups = definitions.stream().sorted(Comparator.comparing(DiscountDefinition::getId))
-                .collect(Collectors.groupingBy(PromotionGroupKey::of, LinkedHashMap::new, Collectors.toList()));
+        List<List<DiscountDefinition>> groups = groupsOf(definitions);
         Set<Long> personIds = new HashSet<>();
         definitions.forEach(definition -> {
             personIds.add(definition.getCreatedById());
@@ -58,12 +59,35 @@ public class PromotionContractTranslator {
             }
         });
         Map<Long, String> names = personNames.findFullNamesByPersonId(personIds);
-        return groups.values().stream().map(group -> responseOf(group, names)).toList();
+        return groups.stream().map(group -> responseOf(group, names)).toList();
     }
 
     public List<DiscountDefinition> findSiblingsOf(DiscountDefinition definition, List<DiscountDefinition> activeCohortPromotions) {
-        PromotionGroupKey key = PromotionGroupKey.of(definition);
-        return activeCohortPromotions.stream().filter(candidate -> PromotionGroupKey.of(candidate).equals(key)).toList();
+        return groupsOf(activeCohortPromotions).stream().filter(group -> group.stream().anyMatch(member -> member.getId().equals(definition.getId()))).findFirst().orElse(List.of(definition));
+    }
+
+    private List<List<DiscountDefinition>> groupsOf(List<DiscountDefinition> definitions) {
+        Map<PromotionGroupKey, List<DiscountDefinition>> byKey = definitions.stream().sorted(Comparator.comparing(DiscountDefinition::getId))
+                .collect(Collectors.groupingBy(PromotionGroupKey::of, LinkedHashMap::new, Collectors.toList()));
+        List<List<DiscountDefinition>> groups = new ArrayList<>();
+        byKey.values().forEach(sameKey -> {
+            List<DiscountDefinition> current = new ArrayList<>();
+            for (DiscountDefinition definition : sameKey) {
+                if (!current.isEmpty() && startsAnotherPromotion(current, definition)) {
+                    groups.add(current);
+                    current = new ArrayList<>();
+                }
+                current.add(definition);
+            }
+            groups.add(current);
+        });
+        return groups;
+    }
+
+    private boolean startsAnotherPromotion(List<DiscountDefinition> current, DiscountDefinition definition) {
+        boolean repeatsInvoiceType = current.stream().anyMatch(member -> member.getApplicableInvoiceType() == definition.getApplicableInvoiceType());
+        Instant previous = current.get(current.size() - 1).getCreatedAt();
+        return repeatsInvoiceType || Duration.between(previous, definition.getCreatedAt()).compareTo(SAME_REQUEST_WINDOW) > 0;
     }
 
     private List<DiscountDefinitionDraft> toDrafts(CreatePromotionRequest request, Long programId, Long courseId) {

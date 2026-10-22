@@ -114,12 +114,15 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
             return;
         }
         StudentDiscount discount = studentDiscountRepository.findById(winner.studentDiscountId()).orElseThrow();
-        discount.recordLastInstallmentConsumed(StatusChangeActor.ofProcess(PROCESS_NAME), Instant.now(clock));
-        studentDiscountRepository.save(discount);
+        if (discount.getStatus() == StudentDiscountStatus.ACTIVE) {
+            discount.recordLastInstallmentConsumed(StatusChangeActor.ofProcess(PROCESS_NAME), Instant.now(clock));
+            studentDiscountRepository.save(discount);
+        }
     }
 
     private List<InvoiceDiscountCandidate> findCohortPromotionCandidates(List<StudentDiscount> promotions, InvoiceIssuingContext context) {
-        List<StudentDiscount> active = promotions.stream().filter(promotion -> promotion.getStatus() == StudentDiscountStatus.ACTIVE).toList();
+        List<StudentDiscount> active = promotions.stream()
+                .filter(promotion -> promotion.getStatus() == StudentDiscountStatus.ACTIVE || promotion.getStatus() == StudentDiscountStatus.EXHAUSTED).toList();
         if (active.isEmpty()) {
             return List.of();
         }

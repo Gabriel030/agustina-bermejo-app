@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.discount.domain;
 
-import com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException;
+import com.red_escuela.backend.billing.discount.exception.DuplicatePromotionBenefitFeeTypeException;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 
 import java.util.HashSet;
