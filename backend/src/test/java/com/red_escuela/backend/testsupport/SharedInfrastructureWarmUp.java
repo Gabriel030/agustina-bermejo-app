@@ -9,7 +9,7 @@ public class SharedInfrastructureWarmUp implements LauncherSessionListener {
 
     @Override
     public void launcherSessionOpened(LauncherSession session) {
-        if (System.getenv("CI") == null) {
+        if (System.getenv("CI") == null || !Boolean.getBoolean("test.fork")) {
             return;
         }
         try {

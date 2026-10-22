@@ -1,6 +1,6 @@
 package com.red_escuela.backend.architecture.modulith;
 
-import com.red_escuela.backend.BackendApplication;
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
@@ -26,7 +26,7 @@ class ModularityTest {
             "academicrecord", "academicstructure", "announcement", "attendance", "billing", "config",
             "enrollment", "evaluation", "graduation", "identity", "notification", "shared");
 
-    private final ApplicationModules modules = ApplicationModules.of(BackendApplication.class);
+    private final ApplicationModules modules = ImportedApplicationClasses.modules();
 
     @Test
     void detectsTheDeclaredModules() {

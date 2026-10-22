@@ -335,18 +335,38 @@ public final class BillingInvariantChecker {
              - round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
                                                                        where p.late_fee_charge_id = c.id and p.id <= k.id)), 2))""";
 
-    private static String frozenOn(String dayExpression) {
-        return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, dayExpression);
+    private static final String LATE_PAYMENT_VERSION_STATUSES = "('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')";
+
+    private static final String LATE_PAYMENT_TIMELINE = """
+            lp as (
+              select v.topic_key, v.config_values,
+                     daterange(v.effective_from, lead(v.effective_from) over (partition by v.topic_key order by v.effective_from, v.decided_at, v.id), '[)') as valid,
+                     row_number() over (partition by v.topic_key order by v.effective_from, v.decided_at, v.id) = 1 as is_first
+              from configuration_version v
+              where v.scope = 'LATE_PAYMENT' and v.status in %s and v.topic_key in (select topic_key from charge))""".formatted(LATE_PAYMENT_VERSION_STATUSES);
+
+    private static final String TERMS_OF_EACH_DAY = """
+            left join lp m on m.topic_key = c.topic_key and g.day::date <@ m.valid
+            left join lp f on f.topic_key = c.topic_key and f.is_first""";
+
+    private static final String CHARGING_ENABLED_THAT_DAY = "coalesce(coalesce(m.config_values, f.config_values) ->> 'lateFeeChargingEnabled', 'false') = 'true'";
+
+    private static final String NOT_FROZEN_THAT_DAY = "not (c.frozen_from is not null and g.day::date > c.frozen_from)";
+
+    private static String chargeWithItsDayIndependentTerms(String extraColumns, String source) {
+        return """
+                charge as (
+                  select c.*,
+                         (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id) as topic_key,
+                         case when %1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' then %2$s end as frozen_from%3$s
+                  %4$s)""".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, extraColumns, source);
     }
 
-    private static String afterThePaymentOfTheOrigin(String dayExpression) {
-        return """
-            exists (select 1 from payment_allocation pa join invoice po on po.id = pa.invoice_id
-                    where pa.invoice_id = c.origin_invoice_id and pa.reverses_allocation_id is null
-                      and not exists (select 1 from payment_allocation pr where pr.reverses_allocation_id = pa.id)
-                      and (pa.effective_date <= po.due_date + coalesce((%1$s ->> 'gracePeriodDays')::int, 0) or %2$s > pa.effective_date))
-            """.formatted(termsOn("po.due_date"), dayExpression);
-    }
+    private static final String PAYMENT_THRESHOLD_OF_ORIGIN = """
+            (select min(case when pa.effective_date <= po.due_date + coalesce((%1$s ->> 'gracePeriodDays')::int, 0) then date '-infinity' else pa.effective_date end)
+             from payment_allocation pa join invoice po on po.id = pa.invoice_id
+             where pa.invoice_id = c.origin_invoice_id and pa.reverses_allocation_id is null
+               and not exists (select 1 from payment_allocation pr where pr.reverses_allocation_id = pa.id))""".formatted(termsOn("po.due_date"));
 
     private static String termsOn(String dayExpression) {
         return """
@@ -375,12 +395,17 @@ public final class BillingInvariantChecker {
                 where c.debit_note_id > ? and (date_trunc('month', c.period_start) <> date_trunc('month', c.period_end) or c.period_start <= o.due_date)
                 """, baselineInvoiceId));
         found.addAll(violations("I-11c charged days differ from the days with charging enabled, not frozen and not after the payment of the origin", """
+                with %1$s,
+                %2$s
                 select 'debit note ' || c.debit_note_id
-                from late_fee_charge c
-                where c.debit_note_id > %d and c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) <> (
+                from charge c
+                where c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
-                    where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s and not %s)
-                """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"), afterThePaymentOfTheOrigin("g.day::date"))));
+                    %3$s
+                    where %4$s and %5$s and not (c.paid_from is not null and g.day::date > c.paid_from))
+                """.formatted(
+                chargeWithItsDayIndependentTerms(",\n" + PAYMENT_THRESHOLD_OF_ORIGIN + " as paid_from", "from late_fee_charge c where c.debit_note_id > " + baselineInvoiceId),
+                LATE_PAYMENT_TIMELINE, TERMS_OF_EACH_DAY, CHARGING_ENABLED_THAT_DAY, NOT_FROZEN_THAT_DAY)));
         found.addAll(violations("I-11c two debit notes of the same origin and month without a reversal of the payment between them", """
                 select 'origin ' || a.origin_invoice_id || ' month ' || date_trunc('month', a.period_start)::date
                 from late_fee_charge a join late_fee_charge b on b.origin_invoice_id = a.origin_invoice_id and b.period_start > a.period_start
@@ -396,12 +421,14 @@ public final class BillingInvariantChecker {
                 where c.debit_note_id > ? and (o.document_type <> 'INVOICE' or o.invoice_type not in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE'))
                 """, baselineInvoiceId));
         found.addAll(violations("I-11e late fee charged for days frozen by the version in effect that day", """
+                with %1$s
                 select 'debit note ' || c.debit_note_id
-                from late_fee_charge c
-                where c.debit_note_id > ? and c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) > (
+                from charge c
+                where c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) > (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
-                    where not %s)
-                """.formatted(frozenOn("g.day::date")), baselineInvoiceId));
+                    where %2$s)
+                """.formatted(
+                chargeWithItsDayIndependentTerms("", "from late_fee_charge c where c.debit_note_id > ?"), NOT_FROZEN_THAT_DAY), baselineInvoiceId));
         found.addAll(violations("I-11f the amount differs from base times daily rate times charged days rounded half up", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c join invoice d on d.id = c.debit_note_id
@@ -478,17 +505,23 @@ public final class BillingInvariantChecker {
                       and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id))
                 else (date_trunc('month', ?::date) - interval '1 day')::date end""";
         return violations("I-11h a chargeable day of the origin is not covered by any debit note", """
+                with %1$s,
+                %2$s
                 select 'origin ' || c.origin_invoice_id || ' day ' || g.day::date
-                from (select o.id as origin_invoice_id, o.due_date as due_date, %1$s as cutoff,
-                             (select min(v.id) from configuration_version v where v.scope = 'LATE_PAYMENT') as late_payment_version_id
-                      from invoice o
-                      where o.id > ? and o.document_type = 'INVOICE' and o.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
-                        and o.payment_status in ('PAID', 'OVERDUE')) c
+                from charge c
                 cross join lateral generate_series(c.due_date + 1, c.cutoff, interval '1 day') g(day)
-                where c.cutoff > c.due_date + coalesce((%2$s ->> 'gracePeriodDays')::int, 0)
-                  and coalesce(%3$s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %4$s
+                %3$s
+                where c.cutoff > c.due_date + coalesce((%4$s ->> 'gracePeriodDays')::int, 0)
+                  and %5$s and %6$s
                   and not exists (select 1 from late_fee_charge x where x.origin_invoice_id = c.origin_invoice_id and g.day::date between x.period_start and x.period_end)
-                """.formatted(cutoff, termsOn("c.due_date"), termsOn("g.day::date"), frozenOn("g.day::date")), today, baselineInvoiceId);
+                """.formatted(
+                chargeWithItsDayIndependentTerms("", """
+                        from (select o.id as origin_invoice_id, o.due_date as due_date, %1$s as cutoff,
+                                     (select min(v.id) from configuration_version v where v.scope = 'LATE_PAYMENT') as late_payment_version_id
+                              from invoice o
+                              where o.id > ? and o.document_type = 'INVOICE' and o.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
+                                and o.payment_status in ('PAID', 'OVERDUE')) c""".formatted(cutoff)),
+                LATE_PAYMENT_TIMELINE, TERMS_OF_EACH_DAY, termsOn("c.due_date"), CHARGING_ENABLED_THAT_DAY, NOT_FROZEN_THAT_DAY), today, baselineInvoiceId);
     }
 
     public void assertLateFeeInvariantsHold() {

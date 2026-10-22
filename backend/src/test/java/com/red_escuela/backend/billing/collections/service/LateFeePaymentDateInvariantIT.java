@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,5 +80,56 @@ class LateFeePaymentDateInvariantIT extends AbstractLateFeeScenarioIT {
         assertThat(violationsAfter("I-11i", "update credit_note set reason = 'LATE_FEE_CORRECTION' where id = (" + paymentNote + ")")).isEmpty();
         assertThat(violationsAfter("I-11c", "delete from late_fee_charge_correction where id = (" + paymentCorrection + ")")).hasSize(1);
         assertThat(invariants.lateFeeCorrectionsAreConsistent()).isEmpty();
+    }
+
+    private <T> T afterInRollback(Supplier<T> reading, String... statements) {
+        return transactionTemplate.execute(status -> {
+            jdbc.execute("set local session_replication_role = replica");
+            for (String statement : statements) {
+                jdbc.execute(statement);
+            }
+            T read = reading.get();
+            status.setRollbackOnly();
+            return read;
+        });
+    }
+
+    @Test
+    void invariantCheckerDetectsEachDailyCoverageViolationOfTheChargedDays() {
+        int year = 2410;
+        Invoice origin = originWithAWithdrawalAndAPaymentCorrection(year);
+        Long debitNoteId = (Long) chargesOf(origin).get(0).get("debit_note_id");
+        Long chargeId = (Long) chargesOf(origin).get(0).get("id");
+        Long versionId = (Long) chargesOf(origin).get(0).get("late_payment_version_id");
+        LocalDate today = d(year, 4, 4);
+        String own = "debit note " + debitNoteId;
+        String corrections = "late_fee_charge_correction where late_fee_charge_id = " + chargeId;
+
+        assertThat(invariants.lateFeesRespectTheRedefinedI11()).isEmpty();
+        assertThat(invariants.lateFeesCoverEveryChargeableDayAt(today)).isEmpty();
+
+        assertThat(afterInRollback(invariants::lateFeesRespectTheRedefinedI11, "alter table late_fee_charge drop constraint ck_late_fee_charge_charged_days",
+                "update late_fee_charge set charged_days = charged_days + 1 where id = " + chargeId))
+                .anyMatch(v -> v.startsWith("I-11c charged days") && v.contains(own));
+        assertThat(afterInRollback(invariants::lateFeesRespectTheRedefinedI11, "alter table late_fee_charge drop constraint ck_late_fee_charge_charged_days",
+                "update late_fee_charge set charged_days = charged_days - 1 where id = " + chargeId))
+                .anyMatch(v -> v.startsWith("I-11c charged days") && v.contains(own));
+        assertThat(afterInRollback(invariants::lateFeesRespectTheRedefinedI11,
+                "update configuration_version set config_values = jsonb_set(config_values, '{lateFeeChargingEnabled}', 'false') where id = " + versionId))
+                .anyMatch(v -> v.startsWith("I-11c charged days") && v.contains(own));
+        assertThat(afterInRollback(invariants::lateFeesRespectTheRedefinedI11, "delete from " + corrections))
+                .anyMatch(v -> v.startsWith("I-11c charged days") && v.contains(own))
+                .anyMatch(v -> v.startsWith("I-11e late fee charged") && v.contains(own));
+        assertThat(afterInRollback(invariants::lateFeesRespectTheRedefinedI11,
+                "update payment_allocation set effective_date = effective_date + 30 where invoice_id = " + origin.getId() + " and reverses_allocation_id is null"))
+                .anyMatch(v -> v.startsWith("I-11c charged days") && v.contains(own));
+        assertThat(afterInRollback(() -> invariants.lateFeesCoverEveryChargeableDayAt(today), "delete from " + corrections,
+                "delete from late_fee_charge where id = " + chargeId))
+                .anyMatch(v -> v.startsWith("I-11h") && v.contains("origin " + origin.getId()));
+        assertThat(afterInRollback(() -> invariants.lateFeesCoverEveryChargeableDayAt(today), "delete from " + corrections,
+                "delete from late_fee_charge where id = " + chargeId,
+                "update configuration_version set config_values = jsonb_set(config_values, '{lateFeeChargingEnabled}', 'false') where id = " + versionId)).isEmpty();
+        assertThat(invariants.lateFeesRespectTheRedefinedI11()).isEmpty();
+        invariants.assertAllBillingInvariantsHold();
     }
 }
