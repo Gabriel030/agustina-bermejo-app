@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.dto;
+package com.red_escuela.backend.billing.discount.dto;
 
 import java.time.YearMonth;
 

@@ -13,7 +13,7 @@ import java.util.Set;
 
 @Component
 public class EnrollmentStudentDiscountReader {
-    private static final Set<StudentDiscountStatus> APPLICABLE_STATUSES = Set.of(StudentDiscountStatus.ACTIVE, StudentDiscountStatus.REVOKED);
+    private static final Set<StudentDiscountStatus> APPLICABLE_STATUSES = Set.of(StudentDiscountStatus.ACTIVE, StudentDiscountStatus.REVOKED, StudentDiscountStatus.EXHAUSTED);
 
     private final StudentDiscountRepository repository;
     private final EnrollmentDiscountLock enrollmentLock;

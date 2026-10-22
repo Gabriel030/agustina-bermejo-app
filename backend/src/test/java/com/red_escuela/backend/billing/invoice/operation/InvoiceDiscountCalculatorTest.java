@@ -29,15 +29,15 @@ class InvoiceDiscountCalculatorTest {
     @Test
     void scholarshipHalfBeatsPromotionThirtyPercent() {
         var scholarship = candidate(DiscountType.SCHOLARSHIP, 1, MONTHLY, "80000.00", "40000.00");
-        var promotion = candidate(DiscountType.PROMOTION, 2, MONTHLY, "80000.00", "24000.00");
+        var promotion = candidate(DiscountType.COHORT_PROMOTION, 2, MONTHLY, "80000.00", "24000.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(promotion, scholarship))).containsExactly(Map.entry(1, scholarship));
     }
 
     @Test
     void thirtyPercentPromotionBeatsTwentyPercentPromotion() {
-        var thirty = candidate(DiscountType.PROMOTION, 9, MONTHLY, "100.00", "30.00");
-        var twenty = candidate(DiscountType.PROMOTION, 1, MONTHLY, "100.00", "20.00");
+        var thirty = candidate(DiscountType.COHORT_PROMOTION, 9, MONTHLY, "100.00", "30.00");
+        var twenty = candidate(DiscountType.COHORT_PROMOTION, 1, MONTHLY, "100.00", "20.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(twenty, thirty))).containsExactly(Map.entry(1, thirty));
     }
@@ -45,7 +45,7 @@ class InvoiceDiscountCalculatorTest {
     @Test
     @Tag("D-295")
     void aTieOfSavingGoesToTheScholarshipWhateverTheInputOrder() {
-        var promotion = candidate(DiscountType.PROMOTION, 1, MONTHLY, "100.00", "30.00");
+        var promotion = candidate(DiscountType.COHORT_PROMOTION, 1, MONTHLY, "100.00", "30.00");
         var scholarship = candidate(DiscountType.SCHOLARSHIP, 8, MONTHLY, "100.00", "30.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(promotion, scholarship))).containsExactly(Map.entry(1, scholarship));
@@ -54,8 +54,8 @@ class InvoiceDiscountCalculatorTest {
 
     @Test
     void aTieOfSavingAndTypeGoesToTheLowestSourceIdWhateverTheInputOrder() {
-        var low = candidate(DiscountType.PROMOTION, 3, MONTHLY, "100.00", "30.00");
-        var high = candidate(DiscountType.PROMOTION, 8, MONTHLY, "100.00", "30.00");
+        var low = candidate(DiscountType.COHORT_PROMOTION, 3, MONTHLY, "100.00", "30.00");
+        var high = candidate(DiscountType.COHORT_PROMOTION, 8, MONTHLY, "100.00", "30.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(high, low))).containsExactly(Map.entry(1, low));
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(low, high))).containsExactly(Map.entry(1, low));
@@ -63,8 +63,8 @@ class InvoiceDiscountCalculatorTest {
 
     @Test
     void twoCandidatesThatRankEqualStillGiveASingleWinnerTheFirstOneListed() {
-        var first = candidate(DiscountType.PROMOTION, 4, MONTHLY, "100.00", "30.00");
-        var second = candidate(DiscountType.PROMOTION, 4, MONTHLY, "100.00", "30.00");
+        var first = candidate(DiscountType.COHORT_PROMOTION, 4, MONTHLY, "100.00", "30.00");
+        var second = candidate(DiscountType.COHORT_PROMOTION, 4, MONTHLY, "100.00", "30.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(first, second)).get(1)).isSameAs(first);
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(second, first)).get(1)).isSameAs(second);
@@ -74,9 +74,9 @@ class InvoiceDiscountCalculatorTest {
     @Tag("D-301")
     void eachLineGetsItsOwnBestDiscount() {
         var scholarshipOnFirstLine = candidateOnLine(1, DiscountType.SCHOLARSHIP, 1, MONTHLY, "80000.00", "40000.00");
-        var promotionOnFirstLine = candidateOnLine(1, DiscountType.PROMOTION, 2, MONTHLY, "80000.00", "24000.00");
-        var smallPromotionOnSecondLine = candidateOnLine(2, DiscountType.PROMOTION, 3, MONTHLY, "50000.00", "5000.00");
-        var bigPromotionOnSecondLine = candidateOnLine(2, DiscountType.PROMOTION, 4, MONTHLY, "50000.00", "15000.00");
+        var promotionOnFirstLine = candidateOnLine(1, DiscountType.COHORT_PROMOTION, 2, MONTHLY, "80000.00", "24000.00");
+        var smallPromotionOnSecondLine = candidateOnLine(2, DiscountType.COHORT_PROMOTION, 3, MONTHLY, "50000.00", "5000.00");
+        var bigPromotionOnSecondLine = candidateOnLine(2, DiscountType.COHORT_PROMOTION, 4, MONTHLY, "50000.00", "15000.00");
 
         var winners = calculator.selectBestDiscountPerInvoiceLine(MONTHLY,
                 List.of(promotionOnFirstLine, smallPromotionOnSecondLine, scholarshipOnFirstLine, bigPromotionOnSecondLine));
@@ -87,7 +87,7 @@ class InvoiceDiscountCalculatorTest {
     @Test
     @Tag("D-301")
     void aCandidateOfAnotherLineNeverCompetes() {
-        var smallOnFirstLine = candidateOnLine(1, DiscountType.PROMOTION, 1, MONTHLY, "100.00", "10.00");
+        var smallOnFirstLine = candidateOnLine(1, DiscountType.COHORT_PROMOTION, 1, MONTHLY, "100.00", "10.00");
         var hugeOnSecondLine = candidateOnLine(2, DiscountType.SCHOLARSHIP, 2, MONTHLY, "100000.00", "90000.00");
 
         var winners = calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(hugeOnSecondLine, smallOnFirstLine));
@@ -99,7 +99,7 @@ class InvoiceDiscountCalculatorTest {
     @Tag("D-129")
     void aCandidateOfAnotherInvoiceTypeIsNeverSelected() {
         var enrollment = candidate(DiscountType.COHORT_ENTRY, 1, InvoiceType.ENROLLMENT_FEE, "100.00", "90.00");
-        var installment = candidate(DiscountType.PROMOTION, 2, MONTHLY, "100.00", "10.00");
+        var installment = candidate(DiscountType.COHORT_PROMOTION, 2, MONTHLY, "100.00", "10.00");
         var smallerInstallment = candidate(DiscountType.SCHOLARSHIP, 3, MONTHLY, "100.00", "5.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(enrollment, installment, smallerInstallment))).containsExactly(Map.entry(1, installment));
@@ -109,7 +109,7 @@ class InvoiceDiscountCalculatorTest {
 
     @Test
     void aLineWithoutCandidatesGetsNoDiscount() {
-        var onlyOnSecondLine = candidateOnLine(2, DiscountType.PROMOTION, 1, MONTHLY, "100.00", "10.00");
+        var onlyOnSecondLine = candidateOnLine(2, DiscountType.COHORT_PROMOTION, 1, MONTHLY, "100.00", "10.00");
 
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of(onlyOnSecondLine))).containsOnlyKeys(2);
         assertThat(calculator.selectBestDiscountPerInvoiceLine(MONTHLY, List.of())).isEmpty();

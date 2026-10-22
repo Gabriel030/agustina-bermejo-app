@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 @Tag("D-284")
 class EnrollmentStudentDiscountReaderTest {
 
-    private static final Set<StudentDiscountStatus> APPLICABLE = Set.of(StudentDiscountStatus.ACTIVE, StudentDiscountStatus.REVOKED);
+    private static final Set<StudentDiscountStatus> APPLICABLE = Set.of(StudentDiscountStatus.ACTIVE, StudentDiscountStatus.REVOKED, StudentDiscountStatus.EXHAUSTED);
 
     private final StudentDiscountRepository repository = mock(StudentDiscountRepository.class);
     private final EnrollmentDiscountLock enrollmentLock = mock(EnrollmentDiscountLock.class);
