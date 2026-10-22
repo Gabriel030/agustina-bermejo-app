@@ -40,6 +40,8 @@ public final class DailyReminderDigestPlanner {
     private static final Set<InvoicePaymentStatus> OPEN_PAYMENT_STATUSES = Set.of(InvoicePaymentStatus.PENDING, InvoicePaymentStatus.OVERDUE,
             InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
 
+    private static final int EMAIL_SHIFT_LOOKAHEAD_DAYS = 14;
+
     private DailyReminderDigestPlanner() {
     }
 
@@ -49,6 +51,7 @@ public final class DailyReminderDigestPlanner {
         List<ReminderDueNotice> inAppNotices = new ArrayList<>();
         List<ReminderDueNotice> emailNotices = new ArrayList<>();
         List<SuppressedReminder> suppressed = new ArrayList<>();
+        LocalDate horizon = businessDate.plusDays(EMAIL_SHIFT_LOOKAHEAD_DAYS);
         for (ReminderInvoiceFact fact : student.invoices()) {
             PolicyVerdict receipt = RECEIPT_UNDER_REVIEW.evaluateRule(fact);
             PolicyVerdict cancellation = PENDING_CANCELLATION.evaluateRule(fact);
@@ -63,13 +66,13 @@ public final class DailyReminderDigestPlanner {
             Optional<PolicyVerdict> denial = firstDenial(receipt, cancellation);
             Optional<ResolvedReminderSchedule> schedule = Optional.ofNullable(schedulesByInvoiceId.get(fact.invoiceId()));
             if (denial.isPresent() && schedule.isPresent()) {
-                for (ReminderOccurrence occurrence : ReminderOccurrenceExpander.expandOccurrencesOf(fact, schedule.get().notices())) {
+                for (ReminderOccurrence occurrence : ReminderOccurrenceExpander.expandOccurrencesUpTo(fact, schedule.get().notices(), horizon)) {
                     collectSuppressed(occurrence, businessDate, nonBusinessDays, denial.get().code(), suppressed);
                 }
             }
             if (denial.isEmpty()) {
                 ResolvedReminderSchedule resolved = schedule.orElseThrow(() -> new IllegalArgumentException("The invoice " + fact.invoiceId() + " has no resolved reminder schedule"));
-                for (ReminderOccurrence occurrence : ReminderOccurrenceExpander.expandOccurrencesOf(fact, resolved.notices())) {
+                for (ReminderOccurrence occurrence : ReminderOccurrenceExpander.expandOccurrencesUpTo(fact, resolved.notices(), horizon)) {
                     collectDue(occurrence, businessDate, nonBusinessDays, inAppNotices, emailNotices);
                 }
             }

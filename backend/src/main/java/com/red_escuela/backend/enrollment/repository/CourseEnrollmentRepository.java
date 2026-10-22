@@ -58,4 +58,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     @Query("select t.startDate as startDate, t.endDate as endDate from CourseEnrollment e join e.course c join c.term t where e.id = :id")
     Optional<CourseTermDates> findCourseTermDates(@Param("id") Long id);
+
+    @Query("select e.id as enrollmentId, e.course.id as targetId, e.paymentStatus as paymentStatus from CourseEnrollment e where e.id in :ids")
+    List<EnrollmentReminderTargetRow> findReminderTargetRows(@Param("ids") Collection<Long> ids);
 }

@@ -18,6 +18,7 @@ public record ReminderSendingOverrides(Boolean suspensionNoticeEnabled, Integer 
                 emailWindowEnd != null ? emailWindowEnd : base.emailWindowEnd(),
                 dailyEmailCap != null ? dailyEmailCap : base.dailyEmailCap(),
                 contactListDaysOverdue != null ? contactListDaysOverdue : base.contactListDaysOverdue(),
-                contactListOverdueInstallments != null ? contactListOverdueInstallments : base.contactListOverdueInstallments());
+                contactListOverdueInstallments != null ? contactListOverdueInstallments : base.contactListOverdueInstallments(),
+                base.dailyDigestEnabled());
     }
 }

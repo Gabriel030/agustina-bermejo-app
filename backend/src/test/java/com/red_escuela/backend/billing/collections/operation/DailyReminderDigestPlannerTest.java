@@ -503,4 +503,22 @@ class DailyReminderDigestPlannerTest {
 
         assertThatThrownBy(() -> plan("2027-03-12", Map.of(), List.of(march))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("1");
     }
+
+    @Test
+    @Tag("D-413")
+    void anInvoiceIssuedAfterThePreviousRunGetsItsIssuanceNoticeTheNextDayAndNothingTheDayItWasIssued() {
+        ReminderInvoiceFact lateIssued = new ReminderInvoiceFact(1L, null, com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType.INVOICE,
+                com.red_escuela.backend.billing.invoice.domain.InvoiceType.MONTHLY_INSTALLMENT, com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.ISSUED,
+                com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PENDING, LocalDate.parse("2027-03-01"), LocalDate.parse("2027-03-11"), null,
+                installment(1L, "2027-03-11").balance(), 1L, null, false, false, false, true);
+        ResolvedReminderSchedule issuanceNotice = schedule(bothChannels("issuance", ReminderMessageType.ISSUANCE_NOTICE, ReminderMilestone.ISSUANCE, 0));
+        Map<Long, ResolvedReminderSchedule> schedules = sameScheduleFor(issuanceNotice, 1L);
+
+        DailyReminderDigest theIssueDay = plan("2027-03-01", schedules, List.of(lateIssued));
+        DailyReminderDigest theNextDay = plan("2027-03-02", schedules, List.of(lateIssued));
+
+        assertThat(theIssueDay.hasNothingToSend()).isTrue();
+        assertThat(theNextDay.inAppMessages()).hasSize(1);
+        assertThat(theNextDay.emailMessages()).hasSize(1);
+    }
 }
