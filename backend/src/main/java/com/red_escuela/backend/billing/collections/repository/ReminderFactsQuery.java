@@ -45,6 +45,20 @@ public class ReminderFactsQuery {
         if (studentIds.isEmpty()) {
             return List.of();
         }
+        return queryOpenInvoices("a.student_id in (:studentIds)", "order by a.student_id, i.id",
+                new MapSqlParameterSource().addValue("studentIds", studentIds), previousBusinessDate, previousPlanningRun);
+    }
+
+    public List<OpenInvoiceRow> findOpenInvoicesByIds(Collection<Long> invoiceIds, LocalDate businessDate) {
+        if (invoiceIds.isEmpty()) {
+            return List.of();
+        }
+        return queryOpenInvoices("i.id in (:invoiceIds)", "order by i.id", new MapSqlParameterSource().addValue("invoiceIds", invoiceIds),
+                businessDate.minusDays(1), businessDate.minusDays(1).atStartOfDay());
+    }
+
+    private List<OpenInvoiceRow> queryOpenInvoices(String scope, String ordering, MapSqlParameterSource scopeParameters, LocalDate previousBusinessDate,
+                                                   LocalDateTime previousPlanningRun) {
         return jdbc.query("""
                 select a.student_id, i.id, i.origin_invoice_id, i.document_type, i.invoice_type, i.document_status, i.payment_status, i.issue_date, i.due_date,
                        i.currency, i.outstanding_amount,
@@ -56,13 +70,12 @@ public class ReminderFactsQuery {
                        (i.issue_date = :previousBusinessDate and exists (select 1 from invoice_status_change c where c.invoice_id = i.id and c.status_kind = 'DOCUMENT'
                                and c.to_status = 'ISSUED' and c.occurred_at > :previousPlanningRun)) as issued_after_previous_run
                 from invoice i join student_current_account a on a.id = i.student_current_account_id
-                where a.student_id in (:studentIds)
+                where %s
                   and i.document_status = 'ISSUED'
                   and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
-                order by a.student_id, i.id
-                """,
-                new MapSqlParameterSource().addValue("studentIds", studentIds).addValue("previousBusinessDate", previousBusinessDate)
-                        .addValue("previousPlanningRun", Timestamp.valueOf(previousPlanningRun)),
+                %s
+                """.formatted(scope, ordering),
+                scopeParameters.addValue("previousBusinessDate", previousBusinessDate).addValue("previousPlanningRun", Timestamp.valueOf(previousPlanningRun)),
                 (rs, rowNumber) -> new OpenInvoiceRow(rs.getLong("student_id"), rs.getLong("id"), (Long) rs.getObject("origin_invoice_id"), rs.getString("document_type"),
                         rs.getString("invoice_type"), rs.getString("document_status"), rs.getString("payment_status"), rs.getObject("issue_date", LocalDate.class),
                         rs.getObject("due_date", LocalDate.class), rs.getString("currency"), rs.getBigDecimal("outstanding_amount"),
