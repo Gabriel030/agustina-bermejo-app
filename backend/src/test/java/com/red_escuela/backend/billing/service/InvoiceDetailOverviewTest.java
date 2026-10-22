@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -215,7 +217,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer, PaymentVerification.none());
 
         BankTransferReceipt reloaded = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
         assertThat(reloaded.getPaymentId()).isNotNull();
@@ -257,7 +259,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), 0);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-        approvePaymentReceiptUseCase.approve(receipt.getId(), recorder);
+        approvePaymentReceiptUseCase.approve(receipt.getId(), recorder, PaymentVerification.none());
 
         JsonNode admin = objectMapper.valueToTree(adminInvoice(student, invoice.getId()));
         MeEnrollmentBillingStatusResponse own = getOwnCourseEnrollmentBillingStatusUseCase.get(student.getId(), enrollment.getId());
@@ -297,7 +299,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
                 BillingTestFixtures.payInvoiceInFull(invoice);
             } else {
                 BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-                approvePaymentReceiptUseCase.approve(receipt.getId(), recorder);
+                approvePaymentReceiptUseCase.approve(receipt.getId(), recorder, PaymentVerification.none());
             }
         }
 

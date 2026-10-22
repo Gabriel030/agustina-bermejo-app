@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
@@ -177,7 +179,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
 
-        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer());
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer(), PaymentVerification.none());
         entityManager.flush();
         entityManager.clear();
 
@@ -198,7 +200,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
 
-        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer());
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer(), PaymentVerification.none());
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
         assertThatInvoice(invoiceRepository.findById(application.getInvoiceId()).orElseThrow()).isPaid();

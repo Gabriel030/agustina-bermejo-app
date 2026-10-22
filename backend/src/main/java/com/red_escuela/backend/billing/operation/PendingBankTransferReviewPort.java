@@ -2,7 +2,9 @@ package com.red_escuela.backend.billing.operation;
 
 public interface PendingBankTransferReviewPort {
 
-    void approvePendingPayment(Long paymentId, Long reviewerPersonId);
+    PendingTransferApprovalAssessment assessApproval(Long paymentId, PaymentVerification verification);
+
+    PendingTransferApprovalOutcome approvePendingPayment(Long paymentId, Long reviewerPersonId, PaymentVerification verification);
 
     void rejectPendingPayment(Long paymentId, String rejectionReason, Long reviewerPersonId);
 }

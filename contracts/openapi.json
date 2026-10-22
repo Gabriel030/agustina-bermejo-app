@@ -209,6 +209,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "rejectionCode" : {
+            "type" : "string"
+          },
           "rejectionReason" : {
             "type" : "string"
           },
@@ -230,7 +233,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "fileName", "id", "rejectionReason", "reviewedAt", "reviewedByName", "status", "uploadedAt", "uploadedByName" ],
+        "required" : [ "fileName", "id", "rejectionCode", "rejectionReason", "reviewedAt", "reviewedByName", "status", "uploadedAt", "uploadedByName" ],
         "type" : "object"
       },
       "AdminInvoiceResponse" : {
@@ -512,6 +515,21 @@
           }
         },
         "required" : [ "period" ],
+        "type" : "object"
+      },
+      "ApproveBankTransferReceiptRequest" : {
+        "properties" : {
+          "reviewNote" : {
+            "type" : "string"
+          },
+          "transferDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "verifiedAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
         "type" : "object"
       },
       "AssignElectiveGroupRequest" : {
@@ -895,6 +913,9 @@
           "productName" : {
             "type" : "string"
           },
+          "rejectionCode" : {
+            "type" : "string"
+          },
           "rejectionReason" : {
             "type" : "string"
           },
@@ -912,7 +933,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "filePath", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "productName", "rejectionReason", "status", "studentDni", "studentName", "uploadedAt" ],
+        "required" : [ "filePath", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "productName", "rejectionCode", "rejectionReason", "status", "studentDni", "studentName", "uploadedAt" ],
         "type" : "object"
       },
       "BankTransferReceiptSubmissionResponse" : {
@@ -4123,6 +4144,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "rejectionCode" : {
+            "type" : "string"
+          },
           "rejectionReason" : {
             "type" : "string"
           },
@@ -4134,7 +4158,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "fileName", "id", "rejectionReason", "status", "uploadedAt" ],
+        "required" : [ "fileName", "id", "rejectionCode", "rejectionReason", "status", "uploadedAt" ],
         "type" : "object"
       },
       "MeInvoiceResponse" : {
@@ -5618,7 +5642,6 @@
       "RejectPaymentReceiptRequest" : {
         "properties" : {
           "rejectionReason" : {
-            "minLength" : 1,
             "type" : "string"
           }
         },
@@ -9507,6 +9530,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApproveBankTransferReceiptRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {
@@ -9653,8 +9685,7 @@
                 "$ref" : "#/components/schemas/RejectPaymentReceiptRequest"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {

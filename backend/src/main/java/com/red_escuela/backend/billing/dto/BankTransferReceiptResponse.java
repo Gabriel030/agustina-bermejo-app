@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePath, String status, String rejectionReason,
+public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePath, String status, String rejectionReason, String rejectionCode,
                                      LocalDateTime uploadedAt, String studentName, String studentDni,
                                      String invoicePeriod, String invoiceFeeType, String productName, List<Long> invoiceIds) {
 
@@ -15,12 +15,16 @@ public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePa
         Invoice invoice = receipt.getInvoice();
         return new BankTransferReceiptResponse(
                 receipt.getId(), invoice.getId(), receipt.getFilePath(),
-                receipt.getStatus().name(), receipt.getRejectionReason(), receipt.getUploadedAt(),
+                receipt.getStatus().name(), receipt.getRejectionReason(), codeOf(receipt), receipt.getUploadedAt(),
                 payer == null ? null : payer.getName() + " " + payer.getLastname(),
                 payer == null ? null : payer.getDni(),
                 invoice.getPrimaryLine().getPeriod().toString(),
                 invoice.getPrimaryLine().getFeeType().name(),
                 productName,
                 invoiceIds);
+    }
+
+    private static String codeOf(BankTransferReceipt receipt) {
+        return receipt.getRejectionCode() == null ? null : receipt.getRejectionCode().name();
     }
 }

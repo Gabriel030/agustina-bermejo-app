@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
@@ -217,7 +219,7 @@ class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
         assertThat(jdbc.queryForObject("select payment_id from bank_transfer_receipt where id = ?", Long.class, uploaded.getId())).isNull();
         assertThat(paymentsOf(debtor.accountId())).isZero();
 
-        BankTransferReceipt approved = approveReceipt.approve(uploaded.getId(), staff);
+        BankTransferReceipt approved = approveReceipt.approve(uploaded.getId(), staff, PaymentVerification.none());
 
         assertThat(approved.getStatus().name()).isEqualTo("APPROVED");
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(1L);

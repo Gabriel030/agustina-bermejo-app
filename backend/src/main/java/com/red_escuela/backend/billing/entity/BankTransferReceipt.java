@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.entity;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptRejectionCode;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.identity.entity.Person;
 
@@ -41,6 +43,10 @@ public class BankTransferReceipt {
 
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rejection_code", length = 30)
+    private BankTransferReceiptRejectionCode rejectionCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by_id")
@@ -87,8 +93,17 @@ public class BankTransferReceipt {
     }
 
     public void reject(Person reviewer, String reason) {
+        rejectWithCode(reviewer, reason, BankTransferReceiptRejectionCode.REVIEWER_REJECTION);
+    }
+
+    public void rejectBecauseTransferDateDiffersFromUploadDate(Person reviewer, String reason) {
+        rejectWithCode(reviewer, reason, BankTransferReceiptRejectionCode.TRANSFER_DATE_MISMATCH);
+    }
+
+    private void rejectWithCode(Person reviewer, String reason, BankTransferReceiptRejectionCode code) {
         requirePendingReview();
         this.rejectionReason = reason;
+        this.rejectionCode = code;
         markReviewed(BankTransferReceiptStatus.REJECTED, reviewer);
     }
 
@@ -100,7 +115,7 @@ public class BankTransferReceipt {
 
     private void requirePendingReview() {
         if (!isPendingReview()) {
-            throw new InvalidPaymentReceiptStateException(id, status.name());
+            throw new PaymentReceiptAlreadyReviewedException();
         }
     }
 }
