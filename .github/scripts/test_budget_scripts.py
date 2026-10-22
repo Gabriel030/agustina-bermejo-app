@@ -35,7 +35,7 @@ def write_source(root, name, body):
 class Args:
     def __init__(self, **values):
         self.__dict__.update(dict(
-            shard=0, meta_out=None, max_class=30.0, max_slow_class=90.0, max_shard=180.0, max_contexts=22,
+            shard=0, meta_out=None, max_class=30.0, max_slow_class=90.0, max_shard=180.0, max_contexts=22, shard_limit='error',
             baseline=None, changed=None, test_root='', out='', shards='', reports=''))
         self.__dict__.update(values)
 
@@ -51,8 +51,18 @@ class BudgetTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def check(self, **values):
-        return budget.check_shard(Args(reports=self.reports, test_root=self.sources, **values))
+    def check(self, wall=None, **values):
+        saved = {key: os.environ.pop(key, None) for key in ('SHARD_START', 'SHARD_END')}
+        if wall is not None:
+            os.environ['SHARD_START'] = '1000'
+            os.environ['SHARD_END'] = str(1000 + wall)
+        try:
+            return budget.check_shard(Args(reports=self.reports, test_root=self.sources, **values))
+        finally:
+            for key in ('SHARD_START', 'SHARD_END'):
+                os.environ.pop(key, None)
+                if saved[key] is not None:
+                    os.environ[key] = saved[key]
 
     def test_class_over_the_limit_fails(self):
         write_report(self.reports, 'com.acme.SlowIT', 31.0)
@@ -77,10 +87,63 @@ class BudgetTest(unittest.TestCase):
         write_source(self.sources, 'com/acme/LongScenarioIT', '@SlowTest(reason = "walks twelve months")\nclass LongScenarioIT {}')
         self.assertEqual(1, self.check())
 
-    def test_shard_over_the_limit_fails(self):
-        for index in range(7):
-            write_report(self.reports, 'com.acme.Part%dIT' % index, 28.0)
-        self.assertEqual(1, self.check())
+    def test_shard_clock_over_the_limit_fails(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(1, self.check(wall=181))
+
+    def test_shard_clock_under_the_limit_passes(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(0, self.check(wall=179))
+
+    def test_shard_clock_at_290_seconds_passes_with_the_default_limit(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(0, self.check(wall=290, max_shard=budget.DEFAULT_MAX_SHARD))
+
+    def test_summed_jvm_time_above_the_limit_does_not_fail_when_the_clock_is_under(self):
+        for index in range(16):
+            write_report(self.reports, 'com.acme.Part%dIT' % index, 30.0)
+        self.assertEqual(0, self.check(wall=250, max_shard=budget.DEFAULT_MAX_SHARD))
+
+    def test_shard_clock_over_the_limit_only_warns_when_asked(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(0, self.check(wall=400, shard_limit='warn'))
+
+    def test_class_over_the_limit_still_fails_when_the_shard_limit_only_warns(self):
+        write_report(self.reports, 'com.acme.SlowIT', 31.0)
+        self.assertEqual(1, self.check(wall=400, shard_limit='warn'))
+
+    def test_shard_clock_exactly_at_the_limit_passes(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(0, self.check(wall=180))
+
+    def test_only_the_shard_start_skips_the_shard_limit(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        os.environ.pop('SHARD_END', None)
+        os.environ['SHARD_START'] = '1000'
+        try:
+            self.assertEqual(0, budget.check_shard(Args(reports=self.reports, test_root=self.sources)))
+        finally:
+            os.environ.pop('SHARD_START', None)
+
+    def test_shard_limit_flag_defaults_to_error(self):
+        parser_args = ['check-shard', '--shard', '0', '--reports', self.reports]
+        import sys
+        saved = sys.argv
+        sys.argv = ['test-budget.py'] + parser_args
+        try:
+            captured = {}
+            original = budget.check_shard
+            budget.check_shard = lambda args: captured.setdefault('mode', args.shard_limit) and 0
+            with self.assertRaises(SystemExit):
+                budget.main()
+        finally:
+            budget.check_shard = original
+            sys.argv = saved
+        self.assertEqual('error', captured['mode'])
+
+    def test_missing_clock_skips_the_shard_limit(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(0, self.check())
 
     def test_nested_class_time_counts_for_the_outer_class(self):
         write_report(self.reports, 'com.acme.OuterIT', 20.0)

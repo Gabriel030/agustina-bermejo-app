@@ -11,10 +11,13 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+env:
+  TESTCONTAINERS_RYUK_DISABLED: "true"
 
 jobs:
-  backend-changes:
+  changes:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
@@ -23,32 +26,37 @@ jobs:
     outputs:
       relevant: ${{ steps.changes.outputs.relevant }}
       mutation: ${{ steps.changes.outputs.mutation }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      lockfile: ${{ steps.changes.outputs.lockfile }}
+      reuse_backend: ${{ steps.changes.outputs.reuse_backend }}
+      reuse_mutation: ${{ steps.changes.outputs.reuse_mutation }}
+      reuse_frontend: ${{ steps.changes.outputs.reuse_frontend }}
+      reuse_run: ${{ steps.changes.outputs.reuse_run }}
+      reuse_pr: ${{ steps.changes.outputs.reuse_pr }}
       baseline_run: ${{ steps.baseline.outputs.run_id }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect backend changes
+      - name: Detect what changed and whether a green pull request already verified this tree
         id: changes
         shell: bash
-        run: |
-          set -uo pipefail
-          relevant=true
-          mutation=true
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
-              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/)'; then
-                relevant=false
-              fi
-              if ! printf '%s\n' "$changed" | grep -qE '^backend/(pom\.xml|src/(main|test)/java/com/red_escuela/backend/(shared/domain|billing)/)'; then
-                mutation=false
-              fi
-            fi
-          fi
-          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
-          echo "mutation=$mutation" >> "$GITHUB_OUTPUT"
-          echo "backend changes: $relevant, mutation scope: $mutation"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.number }}
+          TESTED_TREE_DIR: ${{ runner.temp }}/tested-tree-out
+        run: bash .github/scripts/detect-changes.sh
+
+      - name: Record the verified tree of this pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tested-tree
+          path: ${{ runner.temp }}/tested-tree-out/tested-tree.json
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Resolve the latest integration-branch run that published test timings
         id: baseline
@@ -57,7 +65,7 @@ jobs:
         run: |
           set -uo pipefail
           run_id=""
-          for candidate in $(gh run list --repo "${{ github.repository }}" --workflow ci.yml --branch develop --event push --status success --limit 10 --json databaseId --jq '.[].databaseId' 2>/dev/null); do
+          for candidate in $(gh run list --repo "${{ github.repository }}" --workflow ci.yml --branch develop --event push --status success --limit 30 --json databaseId --jq '.[].databaseId' 2>/dev/null); do
             if gh api "repos/${{ github.repository }}/actions/runs/$candidate/artifacts" --jq '.artifacts[] | select(.name == "test-baseline" and .expired == false) | .id' 2>/dev/null | grep -q .; then
               run_id="$candidate"
               break
@@ -68,8 +76,8 @@ jobs:
 
   backend-contract:
     runs-on: ubuntu-latest
-    needs: backend-changes
-    if: needs.backend-changes.outputs.relevant == 'true' && github.event_name == 'pull_request'
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
@@ -87,8 +95,8 @@ jobs:
 
   backend-tests:
     runs-on: ubuntu-latest
-    needs: backend-changes
-    if: needs.backend-changes.outputs.relevant == 'true'
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true' && needs.changes.outputs.reuse_backend != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -103,13 +111,16 @@ jobs:
       - name: Mark the shard start
         run: echo "SHARD_START=$(date +%s)" >> "$GITHUB_ENV"
 
+      - name: Pull the Postgres image in the background
+        run: nohup docker pull -q postgres:16-alpine > "$RUNNER_TEMP/prepull.log" 2>&1 &
+
       - name: Use the averaged timings of the integration branch when available
-        if: needs.backend-changes.outputs.baseline_run != ''
+        if: needs.changes.outputs.baseline_run != ''
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download "${{ needs.backend-changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D "$RUNNER_TEMP/baseline"
+          gh run download "${{ needs.changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D "$RUNNER_TEMP/baseline"
           python3 .github/scripts/test-shards.py use "$RUNNER_TEMP/baseline"
 
       - name: Verify the shard assignment covers every test class once
@@ -122,10 +133,13 @@ jobs:
           java-version: |
             21
 
-      - name: Cache the Maven repository
-        uses: actions/cache@v4
+      - name: Restore the Maven repository
+        id: maven-cache
+        uses: actions/cache/restore@v4
         with:
-          path: ~/.m2/repository
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
           key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
           restore-keys: |
             maven-${{ runner.os }}-
@@ -136,12 +150,23 @@ jobs:
           EXCLUDED_GROUPS: ${{ github.event_name == 'push' && 'none' || 'docs' }}
         run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 6)" -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$EXCLUDED_GROUPS"
 
+      - name: Save the Maven repository
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 0 && steps.maven-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
+          key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
+
       - name: Enforce the time budget of the shard
         if: always()
+        env:
+          SHARD_LIMIT: ${{ github.event_name == 'push' && 'warn' || 'error' }}
         run: |
           export SHARD_END=$(date +%s)
           mkdir -p shard-out
-          python3 .github/scripts/test-budget.py check-shard --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json
+          python3 .github/scripts/test-budget.py check-shard --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json --shard-limit "$SHARD_LIMIT"
 
       - name: Collect the shard reports
         if: always()
@@ -161,8 +186,8 @@ jobs:
 
   mutation:
     runs-on: ubuntu-latest
-    needs: backend-changes
-    if: needs.backend-changes.outputs.relevant == 'true' && needs.backend-changes.outputs.mutation == 'true'
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true' && needs.changes.outputs.mutation == 'true' && needs.changes.outputs.reuse_mutation != 'true' && !(github.event_name == 'push' && github.ref == 'refs/heads/develop')
     steps:
       - uses: actions/checkout@v4
 
@@ -176,13 +201,14 @@ jobs:
           java-version: |
             21
 
-      - name: Cache the Maven repository
-        uses: actions/cache@v4
+      - name: Restore the Maven repository
+        uses: actions/cache/restore@v4
         with:
-          path: ~/.m2/repository
-          key: maven-pit-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
+          key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
           restore-keys: |
-            maven-pit-${{ runner.os }}-
             maven-${{ runner.os }}-
 
       - name: Restore the PIT incremental history
@@ -232,8 +258,8 @@ jobs:
 
   test-report:
     runs-on: ubuntu-latest
-    needs: [backend-changes, backend-tests]
-    if: always() && needs.backend-changes.outputs.relevant == 'true' && needs.backend-tests.result != 'skipped'
+    needs: [changes, backend-tests]
+    if: always() && needs.changes.outputs.relevant == 'true' && (needs.backend-tests.result != 'skipped' || needs.changes.outputs.reuse_backend == 'true')
     permissions:
       contents: read
       actions: read
@@ -244,28 +270,53 @@ jobs:
           fetch-depth: 0
 
       - name: Self-test of the budget scripts
-        run: python3 -m unittest discover -s .github/scripts -p 'test_budget_scripts.py'
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 
       - name: Download the shard reports
+        if: needs.changes.outputs.reuse_backend != 'true'
         uses: actions/download-artifact@v4
         with:
           pattern: shard-reports-*
           path: shards
 
-      - name: Download the integration-branch baseline
-        if: needs.backend-changes.outputs.baseline_run != ''
+      - name: Inherit the shard reports of the pull request that already verified this tree
+        if: needs.changes.outputs.reuse_backend == 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run download "${{ needs.backend-changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D baseline
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
+        run: gh run download "$REUSE_RUN" --repo "${{ github.repository }}" -p 'shard-reports-*' -D shards
+
+      - name: Summarize what the reuse saved
+        if: needs.changes.outputs.reuse_backend == 'true' && hashFiles('shards/**/meta.json') != ''
+        env:
+          REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import glob, json, os
+          metas = [json.load(open(p)) for p in glob.glob('shards/*/meta.json')]
+          clock = sum(max(m.get('end', 0) - m.get('start', 0), 0) for m in metas)
+          print('### Reused from PR #%s (run %s)' % (os.environ['REUSE_PR'], os.environ['REUSE_RUN']))
+          print('- Shards not executed: %d' % len(metas))
+          print('- Compute saved: about %.1f minutes of runner time' % (clock / 60.0))
+          PY
+
+      - name: Download the integration-branch baseline
+        if: needs.changes.outputs.baseline_run != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "${{ needs.changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D baseline
 
       - name: Build the report and enforce the Spring context cap
         id: report
+        if: hashFiles('shards/**/meta.json') != ''
         shell: bash
         run: |
           set -uo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" > changed.txt || true
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > changed.txt || true
           fi
           args=(aggregate --shards shards --out report-out)
           [ -f baseline/metrics.json ] && args+=(--baseline baseline/metrics.json)
@@ -293,14 +344,14 @@ jobs:
 
       - name: Add this run to the timing history
         continue-on-error: true
-        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && needs.backend-tests.result == 'success'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && (needs.backend-tests.result == 'success' || needs.changes.outputs.reuse_backend == 'true') && hashFiles('report-out/metrics.json') != ''
         run: |
           mkdir -p baseline-out
           python3 .github/scripts/test-shards.py accumulate shards --history baseline --out baseline-out
           cp report-out/metrics.json baseline-out/metrics.json
 
       - name: Publish the timings as the baseline for pull requests
-        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && needs.backend-tests.result == 'success'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && (needs.backend-tests.result == 'success' || needs.changes.outputs.reuse_backend == 'true') && hashFiles('baseline-out/metrics.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: test-baseline
@@ -308,52 +359,53 @@ jobs:
           retention-days: 60
 
       - name: Fail when the Spring context cap is exceeded
-        if: steps.report.outputs.status != '0'
+        if: steps.report.outputs.status != '' && steps.report.outputs.status != '0' && needs.changes.outputs.reuse_backend != 'true'
         run: exit 1
 
   backend:
     runs-on: ubuntu-latest
-    needs: [backend-changes, backend-tests, backend-contract, test-report, mutation]
+    needs: [changes, backend-tests, backend-contract, test-report, mutation]
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
       - name: Aggregate the backend results
         shell: bash
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          TESTS: ${{ needs.backend-tests.result }}
+          CONTRACT: ${{ needs.backend-contract.result }}
+          REPORT: ${{ needs.test-report.result }}
+          MUTATION: ${{ needs.mutation.result }}
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          REUSE: ${{ needs.changes.outputs.reuse_backend }}
+          REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
         run: |
           set -uo pipefail
-          echo "changes=${{ needs.backend-changes.result }} tests=${{ needs.backend-tests.result }} contract=${{ needs.backend-contract.result }} report=${{ needs.test-report.result }} mutation=${{ needs.mutation.result }}"
-          if [ "${{ needs.backend-changes.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.backend-changes.outputs.relevant }}" != "true" ]; then
+          echo "changes=$CHANGES tests=$TESTS contract=$CONTRACT report=$REPORT mutation=$MUTATION"
+          if [ "$CHANGES" != "success" ]; then exit 1; fi
+          if [ "$RELEVANT" != "true" ]; then
             echo "no backend changes"
             exit 0
           fi
-          [ "${{ needs.backend-tests.result }}" = "success" ] && [ "${{ needs.test-report.result }}" = "success" ] && { [ "${{ needs.backend-contract.result }}" = "success" ] || [ "${{ needs.backend-contract.result }}" = "skipped" ]; } && { [ "${{ needs.mutation.result }}" = "success" ] || [ "${{ needs.mutation.result }}" = "skipped" ]; }
+          if [ "$REUSE" = "true" ]; then
+            echo "Backend tests reused from PR #$REUSE_PR (run $REUSE_RUN): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [ "$TESTS" = "success" ] && [ "$REPORT" = "success" ] && { [ "$CONTRACT" = "success" ] || [ "$CONTRACT" = "skipped" ]; } && { [ "$MUTATION" = "success" ] || [ "$MUTATION" = "skipped" ]; }
 
-  frontend:
+  frontend-tests:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    name: frontend-tests (${{ matrix.shard }})
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Detect frontend changes
-        id: changes
-        shell: bash
-        run: |
-          set -uo pipefail
-          relevant=true
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
-              if ! printf '%s\n' "$changed" | grep -qE '^(frontend/|\.github/workflows/)'; then
-                relevant=false
-              fi
-            fi
-          fi
-          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
-          echo "frontend changes: $relevant"
 
       - name: Set up Node
-        if: steps.changes.outputs.relevant == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -361,29 +413,72 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
-        run: npm ci
+        run: npm ci --no-audit --no-fund --prefer-offline
+
+      - name: Run the frontend test shard
+        working-directory: frontend
+        run: npm run test -- --shard=${{ matrix.shard }}/2
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund --prefer-offline
 
       - name: Audit production dependencies
-        if: steps.changes.outputs.relevant == 'true'
+        if: needs.changes.outputs.lockfile == 'true'
         working-directory: frontend
         run: npm run audit:prod
 
       - name: Lint
-        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run lint
 
       - name: Build
-        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run build
 
-      - name: Run frontend test suite
-        if: steps.changes.outputs.relevant == 'true'
-        working-directory: frontend
-        run: npm run test
+  frontend:
+    runs-on: ubuntu-latest
+    needs: [changes, frontend-checks, frontend-tests]
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    steps:
+      - name: Aggregate the frontend results
+        shell: bash
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CHECKS: ${{ needs.frontend-checks.result }}
+          TESTS: ${{ needs.frontend-tests.result }}
+          RELEVANT: ${{ needs.changes.outputs.frontend }}
+          REUSE: ${{ needs.changes.outputs.reuse_frontend }}
+          REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
+        run: |
+          set -uo pipefail
+          echo "changes=$CHANGES frontend=$RELEVANT reuse=$REUSE checks=$CHECKS tests=$TESTS"
+          if [ "$CHANGES" != "success" ]; then exit 1; fi
+          if [ "$RELEVANT" != "true" ]; then
+            echo "no frontend changes"
+            exit 0
+          fi
+          if [ "$REUSE" = "true" ]; then
+            echo "Frontend reused from PR #$REUSE_PR (run $REUSE_RUN): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [ "$CHECKS" = "success" ] && [ "$TESTS" = "success" ]
 
   # Nota: qa/bruno/ es la colección de exploración MANUAL (GUI/CLI local, contra
   # docker-compose.qa.yml — Postgres descartable, ver ese archivo). No corre en CI a
