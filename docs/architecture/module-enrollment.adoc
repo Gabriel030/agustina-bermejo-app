@@ -7,7 +7,7 @@
 * `c.r.b.i.service.CurrentStudentService` (in Identity)
 * `c.r.b.i.service.CurrentPersonService` (in Identity)
 * `c.r.b.b.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase` (in Billing)
-* `c.r.b.b.service.StudentDebtResolutionService` (in Billing)
+* `c.r.b.b.api.EnrollmentDebtGuard` (in Billing)
 * `c.r.b.i.repository.StudentRepository` (in Identity)
 * `c.r.b.a.repository.CourseRepository` (in Academic structure)
 * `c.r.b.b.issuing.ChargeIssuer` (in Billing)

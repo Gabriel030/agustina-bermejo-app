@@ -1,6 +1,15 @@
 package com.red_escuela.backend.billing.api;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -50,13 +59,16 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     private EnrollmentDebtGuard enrollmentDebtGuard;
 
     @Autowired
+    private CourseEnrollmentService courseEnrollmentService;
+
+    @Autowired
     private EntityManager entityManager;
 
     @Autowired
     private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @Autowired
-    private com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository courseEnrollmentRepository;
+    private CourseEnrollmentRepository courseEnrollmentRepository;
 
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
@@ -287,9 +299,9 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
     }
 
-    private Invoice persistNotYetDueInvoiceOfWithdrawnCycle(ProgramEnrollment enrollment, BigDecimal amount) {
+    private Invoice persistNotYetDueInvoiceOfWithdrawnCycle(ProgramEnrollment enrollment, Money amount) {
         return BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().plusMonths(1))
-                .dueOn(LocalDate.now().plusDays(20)).withBaseAmount(ars(amount)).build();
+                .dueOn(LocalDate.now().plusDays(20)).withBaseAmount(amount).build();
     }
 
     private ProgramEnrollment persistWithdrawnEnrollment(Student student, Program program) {
@@ -319,7 +331,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
                 () -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())));
         assertThat(thrown).isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
-        return ((OutstandingDebtBlocksReenrollmentException) thrown).violations().stream().map(com.red_escuela.backend.shared.domain.policy.PolicyViolation::code).toList();
+        return ((OutstandingDebtBlocksReenrollmentException) thrown).violations().stream().map(PolicyViolation::code).toList();
     }
 
     @Test
@@ -329,7 +341,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.debt.c16." + System.nanoTime());
         Student student = persistStudent("88011001");
         Program program = persistProgram();
-        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), BigDecimal.valueOf(160000));
+        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(160000));
 
         assertThat(violationCodesOf(student, program)).containsExactly("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
         BillingTestFixtures.registerApprovedBankTransferPayment(debt.getId(), admin.getId());
@@ -344,7 +356,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     void aReceiptUnderReviewOfAWithdrawnEnrollmentKeepsBlockingTheReturn() {
         Student student = persistStudent("88011002");
         Program program = persistProgram();
-        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), BigDecimal.valueOf(5000));
+        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(5000));
         jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", debt.getId());
 
         assertThat(violationCodesOf(student, program)).containsExactly("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
@@ -356,7 +368,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     void aCancelledInvoiceOfAWithdrawnEnrollmentNoLongerBlocksTheReturn() {
         Student student = persistStudent("88011003");
         Program program = persistProgram();
-        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), BigDecimal.valueOf(5000));
+        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(5000));
         markAsCancelled(debt);
 
         assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
@@ -370,7 +382,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Person requester = persistPerson("admin.debt.d314." + System.nanoTime());
         Student student = persistStudent("88011004");
         Program program = persistProgram();
-        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), BigDecimal.valueOf(80000));
+        Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(80000));
         Long requestId = persistPendingRequestOn(debt, requester);
 
         assertThat(violationCodesOf(student, program)).containsExactly("DEBT_IN_PENDING_CANCELLATION_REQUEST");
@@ -389,29 +401,88 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     void aDebtOfAWithdrawnCourseEnrollmentBlocksTheGuardToo() {
         Student student = persistStudent("88011005");
         Long courseEnrollmentId = new TransactionTemplate(transactionManager).execute(status -> {
-            com.red_escuela.backend.academicstructure.entity.Term term = new com.red_escuela.backend.academicstructure.entity.Term();
+            Term term = new Term();
             term.setYear(2027);
             term.setDescription("2027-1C " + System.nanoTime());
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);
-            com.red_escuela.backend.academicstructure.entity.Course course = new com.red_escuela.backend.academicstructure.entity.Course();
+            Course course = new Course();
             course.setTerm(term);
             course.setName("Curso " + System.nanoTime());
             course.setIsActive(StatusType.ACTIVE);
             entityManager.persist(course);
-            com.red_escuela.backend.enrollment.entity.CourseEnrollment enrollment = new com.red_escuela.backend.enrollment.entity.CourseEnrollment();
+            CourseEnrollment enrollment = new CourseEnrollment();
             enrollment.setStudent(student);
             enrollment.setCourse(course);
-            enrollment.setStatus(com.red_escuela.backend.enrollment.entity.EnrollmentStatus.WITHDRAWN);
+            enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
             enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(2));
             return courseEnrollmentRepository.save(enrollment).getId();
         });
-        com.red_escuela.backend.enrollment.entity.CourseEnrollment withdrawnCourse = courseEnrollmentRepository.findById(courseEnrollmentId).orElseThrow();
+        CourseEnrollment withdrawnCourse = courseEnrollmentRepository.findById(courseEnrollmentId).orElseThrow();
         BillingTestFixtures.invoice().forCourseEnrollment(withdrawnCourse).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().plusMonths(1))
-                .dueOn(LocalDate.now().plusDays(20)).withBaseAmount(ars(BigDecimal.valueOf(5000))).build();
+                .dueOn(LocalDate.now().plusDays(20)).withBaseAmount(ars(5000)).build();
 
         assertThatThrownBy(() -> enrollmentDebtGuard.verifyNoOutstandingDebt(student.getId()))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
+    }
+
+    private ProgramEnrollment persistActiveEnrollment(Student student, Program program) {
+        ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setProgram(program);
+        enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(2));
+        return programEnrollmentRepository.save(enrollment);
+    }
+
+    @Test
+    @Tag("C-16")
+    @Tag("D-142")
+    void aWithdrawnCourseDebtBlocksANewCourseEnrollmentThroughTheService() {
+        Student student = persistStudent("88011006");
+        Program program = persistProgram();
+        persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(5000));
+
+        assertThatThrownBy(() -> courseEnrollmentService.enroll(student.getId(), new CreateCourseEnrollmentRequest(-1L, null)))
+                .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
+    }
+
+    @Test
+    @Tag("D-142")
+    void aDraftOrDiscardedInvoiceOfAWithdrawnEnrollmentDoesNotBlock() {
+        Student student = persistStudent("88011007");
+        Program program = persistProgram();
+        Invoice invoice = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(5000));
+        jdbc.update("update invoice set document_status = 'DISCARDED', discarded_reason = 'prueba', invoice_number = null, issue_date = null, due_date = null, student_snapshot = null, payment_status = null where id = ?", invoice.getId());
+
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-065")
+    void anOverdueInvoiceOfAnActiveEnrollmentBlocksAnyNewEnrollment() {
+        Student student = persistStudent("88011008");
+        Program activeProgram = persistProgram();
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(persistActiveEnrollment(student, activeProgram)).ofType(FeeType.MONTHLY_INSTALLMENT)
+                .forPeriod(YearMonth.now().minusMonths(2)).dueOn(LocalDate.now().minusMonths(2)).withBaseAmount(ars(5000)).build();
+        BillingTestFixtures.markInvoiceAsOverdue(invoice);
+
+        assertThat(violationCodesOf(student, persistProgram())).containsExactly("OVERDUE_INVOICE");
+    }
+
+    @Test
+    @Tag("D-314")
+    void aPendingRequestOnAnInvoiceOfAnActiveEnrollmentIsNotDebtForTheReturn() {
+        Person requester = persistPerson("admin.debt.s12." + System.nanoTime());
+        Student student = persistStudent("88011009");
+        Program activeProgram = persistProgram();
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(persistActiveEnrollment(student, activeProgram)).ofType(FeeType.MONTHLY_INSTALLMENT)
+                .forPeriod(YearMonth.now().plusMonths(1)).dueOn(LocalDate.now().plusDays(20)).withBaseAmount(ars(5000)).build();
+        persistPendingRequestOn(invoice, requester);
+
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
     private void payInFull(Person registrant, Invoice debt) {

@@ -44,6 +44,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
@@ -193,5 +194,23 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
         assertThat(invoiceRepository.existsByStudentIdAndPaymentStatus(student.getId(), InvoicePaymentStatus.OVERDUE)).isTrue();
+    }
+
+    @Test
+    @Tag("C-16")
+    @Tag("D-142")
+    void aProgramEnrollmentWithOutstandingDebtAnswersConflictWithTheReenrollmentCode() throws Exception {
+        Student student = persistStudent("88020003");
+        Program program = persistProgram();
+        persistOldWithdrawnCycleWithDebt(student, program);
+        String token = tokenWithRole("preceptor.reenrollment." + System.nanoTime(), "PRECEPTOR");
+
+        mockMvc.perform(post("/students/{id}/program-enrollments", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"programId\":" + program.getId() + "}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("OUTSTANDING_DEBT_BLOCKS_REENROLLMENT"))
+                .andExpect(jsonPath("$.violations[0].code").value("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT"));
     }
 }
