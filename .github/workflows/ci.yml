@@ -181,10 +181,11 @@ jobs:
         if: always()
         env:
           SHARD_LIMIT: ${{ github.event_name == 'push' && 'warn' || 'error' }}
+          BUDGET_ENFORCEMENT: ${{ github.event_name == 'pull_request' && 'warn' || 'block' }}
         run: |
           export SHARD_END=$(date +%s)
           mkdir -p shard-out
-          python3 .github/scripts/test-budget.py check-shard --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json --shard-limit "$SHARD_LIMIT"
+          python3 .github/scripts/test-budget.py check-shard --shard ${{ matrix.shard }} --reports backend/target/surefire-reports --meta-out shard-out/meta.json --shard-limit "$SHARD_LIMIT" --enforcement "$BUDGET_ENFORCEMENT"
 
       - name: Collect the shard reports
         if: always()
@@ -372,7 +373,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > changed.txt || true
           fi
-          args=(aggregate --shards shards --out report-out)
+          args=(aggregate --shards shards --out report-out --enforcement ${{ github.event_name == 'pull_request' && 'warn' || 'block' }})
           [ -f baseline/metrics.json ] && args+=(--baseline baseline/metrics.json)
           [ -f changed.txt ] && args+=(--changed changed.txt)
           python3 .github/scripts/test-budget.py "${args[@]}"
