@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.invariant;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -14,6 +15,7 @@ public final class BillingInvariantChecker {
     private final long baselineAllocationId;
     private final long baselineAccountId;
     private final long baselineEntryId;
+    private final long baselineReminderId;
 
     private static final String ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES =
             "(a.id > ? or exists (select 1 from current_account_entry x where x.student_current_account_id = a.id and x.id > ?))";
@@ -22,13 +24,14 @@ public final class BillingInvariantChecker {
             "(i.id > ? or exists (select 1 from student_current_account a where a.id = i.student_current_account_id and "
                     + ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES + "))";
 
-    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId) {
+    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId, long baselineReminderId) {
         this.jdbc = jdbc;
         this.baselineEnrollmentId = baselineEnrollmentId;
         this.baselineInvoiceId = baselineInvoiceId;
         this.baselineAllocationId = baselineAllocationId;
         this.baselineAccountId = baselineAccountId;
         this.baselineEntryId = baselineEntryId;
+        this.baselineReminderId = baselineReminderId;
     }
 
     public static BillingInvariantChecker startingNow(JdbcTemplate jdbc) {
@@ -37,7 +40,8 @@ public final class BillingInvariantChecker {
         Long maxAllocation = jdbc.queryForObject("select coalesce(max(id), 0) from payment_allocation", Long.class);
         Long maxAccount = jdbc.queryForObject("select coalesce(max(id), 0) from student_current_account", Long.class);
         Long maxEntry = jdbc.queryForObject("select coalesce(max(id), 0) from current_account_entry", Long.class);
-        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry);
+        Long maxReminder = jdbc.queryForObject("select coalesce(max(id), 0) from collection_reminder", Long.class);
+        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry, maxReminder);
     }
 
     public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlot() {
@@ -497,7 +501,7 @@ public final class BillingInvariantChecker {
                 """.formatted(ENROLLMENT_END_OF_ORIGIN, ENROLLMENT_REGISTRATION_OF_ORIGIN, CORRECTION_COMPLEMENT), baselineInvoiceId);
     }
 
-    public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {
+    public List<String> lateFeesCoverEveryChargeableDayAt(LocalDate today) {
         String cutoff = """
                 case when o.payment_status = 'PAID' then (
                     select a.effective_date from payment_allocation a
@@ -531,10 +535,47 @@ public final class BillingInvariantChecker {
         }
     }
 
-    public void assertLateFeesAreCompleteAt(java.time.LocalDate today) {
+    public void assertLateFeesAreCompleteAt(LocalDate today) {
         List<String> found = lateFeesCoverEveryChargeableDayAt(today);
         if (!found.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", found));
+        }
+    }
+
+    public List<String> atMostOneDigestPerStudentDayAndChannel() {
+        return violations("I-R1 more than one digest for the same student, day and channel (one row per student and day is guaranteed by uq_collection_reminder_student_day)", """
+                select 'reminder ' || r.id || ' student ' || r.student_id || ' day ' || r.business_date || ' carries ' || count(*) || ' digests in ' || m.channel
+                from collection_reminder r
+                cross join lateral (select 'IN_APP' as channel, e.message from jsonb_array_elements(r.in_app_messages) e(message)
+                                    union all
+                                    select 'EMAIL', e.message from jsonb_array_elements(r.email_messages) e(message)) m
+                where r.id > ? and m.message ->> 'format' = 'DAILY_DIGEST'
+                group by r.id, r.student_id, r.business_date, m.channel
+                having count(*) > 1
+                """, baselineReminderId);
+    }
+
+    public List<String> reminderNoticesAreNotPlannedForSettledInvoicesOn(LocalDate day) {
+        return violations("I-R2 notice planned for an invoice that was settled, cancelled or under review that day", """
+                select 'reminder ' || r.id || ' day ' || r.business_date || ' ' || m.channel || ' invoice ' || i.id || ' ' || i.payment_status
+                from collection_reminder r
+                cross join lateral (select 'IN_APP' as channel, l.line from jsonb_path_query(r.in_app_messages, '$[*].blocks[*].lines[*] ? (@.notices.size() > 0)') l(line)
+                                    union all
+                                    select 'EMAIL', l.line from jsonb_path_query(r.email_messages, '$[*].blocks[*].lines[*] ? (@.notices.size() > 0)') l(line)) m
+                join invoice i on i.id = (m.line ->> 'invoiceId')::bigint
+                where r.id > ? and r.business_date = ?
+                  and (i.payment_status in ('PAID', 'CANCELLED', 'PAYMENT_UNDER_REVIEW')
+                       or exists (select 1 from bank_transfer_receipt b where b.invoice_id = i.id and b.status = 'PENDING_REVIEW')
+                       or exists (select 1 from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
+                                  where ari.invoice_id = i.id and ar.status = 'PENDING'))
+                """, baselineReminderId, day);
+    }
+
+    public void assertReminderInvariantsHoldOn(LocalDate day) {
+        List<String> all = new ArrayList<>(atMostOneDigestPerStudentDayAndChannel());
+        all.addAll(reminderNoticesAreNotPlannedForSettledInvoicesOn(day));
+        if (!all.isEmpty()) {
+            throw new AssertionError("Reminder invariants violated:\n" + String.join("\n", all));
         }
     }
 
@@ -561,6 +602,7 @@ public final class BillingInvariantChecker {
         all.addAll(everyAllocationIsFundedByItsSources());
         all.addAll(noDebtDisappearsWithoutADocument());
         all.addAll(lateFeesRespectTheRedefinedI11());
+        all.addAll(atMostOneDigestPerStudentDayAndChannel());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }
