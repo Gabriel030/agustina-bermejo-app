@@ -430,6 +430,25 @@ describe('FinancialDashboardPage', () => {
     expect(screen.getByText(`Rango ampliado para incluir enero de ${year - 2}`)).toBeInTheDocument();
   });
 
+  it('asks one month earlier, without the notice, when the picked month is exactly the start of the range', async () => {
+    const requests = [];
+    install({ requests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    const { from } = rangeFor('LAST_12');
+    const [fromYear, fromMonth] = from.split('-').map(Number);
+    const monthName = new Intl.DateTimeFormat('es-AR', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, fromMonth - 1, 1)));
+    await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: /^Mes, / }));
+    if (fromYear !== Number(currentMonth().slice(0, 4))) await userEvent.click(screen.getByRole('button', { name: 'Año anterior' }));
+    await userEvent.click(screen.getByRole('button', { name: `${monthName} ${fromYear}` }));
+
+    await waitFor(() => expect(requests.some((url) => url.searchParams.get('from') === shiftMonth(from, -1))).toBe(true));
+    expect(screen.queryByText(/Rango ampliado/)).not.toBeInTheDocument();
+  });
+
   it('does not offer months before the first billed month', async () => {
     install({ firstMonth: '2025-06' });
     renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });

@@ -20,7 +20,7 @@ public class FirstBillingMonthQuery {
     }
 
     public Optional<YearMonth> findFirstBillingMonth() {
-        LocalDate earliest = jdbc.queryForObject("select min(i.issue_date) from invoice i", Map.of(), LocalDate.class);
+        LocalDate earliest = jdbc.queryForObject("select min(i.issue_date) from invoice i where i.document_status = 'ISSUED'", Map.of(), LocalDate.class);
         return Optional.ofNullable(earliest).map(YearMonth::from);
     }
 }

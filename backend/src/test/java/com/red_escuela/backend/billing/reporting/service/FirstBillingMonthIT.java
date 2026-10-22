@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,7 +29,7 @@ class FirstBillingMonthIT extends AbstractMonthlyMetricsIT {
 
     @Test
     void answersNullWhenThereAreNoInvoices() throws Exception {
-        assumeTrue(jdbc.queryForObject("select count(*) from invoice", Long.class) == 0L);
+        assertThat(jdbc.queryForObject("select count(*) from invoice", Long.class)).isZero();
 
         JsonNode response = firstMonth(directorToken);
 

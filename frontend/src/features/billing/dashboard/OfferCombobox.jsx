@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 
 export const ALL_SCOPE = 'ALL';
+const LISTBOX_ID = 'offer-listbox';
 
 function fold(text) {
   return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
@@ -80,7 +81,7 @@ export function OfferCombobox({ value, onChange, programs, courses, selectedName
       </div>
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
-          <Button id="offer" type="button" variant="outline" role="combobox" aria-expanded={open} className="h-10 w-full min-w-0 justify-between gap-2 font-normal">
+          <Button id="offer" type="button" variant="outline" role="combobox" aria-haspopup="listbox" aria-controls={open ? LISTBOX_ID : undefined} aria-expanded={open} className="h-10 w-full min-w-0 justify-between gap-2 font-normal">
             <span className="truncate">{triggerLabel}</span>
             <ChevronsUpDown className="opacity-60" />
           </Button>
@@ -88,7 +89,7 @@ export function OfferCombobox({ value, onChange, programs, courses, selectedName
         <PopoverContent align="start" className="w-[max(var(--radix-popover-trigger-width),16rem)] max-w-[calc(100vw-2rem)] gap-0 bg-dialog-bg p-0">
           <Command filter={matchesOffer} value={active} onValueChange={setActive}>
             <CommandInput value={search} onValueChange={setSearch} placeholder="Buscar carrera o curso…" aria-label="Buscar carrera o curso" />
-            <CommandList className="max-h-64">
+            <CommandList id={LISTBOX_ID} className="max-h-64">
               <CommandEmpty>Sin resultados</CommandEmpty>
               <CommandGroup forceMount>
                 <CommandItem value={ALL_SCOPE} forceMount onSelect={() => choose(ALL_SCOPE)} className="min-h-11 px-3">

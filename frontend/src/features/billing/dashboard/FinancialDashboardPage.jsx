@@ -205,7 +205,8 @@ export function FinancialDashboardPage() {
   const earliestMonth = firstMonth.data?.month ?? undefined;
   const noBilling = firstMonth.isSuccess && !firstMonth.data?.month;
   const month = pickedMonth ?? to;
-  const extendedRange = pickedMonth !== null && pickedMonth < rangeFrom;
+  const extendedRange = pickedMonth !== null && pickedMonth <= rangeFrom;
+  const beforeVisibleRange = pickedMonth !== null && pickedMonth < rangeFrom;
   const from = extendedRange ? shiftMonth(pickedMonth, -1) : rangeFrom;
   const [scopeKind, scopeId] = scope.split(':');
   const offerName = (scopeKind === 'program' ? programs.data : courses.data)?.find((offer) => String(offer.id) === scopeId)?.name;
@@ -290,7 +291,7 @@ export function FinancialDashboardPage() {
         <Skeleton className="h-40 w-full" />
       )}
 
-      {ready && extendedRange && (
+      {ready && beforeVisibleRange && (
         <StatusPill tone="warning" className="self-start">
           Rango ampliado para incluir {formatLongMonth(pickedMonth)}
         </StatusPill>
