@@ -4,7 +4,6 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
-import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -25,6 +24,7 @@ import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentRecei
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -76,7 +76,7 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
     @Autowired private SubmitBankTransferReceiptOperation submitOperation;
     @Autowired private ApprovePaymentReceiptUseCase approveReceipt;
     @Autowired private RejectPaymentReceiptUseCase rejectReceipt;
-    @Autowired private CourseEnrollmentAdmissionPaymentListener admissionPaymentListener;
+    @Autowired private CourseEnrollmentApplicationRepository applicationRepository;
     @Autowired private StudentCurrentAccountService accountService;
     @Autowired private PreviewCashPaymentUseCase previewCashPayment;
     @Autowired private RegisterCashPaymentUseCase registerCashPayment;
@@ -371,15 +371,18 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-242")
     @Tag("B26")
-    void aLateAdmissionPaidEventNeverEnrollsACancelledRequest() {
+    void aCancelledRequestIsNeverFoundAsPendingForTheAdmissionPaidListener() {
         Student student = persistStudent();
         NewFlowRequest requested = requestWithTheNewFlowReceipt(student, persistPricedCourse(), "15000.00");
+        assertThat(pendingApplicationsOf(requested.invoiceId())).hasSize(1);
         rejectReceipt.reject(requested.receiptId(), "Comprobante ilegible", persistStaff());
 
-        transactionTemplate.executeWithoutResult(status -> admissionPaymentListener.confirmCourseEnrollmentOfPaidAdmission(AdmissionInvoicePaidEvent.paidFor(requested.invoiceId())));
-
-        assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
+        assertThat(pendingApplicationsOf(requested.invoiceId())).isEmpty();
         assertThat(applicationCancelled(requested.application().getId())).isTrue();
+    }
+
+    private java.util.List<CourseEnrollmentApplication> pendingApplicationsOf(Long invoiceId) {
+        return transactionTemplate.execute(status -> applicationRepository.findLockedPendingByInvoiceId(invoiceId));
     }
 
     @Test
