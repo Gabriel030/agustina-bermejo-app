@@ -21,6 +21,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: '#(pdf)', filename: '../../etc/passwd.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = operationNumber
     And multipart field originAccount = '0170099220000067797370'
@@ -62,6 +63,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: '#(pdf)', filename: 'c.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = operationNumber
     And multipart field originAccount = 'mi.alias.cbu'
@@ -84,6 +86,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: '#(pdf)', filename: 'c.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = secondNumber
     And multipart field originAccount = 'mi.alias.cbu'
@@ -98,6 +101,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: '#(pdf)', filename: 'c.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = 'KAR-403-1'
     And multipart field originAccount = 'alias'
@@ -111,6 +115,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: '#(pdf)', filename: 'c.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = 'KAR-403-2'
     And multipart field originAccount = 'alias'
@@ -124,6 +129,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: '#(pdf)', filename: 'c.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = 'KAR-403-3'
     And multipart field originAccount = 'alias'
@@ -138,6 +144,7 @@ Feature: Subida de comprobante de transferencia (POST /me/bank-transfer-receipts
     And multipart file file = { value: 'MZ no soy un pdf', filename: 'falso.pdf', contentType: 'application/pdf' }
     And multipart field invoiceIds = invoiceId
     And multipart field declaredAmount = '80000.00'
+    And multipart field currency = 'ARS'
     And multipart field transferDate = today
     And multipart field operationNumber = 'KAR-SPOOF'
     And multipart field originAccount = 'alias'

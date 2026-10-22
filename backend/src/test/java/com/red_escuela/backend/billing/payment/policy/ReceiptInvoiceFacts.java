@@ -26,6 +26,10 @@ public final class ReceiptInvoiceFacts {
         return invoice(id, InvoicePaymentStatus.PENDING, dueDate, outstanding);
     }
 
+    public static ReceiptInvoiceFact programAdmission(long id, LocalDate dueDate, String outstanding) {
+        return new ReceiptInvoiceFact(id, ACCOUNT, Currency.ARS, true, InvoicePaymentStatus.PENDING, dueDate, ars(outstanding), true);
+    }
+
     public static ReceiptInvoiceFact overdue(long id, LocalDate dueDate, String outstanding) {
         return invoice(id, InvoicePaymentStatus.OVERDUE, dueDate, outstanding);
     }

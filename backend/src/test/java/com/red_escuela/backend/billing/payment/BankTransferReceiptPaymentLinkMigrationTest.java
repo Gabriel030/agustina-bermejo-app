@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
@@ -8,13 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SlowTest(reason = "Migrates a real database through Flyway to the version before and after the receipt submission model")
 @Tag("D-081")
+@Tag("migration")
 class BankTransferReceiptPaymentLinkMigrationTest {
 
     private static final String LOCATIONS = "classpath:db/migration";
@@ -55,8 +56,7 @@ class BankTransferReceiptPaymentLinkMigrationTest {
                 INVOICE_ID, paymentId);
     }
 
-    private static JdbcTemplate migratedTo(DriverManagerDataSource dataSource, String version) {
-        migrateTo(dataSource, version);
+    private static JdbcTemplate withoutInvoiceForeignKey(DriverManagerDataSource dataSource) {
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("alter table bank_transfer_receipt drop constraint fk_bank_transfer_receipt_invoice");
         return jdbc;
@@ -64,10 +64,8 @@ class BankTransferReceiptPaymentLinkMigrationTest {
 
     @Test
     void migrationAbortsExplicitlyOnOrphanPaymentId() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            JdbcTemplate jdbc = migratedTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
+            JdbcTemplate jdbc = withoutInvoiceForeignKey(dataSource);
             insertReceipt(jdbc, 987654L);
 
             assertThatThrownBy(() -> migrateTo(dataSource, TARGET_VERSION)).isInstanceOf(FlywayException.class).hasMessageContaining("V130 aborted");
@@ -78,10 +76,8 @@ class BankTransferReceiptPaymentLinkMigrationTest {
 
     @Test
     void historicalReceiptsWithoutPaymentSurviveTheMigration() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            JdbcTemplate jdbc = migratedTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
+            JdbcTemplate jdbc = withoutInvoiceForeignKey(dataSource);
             insertReceipt(jdbc, null);
 
             migrateTo(dataSource, TARGET_VERSION);
@@ -94,10 +90,8 @@ class BankTransferReceiptPaymentLinkMigrationTest {
     @Test
     @Tag("D-260")
     void legacyReceiptsStayProtectedFromTwoPendingOnesAndNewReceiptsMaySharetheOldestInvoice() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            JdbcTemplate jdbc = migratedTo(dataSource, PREVIOUS_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(PREVIOUS_VERSION)) {
+            JdbcTemplate jdbc = withoutInvoiceForeignKey(dataSource);
             migrateTo(dataSource, TARGET_VERSION);
             long[] account = new long[1];
             Long personId = insertAccountAndReturnItsPerson(jdbc, account);
@@ -116,10 +110,8 @@ class BankTransferReceiptPaymentLinkMigrationTest {
     @Test
     @Tag("D-269")
     void theDuplicateIndexIgnoresRejectedAndCancelledPaymentsAndPaymentsWithoutDetails() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            JdbcTemplate jdbc = migratedTo(dataSource, TARGET_VERSION);
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo(TARGET_VERSION)) {
+            JdbcTemplate jdbc = withoutInvoiceForeignKey(dataSource);
             long[] account = new long[1];
             Long personId = insertAccountAndReturnItsPerson(jdbc, account);
             Long first = insertPayment(jdbc, account[0], personId, "OP-DUP");

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.repository.PriceVersionRepository;
@@ -16,7 +17,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,13 +31,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-035")
 @Tag("D-240")
 @Tag("D-097")
+@Tag("migration")
 class PriceRevisionMigrationIT {
 
     private record Seed(JdbcTemplate jdbc, long personId, long accountId, long invoiceId, long programId, long courseId) {
-    }
-
-    private static DriverManagerDataSource dataSourceOf(PostgreSQLContainer<?> postgres) {
-        return new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
     private static void migrateTo(DriverManagerDataSource dataSource, String version) {
@@ -86,10 +83,7 @@ class PriceRevisionMigrationIT {
 
     @Test
     void historicalRevisionsBecomeVersionsOfOnePricePerOfferingWithoutRewritingAnyIssuedLine() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = dataSourceOf(postgres);
-            migrateTo(dataSource, "102");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("102")) {
             Seed seed = seedBeforeTheMigration(dataSource);
             long oldest = insertRevision(seed, seed.programId(), null, "MONTHLY_INSTALLMENT", "100000.00", "ARS", "2020-01-01", "2020-01-01 09:00:00");
             long sameDayCorrection = insertRevision(seed, seed.programId(), null, "MONTHLY_INSTALLMENT", "110000.00", "ARS", "2020-01-01", "2020-01-01 18:00:00");
@@ -142,10 +136,7 @@ class PriceRevisionMigrationIT {
 
     @Test
     void aRevisionInAnotherCurrencyThanItsOfferingStopsTheMigrationInsteadOfMigratingSilently() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = dataSourceOf(postgres);
-            migrateTo(dataSource, "102");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("102")) {
             Seed seed = seedBeforeTheMigration(dataSource);
             insertRevision(seed, seed.programId(), null, "MONTHLY_INSTALLMENT", "300.00", "USD", "2025-06-01", "2025-06-01 09:00:00");
 

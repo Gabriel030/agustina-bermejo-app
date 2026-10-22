@@ -194,7 +194,8 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
     private static ReceiptInvoiceFact factOf(Invoice invoice) {
         return new ReceiptInvoiceFact(invoice.getId(), invoice.getStudentCurrentAccountId(), invoice.getCurrency(),
                 invoice.getDocumentStatus() == InvoiceDocumentStatus.ISSUED, invoice.getPaymentStatus(),
-                invoice.getDueDate(), invoice.getAmounts().outstandingAmount().value());
+                invoice.getDueDate(), invoice.getAmounts().outstandingAmount().value(),
+                invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission());
     }
 
     private static String textOrNull(String text) {

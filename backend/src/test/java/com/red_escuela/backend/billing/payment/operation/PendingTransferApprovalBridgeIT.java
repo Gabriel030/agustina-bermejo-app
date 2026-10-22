@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
 
@@ -130,6 +131,80 @@ class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
             assertThat(event.payer().getId()).isEqualTo(studentPersonOf(debtor).getId()).isNotEqualTo(staff.getId());
             assertThat(event.recipients()).hasSize(1);
         });
+    }
+
+    private Long overdueInstallmentAndProgramAdmission(Debtor debtor, List<Long> out) {
+        Long february = invoiceOf(debtor, "50000.00", LocalDate.of(2027, 2, 10));
+        overdueTransition.markAsOverdueWhenPastDueDate(february, TODAY);
+        Long admission = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        jdbc.update("update invoice set issuing_reason = 'PROGRAM_ADMISSION' where id = ?", admission);
+        out.add(february);
+        return admission;
+    }
+
+    @Test
+    @Tag("D-329")
+    void aReceiptOnlyForTheProgramAdmissionPaysTheAdmissionAndLeavesTheOverdueInstallment() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        List<Long> installments = new java.util.ArrayList<>();
+        Long admission = overdueInstallmentAndProgramAdmission(debtor, installments);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(admission), "80000.00", "OP-ADMISSION-ONLY");
+
+        approve(submitted);
+
+        assertThat(paymentStatusOfInvoice(admission)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(installments.get(0))).isEqualTo("OVERDUE");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-329")
+    void aReceiptForTheOverdueInstallmentAndTheAdmissionDeclaringTheAdmissionAmountSettlesTheAdmission() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        List<Long> installments = new java.util.ArrayList<>();
+        Long admission = overdueInstallmentAndProgramAdmission(debtor, installments);
+        Long february = installments.get(0);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(february, admission), "80000.00", "OP-ADMISSION-AND-FEBRUARY");
+
+        assertThat(submitted.items()).extracting(BankTransferReceiptSubmissionResult.Item::invoiceId).containsExactly(admission, february);
+        assertThat(submitted.items()).extracting(BankTransferReceiptSubmissionResult.Item::markedUnderReview).containsExactly(true, false);
+
+        approve(submitted);
+
+        assertThat(paymentStatusOfInvoice(admission)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(february)).isEqualTo("OVERDUE");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-329")
+    void aReceiptForAnAdmissionThatIsNotOfAProgramStillRespectsTheOldestFirstOrder() {
+        Debtor debtor = debtor();
+        List<Long> installments = new java.util.ArrayList<>();
+        Long courseInvoice = overdueInstallmentAndProgramAdmission(debtor, installments);
+        jdbc.update("update invoice set issuing_reason = 'AD_HOC_CHARGE' where id = ?", courseInvoice);
+
+        assertThatThrownBy(() -> submitOn(debtor, List.of(courseInvoice), "80000.00", "OP-NOT-ADMISSION"))
+                .isInstanceOf(com.red_escuela.backend.billing.payment.exception.ReceiptMustCoverOldestInvoicesFirstException.class);
+    }
+
+    @Test
+    @Tag("D-139")
+    void approvingAPaymentThatAlreadyHasItsCreditFailsWithAClearConflictAndCreditsNothingElse() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(march), "80000.00", "OP-DOUBLE-APPROVAL");
+        inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(debtor.accountId()), submitted.paymentId(),
+                com.red_escuela.backend.shared.domain.NonNegativeMoney.of(ars("80000.00")), TODAY, "credito previo"));
+
+        assertThatThrownBy(() -> approve(submitted))
+                .isInstanceOf(com.red_escuela.backend.billing.payment.exception.PaymentAlreadyApprovedException.class)
+                .satisfies(failure -> assertThat(com.red_escuela.backend.shared.exception.ErrorCodeResponse.of((RuntimeException) failure).code())
+                        .isEqualTo("PAYMENT_ALREADY_APPROVED"));
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where payment_id = ?", Long.class, submitted.paymentId())).isEqualTo(1L);
     }
 
     @Test

@@ -275,8 +275,24 @@
 					</systemPropertyVariables>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
-					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
+					<systemPropertyVariables>
+						<test.fork>true</test.fork>
+					</systemPropertyVariables>
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>resolve-mockito-agent</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

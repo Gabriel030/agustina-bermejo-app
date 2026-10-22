@@ -1,17 +1,18 @@
 package com.red_escuela.backend.billing.discount.repository;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SlowTest(reason = "Migrates a real database through Flyway step by step to prove legacy manual discounts survive the individual discount rename")
 @Tag("D-384")
+@Tag("migration")
 class StudentDiscountMigrationTest {
 
     private static void migrateTo(DriverManagerDataSource dataSource, String target) {
@@ -54,10 +55,7 @@ class StudentDiscountMigrationTest {
 
     @Test
     void everyManualDiscountOfAnIssuedInvoiceBecomesIndividualWithoutLosingAnAmount() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "117");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("117")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             long first = insertIssuedInvoiceWithManualDiscount(jdbc, "F-00000001", 10);
             long second = insertIssuedInvoiceWithManualDiscount(jdbc, "F-00000002", 25);

@@ -1,13 +1,12 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Statement;
 import java.util.Map;
@@ -15,16 +14,14 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Tag("migration")
 class CollectionReminderConfigurationMigrationTest {
 
     @Test
     @Tag("D-351")
     @Tag("D-368")
     void versionOneIsSeededWithTheDefaultsAndTheChecksAcceptTheGlobalScopeButRejectATopicWithProgram() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("103").load().migrate();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("103")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into address default values");
             Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);
@@ -70,11 +67,8 @@ class CollectionReminderConfigurationMigrationTest {
     @Test
     @Tag("D-351")
     void withoutAnyPersonNoVersionIsSeededAndTheMigrationStillApplies() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("103")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("103").load().migrate();
             jdbc.update("delete from person");
 
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("106").load().migrate();
