@@ -1,0 +1,118 @@
+name: Mutation full
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: mutation-full
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      sha: ${{ steps.decide.outputs.sha }}
+    steps:
+      - name: Decide whether develop changed since the last green full run
+        id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          sha=$(gh api "repos/${{ github.repository }}/commits/develop" --jq .sha)
+          run=true
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            last=$(gh run list --repo "${{ github.repository }}" --workflow mutation-full.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)
+            if [ -n "$last" ] && gh run download "$last" --repo "${{ github.repository }}" -n mutation-full-verified -D "$RUNNER_TEMP/verified" > /dev/null 2>&1; then
+              if [ "$(cat "$RUNNER_TEMP/verified/sha" 2>/dev/null)" = "$sha" ]; then
+                run=false
+              fi
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "develop is at $sha: full mutation run needed = $run"
+
+  mutation-full:
+    runs-on: ubuntu-latest
+    needs: decide
+    if: needs.decide.outputs.run == 'true'
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.decide.outputs.sha }}
+
+      - name: Mark the job start
+        run: echo "PIT_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+
+      - name: Restore the Maven repository
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
+          key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Run PIT from scratch with the 90 percent threshold
+        working-directory: backend
+        run: |
+          set -o pipefail
+          rm -rf target/pit-history
+          mkdir -p target/pit-history
+          ./mvnw -B -P mutation test-compile org.pitest:pitest-maven:mutationCoverage 2>&1 | tee "$RUNNER_TEMP/pit.log"
+
+      - name: Save the PIT history for the incremental runs of develop
+        if: (success() || failure()) && hashFiles('backend/target/pit-history/history.bin') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: backend/target/pit-history
+          key: pit-history-develop-full-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Record the verified develop commit
+        run: |
+          mkdir -p verified
+          echo "${{ needs.decide.outputs.sha }}" > verified/sha
+
+      - name: Upload the verified develop commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-full-verified
+          path: verified
+          retention-days: 30
+
+      - name: Summarize the PIT run
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### PIT mutation testing (full, develop @ ${{ needs.decide.outputs.sha }})"
+            echo "- Duration: $(( $(date +%s) - PIT_START ))s"
+            grep -hE "Created [0-9]+ mutation test units$|Generated [0-9]+ mutations|Calculated coverage|run mutation analysis" "$RUNNER_TEMP/pit.log" | sed 's/^/- /' || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the PIT report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pit-report-full
+          path: backend/target/pit-reports
+          retention-days: 14
+          if-no-files-found: ignore

@@ -2,8 +2,9 @@
 """Presupuestos de tiempo de la suite de tests del backend.
 
 Uso:
-  test-budget.py check-shard --shard N --reports DIR [--meta-out FILE] [limites]
-      falla si una clase supera el limite por clase (o el de @SlowTest) o el shard supera su limite
+  test-budget.py check-shard --shard N --reports DIR [--meta-out FILE] [--shard-limit error|warn] [limites]
+      falla si una clase supera el limite por clase (o el de @SlowTest); el limite del shard se mide con el
+      reloj del job (SHARD_END - SHARD_START), no con la suma de las JVM, y con --shard-limit warn solo advierte
   test-budget.py aggregate --shards DIR --out DIR [--baseline FILE] [--changed FILE] [limites]
       une los shards, escribe report.md y metrics.json y falla si hay mas contextos de Spring que el tope
 
@@ -33,6 +34,7 @@ def add_limits(parser):
     parser.add_argument('--max-slow-class', type=float, default=DEFAULT_MAX_SLOW_CLASS)
     parser.add_argument('--max-shard', type=float, default=DEFAULT_MAX_SHARD)
     parser.add_argument('--max-contexts', type=int, default=DEFAULT_MAX_CONTEXTS)
+    parser.add_argument('--shard-limit', choices=['error', 'warn'], default='error')
     parser.add_argument('--test-root', default=TEST_ROOT)
 
 
@@ -73,10 +75,18 @@ def read_contexts(path):
     return found
 
 
+def clock_seconds():
+    start = int(os.environ.get('SHARD_START', '0') or 0)
+    end = int(os.environ.get('SHARD_END', '0') or 0)
+    return end - start if start and end >= start else None
+
+
 def check_shard(args):
     times = class_times(args.reports)
     shard_seconds = sum(times.values())
+    wall = clock_seconds()
     failures = []
+    warnings = []
     slow = {}
     for name, seconds in sorted(times.items(), key=lambda item: -item[1]):
         reason = slow_reason(args.test_root, name)
@@ -86,9 +96,12 @@ def check_shard(args):
                 failures.append('%s took %.1fs, above the @SlowTest limit of %.0fs' % (name, seconds, args.max_slow_class))
         elif seconds > args.max_class:
             failures.append('%s took %.1fs, above the per-class limit of %.0fs: speed it up or mark it @SlowTest(reason = "...")' % (name, seconds, args.max_class))
-    if shard_seconds > args.max_shard:
-        failures.append('shard %d spent %.0fs in tests, above the per-shard limit of %.0fs' % (args.shard, shard_seconds, args.max_shard))
-    print('shard %d: %d classes, %.0fs of tests (limit %.0fs), %d @SlowTest' % (args.shard, len(times), shard_seconds, args.max_shard, len(slow)))
+    if wall is not None and wall > args.max_shard:
+        message = 'shard %d took %.0fs of wall clock, above the per-shard limit of %.0fs' % (args.shard, wall, args.max_shard)
+        (warnings if args.shard_limit == 'warn' else failures).append(message)
+    clock_text = '%.0fs of wall clock' % wall if wall is not None else 'wall clock unavailable (the shard limit is not checked)'
+    print('shard %d: %d classes, %.0fs of test time summed over the JVMs, %s (limit %.0fs), %d @SlowTest' % (
+        args.shard, len(times), shard_seconds, clock_text, args.max_shard, len(slow)))
     for name, seconds in sorted(times.items(), key=lambda item: -item[1])[:5]:
         print('  %6.1fs %s' % (seconds, short(name)))
     if args.meta_out:
@@ -100,6 +113,8 @@ def check_shard(args):
     if not times:
         print('no surefire reports found: nothing to check')
         return 0
+    for warning in warnings:
+        print('::warning::BUDGET EXCEEDED: ' + warning)
     for failure in failures:
         print('::error::BUDGET EXCEEDED: ' + failure)
     return 1 if failures else 0
@@ -183,7 +198,7 @@ def aggregate(args):
     lines.append('')
     if shard_seconds:
         lines.append('Shards (tests): ' + ', '.join('%d: %s' % (i, clock(s)) for i, s in enumerate(shard_seconds)) +
-                     ' · límite por shard %s' % clock(args.max_shard))
+                     ' (suma de JVM) · límite por shard %s de reloj' % clock(args.max_shard))
         lines.append('')
 
     touched = {n: t for n, t in times.items() if n in changed}
@@ -211,7 +226,7 @@ def aggregate(args):
     if len(contexts) > args.max_contexts:
         failures.append('%d distinct Spring contexts, above the limit of %d' % (len(contexts), args.max_contexts))
         lines.append('> **Tope de contextos superado:** %d > %d. Reutilizá una configuración existente (`@SharedMockBeans`, mismas propiedades) en lugar de crear un contexto nuevo.' % (len(contexts), args.max_contexts))
-    lines.append('Presupuestos: clase %ds, @SlowTest %ds, shard %ds, contextos %d. Ver `docs/context/testing.md`, sección "Presupuesto de tiempo y pirámide de tests".' % (
+    lines.append('Presupuestos: clase %ds, @SlowTest %ds, shard %ds de reloj, contextos %d. Ver `docs/context/testing.md`, sección "Presupuesto de tiempo y pirámide de tests".' % (
         args.max_class, args.max_slow_class, args.max_shard, args.max_contexts))
 
     os.makedirs(args.out, exist_ok=True)
