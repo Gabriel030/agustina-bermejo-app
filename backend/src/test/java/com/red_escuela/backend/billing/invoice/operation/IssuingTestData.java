@@ -70,7 +70,7 @@ public final class IssuingTestData {
         return switch (type) {
             case PROMOTION -> DiscountCandidateOrigin.LEGACY_PROMOTION;
             case COHORT_ENTRY -> DiscountCandidateOrigin.LEGACY_COHORT_ENTRY;
-            case SCHOLARSHIP, ANNUAL_UPFRONT, INDIVIDUAL -> DiscountCandidateOrigin.STUDENT_DISCOUNT;
+            case SCHOLARSHIP, COHORT_PROMOTION, ANNUAL_UPFRONT, INDIVIDUAL -> DiscountCandidateOrigin.STUDENT_DISCOUNT;
         };
     }
 }

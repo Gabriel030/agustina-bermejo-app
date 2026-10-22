@@ -8,9 +8,9 @@ import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException;
 import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchException;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
+import com.red_escuela.backend.billing.operation.CohortPromotionAcquirer;
 import com.red_escuela.backend.billing.service.PaymentPlanOptionFinder;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionGuard;
-import com.red_escuela.backend.billing.service.PromotionRedeemer;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
@@ -29,13 +29,13 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
     private final CurrentPersonService currentPersonService;
     private final PaymentPlanSelectionGuard guard;
     private final RecurringFeeWindowService recurringFeeWindowService;
-    private final PromotionRedeemer promotionRedeemer;
+    private final CohortPromotionAcquirer cohortPromotionAcquirer;
     private final Clock clock;
 
     public SelectPaymentPlanForCourseService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                               CourseEnrollmentRepository courseEnrollmentRepository, CurrentPersonService currentPersonService,
                                               PaymentPlanSelectionGuard guard, RecurringFeeWindowService recurringFeeWindowService,
-                                              PromotionRedeemer promotionRedeemer,
+                                              CohortPromotionAcquirer cohortPromotionAcquirer,
                                               Clock clock) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.paymentPlanOptionFinder = paymentPlanOptionFinder;
@@ -43,7 +43,7 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         this.currentPersonService = currentPersonService;
         this.guard = guard;
         this.recurringFeeWindowService = recurringFeeWindowService;
-        this.promotionRedeemer = promotionRedeemer;
+        this.cohortPromotionAcquirer = cohortPromotionAcquirer;
         this.clock = clock;
     }
 
@@ -72,7 +72,7 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         }
         selection.setCreatedBy(currentPersonService.resolveCurrentPerson());
         PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
-        promotionRedeemer.redeemIfEligible(courseEnrollment, saved);
+        cohortPromotionAcquirer.acquireWhenEligible(courseEnrollment, saved);
         return saved;
     }
 }

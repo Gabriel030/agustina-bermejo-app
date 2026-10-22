@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.discount.repository;
 
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountOrigin;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,6 +25,12 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
     List<StudentDiscount> findByProgramEnrollmentIdAndStatus(Long programEnrollmentId, StudentDiscountStatus status);
 
     List<StudentDiscount> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, StudentDiscountStatus status);
+
+    long countByDiscountDefinitionIdAndOrigin(Long discountDefinitionId, StudentDiscountOrigin origin);
+
+    Optional<StudentDiscount> findFirstByProgramEnrollmentIdAndOriginOrderByIdAsc(Long programEnrollmentId, StudentDiscountOrigin origin);
+
+    Optional<StudentDiscount> findFirstByCourseEnrollmentIdAndOriginOrderByIdAsc(Long courseEnrollmentId, StudentDiscountOrigin origin);
 
     List<StudentDiscount> findByStudentIdOrderByIdDesc(Long studentId);
 

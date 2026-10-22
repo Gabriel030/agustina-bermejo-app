@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-284")
 @Tag("D-384")
 @Tag("D-036")
+@Tag("D-386")
 class StudentDiscountSchemaIT extends AbstractIntegrationTest {
 
     @Autowired
@@ -33,6 +34,10 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
     private TransactionTemplate transactionTemplate;
     @Autowired
     private IssuingScenarioFactory factory;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+    @Autowired
+    private com.red_escuela.backend.identity.repository.StudentRepository studentRepository;
 
     private IssuingScenarioFactory.Offering offering;
     private IssuingScenarioFactory.Learner learner;
@@ -203,5 +208,77 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
                 .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
         assertThat(jdbc.queryForObject("select discount_amount from invoice_discount where id = ?", java.math.BigDecimal.class, other)).isEqualByComparingTo("10");
         assertThat(jdbc.queryForObject("select consumption_released_at is null from invoice_discount where id = ?", Boolean.class, mixed)).isTrue();
+    }
+
+    private Long insertCohortPromotionDefinition() {
+        return jdbc.queryForObject("""
+                insert into discount_definition (name, discount_type, applicable_invoice_type, calculation, installments_total, available_from, priority, program_id, status,
+                    created_by_process, created_at, direct_publication)
+                values ('Cohorte esquema', 'COHORT_PROMOTION', 'MONTHLY_INSTALLMENT', cast('{"type":"PROPORTIONAL","ratePercent":10}' as jsonb), 3, date '2027-01-01', 1, ?,
+                    'ACTIVE', 'TEST', now(), true) returning id
+                """, Long.class, offering.programId());
+    }
+
+    private Map<String, Object> cohortAcquisitionRow(Long definitionId) {
+        return with(validRow(), "discount_definition_id", definitionId, "discount_type", "COHORT_PROMOTION", "origin", "COHORT_ACQUISITION", "installments_total", 3);
+    }
+
+    @Test
+    void anEnrollmentCanHoldOnlyOneCohortAcquisitionAndItsTypeAndOriginAlwaysGoTogether() {
+        Long definitionId = insertCohortPromotionDefinition();
+        long first = insert(cohortAcquisitionRow(definitionId));
+        try {
+            expectViolation("ux_student_discount_cohort_acquisition_program_enrollment", cohortAcquisitionRow(definitionId));
+            expectViolation("ck_student_discount_cohort_promotion_origin", with(validRow(), "origin", "COHORT_ACQUISITION"));
+            expectViolation("ck_student_discount_cohort_promotion_origin", with(cohortAcquisitionRow(definitionId), "origin", "DIRECT_GRANT"));
+            expectViolation("ck_student_discount_cohort_promotion_has_definition", with(cohortAcquisitionRow(definitionId), "discount_definition_id", null));
+            transactionTemplate.executeWithoutResult(status -> {
+                assertThat(insert(validRow())).isPositive();
+                status.setRollbackOnly();
+            });
+        } finally {
+            jdbc.update("delete from student_discount where id = ?", first);
+            jdbc.update("delete from discount_definition where id = ?", definitionId);
+        }
+    }
+
+    private Long persistCourseEnrollment() {
+        return transactionTemplate.execute(status -> {
+            com.red_escuela.backend.academicstructure.entity.Term term = new com.red_escuela.backend.academicstructure.entity.Term();
+            term.setYear(2027);
+            term.setDescription("2027-1C " + System.nanoTime());
+            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            term.setStartDate(java.time.LocalDateTime.of(2027, 3, 1, 0, 0));
+            term.setEndDate(java.time.LocalDateTime.of(2027, 12, 31, 0, 0));
+            entityManager.persist(term);
+            com.red_escuela.backend.academicstructure.entity.Course course = new com.red_escuela.backend.academicstructure.entity.Course();
+            course.setTerm(term);
+            course.setName("Curso esquema " + System.nanoTime());
+            course.setIsActive(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            course.setCurrency(Currency.ARS);
+            course.setDurationMonths(10);
+            entityManager.persist(course);
+            com.red_escuela.backend.enrollment.entity.CourseEnrollment enrollment = new com.red_escuela.backend.enrollment.entity.CourseEnrollment();
+            enrollment.setStudent(studentRepository.findById(learner.studentId()).orElseThrow());
+            enrollment.setCourse(course);
+            enrollment.setStatus(com.red_escuela.backend.enrollment.entity.EnrollmentStatus.ENROLLED);
+            enrollment.setEnrollmentDate(java.time.LocalDateTime.of(2027, 2, 1, 10, 0));
+            entityManager.persist(enrollment);
+            return enrollment.getId();
+        });
+    }
+
+    @Test
+    void aCourseEnrollmentCanHoldOnlyOneCohortAcquisition() {
+        Long definitionId = insertCohortPromotionDefinition();
+        Long courseEnrollmentId = persistCourseEnrollment();
+        Map<String, Object> row = with(cohortAcquisitionRow(definitionId), "program_enrollment_id", null, "course_enrollment_id", courseEnrollmentId);
+        long first = insert(row);
+        try {
+            expectViolation("ux_student_discount_cohort_acquisition_course_enrollment", new LinkedHashMap<>(row));
+        } finally {
+            jdbc.update("delete from student_discount where id = ?", first);
+            jdbc.update("delete from discount_definition where id = ?", definitionId);
+        }
     }
 }

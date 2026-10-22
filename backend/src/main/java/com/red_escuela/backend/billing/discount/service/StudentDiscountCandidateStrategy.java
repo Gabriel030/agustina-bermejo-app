@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.discount.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.LectiveYearSpan;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountOrigin;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
@@ -66,7 +67,7 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
             return List.of();
         }
         List<StudentDiscount> discounts = reader.apply(enrollment.get()).stream()
-                .filter(discount -> discount.getApplicableInvoiceType() == invoiceType && discount.getCurrency() == context.facts().offeringCurrency())
+                .filter(discount -> discount.getOrigin() == StudentDiscountOrigin.DIRECT_GRANT && discount.getApplicableInvoiceType() == invoiceType && discount.getCurrency() == context.facts().offeringCurrency())
                 .toList();
         if (discounts.isEmpty()) {
             return List.of();
