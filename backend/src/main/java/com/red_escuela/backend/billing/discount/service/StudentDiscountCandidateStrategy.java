@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.discount.service;
 
+import com.red_escuela.backend.billing.discount.domain.AppliedStudentDiscountInstallment;
+import com.red_escuela.backend.billing.discount.domain.CohortPromotionProgress;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.DiscountSavingCalculator;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
@@ -7,6 +10,9 @@ import com.red_escuela.backend.billing.discount.domain.LectiveYearSpan;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountOrigin;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
+import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscountRepository;
+import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
+import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
@@ -17,24 +23,41 @@ import com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCandidat
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidateStrategy {
 
     private static final int MAX_NAME_LENGTH = 200;
+    private static final String PROCESS_NAME = "INVOICE_ISSUING";
 
     private final EnrollmentStudentDiscountReader discountReader;
     private final EnrollmentLectiveYearReader lectiveYearReader;
     private final BillingEnrollmentLookup enrollmentLookup;
     private final EnrollmentFeeIssuanceReader enrollmentFeeReader;
+    private final AppliedStudentDiscountRepository appliedRepository;
+    private final DiscountDefinitionRepository definitionRepository;
+    private final StudentDiscountRepository studentDiscountRepository;
+    private final Clock clock;
 
     public StudentDiscountCandidateStrategy(EnrollmentStudentDiscountReader discountReader, EnrollmentLectiveYearReader lectiveYearReader,
-                                            BillingEnrollmentLookup enrollmentLookup, EnrollmentFeeIssuanceReader enrollmentFeeReader) {
+                                            BillingEnrollmentLookup enrollmentLookup, EnrollmentFeeIssuanceReader enrollmentFeeReader,
+                                            AppliedStudentDiscountRepository appliedRepository, DiscountDefinitionRepository definitionRepository,
+                                            StudentDiscountRepository studentDiscountRepository, Clock clock) {
+        this.appliedRepository = appliedRepository;
+        this.definitionRepository = definitionRepository;
+        this.studentDiscountRepository = studentDiscountRepository;
+        this.clock = clock;
         this.discountReader = discountReader;
         this.lectiveYearReader = lectiveYearReader;
         this.enrollmentLookup = enrollmentLookup;
@@ -66,19 +89,63 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
         if (enrollment.isEmpty()) {
             return List.of();
         }
-        List<StudentDiscount> discounts = reader.apply(enrollment.get()).stream()
-                .filter(discount -> discount.getOrigin() == StudentDiscountOrigin.DIRECT_GRANT && discount.getApplicableInvoiceType() == invoiceType && discount.getCurrency() == context.facts().offeringCurrency())
+        List<StudentDiscount> sameKind = reader.apply(enrollment.get()).stream()
+                .filter(discount -> discount.getApplicableInvoiceType() == invoiceType && discount.getCurrency() == context.facts().offeringCurrency())
                 .toList();
+        List<StudentDiscount> discounts = sameKind.stream().filter(discount -> discount.getOrigin() == StudentDiscountOrigin.DIRECT_GRANT).toList();
+        List<InvoiceDiscountCandidate> cohortCandidates = findCohortPromotionCandidates(sameKind.stream()
+                .filter(discount -> discount.getOrigin() == StudentDiscountOrigin.COHORT_ACQUISITION).toList(), context);
         if (discounts.isEmpty()) {
-            return List.of();
+            return cohortCandidates;
         }
         Optional<LectiveYearSpan> lectiveYear = invoiceType == InvoiceType.ENROLLMENT_FEE ? findLectiveYearOfEnrollmentFee(enrollment.get(), request) : Optional.empty();
-        return discounts.stream()
+        List<InvoiceDiscountCandidate> directCandidates = discounts.stream()
                 .filter(discount -> invoiceType == InvoiceType.ENROLLMENT_FEE
                         ? isFirstLiveEnrollmentFeeOfLectiveYear(discount, enrollment.get(), lectiveYear) : discount.coversPeriod(request.period()))
                 .map(discount -> candidateOf(discount, context))
                 .filter(candidate -> !candidate.discountAmount().value().isZero())
                 .toList();
+        return Stream.concat(directCandidates.stream(), cohortCandidates.stream()).toList();
+    }
+
+    @Override
+    public void markDiscountAsApplied(InvoiceDiscountCandidate winner) {
+        if (winner.discountType() != DiscountType.COHORT_PROMOTION || winner.installmentsTotal() == null || !winner.installmentsTotal().equals(winner.installmentNumber())) {
+            return;
+        }
+        StudentDiscount discount = studentDiscountRepository.findById(winner.studentDiscountId()).orElseThrow();
+        if (discount.getStatus() == StudentDiscountStatus.ACTIVE) {
+            discount.recordLastInstallmentConsumed(StatusChangeActor.ofProcess(PROCESS_NAME), Instant.now(clock));
+            studentDiscountRepository.save(discount);
+        }
+    }
+
+    private List<InvoiceDiscountCandidate> findCohortPromotionCandidates(List<StudentDiscount> promotions, InvoiceIssuingContext context) {
+        List<StudentDiscount> active = promotions.stream()
+                .filter(promotion -> promotion.getStatus() == StudentDiscountStatus.ACTIVE || promotion.getStatus() == StudentDiscountStatus.EXHAUSTED).toList();
+        if (active.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, DiscountDefinition> definitions = definitionRepository.findAllById(active.stream().map(StudentDiscount::getDiscountDefinitionId).toList()).stream()
+                .collect(Collectors.toMap(DiscountDefinition::getId, Function.identity()));
+        Map<Long, Long> usesById = appliedRepository.findLiveApplicationsOf(active.stream().map(StudentDiscount::getId).toList()).stream()
+                .collect(Collectors.groupingBy(AppliedStudentDiscountInstallment::studentDiscountId, Collectors.counting()));
+        return active.stream()
+                .map(promotion -> new CohortPromotionProgress(promotion, definitions.get(promotion.getDiscountDefinitionId()).getAvailableUntil(), usesById.getOrDefault(promotion.getId(), 0L)))
+                .filter(progress -> progress.canBeAppliedOn(context.facts().issueDate()))
+                .map(progress -> cohortCandidateOf(progress, context))
+                .filter(candidate -> !candidate.discountAmount().value().isZero())
+                .toList();
+    }
+
+    private InvoiceDiscountCandidate cohortCandidateOf(CohortPromotionProgress progress, InvoiceIssuingContext context) {
+        StudentDiscount promotion = progress.promotion();
+        NonNegativeMoney base = context.facts().chargeAmount();
+        NonNegativeMoney saving = DiscountSavingCalculator.calculateSavingOnFinalPrice(promotion.getCalculation(), base, Optional.ofNullable(promotion.getCapPerInvoice()));
+        String name = "Promoción: " + promotion.getReason();
+        return new InvoiceDiscountCandidate(promotion.getDiscountType(), promotion.getId(), promotion.getId(), name.substring(0, Math.min(name.length(), MAX_NAME_LENGTH)),
+                promotion.getApplicableInvoiceType(), base, saving, progress.nextInstallmentNumber().isPresent() ? progress.nextInstallmentNumber().getAsInt() : null,
+                promotion.getInstallmentsTotal(), 1, promotion.getPriority(), promotion.getGrantedAt(), promotion.getCalculation(), DiscountCandidateOrigin.STUDENT_DISCOUNT);
     }
 
     private Optional<EnrollmentReference> enrollmentOf(InvoiceIssuingRequest request) {

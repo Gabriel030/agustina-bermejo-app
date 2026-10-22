@@ -67,7 +67,7 @@ class MetricsAccessAndPerformanceIT extends AbstractMonthlyMetricsIT {
                 Long account = accounts[student % accounts.length];
                 Long invoice = seedInvoice(account, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, issued,
                         issued.plusDays(9), student % 5 == 0 ? "OVERDUE" : "PAID", "10000.00", student % 3 == 0 ? "2000.00" : "0.00",
-                        student % 3 == 0 ? "PROMOTION" : null);
+                        student % 3 == 0 ? "COHORT_PROMOTION" : null);
                 if (student % 5 != 0) {
                     seedAllocation(account, invoice, Currency.ARS, student % 3 == 0 ? "8000.00" : "10000.00", issued.plusDays(student % 12));
                 } else {

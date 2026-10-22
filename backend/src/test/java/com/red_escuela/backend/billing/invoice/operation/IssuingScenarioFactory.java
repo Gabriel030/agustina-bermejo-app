@@ -7,11 +7,11 @@ import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.Promotion;
-import com.red_escuela.backend.billing.entity.PromotionBenefit;
-import com.red_escuela.backend.billing.entity.PromotionRedemption;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.domain.CohortPromotionAcquisition;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
@@ -201,28 +201,24 @@ public class IssuingScenarioFactory {
         });
     }
 
-    public Long redeemPromotion(Offering offering, Learner learner, FeeType feeType, Percentage rate, Integer scopeCount) {
+    public Long acquireCohortPromotion(Offering offering, Learner learner, FeeType feeType, Percentage rate, Integer scopeCount) {
+        return acquireCohortPromotion(offering, learner, feeType, rate, scopeCount, null);
+    }
+
+    public Long acquireCohortPromotion(Offering offering, Learner learner, FeeType feeType, Percentage rate, Integer scopeCount, LocalDate availableUntil) {
         return transactionTemplate.execute(status -> {
-            Promotion promotion = new Promotion();
-            promotion.setDescription("Promo " + rate.points().stripTrailingZeros().toPlainString() + "%");
-            promotion.setProgram(entityManager.getReference(Program.class, offering.programId()));
-            promotion.setEligibilityValidFrom(LocalDate.of(2020, 1, 1));
-            promotion.setEligibilityValidTo(LocalDate.of(2030, 1, 1));
-            promotion.setCreatedBy(entityManager.getReference(Person.class, offering.directorId()));
-            promotion.setCreatedAt(LocalDateTime.of(2027, 1, 1, 0, 0));
+            Instant now = Instant.parse("2027-02-01T10:00:00Z");
+            DiscountDraftBuilder draft = DiscountDraftBuilder.cohortPromotion().named("Promo " + rate.points().stripTrailingZeros().toPlainString() + "%")
+                    .forProgram(offering.programId()).forInvoiceType(InvoiceType.valueOf(feeType.name())).withPercent(rate.points().toPlainString())
+                    .availableFrom(LocalDate.of(2020, 1, 1)).availableUntil(availableUntil).withEnrollmentWindow(LocalDate.of(2020, 1, 1), LocalDate.of(2030, 1, 1));
+            DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition((scopeCount == null ? draft.withoutInstallments() : draft.withInstallments(scopeCount)).build(),
+                    offering.directorId(), now);
+            entityManager.persist(definition);
+            CohortPromotionAcquisition acquisition = new CohortPromotionAcquisition(EnrollmentReference.ofProgram(learner.programEnrollmentId()), learner.studentId(), offering.currency(),
+                    definition, new ScholarshipPeriodRange(YearMonth.of(2027, 2), YearMonth.of(2027, 2)), offering.directorId(), "Promoción adquirida");
+            StudentDiscount promotion = StudentDiscount.acquireCohortPromotion(acquisition, now);
             entityManager.persist(promotion);
-            PromotionBenefit benefit = new PromotionBenefit();
-            benefit.setPromotion(promotion);
-            benefit.setFeeType(feeType);
-            benefit.setValue(new MonetaryAdjustment.Proportional(rate));
-            benefit.setInvoiceScopeCount(scopeCount);
-            entityManager.persist(benefit);
-            PromotionRedemption redemption = new PromotionRedemption();
-            redemption.setPromotion(promotion);
-            redemption.setPaymentPlanSelection(entityManager.getReference(PaymentPlanSelection.class, learner.selectionId()));
-            redemption.setRedeemedAt(LocalDateTime.of(2027, 2, 1, 0, 0));
-            entityManager.persist(redemption);
-            return benefit.getId();
+            return promotion.getId();
         });
     }
 }

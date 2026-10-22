@@ -13,7 +13,7 @@ import {
 describe('ADJUSTMENT_TYPE_LABELS', () => {
   it.each([
     ['SCHOLARSHIP', 'Beca'],
-    ['PROMOTION', 'Promoción'],
+    ['COHORT_PROMOTION', 'Promoción'],
     ['ANNUAL_UPFRONT', 'Pago anual'],
     ['COHORT_ENTRY', 'Ingreso de cohorte'],
     ['INDIVIDUAL', 'Descuento individual'],
@@ -62,7 +62,7 @@ describe('estado de la factura', () => {
 describe('descuentos del renglón', () => {
   it('arma la etiqueta con el avance de cuotas', () => {
     expect(discountLabel({ discountName: 'Beca 50 %', discountSource: 'SCHOLARSHIP', installmentNumber: 1, installmentsTotal: 3 })).toBe('Beca 50 % (cuota 1 de 3)');
-    expect(discountLabel({ discountName: 'Promo', discountSource: 'PROMOTION', installmentNumber: 2, installmentsTotal: null })).toBe('Promo (cuota 2)');
+    expect(discountLabel({ discountName: 'Promo', discountSource: 'COHORT_PROMOTION', installmentNumber: 2, installmentsTotal: null })).toBe('Promo (cuota 2)');
     expect(discountLabel({ discountName: '', discountSource: 'SCHOLARSHIP', installmentNumber: null })).toBe('Beca');
   });
 

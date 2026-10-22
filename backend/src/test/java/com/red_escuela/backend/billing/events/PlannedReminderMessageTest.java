@@ -70,7 +70,7 @@ class PlannedReminderMessageTest {
         PlannedReminderMessage filtered = message.withoutLinesPrecedingTheirDueDate().orElseThrow();
 
         assertThat(filtered.leadNoticeType()).isEqualTo(PlannedReminderNoticeType.AFTER_ISSUE_REMINDER);
-        assertThat(filtered.priority()).isEqualTo(2);
+        assertThat(filtered.priority()).isEqualTo(4);
     }
 
     @Test
@@ -153,6 +153,7 @@ class PlannedReminderMessageTest {
     @Tag("D-412")
     void theNoticeTypeOrderMatchesTheSeverityRankOfTheDomain(PlannedReminderNoticeType noticeType) {
         assertThat(noticeType.ordinal() + 1).isEqualTo(ReminderMessageSeverity.rankOf(ReminderMessageType.valueOf(noticeType.name())));
+        assertThat(noticeType.dispatchPriority()).isEqualTo(ReminderMessageSeverity.dispatchPriorityOf(ReminderMessageType.valueOf(noticeType.name())));
     }
 
     @Test

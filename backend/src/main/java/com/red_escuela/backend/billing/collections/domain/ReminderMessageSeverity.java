@@ -20,6 +20,16 @@ public final class ReminderMessageSeverity {
         };
     }
 
+    public static int dispatchPriorityOf(ReminderMessageType messageType) {
+        return switch (messageType) {
+            case BEFORE_SUSPENSION_REMINDER -> 1;
+            case AFTER_DUE_REMINDER -> 2;
+            case BEFORE_DUE_REMINDER -> 3;
+            case AFTER_ISSUE_REMINDER -> 4;
+            case ISSUANCE_NOTICE -> 5;
+        };
+    }
+
     public static ReminderMessageType mostSevereOf(Collection<ReminderMessageType> messageTypes) {
         return messageTypes.stream().max(Comparator.comparingInt(ReminderMessageSeverity::rankOf)).orElseThrow();
     }
