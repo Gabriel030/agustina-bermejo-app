@@ -8,12 +8,17 @@ import { cn } from '@/lib/utils';
 // este mismo ancho máximo.
 const ANCHO_MAXIMO = 'max-w-[1200px]';
 
-export function PageContainer({ children, className, title, action }) {
+export function PageContainer({ children, className, title, description, action }) {
   return (
     <div className={cn('mx-auto flex min-w-0 w-full flex-1 flex-col gap-6', ANCHO_MAXIMO, className)}>
-      {(title || action) && (
+      {(title || description || action) && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {title && <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">{title}</h1>}
+          {(title || description) && (
+            <div className="flex min-w-0 flex-col gap-0.5">
+              {title && <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">{title}</h1>}
+              {description && <p className="truncate text-sm text-ink-soft">{description}</p>}
+            </div>
+          )}
           {action}
         </div>
       )}
