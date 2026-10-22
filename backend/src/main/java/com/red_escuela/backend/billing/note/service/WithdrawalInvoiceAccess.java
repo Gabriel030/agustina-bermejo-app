@@ -26,6 +26,14 @@ public class WithdrawalInvoiceAccess {
         return invoiceQueries.findAccountIdsOfEnrollment(programEnrollmentId, courseEnrollmentId);
     }
 
+    public Optional<Long> findAccountIdOfInvoice(Long invoiceId) {
+        return invoiceQueries.findAccountIdOfInvoice(invoiceId);
+    }
+
+    public Optional<Invoice> findInvoiceWithLines(Long invoiceId) {
+        return invoiceQueries.findInvoiceWithLines(invoiceId);
+    }
+
     public List<Invoice> findInvoicesOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId) {
         return invoiceQueries.findInvoicesOfEnrollment(programEnrollmentId, courseEnrollmentId);
     }

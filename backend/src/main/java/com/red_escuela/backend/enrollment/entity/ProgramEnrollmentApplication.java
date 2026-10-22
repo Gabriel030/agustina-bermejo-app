@@ -63,6 +63,18 @@ public class ProgramEnrollmentApplication {
     @Column(name = "enrollment_failure_notified_at")
     private LocalDateTime enrollmentFailureNotifiedAt;
 
+    @Column(name = "expired_at")
+    private LocalDateTime expiredAt;
+
+    public boolean expireIfApproved() {
+        if (status != ProgramEnrollmentApplicationStatus.APPROVED) {
+            return false;
+        }
+        this.status = ProgramEnrollmentApplicationStatus.EXPIRED;
+        this.expiredAt = ApplicationTime.now();
+        return true;
+    }
+
     public void markEnrollmentFailureNotified() {
         this.enrollmentFailureNotifiedAt = ApplicationTime.now();
     }
