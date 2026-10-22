@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
@@ -54,6 +55,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 @Transactional
 @org.springframework.test.context.event.RecordApplicationEvents
+@SharedSpyBeans
 class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -74,7 +76,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Autowired
     private org.springframework.test.context.event.ApplicationEvents applicationEvents;
 
-    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    @Autowired
     private com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort withdrawalBillingPort;
 
     @AfterEach

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -39,7 +40,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
@@ -63,6 +63,7 @@ import static org.mockito.Mockito.reset;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedSpyBeans
 class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private RequestProgramEnrollmentApplicationUseCase requestUseCase;
     @Autowired private ApproveProgramEnrollmentApplicationUseCase approveUseCase;
@@ -78,7 +79,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private NotificationRepository notificationRepository;
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
-    @MockitoSpyBean private ProgramEnrollmentService programEnrollmentService;
+    @Autowired private ProgramEnrollmentService programEnrollmentService;
 
     private BillingInvariantChecker invariants;
 

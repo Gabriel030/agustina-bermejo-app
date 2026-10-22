@@ -1,10 +1,10 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
 import org.mockito.Mockito;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -72,12 +72,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @ExtendWith(OutputCaptureExtension.class)
+@SharedMockBeans
 class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     private static final StatusChangeActor TEST_ACTOR = new StatusChangeActor(null, "OverdueInvoiceDetectionTest");
 
-    @MockitoBean
+    @Autowired
     private LateFeeAccrualStep lateFeeAccrualStep;
-    @MockitoBean
+    @Autowired
     private LateFeeOnOverdueInvoiceListener lateFeeOnOverdueInvoiceListener;
 
     @org.junit.jupiter.api.BeforeEach
