@@ -103,6 +103,8 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     private final AtomicInteger sequence = new AtomicInteger();
     private final Map<Long, List<DispatchItem>> itemsByDelivery = new HashMap<>();
     private final Set<Long> notApplicable = new HashSet<>();
+    private final Set<Long> paidBetweenPlanAndSend = new HashSet<>();
+    private final Map<Long, String> optedOut = new HashMap<>();
     private final Map<Long, DeliveryContent> trimmedContent = new HashMap<>();
     private Person recipient;
 
@@ -165,7 +167,16 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
             }
 
             @Override
+            public Optional<String> suppressionReasonOf(NotificationDelivery delivery) {
+                return Optional.ofNullable(optedOut.get(delivery.getId()));
+            }
+
+            @Override
             public boolean isStillApplicable(NotificationDelivery delivery, LocalDate date) {
+                if (paidBetweenPlanAndSend.remove(delivery.getId())) {
+                    notApplicable.add(delivery.getId());
+                    return true;
+                }
                 return !notApplicable.contains(delivery.getId());
             }
         };
@@ -296,6 +307,66 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
         assertThat(deliveryOf(paid).getStatusReason()).isEqualTo("NO_LONGER_APPLICABLE");
         assertThat(deliveryOf(second).getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
         assertThat(deliveryOf(third).getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
+    }
+
+    @Test
+    @Tag("e04")
+    @Tag("D-354")
+    void aMailPaidBetweenThePlanAndTheSendingIsSuppressedAndNeverSent() {
+        LocalDate day = LocalDate.of(2034, 3, 9);
+        Long paidLater = queue(day, HIGHEST, day.plusDays(5), true);
+        Long other = queue(day, LOWER, day.plusDays(5), true);
+        paidBetweenPlanAndSend.add(paidLater);
+        List<String> sentSubjects = new ArrayList<>();
+        TransactionalEmailGateway recording = (TransactionalEmail email) -> {
+            sentSubjects.add(email.subject());
+            return realGateway.send(email);
+        };
+        EmailDeliveryDispatchJob job = jobWith(date -> new EmailDispatchSettings(EmailDispatchWindow.STANDARD, 250), channelWith(recording));
+
+        at(day, 9, 0);
+        job.dispatchDueEmails();
+
+        assertThat(deliveryOf(paidLater).getStatus()).isEqualTo(DeliveryStatus.SUPPRESSED);
+        assertThat(deliveryOf(paidLater).getStatusReason()).isEqualTo("NO_LONGER_APPLICABLE");
+        assertThat(deliveryOf(other).getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
+        assertThat(sentSubjects).hasSize(1).doesNotContain(deliveryOf(paidLater).getSubject());
+    }
+
+    @Test
+    @Tag("D-340")
+    @Tag("D-372")
+    void aMailThatTheSourceReportsAsOptedOutIsSuppressedAndDoesNotEnterThePlan() {
+        LocalDate day = LocalDate.of(2034, 3, 10);
+        Long optedOutMail = queue(day, HIGHEST, day.plusDays(5), true);
+        Long other = queue(day, LOWER, day.plusDays(5), true);
+        optedOut.put(optedOutMail, "OPTED_OUT");
+
+        at(day, 9, 0);
+        jobWithCap(1).dispatchDueEmails();
+
+        assertThat(deliveryOf(optedOutMail).getStatus()).isEqualTo(DeliveryStatus.SUPPRESSED);
+        assertThat(deliveryOf(optedOutMail).getStatusReason()).isEqualTo("OPTED_OUT");
+        assertThat(deliveryOf(other).getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
+    }
+
+    @Test
+    @Tag("c06")
+    @Tag("D-342")
+    void theWindowComesFromTheSettingsOfTheDay() {
+        LocalDate day = LocalDate.of(2034, 3, 13);
+        Long mail = queue(day, LOWER, day.plusDays(5), false);
+        EmailDispatchWindow afternoon = new EmailDispatchWindow(LocalTime.of(14, 0), LocalTime.of(16, 0));
+        EmailDeliveryDispatchJob job = jobWith(date -> new EmailDispatchSettings(afternoon, 250), realChannel);
+
+        at(day, 9, 30);
+        job.dispatchDueEmails();
+        assertThat(deliveryOf(mail).getStatus()).isEqualTo(DeliveryStatus.QUEUED);
+        at(day, 14, 0);
+        job.dispatchDueEmails();
+        assertThat(deliveryOf(mail).getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
+        at(day, 16, 0);
+        assertThat(job.dispatchDueEmails()).isZero();
     }
 
     @Test

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Component
@@ -61,11 +62,10 @@ public class EmailDispatchPlanningService {
         Map<Long, NotificationDelivery> stillApplicable = new HashMap<>();
         int suppressed = 0;
         for (NotificationDelivery delivery : locked) {
-            if (dispatchSource.isStillApplicable(delivery, today)) {
-                stillApplicable.put(delivery.getId(), delivery);
-            } else {
-                delivery.suppress(DeliveryStatusReason.NO_LONGER_APPLICABLE);
+            if (suppressIfNotDispatchable(delivery, today)) {
                 suppressed++;
+            } else {
+                stillApplicable.put(delivery.getId(), delivery);
             }
         }
         List<DispatchCandidate> candidates = new ArrayList<>();
@@ -96,6 +96,25 @@ public class EmailDispatchPlanningService {
         log.info("Planificacion de despacho fecha={} candidatos={} cupoRestante={} aEnviar={} diferidos={} descartados={} suprimidos={} recortados={}",
                 today, locked.size(), remaining, plan.toSend().size(), plan.toDefer().size(), plan.toDiscard().size(), suppressed, trimmed);
         return List.copyOf(toSend);
+    }
+
+    public boolean suppressBeforeSending(Long deliveryId, LocalDate today) {
+        return Boolean.TRUE.equals(transactionTemplate.execute(status -> deliveryRepository.findByIdForUpdate(deliveryId)
+                .filter(delivery -> delivery.getStatus().isWaitingForDispatch())
+                .map(delivery -> suppressIfNotDispatchable(delivery, today)).orElse(false)));
+    }
+
+    private boolean suppressIfNotDispatchable(NotificationDelivery delivery, LocalDate today) {
+        Optional<String> reason = dispatchSource.suppressionReasonOf(delivery);
+        if (reason.isPresent()) {
+            delivery.suppress(reason.get());
+            return true;
+        }
+        if (!dispatchSource.isStillApplicable(delivery, today)) {
+            delivery.suppress(DeliveryStatusReason.NO_LONGER_APPLICABLE);
+            return true;
+        }
+        return false;
     }
 
     private List<DispatchItem> itemsOf(NotificationDelivery delivery) {

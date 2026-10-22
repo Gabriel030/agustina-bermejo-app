@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.billing.events.PlannedReminderNotice;
 import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
+import com.red_escuela.backend.notification.delivery.domain.DeliveryStatusReason;
 import com.red_escuela.backend.notification.delivery.domain.DispatchItem;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.service.EmailDispatchSource;
@@ -42,7 +43,25 @@ public class CollectionReminderEmailDispatchSource implements EmailDispatchSourc
         if (!isCollectionReminder(delivery)) {
             return true;
         }
-        return applicabilityQuery.isStillApplicable(delivery.getRelatedEntityId(), date);
+        return storedMessageOf(delivery)
+                .map(stored -> applicabilityQuery.isStillApplicable(delivery.getRelatedEntityId(), date, highlightedInvoiceIdsOf(stored.message())))
+                .orElseGet(() -> applicabilityQuery.isStillApplicable(delivery.getRelatedEntityId(), date));
+    }
+
+    @Override
+    public Optional<String> suppressionReasonOf(NotificationDelivery delivery) {
+        if (!isCollectionReminder(delivery) || preferenceQuery.isPreDueReminderEmailEnabled(delivery.getRecipientPersonId())) {
+            return Optional.empty();
+        }
+        return emailsQuery.findEmailsOfReminder(delivery.getRelatedEntityId())
+                .map(StoredReminderEmails::emailMessages)
+                .filter(messages -> ordinalOf(delivery.getDedupKey()) >= 0 && ordinalOf(delivery.getDedupKey()) < messages.size())
+                .filter(messages -> messages.get(ordinalOf(delivery.getDedupKey())).withoutLinesPrecedingTheirDueDate().isEmpty())
+                .map(messages -> DeliveryStatusReason.OPTED_OUT);
+    }
+
+    private static Set<Long> highlightedInvoiceIdsOf(PlannedReminderMessage message) {
+        return message.lines().stream().filter(PlannedReminderLine::isHighlighted).map(PlannedReminderLine::invoiceId).collect(Collectors.toSet());
     }
 
     @Override

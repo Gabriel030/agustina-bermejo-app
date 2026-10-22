@@ -27,6 +27,8 @@ import static com.red_escuela.backend.billing.events.PlannedReminderFixtures.lin
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -133,5 +135,31 @@ class CollectionReminderEmailDispatchSourceTest {
         storedEmails(mixedDigest());
 
         assertThat(source.contentWithoutItems(reminderDelivery(0), Set.of("invoice:1", "invoice:2"))).isEmpty();
+    }
+
+    @Test
+    void applicabilityIsJudgedOnTheInvoicesNoticedByThisMailOnly() {
+        storedEmails(mixedDigest());
+        when(applicability.isStillApplicable(REMINDER_ID, PLANNED_ON, Set.of(1L, 2L))).thenReturn(false);
+
+        assertThat(source.isStillApplicable(reminderDelivery(0), PLANNED_ON)).isFalse();
+        verify(applicability, never()).isStillApplicable(REMINDER_ID, PLANNED_ON);
+    }
+
+    @Test
+    void aMailMadeOnlyOfPreDueLinesIsSuppressedForARecipientWhoOptedOut() {
+        when(preferences.isPreDueReminderEmailEnabled(PERSON_ID)).thenReturn(false);
+        storedEmails(digest(PlannedReminderNoticeType.BEFORE_DUE_REMINDER, true, arsBlock(line(1, DUE_SOON, ars(70000), true, PlannedReminderNoticeType.BEFORE_DUE_REMINDER))));
+
+        assertThat(source.suppressionReasonOf(reminderDelivery(0))).contains("OPTED_OUT");
+    }
+
+    @Test
+    void aMixedMailOrARecipientWhoDidNotOptOutIsNotSuppressedByPreference() {
+        storedEmails(mixedDigest());
+        assertThat(source.suppressionReasonOf(reminderDelivery(0))).isEmpty();
+        when(preferences.isPreDueReminderEmailEnabled(PERSON_ID)).thenReturn(false);
+        assertThat(source.suppressionReasonOf(reminderDelivery(0))).isEmpty();
+        assertThat(source.suppressionReasonOf(deliveryOf("Invoice", 11L, "other:1"))).isEmpty();
     }
 }

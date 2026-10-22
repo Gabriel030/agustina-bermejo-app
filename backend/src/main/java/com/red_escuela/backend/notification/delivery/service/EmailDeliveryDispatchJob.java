@@ -68,6 +68,9 @@ public class EmailDeliveryDispatchJob {
                 log.warn("La franja de envio de mails se cerro con {} mails planificados sin enviar fecha={}", toSend.size() - attempted, today);
                 return attempted;
             }
+            if (planningService.suppressBeforeSending(id, today)) {
+                continue;
+            }
             dispatchOne(id);
             attempted++;
         }

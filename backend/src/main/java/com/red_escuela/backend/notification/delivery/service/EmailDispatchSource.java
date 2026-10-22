@@ -15,5 +15,7 @@ public interface EmailDispatchSource {
 
     Optional<DeliveryContent> contentWithoutItems(NotificationDelivery delivery, Set<String> itemKeys);
 
+    Optional<String> suppressionReasonOf(NotificationDelivery delivery);
+
     boolean isStillApplicable(NotificationDelivery delivery, LocalDate date);
 }

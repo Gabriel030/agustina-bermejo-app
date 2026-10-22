@@ -35,9 +35,19 @@ public class StoredCollectionReminderApplicabilityQuery implements CollectionRem
         return reminderRepository.findById(reminderId).map(reminder -> hasRemindableInvoice(reminder, date)).orElse(false);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isStillApplicable(Long reminderId, LocalDate date, Set<Long> noticedInvoiceIds) {
+        return reminderRepository.existsById(reminderId) && hasRemindableInvoice(noticedInvoiceIds, date);
+    }
+
     private boolean hasRemindableInvoice(CollectionReminder reminder, LocalDate date) {
         Set<Long> noticedInvoiceIds = reminder.getEmailMessages().stream().map(PlannedReminderMessage::lines).flatMap(List::stream)
                 .filter(PlannedReminderLine::isHighlighted).map(PlannedReminderLine::invoiceId).collect(Collectors.toSet());
+        return hasRemindableInvoice(noticedInvoiceIds, date);
+    }
+
+    private boolean hasRemindableInvoice(Set<Long> noticedInvoiceIds, LocalDate date) {
         return factsLoader.loadInvoiceFactsOf(noticedInvoiceIds, date).stream()
                 .anyMatch(fact -> eligibilityPolicySet.evaluateRulesUntilFirstViolation(fact).firstDenial().isEmpty());
     }
