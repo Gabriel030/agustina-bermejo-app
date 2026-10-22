@@ -225,8 +225,8 @@ class BankTransferReceiptReviewEndpointIT extends AbstractBankTransferReceiptHtt
         MvcResult again = mockMvc.perform(review("approve", submitted.receiptId(), token, null)).andExpect(status().isConflict()).andReturn();
         MvcResult rejectAfter = mockMvc.perform(review("reject", submitted.receiptId(), token, "{\"rejectionReason\":\"Tarde\"}")).andExpect(status().isConflict()).andReturn();
 
-        assertThat(codeOf(again)).isNotBlank();
-        assertThat(codeOf(rejectAfter)).isNotBlank();
+        assertThat(codeOf(again)).isEqualTo("PAYMENT_RECEIPT_ALREADY_REVIEWED");
+        assertThat(codeOf(rejectAfter)).isEqualTo("PAYMENT_RECEIPT_ALREADY_REVIEWED");
         assertThat(jdbc.queryForObject("select count(*) from current_account_entry where payment_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class,
                 submitted.paymentId())).isEqualTo(1L);
     }

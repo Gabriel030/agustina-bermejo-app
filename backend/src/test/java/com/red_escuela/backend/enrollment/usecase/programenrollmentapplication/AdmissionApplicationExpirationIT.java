@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -301,7 +303,7 @@ class AdmissionApplicationExpirationIT extends AbstractIntegrationTest {
         assertThat(paymentStatusOf(invoice)).isNotEqualTo("CANCELLED");
 
         MutableClock.INSTANCE.setDate(ADMISSION_END.plusDays(3));
-        approvePaymentReceiptUseCase.approve(receipt.getId(), persistPreceptor());
+        approvePaymentReceiptUseCase.approve(receipt.getId(), persistPreceptor(), PaymentVerification.none());
 
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(isEnrolled(application)).isTrue());
         assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ?", Long.class, invoice.getId())).isZero();

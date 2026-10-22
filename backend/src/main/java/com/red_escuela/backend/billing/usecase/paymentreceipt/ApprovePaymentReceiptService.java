@@ -15,11 +15,6 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
     }
 
     @Override
-    public BankTransferReceipt approve(Long id, Person decidedBy) {
-        return reviewer.approveReceipt(id, decidedBy, PaymentVerification.none());
-    }
-
-    @Override
     public BankTransferReceipt approve(Long id, Person decidedBy, PaymentVerification verification) {
         return reviewer.approveReceipt(id, decidedBy, verification);
     }

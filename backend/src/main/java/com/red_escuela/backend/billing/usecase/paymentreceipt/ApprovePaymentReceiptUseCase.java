@@ -7,6 +7,4 @@ import com.red_escuela.backend.identity.entity.Person;
 public interface ApprovePaymentReceiptUseCase {
 
     BankTransferReceipt approve(Long id, Person decidedBy, PaymentVerification verification);
-
-    BankTransferReceipt approve(Long id, Person decidedBy);
 }

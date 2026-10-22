@@ -161,7 +161,7 @@ class PaymentReceiptReviewConcurrencyIT extends AbstractPendingTransferBridgeIT 
                         winners++;
                     } else {
                         assertThat(failure).isInstanceOf(ConflictException.class);
-                        assertThat(ErrorCodeResponse.of(failure).code()).isIn("PAYMENT_RECEIPT_ALREADY_REVIEWED", "INVALID_PAYMENT_RECEIPT_STATE");
+                        assertThat(ErrorCodeResponse.of(failure).code()).isEqualTo("PAYMENT_RECEIPT_ALREADY_REVIEWED");
                     }
                 }
                 assertThat(winners).isEqualTo(1);

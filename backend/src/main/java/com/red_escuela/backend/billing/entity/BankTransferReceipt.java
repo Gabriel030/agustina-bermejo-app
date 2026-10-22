@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.identity.entity.Person;
 
@@ -114,7 +115,7 @@ public class BankTransferReceipt {
 
     private void requirePendingReview() {
         if (!isPendingReview()) {
-            throw new InvalidPaymentReceiptStateException(id, status.name());
+            throw new PaymentReceiptAlreadyReviewedException();
         }
     }
 }

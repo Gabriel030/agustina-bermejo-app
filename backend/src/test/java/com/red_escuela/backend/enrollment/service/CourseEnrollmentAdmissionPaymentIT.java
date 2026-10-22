@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -146,12 +148,12 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         CourseEnrollmentApplication application = request(student, course);
         Long invoiceId = application.getInvoiceId();
 
-        var first = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin);
+        var first = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
 
         assertThat(first.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
         var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), receiptFile());
-        approvePaymentReceiptUseCase.approve(second.getId(), admin);
+        approvePaymentReceiptUseCase.approve(second.getId(), admin, PaymentVerification.none());
 
         awaitEnrollments(student, 1);
         assertThat(invoiceRepository.findById(invoiceId).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
@@ -203,7 +205,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Person admin = persistAdministrative();
         CourseEnrollmentApplication application = request(student, course);
         Long invoiceId = application.getInvoiceId();
-        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin);
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
         awaitEnrollments(student, 1);
 
         transactionTemplate.executeWithoutResult(status -> admissionPaymentListener.confirmCourseEnrollmentOfPaidAdmission(AdmissionInvoicePaidEvent.paidFor(invoiceId)));
@@ -220,7 +222,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         CourseEnrollmentApplication application = request(student, course);
         Long invoiceId = application.getInvoiceId();
 
-        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrative());
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrative(), PaymentVerification.none());
 
         awaitEnrollments(student, 1);
         Long enrollmentId = courseEnrollmentRepository.findByStudentId(student.getId()).get(0).getId();
@@ -250,7 +252,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Student student = persistStudent();
         CourseEnrollmentApplication application = request(student, course);
 
-        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrative());
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrative(), PaymentVerification.none());
 
         awaitEnrollments(student, 1);
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId()).get(0).getStatus())

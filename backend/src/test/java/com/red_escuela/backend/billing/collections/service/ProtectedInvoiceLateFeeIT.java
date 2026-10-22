@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
@@ -61,7 +63,7 @@ class ProtectedInvoiceLateFeeIT extends AbstractLateFeeScenarioIT {
         assertThat(reload(origin).getPaymentStatus().name()).isEqualTo("PAYMENT_UNDER_REVIEW");
 
         MutableClock.INSTANCE.setDate(d(2027, 4, 2));
-        approveReceipt.approve(submitted[0].receiptId(), person);
+        approveReceipt.approve(submitted[0].receiptId(), person, PaymentVerification.none());
         awaitEventsDrained();
         reconcile(origin, d(2027, 4, 2));
         reconcile(origin, d(2027, 5, 1));

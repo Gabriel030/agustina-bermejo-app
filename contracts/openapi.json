@@ -530,7 +530,6 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "reviewNote", "transferDate", "verifiedAmount" ],
         "type" : "object"
       },
       "AssignElectiveGroupRequest" : {

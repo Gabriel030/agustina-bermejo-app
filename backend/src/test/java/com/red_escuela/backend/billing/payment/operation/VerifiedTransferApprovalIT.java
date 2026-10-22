@@ -224,7 +224,38 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
         MutableClock.INSTANCE.setDate(LocalDate.of(2027, 3, 10));
         BankTransferReceiptSubmissionResult submitted = submit(command(debtor, List.of(march), "80000.00", LocalDate.of(2027, 3, 9), "OP-B17-DECLARED"));
 
-        assertThatThrownBy(() -> approveReceipt.approve(submitted.receiptId(), staff)).isInstanceOf(ReceiptTransferDateMismatchException.class);
+        assertThatThrownBy(() -> approveReceipt.approve(submitted.receiptId(), staff, PaymentVerification.none())).isInstanceOf(ReceiptTransferDateMismatchException.class);
+
+        assertThat(receiptStatus(submitted.receiptId())).isEqualTo("REJECTED");
+        assertThat(creditEntriesOf(debtor)).isZero();
+    }
+
+    @Test
+    @Tag("D-320")
+    @Tag("D-243")
+    void uploadedAt2359AndApprovedJustAfterMidnightKeepsTheUploadDateAndIsApproved() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        MutableClock.INSTANCE.setDateTime(java.time.LocalDateTime.of(2027, 3, 9, 23, 59));
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(march), "80000.00", "OP-MIDNIGHT-OK");
+        MutableClock.INSTANCE.setDateTime(java.time.LocalDateTime.of(2027, 3, 10, 0, 0));
+
+        BankTransferReceipt approved = approveWith(submitted, new PaymentVerification(null, LocalDate.of(2027, 3, 9), null));
+
+        assertThat(approved.getStatus().name()).isEqualTo("APPROVED");
+        assertThat(paymentRow(submitted.paymentId()).get("paid_on").toString()).isEqualTo("2027-03-09");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+    }
+
+    @Test
+    @Tag("D-320")
+    void uploadedJustAfterMidnightWithTheTransferOfTheDayBeforeIsRejected() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        MutableClock.INSTANCE.setDateTime(java.time.LocalDateTime.of(2027, 3, 10, 0, 0));
+        BankTransferReceiptSubmissionResult submitted = submit(command(debtor, List.of(march), "80000.00", LocalDate.of(2027, 3, 9), "OP-MIDNIGHT-KO"));
+
+        assertThatThrownBy(() -> approveWith(submitted, PaymentVerification.none())).isInstanceOf(ReceiptTransferDateMismatchException.class);
 
         assertThat(receiptStatus(submitted.receiptId())).isEqualTo("REJECTED");
         assertThat(creditEntriesOf(debtor)).isZero();

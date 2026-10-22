@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -334,7 +336,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
         entityManager.flush();
 
-        approvePaymentReceiptUseCase.approve(receipt.getId(), preceptor);
+        approvePaymentReceiptUseCase.approve(receipt.getId(), preceptor, PaymentVerification.none());
         entityManager.flush();
         entityManager.clear();
 
