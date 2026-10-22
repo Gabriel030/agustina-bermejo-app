@@ -334,6 +334,59 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
         invariants.assertAllBillingInvariantsHold();
     }
 
+    private void registerCashOf(Student student, String amount) {
+        Money money = ars(amount);
+        Person staff = persistStaff();
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(staff.getId().toString(), null, "ROLE_ADMINISTRATIVO"));
+        try {
+            String fingerprint = previewCashPayment.previewCashPayment(student.getId(), money).fingerprint();
+            registerCashPayment.registerCashPayment(student.getId(), new RegisterCashPaymentRequest(money, null, null, null, fingerprint), "b26-cash-" + System.nanoTime());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Tag("D-242")
+    @Tag("D-261")
+    void aRejectedReceiptWhoseCourseInvoiceIsCoveredByTheIdleCreditLeavesItPaidAndTheRequestAlive() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Student student = persistStudent();
+        NewFlowRequest requested = requestWithTheNewFlowReceipt(student, persistPricedCourse(), "15000.00");
+        registerCashOf(student, "15000.00");
+        assertThat(invoiceStatus(requested.invoiceId())).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(creditAvailableIn(requested.invoiceId())).isEqualByComparingTo("15000.00");
+
+        rejectReceipt.reject(requested.receiptId(), "Comprobante ilegible", persistStaff());
+
+        assertThat(receiptStatus(requested.receiptId())).isEqualTo("REJECTED");
+        assertThat(invoiceStatus(requested.invoiceId())).isEqualTo("PAID");
+        assertThat(applicationCancelled(requested.application().getId())).isFalse();
+        assertThat(creditAvailableIn(requested.invoiceId())).isEqualByComparingTo("0");
+        awaitEnrollments(student, 1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-242")
+    @Tag("D-261")
+    void aRejectedReceiptWhoseCourseInvoiceIsNotCoveredByTheIdleCreditCancelsTheInvoiceAndTheRequestAndKeepsTheCredit() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Student student = persistStudent();
+        Course course = persistPricedCourse();
+        NewFlowRequest requested = requestWithTheNewFlowReceipt(student, course, "15000.00");
+        registerCashOf(student, "5000.00");
+
+        rejectReceipt.reject(requested.receiptId(), "Comprobante ilegible", persistStaff());
+
+        assertThat(receiptStatus(requested.receiptId())).isEqualTo("REJECTED");
+        assertThat(invoiceStatus(requested.invoiceId())).isEqualTo("CANCELLED");
+        assertThat(applicationCancelled(requested.application().getId())).isTrue();
+        assertThat(creditAvailableIn(requested.invoiceId())).isEqualByComparingTo("5000.00");
+        assertEnrollmentsStay(student, 0);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
     @Test
     @Tag("D-242")
     @Tag("B26")

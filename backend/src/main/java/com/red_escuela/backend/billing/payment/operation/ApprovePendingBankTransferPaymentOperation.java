@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.account.service.StudentCurrentAccountServ
 import com.red_escuela.backend.billing.events.AccountCreditAllocatedEvent;
 import com.red_escuela.backend.billing.events.PaymentApprovedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
 import com.red_escuela.backend.billing.operation.BillingOperation;
@@ -123,7 +124,10 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         recordPaymentCreditOnce(account, payment, approvedAmount, uploadDate);
         Set<Long> programAdmissionInvoiceIds = invoicesById.values().stream()
                 .filter(invoice -> invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission()).map(Invoice::getId).collect(Collectors.toSet());
-        AccountCreditAllocationResult allocation = allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.reviewer(), programAdmissionInvoiceIds);
+        Set<Long> underReviewInvoiceIdsOfThisPayment = items.stream().filter(PaymentCheckoutItem::isMarkedUnderReview).map(PaymentCheckoutItem::getInvoiceId)
+                .filter(invoiceId -> invoicesById.get(invoiceId).getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW).collect(Collectors.toSet());
+        AccountCreditAllocationResult allocation = allocationService.allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.reviewer(),
+                programAdmissionInvoiceIds, underReviewInvoiceIdsOfThisPayment);
         List<Long> released = reviewRelease.releaseProtectedItemsStillUnderReview(items, invoicesById, today, command.reviewer(), RELEASE_REASON);
         log.info("Pago pendiente por transferencia aprobado y acreditado: pago={}, cuenta={}, monto={}, fechaDeSubida={}, facturasLiberadasDeRevision={}", payment.getId(),
                 account.getId(), approvedAmount.value().amount(), uploadDate, released);

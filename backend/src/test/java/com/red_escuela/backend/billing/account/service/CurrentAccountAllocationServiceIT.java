@@ -189,17 +189,38 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
     }
 
     @Test
-    void anInvoiceWithAReceiptUnderReviewIsAllocatedLikeAnyOpenInvoice() {
-        Long invoice = issue("80000.00", LocalDate.of(2027, 4, 10), FeeType.ADMINISTRATIVE_FEE);
+    @Tag("D-261")
+    void anInvoiceWithAReceiptUnderReviewIsSkippedByTheAutomaticAllocationAndTheNextOneIsPaid() {
+        Long underReview = issue("80000.00", LocalDate.of(2027, 3, 10), FeeType.ADMINISTRATIVE_FEE);
+        Long next = issue("80000.00", LocalDate.of(2027, 4, 10), FeeType.ADMINISTRATIVE_FEE);
         inTransaction(() -> {
-            invoiceRepository.findByIdForUpdate(invoice).orElseThrow().markPaymentUnderReview(TODAY, ACTOR, "Comprobante");
+            invoiceRepository.findByIdForUpdate(underReview).orElseThrow().markPaymentUnderReview(TODAY, ACTOR, "Comprobante");
             return null;
         });
         receiveCredit("80000.00", TODAY);
 
         allocateOn(TODAY);
 
-        assertThat(paymentStatusOf(invoice)).isEqualTo("PAID");
+        assertThat(paymentStatusOf(underReview)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(paymentStatusOf(next)).isEqualTo("PAID");
+        assertThat(unallocatedCredit()).isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-261")
+    void creditStaysUnallocatedWhileTheOnlyOpenInvoiceIsUnderReview() {
+        Long underReview = issue("80000.00", LocalDate.of(2027, 4, 10), FeeType.ADMINISTRATIVE_FEE);
+        inTransaction(() -> {
+            invoiceRepository.findByIdForUpdate(underReview).orElseThrow().markPaymentUnderReview(TODAY, ACTOR, "Comprobante");
+            return null;
+        });
+        receiveCredit("80000.00", TODAY);
+
+        allocateOn(TODAY);
+
+        assertThat(paymentStatusOf(underReview)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(unallocatedCredit()).isEqualByComparingTo("80000.00");
         invariants.assertAllBillingInvariantsHold();
     }
 

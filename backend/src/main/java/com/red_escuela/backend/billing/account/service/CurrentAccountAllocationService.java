@@ -72,13 +72,13 @@ public class CurrentAccountAllocationService {
     @Transactional(propagation = Propagation.MANDATORY)
     public AccountCreditAllocationResult allocateAccountCreditToOldestInvoices(StudentCurrentAccount lockedAccount, LocalDate businessDate,
                                                                               StatusChangeActor actor) {
-        return allocateAccountCredit(lockedAccount, businessDate, actor, strategy, Set.of(), Set.of());
+        return allocateAccountCredit(lockedAccount, businessDate, actor, Set.of(), Set.of(), Set.of());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public AccountCreditAllocationResult allocateAccountCreditToOldestInvoicesSkipping(StudentCurrentAccount lockedAccount, LocalDate businessDate,
                                                                                       StatusChangeActor actor, Set<Long> skippedInvoiceIds) {
-        return allocateAccountCredit(lockedAccount, businessDate, actor, strategy, Set.of(), skippedInvoiceIds);
+        return allocateAccountCredit(lockedAccount, businessDate, actor, Set.of(), skippedInvoiceIds, Set.of());
     }
 
     public List<PlannedInvoiceAllocation> planFullInvoiceAllocationsSkipping(NonNegativeMoney credit, List<OpenInvoiceView> openInvoiceViews,
@@ -90,24 +90,35 @@ public class CurrentAccountAllocationService {
     public AccountCreditAllocationResult allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(StudentCurrentAccount lockedAccount, LocalDate businessDate,
                                                                                             StatusChangeActor actor,
                                                                                             Set<Long> programAdmissionInvoiceIdsBeingPaid) {
-        AccountCreditAllocationStrategy effective = programAdmissionInvoiceIdsBeingPaid.isEmpty() ? strategy
-                : new ProgramAdmissionInvoicePaidFirstAllocationStrategy(strategy, programAdmissionInvoiceIdsBeingPaid);
-        return allocateAccountCredit(lockedAccount, businessDate, actor, effective, programAdmissionInvoiceIdsBeingPaid, Set.of());
+        return allocateAccountCredit(lockedAccount, businessDate, actor, programAdmissionInvoiceIdsBeingPaid, Set.of(), Set.of());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AccountCreditAllocationResult allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(StudentCurrentAccount lockedAccount,
+                                                                                                            LocalDate businessDate, StatusChangeActor actor,
+                                                                                                            Set<Long> programAdmissionInvoiceIdsBeingPaid,
+                                                                                                            Set<Long> underReviewInvoiceIdsOfTheApprovedPayment) {
+        return allocateAccountCredit(lockedAccount, businessDate, actor, programAdmissionInvoiceIdsBeingPaid, Set.of(), underReviewInvoiceIdsOfTheApprovedPayment);
     }
 
     private AccountCreditAllocationResult allocateAccountCredit(StudentCurrentAccount lockedAccount, LocalDate businessDate, StatusChangeActor actor,
-                                                                AccountCreditAllocationStrategy strategy,
-                                                                Set<Long> programAdmissionInvoiceIdsBeingPaid, Set<Long> skippedInvoiceIds) {
+                                                                Set<Long> programAdmissionInvoiceIdsBeingPaid, Set<Long> skippedInvoiceIds,
+                                                                Set<Long> underReviewInvoiceIdsThatMayBePaid) {
         NonNegativeMoney creditToAllocate = lockedAccount.getUnallocatedCreditAmount();
         if (creditToAllocate.value().isZero()) {
             return AccountCreditAllocationResult.nothingAllocated();
         }
-        List<Invoice> openInvoices = invoices.listOpenInvoicesOfAccount(lockedAccount.getId());
-        List<OpenInvoiceView> orderedViews = strategy.sortInAllocationOrder(openInvoices.stream().map(OpenInvoiceView::of)
-                .filter(view -> !view.outstandingAmount().value().isZero()).filter(view -> !skippedInvoiceIds.contains(view.invoiceId())).toList());
-        List<PlannedInvoiceAllocation> plan = strategy.planFullInvoiceAllocations(creditToAllocate, orderedViews);
+        List<Invoice> openInvoices = invoices.listInvoicesAllocatableToAccountCredit(lockedAccount.getId(), underReviewInvoiceIdsThatMayBePaid);
+        List<OpenInvoiceView> candidateViews = openInvoices.stream().map(OpenInvoiceView::of)
+                .filter(view -> !view.outstandingAmount().value().isZero()).filter(view -> !skippedInvoiceIds.contains(view.invoiceId())).toList();
+        Set<Long> coveredProgramAdmissionInvoiceIds = ProgramAdmissionInvoicePaidFirstAllocationStrategy.programAdmissionInvoiceIdsFullyCoveredByCredit(
+                strategy, programAdmissionInvoiceIdsBeingPaid, creditToAllocate, candidateViews);
+        AccountCreditAllocationStrategy effective = coveredProgramAdmissionInvoiceIds.isEmpty() ? strategy
+                : new ProgramAdmissionInvoicePaidFirstAllocationStrategy(strategy, coveredProgramAdmissionInvoiceIds);
+        List<OpenInvoiceView> orderedViews = effective.sortInAllocationOrder(candidateViews);
+        List<PlannedInvoiceAllocation> plan = effective.planFullInvoiceAllocations(creditToAllocate, orderedViews);
         planPolicies.evaluateRulesUntilFirstViolation(new AllocationPlanContext(lockedAccount.getId(), lockedAccount.getCurrency(), creditToAllocate,
-                orderedViews, plan, programAdmissionInvoiceIdsBeingPaid)).throwIfDenied(PaymentAllocationRejectedException::new);
+                orderedViews, plan, coveredProgramAdmissionInvoiceIds)).throwIfDenied(PaymentAllocationRejectedException::new);
         if (plan.isEmpty()) {
             return AccountCreditAllocationResult.nothingAllocated();
         }
