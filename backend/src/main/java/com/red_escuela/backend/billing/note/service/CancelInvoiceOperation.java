@@ -81,7 +81,7 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
     public void requireValidContext(CancelInvoiceCommand command) {
         Invoice invoice = invoices.findInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
-        lateFeeAnnulment.requireNoLateFeeDebitNoteUnderPaymentReview(command, invoice.getId());
+        lateFeeAnnulment.requireNoLateFeeDebitNoteUnderPaymentReview(invoice.getId());
     }
 
     @Override
@@ -101,7 +101,7 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoices.lockInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
-        for (CreditNote annulment : lateFeeAnnulment.annulLiveLateFeesOfInstallment(command, invoice)) {
+        for (CreditNote annulment : lateFeeAnnulment.annulLiveLateFeesOfInstallment(invoice)) {
             accountService.recordCreditNoteIssuedCredit(account, annulment.getId(), annulment.getOffsetAmount(), annulment.getFreeCreditAmount(), LocalDate.now(clock),
                     "Anulación del recargo " + annulment.getInvoiceNumber() + " por la cancelación de la cuota " + invoice.getInvoiceNumber().value() + " (nota de crédito "
                             + annulment.getCreditNoteNumber().value() + ")");

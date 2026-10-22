@@ -4,21 +4,26 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
 import com.red_escuela.backend.billing.note.exception.PendingBankTransferOnInvoiceException;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 @Tag("D-291")
-@com.red_escuela.backend.testsupport.SlowTest(reason = "Nine scenarios that each seed an installment with two month closes and cancel it against Postgres")
+@SlowTest(reason = "Nine scenarios that each seed an installment with two month closes and cancel it against Postgres")
 class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulmentOnCancellationIT {
 
     @Test
@@ -38,10 +43,10 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         Map<String, Object> aprilAnnulment = onlyCreditNoteOf(aprilNote);
         assertThat(marchAnnulment).containsEntry("reason", "LATE_FEE_ANNULMENT");
         assertThat(aprilAnnulment).containsEntry("reason", "LATE_FEE_ANNULMENT");
-        assertThat((java.math.BigDecimal) marchAnnulment.get("total_amount")).isEqualByComparingTo("4000.00");
-        assertThat((java.math.BigDecimal) marchAnnulment.get("offset_amount")).isEqualByComparingTo("4000.00");
-        assertThat((java.math.BigDecimal) aprilAnnulment.get("total_amount")).isEqualByComparingTo("6000.00");
-        assertThat((java.math.BigDecimal) aprilAnnulment.get("free_credit_amount")).isEqualByComparingTo("0.00");
+        assertThat((BigDecimal) marchAnnulment.get("total_amount")).isEqualByComparingTo("4000.00");
+        assertThat((BigDecimal) marchAnnulment.get("offset_amount")).isEqualByComparingTo("4000.00");
+        assertThat((BigDecimal) aprilAnnulment.get("total_amount")).isEqualByComparingTo("6000.00");
+        assertThat((BigDecimal) aprilAnnulment.get("free_credit_amount")).isEqualByComparingTo("0.00");
         assertThat(onlyCreditNoteOf(origin.getId())).containsEntry("reason", "BILLING_ERROR");
         assertThat(jdbc.queryForList("select distinct xmin::text from credit_note where invoice_id in (?, ?, ?)", String.class, origin.getId(), marchNote, aprilNote))
                 .as("the three credit notes are written by one transaction").hasSize(1);
@@ -78,7 +83,7 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         Invoice origin = marchInstallmentWithTheMarchAndAprilCloses(2603);
         Long marchNote = debitNoteIdOf(origin, 0);
         Long aprilNote = debitNoteIdOf(origin, 1);
-        java.math.BigDecimal balanceBefore = balanceOfAccount(origin);
+        BigDecimal balanceBefore = balanceOfAccount(origin);
         String function = "fail_credit_note_of_debit_note_" + aprilNote;
         jdbc.execute("create or replace function " + function + "() returns trigger as $$ begin raise exception 'injected failure'; end $$ language plpgsql");
         jdbc.execute("create trigger " + function + " before insert on credit_note for each row when (new.invoice_id = " + aprilNote + ") execute function " + function + "()");
@@ -129,7 +134,7 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         Long aprilNote = debitNoteIdOf(origin, 1);
         receiveMoney(origin, "4000.00", d(2605, 5, 2));
         transactionTemplate.executeWithoutResult(status -> allocationService.allocateAccountCreditToOldestInvoicesSkipping(
-                accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), d(2605, 5, 2), ACTOR, java.util.Set.of(origin.getId())));
+                accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), d(2605, 5, 2), ACTOR, Set.of(origin.getId())));
         assertThat(paymentStatusOf(marchNote)).isEqualTo("PAID");
 
         cancel(origin, CreditNoteReason.BILLING_ERROR);
@@ -139,10 +144,38 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         assertThat(paymentStatusOf(aprilNote)).isEqualTo("CANCELLED");
         Map<String, Object> paidAnnulment = onlyCreditNoteOf(marchNote);
         assertThat(paidAnnulment).containsEntry("reason", "LATE_FEE_ANNULMENT");
-        assertThat((java.math.BigDecimal) paidAnnulment.get("free_credit_amount")).isEqualByComparingTo("4000.00");
-        assertThat((java.math.BigDecimal) paidAnnulment.get("offset_amount")).isEqualByComparingTo("0.00");
+        assertThat((BigDecimal) paidAnnulment.get("free_credit_amount")).isEqualByComparingTo("4000.00");
+        assertThat((BigDecimal) paidAnnulment.get("offset_amount")).isEqualByComparingTo("0.00");
         assertThat(unallocatedCreditOfAccount(origin)).isEqualByComparingTo("4000.00");
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("C3-02")
+    void aFailureOfTheInstallmentCreditNoteAfterTheLateFeesWereAnnulledRollsBackTheAnnulments() {
+        Invoice origin = marchInstallmentWithTheMarchAndAprilCloses(2614);
+        Long marchNote = debitNoteIdOf(origin, 0);
+        Long aprilNote = debitNoteIdOf(origin, 1);
+        String function = "fail_credit_note_of_installment_" + origin.getId();
+        jdbc.execute("create or replace function " + function + "() returns trigger as $$ begin raise exception 'injected installment failure'; end $$ language plpgsql");
+        jdbc.execute("create trigger " + function + " before insert on credit_note for each row when (new.invoice_id = " + origin.getId() + ") execute function " + function + "()");
+        try {
+            assertThatThrownBy(() -> cancel(origin, CreditNoteReason.BILLING_ERROR)).hasMessageContaining("injected installment failure");
+        } finally {
+            jdbc.execute("drop trigger if exists " + function + " on credit_note");
+            jdbc.execute("drop function if exists " + function + "()");
+        }
+
+        assertNothingWasCancelled(origin, marchNote, aprilNote);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    private void assertRejectedBecauseTheLateFeeIsUnderReview(Throwable thrown, Long debitNoteId) {
+        assertThat(thrown).isInstanceOf(PendingBankTransferOnInvoiceException.class);
+        List<PolicyViolation> violations = ((PendingBankTransferOnInvoiceException) thrown).violations();
+        assertThat(violations).hasSize(1);
+        assertThat(violations.get(0).code()).isEqualTo("LATE_FEE_UNDER_PAYMENT_REVIEW");
+        assertThat(violations.get(0).message()).contains("id " + debitNoteId);
     }
 
     @Test
@@ -154,7 +187,7 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         Long aprilNote = debitNoteIdOf(origin, 1);
         jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", aprilNote);
 
-        assertThatThrownBy(() -> cancel(origin, CreditNoteReason.BILLING_ERROR)).isInstanceOf(PendingBankTransferOnInvoiceException.class);
+        assertRejectedBecauseTheLateFeeIsUnderReview(catchThrowable(() -> cancel(origin, CreditNoteReason.BILLING_ERROR)), aprilNote);
 
         assertThat(paymentStatusOf(origin.getId())).isEqualTo("OVERDUE");
         assertThat(paymentStatusOf(marchNote)).isNotEqualTo("CANCELLED");
@@ -171,8 +204,8 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", aprilNote);
         CancelInvoiceCommand command = CancelInvoiceCommand.byPerson(origin.getId(), CreditNoteReason.BILLING_ERROR, "Cuota con recargos", person.getId(), true);
 
-        assertThatThrownBy(() -> transactionTemplate.execute(status -> cancelInvoiceOperation.cancelWithoutAllocatingCredit(command)))
-                .isInstanceOf(PendingBankTransferOnInvoiceException.class);
+        assertRejectedBecauseTheLateFeeIsUnderReview(catchThrowable(() -> transactionTemplate.execute(status -> cancelInvoiceOperation.cancelWithoutAllocatingCredit(command))),
+                aprilNote);
 
         assertThat(paymentStatusOf(origin.getId())).isEqualTo("OVERDUE");
         assertThat(countOfCreditNotesOf(origin.getId(), marchNote, aprilNote)).isZero();
@@ -196,11 +229,11 @@ class LateFeeAnnulmentOnInstallmentCancellationIT extends AbstractLateFeeAnnulme
         List<Map<String, Object>> notes = creditNotesOf(debitNoteId);
         assertThat(notes).hasSize(2);
         assertThat(notes.get(0)).containsEntry("reason", "LATE_FEE_CORRECTION");
-        assertThat((java.math.BigDecimal) notes.get(0).get("total_amount")).isEqualByComparingTo("400.00");
+        assertThat((BigDecimal) notes.get(0).get("total_amount")).isEqualByComparingTo("400.00");
         assertThat(notes.get(1)).containsEntry("reason", "LATE_FEE_ANNULMENT");
-        assertThat((java.math.BigDecimal) notes.get(1).get("total_amount")).isEqualByComparingTo("3400.00");
+        assertThat((BigDecimal) notes.get(1).get("total_amount")).isEqualByComparingTo("3400.00");
         assertThat(paymentStatusOf(debitNoteId)).isEqualTo("CANCELLED");
-        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ?", java.math.BigDecimal.class, debitNoteId)).isEqualByComparingTo("3800.00");
+        assertThat(jdbc.queryForObject("select sum(total_amount) from credit_note where invoice_id = ?", BigDecimal.class, debitNoteId)).isEqualByComparingTo("3800.00");
         invariants.assertAllBillingInvariantsHold();
     }
 

@@ -257,6 +257,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | IssuanceSettingsCoherencePolicy | INVALID_ISSUANCE_SETTINGS | D-053, D-160 |
 
+## Momento LATE_FEE_ANNULMENT_ON_CANCELLATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | LateFeeDebitNoteNotUnderPaymentReviewPolicy | LATE_FEE_UNDER_PAYMENT_REVIEW | D-153, D-291, D-400 |
+
 ## Momento LATE_FEE_CORRECTION_ISSUING
 
 | Orden | Policy | Códigos de violación | Decisiones |

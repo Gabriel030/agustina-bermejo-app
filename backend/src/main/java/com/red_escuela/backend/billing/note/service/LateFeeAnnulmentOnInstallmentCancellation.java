@@ -7,12 +7,10 @@ import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.domain.LateFeeCorrectionCreditNoteKind;
 import com.red_escuela.backend.billing.note.exception.CreditNoteInvoiceNotFoundException;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
-import com.red_escuela.backend.billing.note.policy.CancellationInvoiceNotUnderReviewPolicy;
-import com.red_escuela.backend.billing.note.policy.InvoiceCancellationContext;
-import com.red_escuela.backend.billing.note.policy.InvoiceCancellationRejections;
-import com.red_escuela.backend.billing.note.domain.CreditedInvoiceFacts;
+import com.red_escuela.backend.billing.note.policy.LateFeeAnnulmentRejections;
+import com.red_escuela.backend.billing.note.policy.LateFeeDebitNoteAnnulmentContext;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
-import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
+import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,34 +23,35 @@ import java.util.List;
 @Component
 public class LateFeeAnnulmentOnInstallmentCancellation {
     private static final Logger log = LoggerFactory.getLogger(LateFeeAnnulmentOnInstallmentCancellation.class);
-    private static final CancellationInvoiceNotUnderReviewPolicy NOT_UNDER_REVIEW = new CancellationInvoiceNotUnderReviewPolicy();
 
     private final LateFeeDebitNoteLookup debitNoteLookup;
     private final InvoiceCreditAccessService invoices;
     private final LateFeeCorrectionCreditNoteIssuer creditNoteIssuer;
+    private final PolicySet<LateFeeDebitNoteAnnulmentContext> annulmentPolicies;
     private final Clock clock;
 
     public LateFeeAnnulmentOnInstallmentCancellation(LateFeeDebitNoteLookup debitNoteLookup, InvoiceCreditAccessService invoices,
-                                                     LateFeeCorrectionCreditNoteIssuer creditNoteIssuer, Clock clock) {
+                                                     LateFeeCorrectionCreditNoteIssuer creditNoteIssuer, PolicySet<LateFeeDebitNoteAnnulmentContext> annulmentPolicies, Clock clock) {
         this.debitNoteLookup = debitNoteLookup;
         this.invoices = invoices;
         this.creditNoteIssuer = creditNoteIssuer;
+        this.annulmentPolicies = annulmentPolicies;
         this.clock = clock;
     }
 
-    public void requireNoLateFeeDebitNoteUnderPaymentReview(CancelInvoiceCommand command, Long installmentId) {
+    public void requireNoLateFeeDebitNoteUnderPaymentReview(Long installmentId) {
         for (Long debitNoteId : debitNoteLookup.findDebitNoteIdsOfOriginInvoiceInAscendingOrder(installmentId)) {
             Invoice debitNote = invoices.findInvoice(debitNoteId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(debitNoteId));
-            requireNotUnderPaymentReview(command, debitNote);
+            requireNotUnderPaymentReview(debitNote);
         }
     }
 
-    public List<CreditNote> annulLiveLateFeesOfInstallment(CancelInvoiceCommand command, Invoice lockedInstallment) {
+    public List<CreditNote> annulLiveLateFeesOfInstallment(Invoice lockedInstallment) {
         List<Invoice> lockedDebitNotes = new ArrayList<>();
         for (Long debitNoteId : debitNoteLookup.findDebitNoteIdsOfOriginInvoiceInAscendingOrder(lockedInstallment.getId())) {
             lockedDebitNotes.add(invoices.lockInvoice(debitNoteId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(debitNoteId)));
         }
-        lockedDebitNotes.forEach(debitNote -> requireNotUnderPaymentReview(command, debitNote));
+        lockedDebitNotes.forEach(this::requireNotUnderPaymentReview);
         LocalDate businessDate = LocalDate.now(clock);
         List<CreditNote> notes = new ArrayList<>();
         for (Invoice debitNote : lockedDebitNotes) {
@@ -72,9 +71,14 @@ public class LateFeeAnnulmentOnInstallmentCancellation {
         return notes;
     }
 
-    private static void requireNotUnderPaymentReview(CancelInvoiceCommand command, Invoice debitNote) {
-        InvoiceCancellationContext context = new InvoiceCancellationContext(command, CreditedInvoiceFacts.of(debitNote));
-        new PolicyEvaluationResult(List.of(NOT_UNDER_REVIEW.evaluateRule(context)))
-                .throwIfDenied(violations -> InvoiceCancellationRejections.rejectionOf(violations, debitNote.getPaymentStatus()));
+    public boolean hasLateFeeDebitNoteUnderPaymentReview(Long installmentId) {
+        return debitNoteLookup.findDebitNoteIdsOfOriginInvoiceInAscendingOrder(installmentId).stream()
+                .map(debitNoteId -> invoices.findInvoice(debitNoteId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(debitNoteId)))
+                .anyMatch(debitNote -> debitNote.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
+    }
+
+    private void requireNotUnderPaymentReview(Invoice debitNote) {
+        annulmentPolicies.evaluateRulesUntilFirstViolation(new LateFeeDebitNoteAnnulmentContext(debitNote.getId(), debitNote.getInvoiceNumber().value(), debitNote.getPaymentStatus()))
+                .throwIfDenied(LateFeeAnnulmentRejections::rejectionOf);
     }
 }

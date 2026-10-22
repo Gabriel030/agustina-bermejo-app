@@ -7,6 +7,8 @@ import com.red_escuela.backend.billing.note.policy.CancellationByFullCreditNoteP
 import com.red_escuela.backend.billing.note.policy.CancellationInvoiceNotUnderReviewPolicy;
 import com.red_escuela.backend.billing.note.policy.CancellationJustificationPolicy;
 import com.red_escuela.backend.billing.note.policy.CancellationReasonPolicy;
+import com.red_escuela.backend.billing.note.policy.LateFeeDebitNoteAnnulmentContext;
+import com.red_escuela.backend.billing.note.policy.LateFeeDebitNoteNotUnderPaymentReviewPolicy;
 import com.red_escuela.backend.billing.note.policy.InvoiceCancellationContext;
 import com.red_escuela.backend.billing.note.policy.SystemInitiatedCancellationPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteDestinationUnchangedPolicy;
@@ -56,6 +58,11 @@ public class CreditNoteOperationHandlersConfiguration {
                 new SystemInitiatedCancellationPolicy(),
                 new CancellationInvoiceNotUnderReviewPolicy(),
                 new CancellationByFullCreditNotePolicy()));
+    }
+
+    @Bean
+    public PolicySet<LateFeeDebitNoteAnnulmentContext> lateFeeAnnulmentOnCancellationPolicySet() {
+        return PolicySet.named("LATE_FEE_ANNULMENT_ON_CANCELLATION", List.of(new LateFeeDebitNoteNotUnderPaymentReviewPolicy()));
     }
 
     @Bean

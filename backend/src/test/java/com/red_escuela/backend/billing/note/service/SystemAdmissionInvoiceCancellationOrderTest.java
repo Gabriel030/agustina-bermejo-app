@@ -39,7 +39,8 @@ class SystemAdmissionInvoiceCancellationOrderTest {
     private final AdmissionReceiptLookup receiptLookup = mock(AdmissionReceiptLookup.class);
     private final BillingOperationPipeline pipeline = mock(BillingOperationPipeline.class);
     private final CancelInvoiceOperation operation = mock(CancelInvoiceOperation.class);
-    private final SystemAdmissionInvoiceCancellation cancellation = new SystemAdmissionInvoiceCancellation(invoiceAccess, accountService, receiptLookup, pipeline, operation);
+    private final SystemAdmissionInvoiceCancellation cancellation = new SystemAdmissionInvoiceCancellation(invoiceAccess, accountService, receiptLookup, pipeline, operation,
+            mock(LateFeeAnnulmentOnInstallmentCancellation.class));
 
     private Invoice unpaidInvoice() {
         Invoice invoice = mock(Invoice.class);

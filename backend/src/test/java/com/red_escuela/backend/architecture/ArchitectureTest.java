@@ -469,6 +469,20 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-291")
+    void lateFeeAnnulmentRuleDetectsAShortcutOutsideTheCancellation() {
+        assertThatThrownBy(() -> ArchitectureRules.lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LateFeeAnnulmentShortcutFixture");
+    }
+
+    @Test
+    @Tag("D-291")
+    void lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation() {
+        ArchitectureRules.lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-375")
     void lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
         ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(MAIN_CLASSES);

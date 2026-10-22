@@ -9,11 +9,13 @@ import com.red_escuela.backend.billing.note.domain.WithdrawalCancellationItem;
 import com.red_escuela.backend.billing.note.exception.PendingBankTransferOnInvoiceException;
 import com.red_escuela.backend.billing.note.service.CancelInvoicesAfterWithdrawalOperation;
 import com.red_escuela.backend.billing.note.service.SystemAdmissionInvoiceCancellation;
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -34,7 +36,7 @@ class LateFeeAnnulmentOnCancellationCallersIT extends AbstractLateFeeAnnulmentOn
     private SystemAdmissionInvoiceCancellation admissionCancellation;
 
     private CancelInvoicesAfterWithdrawalCommand withdrawalOf(Invoice... installments) {
-        List<WithdrawalCancellationItem> items = java.util.Arrays.stream(installments).map(invoice -> WithdrawalCancellationItem.cancelling(invoice.getId())).toList();
+        List<WithdrawalCancellationItem> items = Arrays.stream(installments).map(invoice -> WithdrawalCancellationItem.cancelling(invoice.getId())).toList();
         return new CancelInvoicesAfterWithdrawalCommand(items, d(2611, 4, 1), person.getId(), true, null);
     }
 
@@ -69,7 +71,8 @@ class LateFeeAnnulmentOnCancellationCallersIT extends AbstractLateFeeAnnulmentOn
         jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", aprilNote);
 
         assertThatThrownBy(() -> pipeline.runOperation(withdrawalOperation, withdrawalOf(other, origin)).resultOrThrowIfAwaitingAuthorization(
-                id -> new IllegalStateException("Unexpected authorization " + id))).isInstanceOf(PendingBankTransferOnInvoiceException.class);
+                id -> new IllegalStateException("Unexpected authorization " + id))).isInstanceOf(PendingBankTransferOnInvoiceException.class)
+                .satisfies(thrown -> assertThat(((PendingBankTransferOnInvoiceException) thrown).violations().get(0).code()).isEqualTo("LATE_FEE_UNDER_PAYMENT_REVIEW"));
 
         assertThat(paymentStatusOf(other.getId())).isEqualTo("OVERDUE");
         assertThat(paymentStatusOf(origin.getId())).isEqualTo("OVERDUE");
@@ -112,6 +115,22 @@ class LateFeeAnnulmentOnCancellationCallersIT extends AbstractLateFeeAnnulmentOn
     }
 
     @Test
+    @Tag("C3-15")
+    @Tag("D-153")
+    void theAdmissionExpiryLeavesTheInvoiceUntouchedWhileOneOfItsLateFeesIsUnderPaymentReview() {
+        Invoice origin = marchInstallmentWithTheMarchAndAprilCloses(2615);
+        Long marchNote = debitNoteIdOf(origin, 0);
+        Long aprilNote = debitNoteIdOf(origin, 1);
+        jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", aprilNote);
+
+        SystemAdmissionInvoiceCancellation.Outcome outcome = transactionTemplate.execute(status -> admissionCancellation.cancelWhenUnpaid(origin.getId()));
+
+        assertThat(outcome).isEqualTo(SystemAdmissionInvoiceCancellation.Outcome.NOT_CANCELLABLE);
+        assertThat(paymentStatusOf(origin.getId())).isEqualTo("OVERDUE");
+        assertThat(countOfCreditNotesOf(origin.getId(), marchNote, aprilNote)).isZero();
+    }
+
+    @Test
     @Tag("C3-14")
     void aLateFeeSweepAndTheCancellationOfItsInstallmentNeverLeaveALiveLateFeeOverACancelledInstallment() throws Exception {
         for (int round = 0; round < 3; round++) {
@@ -122,7 +141,7 @@ class LateFeeAnnulmentOnCancellationCallersIT extends AbstractLateFeeAnnulmentOn
             if (round > 0) {
                 reconcile(origin, d(year, 4, 1));
             }
-            com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(d(year, 5, 1));
+            MutableClock.INSTANCE.setDate(d(year, 5, 1));
             CountDownLatch start = new CountDownLatch(1);
             ExecutorService executor = Executors.newFixedThreadPool(2);
             try {
