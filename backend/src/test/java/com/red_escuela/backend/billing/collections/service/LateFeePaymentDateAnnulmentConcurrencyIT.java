@@ -151,6 +151,7 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
     @ParameterizedTest
     @CsvSource({"2551,0,0", "2552,0,250", "2553,250,0"})
     @Tag("D-332")
+    @Tag("D-378")
     void concurrentBackdatedPaymentAndMonthCloseNeverChargeADayAfterThePaymentDate(int year, long allocationDelayMillis, long closeDelayMillis) throws Exception {
         arrange(year);
         publishDefaults(year);
@@ -174,7 +175,13 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
         assertThat(jdbc.queryForObject("select coalesce(sum(c.charged_days), 0) - coalesce((select sum(k.corrected_days) from late_fee_charge_correction k "
                 + "join late_fee_charge c2 on c2.id = k.late_fee_charge_id where c2.origin_invoice_id = ?), 0) from late_fee_charge c where c.origin_invoice_id = ?",
                 Long.class, origin.getId(), origin.getId())).isEqualTo(17L);
-        assertThat(chargesOf(origin)).isNotEmpty();
+        String prefix = year + "-03-";
+        List<String> corrections = jdbc.queryForList("select first_corrected_day || '..' || last_corrected_day || ':' || corrected_days from late_fee_charge_correction "
+                + "where cause = 'PAYMENT_DATED_BEFORE_CHARGED_DAYS' and late_fee_charge_id in (select id from late_fee_charge where origin_invoice_id = ?)", String.class, origin.getId());
+        List<String> summary = summaryOf(origin);
+        boolean finalDebitNoteUpToThePayment = summary.equals(List.of(prefix + "12.." + prefix + "28:17:3400.00")) && corrections.isEmpty();
+        boolean closeThenAnnulment = summary.equals(List.of(prefix + "12.." + prefix + "31:20:4000.00")) && corrections.equals(List.of(prefix + "29.." + prefix + "31:3"));
+        assertThat(finalDebitNoteUpToThePayment || closeThenAnnulment).as("documents %s corrections %s", summary, corrections).isTrue();
         assertScenarioInvariants(d(year, 4, 2));
     }
 }

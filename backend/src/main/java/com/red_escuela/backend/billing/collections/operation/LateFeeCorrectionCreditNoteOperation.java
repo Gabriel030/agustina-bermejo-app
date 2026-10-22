@@ -126,7 +126,7 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
             if (command.cause().isPaymentDate()) {
                 events.add(LateFeeAnnulledByPaymentDateEvent.annulledFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
                         studentPersonId, issued.correction().getCorrectedDays(), command.referenceDate(), command.cause() == LateFeeCorrectionCause.PAYMENT_WITHIN_GRACE,
-                        note.getTotalAmount().value().amount(), note.getCurrency().name()));
+                        note.getTotalAmount()));
             } else {
                 events.add(CreditNoteIssuedEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
                         studentPersonId, null, note.getReason().name(), note.getTotalAmount().value().amount(), note.getCurrency().name(), note.getIssueDate()));

@@ -2,12 +2,15 @@ package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import com.red_escuela.backend.billing.events.LateFeeAnnulledByPaymentDateEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
@@ -30,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-378")
-@SlowTest(reason = "Nine scenarios that each seed overdue installments, annul their late fees by payment date and run the real nightly recovery and events against Postgres")
+@SlowTest(reason = "Eleven scenarios that each seed overdue installments, annul their late fees by payment date and run the real nightly recovery and events against Postgres")
 class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
 
     @Autowired
@@ -121,6 +124,49 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
         assertThat(paymentStatusOf(debitNoteId)).isEqualTo("CANCELLED");
         assertThat(netChargedDaysOf(debitNoteId)).isZero();
         assertScenarioInvariants(d(2502, 4, 4));
+    }
+
+    @Test
+    @Tag("D-331")
+    void nightlyRunAnnulsADebitNoteEntirelyBeforeThePaymentDateWhenPaidInsideTheGrace() {
+        int year = 2531;
+        arrange(year);
+        publish(15, "0.002", 10, true, true, d(year, 1, 1));
+        Invoice origin = overdueInstallmentDueOn(d(year, 2, 20));
+        reconcile(origin, d(year, 3, 8));
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        assertThat(summaryOf(origin)).containsExactly(year + "-02-21.." + year + "-02-28:8:1600.00");
+        MutableClock.INSTANCE.setDate(d(year, 3, 9));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(year, 3, 5), d(year, 3, 9));
+
+        failTheSettlementCorrectionWhile(() -> assertThatThrownBy(() -> accrualService.reconcileLateFeesOfSettledInvoice(origin.getId(), d(year, 3, 9)))
+                .isInstanceOf(IllegalStateException.class));
+        assertThat(creditNotesOf(debitNoteId)).isEmpty();
+        MutableClock.INSTANCE.setDate(d(year, 3, 10));
+        LateFeeAccrualResult first = accrualStep.accrueLateFees(d(year, 3, 10));
+        awaitEventsDrained();
+
+        assertThat(first.settlementCandidates()).isEqualTo(1);
+        assertThat(creditedTotalOf(debitNoteId)).isEqualByComparingTo("1600.00");
+        assertThat(paymentStatusOf(debitNoteId)).isEqualTo("CANCELLED");
+        assertThat(netChargedDaysOf(debitNoteId)).isZero();
+        assertScenarioInvariants(d(year, 3, 10));
+    }
+
+    @Test
+    @Tag("D-117")
+    void aRedeliveredAnnulmentEventNotifiesTheStudentOnce() {
+        arrange(2532);
+        Long creditNoteId = System.nanoTime();
+        LateFeeAnnulledByPaymentDateEvent event = LateFeeAnnulledByPaymentDateEvent.annulledFor(creditNoteId, "NC-00000099", 77L, "ND-00000077", person.getId(), 3,
+                d(2532, 3, 28), false, NonNegativeMoney.of(new BigDecimal("600.00"), Currency.ARS));
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
+        awaitEventsDrained();
+
+        assertThat(notifications.findByRecipientIdOrderByCreatedAtDesc(person.getId()).stream()
+                .filter(notification -> creditNoteId.equals(notification.getRelatedEntityId())).count()).isEqualTo(1L);
     }
 
     @ParameterizedTest

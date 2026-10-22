@@ -52,7 +52,7 @@ public class LateFeeCorrectionNotificationListener {
     }
 
     private static String studentMessageOf(LateFeeAnnulledByPaymentDateEvent event) {
-        String creditNote = " (nota de crédito " + event.creditNoteNumber() + " por " + event.currency() + " " + event.totalAmount() + ").";
+        String creditNote = " (nota de crédito " + event.creditNoteNumber() + " por " + event.totalAmount().value().currency() + " " + event.totalAmount().value().amount() + ").";
         String paymentDate = DAY_MONTH_YEAR.format(event.paymentDate());
         if (event.paidWithinGrace()) {
             return "Ajustamos el recargo por mora " + event.debitNoteNumber() + ": no te cobramos " + daysOf(event.annulledDays()) + " porque pagaste el " + paymentDate
