@@ -11,9 +11,9 @@ import com.red_escuela.backend.shared.mail.EmailService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedMockBeans
 @Tag("D-178")
 @Tag("D-183")
 class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTest {
@@ -44,7 +45,7 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
     private EntityManager entityManager;
     @Autowired
     private JdbcTemplate jdbcTemplate;
-    @MockBean
+    @Autowired
     private EmailService emailService;
 
     private long incompletePublicationsOf(UUID eventId) {
