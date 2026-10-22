@@ -48,7 +48,7 @@ jobs:
           PR_NUMBER: ${{ github.event.number }}
           PUSH_BEFORE: ${{ github.event.before }}
           TESTED_TREE_DIR: ${{ runner.temp }}/tested-tree-out
-        run: .github/scripts/detect-changes.sh
+        run: bash .github/scripts/detect-changes.sh
 
       - name: Record the verified tree of this pull request
         if: github.event_name == 'pull_request'
