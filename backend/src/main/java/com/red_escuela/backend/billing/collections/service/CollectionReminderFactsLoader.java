@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +59,11 @@ public class CollectionReminderFactsLoader {
     @Transactional(readOnly = true)
     public List<Long> findCandidateStudentIdsAmong(Collection<Long> studentIds) {
         return factsQuery.findStudentIdsWithRemindableInvoicesAmong(studentIds);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReminderInvoiceFact> loadInvoiceFactsOf(Collection<Long> invoiceIds, LocalDate businessDate) {
+        return factsQuery.findOpenInvoicesByIds(invoiceIds, businessDate).stream().map(row -> factOf(row, Collections.emptyMap(), Collections.emptyMap())).toList();
     }
 
     @Transactional(readOnly = true)
