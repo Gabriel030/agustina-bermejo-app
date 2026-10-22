@@ -46,7 +46,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.number }}
-          PUSH_BEFORE: ${{ github.event.before }}
           TESTED_TREE_DIR: ${{ runner.temp }}/tested-tree-out
         run: bash .github/scripts/detect-changes.sh
 
@@ -162,7 +161,6 @@ jobs:
 
       - name: Enforce the time budget of the shard
         if: always()
-        continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
         env:
           SHARD_LIMIT: ${{ github.event_name == 'push' && 'warn' || 'error' }}
         run: |
@@ -189,7 +187,7 @@ jobs:
   mutation:
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.relevant == 'true' && needs.changes.outputs.mutation == 'true' && needs.changes.outputs.reuse_mutation != 'true'
+    if: needs.changes.outputs.relevant == 'true' && needs.changes.outputs.mutation == 'true' && needs.changes.outputs.reuse_mutation != 'true' && !(github.event_name == 'push' && github.ref == 'refs/heads/develop')
     steps:
       - uses: actions/checkout@v4
 
@@ -215,27 +213,21 @@ jobs:
 
       - name: Restore the PIT incremental history
         id: pit-history
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
+        if: github.event_name == 'pull_request'
         uses: actions/cache/restore@v4
         with:
           path: backend/target/pit-history
           key: pit-history-no-exact-match
           restore-keys: |
             pit-history-pr-${{ github.event.number }}-
-            pit-history-${{ github.base_ref || github.ref_name }}-
+            pit-history-${{ github.base_ref }}-
 
       - name: Run PIT with the 90 percent threshold
-        id: pit
         working-directory: backend
-        continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
         run: |
           set -o pipefail
           mkdir -p target/pit-history
           ./mvnw -B -P mutation test-compile org.pitest:pitest-maven:mutationCoverage 2>&1 | tee "$RUNNER_TEMP/pit.log"
-
-      - name: Warn that PIT failed without blocking the integration branch
-        if: steps.pit.outcome == 'failure'
-        run: echo "::warning::PIT failed on develop (incremental run, non-blocking). The daily mutation-full workflow re-verifies the 90 percent threshold from scratch."
 
       - name: Save the PIT incremental history
         if: (success() || failure()) && hashFiles('backend/target/pit-history/history.bin') != ''
@@ -278,7 +270,7 @@ jobs:
           fetch-depth: 0
 
       - name: Self-test of the budget scripts
-        run: python3 -m unittest discover -s .github/scripts -p 'test_budget_scripts.py'
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 
       - name: Download the shard reports
         if: needs.changes.outputs.reuse_backend != 'true'
@@ -292,7 +284,23 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run download "${{ needs.changes.outputs.reuse_run }}" --repo "${{ github.repository }}" -p 'shard-reports-*' -D shards
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
+        run: gh run download "$REUSE_RUN" --repo "${{ github.repository }}" -p 'shard-reports-*' -D shards
+
+      - name: Summarize what the reuse saved
+        if: needs.changes.outputs.reuse_backend == 'true' && hashFiles('shards/**/meta.json') != ''
+        env:
+          REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import glob, json, os
+          metas = [json.load(open(p)) for p in glob.glob('shards/*/meta.json')]
+          clock = sum(max(m.get('end', 0) - m.get('start', 0), 0) for m in metas)
+          print('### Reused from PR #%s (run %s)' % (os.environ['REUSE_PR'], os.environ['REUSE_RUN']))
+          print('- Shards not executed: %d' % len(metas))
+          print('- Compute saved: about %.1f minutes of runner time' % (clock / 60.0))
+          PY
 
       - name: Download the integration-branch baseline
         if: needs.changes.outputs.baseline_run != ''
@@ -361,22 +369,29 @@ jobs:
     steps:
       - name: Aggregate the backend results
         shell: bash
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          TESTS: ${{ needs.backend-tests.result }}
+          CONTRACT: ${{ needs.backend-contract.result }}
+          REPORT: ${{ needs.test-report.result }}
+          MUTATION: ${{ needs.mutation.result }}
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          REUSE: ${{ needs.changes.outputs.reuse_backend }}
+          REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
         run: |
           set -uo pipefail
-          echo "changes=${{ needs.changes.result }} tests=${{ needs.backend-tests.result }} contract=${{ needs.backend-contract.result }} report=${{ needs.test-report.result }} mutation=${{ needs.mutation.result }}"
-          if [ "${{ needs.changes.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.changes.outputs.relevant }}" != "true" ]; then
+          echo "changes=$CHANGES tests=$TESTS contract=$CONTRACT report=$REPORT mutation=$MUTATION"
+          if [ "$CHANGES" != "success" ]; then exit 1; fi
+          if [ "$RELEVANT" != "true" ]; then
             echo "no backend changes"
             exit 0
           fi
-          if [ "${{ needs.changes.outputs.reuse_backend }}" = "true" ]; then
-            echo "Backend tests reused from PR #${{ needs.changes.outputs.reuse_pr }} (run ${{ needs.changes.outputs.reuse_run }}): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$REUSE" = "true" ]; then
+            echo "Backend tests reused from PR #$REUSE_PR (run $REUSE_RUN): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          mutation_ok=false
-          if [ "${{ needs.mutation.result }}" = "success" ] || [ "${{ needs.mutation.result }}" = "skipped" ]; then mutation_ok=true; fi
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/develop" ]; then mutation_ok=true; fi
-          [ "${{ needs.backend-tests.result }}" = "success" ] && [ "${{ needs.test-report.result }}" = "success" ] && { [ "${{ needs.backend-contract.result }}" = "success" ] || [ "${{ needs.backend-contract.result }}" = "skipped" ]; } && [ "$mutation_ok" = "true" ]
+          [ "$TESTS" = "success" ] && [ "$REPORT" = "success" ] && { [ "$CONTRACT" = "success" ] || [ "$CONTRACT" = "skipped" ]; } && { [ "$MUTATION" = "success" ] || [ "$MUTATION" = "skipped" ]; }
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -405,20 +420,14 @@ jobs:
         working-directory: frontend
         run: npm run test -- --shard=${{ matrix.shard }}/2
 
-  frontend:
+  frontend-checks:
     runs-on: ubuntu-latest
-    needs: [changes, frontend-tests]
-    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
     steps:
-      - name: Stop when the change detection failed
-        if: needs.changes.result != 'success'
-        run: exit 1
-
       - uses: actions/checkout@v4
-        if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
 
       - name: Set up Node
-        if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -426,40 +435,50 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
         working-directory: frontend
         run: npm ci --no-audit --no-fund --prefer-offline
 
       - name: Audit production dependencies
-        if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true' && needs.changes.outputs.lockfile == 'true'
+        if: needs.changes.outputs.lockfile == 'true'
         working-directory: frontend
         run: npm run audit:prod
 
       - name: Lint
-        if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
         working-directory: frontend
         run: npm run lint
 
       - name: Build
-        if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
         working-directory: frontend
         run: npm run build
 
+  frontend:
+    runs-on: ubuntu-latest
+    needs: [changes, frontend-checks, frontend-tests]
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    steps:
       - name: Aggregate the frontend results
-        if: always() && needs.changes.result == 'success'
         shell: bash
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CHECKS: ${{ needs.frontend-checks.result }}
+          TESTS: ${{ needs.frontend-tests.result }}
+          RELEVANT: ${{ needs.changes.outputs.frontend }}
+          REUSE: ${{ needs.changes.outputs.reuse_frontend }}
+          REUSE_PR: ${{ needs.changes.outputs.reuse_pr }}
+          REUSE_RUN: ${{ needs.changes.outputs.reuse_run }}
         run: |
           set -uo pipefail
-          echo "frontend=${{ needs.changes.outputs.frontend }} reuse=${{ needs.changes.outputs.reuse_frontend }} tests=${{ needs.frontend-tests.result }}"
-          if [ "${{ needs.changes.outputs.frontend }}" != "true" ]; then
+          echo "changes=$CHANGES frontend=$RELEVANT reuse=$REUSE checks=$CHECKS tests=$TESTS"
+          if [ "$CHANGES" != "success" ]; then exit 1; fi
+          if [ "$RELEVANT" != "true" ]; then
             echo "no frontend changes"
             exit 0
           fi
-          if [ "${{ needs.changes.outputs.reuse_frontend }}" = "true" ]; then
-            echo "Frontend reused from PR #${{ needs.changes.outputs.reuse_pr }} (run ${{ needs.changes.outputs.reuse_run }}): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$REUSE" = "true" ]; then
+            echo "Frontend reused from PR #$REUSE_PR (run $REUSE_RUN): the merged tree is identical to the tree that PR verified." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          [ "${{ needs.frontend-tests.result }}" = "success" ]
+          [ "$CHECKS" = "success" ] && [ "$TESTS" = "success" ]
 
   # Nota: qa/bruno/ es la colección de exploración MANUAL (GUI/CLI local, contra
   # docker-compose.qa.yml — Postgres descartable, ver ese archivo). No corre en CI a

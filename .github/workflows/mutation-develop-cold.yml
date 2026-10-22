@@ -1,0 +1,122 @@
+name: Mutation develop cold
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'backend/pom.xml'
+      - 'backend/src/main/java/com/red_escuela/backend/shared/domain/**'
+      - 'backend/src/main/java/com/red_escuela/backend/billing/**'
+      - 'backend/src/test/java/com/red_escuela/backend/shared/domain/**'
+      - 'backend/src/test/java/com/red_escuela/backend/billing/**'
+      - '.github/workflows/mutation-develop-cold.yml'
+
+concurrency:
+  group: mutation-develop-cold-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  mutation-cold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip when this tree was already verified from scratch
+        id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          tree=$(git rev-parse 'HEAD^{tree}')
+          run=true
+          if runs=$(gh run list --repo "${{ github.repository }}" --workflow mutation-develop-cold.yml --branch develop --status success --limit 10 --json databaseId --jq '.[].databaseId'); then
+            for candidate in $runs; do
+              rm -rf "$RUNNER_TEMP/verified"
+              if gh run download "$candidate" --repo "${{ github.repository }}" -n cold-verified-tree -D "$RUNNER_TEMP/verified" > /dev/null 2>&1; then
+                if [ "$(cat "$RUNNER_TEMP/verified/tree" 2>/dev/null)" = "$tree" ]; then
+                  run=false
+                fi
+                break
+              fi
+            done
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "tree $tree: cold PIT run needed = $run"
+
+      - name: Mark the job start
+        if: steps.decide.outputs.run == 'true'
+        run: echo "PIT_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 21
+        if: steps.decide.outputs.run == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+
+      - name: Restore the Maven repository
+        if: steps.decide.outputs.run == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
+          key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Run PIT from scratch with the 90 percent threshold
+        if: steps.decide.outputs.run == 'true'
+        working-directory: backend
+        run: |
+          set -o pipefail
+          rm -rf target/pit-history
+          mkdir -p target/pit-history
+          ./mvnw -B -P mutation test-compile org.pitest:pitest-maven:mutationCoverage 2>&1 | tee "$RUNNER_TEMP/pit.log"
+
+      - name: Save the PIT history for the incremental runs of pull requests
+        if: steps.decide.outputs.run == 'true' && (success() || failure()) && hashFiles('backend/target/pit-history/history.bin') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: backend/target/pit-history
+          key: pit-history-develop-cold-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Record the verified tree
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          mkdir -p verified
+          git rev-parse 'HEAD^{tree}' > verified/tree
+
+      - name: Upload the verified tree
+        if: steps.decide.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cold-verified-tree
+          path: verified
+          retention-days: 30
+
+      - name: Summarize the PIT run
+        if: steps.decide.outputs.run == 'true' && always()
+        shell: bash
+        run: |
+          {
+            echo "### PIT mutation testing (cold, develop)"
+            echo "- Duration: $(( $(date +%s) - PIT_START ))s"
+            grep -hE "Created [0-9]+ mutation test units$|Generated [0-9]+ mutations|Calculated coverage|run mutation analysis" "$RUNNER_TEMP/pit.log" | sed 's/^/- /' || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the PIT report
+        if: steps.decide.outputs.run == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pit-report-cold
+          path: backend/target/pit-reports
+          retention-days: 14
+          if-no-files-found: ignore

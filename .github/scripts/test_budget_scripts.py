@@ -112,6 +112,35 @@ class BudgetTest(unittest.TestCase):
         write_report(self.reports, 'com.acme.SlowIT', 31.0)
         self.assertEqual(1, self.check(wall=400, shard_limit='warn'))
 
+    def test_shard_clock_exactly_at_the_limit_passes(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        self.assertEqual(0, self.check(wall=180))
+
+    def test_only_the_shard_start_skips_the_shard_limit(self):
+        write_report(self.reports, 'com.acme.FastIT', 5.0)
+        os.environ.pop('SHARD_END', None)
+        os.environ['SHARD_START'] = '1000'
+        try:
+            self.assertEqual(0, budget.check_shard(Args(reports=self.reports, test_root=self.sources)))
+        finally:
+            os.environ.pop('SHARD_START', None)
+
+    def test_shard_limit_flag_defaults_to_error(self):
+        parser_args = ['check-shard', '--shard', '0', '--reports', self.reports]
+        import sys
+        saved = sys.argv
+        sys.argv = ['test-budget.py'] + parser_args
+        try:
+            captured = {}
+            original = budget.check_shard
+            budget.check_shard = lambda args: captured.setdefault('mode', args.shard_limit) and 0
+            with self.assertRaises(SystemExit):
+                budget.main()
+        finally:
+            budget.check_shard = original
+            sys.argv = saved
+        self.assertEqual('error', captured['mode'])
+
     def test_missing_clock_skips_the_shard_limit(self):
         write_report(self.reports, 'com.acme.FastIT', 5.0)
         self.assertEqual(0, self.check())

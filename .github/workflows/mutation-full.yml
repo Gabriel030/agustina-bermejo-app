@@ -30,11 +30,16 @@ jobs:
           sha=$(gh api "repos/${{ github.repository }}/commits/develop" --jq .sha)
           run=true
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            last=$(gh run list --repo "${{ github.repository }}" --workflow mutation-full.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)
-            if [ -n "$last" ] && gh run download "$last" --repo "${{ github.repository }}" -n mutation-full-verified -D "$RUNNER_TEMP/verified" > /dev/null 2>&1; then
-              if [ "$(cat "$RUNNER_TEMP/verified/sha" 2>/dev/null)" = "$sha" ]; then
-                run=false
-              fi
+            if runs=$(gh run list --repo "${{ github.repository }}" --workflow mutation-full.yml --status success --limit 10 --json databaseId --jq '.[].databaseId'); then
+              for candidate in $runs; do
+                rm -rf "$RUNNER_TEMP/verified"
+                if gh run download "$candidate" --repo "${{ github.repository }}" -n mutation-full-verified -D "$RUNNER_TEMP/verified" > /dev/null 2>&1; then
+                  if [ "$(cat "$RUNNER_TEMP/verified/sha" 2>/dev/null)" = "$sha" ]; then
+                    run=false
+                  fi
+                  break
+                fi
+              done
             fi
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
