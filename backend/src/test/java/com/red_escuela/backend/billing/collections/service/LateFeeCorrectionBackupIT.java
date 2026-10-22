@@ -172,6 +172,8 @@ class LateFeeCorrectionBackupIT extends AbstractLateFeeCorrectionIT {
         assertThat(creditNotes).hasSize(1);
         assertThat(creditNotes.get(0)).containsEntry("fact_date", Date.valueOf(d(2180, 5, 1))).containsEntry("issue_date", Date.valueOf(d(2180, 5, 17)));
         assertThat(fiscalWindowNoticesOf(secretariat, debitNoteId)).isEqualTo(1L);
+        assertThat(fiscalWindowNoticeMessagesOf(secretariat, debitNoteId)).singleElement().asString()
+                .contains("(corrección del recargo de la nota de débito ").contains("se emitió el 17/05/2180, y la baja se registró el 01/05/2180: fuera de los 15 días de la RG 4540");
         invariants.assertAllBillingInvariantsHold();
     }
 

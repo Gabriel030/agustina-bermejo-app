@@ -84,6 +84,12 @@ abstract class AbstractLateFeeCorrectionIT extends AbstractLateFeeScenarioIT {
         });
     }
 
+    protected List<String> fiscalWindowNoticeMessagesOf(Person secretariat, Long debitNoteId) {
+        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(secretariat.getId()).stream()
+                .filter(notification -> notification.getType() == NotificationType.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW
+                        && debitNoteId.equals(notification.getRelatedEntityId())).map(notification -> notification.getMessage()).toList();
+    }
+
     protected long fiscalWindowNoticesOf(Person secretariat, Long debitNoteId) {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(secretariat.getId()).stream()
                 .filter(notification -> notification.getType() == NotificationType.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW

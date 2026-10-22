@@ -13,10 +13,13 @@ import org.mockito.AdditionalAnswers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -67,6 +71,10 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
         MutableClock.INSTANCE.reset();
         ReflectionTestUtils.setField(issuerTarget, "correctionRepository", originalCorrectionRepository);
         ReflectionTestUtils.setField(serviceTarget, "issuer", originalIssuer);
+    }
+
+    private static void waitMillis(long millis) {
+        await().pollDelay(Duration.ofMillis(millis)).atMost(Duration.ofSeconds(5)).until(() -> true);
     }
 
     private void runTogether(List<Callable<Object>> tasks, CountDownLatch start) throws Exception {
@@ -136,5 +144,35 @@ class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT
         ReflectionTestUtils.setField(serviceTarget, "issuer", issuerTarget);
         assertThat(settlementCorrectionService.correctLateFeesChargedAfterThePaymentOf(origin.getId(), settlement)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ? and reason = 'LATE_FEE_ANNULMENT'", Long.class, debitNoteId)).isEqualTo(1L);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2551,0,0", "2552,0,250", "2553,250,0"})
+    @Tag("D-332")
+    void concurrentBackdatedPaymentAndMonthCloseNeverChargeADayAfterThePaymentDate(int year, long allocationDelayMillis, long closeDelayMillis) throws Exception {
+        arrange(year);
+        publishDefaults(year);
+        Invoice origin = overdueInstallmentDueOn(d(year, 3, 11));
+        receiveMoney(origin, "100000.00", d(year, 3, 28));
+        MutableClock.INSTANCE.setDate(d(year, 4, 1));
+        CountDownLatch start = new CountDownLatch(1);
+
+        runTogether(List.of(() -> {
+            start.await();
+            waitMillis(allocationDelayMillis);
+            allocateOn(origin, d(year, 4, 1));
+            return null;
+        }, () -> {
+            start.await();
+            waitMillis(closeDelayMillis);
+            return accrualService.reconcileLateFeesOfInvoice(origin.getId(), d(year, 4, 1));
+        }), start);
+        awaitEventsDrained();
+
+        assertThat(jdbc.queryForObject("select coalesce(sum(c.charged_days), 0) - coalesce((select sum(k.corrected_days) from late_fee_charge_correction k "
+                + "join late_fee_charge c2 on c2.id = k.late_fee_charge_id where c2.origin_invoice_id = ?), 0) from late_fee_charge c where c.origin_invoice_id = ?",
+                Long.class, origin.getId(), origin.getId())).isEqualTo(17L);
+        assertThat(chargesOf(origin)).isNotEmpty();
+        assertScenarioInvariants(d(year, 4, 2));
     }
 }

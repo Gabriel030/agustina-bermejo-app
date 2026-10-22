@@ -52,6 +52,13 @@ class LateFeeSettlementProperties {
                 Arbitraries.integers().between(0, 220).optional(), step.list().ofMinSize(1).ofMaxSize(30)).as(Scenario::new);
     }
 
+    @Provide
+    Arbitrary<Scenario> scenariosWithoutReversals() {
+        Arbitrary<Step> step = Combinators.combine(Arbitraries.of(Kind.ADVANCE, Kind.PAY), Arbitraries.integers().between(0, 45)).as(Step::new);
+        return Combinators.combine(Arbitraries.integers().between(0, 120), Arbitraries.integers().between(0, 15), Arbitraries.integers().between(0, 200),
+                Arbitraries.integers().between(0, 220).optional(), step.list().ofMinSize(1).ofMaxSize(30)).as(Scenario::new);
+    }
+
     private static Outcome simulate(Scenario scenario) {
         LocalDate due = START.plusDays(scenario.dueOffsetDays());
         DailyLateFeeSchedule schedule = new DailyLateFeeSchedule(due, scenario.graceDays());
@@ -183,6 +190,24 @@ class LateFeeSettlementProperties {
 
         assertThat(charged).isEqualTo(outcome.oracleChargedDays());
         assertThat(outcome.annulledDaysPlanned()).isEqualTo(outcome.annulledDaysExpected());
+    }
+
+    @Property(tries = 1000, seed = "20261021")
+    void netChargedDaysMatchTheOracleWithBackdatedPayments(@ForAll("scenariosWithoutReversals") Scenario scenario) {
+        Outcome outcome = simulate(scenario);
+        LocalDate enabledFrom = START.plusDays(scenario.enabledFromOffsetDays());
+        Optional<LocalDate> end = scenario.endOffsetDays().map(START::plusDays);
+        Predicate<LocalDate> enabledOn = day -> !day.isBefore(enabledFrom);
+        Predicate<LocalDate> frozenOn = day -> end.map(day::isAfter).orElse(false);
+        int grossChargedDays = chargedDaysOf(outcome, enabledOn, frozenOn).size();
+        Set<LocalDate> expectedNet = new HashSet<>();
+        if (!outcome.paid()) {
+            expectedNet.addAll(outcome.oracleChargedDays());
+        } else if (outcome.paidOn().isAfter(outcome.dueDate().plusDays(scenario.graceDays()))) {
+            addChargeableDays(expectedNet, outcome.dueDate(), outcome.paidOn(), enabledOn, frozenOn);
+        }
+
+        assertThat(grossChargedDays - outcome.annulledDaysPlanned()).isEqualTo(expectedNet.size());
     }
 
     @Property(tries = 1000, seed = "20261013")

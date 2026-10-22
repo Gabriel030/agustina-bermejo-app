@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.collections.exception.LateFeeCorrectionRe
 import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeCorrectionRepository;
 import com.red_escuela.backend.billing.events.CreditNoteIssuedEvent;
+import com.red_escuela.backend.billing.events.LateFeeAnnulledByPaymentDateEvent;
 import com.red_escuela.backend.billing.events.LateFeeCorrectionIssuedAfterFiscalWindowEvent;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -79,7 +80,7 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
 
     @Override
     public List<Class<? extends DomainEvent>> publishedEventTypes() {
-        return List.of(CreditNoteIssuedEvent.class, LateFeeCorrectionIssuedAfterFiscalWindowEvent.class);
+        return List.of(CreditNoteIssuedEvent.class, LateFeeAnnulledByPaymentDateEvent.class, LateFeeCorrectionIssuedAfterFiscalWindowEvent.class);
     }
 
     @Override
@@ -122,11 +123,17 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
             CreditNote note = issued.creditNote();
             Long studentPersonId = invoiceAccess.findAccountOwnerPersonId(note.getInvoiceId()).orElseThrow();
             List<DomainEvent> events = new ArrayList<>();
-            events.add(CreditNoteIssuedEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
-                    studentPersonId, null, note.getReason().name(), note.getTotalAmount().value().amount(), note.getCurrency().name(), note.getIssueDate()));
-            if (command.cause() == LateFeeCorrectionCause.BACKDATED_WITHDRAWAL && LateFeeCorrectionFiscalWindow.isOutside(command.factDate(), note.getIssueDate())) {
+            if (command.cause().isPaymentDate()) {
+                events.add(LateFeeAnnulledByPaymentDateEvent.annulledFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
+                        studentPersonId, issued.correction().getCorrectedDays(), command.referenceDate(), command.cause() == LateFeeCorrectionCause.PAYMENT_WITHIN_GRACE,
+                        note.getTotalAmount().value().amount(), note.getCurrency().name()));
+            } else {
+                events.add(CreditNoteIssuedEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
+                        studentPersonId, null, note.getReason().name(), note.getTotalAmount().value().amount(), note.getCurrency().name(), note.getIssueDate()));
+            }
+            if (LateFeeCorrectionFiscalWindow.isOutside(command.factDate(), note.getIssueDate())) {
                 events.add(LateFeeCorrectionIssuedAfterFiscalWindowEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(),
-                        note.getInvoiceNumber(), command.factDate(), note.getIssueDate()));
+                        note.getInvoiceNumber(), command.cause().name(), command.factDate(), note.getIssueDate()));
             }
             return events;
         }).orElse(List.of());

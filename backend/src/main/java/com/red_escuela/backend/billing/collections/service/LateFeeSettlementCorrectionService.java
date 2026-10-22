@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.account.domain.InvoiceSettlement;
+import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCharge;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import org.slf4j.Logger;
@@ -16,10 +17,20 @@ public class LateFeeSettlementCorrectionService {
 
     private final LateFeeChargeRepository chargeRepository;
     private final LateFeeCorrectionIssuer issuer;
+    private final InvoiceSettlementQueryService settlementQuery;
 
-    public LateFeeSettlementCorrectionService(LateFeeChargeRepository chargeRepository, LateFeeCorrectionIssuer issuer) {
+    public LateFeeSettlementCorrectionService(LateFeeChargeRepository chargeRepository, LateFeeCorrectionIssuer issuer, InvoiceSettlementQueryService settlementQuery) {
         this.chargeRepository = chargeRepository;
         this.issuer = issuer;
+        this.settlementQuery = settlementQuery;
+    }
+
+    public LateFeeCorrectionOutcome correctLateFeeOfDebitNote(Long debitNoteId) {
+        Objects.requireNonNull(debitNoteId, "debitNoteId");
+        return chargeRepository.findByDebitNoteId(debitNoteId)
+                .flatMap(charge -> settlementQuery.findCurrentSettlementOfInvoice(charge.getOriginInvoiceId())
+                        .map(settlement -> issuer.correctLateFeeChargeAfterPaymentDateInNewTransaction(charge.getId(), settlement)))
+                .orElse(LateFeeCorrectionOutcome.NOTHING_TO_CORRECT);
     }
 
     public int correctLateFeesChargedAfterThePaymentOf(Long originInvoiceId, InvoiceSettlement settlement) {
@@ -27,11 +38,15 @@ public class LateFeeSettlementCorrectionService {
         Objects.requireNonNull(settlement, "settlement");
         List<LateFeeCharge> charges = chargeRepository.findByOriginInvoiceIdOrderByPeriodStart(originInvoiceId);
         int corrected = 0;
+        int deferred = 0;
         int failed = 0;
         for (LateFeeCharge charge : charges) {
             try {
-                if (issuer.correctLateFeeChargeAfterPaymentDateInNewTransaction(charge.getId(), settlement) == LateFeeCorrectionOutcome.CORRECTED) {
+                LateFeeCorrectionOutcome outcome = issuer.correctLateFeeChargeAfterPaymentDateInNewTransaction(charge.getId(), settlement);
+                if (outcome == LateFeeCorrectionOutcome.CORRECTED) {
                     corrected++;
+                } else if (outcome == LateFeeCorrectionOutcome.DEFERRED) {
+                    deferred++;
                 }
             } catch (RuntimeException e) {
                 failed++;
@@ -41,6 +56,10 @@ public class LateFeeSettlementCorrectionService {
         if (corrected > 0) {
             log.info("Recargos anulados por la fecha de pago: origen={}, imputacion={}, fechaDePago={}, anulados={}", originInvoiceId, settlement.allocationId(),
                     settlement.paymentDate(), corrected);
+        }
+        if (deferred > 0) {
+            log.info("Anulaciones de recargo diferidas hasta que se decida el comprobante de la nota de débito: origen={}, imputacion={}, diferidas={}", originInvoiceId,
+                    settlement.allocationId(), deferred);
         }
         if (failed > 0) {
             throw new IllegalStateException("The late fee annulment by payment date failed for " + failed + " charges");

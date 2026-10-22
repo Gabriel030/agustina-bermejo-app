@@ -90,4 +90,20 @@ class LateFeeCorrectionByPaymentDateMigrationTest {
             assertThat(migrated.queryForObject("select count(*) from late_fee_charge_correction", Long.class)).isEqualTo(3L);
         }
     }
+
+    @Test
+    @Tag("D-378")
+    void settlementAllocationOfACorrectionMustBelongToTheSameAccountAsTheCorrection() {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
+            postgres.start();
+            JdbcTemplate jdbc = migrateTo(postgres, "131");
+            insertWithoutForeignKeys(jdbc, withdrawalCorrection(110, 20, "2027-03-29", "'2027-03-28'"));
+
+            jdbc = migrateTo(postgres, "133");
+
+            assertThat(jdbc.queryForObject("select count(*) from late_fee_charge_correction", Long.class)).isEqualTo(1L);
+            assertThat(jdbc.queryForObject("select pg_get_constraintdef(oid) from pg_constraint where conname = 'fk_late_fee_charge_correction_settlement_allocation'",
+                    String.class)).isEqualTo("FOREIGN KEY (settlement_allocation_id, student_current_account_id) REFERENCES payment_allocation(id, student_current_account_id)");
+        }
+    }
 }
