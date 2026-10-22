@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 public class BankTransferReceiptReviewer implements BankTransferReceiptReviewPort {
@@ -35,18 +36,20 @@ public class BankTransferReceiptReviewer implements BankTransferReceiptReviewPor
     private final PaymentReceiptFinder paymentReceiptFinder;
     private final ApprovedPaymentRegistrationPort registrationPort;
     private final ApplicationEventPublisher eventPublisher;
+    private final RejectedCourseReceiptCancellation rejectedCourseReceiptCancellation;
     private final PolicySet<PaymentRejectionCheck> rejectionReasonPolicies;
     private final PolicySet<ReceiptApprovalCheck> approvalPolicies;
 
     public BankTransferReceiptReviewer(BankTransferReceiptRepository bankTransferReceiptRepository,
                                          PaymentReceiptFinder paymentReceiptFinder, ApprovedPaymentRegistrationPort registrationPort,
-                                         ApplicationEventPublisher eventPublisher,
+                                         ApplicationEventPublisher eventPublisher, RejectedCourseReceiptCancellation rejectedCourseReceiptCancellation,
                                        PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet,
                                        PolicySet<ReceiptApprovalCheck> receiptApprovalPolicySet) {
         this.bankTransferReceiptRepository = bankTransferReceiptRepository;
         this.paymentReceiptFinder = paymentReceiptFinder;
         this.registrationPort = registrationPort;
         this.eventPublisher = eventPublisher;
+        this.rejectedCourseReceiptCancellation = rejectedCourseReceiptCancellation;
         this.rejectionReasonPolicies = paymentRejectionReasonPolicySet;
         this.approvalPolicies = receiptApprovalPolicySet;
     }
@@ -106,9 +109,8 @@ public class BankTransferReceiptReviewer implements BankTransferReceiptReviewPor
         boolean hasPendingPayment = paymentReceiptFinder.hasPendingPayment(receipt);
         receipt.reject(decidedBy, reason);
         flushReviewOf(receipt);
-        if (hasPendingPayment) {
-            paymentReceiptFinder.rejectPendingPayment(receipt, reason);
-        }
+        List<Long> receiptItemInvoiceIds = hasPendingPayment ? paymentReceiptFinder.rejectPendingPayment(receipt, reason) : List.of(receipt.getInvoice().getId());
+        rejectedCourseReceiptCancellation.cancelCourseAdmissionsOfRejectedReceipt(receiptItemInvoiceIds);
         BankTransferReceipt saved = bankTransferReceiptRepository.save(receipt);
         paymentReceiptFinder.publishRejected(saved);
         log.warn("Comprobante de pago rechazado: comprobante={}, factura={}", id, saved.getInvoice().getId());
@@ -120,7 +122,8 @@ public class BankTransferReceiptReviewer implements BankTransferReceiptReviewPor
                 + ") no coincide con la fecha en que se subió el comprobante (" + assessment.uploadDate().format(DATE_FORMAT) + ")";
         receipt.rejectBecauseTransferDateDiffersFromUploadDate(decidedBy, reason);
         flushReviewOf(receipt);
-        paymentReceiptFinder.rejectPendingPayment(receipt, reason);
+        List<Long> receiptItemInvoiceIds = paymentReceiptFinder.rejectPendingPayment(receipt, reason);
+        rejectedCourseReceiptCancellation.cancelCourseAdmissionsOfRejectedReceipt(receiptItemInvoiceIds);
         BankTransferReceipt rejected = bankTransferReceiptRepository.save(receipt);
         paymentReceiptFinder.publishRejected(rejected);
         log.warn("Comprobante rechazado por fecha de transferencia distinta de la de subida: comprobante={}, fechaDeSubida={}, fechaVerificada={}", receipt.getId(),
