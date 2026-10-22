@@ -31,6 +31,11 @@ public record ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceD
         return balance.value().currency();
     }
 
+    public ReminderInvoiceFact withPaymentStatus(InvoicePaymentStatus newPaymentStatus) {
+        return new ReminderInvoiceFact(invoiceId, originInvoiceId, documentType, invoiceType, documentStatus, newPaymentStatus, issueDate, dueDate, suspensionDate,
+                balance, programEnrollmentId, courseEnrollmentId, receiptUnderReview, openCancellationRequest);
+    }
+
     public boolean isDebitNote() {
         return documentType == InvoiceDocumentType.DEBIT_NOTE;
     }
