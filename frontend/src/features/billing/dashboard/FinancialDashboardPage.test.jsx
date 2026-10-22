@@ -229,6 +229,119 @@ describe('FinancialDashboardPage', () => {
     expect(new Set(requests.map((url) => url.pathname.split('/').pop()))).toContain('on-time-payment');
   });
 
+  async function pickOffer(name) {
+    await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
+    await userEvent.click(await screen.findByRole('option', { name }));
+  }
+
+  function installOffers() {
+    server.use(
+      http.get(`${API}/programs`, () => HttpResponse.json([{ id: 5, name: 'Tecnicatura en Diseño' }])),
+      http.get(`${API}/courses`, () => HttpResponse.json([{ id: 9, name: 'Curso de Fotografía' }])),
+    );
+  }
+
+  it('d2-03 reloads every panel with the chosen program and replaces it when a course is chosen', async () => {
+    const requests = [];
+    install({ requests });
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+    expect(requests.every((url) => !url.searchParams.has('programId') && !url.searchParams.has('courseId'))).toBe(true);
+    expect(screen.getByText('Todas las ofertas', { selector: 'p' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    requests.length = 0;
+    await pickOffer('Tecnicatura en Diseño');
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => url.searchParams.get('programId') === '5' && !url.searchParams.has('courseId'))).toBe(true);
+    expect(new Set(requests.map((url) => url.pathname.split('/').pop()))).toContain('on-time-payment');
+
+    requests.length = 0;
+    await pickOffer('Curso de Fotografía');
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => url.searchParams.get('courseId') === '9' && !url.searchParams.has('programId'))).toBe(true);
+    expect(screen.getByRole('combobox', { name: /Oferta/ })).toHaveTextContent('Curso de Fotografía');
+    expect(screen.getByText('Curso: Curso de Fotografía')).toBeInTheDocument();
+  });
+
+  it('replaces the course with the program when the program is chosen after it', async () => {
+    const requests = [];
+    install({ requests });
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await pickOffer('Curso de Fotografía');
+    await waitFor(() => expect(requests.some((url) => url.searchParams.get('courseId') === '9')).toBe(true));
+    requests.length = 0;
+    await pickOffer('Tecnicatura en Diseño');
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => url.searchParams.get('programId') === '5' && !url.searchParams.has('courseId'))).toBe(true);
+  });
+
+  it('shows the active offer on a chip that removes the scope and shows it in the subtitle', async () => {
+    const requests = [];
+    install({ requests });
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await pickOffer('Tecnicatura en Diseño');
+    expect(await screen.findByText('Carrera: Tecnicatura en Diseño')).toBeInTheDocument();
+    expect(screen.getByText('Tecnicatura en Diseño', { selector: 'p' })).toBeInTheDocument();
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar filtro de oferta' }));
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => !url.searchParams.has('programId'))).toBe(true);
+    expect(screen.queryByText('Carrera: Tecnicatura en Diseño')).not.toBeInTheDocument();
+    expect(screen.getByText('Todas las ofertas', { selector: 'p' })).toBeInTheDocument();
+  });
+
+  it('removes the offer with "Quitar filtros"', async () => {
+    const requests = [];
+    install({ requests });
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await pickOffer('Tecnicatura en Diseño');
+    await waitFor(() => expect(requests.some((url) => url.searchParams.get('programId') === '5')).toBe(true));
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => !url.searchParams.has('programId'))).toBe(true);
+  });
+
+  it('tells there are no offers loaded when both lists are empty', async () => {
+    install();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
+
+    expect(await screen.findByText('No hay carreras ni cursos cargados')).toBeInTheDocument();
+  });
+
+  it('labels the cards of today as independent from the offer filter', async () => {
+    install();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    expect(await screen.findByRole('heading', { name: 'Hoy · todas las ofertas' })).toBeInTheDocument();
+  });
+
   it('shows no currency toggle when only one currency is in use', async () => {
     install();
     renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });

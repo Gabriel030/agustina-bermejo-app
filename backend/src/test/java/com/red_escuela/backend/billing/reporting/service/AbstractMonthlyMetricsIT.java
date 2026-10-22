@@ -27,6 +27,10 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     private final List<Long> seededInvoiceIds = new ArrayList<>();
     private final List<Long> seededPriceIds = new ArrayList<>();
     private final List<Long> seededProgramIds = new ArrayList<>();
+    private final List<Long> seededProgramEnrollmentIds = new ArrayList<>();
+    private final List<Long> seededCourseEnrollmentIds = new ArrayList<>();
+    private final List<Long> seededCourseIds = new ArrayList<>();
+    private final List<Long> seededTermIds = new ArrayList<>();
     private final List<Long> seededConfigurationVersionIds = new ArrayList<>();
 
     protected Long arsAccountId;
@@ -48,9 +52,10 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         }
         String ids = seededInvoiceIds.stream().map(String::valueOf).collect(Collectors.joining(","));
         List<String> guards = List.of("payment_allocation_source.trg_payment_allocation_source_append_only", "payment_allocation.trg_payment_allocation_append_only", "invoice_status_change.trg_invoice_status_change_append_only",
-                "invoice_line.trg_invoice_line_immutable_when_issued", "invoice_discount.trg_invoice_discount_immutable_when_issued");
+                "credit_note.trg_credit_note_append_only", "invoice_line.trg_invoice_line_immutable_when_issued", "invoice_discount.trg_invoice_discount_immutable_when_issued");
         guards.forEach(guard -> jdbc.execute("alter table " + guard.split("\\.")[0] + " disable trigger " + guard.split("\\.")[1]));
         try {
+            jdbc.update("delete from credit_note where invoice_id in (" + ids + ")");
             jdbc.update("delete from late_fee_charge where debit_note_id in (" + ids + ") or origin_invoice_id in (" + ids + ")");
             jdbc.update("delete from bank_transfer_receipt where invoice_id in (" + ids + ")");
             jdbc.update("delete from payment_allocation_source where payment_allocation_id in (select id from payment_allocation where invoice_id in (" + ids + "))");
@@ -59,6 +64,14 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
             jdbc.update("delete from invoice_discount where invoice_line_id in (select id from invoice_line where invoice_id in (" + ids + "))");
             jdbc.update("delete from invoice_line where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice where id in (" + ids + ")");
+            seededProgramEnrollmentIds.forEach(id -> jdbc.update("delete from program_enrollment where id = ?", id));
+            seededCourseEnrollmentIds.forEach(id -> jdbc.update("delete from course_enrollment where id = ?", id));
+            seededCourseIds.forEach(id -> jdbc.update("delete from course where id = ?", id));
+            seededTermIds.forEach(id -> jdbc.update("delete from term where id = ?", id));
+            seededTermIds.clear();
+            seededProgramEnrollmentIds.clear();
+            seededCourseEnrollmentIds.clear();
+            seededCourseIds.clear();
             seededConfigurationVersionIds.forEach(versionId -> jdbc.update("delete from configuration_version where id = ?", versionId));
             seededConfigurationVersionIds.clear();
             seededPriceIds.forEach(priceId -> {
@@ -118,6 +131,41 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         return debitNoteId;
     }
 
+    protected Long seedProgramEnrollmentOn(Long invoiceId, Currency currency) {
+        Long programId = jdbc.queryForObject("insert into program (name, currency) values ('Carrera filtrada', ?) returning id", Long.class, currency.name());
+        seededProgramIds.add(programId);
+        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentOf(invoiceId), programId);
+        seededProgramEnrollmentIds.add(enrollmentId);
+        linkInvoiceLines(invoiceId, "program_enrollment_id", enrollmentId);
+        return programId;
+    }
+
+    protected Long seedCourseEnrollmentOn(Long invoiceId, Currency currency) {
+        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date) values (2021, true, timestamp '2021-03-01 00:00:00', timestamp '2021-12-15 00:00:00') returning id", Long.class);
+        seededTermIds.add(termId);
+        Long courseId = jdbc.queryForObject("insert into course (name, term_id, currency) values ('Curso filtrado', ?, ?) returning id", Long.class, termId, currency.name());
+        seededCourseIds.add(courseId);
+        Long enrollmentId = jdbc.queryForObject("insert into course_enrollment (student_id, course_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentOf(invoiceId), courseId);
+        seededCourseEnrollmentIds.add(enrollmentId);
+        linkInvoiceLines(invoiceId, "course_enrollment_id", enrollmentId);
+        return courseId;
+    }
+
+    private Long studentOf(Long invoiceId) {
+        return jdbc.queryForObject("select a.student_id from invoice i join student_current_account a on a.id = i.student_current_account_id where i.id = ?", Long.class, invoiceId);
+    }
+
+    private void linkInvoiceLines(Long invoiceId, String column, Long enrollmentId) {
+        jdbc.execute("alter table invoice_line disable trigger trg_invoice_line_immutable_when_issued");
+        try {
+            jdbc.update("update invoice_line set " + column + " = ? where invoice_id = ?", enrollmentId, invoiceId);
+        } finally {
+            jdbc.execute("alter table invoice_line enable trigger trg_invoice_line_immutable_when_issued");
+        }
+    }
+
     protected void seedMarketingDiscount(Long invoiceId, Currency currency, String marketingAmount) {
         Long programId = jdbc.queryForObject("insert into program (name, currency) values ('Carrera de prueba', ?) returning id", Long.class, currency.name());
         seededProgramIds.add(programId);
@@ -134,6 +182,17 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         } finally {
             jdbc.execute("alter table invoice_line enable trigger trg_invoice_line_immutable_when_issued");
         }
+    }
+
+    protected void seedCreditNote(Long accountId, Long invoiceId, String reason, LocalDate issued, String amount) {
+        BigDecimal total = new BigDecimal(amount);
+        String number = String.format("NC-%08d", jdbc.queryForObject("select nextval('credit_note_number_seq')", Long.class));
+        jdbc.update("insert into credit_note (credit_note_number, student_current_account_id, currency, invoice_id, invoice_number, reason, justification, "
+                        + "offset_amount, offset_amount_currency, free_credit_amount, free_credit_amount_currency, total_amount, total_amount_currency, "
+                        + "issue_date, fact_date, recipient_snapshot, issued_by_process, recorded_at) "
+                        + "select ?, ?, i.currency, i.id, i.invoice_number, ?, 'Nota de prueba', 0, i.currency, ?, i.currency, ?, i.currency, "
+                        + "?, ?, cast('{}' as jsonb), 'TEST', now() from invoice i where i.id = ?",
+                number, accountId, reason, total, total, issued, issued, invoiceId);
     }
 
     protected void seedAllocation(Long accountId, Long invoiceId, Currency currency, String amount, LocalDate effectiveDate) {

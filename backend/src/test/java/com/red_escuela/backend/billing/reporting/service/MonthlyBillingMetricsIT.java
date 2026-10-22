@@ -156,6 +156,61 @@ class MonthlyBillingMetricsIT extends AbstractMonthlyMetricsIT {
     }
 
     @Test
+    @Tag("D-415")
+    @Tag("D-097")
+    void theLateFeePanelAddsTheWithdrawalCorrectionsToThePaymentAnnulmentsOfTheSameCurrencyOnly() throws Exception {
+        LocalDate firstOfMarch = LocalDate.of(2021, 3, 1);
+        Long arsOrigin = seedInvoice(arsAccountId, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
+                firstOfMarch.plusDays(9), "OVERDUE", "100000.00", NO_DISCOUNT, null);
+        Long usdOrigin = seedInvoice(usdAccountId, Currency.USD, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
+                firstOfMarch.plusDays(9), "OVERDUE", "100.00", NO_DISCOUNT, null);
+        LocalDate inApril = LocalDate.of(2021, 4, 20);
+        seedCreditNote(arsAccountId, arsOrigin, "LATE_FEE_CORRECTION", inApril, "700.00");
+        seedCreditNote(arsAccountId, arsOrigin, "LATE_FEE_ANNULMENT", inApril, "300.00");
+        seedCreditNote(arsAccountId, arsOrigin, "WITHDRAWAL", inApril, "9000.00");
+        seedCreditNote(arsAccountId, arsOrigin, "LATE_FEE_CORRECTION", LocalDate.of(2021, 5, 3), "50.00");
+        seedCreditNote(usdAccountId, usdOrigin, "LATE_FEE_CORRECTION", inApril, "8.00");
+
+        JsonNode ars = metric(directorToken, "late-fees", "from=2021-04&to=2021-05&currency=ARS");
+        JsonNode usd = metric(directorToken, "late-fees", "from=2021-04&to=2021-05&currency=USD");
+
+        assertThat(seriesOf(ars, "annulledCount").get("values").get(0).asLong()).isEqualTo(2);
+        assertThat(seriesOf(ars, "annulledAmount").get("values").get(0).get("amount").asText()).isEqualTo("1000.00");
+        assertThat(seriesOf(ars, "annulledCount").get("values").get(1).asLong()).isEqualTo(1);
+        assertThat(seriesOf(ars, "annulledAmount").get("values").get(1).get("amount").asText()).isEqualTo("50.00");
+        assertThat(seriesOf(usd, "annulledCount").get("values").get(0).asLong()).isEqualTo(1);
+        assertThat(seriesOf(usd, "annulledAmount").get("values").get(0).get("amount").asText()).isEqualTo("8.00");
+    }
+
+    @Test
+    @Tag("D-415")
+    void theProgramAndCourseFiltersKeepOnlyTheLateFeeCreditNotesOfThatOffer() throws Exception {
+        LocalDate firstOfMarch = LocalDate.of(2021, 3, 1);
+        LocalDate inApril = LocalDate.of(2021, 4, 20);
+        Long programInvoice = seedInvoice(arsAccountId, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
+                firstOfMarch.plusDays(9), "OVERDUE", "5000.00", NO_DISCOUNT, null);
+        Long courseInvoice = seedInvoice(arsAccountId, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
+                firstOfMarch.plusDays(9), "OVERDUE", "3000.00", NO_DISCOUNT, null);
+        Long programId = seedProgramEnrollmentOn(programInvoice, Currency.ARS);
+        Long courseId = seedCourseEnrollmentOn(courseInvoice, Currency.ARS);
+        seedCreditNote(arsAccountId, programInvoice, "LATE_FEE_ANNULMENT", inApril, "5000.00");
+        seedCreditNote(arsAccountId, courseInvoice, "LATE_FEE_CORRECTION", inApril, "3000.00");
+        String range = "from=2021-04&to=2021-05&currency=ARS";
+
+        JsonNode all = metric(directorToken, "late-fees", range);
+        JsonNode byProgram = metric(directorToken, "late-fees", range + "&programId=" + programId);
+        JsonNode byCourse = metric(directorToken, "late-fees", range + "&courseId=" + courseId);
+        JsonNode byOtherProgram = metric(directorToken, "late-fees", range + "&programId=" + (programId + 999));
+
+        assertThat(seriesOf(all, "annulledCount").get("values").get(0).asLong()).isEqualTo(2);
+        assertThat(seriesOf(byProgram, "annulledCount").get("values").get(0).asLong()).isEqualTo(1);
+        assertThat(seriesOf(byProgram, "annulledAmount").get("values").get(0).get("amount").asText()).isEqualTo("5000.00");
+        assertThat(seriesOf(byCourse, "annulledCount").get("values").get(0).asLong()).isEqualTo(1);
+        assertThat(seriesOf(byCourse, "annulledAmount").get("values").get(0).get("amount").asText()).isEqualTo("3000.00");
+        assertThat(seriesOf(byOtherProgram, "annulledCount").get("values").get(0).asLong()).isZero();
+    }
+
+    @Test
     @Tag("D-240")
     void discountsIncludeTheMarketingDiscountOfTheLineAndCountItInTheGrossBilled() throws Exception {
         LocalDate firstOfMarch = LocalDate.of(2021, 3, 1);
