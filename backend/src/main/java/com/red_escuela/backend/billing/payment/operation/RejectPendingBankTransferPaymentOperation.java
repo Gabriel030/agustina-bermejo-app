@@ -81,7 +81,8 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
         payments.save(payment);
         List<Long> released = reviewRelease.releaseProtectedItemsStillUnderReview(items, invoicesById, today, command.reviewer(), RELEASE_REASON);
         log.warn("Pago pendiente por transferencia rechazado: pago={}, cuenta={}, facturasLiberadasDeRevision={}", payment.getId(), payment.getStudentCurrentAccountId(), released);
-        return new PendingBankTransferDecisionResult(payment.getId(), payment.getStudentCurrentAccountId(), today, payment.getAmount(), released);
+        return new PendingBankTransferDecisionResult(payment.getId(), payment.getStudentCurrentAccountId(), today, payment.getAmount(), released, List.of(),
+                items.stream().map(PaymentCheckoutItem::getInvoiceId).toList());
     }
 
     @Override

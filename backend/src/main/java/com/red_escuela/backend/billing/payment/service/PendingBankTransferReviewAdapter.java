@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 public class PendingBankTransferReviewAdapter implements PendingBankTransferReviewPort {
@@ -59,8 +60,8 @@ public class PendingBankTransferReviewAdapter implements PendingBankTransferRevi
     }
 
     @Override
-    public void rejectPendingPayment(Long paymentId, String rejectionReason, Long reviewerPersonId) {
-        pipeline.runOperation(rejectOperation, new RejectPendingBankTransferPaymentCommand(paymentId, rejectionReason, StatusChangeActor.ofPerson(reviewerPersonId)))
-                .resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("Unexpected authorization request " + requestId));
+    public List<Long> rejectPendingPayment(Long paymentId, String rejectionReason, Long reviewerPersonId) {
+        return pipeline.runOperation(rejectOperation, new RejectPendingBankTransferPaymentCommand(paymentId, rejectionReason, StatusChangeActor.ofPerson(reviewerPersonId)))
+                .resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("Unexpected authorization request " + requestId)).receiptItemInvoiceIds();
     }
 }

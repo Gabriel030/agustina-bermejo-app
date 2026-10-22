@@ -51,6 +51,11 @@ public class SystemAdmissionInvoiceCancellation {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Outcome cancelWhenUnpaid(Long invoiceId) {
+        return cancelWhenUnpaid(invoiceId, SystemCancellationOrigin.ADMISSION_EXPIRED, JUSTIFICATION);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Outcome cancelWhenUnpaid(Long invoiceId, SystemCancellationOrigin origin, String justification) {
         Long accountId = invoiceAccess.findAccountIdOf(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
         accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoiceAccess.lockInvoice(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
@@ -64,9 +69,9 @@ public class SystemAdmissionInvoiceCancellation {
         if ((receipt != null && PENDING_RECEIPT.equals(receipt.status())) || lateFeeAnnulment.hasLateFeeDebitNoteUnderPaymentReview(invoiceId)) {
             return Outcome.NOT_CANCELLABLE;
         }
-        pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.ADMISSION_EXPIRED, JUSTIFICATION))
+        pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.bySystem(invoiceId, origin, justification))
                 .resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("A system cancellation never waits for authorization: " + requestId));
-        log.info("Matrícula de ingreso anulada al vencer la solicitud: factura={}", invoiceId);
+        log.info("Factura de admisión anulada: factura={}, origen={}", invoiceId, origin);
         return Outcome.CANCELLED;
     }
 }
