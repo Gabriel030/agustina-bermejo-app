@@ -58,7 +58,7 @@ export function discountLabel(discount) {
 
 export const ADJUSTMENT_TYPE_LABELS = {
   SCHOLARSHIP: 'Beca',
-  PROMOTION: 'Promoción',
+  COHORT_PROMOTION: 'Promoción',
   ANNUAL_UPFRONT: 'Pago anual',
   COHORT_ENTRY: 'Ingreso de cohorte',
   INDIVIDUAL: 'Descuento individual',

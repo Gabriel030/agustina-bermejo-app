@@ -3,7 +3,7 @@ import { buildRows, goalThreshold, keysWithPrefix, seriesOf, sumCounts, sumMoney
 
 const DISCOUNT_LABELS = {
   SCHOLARSHIP: 'Becas',
-  PROMOTION: 'Promociones',
+  COHORT_PROMOTION: 'Promociones',
   ANNUAL_UPFRONT: 'Pago anual',
   COHORT_ENTRY: 'Ingreso por cohorte',
   INDIVIDUAL: 'Descuento individual',

@@ -90,20 +90,19 @@ class InvoiceIssuingReviewFixesIT extends AbstractInvoiceIssuingIT {
     }
 
     @Test
-    @Tag("D-074")
-    void aPromotionCapCountsPerStudentEvenWithoutAnEnrollment() {
+    @Tag("D-326")
+    void aSingleChargePromotionIsUsedOnlyOncePerEnrollment() {
         var offering = factory.newProgram(Currency.ARS, 80000, 50000);
         Long template = factory.newTemplate(offering, 2027);
-        var applicant = factory.newLearner(offering, null);
-        Long benefitId = factory.redeemPromotion(offering, applicant, FeeType.ENROLLMENT_FEE, percent("30"), 1);
+        var learner = factory.newLearner(offering, null);
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.ENROLLMENT_FEE, percent("30"), null);
 
-        var slot1 = issued(runner.issueInvoiceInNewTransaction(enrollmentFee(offering, applicant, template, 1, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), null,
-                false, InvoiceIssuingReason.PROGRAM_ADMISSION)));
-        var slot2 = issued(runner.issueInvoiceInNewTransaction(enrollmentFee(offering, applicant, template, 2, YearMonth.of(2027, 8), LocalDate.of(2027, 3, 11), null,
-                false, InvoiceIssuingReason.PROGRAM_ADMISSION)));
+        var slot1 = issued(runner.issueInvoiceInNewTransaction(enrollmentFee(offering, learner, template, 1, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), null,
+                false, InvoiceIssuingReason.MONTHLY_RUN)));
+        var slot2 = issued(runner.issueInvoiceInNewTransaction(enrollmentFee(offering, learner, template, 2, YearMonth.of(2027, 8), LocalDate.of(2027, 3, 11), null,
+                false, InvoiceIssuingReason.MONTHLY_RUN)));
 
-        assertThat(slot1.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(benefitId);
-        assertThat(slot1.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("1 de 1");
+        assertThat(slot1.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(promotionId);
         assertThat(slot2.getLines().get(0).getDiscount()).isNull();
     }
 
@@ -112,7 +111,7 @@ class InvoiceIssuingReviewFixesIT extends AbstractInvoiceIssuingIT {
     void aPromotionOfTwoInstallmentsDiscountsExactlyTwoOfAllTheIssuedScope() {
         var offering = factory.newProgram(Currency.ARS, 80000, 50000);
         var learner = factory.newLearner(offering, null);
-        factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
+        factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         List<Boolean> discounted = new java.util.ArrayList<>();
         for (int month = 3; month <= 8; month++) {

@@ -40,7 +40,7 @@ class DiscountCandidateRankingTest {
     @Test
     void anEqualSavingIsBrokenByTypeWithTheScholarshipFirst() {
         var annual = studentDiscountCandidate(DiscountType.ANNUAL_UPFRONT, 1, 1, "40.00", 1, EARLY);
-        var promotion = studentDiscountCandidate(DiscountType.PROMOTION, 2, 2, "40.00", 2, EARLY);
+        var promotion = studentDiscountCandidate(DiscountType.COHORT_PROMOTION, 2, 2, "40.00", 2, EARLY);
         var scholarship = studentDiscountCandidate(DiscountType.SCHOLARSHIP, 3, 3, "40.00", 3, LATE);
 
         assertThat(rankOf(annual, promotion, scholarship)).containsExactly(scholarship, promotion, annual);
@@ -51,7 +51,7 @@ class DiscountCandidateRankingTest {
     void individualAndCohortEntryRankLikeACohortPromotion() {
         var scholarship = studentDiscountCandidate(DiscountType.SCHOLARSHIP, 9, 9, "40.00", 9, LATE);
         var annual = studentDiscountCandidate(DiscountType.ANNUAL_UPFRONT, 1, 1, "40.00", 1, EARLY);
-        var promotion = studentDiscountCandidate(DiscountType.PROMOTION, 2, 2, "40.00", 3, EARLY);
+        var promotion = studentDiscountCandidate(DiscountType.COHORT_PROMOTION, 2, 2, "40.00", 3, EARLY);
         var individual = studentDiscountCandidate(DiscountType.INDIVIDUAL, 3, 3, "40.00", 2, EARLY);
         var cohortEntry = studentDiscountCandidate(DiscountType.COHORT_ENTRY, 4, 4, "40.00", 1, EARLY);
 
@@ -62,8 +62,8 @@ class DiscountCandidateRankingTest {
     @Test
     @Tag("D-285")
     void anEqualSavingAndTypeIsBrokenByPriority() {
-        var secondPriority = studentDiscountCandidate(DiscountType.PROMOTION, 1, 1, "40.00", 2, EARLY);
-        var firstPriority = studentDiscountCandidate(DiscountType.PROMOTION, 2, 2, "40.00", 1, LATE);
+        var secondPriority = studentDiscountCandidate(DiscountType.COHORT_PROMOTION, 1, 1, "40.00", 2, EARLY);
+        var firstPriority = studentDiscountCandidate(DiscountType.COHORT_PROMOTION, 2, 2, "40.00", 1, LATE);
 
         assertThat(rankOf(secondPriority, firstPriority)).containsExactly(firstPriority, secondPriority);
     }
@@ -87,10 +87,10 @@ class DiscountCandidateRankingTest {
 
     @Test
     void candidatesWithoutPriorityOrGrantRankAfterThoseThatHaveThem() {
-        var legacy = candidate(DiscountType.PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00");
+        var legacy = candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00");
         var withPriorityOnly = withPriority(legacy, 1, null);
         var withGrantOnly = withPriority(legacy, null, LATE);
-        var withBoth = studentDiscountCandidate(DiscountType.PROMOTION, 1, 1, "40.00", 1, LATE);
+        var withBoth = studentDiscountCandidate(DiscountType.COHORT_PROMOTION, 1, 1, "40.00", 1, LATE);
 
         assertThat(rankOf(legacy, withGrantOnly, withPriorityOnly, withBoth)).containsExactly(withBoth, withPriorityOnly, withGrantOnly, legacy);
         assertThat(rankOf(withPriorityOnly, withBoth)).first().isEqualTo(withBoth);
@@ -98,17 +98,17 @@ class DiscountCandidateRankingTest {
 
     @Test
     void anEqualEverythingButTheOriginIsBrokenByTheOriginOrder() {
-        var studentDiscount = withOrigin(candidate(DiscountType.PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.STUDENT_DISCOUNT);
-        var legacyPromotion = withOrigin(candidate(DiscountType.PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.LEGACY_PROMOTION);
+        var studentDiscount = withOrigin(candidate(DiscountType.COHORT_PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.STUDENT_DISCOUNT);
+        var legacyCohortEntry = withOrigin(candidate(DiscountType.COHORT_PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
 
-        assertThat(rankOf(studentDiscount, legacyPromotion)).containsExactly(legacyPromotion, studentDiscount);
+        assertThat(rankOf(studentDiscount, legacyCohortEntry)).containsExactly(legacyCohortEntry, studentDiscount);
     }
 
     @Test
     void anEqualEverythingButTheSourceIdIsBrokenByTheLowestSourceId() {
-        var high = withoutStudentDiscountId(candidate(DiscountType.PROMOTION, 8, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"));
-        var low = withoutStudentDiscountId(candidate(DiscountType.PROMOTION, 3, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"));
-        var withStudentDiscountId = candidate(DiscountType.PROMOTION, 20, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00");
+        var high = withoutStudentDiscountId(candidate(DiscountType.COHORT_PROMOTION, 8, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"));
+        var low = withoutStudentDiscountId(candidate(DiscountType.COHORT_PROMOTION, 3, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"));
+        var withStudentDiscountId = candidate(DiscountType.COHORT_PROMOTION, 20, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00");
 
         assertThat(rankOf(high, low)).containsExactly(low, high);
         assertThat(rankOf(high, withStudentDiscountId)).containsExactly(withStudentDiscountId, high);
@@ -116,7 +116,7 @@ class DiscountCandidateRankingTest {
 
     @Test
     void aCandidateDoesNotRankAboveItself() {
-        var only = candidate(DiscountType.PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00");
+        var only = candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00");
 
         assertThat(ranking.ranksAbove(only, only)).isFalse();
         assertThat(ranking.compare(only, only)).isZero();

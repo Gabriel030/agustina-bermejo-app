@@ -1,5 +1,6 @@
-package com.red_escuela.backend.billing.dto;
+package com.red_escuela.backend.billing.discount.dto;
 
+import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

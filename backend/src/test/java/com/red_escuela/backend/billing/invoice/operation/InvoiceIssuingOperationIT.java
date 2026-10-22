@@ -102,7 +102,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         var offering = program();
         var learner = factory.newLearner(offering, null);
         Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
-        Long benefitId = factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
 
@@ -113,7 +113,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(discount.getStudentDiscountId()).isEqualTo(scholarshipId);
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("40000.00"));
         assertThat(jdbc.queryForObject("select count(*) from invoice_discount where student_discount_id = ? and discount_type = 'SCHOLARSHIP'", Long.class, scholarshipId)).isEqualTo(1L);
-        assertThat(jdbc.queryForObject("select count(*) from invoice_discount where discount_type = 'PROMOTION' and student_discount_id = ?", Long.class, benefitId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount where discount_type = 'COHORT_PROMOTION' and student_discount_id = ?", Long.class, promotionId)).isZero();
         assertThat((BigDecimal) entriesOf(learner.studentId(), Currency.ARS).get(0).get("amount")).isEqualByComparingTo("40000.00");
         invariants.assertAllBillingInvariantsHold();
     }
@@ -126,19 +126,19 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         var offering = program();
         var learner = factory.newLearner(offering, null);
         Long scholarshipId = factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
-        Long benefitId = factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("60"), 2);
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("60"), 2);
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
 
         var discount = invoice.getLines().get(0).getDiscount();
         assertThat(discount.getDiscountAmount()).isEqualTo(ars("48000.00"));
-        assertThat(discount.getStudentDiscountId()).isEqualTo(benefitId);
+        assertThat(discount.getStudentDiscountId()).isEqualTo(promotionId);
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("32000.00"));
         assertThat(jdbc.queryForObject("select count(*) from invoice_discount where discount_type = 'SCHOLARSHIP' and student_discount_id = ?", Long.class, scholarshipId)).isZero();
         assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, scholarshipId)).isEqualTo("ACTIVE");
         Invoice april = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 4), LocalDate.of(2027, 4, 11), LocalDate.of(2027, 4, 1))));
         Invoice may = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 5), LocalDate.of(2027, 5, 11), LocalDate.of(2027, 5, 1))));
-        assertThat(april.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(benefitId);
+        assertThat(april.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(promotionId);
         assertThat(may.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(scholarshipId);
         assertThat(may.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("3 de 3");
         invariants.assertAllBillingInvariantsHold();
@@ -150,7 +150,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         var offering = program();
         var learner = factory.newLearner(offering, null);
         factory.grantScholarship(offering, learner, percent("50"), YearMonth.of(2027, 3), YearMonth.of(2027, 3));
-        Long benefitId = factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         Invoice march = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
         Invoice april = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 4), LocalDate.of(2027, 4, 11), LocalDate.of(2027, 4, 1))));
@@ -158,7 +158,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         Invoice june = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 6), LocalDate.of(2027, 6, 11), LocalDate.of(2027, 6, 1))));
 
         assertThat(march.getLines().get(0).getDiscount().getDiscountAmount()).isEqualTo(ars("40000.00"));
-        assertThat(april.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(benefitId);
+        assertThat(april.getLines().get(0).getDiscount().getStudentDiscountId()).isEqualTo(promotionId);
         assertThat(april.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("1 de 2");
         assertThat(may.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("2 de 2");
         assertThat(june.getLines().get(0).getDiscount()).isNull();
@@ -172,7 +172,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         var offering = program();
         var learner = factory.newLearner(offering, null);
         factory.grantScholarship(offering, learner, percent("100"), YearMonth.of(2027, 3), YearMonth.of(2027, 5));
-        factory.redeemPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
+        factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 2);
 
         Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
 

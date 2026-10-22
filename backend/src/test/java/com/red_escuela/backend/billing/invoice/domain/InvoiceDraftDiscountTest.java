@@ -33,7 +33,7 @@ class InvoiceDraftDiscountTest {
     @Test
     void aDiscountWithoutALimitOrWithoutProgressDescribesItselfAccordingly() {
         Invoice draft = monthlyDraft("100.00");
-        draft.addDiscountToDraftLine(1, new InvoiceDiscountDraft(DiscountType.PROMOTION, "Promo", null, ars("100.00"), ars("10.00"), 2, null));
+        draft.addDiscountToDraftLine(1, new InvoiceDiscountDraft(DiscountType.COHORT_PROMOTION, "Promo", null, ars("100.00"), ars("10.00"), 2, null));
 
         assertThat(draft.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("2");
         assertThat(new InvoiceDiscount(draft.getLines().get(0), discount("100.00", "10.00")).describeInstallmentProgress()).isEmpty();
