@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.payment.policy;
 
 import com.red_escuela.backend.billing.payment.exception.BankTransferDetailsRequiredException;
 import com.red_escuela.backend.billing.payment.exception.InvoiceAlreadyUnderReviewException;
+import com.red_escuela.backend.billing.payment.exception.LegacyReceiptPendingOnInvoiceException;
 import com.red_escuela.backend.billing.payment.exception.PossibleDuplicateBankTransferException;
 import com.red_escuela.backend.billing.payment.exception.ReceiptInvoiceCurrencyMismatchException;
 import com.red_escuela.backend.billing.payment.exception.ReceiptInvoiceNotPayableException;
@@ -31,6 +32,7 @@ public final class BankTransferReceiptRejections {
             case "INVOICE_ALREADY_UNDER_REVIEW" -> new InvoiceAlreadyUnderReviewException(violations);
             case "RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST" -> new ReceiptMustCoverOldestInvoicesFirstException(violations);
             case "POSSIBLE_DUPLICATE_BANK_TRANSFER" -> new PossibleDuplicateBankTransferException(violations);
+            case "LEGACY_RECEIPT_PENDING_ON_INVOICE" -> new LegacyReceiptPendingOnInvoiceException(violations);
             default -> throw new IllegalStateException("Unmapped bank transfer receipt violation " + code);
         };
     }

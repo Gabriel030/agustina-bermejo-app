@@ -14,6 +14,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | BankTransferReceiptDetailsRequiredPolicy | BANK_TRANSFER_AMOUNT_INVALID, BANK_TRANSFER_DATE_REQUIRED, BANK_TRANSFER_DATE_IN_FUTURE, BANK_TRANSFER_OPERATION_NUMBER_REQUIRED, BANK_TRANSFER_OPERATION_NUMBER_TOO_LONG, BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED, BANK_TRANSFER_ORIGIN_ACCOUNT_TOO_LONG, BANK_TRANSFER_HOLDER_NAME_REQUIRED, BANK_TRANSFER_HOLDER_NAME_TOO_LONG, BANK_TRANSFER_BANK_NAME_TOO_LONG, BANK_TRANSFER_RECEIPT_FILE_REQUIRED, BANK_TRANSFER_INVOICES_REQUIRED | D-267, D-136, D-097 |
 
+## Momento BANK_TRANSFER_RECEIPT_FILE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | BankTransferReceiptFilePolicy | BANK_TRANSFER_RECEIPT_FILE_TYPE_NOT_ALLOWED, BANK_TRANSFER_RECEIPT_FILE_CONTENT_MISMATCH | D-267 |
+
 ## Momento BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -31,8 +37,9 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | SelectedInvoicesBelongToAccountPolicy | INVOICE_CURRENCY_MISMATCH, INVOICE_OF_ANOTHER_ACCOUNT, INVOICE_NOT_PAYABLE_BY_RECEIPT | D-097, D-153 |
-| 2 | DuplicateBankTransferPolicy | POSSIBLE_DUPLICATE_BANK_TRANSFER | D-269 |
-| 3 | ReceiptCoversOldestInvoicesFirstPolicy | INVOICE_ALREADY_UNDER_REVIEW, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST | D-153, D-260 |
+| 2 | LegacyReceiptNotPendingOnSelectedInvoicesPolicy | LEGACY_RECEIPT_PENDING_ON_INVOICE | D-260 |
+| 3 | DuplicateBankTransferPolicy | POSSIBLE_DUPLICATE_BANK_TRANSFER | D-269 |
+| 4 | ReceiptCoversOldestInvoicesFirstPolicy | INVOICE_ALREADY_UNDER_REVIEW, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST | D-153, D-260 |
 
 ## Momento BILLING_CONFIGURATION_CHANGE
 
@@ -561,6 +568,15 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de AccountCreditAllocatedEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
+## Operación APPROVE_PENDING_BANK_TRANSFER_PAYMENT
+
+- Validaciones (momentos): —
+- Pre-procesamiento (en orden): —
+- Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentApprovedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
 ## Operación CANCEL_CONFIGURATION_VERSION
 
 - Validaciones (momentos): CONFIGURATION_VERSION_CANCELLATION
@@ -678,6 +694,12 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de PaymentApprovedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
+## Operación REJECT_PENDING_BANK_TRANSFER_PAYMENT
+
+- Validaciones (momentos): —
+- Pre-procesamiento (en orden): —
+- Eventos que publica: —
 
 ## Operación REVOKE_STUDENT_DISCOUNT
 

@@ -41,7 +41,10 @@ class BankTransferReceiptRejectionsTest {
             "INVOICE_NOT_PAYABLE_BY_RECEIPT,ReceiptInvoiceNotPayableException,RECEIPT_INVOICE_NOT_PAYABLE",
             "INVOICE_ALREADY_UNDER_REVIEW,InvoiceAlreadyUnderReviewException,INVOICE_ALREADY_UNDER_REVIEW",
             "RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST,ReceiptMustCoverOldestInvoicesFirstException,RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST",
-            "POSSIBLE_DUPLICATE_BANK_TRANSFER,PossibleDuplicateBankTransferException,POSSIBLE_DUPLICATE_BANK_TRANSFER"})
+            "POSSIBLE_DUPLICATE_BANK_TRANSFER,PossibleDuplicateBankTransferException,POSSIBLE_DUPLICATE_BANK_TRANSFER",
+            "LEGACY_RECEIPT_PENDING_ON_INVOICE,LegacyReceiptPendingOnInvoiceException,LEGACY_RECEIPT_PENDING_ON_INVOICE",
+            "BANK_TRANSFER_RECEIPT_FILE_CONTENT_MISMATCH,BankTransferDetailsRequiredException,BANK_TRANSFER_DETAILS_REQUIRED",
+            "BANK_TRANSFER_RECEIPT_FILE_TYPE_NOT_ALLOWED,BankTransferDetailsRequiredException,BANK_TRANSFER_DETAILS_REQUIRED"})
     void everyViolationMapsToItsExceptionAndItsHttpCode(String violationCode, String exceptionName, String httpCode) {
         RuntimeException rejection = rejectionOfCode(violationCode);
 

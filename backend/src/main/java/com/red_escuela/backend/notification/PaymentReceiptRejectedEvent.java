@@ -1,12 +1,13 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public record PaymentReceiptRejectedEvent(BankTransferReceipt receipt) implements DomainNotificationEvent {
+public record PaymentReceiptRejectedEvent(BankTransferReceipt receipt, Person payer) implements DomainNotificationEvent {
     private static final DateTimeFormatter PERIOD_FORMAT = DateTimeFormatter.ofPattern("MM/yyyy");
 
     @Override
@@ -22,7 +23,7 @@ public record PaymentReceiptRejectedEvent(BankTransferReceipt receipt) implement
 
     @Override
     public List<NotificationRecipient> recipients() {
-        return receipt.payer() == null ? List.of() : List.of(new PersonRecipient(receipt.payer()));
+        return payer == null ? List.of() : List.of(new PersonRecipient(payer));
     }
 
     @Override
