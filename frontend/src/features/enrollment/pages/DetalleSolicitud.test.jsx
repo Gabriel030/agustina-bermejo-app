@@ -307,4 +307,23 @@ describe('DetalleSolicitud', () => {
     await user.click(screen.getByRole('button', { name: 'Solicitar de nuevo' }));
     expect(await screen.findByText('Ficha de la carrera')).toBeInTheDocument();
   });
+
+  it('una solicitud vencida lo explica, ofrece solicitar de nuevo y no muestra la revisión ni la subida de documentos', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([
+          { id: 3, programId: 9, programName: 'Administración de Empresas', status: 'EXPIRED', requestedAt: '2026-01-10T10:00:00' },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDetalle('3');
+
+    expect(await screen.findByText('Solicitud vencida.')).toBeInTheDocument();
+    expect(screen.getAllByText('Vencida').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Tu solicitud está en revisión/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Documentos de tu solicitud')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Solicitar de nuevo' }));
+    expect(await screen.findByText('Ficha de la carrera')).toBeInTheDocument();
+  });
 });

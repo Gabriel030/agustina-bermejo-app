@@ -30,6 +30,10 @@ public class WithdrawalInvoiceAccess {
         return invoiceQueries.findAccountIdOfInvoice(invoiceId);
     }
 
+    public Optional<Invoice> lockInvoice(Long invoiceId) {
+        return invoiceQueries.lockInvoice(invoiceId);
+    }
+
     public Optional<Invoice> findInvoiceWithLines(Long invoiceId) {
         return invoiceQueries.findInvoiceWithLines(invoiceId);
     }

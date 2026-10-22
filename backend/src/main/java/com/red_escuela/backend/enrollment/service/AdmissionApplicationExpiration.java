@@ -40,6 +40,9 @@ public class AdmissionApplicationExpiration {
         }
         ProgramEnrollmentApplication application = applicationRepository.findLockedById(applicationId).orElseThrow();
         boolean expired = application.expireIfApproved();
+        if (!expired && outcome == Outcome.CANCELLED) {
+            throw new IllegalStateException("The admission invoice was cancelled but the application " + applicationId + " could not be expired");
+        }
         if (expired) {
             log.info("Solicitud de admisión vencida al cerrar la admisión: solicitud={}, factura={}, resultadoFactura={}", applicationId, invoiceId.get(), outcome);
         }

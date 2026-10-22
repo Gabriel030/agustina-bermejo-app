@@ -45,7 +45,7 @@ public class SystemAdmissionInvoiceCancellation implements ExpiredAdmissionInvoi
     public Outcome cancelWhenUnpaid(Long invoiceId) {
         Long accountId = invoiceAccess.findAccountIdOfInvoice(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
         accountService.lockStudentCurrentAccount(accountId);
-        Invoice invoice = invoiceAccess.findInvoiceWithLines(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
+        Invoice invoice = invoiceAccess.lockInvoice(invoiceId).orElseThrow(() -> new IllegalStateException("Admission invoice not found: " + invoiceId));
         if (invoice.getDocumentStatus() == InvoiceDocumentStatus.ISSUED && invoice.getPaymentStatus() == InvoicePaymentStatus.CANCELLED) {
             return Outcome.ALREADY_CANCELLED;
         }
@@ -56,7 +56,8 @@ public class SystemAdmissionInvoiceCancellation implements ExpiredAdmissionInvoi
         if (receipt != null && PENDING_RECEIPT.equals(receipt.status())) {
             return Outcome.NOT_CANCELLABLE;
         }
-        pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.ADMISSION_EXPIRED, JUSTIFICATION));
+        pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.ADMISSION_EXPIRED, JUSTIFICATION))
+                .resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("A system cancellation never waits for authorization: " + requestId));
         log.info("Matrícula de ingreso anulada al vencer la solicitud: factura={}", invoiceId);
         return Outcome.CANCELLED;
     }

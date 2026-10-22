@@ -147,6 +147,18 @@ export function DetalleSolicitud() {
         </GlassCard>
       )}
 
+      {solicitud.status === 'EXPIRED' && (
+        <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-[13px] text-danger">
+          <div>
+            <span className="font-bold">Solicitud vencida.</span> Cerró la admisión sin que se pagara la matrícula de ingreso y la factura quedó anulada.
+          </div>
+          <div>Podés volver a solicitar el ingreso a {solicitud.programName} en la próxima admisión.</div>
+          <Button variant="outline" className="w-fit" onClick={() => navigate(`/catalogo/carreras/${solicitud.programId}`)}>
+            Solicitar de nuevo
+          </Button>
+        </GlassCard>
+      )}
+
       {solicitud.status === 'APPROVED' && !solicitud.admissionInvoice && (
         <GlassCard className="bg-neutral-bg p-5 text-[13px] text-ink-soft">
           <span className="font-bold text-ink">Solicitud aprobada.</span> Consultá con Secretaría el pago de la matrícula de ingreso.
@@ -203,7 +215,7 @@ export function DetalleSolicitud() {
         </GlassCard>
       )}
 
-      {solicitud.status !== 'REJECTED' && solicitud.status !== 'APPROVED' && (
+      {solicitud.status !== 'REJECTED' && solicitud.status !== 'EXPIRED' && solicitud.status !== 'APPROVED' && (
         <>
           <GlassCard className="p-5 text-[13px] text-ink-soft">
             Tu solicitud está en revisión. No se te cobró nada: si la aprueban, vas a recibir la factura de la matrícula de ingreso y vas

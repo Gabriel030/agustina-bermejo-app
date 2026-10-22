@@ -33,6 +33,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.SharedSpyBeans;
+import com.red_escuela.backend.testsupport.SlowTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +66,7 @@ import static org.awaitility.Awaitility.await;
 @SharedSpyBeans
 @Tag("D-229")
 @Tag("D-252")
+@SlowTest(reason = "Concurrent runs with real threads and multi-stage admission scenarios (approve, receipt, expiry, payment) on the shared Spring context")
 class AdmissionApplicationExpirationIT extends AbstractIntegrationTest {
     private static final LocalDate ADMISSION_END = LocalDate.now().plusDays(5);
 

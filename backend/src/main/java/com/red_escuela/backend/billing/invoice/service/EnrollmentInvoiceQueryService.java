@@ -29,6 +29,11 @@ public class EnrollmentInvoiceQueryService {
         return invoiceRepository.findStudentCurrentAccountIdByInvoiceId(invoiceId);
     }
 
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public Optional<Invoice> lockInvoice(Long invoiceId) {
+        return invoiceRepository.findByIdForUpdate(invoiceId);
+    }
+
     @Transactional(readOnly = true)
     public Optional<Invoice> findInvoiceWithLines(Long invoiceId) {
         return invoiceRepository.findInvoiceWithLinesById(invoiceId);
