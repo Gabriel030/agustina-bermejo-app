@@ -2,6 +2,7 @@ package com.red_escuela.backend.config;
 
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.shared.time.MutableClock;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +11,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import java.time.Duration;
 import java.util.Map;
 
 @Tag("integration")
@@ -21,6 +23,8 @@ public abstract class AbstractIntegrationTest {
             .withCommand("postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off", "-c", "max_connections=500");
 
     static {
+        Awaitility.setDefaultPollInterval(Duration.ofMillis(15));
+        Awaitility.setDefaultPollDelay(Duration.ZERO);
         postgres.start();
         TestDatabaseIsolation.initialize(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
