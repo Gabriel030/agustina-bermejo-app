@@ -1,6 +1,7 @@
 package com.red_escuela.backend.architecture.modulith;
 
 import com.red_escuela.backend.BackendApplication;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.core.DependencyType;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SlowTest(reason = "Analyzes the dependencies of every class of every module of the application, so its time grows with the code base")
 class ModularityTest {
 
     private static final Path BASELINE_DIRECTORY = Path.of("src/test/resources/modulith-baseline");

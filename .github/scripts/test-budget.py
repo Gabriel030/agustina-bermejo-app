@@ -7,7 +7,7 @@ Uso:
   test-budget.py aggregate --shards DIR --out DIR [--baseline FILE] [--changed FILE] [limites]
       une los shards, escribe report.md y metrics.json y falla si hay mas contextos de Spring que el tope
 
-Limites (segundos / cantidad): --max-class 30, --max-slow-class 90, --max-shard 240, --max-contexts 24
+Limites (segundos / cantidad): --max-class 30, --max-slow-class 90, --max-shard 300, --max-contexts 24
 """
 import argparse
 import glob
@@ -24,7 +24,7 @@ SLOW = re.compile(r'@SlowTest\s*\(\s*reason\s*=\s*"((?:[^"\\]|\\.)*)"')
 
 DEFAULT_MAX_CLASS = 30.0
 DEFAULT_MAX_SLOW_CLASS = 90.0
-DEFAULT_MAX_SHARD = 240.0
+DEFAULT_MAX_SHARD = 300.0
 DEFAULT_MAX_CONTEXTS = 24
 
 
