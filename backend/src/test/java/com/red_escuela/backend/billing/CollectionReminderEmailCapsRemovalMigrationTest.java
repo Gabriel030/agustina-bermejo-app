@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValuesCodec;
 import com.red_escuela.backend.testsupport.SlowTest;
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,10 +18,10 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SlowTest(reason = "Levanta su propio Postgres y migra por etapas para cargar filas con la forma vieja antes de la migración que quita los topes de mails")
+@Tag("migration")
 class CollectionReminderEmailCapsRemovalMigrationTest {
 
-    private static JdbcTemplate migrateTo(PostgreSQLContainer<?> postgres, String target) {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+    private static JdbcTemplate migrateTo(DriverManagerDataSource dataSource, String target) {
         Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target(target).load().migrate();
         return new JdbcTemplate(dataSource);
     }
@@ -41,14 +41,13 @@ class CollectionReminderEmailCapsRemovalMigrationTest {
     @Test
     @Tag("D-391")
     void storedValuesLoseTheCapsInEveryScopeAreIdempotentAndOtherScopesAreUntouched() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            JdbcTemplate jdbc = migrateTo(postgres, "103");
+        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("103")) {
+            JdbcTemplate jdbc = new JdbcTemplate(database);
             jdbc.update("insert into address default values");
             Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);
             jdbc.update("insert into person (name, last_name, dni, email, username, address_id) values ('Seed', 'Person', '30111222', 'seed@example.com', 'seed.person', ?)",
                     addressId);
-            migrateTo(postgres, "123");
+            migrateTo(database, "123");
             String capsOverrides = "'{\"minDaysBetweenEmails\": 2, \"maxReminderEmailsPerMonth\": 9, \"dailyEmailCap\": 200}'::jsonb";
             jdbc.update("update configuration_version set config_values = jsonb_set(config_values, '{schedule,sendingOverrides}', " + capsOverrides
                     + ") where scope = 'PROGRAM_REMINDER_SCHEDULE'");
@@ -71,7 +70,7 @@ class CollectionReminderEmailCapsRemovalMigrationTest {
             String before = jdbc.queryForObject("select config_values::text from configuration_version where scope = 'COLLECTION_REMINDERS'", String.class);
             assertThat(before).contains("minDaysBetweenEmails", "maxReminderEmailsPerMonth");
 
-            migrateTo(postgres, "126");
+            migrateTo(database, "126");
             String afterFirst = snapshot(jdbc);
             jdbc.execute(migrationScript());
 
