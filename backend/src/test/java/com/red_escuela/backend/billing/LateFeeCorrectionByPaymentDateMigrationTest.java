@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing;
 
 import com.red_escuela.backend.testsupport.MigrationTestDatabase;
-import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
@@ -15,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SlowTest(reason = "Levanta su propio Postgres y migra por etapas para cargar una corrección de baja con la forma vieja antes de la migración de las correcciones por fecha de pago")
-@Tag("migration")
 @Tag("migration")
 class LateFeeCorrectionByPaymentDateMigrationTest {
     private static final String COLUMNS = "late_fee_charge_id, debit_note_id, student_current_account_id, credit_note_id, first_corrected_day, last_corrected_day, "
@@ -95,12 +93,11 @@ class LateFeeCorrectionByPaymentDateMigrationTest {
     @Test
     @Tag("D-378")
     void settlementAllocationOfACorrectionMustBelongToTheSameAccountAsTheCorrection() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            JdbcTemplate jdbc = migrateTo(postgres, "131");
+        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("131")) {
+            JdbcTemplate jdbc = new JdbcTemplate(database);
             insertWithoutForeignKeys(jdbc, withdrawalCorrection(110, 20, "2027-03-29", "'2027-03-28'"));
 
-            jdbc = migrateTo(postgres, "133");
+            jdbc = migrateTo(database, "133");
 
             assertThat(jdbc.queryForObject("select count(*) from late_fee_charge_correction", Long.class)).isEqualTo(1L);
             assertThat(jdbc.queryForObject("select pg_get_constraintdef(oid) from pg_constraint where conname = 'fk_late_fee_charge_correction_settlement_allocation'",

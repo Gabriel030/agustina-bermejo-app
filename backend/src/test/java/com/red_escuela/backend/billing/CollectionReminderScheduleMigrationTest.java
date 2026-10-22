@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing;
 
 import com.red_escuela.backend.testsupport.MigrationTestDatabase;
-import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValuesCodec;
@@ -22,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SlowTest(reason = "Cada caso levanta su propio Postgres y aplica las 111 migraciones por etapas para cargar datos con la forma vieja; no se puede compartir el contenedor sin mezclar estados")
-@Tag("migration")
 @Tag("migration")
 class CollectionReminderScheduleMigrationTest {
 

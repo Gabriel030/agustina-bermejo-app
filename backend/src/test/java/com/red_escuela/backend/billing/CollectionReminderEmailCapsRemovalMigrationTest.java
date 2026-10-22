@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing;
 
 import com.red_escuela.backend.testsupport.MigrationTestDatabase;
-import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValuesCodec;
 import com.red_escuela.backend.testsupport.SlowTest;
@@ -19,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SlowTest(reason = "Levanta su propio Postgres y migra por etapas para cargar filas con la forma vieja antes de la migración que quita los topes de mails")
-@Tag("migration")
 @Tag("migration")
 class CollectionReminderEmailCapsRemovalMigrationTest {
 

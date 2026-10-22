@@ -23,12 +23,13 @@ class MigrationTestDatabaseTest {
 
     @Test
     void theDatabaseComesWithEveryMigrationUpToTheRequestedVersion() {
-        try (MigrationTestDatabase database = MigrationTestDatabase.migratedTo("102")) {
+        try (MigrationTestDatabase before = MigrationTestDatabase.migratedTo("4");
+             MigrationTestDatabase database = MigrationTestDatabase.migratedTo("5")) {
             JdbcTemplate jdbc = new JdbcTemplate(database);
 
-            assertThat(jdbc.queryForObject(LAST_APPLIED_VERSION, String.class)).isEqualTo("102");
-            assertThat(jdbc.queryForObject("select to_regclass('payment') is not null", Boolean.class)).isTrue();
-            assertThat(jdbc.queryForObject("select count(*) from information_schema.columns where table_name = 'payment' and column_name = 'method'", Integer.class)).isEqualTo(1);
+            assertThat(jdbc.queryForObject(LAST_APPLIED_VERSION, String.class)).isEqualTo("5");
+            assertThat(jdbc.queryForObject("select to_regclass('role') is not null", Boolean.class)).isTrue();
+            assertThat(new JdbcTemplate(before).queryForObject("select to_regclass('role') is null", Boolean.class)).isTrue();
         }
     }
 
