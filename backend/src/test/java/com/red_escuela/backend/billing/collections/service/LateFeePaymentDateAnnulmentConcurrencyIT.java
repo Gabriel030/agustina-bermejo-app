@@ -11,6 +11,7 @@ import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
 import org.mockito.AdditionalAnswers;
 import org.junit.jupiter.api.BeforeEach;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
+@SlowTest(reason = "Runs real threads against Postgres and shares the heavy Spring context of the late fee scenario hierarchy: when it is the first class of its shard it absorbs the whole context start-up")
 class LateFeePaymentDateAnnulmentConcurrencyIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
