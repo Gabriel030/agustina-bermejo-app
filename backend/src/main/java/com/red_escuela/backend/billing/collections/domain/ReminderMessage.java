@@ -28,9 +28,17 @@ public record ReminderMessage(ReminderMessageFormat format, ReminderMessageType 
         if (messageTypes.isEmpty()) {
             return Optional.empty();
         }
-        ReminderMessageFormat format = messageTypes.size() == 1 && lines.size() == 1 ? ReminderMessageFormat.OWN_NOTICE : ReminderMessageFormat.DAILY_DIGEST;
+        ReminderMessageFormat format = formatOf(lines, messageTypes.size());
         ReminderMessageType lead = ReminderMessageSeverity.mostSevereOf(messageTypes);
         return Optional.of(new ReminderMessage(format, lead, ReminderMessageSeverity.dispatchPriorityOf(lead), lines, imputationOrderDebt, creditByCurrency));
+    }
+
+    private static ReminderMessageFormat formatOf(List<ReminderDigestLine> lines, int noticeCount) {
+        boolean summarizesPriorDebt = lines.stream().flatMap(line -> line.notices().stream()).anyMatch(ReminderDigestNotice::summarizesPriorDebt);
+        if (summarizesPriorDebt) {
+            return ReminderMessageFormat.DEBT_SUMMARY;
+        }
+        return noticeCount == 1 && lines.size() == 1 ? ReminderMessageFormat.OWN_NOTICE : ReminderMessageFormat.DAILY_DIGEST;
     }
 
     public List<ReminderDigestLine> highlightedLines() {
@@ -48,10 +56,13 @@ public record ReminderMessage(ReminderMessageFormat format, ReminderMessageType 
     }
 
     public boolean emailPrecedesDueDate() {
-        return highlightedLines().stream().allMatch(ReminderDigestLine::precedesDueDate);
+        return format != ReminderMessageFormat.DEBT_SUMMARY && highlightedLines().stream().allMatch(ReminderDigestLine::precedesDueDate);
     }
 
     public Optional<ReminderMessage> withoutLinesPrecedingTheirDueDate() {
+        if (format == ReminderMessageFormat.DEBT_SUMMARY) {
+            return Optional.of(this);
+        }
         return compose(lines.stream().filter(line -> !line.precedesDueDate()).toList(), imputationOrderDebt.stream().filter(line -> !line.precedesDueDate()).toList(), creditByCurrency);
     }
 }

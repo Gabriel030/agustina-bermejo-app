@@ -2,8 +2,10 @@ package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
+import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.ReminderDigestMode;
 import com.red_escuela.backend.billing.collections.service.CollectionReminderFactsLoader;
+import com.red_escuela.backend.billing.collections.service.ReminderContentTermsCache;
 import com.red_escuela.backend.billing.collections.service.StudentReminderContext;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
@@ -104,7 +106,8 @@ public class CollectionReminderPlanningStep {
     private void planStudent(StudentReminderContext context, PlanningRun run) {
         try {
             Map<Long, ResolvedReminderSchedule> schedules = factsLoader.resolveSchedulesOf(context, run.businessDate, run.scheduleCache);
-            StudentPlanningOutcome outcome = studentPlanner.planReminderOfStudentOn(context, schedules, run.businessDate, run.nonBusinessDays, run.mode);
+            ReminderContentTerms terms = factsLoader.resolveContentTermsOf(context, run.businessDate, run.termsCache);
+            StudentPlanningOutcome outcome = studentPlanner.planReminderOfStudentOn(context, schedules, run.businessDate, run.nonBusinessDays, run.mode, terms);
             switch (outcome) {
                 case PLANNED -> run.planned++;
                 case ALREADY_PLANNED -> run.alreadyPlanned++;
@@ -142,6 +145,7 @@ public class CollectionReminderPlanningStep {
         private final NonBusinessDays nonBusinessDays;
         private final ReminderDigestMode mode;
         private final Map<ReminderScheduleTarget, ResolvedReminderSchedule> scheduleCache = new HashMap<>();
+        private final ReminderContentTermsCache termsCache = new ReminderContentTermsCache();
         private final List<PlanningError> errors = new ArrayList<>();
         private int candidates;
         private int planned;

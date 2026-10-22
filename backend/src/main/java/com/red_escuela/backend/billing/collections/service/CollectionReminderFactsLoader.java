@@ -1,10 +1,14 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.ReminderInvoiceFact;
+import com.red_escuela.backend.billing.collections.domain.ReminderLateFeeTerms;
+import com.red_escuela.backend.billing.collections.domain.ReminderSuspensionRule;
 import com.red_escuela.backend.billing.collections.domain.ReminderStudentFacts;
 import com.red_escuela.backend.billing.collections.repository.ReminderFactsQuery;
 import com.red_escuela.backend.billing.collections.repository.ReminderFactsQuery.CreditRow;
 import com.red_escuela.backend.billing.collections.repository.ReminderFactsQuery.OpenInvoiceRow;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.ResolvedReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
@@ -99,6 +103,25 @@ public class CollectionReminderFactsLoader {
         context.scheduleTargetsByInvoiceId().forEach((invoiceId, target) ->
                 schedules.put(invoiceId, resolvedByTarget.computeIfAbsent(target, key -> configurationReader.reminderScheduleFor(key, businessDate))));
         return schedules;
+    }
+
+    public ReminderContentTerms resolveContentTermsOf(StudentReminderContext context, LocalDate businessDate, ReminderContentTermsCache cache) {
+        Map<Long, ReminderLateFeeTerms> lateFeeByInvoiceId = new HashMap<>();
+        for (ReminderInvoiceFact fact : context.facts().invoices()) {
+            if (!fact.isDebitNote() && fact.invoiceType() != InvoiceType.LATE_FEE) {
+                cache.lateFeeTermsOn(fact.dueDate(), this::lateFeeTermsInEffectOn).ifPresent(terms -> lateFeeByInvoiceId.put(fact.invoiceId(), terms));
+            }
+        }
+        ReminderSuspensionRule suspensionRule = cache.suspensionRuleFrom(() -> latePaymentTermsInEffectOn(businessDate).map(ReminderSuspensionRule::of)).orElse(null);
+        return new ReminderContentTerms(lateFeeByInvoiceId, suspensionRule);
+    }
+
+    private Optional<ReminderLateFeeTerms> lateFeeTermsInEffectOn(LocalDate dueDate) {
+        return latePaymentTermsInEffectOn(dueDate).flatMap(ReminderLateFeeTerms::of);
+    }
+
+    private Optional<LatePaymentTerms> latePaymentTermsInEffectOn(LocalDate date) {
+        return configurationReader.findLatePaymentSettingsEffectiveOn(date).or(configurationReader::findFirstLatePaymentSettings);
     }
 
     private static Set<Long> distinctIdsOf(List<OpenInvoiceRow> rows, Function<OpenInvoiceRow, Long> idOf) {

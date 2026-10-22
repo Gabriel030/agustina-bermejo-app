@@ -7,7 +7,7 @@ import java.util.List;
 
 public record PlannedReminderLine(Long invoiceId, Long originInvoiceId, PlannedReminderInvoiceKind invoiceKind, boolean debitNote, LocalDate dueDate, Money balance,
                                   boolean receiptUnderReview, boolean precedesDueDate, List<PlannedReminderNotice> notices, Long scheduleVersionId,
-                                  Long exceptionVersionId, Long groupVersionId, Long globalSettingsVersionId) {
+                                  Long exceptionVersionId, Long groupVersionId, Long globalSettingsVersionId, PlannedReminderLateFee lateFee) {
 
     public PlannedReminderLine {
         notices = List.copyOf(notices);

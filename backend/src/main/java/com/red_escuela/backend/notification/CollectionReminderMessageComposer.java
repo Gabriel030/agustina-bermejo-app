@@ -2,11 +2,15 @@ package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.billing.events.PlannedReminderBlock;
 import com.red_escuela.backend.billing.events.PlannedReminderFormat;
+import com.red_escuela.backend.billing.events.PlannedReminderInvoiceKind;
+import com.red_escuela.backend.billing.events.PlannedReminderLateFee;
 import com.red_escuela.backend.billing.events.PlannedReminderLine;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.billing.events.PlannedReminderNoticeType;
+import com.red_escuela.backend.billing.events.PlannedReminderSuspensionRule;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Component;
 
 import java.text.DecimalFormat;
@@ -26,9 +30,9 @@ public class CollectionReminderMessageComposer {
     private static final String RECEIPT_LINE = "Si ya realizaste el pago, subí el comprobante desde la plataforma.";
 
     public DeliveryContent composeInApp(PlannedReminderMessage message, LocalDate businessDate) {
-        StringBuilder text = new StringBuilder(introOf(message.leadNoticeType()));
-        List<PlannedReminderLine> highlighted = message.lines().stream().filter(PlannedReminderLine::isHighlighted).toList();
-        String summary = highlighted.stream()
+        StringBuilder text = new StringBuilder(introOf(message));
+        List<PlannedReminderLine> described = message.format() == PlannedReminderFormat.DEBT_SUMMARY ? message.lines() : message.lines().stream().filter(PlannedReminderLine::isHighlighted).toList();
+        String summary = described.stream()
                 .map(line -> kindLabelOf(line) + " (" + dueTextOf(line, businessDate) + ", " + formatted(line.balance()) + ")")
                 .collect(Collectors.joining("; "));
         text.append(" ").append(summary).append(".");
@@ -37,7 +41,7 @@ public class CollectionReminderMessageComposer {
     }
 
     public DeliveryContent composeEmail(PlannedReminderMessage message, LocalDate businessDate) {
-        StringBuilder body = new StringBuilder("Hola,\n\n").append(introOf(message.leadNoticeType())).append("\n");
+        StringBuilder body = new StringBuilder("Hola,\n\n").append(introOf(message)).append("\n");
         boolean severalBlocks = message.blocks().size() > 1;
         for (PlannedReminderBlock block : message.blocks()) {
             body.append("\n");
@@ -46,8 +50,15 @@ public class CollectionReminderMessageComposer {
             }
             appendBlock(body, message, block, businessDate);
         }
+        appendNewInstallmentMention(body, message, businessDate);
+        appendLateFeeLines(body, message, businessDate);
+        appendSuspensionLine(body, message);
         body.append("\n").append(PAYMENT_ORDER_LINE).append("\n").append(RECEIPT_LINE).append("\n");
-        return DeliveryContent.forEmail(subjectOf(message.leadNoticeType()), body.toString(), null);
+        return DeliveryContent.forEmail(subjectOf(message), body.toString(), null);
+    }
+
+    public String subjectOf(PlannedReminderMessage message) {
+        return message.format() == PlannedReminderFormat.DEBT_SUMMARY ? "Resumen de tu deuda" : subjectOf(message.leadNoticeType());
     }
 
     public String subjectOf(PlannedReminderNoticeType leadNoticeType) {
@@ -58,6 +69,10 @@ public class CollectionReminderMessageComposer {
             case AFTER_DUE_REMINDER -> "Tenés una cuota vencida";
             case BEFORE_SUSPENSION_REMINDER -> "Tenés cuotas impagas en tu inscripción";
         };
+    }
+
+    private String introOf(PlannedReminderMessage message) {
+        return message.format() == PlannedReminderFormat.DEBT_SUMMARY ? "Este es el resumen de tu deuda." : introOf(message.leadNoticeType());
     }
 
     private String introOf(PlannedReminderNoticeType leadNoticeType) {
@@ -71,7 +86,7 @@ public class CollectionReminderMessageComposer {
     }
 
     private void appendBlock(StringBuilder body, PlannedReminderMessage message, PlannedReminderBlock block, LocalDate businessDate) {
-        boolean marksHighlighted = message.format() == PlannedReminderFormat.DAILY_DIGEST;
+        boolean marksHighlighted = message.format() != PlannedReminderFormat.OWN_NOTICE;
         for (PlannedReminderLine line : block.lines()) {
             body.append(line.debitNote() ? "    - " : "- ").append(kindLabelOf(line)).append(": ").append(dueTextOf(line, businessDate)).append(", ")
                     .append(formatted(line.balance()));
@@ -79,7 +94,7 @@ public class CollectionReminderMessageComposer {
                 body.append(" (comprobante en revisión)");
             }
             if (marksHighlighted && line.isHighlighted()) {
-                body.append(" (aviso de hoy)");
+                body.append(isNewInstallment(line) ? " (cuota nueva)" : " (aviso de hoy)");
             }
             body.append("\n");
         }
@@ -90,6 +105,57 @@ public class CollectionReminderMessageComposer {
         if (block.hasCreditShortfall()) {
             body.append("Te faltan ").append(formatted(block.missingForNext())).append(" para cubrir ").append(shortfallTargetOf(block, businessDate)).append(".\n");
         }
+    }
+
+    private boolean isNewInstallment(PlannedReminderLine line) {
+        return line.notices().stream().anyMatch(notice -> notice.noticeType() == PlannedReminderNoticeType.ISSUANCE_NOTICE);
+    }
+
+    private void appendNewInstallmentMention(StringBuilder body, PlannedReminderMessage message, LocalDate businessDate) {
+        if (message.format() != PlannedReminderFormat.DEBT_SUMMARY) {
+            return;
+        }
+        for (PlannedReminderLine line : message.lines()) {
+            if (isNewInstallment(line)) {
+                body.append("\nAdemás, se emitió una cuota nueva de ").append(kindLabelOf(line).toLowerCase(ARGENTINA)).append(" que ")
+                        .append(dueTextOf(line, businessDate)).append(".\n");
+            }
+        }
+    }
+
+    private void appendLateFeeLines(StringBuilder body, PlannedReminderMessage message, LocalDate businessDate) {
+        boolean describesEveryLine = message.format() == PlannedReminderFormat.DEBT_SUMMARY;
+        List<PlannedReminderLine> described = message.lines().stream()
+                .filter(line -> line.lateFee() != null && !line.debitNote() && line.invoiceKind() != PlannedReminderInvoiceKind.LATE_FEE)
+                .filter(line -> describesEveryLine || line.isHighlighted())
+                .toList();
+        for (PlannedReminderLine line : described) {
+            body.append("\n").append(lateFeeSentenceOf(line, businessDate)).append("\n");
+        }
+    }
+
+    private String lateFeeSentenceOf(PlannedReminderLine line, LocalDate businessDate) {
+        PlannedReminderLateFee lateFee = line.lateFee();
+        LocalDate graceEnd = line.dueDate().plusDays(lateFee.graceDays());
+        String charge = "un recargo de " + ratePointsOf(lateFee.dailyRate()) + " % por día desde el " + DAY.format(line.dueDate())
+                + " (" + formatted(line.balance().times(lateFee.dailyRate())) + " por día)";
+        String lead = kindLabelOf(line) + " con vencimiento el " + DAY.format(line.dueDate()) + ": ";
+        return businessDate.isAfter(graceEnd) ? lead + "corre " + charge + "." : lead + "si se paga después del " + DAY.format(graceEnd) + ", corre " + charge + ".";
+    }
+
+    private String ratePointsOf(Percentage rate) {
+        return new DecimalFormat("0.##", DecimalFormatSymbols.getInstance(ARGENTINA)).format(rate.points());
+    }
+
+    private void appendSuspensionLine(StringBuilder body, PlannedReminderMessage message) {
+        PlannedReminderSuspensionRule rule = message.suspensionRule();
+        if (rule == null) {
+            return;
+        }
+        int invoiceCount = Math.max(1, rule.afterInvoiceCount());
+        body.append("\nSegún la regla vigente, la inscripción puede suspenderse si hay ").append(invoiceCount).append(invoiceCount == 1 ? " factura vencida" : " facturas vencidas")
+                .append(" o más, o si pasan más de ").append(rule.afterDays()).append(rule.afterDays() == 1 ? " día" : " días")
+                .append(" desde el vencimiento de la factura vencida más antigua.\n");
     }
 
     private String shortfallTargetOf(PlannedReminderBlock block, LocalDate businessDate) {

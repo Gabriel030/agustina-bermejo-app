@@ -11,10 +11,12 @@ import com.red_escuela.backend.billing.collections.policy.LateFeeChargingEnabled
 import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeNotFrozenPolicy;
+import com.red_escuela.backend.billing.collections.policy.NewInstallmentWaitsForPriorDebtPolicy;
 import com.red_escuela.backend.billing.collections.policy.OriginNotUnderPaymentReviewPolicy;
 import com.red_escuela.backend.billing.collections.policy.OverdueDetectionContext;
 import com.red_escuela.backend.billing.collections.domain.ReminderInvoiceFact;
 import com.red_escuela.backend.billing.collections.policy.PendingCancellationSuppressesReminderPolicy;
+import com.red_escuela.backend.billing.collections.policy.PriorDebtReminderContext;
 import com.red_escuela.backend.billing.collections.policy.ReceiptUnderReviewSuppressesReminderPolicy;
 import com.red_escuela.backend.billing.collections.policy.ReminderEligibleInvoicePolicy;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -54,6 +56,11 @@ public class CollectionsPolicySetsConfiguration {
                 new ReminderEligibleInvoicePolicy(),
                 new ReceiptUnderReviewSuppressesReminderPolicy(),
                 new PendingCancellationSuppressesReminderPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PriorDebtReminderContext> collectionReminderPriorDebtPolicySet() {
+        return PolicySet.named("COLLECTION_REMINDER_PRIOR_DEBT", List.of(new NewInstallmentWaitsForPriorDebtPolicy()));
     }
 
     @Bean
