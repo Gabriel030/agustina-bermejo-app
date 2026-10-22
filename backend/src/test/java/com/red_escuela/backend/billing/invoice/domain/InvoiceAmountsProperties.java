@@ -22,8 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-171")
 @Tag("D-174")
 class InvoiceAmountsProperties {
-
-    private static final int TRIES = 1000;
     private static final String SEED = "20271003";
 
     record LineSpec(long cents, int discountPercent) {
@@ -40,7 +38,7 @@ class InvoiceAmountsProperties {
         return NonNegativeMoney.of(BigDecimal.valueOf(cents, 2), Currency.ARS);
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void theTotalIsTheSumOfLinesMinusTheSumOfDiscountsAndNeverNegative(@ForAll("lineSpecs") List<LineSpec> specs) {
         Invoice invoice = InvoiceTestData.annualDraft(0);
         long linesCents = 0;
@@ -65,7 +63,7 @@ class InvoiceAmountsProperties {
         assertThat(amounts.total().value().isNegative()).isFalse();
     }
 
-    @Property(tries = TRIES, seed = SEED)
+    @Property(seed = SEED)
     void noValidSequenceOfAmountOperationsLeavesPaidAndOutstandingTogetherOrANegativeAmount(
             @ForAll("lineSpecs") List<LineSpec> specs, @ForAll List<Boolean> operations) {
         long total = specs.get(0).cents();

@@ -38,7 +38,7 @@ class AllocationSourcesProperties {
         return Arbitraries.longs().between(0, 5_000_000);
     }
 
-    @Property(tries = 1000, seed = "20261015")
+    @Property(seed = "20261015")
     void theSourcesOfEachAllocationAddUpToItAndEndInTheCreditThatFixesItsEffectiveDate(@ForAll("centAmounts") List<Long> amounts,
                                                                                          @ForAll("centAmounts") List<Long> creditCents,
                                                                                          @ForAll("credit") long requestedCents) {
@@ -59,7 +59,7 @@ class AllocationSourcesProperties {
         }
     }
 
-    @Property(tries = 1000, seed = "20261015")
+    @Property(seed = "20261015")
     void theCreditAvailableFromEntriesFeedsTheScheduleWithoutExceedingWhatEachEntryHasLeft(@ForAll("centAmounts") List<Long> paymentCents,
                                                                                             @ForAll("credit") long sourcedSeed, @ForAll("credit") long leftSeed,
                                                                                             @ForAll("centAmounts") List<Long> planCents) {

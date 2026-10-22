@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.reporting.service;
 
+import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -53,6 +54,7 @@ class MetricsAccessAndPerformanceIT extends AbstractMonthlyMetricsIT {
     }
 
     @Test
+    @NightlyTest(reason = "Performance: seeds twenty four months of data to time every panel")
     void everyPanelRespondsOverTwentyFourMonthsOfDataAndRegistersItsQueryTimer() throws Exception {
         Long[] accounts = new Long[20];
         for (int i = 0; i < accounts.length; i++) {

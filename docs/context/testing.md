@@ -170,6 +170,23 @@ Los límites son constantes de `.github/scripts/test-budget.py` (parámetros `--
 2. **Medio: tests de integración solo para persistencia e integración real.** Queries, constraints, transacciones, eventos entre módulos, endpoints. Extienden `AbstractIntegrationTest` (Postgres real, aislamiento por clase con `TestDatabaseIsolation`). No repitas ahí lo que ya cubre un test de dominio.
 3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline pueden superar 30 s. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR.
 
+### Tiers de tests: PR y nightly
+
+El tier se elige con la propiedad `test.exploration` (`pr` por defecto, `nightly`): `./mvnw test -Dtest.exploration=nightly`. Surefire la pasa a los forks y el perfil `exploration-nightly` del `pom.xml` sube los intentos de jqwik. Un valor desconocido falla en vez de caer en `pr`.
+
+| | Tier `pr` (cada PR y push) | Tier `nightly` (corrida nocturna y release) |
+|---|---|---|
+| Secuencias aleatorias (`CurrentAccountAllocationCommandSequencesIT`, `CancellationPropertiesIT`, `CreditNoteCommandSequencesIT`, `LateFeeCorrectionSequencesIT`) | 5 / 5 / 5 / 1, semilla fija | 50 / 40 / 40 / 6, semilla rotativa |
+| `LateFeeRandomScenariosIT` | 1 escenario (semilla 3, con gracia) | 10 escenarios |
+| jqwik (`@Property`) | 200 intentos (`jqwik.tries.default`), semillas fijas del propio test | 1000 intentos, mismas semillas |
+| Tests `@NightlyTest` | se saltean | corren |
+
+- **Cómo se lee el tier en un test:** `ExplorationTier.sequences(prCount, nightlyCount)` y `ExplorationTier.seed(owner, fixedSeed)` (`testsupport/ExplorationTier.java`). En nightly la semilla sale del reloj y se **loguea** (`Exploration seed of <test> in tier nightly: <n>`); para reproducir una falla: `-Dtest.exploration=nightly -Dtest.exploration.seed=<n>`.
+- **jqwik:** no pongas `tries =` en `@Property`; el valor sale de `jqwik.tries.default` (200 en `src/test/resources/junit-platform.properties`, 1000 en nightly). jqwik no tiene semilla global: la semilla fija sigue en el `@Property` y por eso en nightly se rota solo en las secuencias propias. PIT conserva 1000 intentos (`jvmArgs` del perfil `mutation`) hasta medir qué mutantes se pierden con menos.
+- **`@NightlyTest(reason = "...")`** (`testsupport/NightlyTest.java`, lleva `@Tag("nightly")`) marca tests de volumen o performance (400 facturas vencidas, 24 meses de datos). Se deshabilita solo con `ExecutionCondition`, sin depender de `excludedGroups`, así que ningún workflow puede ejecutarlos por error. Úsalo solo en tests que no llevan ningún `@Tag("D-xxx")` exclusivo (ver regla R5).
+- **`ModuleDocumentationTest`** sigue con `@Tag("docs")` (excluido por defecto con `test.excludedGroups=docs`): se corre solo en nightly y en release con `-Dtest.excludedGroups=none`.
+- **Regla R5 (`BillingDecisionCoverageTest`):** cada decisión D-xxx vigente implementada o parcial necesita **al menos un test del tier PR**, es decir, con su `@Tag("D-xxx")`, sin `@NightlyTest`, sin `@Tag("nightly")`, sin `@Tag("migration")` y sin `@Disabled`. Si movés el único test de una decisión a nightly, el build falla con `R5 D-xxx ... sin test del tier PR`. Agregá un test liviano de PR en vez de saltear la regla.
+
 ### Reglas para no pagar contextos y esperas de más
 
 - **Reutilizá la configuración compartida de mocks.** Cada combinación distinta de `@MockitoBean`/`@MockBean`/`@TestPropertySource`/`@ActiveProfiles` crea un contexto de Spring nuevo (varios segundos de arranque). Si tu test solo necesita mockear el envío de mails o el validador de Google, anotalo con `@SharedMockBeans` (`testsupport/SharedMockBeans.java`): mockea `EmailService` y `GoogleIdTokenService`, y todos los tests que lo usen comparten contexto. Para espiar servicios usá `@SharedSpyBeans` (`testsupport/SharedSpyBeans.java`) y `@Autowired` del bean (es el spy); para propiedades distintas (rate limit bajo, API docs apagada, actuator) `@SharedPropertyOverrides`. Ambos resetean después de cada test (`MockReset.AFTER`): quien cambia el comportamiento de un spy/mock lo restaura solo, y si el tipo falta en la anotación se agrega ahí en vez de declarar un `@MockitoBean`/`@MockitoSpyBean` por clase. Si hace falta un mock común más, se agrega a esa anotación, no se declara de nuevo en cada clase.

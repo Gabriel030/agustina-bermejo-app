@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.testsupport.ExplorationTier;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
@@ -31,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SlowTest(reason = "Property test that generates random sequences of issues, payments, credit notes and cancellations")
 class CancellationPropertiesIT extends AbstractCreditNoteIT {
 
-    private static final int SEQUENCES = 20;
+    private static final int SEQUENCES = ExplorationTier.sequences(5, 40);
     private static final LocalDate BASE_DATE = LocalDate.of(2027, 4, 1);
 
     @Autowired
@@ -44,7 +45,7 @@ class CancellationPropertiesIT extends AbstractCreditNoteIT {
     @Test
     void anySequenceOfIssuesPaymentsCreditNotesAndCancellationsKeepsTheBillingInvariants() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
-        Random random = new Random(20261010L);
+        Random random = new Random(ExplorationTier.seed("CancellationPropertiesIT", 20261010L));
         Long actor = newStaffPerson().getId();
         CreditNoteReason[] cancellationReasons = {CreditNoteReason.BILLING_ERROR, CreditNoteReason.CANCELLATION, CreditNoteReason.LATE_FEE_ANNULMENT};
         int cancelled = 0;

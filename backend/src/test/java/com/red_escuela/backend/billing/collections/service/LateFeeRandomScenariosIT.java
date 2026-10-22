@@ -1,23 +1,29 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.testsupport.ExplorationTier;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SlowTest(reason = "Walks the days of five seeded scenarios with the real late fee reconciliation against Postgres")
 class LateFeeRandomScenariosIT extends AbstractLateFeeScenarioIT {
 
+    static IntStream scenarioSeeds() {
+        return ExplorationTier.current() == ExplorationTier.NIGHTLY ? IntStream.rangeClosed(1, 10) : IntStream.of(3);
+    }
+
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5})
+    @MethodSource("scenarioSeeds")
     @Tag("D-330")
     @Tag("D-331")
     @Tag("D-332")

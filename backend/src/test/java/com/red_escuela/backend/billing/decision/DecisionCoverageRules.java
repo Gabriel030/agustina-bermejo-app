@@ -13,14 +13,26 @@ public final class DecisionCoverageRules {
     public static List<String> findViolations(DecisionRegistry registry, List<TaggedTestUse> uses) {
         List<String> violations = new ArrayList<>();
         for (DecisionRegistryRow row : registry.rows()) {
-            if (row.isCurrent() && row.isImplementedOrPartial() && !hasTag(uses, row.id())) {
-                violations.add("R1 " + row.id() + " (" + row.area() + ") sin test: " + row.testCase());
+            if (row.isCurrent() && row.isImplementedOrPartial()) {
+                checkCoverage(row, uses, violations);
             }
         }
         for (TaggedTestUse use : uses) {
             checkUse(registry, use, violations);
         }
         return violations;
+    }
+
+    private static void checkCoverage(DecisionRegistryRow row, List<TaggedTestUse> uses, List<String> violations) {
+        if (!hasTag(uses, row.id())) {
+            violations.add("R1 " + row.id() + " (" + row.area() + ") sin test: " + row.testCase());
+        } else if (!row.isToConfirm() && !hasPrTierTest(uses, row.id())) {
+            violations.add("R5 " + row.id() + " (" + row.area() + ") sin test del tier PR (solo nightly, migration o deshabilitados): " + row.testCase());
+        }
+    }
+
+    private static boolean hasPrTierTest(List<TaggedTestUse> uses, String id) {
+        return uses.stream().anyMatch(use -> use.tag().equals(id) && !use.disabled() && !use.outsidePrTier());
     }
 
     private static boolean hasTag(List<TaggedTestUse> uses, String id) {

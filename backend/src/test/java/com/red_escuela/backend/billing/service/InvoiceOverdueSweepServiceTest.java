@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -208,6 +209,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @NightlyTest(reason = "Volume: persists 400 overdue invoices; the sweep behavior is covered by the small cases of the class")
     void dailyProcessMustReviewFourHundredOverdueInstallmentsAndNoneIsLeftUnprocessed() {
         Person director = persistPerson("director.sweep5." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));

@@ -31,7 +31,7 @@ class PercentageProperties {
         return Arbitraries.bigDecimals().between(new BigDecimal("-1000000.00"), new BigDecimal("-0.01")).ofScale(2);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void pointsInZeroToOneHundredAreAcceptedAndRoundTrip(@ForAll("pointsInRange") BigDecimal points) {
         Percentage percentage = Percentage.ofPoints(points);
 
@@ -39,22 +39,22 @@ class PercentageProperties {
         assertThat(percentage.fraction()).isBetween(BigDecimal.ZERO, BigDecimal.ONE);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void pointsAboveOneHundredAreRejected(@ForAll("pointsAboveRange") BigDecimal points) {
         assertThatThrownBy(() -> Percentage.ofPoints(points)).isInstanceOf(InvalidPercentageException.class);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void negativePointsAreRejected(@ForAll("pointsBelowRange") BigDecimal points) {
         assertThatThrownBy(() -> Percentage.ofPoints(points)).isInstanceOf(InvalidPercentageException.class);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void exceedsAgreesWithTheOrderOfThePoints(@ForAll("pointsInRange") BigDecimal first, @ForAll("pointsInRange") BigDecimal second) {
         assertThat(Percentage.ofPoints(first).exceeds(Percentage.ofPoints(second))).isEqualTo(first.compareTo(second) > 0);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void ratioOfAPartInsideTheTotalIsAValidPercentage(@ForAll @net.jqwik.api.constraints.LongRange(min = 0, max = 100000) long part,
                                                       @ForAll @net.jqwik.api.constraints.LongRange(min = 1, max = 100000) long extra) {
         long total = part + extra;
