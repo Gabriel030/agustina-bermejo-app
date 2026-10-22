@@ -14,6 +14,8 @@ import com.red_escuela.backend.notification.PaymentReceiptRejectedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class PaymentReceiptFinder {
 
@@ -59,8 +61,8 @@ public class PaymentReceiptFinder {
         return pendingReviewPort.approvePendingPayment(receipt.getPaymentId(), reviewerIdOf(receipt), verification);
     }
 
-    public void rejectPendingPayment(BankTransferReceipt receipt, String reason) {
-        pendingReviewPort.rejectPendingPayment(receipt.getPaymentId(), reason, reviewerIdOf(receipt));
+    public List<Long> rejectPendingPayment(BankTransferReceipt receipt, String reason) {
+        return pendingReviewPort.rejectPendingPayment(receipt.getPaymentId(), reason, reviewerIdOf(receipt));
     }
 
     public void publishApproved(BankTransferReceipt receipt) {

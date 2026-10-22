@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.shared.time.ApplicationTime;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -42,4 +45,15 @@ public class CourseEnrollmentApplication {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_enrollment_id")
     private CourseEnrollment courseEnrollment;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    public boolean cancelIfPending() {
+        if (courseEnrollment != null || cancelledAt != null) {
+            return false;
+        }
+        this.cancelledAt = ApplicationTime.now();
+        return true;
+    }
 }
