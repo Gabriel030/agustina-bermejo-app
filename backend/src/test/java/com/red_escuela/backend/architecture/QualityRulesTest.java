@@ -2,8 +2,7 @@ package com.red_escuela.backend.architecture;
 
 import com.red_escuela.backend.shared.time.RawNowRule;
 import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import org.junit.jupiter.api.Test;
 
@@ -18,9 +17,7 @@ class QualityRulesTest {
     private static final String FIXTURE_ROOT = ArchitectureRules.ROOT + ".architecture.fixture.quality";
 
     private static JavaClasses fixtureClasses() {
-        return new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(FIXTURE_ROOT);
+        return ImportedApplicationClasses.fixturesIn(FIXTURE_ROOT);
     }
 
     @Test

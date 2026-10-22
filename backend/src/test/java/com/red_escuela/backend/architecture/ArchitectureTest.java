@@ -3,7 +3,7 @@ package com.red_escuela.backend.architecture;
 import com.red_escuela.backend.shared.time.RawNowRule;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import com.red_escuela.backend.architecture.fixture.billing.configuration.entity.FixtureEntity;
 import jakarta.persistence.Entity;
@@ -25,9 +25,7 @@ class ArchitectureTest {
 
     @Test
     void primitiveMoneyRuleDetectsViolations() {
-        JavaClasses fixture = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+        JavaClasses fixture = ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
 
         assertThatThrownBy(() -> ArchitectureRules.noPrimitiveMoneyPercentOrGradeFields("..dto..").check(fixture))
                 .isInstanceOf(AssertionError.class)
@@ -145,9 +143,7 @@ class ArchitectureTest {
 
     @Test
     void issuanceRulesDetectViolations() {
-        JavaClasses fixture = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+        JavaClasses fixture = ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
 
         assertThatThrownBy(() -> ArchitectureRules.invoicesAreIssuedOnlyByInvoiceIssuingService().check(fixture))
                 .isInstanceOf(AssertionError.class)
@@ -163,9 +159,7 @@ class ArchitectureTest {
     private static final String FIXTURE_V2 = ArchitectureRules.ROOT + ".architecture.fixture.billing.configuration";
 
     private static JavaClasses fixtureClasses() {
-        return new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+        return ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
     }
 
     @Test

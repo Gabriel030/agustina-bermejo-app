@@ -11,8 +11,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.CompositeArchRule;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,16 +38,11 @@ final class TestSuiteRules {
     }
 
     static JavaClasses importTestClasses() {
-        return new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .withImportOption(location -> !location.contains("/architecture/fixture/"))
-                .importPackages(ArchitectureRules.ROOT);
+        return ImportedApplicationClasses.testsOutsideFixtures();
     }
 
     static JavaClasses importFixtureClasses() {
-        return new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(FIXTURE_PACKAGE);
+        return ImportedApplicationClasses.fixturesIn(FIXTURE_PACKAGE);
     }
 
     static ArchRule domainAndPolicyTestsDoNotBootSpring() {

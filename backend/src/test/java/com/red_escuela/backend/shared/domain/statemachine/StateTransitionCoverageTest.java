@@ -2,8 +2,7 @@ package com.red_escuela.backend.shared.domain.statemachine;
 
 import com.red_escuela.backend.shared.time.RawNowRule;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -43,8 +42,7 @@ class StateTransitionCoverageTest {
     void everyMachineInMainHasItsExhaustiveTestCoveringTheWholeProduct() throws Exception {
         Map<String, StateTransitionTable<?, ?>> tables = StateMachineDiscovery.findTablesDeclaredInMain();
         Map<String, List<TransitionExpectation>> expectations = new HashMap<>();
-        for (JavaClass testClass : new ClassFileImporter().withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages("com.red_escuela.backend")) {
+        for (JavaClass testClass : ImportedApplicationClasses.allTests()) {
             ExhaustiveTransitionExpectations annotation = testClass.reflect().getAnnotation(ExhaustiveTransitionExpectations.class);
             if (annotation != null) {
                 Method method = testClass.reflect().getDeclaredMethod("expectedTransitions");
