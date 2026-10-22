@@ -173,7 +173,7 @@ class ReminderOccurrenceExpanderTest {
     @Tag("D-413")
     void anInvoiceIssuedAfterThePreviousRunRecoversOnlyItsIssueDayNoticeOneDayLater() {
         ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", false, true);
-        ReminderNotice onIssueDay = notice("issue", ReminderMilestone.ISSUANCE, 0, null);
+        ReminderNotice onIssueDay = new ReminderNotice("issue", ReminderMessageType.ISSUANCE_NOTICE, ReminderMilestone.ISSUANCE, 0, EnumSet.of(ReminderChannel.EMAIL), null);
         ReminderNotice fiveDaysLater = notice("later", ReminderMilestone.ISSUANCE, 5, null);
 
         List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(onIssueDay, fiveDaysLater), LocalDate.parse("2027-03-20"));
@@ -211,6 +211,17 @@ class ReminderOccurrenceExpanderTest {
         assertThat(overdue.issuedAfterPreviousRun()).isTrue();
         assertThat(ReminderInvoiceFacts.installment(1L, "2027-03-01", "2027-03-11").enrollmentSuspended()).isFalse();
         assertThat(ReminderInvoiceFacts.installment(1L, "2027-03-01", "2027-03-11").issuedAfterPreviousRun()).isFalse();
+    }
+
+    @Test
+    @Tag("D-413")
+    void anotherNoticeFallingOnTheIssueDayIsNotMovedWhenTheInvoiceWasIssuedAfterThePreviousRun() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", false, true);
+        ReminderNotice otherNoticeOnIssueDay = notice("other", ReminderMilestone.ISSUANCE, 0, null);
+
+        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(otherNoticeOnIssueDay), LocalDate.parse("2027-03-20"));
+
+        assertThat(datesOf(occurrences)).containsExactly(LocalDate.parse("2027-03-01"));
     }
 
     @Test

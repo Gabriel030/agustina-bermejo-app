@@ -8,12 +8,14 @@ import com.red_escuela.backend.billing.collections.service.CollectionReminderFac
 import com.red_escuela.backend.billing.collections.service.StudentReminderContext;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
@@ -62,13 +64,42 @@ class CollectionReminderPlanningStepTest {
     void aUniqueIndexViolationCountsAsAlreadyPlannedAndNotAsFailure() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L));
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("uq_collection_reminder_student_day"));
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("duplicate", new ConstraintViolationException("duplicate", new SQLException("duplicate key", "23505"), "uq_collection_reminder_student_day")));
 
         CollectionReminderPlanningResult result = step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L));
 
         assertThat(result.alreadyPlanned()).isEqualTo(1);
         assertThat(result.failed()).isZero();
         assertThat(result.errors()).isEmpty();
+    }
+
+    @Test
+    @Tag("D-353")
+    void anyOtherConstraintViolationCountsAsAFailureWithItsError() {
+        when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L));
+        everyCandidateHasFacts();
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("not empty",
+                new ConstraintViolationException("not empty", new SQLException("check violated", "23514"), "ck_collection_reminder_not_empty")));
+
+        CollectionReminderPlanningResult result = step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L));
+
+        assertThat(result.alreadyPlanned()).isZero();
+        assertThat(result.failed()).isEqualTo(1);
+        assertThat(result.errors()).containsExactly(new PlanningError(1L, "not empty"));
+    }
+
+    @Test
+    @Tag("D-353")
+    void aCandidateWithoutLoadedFactsIsAFailureWithItsError() {
+        when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L, 2L));
+        when(factsLoader.loadContextsOf(any(), eq(BUSINESS_DATE))).thenReturn(List.of(contextOf(2L)));
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
+
+        CollectionReminderPlanningResult result = step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L, 2L));
+
+        assertThat(result.failed()).isEqualTo(1);
+        assertThat(result.planned()).isEqualTo(1);
+        assertThat(result.errors()).extracting(PlanningError::studentId).containsExactly(1L);
     }
 
     @Test
@@ -84,10 +115,7 @@ class CollectionReminderPlanningStepTest {
 
         assertThat(result.failed()).isEqualTo(1);
         assertThat(result.planned()).isEqualTo(1);
-        assertThat(result.errors()).singleElement().satisfies(error -> {
-            assertThat(error).containsEntry("studentId", 1L);
-            assertThat(error.get("message")).isEqualTo("The invoice 9 has no resolved reminder schedule");
-        });
+        assertThat(result.errors()).containsExactly(new PlanningError(1L, "The invoice 9 has no resolved reminder schedule"));
     }
 
     @Test

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -29,7 +30,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,7 +70,7 @@ public class CollectionReminderFactsLoader {
         Map<Long, Long> personByStudent = factsQuery.findPersonsOf(studentIds).stream().collect(Collectors.toMap(ReminderFactsQuery.StudentPersonRow::studentId,
                 ReminderFactsQuery.StudentPersonRow::personId));
         Map<Long, List<OpenInvoiceRow>> invoicesByStudent = invoiceRows.stream().collect(Collectors.groupingBy(OpenInvoiceRow::studentId, LinkedHashMap::new, Collectors.toList()));
-        List<StudentReminderContext> contexts = new java.util.ArrayList<>();
+        List<StudentReminderContext> contexts = new ArrayList<>();
         for (Map.Entry<Long, List<OpenInvoiceRow>> entry : invoicesByStudent.entrySet()) {
             Long personId = personByStudent.get(entry.getKey());
             if (personId == null) {
@@ -92,7 +95,7 @@ public class CollectionReminderFactsLoader {
         return schedules;
     }
 
-    private static Set<Long> distinctIdsOf(List<OpenInvoiceRow> rows, java.util.function.Function<OpenInvoiceRow, Long> idOf) {
+    private static Set<Long> distinctIdsOf(List<OpenInvoiceRow> rows, Function<OpenInvoiceRow, Long> idOf) {
         Set<Long> ids = new HashSet<>();
         rows.forEach(row -> {
             if (idOf.apply(row) != null) {
@@ -115,17 +118,17 @@ public class CollectionReminderFactsLoader {
         return target != null && target.suspended();
     }
 
-    private static java.util.Optional<ReminderScheduleTarget> scheduleTargetOf(OpenInvoiceRow row, Map<Long, EnrollmentReminderTarget> programTargets,
+    private static Optional<ReminderScheduleTarget> scheduleTargetOf(OpenInvoiceRow row, Map<Long, EnrollmentReminderTarget> programTargets,
                                                                                Map<Long, EnrollmentReminderTarget> courseTargets) {
         EnrollmentReminderTarget program = programTargets.get(row.programEnrollmentId());
         if (program != null && program.programId() != null) {
-            return java.util.Optional.of(new ReminderScheduleTarget(TeachingGroup.PROGRAMS, program.programId()));
+            return Optional.of(new ReminderScheduleTarget(TeachingGroup.PROGRAMS, program.programId()));
         }
         EnrollmentReminderTarget course = courseTargets.get(row.courseEnrollmentId());
         if (course != null && course.courseId() != null) {
-            return java.util.Optional.of(new ReminderScheduleTarget(TeachingGroup.MONTHLY_COURSES, course.courseId()));
+            return Optional.of(new ReminderScheduleTarget(TeachingGroup.MONTHLY_COURSES, course.courseId()));
         }
-        return java.util.Optional.empty();
+        return Optional.empty();
     }
 
     private static Map<Currency, NonNegativeMoney> creditOf(List<CreditRow> rows) {

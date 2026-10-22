@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSe
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.ResolvedReminderSchedule;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +27,7 @@ import java.util.Set;
 @Component
 public class CollectionReminderPlanningStep {
     private static final Logger log = LoggerFactory.getLogger(CollectionReminderPlanningStep.class);
+    private static final String STUDENT_DAY_CONSTRAINT = "uq_collection_reminder_student_day";
     private static final int PAGE_SIZE = 200;
     private static final int CALENDAR_DAYS_BEFORE = 14;
     private static final int CALENDAR_DAYS_AFTER = 30;
@@ -89,9 +90,14 @@ public class CollectionReminderPlanningStep {
         for (StudentReminderContext context : contexts) {
             planStudent(context, run);
         }
-        run.failed += studentIds.size() - contexts.size();
-        if (contexts.size() < studentIds.size()) {
-            log.warn("Alumnos candidatos sin facturas recordables al cargar los hechos: candidatos={}, cargados={}", studentIds.size(), contexts.size());
+        Set<Long> loaded = new HashSet<>();
+        contexts.forEach(context -> loaded.add(context.studentId()));
+        for (Long studentId : studentIds) {
+            if (!loaded.contains(studentId)) {
+                run.failed++;
+                log.warn("Alumno candidato sin hechos cargados: alumno={}, fecha={}", studentId, run.businessDate);
+                run.errors.add(new PlanningError(studentId, "No se pudieron cargar los hechos del alumno"));
+            }
         }
     }
 
@@ -104,17 +110,31 @@ public class CollectionReminderPlanningStep {
                 case ALREADY_PLANNED -> run.alreadyPlanned++;
                 case NOTHING_TO_SEND -> run.nothingToSend++;
             }
-        } catch (DataIntegrityViolationException alreadyDone) {
-            run.alreadyPlanned++;
-            log.info("Recordatorio de cobranza ya planificado: alumno={}, fecha={}", context.studentId(), run.businessDate);
+        } catch (DataIntegrityViolationException violation) {
+            if (isStudentDayDuplicate(violation)) {
+                run.alreadyPlanned++;
+                log.info("Recordatorio de cobranza ya planificado: alumno={}, fecha={}", context.studentId(), run.businessDate);
+            } else {
+                recordFailure(context, run, violation);
+            }
         } catch (Exception e) {
-            run.failed++;
-            log.warn("Falló la planificación del recordatorio de cobranza: alumno={}, fecha={}", context.studentId(), run.businessDate, e);
-            Map<String, Object> error = new LinkedHashMap<>();
-            error.put("studentId", context.studentId());
-            error.put("message", e.getMessage());
-            run.errors.add(error);
+            recordFailure(context, run, e);
         }
+    }
+
+    private void recordFailure(StudentReminderContext context, PlanningRun run, Exception failure) {
+        run.failed++;
+        log.warn("Falló la planificación del recordatorio de cobranza: alumno={}, fecha={}", context.studentId(), run.businessDate, failure);
+        run.errors.add(new PlanningError(context.studentId(), failure.getMessage()));
+    }
+
+    private static boolean isStudentDayDuplicate(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation && STUDENT_DAY_CONSTRAINT.equalsIgnoreCase(violation.getConstraintName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static final class PlanningRun {
@@ -122,7 +142,7 @@ public class CollectionReminderPlanningStep {
         private final NonBusinessDays nonBusinessDays;
         private final ReminderDigestMode mode;
         private final Map<ReminderScheduleTarget, ResolvedReminderSchedule> scheduleCache = new HashMap<>();
-        private final List<Map<String, Object>> errors = new ArrayList<>();
+        private final List<PlanningError> errors = new ArrayList<>();
         private int candidates;
         private int planned;
         private int alreadyPlanned;

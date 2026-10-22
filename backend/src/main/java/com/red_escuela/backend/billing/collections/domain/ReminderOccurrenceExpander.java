@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.domain;
 
+import com.red_escuela.backend.billing.configuration.domain.ReminderMessageType;
 import com.red_escuela.backend.billing.configuration.domain.ReminderNotice;
 
 import java.time.LocalDate;
@@ -26,7 +27,7 @@ public final class ReminderOccurrenceExpander {
         for (ReminderNotice notice : notices) {
             for (LocalDate date : occurrenceDatesOf(invoice, notice, horizon)) {
                 if (!date.isBefore(invoice.issueDate())) {
-                    occurrences.add(new ReminderOccurrence(invoice.invoiceId(), notice.noticeKey(), notice.messageType(), notice.channels(), recoveredDateOf(invoice, date), invoice.dueDate()));
+                    occurrences.add(new ReminderOccurrence(invoice.invoiceId(), notice.noticeKey(), notice.messageType(), notice.channels(), recoveredDateOf(invoice, notice, date), invoice.dueDate()));
                 }
             }
         }
@@ -45,7 +46,7 @@ public final class ReminderOccurrenceExpander {
         return notice.openEndedOccurrenceDatesFor(invoice.milestoneDates(), horizon);
     }
 
-    private static LocalDate recoveredDateOf(ReminderInvoiceFact invoice, LocalDate date) {
-        return invoice.issuedAfterPreviousRun() && date.equals(invoice.issueDate()) ? date.plusDays(1) : date;
+    private static LocalDate recoveredDateOf(ReminderInvoiceFact invoice, ReminderNotice notice, LocalDate date) {
+        return invoice.issuedAfterPreviousRun() && notice.messageType() == ReminderMessageType.ISSUANCE_NOTICE && date.equals(invoice.issueDate()) ? date.plusDays(1) : date;
     }
 }

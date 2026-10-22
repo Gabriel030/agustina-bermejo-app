@@ -410,7 +410,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
         assertThat(result.failed()).isEqualTo(1);
         assertThat(result.planned()).isEqualTo(1);
         assertThat(result.errors()).hasSize(1);
-        assertThat(result.errors().get(0)).containsEntry("studentId", withoutEnrollment.getId());
+        assertThat(result.errors().get(0).studentId()).isEqualTo(withoutEnrollment.getId());
         assertThat(reminderRepository.existsByStudentIdAndBusinessDate(healthy.getId(), MARCH_FIRST)).isTrue();
         assertThat(reminderRepository.existsByStudentIdAndBusinessDate(withoutEnrollment.getId(), MARCH_FIRST)).isFalse();
     }
@@ -448,6 +448,32 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
         }
         assertThat(jdbc.queryForObject("select count(*) from collection_reminder where student_id in (?, ?, ?)", Long.class, ids.get(0), ids.get(1), ids.get(2))).isEqualTo(3L);
         assertThat(applicationEvents.stream(CollectionReminderPlannedEvent.class).count()).isEqualTo(3L);
+    }
+
+    @Test
+    @Tag("D-353")
+    void aRealDuplicateOfStudentAndDayIsReportedByTheDatabaseWithTheNameOfItsUniqueConstraint() {
+        Student student = newStudent();
+        PlannedReminderMessage message = new PlannedReminderMessage(PlannedReminderFormat.OWN_NOTICE, com.red_escuela.backend.billing.events.PlannedReminderNoticeType.ISSUANCE_NOTICE, 1,
+                false, List.of());
+        reminderRepository.saveAndFlush(CollectionReminder.recordPlannedFor(student.getId(), MARCH_FIRST, List.of(message), List.of(), List.of()));
+
+        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() -> reminderRepository.saveAndFlush(
+                CollectionReminder.recordPlannedFor(student.getId(), MARCH_FIRST, List.of(message), List.of(), List.of())));
+
+        assertThat(thrown).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(thrown).hasRootCauseInstanceOf(org.postgresql.util.PSQLException.class);
+        assertThat(constraintNamesOf(thrown)).contains("uq_collection_reminder_student_day");
+    }
+
+    private static List<String> constraintNamesOf(Throwable thrown) {
+        List<String> names = new java.util.ArrayList<>();
+        for (Throwable cause = thrown; cause != null; cause = cause.getCause()) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException violation) {
+                names.add(violation.getConstraintName());
+            }
+        }
+        return names;
     }
 
     @Test
