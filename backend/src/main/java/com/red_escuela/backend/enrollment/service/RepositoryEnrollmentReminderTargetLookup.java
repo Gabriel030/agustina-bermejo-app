@@ -1,0 +1,48 @@
+package com.red_escuela.backend.enrollment.service;
+
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.enrollment.api.EnrollmentReminderTarget;
+import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+@Component
+public class RepositoryEnrollmentReminderTargetLookup implements EnrollmentReminderTargetLookup {
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+
+    public RepositoryEnrollmentReminderTargetLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
+        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, EnrollmentReminderTarget> findProgramEnrollmentTargets(Collection<Long> programEnrollmentIds) {
+        Map<Long, EnrollmentReminderTarget> targets = new HashMap<>();
+        if (programEnrollmentIds.isEmpty()) {
+            return targets;
+        }
+        programEnrollmentRepository.findReminderTargetRows(programEnrollmentIds).forEach(row -> targets.put(row.getEnrollmentId(),
+                new EnrollmentReminderTarget(row.getEnrollmentId(), row.getTargetId(), null, row.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED)));
+        return targets;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, EnrollmentReminderTarget> findCourseEnrollmentTargets(Collection<Long> courseEnrollmentIds) {
+        Map<Long, EnrollmentReminderTarget> targets = new HashMap<>();
+        if (courseEnrollmentIds.isEmpty()) {
+            return targets;
+        }
+        courseEnrollmentRepository.findReminderTargetRows(courseEnrollmentIds).forEach(row -> targets.put(row.getEnrollmentId(),
+                new EnrollmentReminderTarget(row.getEnrollmentId(), null, row.getTargetId(), row.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED)));
+        return targets;
+    }
+}

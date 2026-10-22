@@ -22,9 +22,15 @@ public final class CollectionReminderPlannedEventFactory {
     }
 
     public static CollectionReminderPlannedEvent plannedEventOf(Long reminderId, Long studentPersonId, DailyReminderDigest digest) {
-        return CollectionReminderPlannedEvent.plannedFor(reminderId, studentPersonId, digest.businessDate(),
-                digest.inAppMessages().stream().map(CollectionReminderPlannedEventFactory::messageOf).toList(),
-                digest.emailMessages().stream().map(CollectionReminderPlannedEventFactory::messageOf).toList());
+        return CollectionReminderPlannedEvent.plannedFor(reminderId, studentPersonId, digest.businessDate(), inAppMessagesOf(digest), emailMessagesOf(digest));
+    }
+
+    public static List<PlannedReminderMessage> inAppMessagesOf(DailyReminderDigest digest) {
+        return digest.inAppMessages().stream().map(CollectionReminderPlannedEventFactory::messageOf).toList();
+    }
+
+    public static List<PlannedReminderMessage> emailMessagesOf(DailyReminderDigest digest) {
+        return digest.emailMessages().stream().map(CollectionReminderPlannedEventFactory::messageOf).toList();
     }
 
     private static PlannedReminderMessage messageOf(ReminderMessage message) {

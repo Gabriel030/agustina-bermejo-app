@@ -41,6 +41,23 @@ public record ReminderNotice(String noticeKey, ReminderMessageType messageType, 
         return occurrenceDate.isBefore(dates.dueDate());
     }
 
+    public boolean repeatsUntilSuspension() {
+        return repetition != null && repetition.everyDays() > 0 && repetition.until() == ReminderMilestone.SUSPENSION;
+    }
+
+    public List<LocalDate> openEndedOccurrenceDatesFor(ReminderMilestoneDates dates, LocalDate horizon) {
+        Optional<LocalDate> first = firstDateFor(dates);
+        if (first.isEmpty() || !repeatsUntilSuspension()) {
+            return first.map(List::of).orElse(List.of());
+        }
+        List<LocalDate> occurrences = new ArrayList<>();
+        occurrences.add(first.get());
+        for (LocalDate next = first.get().plusDays(repetition.everyDays()); !next.isAfter(horizon); next = next.plusDays(repetition.everyDays())) {
+            occurrences.add(next);
+        }
+        return occurrences;
+    }
+
     public List<LocalDate> occurrenceDatesFor(ReminderMilestoneDates dates) {
         Optional<LocalDate> first = firstDateFor(dates);
         if (first.isEmpty()) {
