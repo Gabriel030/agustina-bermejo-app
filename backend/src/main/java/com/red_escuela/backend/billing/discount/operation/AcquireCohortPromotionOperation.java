@@ -131,7 +131,7 @@ public class AcquireCohortPromotionOperation implements BillingOperation<Acquire
 
     private AcquiredCohortPromotion acquire(DiscountDefinition definition, long placesUsed, AcquireCohortPromotionCommand command, BillingEnrollmentFacts facts, Instant now) {
         boolean tookLastPlace = definition.takesLastPlaceAfter(placesUsed);
-        String reason = (REASON_PREFIX + definition.getName());
+        String reason = REASON_PREFIX + definition.getName();
         CohortPromotionAcquisition acquisition = new CohortPromotionAcquisition(command.enrollment(), facts.studentId(), facts.currency(), definition,
                 referenceRangeOf(definition, command.enrollmentDate()), command.actorPersonId(), reason.substring(0, Math.min(reason.length(), REASON_MAX_LENGTH)));
         StudentDiscount saved = repository.saveAndFlush(StudentDiscount.acquireCohortPromotion(acquisition, now));

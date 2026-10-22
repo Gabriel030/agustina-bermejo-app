@@ -34,6 +34,10 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
     private TransactionTemplate transactionTemplate;
     @Autowired
     private IssuingScenarioFactory factory;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+    @Autowired
+    private com.red_escuela.backend.identity.repository.StudentRepository studentRepository;
 
     private IssuingScenarioFactory.Offering offering;
     private IssuingScenarioFactory.Learner learner;
@@ -232,6 +236,46 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
                 assertThat(insert(validRow())).isPositive();
                 status.setRollbackOnly();
             });
+        } finally {
+            jdbc.update("delete from student_discount where id = ?", first);
+            jdbc.update("delete from discount_definition where id = ?", definitionId);
+        }
+    }
+
+    private Long persistCourseEnrollment() {
+        return transactionTemplate.execute(status -> {
+            com.red_escuela.backend.academicstructure.entity.Term term = new com.red_escuela.backend.academicstructure.entity.Term();
+            term.setYear(2027);
+            term.setDescription("2027-1C " + System.nanoTime());
+            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            term.setStartDate(java.time.LocalDateTime.of(2027, 3, 1, 0, 0));
+            term.setEndDate(java.time.LocalDateTime.of(2027, 12, 31, 0, 0));
+            entityManager.persist(term);
+            com.red_escuela.backend.academicstructure.entity.Course course = new com.red_escuela.backend.academicstructure.entity.Course();
+            course.setTerm(term);
+            course.setName("Curso esquema " + System.nanoTime());
+            course.setIsActive(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            course.setCurrency(Currency.ARS);
+            course.setDurationMonths(10);
+            entityManager.persist(course);
+            com.red_escuela.backend.enrollment.entity.CourseEnrollment enrollment = new com.red_escuela.backend.enrollment.entity.CourseEnrollment();
+            enrollment.setStudent(studentRepository.findById(learner.studentId()).orElseThrow());
+            enrollment.setCourse(course);
+            enrollment.setStatus(com.red_escuela.backend.enrollment.entity.EnrollmentStatus.ENROLLED);
+            enrollment.setEnrollmentDate(java.time.LocalDateTime.of(2027, 2, 1, 10, 0));
+            entityManager.persist(enrollment);
+            return enrollment.getId();
+        });
+    }
+
+    @Test
+    void aCourseEnrollmentCanHoldOnlyOneCohortAcquisition() {
+        Long definitionId = insertCohortPromotionDefinition();
+        Long courseEnrollmentId = persistCourseEnrollment();
+        Map<String, Object> row = with(cohortAcquisitionRow(definitionId), "program_enrollment_id", null, "course_enrollment_id", courseEnrollmentId);
+        long first = insert(row);
+        try {
+            expectViolation("ux_student_discount_cohort_acquisition_course_enrollment", new LinkedHashMap<>(row));
         } finally {
             jdbc.update("delete from student_discount where id = ?", first);
             jdbc.update("delete from discount_definition where id = ?", definitionId);
