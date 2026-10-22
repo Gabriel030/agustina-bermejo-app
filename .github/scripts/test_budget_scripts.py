@@ -35,7 +35,7 @@ def write_source(root, name, body):
 class Args:
     def __init__(self, **values):
         self.__dict__.update(dict(
-            shard=0, meta_out=None, max_class=30.0, max_slow_class=90.0, max_shard=180.0, max_contexts=22, shard_limit='error',
+            shard=0, meta_out=None, max_class=30.0, max_slow_class=90.0, max_shard=180.0, max_contexts=22, shard_limit='error', enforcement='block',
             baseline=None, changed=None, test_root='', out='', shards='', reports=''))
         self.__dict__.update(values)
 
@@ -172,6 +172,7 @@ class BudgetTest(unittest.TestCase):
         self.assertEqual(61, metrics['wall_seconds'])
         self.assertEqual(0, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=22)))
         self.assertEqual(1, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17)))
+        self.assertEqual(0, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17, enforcement='warn')))
 
 
 class ShardTimingsTest(unittest.TestCase):
