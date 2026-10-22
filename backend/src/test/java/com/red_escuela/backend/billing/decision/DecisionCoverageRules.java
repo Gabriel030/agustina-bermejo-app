@@ -26,7 +26,7 @@ public final class DecisionCoverageRules {
     private static void checkCoverage(DecisionRegistryRow row, List<TaggedTestUse> uses, List<String> violations) {
         if (!hasTag(uses, row.id())) {
             violations.add("R1 " + row.id() + " (" + row.area() + ") sin test: " + row.testCase());
-        } else if (!hasPrTierTest(uses, row.id())) {
+        } else if (!row.isToConfirm() && !hasPrTierTest(uses, row.id())) {
             violations.add("R5 " + row.id() + " (" + row.area() + ") sin test del tier PR (solo nightly, migration o deshabilitados): " + row.testCase());
         }
     }
