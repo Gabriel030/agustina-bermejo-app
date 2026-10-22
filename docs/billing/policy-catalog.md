@@ -647,8 +647,9 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 - Validaciones (momentos): LATE_FEE_CORRECTION_ISSUING
 - Pre-procesamiento (en orden): —
-- Eventos que publica: CreditNoteIssuedEvent, LateFeeCorrectionIssuedAfterFiscalWindowEvent
+- Eventos que publica: CreditNoteIssuedEvent, LateFeeAnnulledByPaymentDateEvent, LateFeeCorrectionIssuedAfterFiscalWindowEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
+- Post-procesamiento de LateFeeAnnulledByPaymentDateEvent: LateFeeCorrectionNotificationListener#notifyStudentOfTheAnnulmentByPaymentDate
 - Post-procesamiento de LateFeeCorrectionIssuedAfterFiscalWindowEvent: LateFeeCorrectionNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow
 
 ## Operación ISSUE_LATE_FEE_DEBIT_NOTE

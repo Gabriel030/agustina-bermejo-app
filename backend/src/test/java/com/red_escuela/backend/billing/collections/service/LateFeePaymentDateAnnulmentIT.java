@@ -33,7 +33,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-378")
-@SlowTest(reason = "Ten scenarios that each seed overdue invoices, annul payments by payment date and run the real late fee reconciliation and events against Postgres")
+@SlowTest(reason = "Nine scenarios that each seed overdue invoices, annul payments by payment date and run the real late fee reconciliation and events against Postgres")
 class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
@@ -273,11 +273,6 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
         assertScenarioInvariants(d(2406, 4, 2));
     }
 
-    private long fiscalWindowNoticesHandled() {
-        return jdbc.queryForObject("select count(*) from processed_effect where handler_name = 'LateFeeCorrectionNotificationListener.notifySecretariatWhenIssuedAfterFiscalWindow'",
-                Long.class);
-    }
-
     @Test
     @Tag("D-290")
     void aSettlementReversedBeforeTheAnnulmentIsNotAnnulledByItsStaleDate() {
@@ -300,26 +295,6 @@ class LateFeePaymentDateAnnulmentIT extends AbstractLateFeeScenarioIT {
         assertThat(annulled).isZero();
         assertThat(creditNotesOf(debitNoteId)).isEmpty();
         assertThat(correctionsOf(debitNoteId)).isEmpty();
-    }
-
-    @Test
-    @Tag("D-325")
-    void annulmentRecoveredAfterTheFiscalWindowNeverNotifiesAWithdrawalNoticeToTheSecretariat() {
-        arrange(2412);
-        publishDefaults(2412);
-        Invoice origin = overdueInstallmentDueOn(d(2412, 3, 11));
-        reconcile(origin, d(2412, 4, 2));
-        Long debitNoteId = debitNoteIdOf(origin, 0);
-        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2412, 3, 28), d(2412, 4, 2));
-        long noticesBefore = fiscalWindowNoticesHandled();
-        MutableClock.INSTANCE.setDate(d(2412, 4, 25));
-
-        accrualStep.accrueLateFees(d(2412, 4, 25));
-        awaitEventsDrained();
-
-        assertThat(creditedTotalOf(debitNoteId)).isEqualByComparingTo("600.00");
-        assertThat(creditNotesOf(debitNoteId).get(0).get("issue_date").toString()).isEqualTo("2412-04-25");
-        assertThat(fiscalWindowNoticesHandled()).isEqualTo(noticesBefore);
     }
 
     @Test

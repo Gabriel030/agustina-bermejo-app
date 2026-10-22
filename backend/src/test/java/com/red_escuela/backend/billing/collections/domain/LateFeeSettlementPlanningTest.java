@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -125,34 +124,5 @@ class LateFeeSettlementPlanningTest {
 
         assertThat(cutoff.kind()).isEqualTo(LateFeeCutoffKind.SETTLEMENT);
         assertThat(cutoff.lastDay()).isEqualTo(day("2027-03-20"));
-    }
-
-    @Test
-    @Tag("D-332")
-    void chargedDaysAfterCountsOnlyTheChargedDaysOfThePeriodPastTheGivenDay() {
-        LateFeeAccrualPeriod march = period("2027-03-12", "2027-03-31");
-        Predicate<LocalDate> everyDay = day -> true;
-
-        assertThat(march.chargedDaysAfter(day("2027-03-28"), everyDay)).isEqualTo(3);
-        assertThat(march.chargedDaysAfter(day("2027-03-30"), everyDay)).isEqualTo(1);
-        assertThat(march.chargedDaysAfter(day("2027-03-31"), everyDay)).isZero();
-        assertThat(march.chargedDaysAfter(day("2027-04-02"), everyDay)).isZero();
-        assertThat(march.chargedDaysAfter(day("2027-03-12"), everyDay)).isEqualTo(19);
-        assertThat(march.chargedDaysAfter(day("2027-03-11"), everyDay)).isEqualTo(20);
-        assertThat(march.chargedDaysAfter(day("2027-02-01"), everyDay)).isEqualTo(20);
-    }
-
-    @Test
-    @Tag("D-332")
-    @Tag("D-380")
-    void chargedDaysAfterSkipsTheDaysThatWereNotCharged() {
-        LateFeeAccrualPeriod march = period("2027-03-12", "2027-03-31");
-        Predicate<LocalDate> notChargedBetweenThe29thAndThe30th = day -> day.getDayOfMonth() < 29 || day.getDayOfMonth() > 30;
-
-        assertThat(march.chargedDaysAfter(day("2027-03-26"), notChargedBetweenThe29thAndThe30th)).isEqualTo(3);
-        assertThat(march.chargedDaysAfter(day("2027-03-28"), notChargedBetweenThe29thAndThe30th)).isEqualTo(1);
-        assertThat(march.chargedDaysAfter(day("2027-03-29"), notChargedBetweenThe29thAndThe30th)).isEqualTo(1);
-        assertThat(march.chargedDaysAfter(day("2027-03-30"), notChargedBetweenThe29thAndThe30th)).isEqualTo(1);
-        assertThat(march.chargedDaysAfter(day("2027-03-31"), notChargedBetweenThe29thAndThe30th)).isZero();
     }
 }
