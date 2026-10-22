@@ -229,6 +229,55 @@ describe('FinancialDashboardPage', () => {
     expect(new Set(requests.map((url) => url.pathname.split('/').pop()))).toContain('on-time-payment');
   });
 
+  it('d2-03 reloads every panel with the chosen program and drops it when a course is chosen', async () => {
+    const requests = [];
+    install({ requests });
+    server.use(
+      http.get(`${API}/programs`, () => HttpResponse.json([{ id: 5, name: 'Tecnicatura en Diseño' }])),
+      http.get(`${API}/courses`, () => HttpResponse.json([{ id: 9, name: 'Curso de Fotografía' }])),
+    );
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+    expect(requests.every((url) => !url.searchParams.has('programId') && !url.searchParams.has('courseId'))).toBe(true);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    requests.length = 0;
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Carrera' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Tecnicatura en Diseño' }));
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => url.searchParams.get('programId') === '5' && !url.searchParams.has('courseId'))).toBe(true);
+    expect(new Set(requests.map((url) => url.pathname.split('/').pop()))).toContain('on-time-payment');
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('combobox', { name: 'Curso' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Curso de Fotografía' }));
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => url.searchParams.get('courseId') === '9' && !url.searchParams.has('programId'))).toBe(true);
+    expect(screen.getByRole('combobox', { name: 'Carrera' })).toHaveTextContent('Todas las carreras');
+  });
+
+  it('removes the program or course scope with "Quitar filtros"', async () => {
+    const requests = [];
+    install({ requests });
+    server.use(http.get(`${API}/programs`, () => HttpResponse.json([{ id: 5, name: 'Tecnicatura en Diseño' }])));
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Carrera' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Tecnicatura en Diseño' }));
+    await waitFor(() => expect(requests.some((url) => url.searchParams.get('programId') === '5')).toBe(true));
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => !url.searchParams.has('programId'))).toBe(true);
+  });
+
   it('shows no currency toggle when only one currency is in use', async () => {
     install();
     renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });

@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useCourses } from '@/features/academic-structure/hooks/useCourses';
+import { usePrograms } from '@/features/academic-structure/hooks/usePrograms';
 import { useDebtors, useFinancialDashboard } from '@/features/billing/hooks/useFinancialDashboard';
 import { FEE_TYPE_LABELS } from '@/lib/billing';
 import { formatMoney } from '@/lib/utils';
@@ -21,6 +23,7 @@ import { MonthKpis, TodayKpis } from './KpiBlocks';
 import { MetricPanel } from './MetricPanel';
 
 const ALL_TYPES = 'ALL';
+const ALL_SCOPE = 'ALL';
 const INVOICE_TYPE_OPTIONS = [
   { value: ALL_TYPES, label: 'Todos los tipos' },
   ...Object.entries(FEE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
@@ -50,6 +53,21 @@ function FilterSelect({ id, label, value, onChange, options }) {
         </SelectContent>
       </Select>
     </div>
+  );
+}
+
+function ScopeFilters({ programId, courseId, onProgramChange, onCourseChange }) {
+  const programs = usePrograms();
+  const courses = useCourses();
+  const toOptions = (all, items) => [
+    { value: ALL_SCOPE, label: all },
+    ...(items ?? []).map((item) => ({ value: String(item.id), label: item.name })),
+  ];
+  return (
+    <>
+      <FilterSelect id="program" label="Carrera" value={programId} onChange={onProgramChange} options={toOptions('Todas las carreras', programs.data)} />
+      <FilterSelect id="course" label="Curso" value={courseId} onChange={onCourseChange} options={toOptions('Todos los cursos', courses.data)} />
+    </>
   );
 }
 
@@ -164,6 +182,8 @@ export function FinancialDashboardPage() {
   const isDirector = useLocation().pathname.startsWith('/director');
   const [range, setRange] = useState(DEFAULT_RANGE);
   const [invoiceType, setInvoiceType] = useState(ALL_TYPES);
+  const [programId, setProgramId] = useState(ALL_SCOPE);
+  const [courseId, setCourseId] = useState(ALL_SCOPE);
   const [pickedCurrency, setPickedCurrency] = useState(null);
   const [pickedMonth, setPickedMonth] = useState(null);
   const [ready, setReady] = useState(false);
@@ -172,11 +192,26 @@ export function FinancialDashboardPage() {
   const currencies = (dashboard.data?.totalsByCurrency ?? []).map((totals) => totals.totalDebt?.currency).filter(Boolean);
   const currency = pickedCurrency ?? currencies[0];
   const { from, to } = rangeFor(range);
-  const filters = { from, to, currency, invoiceType: invoiceType === ALL_TYPES ? undefined : invoiceType };
+  const filters = {
+    from,
+    to,
+    currency,
+    invoiceType: invoiceType === ALL_TYPES ? undefined : invoiceType,
+    programId: programId === ALL_SCOPE ? undefined : programId,
+    courseId: courseId === ALL_SCOPE ? undefined : courseId,
+  };
   const months = [];
   for (let month = from; month <= to; month = nextMonth(month)) months.push(month);
   const month = pickedMonth && months.includes(pickedMonth) ? pickedMonth : to;
-  const activeFilters = [range !== DEFAULT_RANGE, invoiceType !== ALL_TYPES].filter(Boolean).length;
+  const activeFilters = [range !== DEFAULT_RANGE, invoiceType !== ALL_TYPES, programId !== ALL_SCOPE, courseId !== ALL_SCOPE].filter(Boolean).length;
+  const pickProgram = (value) => {
+    setProgramId(value);
+    setCourseId(ALL_SCOPE);
+  };
+  const pickCourse = (value) => {
+    setCourseId(value);
+    setProgramId(ALL_SCOPE);
+  };
 
   const toolbar = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -220,6 +255,7 @@ export function FinancialDashboardPage() {
         <PopoverContent align="end" className="flex w-72 flex-col gap-4 bg-dialog-bg p-4">
           <FilterSelect id="range" label="Período" value={range} onChange={setRange} options={RANGE_OPTIONS} />
           <FilterSelect id="invoice-type" label="Tipo de factura" value={invoiceType} onChange={setInvoiceType} options={INVOICE_TYPE_OPTIONS} />
+          <ScopeFilters programId={programId} courseId={courseId} onProgramChange={pickProgram} onCourseChange={pickCourse} />
           {activeFilters > 0 && (
             <Button
               variant="ghost"
@@ -228,6 +264,8 @@ export function FinancialDashboardPage() {
               onClick={() => {
                 setRange(DEFAULT_RANGE);
                 setInvoiceType(ALL_TYPES);
+                setProgramId(ALL_SCOPE);
+                setCourseId(ALL_SCOPE);
               }}
             >
               Quitar filtros

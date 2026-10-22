@@ -48,9 +48,10 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         }
         String ids = seededInvoiceIds.stream().map(String::valueOf).collect(Collectors.joining(","));
         List<String> guards = List.of("payment_allocation_source.trg_payment_allocation_source_append_only", "payment_allocation.trg_payment_allocation_append_only", "invoice_status_change.trg_invoice_status_change_append_only",
-                "invoice_line.trg_invoice_line_immutable_when_issued", "invoice_discount.trg_invoice_discount_immutable_when_issued");
+                "credit_note.trg_credit_note_append_only", "invoice_line.trg_invoice_line_immutable_when_issued","invoice_discount.trg_invoice_discount_immutable_when_issued");
         guards.forEach(guard -> jdbc.execute("alter table " + guard.split("\\.")[0] + " disable trigger " + guard.split("\\.")[1]));
         try {
+            jdbc.update("delete from credit_note where invoice_id in (" + ids + ")");
             jdbc.update("delete from late_fee_charge where debit_note_id in (" + ids + ") or origin_invoice_id in (" + ids + ")");
             jdbc.update("delete from bank_transfer_receipt where invoice_id in (" + ids + ")");
             jdbc.update("delete from payment_allocation_source where payment_allocation_id in (select id from payment_allocation where invoice_id in (" + ids + "))");
@@ -134,6 +135,17 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         } finally {
             jdbc.execute("alter table invoice_line enable trigger trg_invoice_line_immutable_when_issued");
         }
+    }
+
+    protected void seedCreditNote(Long accountId, Long invoiceId, String reason, LocalDate issued, String amount) {
+        BigDecimal total = new BigDecimal(amount);
+        String number = String.format("NC-%08d", jdbc.queryForObject("select nextval('credit_note_number_seq')", Long.class));
+        jdbc.update("insert into credit_note (credit_note_number, student_current_account_id, currency, invoice_id, invoice_number, reason, justification, "
+                        + "offset_amount, offset_amount_currency, free_credit_amount, free_credit_amount_currency, total_amount, total_amount_currency, "
+                        + "issue_date, fact_date, recipient_snapshot, issued_by_process, recorded_at) "
+                        + "select ?, ?, i.currency, i.id, i.invoice_number, ?, 'Nota de prueba', 0, i.currency, ?, i.currency, ?, i.currency, "
+                        + "?, ?, cast('{}' as jsonb), 'TEST', now() from invoice i where i.id = ?",
+                number, accountId, reason, total, total, issued, issued, invoiceId);
     }
 
     protected void seedAllocation(Long accountId, Long invoiceId, Currency currency, String amount, LocalDate effectiveDate) {
