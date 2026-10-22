@@ -132,18 +132,20 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
     }
 
     @Test
-    void approvingAfterTheInvoiceWasPaidRejectsTheResumeAndLeavesNoCreditNote() throws Exception {
+    void approvingAfterTheCreditableAmountWasConsumedRejectsTheResumeAndLeavesNoExtraCreditNote() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Scenario scenario = unpaidInvoice("80000.00");
         Staff administrative = newStaff("ADMINISTRATIVO");
         Staff director = newStaff("DIRECTOR");
         long requestId = pendingRequestId(requestCreditNote(scenario.invoiceId(), administrative, creditNoteBody("BILLING_ERROR", "Error", 1, "30000.00"), 202));
-        payAccount(scenario.accountId(), "80000.00", LocalDate.of(2027, 3, 11));
+        requestCreditNote(scenario.invoiceId(), director, creditNoteBody("BILLING_ERROR", "Error de carga", 1, "60000.00"), 201);
         long entriesBefore = ledgerEntryCount(scenario.accountId());
 
-        decide("approve", requestId, director, 409);
+        mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + director.token())
+                .contentType(APPLICATION_JSON).content("{\"decisionReason\":\"ok\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT"));
 
-        assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ?", Long.class, scenario.invoiceId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from credit_note where invoice_id = ?", Long.class, scenario.invoiceId())).isEqualTo(1L);
         assertThat(ledgerEntryCount(scenario.accountId())).isEqualTo(entriesBefore);
         assertThat(jdbc.queryForMap("select status, resume_outcome from authorization_request where id = ?", requestId))
                 .containsEntry("status", "APPROVED").containsEntry("resume_outcome", "REJECTED_ON_RESUME");
