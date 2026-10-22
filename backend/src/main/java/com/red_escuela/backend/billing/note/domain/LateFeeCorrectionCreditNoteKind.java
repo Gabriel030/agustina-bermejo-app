@@ -4,7 +4,8 @@ import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 
 public enum LateFeeCorrectionCreditNoteKind {
     AFTER_WITHDRAWAL(CreditNoteReason.LATE_FEE_CORRECTION, "LateFeeWithdrawalCorrection"),
-    AFTER_PAYMENT_DATE(CreditNoteReason.LATE_FEE_ANNULMENT, "LateFeePaymentDateCorrection");
+    AFTER_PAYMENT_DATE(CreditNoteReason.LATE_FEE_ANNULMENT, "LateFeePaymentDateCorrection"),
+    AFTER_INSTALLMENT_CANCELLATION(CreditNoteReason.LATE_FEE_ANNULMENT, "LateFeeInstallmentCancellationAnnulment");
 
     private final CreditNoteReason reason;
     private final String processName;

@@ -153,10 +153,11 @@ public final class ArchitectureRules {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ROOT + ".billing.collections.operation.LateFeeCorrectionCreditNoteOperation")
                 .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeAnnulmentOnInstallmentCancellation")
                 .should().callMethodWhere(target(owner(assignableTo(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")))
                         .and(target(name("issueCorrectionCreditNote"))))
                 .allowEmptyShould(true)
-                .because("a late fee correction credit note must go through its operation, which validates the target debit note");
+                .because("a late fee correction credit note must go through its operation, or through the annulment that rides on the cancellation of its installment, which validate the target debit note");
     }
 
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
