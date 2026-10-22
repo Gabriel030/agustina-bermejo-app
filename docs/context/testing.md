@@ -228,6 +228,20 @@ El job `test-report` publica un comentario en el PR (se actualiza en cada push, 
 
 Los tiempos para repartir clases entre shards no se editan a mano: cada push a `develop` suma sus medidas de surefire al historial de las últimas 8 corridas (`samples.json`, dentro del artifact `test-baseline`) y publica el promedio por clase como `timings.txt`. Una sola corrida es ruidosa: el costo de arrancar cada contexto de Spring lo paga la primera clase del shard que lo usa, así que cambia de clase cuando cambia el reparto. Por eso el reparto solo usa el baseline si tiene al menos 3 corridas de historial; si no (artifact viejo, sin historial, corrupto o con forma inesperada, o ausente) cae al `.github/test-shards/timings.txt` versionado, que es el promedio de 7 corridas. Las clases nuevas sin medición pesan el promedio de las medidas.
 
+### Correr tests focalizados en local: `backend/dev-test`
+
+```bash
+backend/dev-test PolicyEvaluationTest,QualityRulesTest        # clases (una sola invocación de Maven)
+backend/dev-test com.red_escuela.backend.billing.catalog      # todo un paquete de tests
+backend/dev-test --changed                                    # tests tocados + homónimos (XTest/XTests/XIT) de las clases de producción tocadas
+```
+
+Arma una única invocación `./mvnw -o test -Dtest=… -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false`, toma el semáforo `~/.claude/epica18/ci-slot.sh` si existe y lo suelta al salir (también ante error o Ctrl-C). `--changed` compara contra `origin/develop` y el working tree, y solo sugiere: sumá a mano `architecture/` y lo que tu cambio afecte aunque no tenga archivo homónimo. Reglas: siempre `-o`, sin `clean` ni `test-compile` previo, una sola invocación por tanda. Un archivo `.java` cuyo nombre no coincide con su clase hace que Maven recompile todos los tests en cada corrida; `SourceFileNameMatchesTypeTest` lo impide.
+
+### CI de PR: reintento de flaky
+
+En eventos `pull_request` los shards corren con `-Dsurefire.rerunFailingTestsCount=1` (en `push` y nightly no). Un test que falla y pasa en el reintento no rompe el shard, pero el reporte del PR lo lista como flaky (`flakyFailure`/`flakyError` del XML de surefire): estabilizalo, no lo ignores.
+
 ### Reproducir una falla de un shard en local
 
 Cada fallo de CI dice en qué shard ocurrió (`backend-tests (N)`). Para correr exactamente las mismas clases, con el mismo algoritmo y los mismos tiempos que la CI:

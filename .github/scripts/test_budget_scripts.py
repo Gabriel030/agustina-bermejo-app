@@ -175,6 +175,37 @@ class BudgetTest(unittest.TestCase):
         self.assertEqual(0, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17, enforcement='warn')))
 
 
+class FlakyReportTest(unittest.TestCase):
+
+    def test_report_lists_tests_that_passed_only_on_the_rerun(self):
+        with tempfile.TemporaryDirectory() as root:
+            directory = os.path.join(root, 'shards', 'shard-0')
+            reports = os.path.join(directory, 'reports')
+            os.makedirs(reports)
+            with open(os.path.join(reports, 'TEST-com.acme.SteadyIT.xml'), 'w', encoding='utf-8') as handle:
+                handle.write('<testsuite name="com.acme.SteadyIT" time="1" tests="1"><testcase classname="com.acme.SteadyIT" name="steady"/></testsuite>')
+            with open(os.path.join(reports, 'TEST-com.acme.WobblyIT.xml'), 'w', encoding='utf-8') as handle:
+                handle.write('<testsuite name="com.acme.WobblyIT" time="2" tests="2">'
+                             '<testcase classname="com.acme.WobblyIT" name="stable"/>'
+                             '<testcase classname="com.acme.WobblyIT" name="wobbles"><flakyFailure message="boom"/></testcase></testsuite>')
+            out = os.path.join(root, 'out')
+            budget.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
+            with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
+                report = handle.read()
+            self.assertIn('com.acme.WobblyIT.wobbles', report)
+            self.assertNotIn('com.acme.WobblyIT.stable', report)
+            self.assertNotIn('com.acme.SteadyIT.steady', report)
+
+    def test_report_has_no_flaky_section_when_nothing_was_retried(self):
+        with tempfile.TemporaryDirectory() as root:
+            reports = os.path.join(root, 'shards', 'shard-0', 'reports')
+            write_report(reports, 'com.acme.SteadyIT', 1.0)
+            out = os.path.join(root, 'out')
+            budget.aggregate(Args(shards=os.path.join(root, 'shards'), out=out, test_root=os.path.join(root, 'src')))
+            with open(os.path.join(out, 'report.md'), encoding='utf-8') as handle:
+                self.assertNotIn('flaky', handle.read())
+
+
 class ShardTimingsTest(unittest.TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
