@@ -13,10 +13,13 @@ public class LateFeeCorrectionOnPaymentReviewDecidedListener {
     private static final String APPROVED_HANDLER_NAME = "LateFeeCorrectionOnPaymentReviewDecidedListener.approved";
 
     private final LateFeeWithdrawalCorrectionService correctionService;
+    private final LateFeeSettlementCorrectionService settlementCorrectionService;
     private final ProcessedEffectGuard effectGuard;
 
-    public LateFeeCorrectionOnPaymentReviewDecidedListener(LateFeeWithdrawalCorrectionService correctionService, ProcessedEffectGuard effectGuard) {
+    public LateFeeCorrectionOnPaymentReviewDecidedListener(LateFeeWithdrawalCorrectionService correctionService, LateFeeSettlementCorrectionService settlementCorrectionService,
+                                                           ProcessedEffectGuard effectGuard) {
         this.correctionService = correctionService;
+        this.settlementCorrectionService = settlementCorrectionService;
         this.effectGuard = effectGuard;
     }
 
@@ -25,11 +28,16 @@ public class LateFeeCorrectionOnPaymentReviewDecidedListener {
         if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {
             return;
         }
-        effectGuard.runEffectOnce(event, APPROVED_HANDLER_NAME, () -> correctionService.correctLateFeeOfDebitNote(event.invoiceId(), ApplicationTime.today()));
+        effectGuard.runEffectOnce(event, APPROVED_HANDLER_NAME, () -> correctLateFeesOfDebitNote(event.invoiceId()));
     }
 
     @ApplicationModuleListener
     public void retryCorrectionOfDebitNoteWhoseReceiptWasRejected(InvoicePaymentReviewReleasedEvent event) {
-        correctionService.correctLateFeeOfDebitNote(event.invoiceId(), ApplicationTime.today());
+        correctLateFeesOfDebitNote(event.invoiceId());
+    }
+
+    private void correctLateFeesOfDebitNote(Long debitNoteId) {
+        correctionService.correctLateFeeOfDebitNote(debitNoteId, ApplicationTime.today());
+        settlementCorrectionService.correctLateFeeOfDebitNote(debitNoteId);
     }
 }

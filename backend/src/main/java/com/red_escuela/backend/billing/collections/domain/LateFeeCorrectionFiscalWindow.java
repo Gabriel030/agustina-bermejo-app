@@ -10,9 +10,9 @@ public final class LateFeeCorrectionFiscalWindow {
     private LateFeeCorrectionFiscalWindow() {
     }
 
-    public static boolean isOutside(LocalDate withdrawalRegisteredOn, LocalDate creditNoteIssueDate) {
-        Objects.requireNonNull(withdrawalRegisteredOn, "withdrawalRegisteredOn");
+    public static boolean isOutside(LocalDate factRegisteredOn, LocalDate creditNoteIssueDate) {
+        Objects.requireNonNull(factRegisteredOn, "factRegisteredOn");
         Objects.requireNonNull(creditNoteIssueDate, "creditNoteIssueDate");
-        return ChronoUnit.DAYS.between(withdrawalRegisteredOn, creditNoteIssueDate) > WINDOW_DAYS;
+        return ChronoUnit.DAYS.between(factRegisteredOn, creditNoteIssueDate) > WINDOW_DAYS;
     }
 }
