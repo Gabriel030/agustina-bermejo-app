@@ -43,7 +43,7 @@ public final class ReminderDigestAssembler {
     private record Composer(LocalDate businessDate, Map<Currency, NonNegativeMoney> creditByCurrency) {
 
         List<ReminderMessage> dailyDigest(List<ReminderDebtEntry> debt, List<ReminderDueNotice> notices) {
-            return composeOver(debt, notices).stream().toList();
+            return composeOver(debt, debt, notices).stream().toList();
         }
 
         List<ReminderMessage> dailyDigestWithSuspensionWarningsApart(List<ReminderDebtEntry> debt, List<ReminderDueNotice> notices) {
@@ -51,21 +51,22 @@ public final class ReminderDigestAssembler {
             List<ReminderDueNotice> regular = notices.stream().filter(notice -> !notice.isExemptFromTheDailyDigest()).toList();
             Set<Long> exemptInvoiceIds = exempt.stream().map(ReminderDueNotice::invoiceId).collect(Collectors.toSet());
             List<ReminderDebtEntry> exemptDebt = debt.stream().filter(entry -> exemptInvoiceIds.contains(entry.invoiceId())).toList();
-            return Stream.concat(composeOver(debt, regular).stream(), composeOver(exemptDebt, exempt).stream()).toList();
+            return Stream.concat(composeOver(debt, debt, regular).stream(), composeOver(debt, exemptDebt, exempt).stream()).toList();
         }
 
         List<ReminderMessage> separateMessages(List<ReminderDebtEntry> debt, List<ReminderDueNotice> notices) {
             return notices.stream()
-                    .flatMap(notice -> composeOver(debt.stream().filter(entry -> entry.invoiceId().equals(notice.invoiceId())).toList(), List.of(notice)).stream())
+                    .flatMap(notice -> composeOver(debt, debt.stream().filter(entry -> entry.invoiceId().equals(notice.invoiceId())).toList(), List.of(notice)).stream())
                     .toList();
         }
 
-        private Optional<ReminderMessage> composeOver(List<ReminderDebtEntry> debt, List<ReminderDueNotice> notices) {
+        private Optional<ReminderMessage> composeOver(List<ReminderDebtEntry> fullDebt, List<ReminderDebtEntry> debt, List<ReminderDueNotice> notices) {
+            List<ReminderDigestLine> imputationOrderDebt = fullDebt.stream().map(entry -> ReminderDigestLine.of(entry, businessDate, List.of())).toList();
             List<ReminderDigestLine> lines = debt.stream()
                     .map(entry -> ReminderDigestLine.of(entry, businessDate, notices.stream()
                             .filter(notice -> notice.invoiceId().equals(entry.invoiceId())).map(ReminderDueNotice::asDigestNotice).toList()))
                     .toList();
-            return ReminderMessage.compose(lines, creditByCurrency);
+            return ReminderMessage.compose(lines, imputationOrderDebt, creditByCurrency);
         }
     }
 }

@@ -12,23 +12,25 @@ import java.util.Objects;
 import java.util.Optional;
 
 public record ReminderMessage(ReminderMessageFormat format, ReminderMessageType leadMessageType, int priority, List<ReminderDigestLine> lines,
-                              Map<Currency, NonNegativeMoney> creditByCurrency) {
+                              List<ReminderDigestLine> imputationOrderDebt, Map<Currency, NonNegativeMoney> creditByCurrency) {
 
     public ReminderMessage {
         Objects.requireNonNull(format, "format");
         Objects.requireNonNull(leadMessageType, "leadMessageType");
         lines = List.copyOf(lines);
+        imputationOrderDebt = List.copyOf(imputationOrderDebt);
         creditByCurrency = Map.copyOf(creditByCurrency);
     }
 
-    public static Optional<ReminderMessage> compose(List<ReminderDigestLine> lines, Map<Currency, NonNegativeMoney> creditByCurrency) {
+    public static Optional<ReminderMessage> compose(List<ReminderDigestLine> lines, List<ReminderDigestLine> imputationOrderDebt,
+                                                  Map<Currency, NonNegativeMoney> creditByCurrency) {
         List<ReminderMessageType> messageTypes = lines.stream().flatMap(line -> line.notices().stream()).map(ReminderDigestNotice::messageType).toList();
         if (messageTypes.isEmpty()) {
             return Optional.empty();
         }
         ReminderMessageFormat format = messageTypes.size() == 1 && lines.size() == 1 ? ReminderMessageFormat.OWN_NOTICE : ReminderMessageFormat.DAILY_DIGEST;
         ReminderMessageType lead = ReminderMessageSeverity.mostSevereOf(messageTypes);
-        return Optional.of(new ReminderMessage(format, lead, ReminderMessageSeverity.rankOf(lead), lines, creditByCurrency));
+        return Optional.of(new ReminderMessage(format, lead, ReminderMessageSeverity.rankOf(lead), lines, imputationOrderDebt, creditByCurrency));
     }
 
     public List<ReminderDigestLine> highlightedLines() {
@@ -41,7 +43,7 @@ public record ReminderMessage(ReminderMessageFormat format, ReminderMessageType 
             byCurrency.computeIfAbsent(line.currency(), currency -> new ArrayList<>()).add(line);
         }
         return byCurrency.entrySet().stream()
-                .map(entry -> ReminderCurrencyBlock.of(entry.getKey(), entry.getValue(), creditByCurrency.getOrDefault(entry.getKey(), NonNegativeMoney.zero(entry.getKey()))))
+                .map(entry -> ReminderCurrencyBlock.of(entry.getKey(), entry.getValue(), imputationOrderDebt.stream().filter(line -> line.currency() == entry.getKey()).toList(), creditByCurrency.getOrDefault(entry.getKey(), NonNegativeMoney.zero(entry.getKey()))))
                 .toList();
     }
 
@@ -50,6 +52,6 @@ public record ReminderMessage(ReminderMessageFormat format, ReminderMessageType 
     }
 
     public Optional<ReminderMessage> withoutLinesPrecedingTheirDueDate() {
-        return compose(lines.stream().filter(line -> !line.precedesDueDate()).toList(), creditByCurrency);
+        return compose(lines.stream().filter(line -> !line.precedesDueDate()).toList(), imputationOrderDebt.stream().filter(line -> !line.precedesDueDate()).toList(), creditByCurrency);
     }
 }

@@ -12,10 +12,10 @@ public record ReminderCurrencyBlock(Currency currency, List<ReminderDigestLine> 
         lines = List.copyOf(lines);
     }
 
-    public static ReminderCurrencyBlock of(Currency currency, List<ReminderDigestLine> lines, NonNegativeMoney availableCredit) {
+    public static ReminderCurrencyBlock of(Currency currency, List<ReminderDigestLine> lines, List<ReminderDigestLine> imputationOrderDebt, NonNegativeMoney availableCredit) {
         NonNegativeMoney zero = NonNegativeMoney.zero(currency);
         NonNegativeMoney total = lines.stream().map(ReminderDigestLine::balance).reduce(zero, NonNegativeMoney::plus);
-        ReminderDigestLine next = lines.stream().filter(line -> !line.receiptUnderReview()).findFirst().orElse(null);
+        ReminderDigestLine next = imputationOrderDebt.stream().filter(line -> !line.receiptUnderReview()).findFirst().orElse(null);
         if (next == null || availableCredit.value().isZero()) {
             return new ReminderCurrencyBlock(currency, lines, total, availableCredit, null, zero);
         }

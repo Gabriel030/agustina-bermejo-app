@@ -80,6 +80,31 @@ class CollectionReminderPlannedEventFactoryTest {
     }
 
     @Test
+    @Tag("D-372")
+    void aPreDueDigestIsFlaggedAsPrecedingTheDueDate() {
+        ResolvedReminderSchedule schedule = schedule(bothChannels("before", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -1));
+        ReminderStudentFacts student = new ReminderStudentFacts(7L, List.of(installment(1L, "2027-03-11")), Map.of());
+        DailyReminderDigest digest = DailyReminderDigestPlanner.planDailyDigestOf(student, Map.of(1L, schedule), LocalDate.parse("2027-03-10"), NonBusinessDays.weekendsOnly(),
+                ReminderDigestMode.DAILY_DIGEST);
+
+        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digest);
+
+        assertThat(event.emailMessages().get(0).precedesDueDate()).isTrue();
+        assertThat(event.emailMessages().get(0).format()).isEqualTo(PlannedReminderFormat.OWN_NOTICE);
+        assertThat(event.emailMessages().get(0).blocks().get(0).lines().get(0).precedesDueDate()).isTrue();
+    }
+
+    @Test
+    void sourceAndEventEnumsHaveTheSameConstantsInTheSameOrder() {
+        assertThat(java.util.Arrays.stream(ReminderMessageType.values()).map(Enum::name)).containsExactly(
+                java.util.Arrays.stream(PlannedReminderNoticeType.values()).map(Enum::name).toArray(String[]::new));
+        assertThat(java.util.Arrays.stream(com.red_escuela.backend.billing.collections.domain.ReminderMessageFormat.values()).map(Enum::name)).containsExactly(
+                java.util.Arrays.stream(PlannedReminderFormat.values()).map(Enum::name).toArray(String[]::new));
+        assertThat(java.util.Arrays.stream(PlannedReminderInvoiceKind.values()).map(Enum::name))
+                .isSubsetOf(java.util.Arrays.stream(com.red_escuela.backend.billing.invoice.domain.InvoiceType.values()).map(Enum::name).toList());
+    }
+
+    @Test
     void theEventSurvivesAJsonRoundTrip() throws Exception {
         ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digestOf1203());

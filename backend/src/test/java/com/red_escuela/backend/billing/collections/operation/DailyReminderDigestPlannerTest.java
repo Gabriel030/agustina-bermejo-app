@@ -208,12 +208,50 @@ class DailyReminderDigestPlannerTest {
         DailyReminderDigest monday = plan("2027-03-15", schedules, List.of(march, fee));
 
         assertThat(saturday.emailMessages()).isEmpty();
+        assertThat(saturday.hasNothingToSend()).isFalse();
         assertThat(saturday.inAppMessages()).hasSize(1);
         assertThat(highlightedIdsOf(saturday.inAppMessages().get(0))).containsExactly(1L);
         assertThat(monday.emailMessages()).hasSize(1);
         assertThat(highlightedIdsOf(monday.emailMessages().get(0))).containsExactly(1L, 2L);
         assertThat(monday.inAppMessages()).hasSize(1);
         assertThat(highlightedIdsOf(monday.inAppMessages().get(0))).containsExactly(2L);
+    }
+
+    @Test
+    @Tag("D-410")
+    @Tag("D-139")
+    @Tag("D-089")
+    void theSuspensionWarningEmailListsOnlyItsInvoicesButMeasuresTheCreditAgainstTheWholeDebt() {
+        ReminderInvoiceFact march = installment(1L, "2027-03-11");
+        ReminderInvoiceFact april = installment(2L, "2027-03-12");
+        Map<Long, ResolvedReminderSchedule> schedules = Map.of(
+                1L, schedule(),
+                2L, schedule(bothChannels("warning", ReminderMessageType.BEFORE_SUSPENSION_REMINDER, ReminderMilestone.DUE_DATE, 3)));
+        Map<Currency, NonNegativeMoney> credit = Map.of(Currency.ARS, NonNegativeMoney.of(new BigDecimal("30000.00"), Currency.ARS));
+
+        DailyReminderDigest digest = plan("2027-03-15", schedules, List.of(march, april), NonBusinessDays.weekendsOnly(), ReminderDigestMode.DAILY_DIGEST, credit);
+
+        ReminderMessage warning = digest.emailMessages().get(0);
+        assertThat(invoiceIdsOf(warning)).containsExactly(2L);
+        var block = warning.blocks().get(0);
+        assertThat(block.shortfallInvoiceId()).isEqualTo(1L);
+        assertThat(block.missingForNext().value().amount()).isEqualByComparingTo(new BigDecimal("50000.00"));
+        assertThat(block.total().value().amount()).isEqualByComparingTo(new BigDecimal("80000.00"));
+    }
+
+    @Test
+    @Tag("D-410")
+    void twoSuspensionWarningsOnTheSameDayShareOneExemptEmail() {
+        ReminderInvoiceFact march = installment(1L, "2027-03-11");
+        ReminderInvoiceFact fee = enrollmentFee(2L, "2027-03-11");
+        Map<Long, ResolvedReminderSchedule> schedules = sameScheduleFor(
+                schedule(bothChannels("warning", ReminderMessageType.BEFORE_SUSPENSION_REMINDER, ReminderMilestone.DUE_DATE, 4)), 1L, 2L);
+
+        DailyReminderDigest digest = plan("2027-03-15", schedules, List.of(march, fee));
+
+        assertThat(digest.emailMessages()).hasSize(1);
+        assertThat(invoiceIdsOf(digest.emailMessages().get(0))).containsExactly(1L, 2L);
+        assertThat(highlightedIdsOf(digest.emailMessages().get(0))).containsExactly(1L, 2L);
     }
 
     @Test

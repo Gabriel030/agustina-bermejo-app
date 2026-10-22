@@ -43,9 +43,9 @@ class ReminderDigestDomainTest {
     @Test
     @Tag("D-139")
     void creditCoveringTheNextInvoiceShowsNoShortfall() {
-        ReminderCurrencyBlock covering = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), ars("100000.00"));
-        ReminderCurrencyBlock exceeding = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), ars("100000.01"));
-        ReminderCurrencyBlock short1 = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), ars("99999.99"));
+        ReminderCurrencyBlock covering = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), List.of(line(1L, "100000.00", false)), ars("100000.00"));
+        ReminderCurrencyBlock exceeding = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), List.of(line(1L, "100000.00", false)), ars("100000.01"));
+        ReminderCurrencyBlock short1 = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), List.of(line(1L, "100000.00", false)), ars("99999.99"));
 
         assertThat(covering.hasCreditShortfall()).isFalse();
         assertThat(covering.missingForNext().value().isZero()).isTrue();
@@ -57,7 +57,7 @@ class ReminderDigestDomainTest {
     @Test
     @Tag("D-139")
     void noCreditShowsNoShortfall() {
-        ReminderCurrencyBlock block = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), NonNegativeMoney.zero(Currency.ARS));
+        ReminderCurrencyBlock block = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "100000.00", false)), List.of(line(1L, "100000.00", false)), NonNegativeMoney.zero(Currency.ARS));
 
         assertThat(block.hasCreditShortfall()).isFalse();
         assertThat(block.availableCredit().value().isZero()).isTrue();
@@ -67,7 +67,7 @@ class ReminderDigestDomainTest {
     @Tag("D-139")
     @Tag("D-346")
     void theShortfallPointsAtTheFirstInvoiceNotUnderReviewAndTheTotalAddsEveryLine() {
-        ReminderCurrencyBlock block = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "50000.00", true), line(2L, "100000.00", false), line(3L, "20000.00", false)),
+        ReminderCurrencyBlock block = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "50000.00", true), line(2L, "100000.00", false), line(3L, "20000.00", false)), List.of(line(1L, "50000.00", true), line(2L, "100000.00", false), line(3L, "20000.00", false)),
                 ars("30000.00"));
 
         assertThat(block.shortfallInvoiceId()).isEqualTo(2L);
@@ -78,7 +78,7 @@ class ReminderDigestDomainTest {
     @Test
     @Tag("D-139")
     void everyLineUnderReviewLeavesNothingToCover() {
-        ReminderCurrencyBlock block = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "50000.00", true)), ars("30000.00"));
+        ReminderCurrencyBlock block = ReminderCurrencyBlock.of(Currency.ARS, List.of(line(1L, "50000.00", true)), List.of(line(1L, "50000.00", true)), ars("30000.00"));
 
         assertThat(block.hasCreditShortfall()).isFalse();
     }
@@ -95,6 +95,6 @@ class ReminderDigestDomainTest {
 
     @Test
     void aMessageWithoutNoticesIsNotComposed() {
-        assertThat(ReminderMessage.compose(List.of(line(1L, "100000.00", false)), Map.of())).isEmpty();
+        assertThat(ReminderMessage.compose(List.of(line(1L, "100000.00", false)), List.of(line(1L, "100000.00", false)), Map.of())).isEmpty();
     }
 }
