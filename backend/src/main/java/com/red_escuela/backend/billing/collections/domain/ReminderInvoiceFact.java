@@ -14,7 +14,8 @@ import java.util.Objects;
 public record ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceDocumentType documentType, InvoiceType invoiceType,
                                   InvoiceDocumentStatus documentStatus, InvoicePaymentStatus paymentStatus, LocalDate issueDate,
                                   LocalDate dueDate, LocalDate suspensionDate, NonNegativeMoney balance, Long programEnrollmentId,
-                                  Long courseEnrollmentId, boolean receiptUnderReview, boolean openCancellationRequest) {
+                                  Long courseEnrollmentId, boolean receiptUnderReview, boolean openCancellationRequest, boolean enrollmentSuspended,
+                                  boolean issuedAfterPreviousRun) {
 
     public ReminderInvoiceFact {
         Objects.requireNonNull(invoiceId, "invoiceId");
@@ -27,13 +28,20 @@ public record ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceD
         Objects.requireNonNull(balance, "balance");
     }
 
+    public ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceDocumentType documentType, InvoiceType invoiceType, InvoiceDocumentStatus documentStatus,
+                               InvoicePaymentStatus paymentStatus, LocalDate issueDate, LocalDate dueDate, LocalDate suspensionDate, NonNegativeMoney balance,
+                               Long programEnrollmentId, Long courseEnrollmentId, boolean receiptUnderReview, boolean openCancellationRequest) {
+        this(invoiceId, originInvoiceId, documentType, invoiceType, documentStatus, paymentStatus, issueDate, dueDate, suspensionDate, balance, programEnrollmentId,
+                courseEnrollmentId, receiptUnderReview, openCancellationRequest, false, false);
+    }
+
     public Currency currency() {
         return balance.value().currency();
     }
 
     public ReminderInvoiceFact withPaymentStatus(InvoicePaymentStatus newPaymentStatus) {
         return new ReminderInvoiceFact(invoiceId, originInvoiceId, documentType, invoiceType, documentStatus, newPaymentStatus, issueDate, dueDate, suspensionDate,
-                balance, programEnrollmentId, courseEnrollmentId, receiptUnderReview, openCancellationRequest);
+                balance, programEnrollmentId, courseEnrollmentId, receiptUnderReview, openCancellationRequest, enrollmentSuspended, issuedAfterPreviousRun);
     }
 
     public boolean isDebitNote() {

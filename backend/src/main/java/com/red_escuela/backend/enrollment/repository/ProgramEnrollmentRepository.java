@@ -63,4 +63,7 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
             where e.id = :id
             """)
     java.util.Optional<BillingTemplateRef> findBillingTemplateRef(@Param("id") Long id);
+
+    @Query("select e.id as enrollmentId, e.program.id as targetId, e.paymentStatus as paymentStatus from ProgramEnrollment e where e.id in :ids")
+    List<EnrollmentReminderTargetRow> findReminderTargetRows(@Param("ids") Collection<Long> ids);
 }

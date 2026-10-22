@@ -20,6 +20,12 @@ public final class ReminderInvoiceFacts {
                 issueDate, dueDate, null, false, false);
     }
 
+    public static ReminderInvoiceFact installmentOfAnEnrollment(long id, String issueDate, String dueDate, boolean enrollmentSuspended, boolean issuedAfterPreviousRun) {
+        return new ReminderInvoiceFact(id, null, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT, InvoiceDocumentStatus.ISSUED, InvoicePaymentStatus.PENDING,
+                LocalDate.parse(issueDate), LocalDate.parse(dueDate), null, NonNegativeMoney.of(new BigDecimal("80000.00"), Currency.ARS), 1L, null, false, false,
+                enrollmentSuspended, issuedAfterPreviousRun);
+    }
+
     public static ReminderInvoiceFact lateFeeDebitNote(long id, long originId, String issueDate, String dueDate) {
         return fact(id, originId, InvoiceDocumentType.DEBIT_NOTE, InvoiceType.LATE_FEE, InvoiceDocumentStatus.ISSUED, InvoicePaymentStatus.PENDING,
                 issueDate, dueDate, null, false, false);

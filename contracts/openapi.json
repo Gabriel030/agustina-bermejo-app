@@ -1278,6 +1278,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "dailyDigestEnabled" : {
+            "description" : "Resumen diario único por alumno; si no viene, queda activado",
+            "type" : "boolean"
+          },
           "dailyEmailCap" : {
             "format" : "int32",
             "type" : "integer"

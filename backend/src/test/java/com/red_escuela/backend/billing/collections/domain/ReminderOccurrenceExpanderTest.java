@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.configuration.domain.ReminderChannel;
 import com.red_escuela.backend.billing.configuration.domain.ReminderMessageType;
 import com.red_escuela.backend.billing.configuration.domain.ReminderMilestone;
+import com.red_escuela.backend.billing.configuration.domain.ReminderMilestoneDates;
 import com.red_escuela.backend.billing.configuration.domain.ReminderNotice;
 import com.red_escuela.backend.billing.configuration.domain.ReminderRepetition;
 import org.junit.jupiter.api.Tag;
@@ -131,5 +132,95 @@ class ReminderOccurrenceExpanderTest {
         ReminderNotice degenerate = notice("a", ReminderMilestone.ISSUANCE, 1, new ReminderRepetition(0, ReminderMilestone.DUE_DATE));
 
         assertThat(datesOf(ReminderOccurrenceExpander.expandOccurrencesOf(march, List.of(degenerate)))).containsExactly(LocalDate.parse("2027-03-02"));
+    }
+
+    @Test
+    @Tag("D-413")
+    void repetitionUntilSuspensionKeepsRepeatingWhileTheEnrollmentIsNotSuspendedAndThereIsNoSuspensionDate() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", false, false);
+        ReminderNotice everyThreeDaysUntilSuspension = notice("a", ReminderMilestone.DUE_DATE, 1, new ReminderRepetition(3, ReminderMilestone.SUSPENSION));
+
+        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(everyThreeDaysUntilSuspension), LocalDate.parse("2027-03-24"));
+
+        assertThat(datesOf(occurrences)).containsExactly(LocalDate.parse("2027-03-12"), LocalDate.parse("2027-03-15"), LocalDate.parse("2027-03-18"),
+                LocalDate.parse("2027-03-21"), LocalDate.parse("2027-03-24"));
+    }
+
+    @Test
+    @Tag("D-413")
+    void repetitionUntilSuspensionStopsRepeatingOnceTheEnrollmentIsSuspended() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", true, false);
+        ReminderNotice everyThreeDaysUntilSuspension = notice("a", ReminderMilestone.DUE_DATE, 1, new ReminderRepetition(3, ReminderMilestone.SUSPENSION));
+
+        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(everyThreeDaysUntilSuspension), LocalDate.parse("2027-03-25"));
+
+        assertThat(datesOf(occurrences)).containsExactly(LocalDate.parse("2027-03-12"));
+    }
+
+    @Test
+    @Tag("D-413")
+    void aKnownSuspensionDateStillBoundsTheRepetitionEvenWhenTheHorizonIsFurther() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.fact(1L, null, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT, InvoiceDocumentStatus.ISSUED,
+                InvoicePaymentStatus.PENDING, "2027-03-01", "2027-03-11", "2027-03-20", false, false);
+        ReminderNotice everyThreeDaysUntilSuspension = notice("a", ReminderMilestone.DUE_DATE, 1, new ReminderRepetition(3, ReminderMilestone.SUSPENSION));
+
+        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(everyThreeDaysUntilSuspension), LocalDate.parse("2027-04-30"));
+
+        assertThat(datesOf(occurrences)).containsExactly(LocalDate.parse("2027-03-12"), LocalDate.parse("2027-03-15"), LocalDate.parse("2027-03-18"));
+    }
+
+    @Test
+    @Tag("D-413")
+    void anInvoiceIssuedAfterThePreviousRunRecoversOnlyItsIssueDayNoticeOneDayLater() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", false, true);
+        ReminderNotice onIssueDay = notice("issue", ReminderMilestone.ISSUANCE, 0, null);
+        ReminderNotice fiveDaysLater = notice("later", ReminderMilestone.ISSUANCE, 5, null);
+
+        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(onIssueDay, fiveDaysLater), LocalDate.parse("2027-03-20"));
+
+        assertThat(occurrences).extracting(ReminderOccurrence::noticeKey, ReminderOccurrence::date)
+                .containsExactly(org.assertj.core.api.Assertions.tuple("issue", LocalDate.parse("2027-03-02")), org.assertj.core.api.Assertions.tuple("later", LocalDate.parse("2027-03-06")));
+    }
+
+    @Test
+    @Tag("D-413")
+    void anOpenEndedExpansionOnlyRepeatsNoticesThatRepeatUntilTheSuspension() {
+        ReminderMilestoneDates withoutSuspension = ReminderMilestoneDates.withoutSuspension(LocalDate.parse("2027-03-01"), LocalDate.parse("2027-03-11"));
+        ReminderNotice untilDue = notice("a", ReminderMilestone.DUE_DATE, 1, new ReminderRepetition(3, ReminderMilestone.DUE_DATE));
+        ReminderNotice withoutRepetition = notice("b", ReminderMilestone.DUE_DATE, 1, null);
+        ReminderNotice everyZeroDays = notice("c", ReminderMilestone.DUE_DATE, 1, new ReminderRepetition(0, ReminderMilestone.SUSPENSION));
+        ReminderNotice anchoredOnTheSuspension = notice("d", ReminderMilestone.SUSPENSION, -1, new ReminderRepetition(3, ReminderMilestone.SUSPENSION));
+        LocalDate horizon = LocalDate.parse("2027-04-30");
+
+        assertThat(untilDue.repeatsUntilSuspension()).isFalse();
+        assertThat(withoutRepetition.repeatsUntilSuspension()).isFalse();
+        assertThat(everyZeroDays.repeatsUntilSuspension()).isFalse();
+        assertThat(untilDue.openEndedOccurrenceDatesFor(withoutSuspension, horizon)).containsExactly(LocalDate.parse("2027-03-12"));
+        assertThat(withoutRepetition.openEndedOccurrenceDatesFor(withoutSuspension, horizon)).containsExactly(LocalDate.parse("2027-03-12"));
+        assertThat(anchoredOnTheSuspension.openEndedOccurrenceDatesFor(withoutSuspension, horizon)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-413")
+    void changingThePaymentStatusKeepsTheEnrollmentSuspensionAndTheLateIssuanceFlags() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", true, true);
+        ReminderInvoiceFact overdue = march.withPaymentStatus(InvoicePaymentStatus.OVERDUE);
+
+        assertThat(overdue.paymentStatus()).isEqualTo(InvoicePaymentStatus.OVERDUE);
+        assertThat(overdue.enrollmentSuspended()).isTrue();
+        assertThat(overdue.issuedAfterPreviousRun()).isTrue();
+        assertThat(ReminderInvoiceFacts.installment(1L, "2027-03-01", "2027-03-11").enrollmentSuspended()).isFalse();
+        assertThat(ReminderInvoiceFacts.installment(1L, "2027-03-01", "2027-03-11").issuedAfterPreviousRun()).isFalse();
+    }
+
+    @Test
+    @Tag("D-413")
+    void anInvoiceIssuedBeforeThePreviousRunKeepsItsIssueDayNoticeOnItsOwnDay() {
+        ReminderInvoiceFact march = ReminderInvoiceFacts.installmentOfAnEnrollment(1L, "2027-03-01", "2027-03-11", false, false);
+        ReminderNotice onIssueDay = notice("issue", ReminderMilestone.ISSUANCE, 0, null);
+
+        List<ReminderOccurrence> occurrences = ReminderOccurrenceExpander.expandOccurrencesUpTo(march, List.of(onIssueDay), LocalDate.parse("2027-03-20"));
+
+        assertThat(datesOf(occurrences)).containsExactly(LocalDate.parse("2027-03-01"));
     }
 }
