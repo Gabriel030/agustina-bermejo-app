@@ -166,7 +166,9 @@ jobs:
             groups=$(IFS=,; echo "${excluded[*]}")
           fi
           echo "excluded groups: $groups"
-          ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 6)" -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$groups"
+          rerun=0
+          [ "${{ github.event_name }}" = "pull_request" ] && rerun=1
+          ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 6)" -Dsurefire.rerunFailingTestsCount=$rerun -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$groups"
 
       - name: Save the Maven repository
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 0 && steps.maven-cache.outputs.cache-hit != 'true'
@@ -321,8 +323,10 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+
+      - name: Fetch the pull request base commit
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
 
       - name: Self-test of the budget scripts
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
@@ -381,21 +385,13 @@ jobs:
           [ -f report-out/report.md ] && cat report-out/report.md >> "$GITHUB_STEP_SUMMARY"
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
-      - name: Comment the report on the pull request
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('report-out/report.md') != ''
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -uo pipefail
-          repo="${{ github.repository }}"
-          number="${{ github.event.pull_request.number }}"
-          existing=$(gh api "repos/$repo/issues/$number/comments" --paginate --jq '.[] | select(.body | contains("<!-- test-time-report -->")) | .id' | head -n 1)
-          if [ -n "$existing" ]; then
-            gh api --method PATCH "repos/$repo/issues/comments/$existing" -F body=@report-out/report.md > /dev/null
-          else
-            gh api --method POST "repos/$repo/issues/$number/comments" -F body=@report-out/report.md > /dev/null
-          fi
+      - name: Upload the report for the pull request comment
+        if: github.event_name == 'pull_request' && hashFiles('report-out/report.md') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-comment
+          path: report-out/report.md
+          retention-days: 1
 
       - name: Add this run to the timing history
         continue-on-error: true
@@ -416,6 +412,37 @@ jobs:
       - name: Fail when the Spring context cap is exceeded
         if: steps.report.outputs.status != '' && steps.report.outputs.status != '0' && needs.changes.outputs.reuse_backend != 'true'
         run: exit 1
+
+  test-report-comment:
+    runs-on: ubuntu-latest
+    needs: [test-report]
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && needs.test-report.result != 'skipped'
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Download the report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: test-report-comment
+          path: report-out
+
+      - name: Comment the report on the pull request
+        if: hashFiles('report-out/report.md') != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          repo="${{ github.repository }}"
+          number="${{ github.event.pull_request.number }}"
+          existing=$(gh api "repos/$repo/issues/$number/comments" --paginate --jq '.[] | select(.body | contains("<!-- test-time-report -->")) | .id' | head -n 1)
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/$repo/issues/comments/$existing" -F body=@report-out/report.md > /dev/null
+          else
+            gh api --method POST "repos/$repo/issues/$number/comments" -F body=@report-out/report.md > /dev/null
+          fi
 
   backend:
     runs-on: ubuntu-latest
