@@ -8,13 +8,14 @@ import java.time.LocalDateTime;
 
 public record AdminInvoiceReceiptResponse(
         Long id, String status, String fileName, LocalDateTime uploadedAt, String uploadedByName,
-        String reviewedByName, LocalDateTime reviewedAt, String rejectionReason) {
+        String reviewedByName, LocalDateTime reviewedAt, String rejectionReason, String rejectionCode) {
 
     public static AdminInvoiceReceiptResponse from(BankTransferReceipt receipt) {
         return new AdminInvoiceReceiptResponse(
                 receipt.getId(), receipt.getStatus().name(), Path.of(receipt.getFilePath()).getFileName().toString(),
                 receipt.getUploadedAt(), nameOf(receipt.getUploadedBy()), nameOf(receipt.getReviewedBy()),
-                receipt.getReviewedAt(), receipt.getRejectionReason());
+                receipt.getReviewedAt(), receipt.getRejectionReason(),
+                receipt.getRejectionCode() == null ? null : receipt.getRejectionCode().name());
     }
 
     private static String nameOf(Person person) {

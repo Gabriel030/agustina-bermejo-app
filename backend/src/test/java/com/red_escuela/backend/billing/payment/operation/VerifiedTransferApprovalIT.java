@@ -56,6 +56,10 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
                 debtor.accountId());
     }
 
+    private String rejectionCodeOf(Long receiptId) {
+        return jdbc.queryForObject("select rejection_code from bank_transfer_receipt where id = ?", String.class, receiptId);
+    }
+
     private String receiptRejectionReason(Long receiptId) {
         return jdbc.queryForObject("select rejection_reason from bank_transfer_receipt where id = ?", String.class, receiptId);
     }
@@ -96,6 +100,7 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
 
         reject(submitted, "No encontramos la transferencia");
 
+        assertThat(rejectionCodeOf(submitted.receiptId())).isEqualTo("REVIEWER_REJECTION");
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("OVERDUE");
         assertThat(dueDateOfInvoice(march)).isEqualTo(MARCH_DUE);
         assertThat(rejectedEvents()).singleElement().satisfies(event -> {
@@ -172,7 +177,6 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
 
     @Test
     @Tag("D-320")
-    @Tag("D-259")
     void aVerifiedTransferDateLaterThanTheUploadDateRejectsTheReceiptAndCreditsNothing() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Debtor debtor = debtor();
@@ -185,6 +189,7 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
                 .satisfies(failure -> assertThat(ErrorCodeResponse.of(failure).code()).isEqualTo("RECEIPT_TRANSFER_DATE_MISMATCH"));
 
         assertThat(receiptStatus(submitted.receiptId())).isEqualTo("REJECTED");
+        assertThat(rejectionCodeOf(submitted.receiptId())).isEqualTo("TRANSFER_DATE_MISMATCH");
         assertThat(receiptRejectionReason(submitted.receiptId())).contains("12/03/2027").contains("09/03/2027");
         assertThat(paymentRow(submitted.paymentId())).containsEntry("status", "REJECTED");
         assertThat(creditEntriesOf(debtor)).isZero();
@@ -205,6 +210,7 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
         assertThatThrownBy(() -> approveWith(submitted, new PaymentVerification(null, LocalDate.of(2027, 3, 8), null))).isInstanceOf(ReceiptTransferDateMismatchException.class);
 
         assertThat(receiptStatus(submitted.receiptId())).isEqualTo("REJECTED");
+        assertThat(rejectionCodeOf(submitted.receiptId())).isEqualTo("TRANSFER_DATE_MISMATCH");
         assertThat(paymentRow(submitted.paymentId())).containsEntry("status", "REJECTED");
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
         assertThat(creditEntriesOf(debtor)).isZero();

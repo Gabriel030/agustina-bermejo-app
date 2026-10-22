@@ -147,7 +147,9 @@ class BankTransferReceiptReviewEndpointIT extends AbstractBankTransferReceiptHtt
         assertThat(codeOf(tooLong)).isEqualTo("PAYMENT_REJECTION_REASON_TOO_LONG");
         assertThat(receiptStatusOf(submitted.receiptId())).isEqualTo("PENDING_REVIEW");
 
-        mockMvc.perform(review("reject", submitted.receiptId(), token, "{\"rejectionReason\":\"" + "m".repeat(500) + "\"}")).andExpect(status().isOk());
+        MvcResult rejected = mockMvc.perform(review("reject", submitted.receiptId(), token, "{\"rejectionReason\":\"" + "m".repeat(500) + "\"}"))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(bodyOf(rejected).get("rejectionCode").asText()).isEqualTo("REVIEWER_REJECTION");
         assertThat(jdbc.queryForObject("select length(rejection_reason) from bank_transfer_receipt where id = ?", Integer.class, submitted.receiptId())).isEqualTo(500);
         assertThat(jdbc.queryForObject("select length(rejection_reason) from payment where id = ?", Integer.class, submitted.paymentId())).isEqualTo(500);
     }
@@ -207,6 +209,7 @@ class BankTransferReceiptReviewEndpointIT extends AbstractBankTransferReceiptHtt
 
         assertThat(codeOf(result)).isEqualTo("RECEIPT_TRANSFER_DATE_MISMATCH");
         assertThat(receiptStatusOf(submitted.receiptId())).isEqualTo("REJECTED");
+        assertThat(jdbc.queryForObject("select rejection_code from bank_transfer_receipt where id = ?", String.class, submitted.receiptId())).isEqualTo("TRANSFER_DATE_MISMATCH");
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
     }
 

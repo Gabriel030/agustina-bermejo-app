@@ -22,7 +22,10 @@ import com.red_escuela.backend.billing.payment.policy.CashPaymentPreviewIsCurren
 import com.red_escuela.backend.billing.payment.policy.CashPaymentReceiptNumberPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyFormatPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayAvailabilityContext;
+import com.red_escuela.backend.billing.payment.policy.LegacyReceiptNotVerifiablePolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentRejectionCheck;
+import com.red_escuela.backend.billing.payment.policy.ReceiptApprovalCheck;
+import com.red_escuela.backend.billing.payment.policy.ReceiptTransferDateMatchesUploadDatePolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentRejectionReasonRequiredPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentReviewNoteLengthPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentVerificationCheck;
@@ -115,5 +118,10 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet() {
         return PolicySet.named("PAYMENT_REJECTION", List.of(new PaymentRejectionReasonRequiredPolicy()));
+    }
+
+    @Bean
+    public PolicySet<ReceiptApprovalCheck> receiptApprovalPolicySet() {
+        return PolicySet.named("RECEIPT_APPROVAL", List.of(new LegacyReceiptNotVerifiablePolicy(), new ReceiptTransferDateMatchesUploadDatePolicy()));
     }
 }

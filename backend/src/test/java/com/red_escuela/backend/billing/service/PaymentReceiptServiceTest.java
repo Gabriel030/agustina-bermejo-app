@@ -313,7 +313,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
                 attempt.get(60, TimeUnit.SECONDS);
                 approvals++;
             } catch (ExecutionException e) {
-                assertThat(e.getCause()).isInstanceOfAny(org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+                assertThat(e.getCause()).isInstanceOfAny(com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class,
                         InvalidPaymentReceiptStateException.class, InvoiceNotPayableException.class);
             }
         }
@@ -392,7 +392,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
                 exitos++;
             } catch (ExecutionException e) {
                 assertThat(e.getCause()).isInstanceOfAny(
-                        org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+                        com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class,
                         InvalidPaymentReceiptStateException.class);
                 conflictos++;
             }

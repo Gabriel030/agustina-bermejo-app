@@ -340,6 +340,21 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | CashPaymentReceiptNumberPolicy | CASH_PAYMENT_RECEIPT_NUMBER_INVALID | D-136 |
 | 4 | CashPaymentBackdateReasonLengthPolicy | CASH_PAYMENT_BACKDATE_REASON_INVALID | D-266 |
 
+## Momento PAYMENT_REJECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | PaymentRejectionReasonRequiredPolicy | PAYMENT_REJECTION_REASON_REQUIRED, PAYMENT_REJECTION_REASON_TOO_LONG | D-139 |
+
+## Momento PAYMENT_REVIEW
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | VerifiedPaymentAmountPolicy | VERIFIED_PAYMENT_AMOUNT_INVALID | D-139, D-208 |
+| 2 | VerifiedPaymentCurrencyPolicy | VERIFIED_PAYMENT_CURRENCY_MISMATCH | D-097, D-098 |
+| 3 | VerifiedPaymentDatePolicy | PAYMENT_DATE_IN_FUTURE | D-169, D-320 |
+| 4 | PaymentReviewNoteLengthPolicy | PAYMENT_REVIEW_NOTE_TOO_LONG | D-139 |
+
 ## Momento PRICE_CHANGE
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -371,6 +386,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 2 | NotSuspendedOrWithdrawnForNonPaymentPolicy | SUSPENDED_OR_WITHDRAWN | D-066, D-053 |
 | 3 | StudyPlanNotCompletedPolicy | PLAN_COMPLETED | D-038 |
 | 4 | PaymentPlanChosenPolicy | NO_PAYMENT_PLAN | D-050 |
+
+## Momento RECEIPT_APPROVAL
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | LegacyReceiptNotVerifiablePolicy | LEGACY_RECEIPT_HAS_NO_VERIFIABLE_PAYMENT | D-139 |
+| 2 | ReceiptTransferDateMatchesUploadDatePolicy | RECEIPT_TRANSFER_DATE_MISMATCH | D-320, D-243 |
 
 ## Momento REENROLLMENT_DEBT
 
@@ -570,7 +592,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación APPROVE_PENDING_BANK_TRANSFER_PAYMENT
 
-- Validaciones (momentos): —
+- Validaciones (momentos): PAYMENT_REVIEW
 - Pre-procesamiento (en orden): —
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
