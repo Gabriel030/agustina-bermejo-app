@@ -103,7 +103,7 @@ tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:
 1. **Compartidos entre varios use cases** del mismo subdominio (evitan
-   duplicar lógica): `PaymentPlanSelectionGuard`, `PromotionRedeemer`,
+   duplicar lógica): `PaymentPlanSelectionGuard`, `PaymentPlanOptionFinder`,
    `PaymentReceiptFinder`, etc.
 2. **Ya cohesivos de por sí**, no tenían el problema de "cajón de sastre"
    (varios métodos, pero todos sobre el mismo concepto — mismo criterio que

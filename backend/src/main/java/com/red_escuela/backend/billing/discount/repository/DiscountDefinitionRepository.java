@@ -22,6 +22,22 @@ public interface DiscountDefinitionRepository extends JpaRepository<DiscountDefi
     @Query("select d from DiscountDefinition d where (:type is null or d.discountType = :type) and (:status is null or d.status = :status) order by d.id")
     List<DiscountDefinition> findCatalog(@Param("type") DiscountDefinitionType type, @Param("status") DiscountDefinitionStatus status);
 
+    @Query("""
+            select d.id from DiscountDefinition d
+            where d.discountType = com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType.COHORT_PROMOTION
+              and d.status = com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus.ACTIVE
+              and d.programId = :programId and (d.programCohortId is null or d.programCohortId = :programCohortId)
+            order by d.id""")
+    List<Long> findActiveCohortPromotionIdsOfProgram(@Param("programId") Long programId, @Param("programCohortId") Long programCohortId);
+
+    @Query("""
+            select d.id from DiscountDefinition d
+            where d.discountType = com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType.COHORT_PROMOTION
+              and d.status = com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus.ACTIVE
+              and d.courseId = :courseId
+            order by d.id""")
+    List<Long> findActiveCohortPromotionIdsOfCourse(@Param("courseId") Long courseId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from DiscountDefinition d where d.id = :id")
     Optional<DiscountDefinition> findByIdForUpdate(@Param("id") Long id);

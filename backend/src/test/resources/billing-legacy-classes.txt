@@ -157,7 +157,6 @@ com.red_escuela.backend.billing.service.ProgramCohortService
 com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup
 com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService
 com.red_escuela.backend.billing.service.PromotionBuilder
-com.red_escuela.backend.billing.service.PromotionRedeemer
 com.red_escuela.backend.billing.service.RecurringFeeWindowService
 com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService
 com.red_escuela.backend.billing.service.YearBillingConfigurationApplier

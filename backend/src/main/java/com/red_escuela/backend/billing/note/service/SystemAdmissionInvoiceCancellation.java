@@ -36,14 +36,17 @@ public class SystemAdmissionInvoiceCancellation {
     private final AdmissionReceiptLookup receiptLookup;
     private final BillingOperationPipeline pipeline;
     private final CancelInvoiceOperation cancelInvoiceOperation;
+    private final LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment;
 
     public SystemAdmissionInvoiceCancellation(InvoiceCreditAccessService invoiceAccess, StudentCurrentAccountService accountService, AdmissionReceiptLookup receiptLookup,
-                                              BillingOperationPipeline pipeline, CancelInvoiceOperation cancelInvoiceOperation) {
+                                              BillingOperationPipeline pipeline, CancelInvoiceOperation cancelInvoiceOperation,
+                                              LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment) {
         this.invoiceAccess = invoiceAccess;
         this.accountService = accountService;
         this.receiptLookup = receiptLookup;
         this.pipeline = pipeline;
         this.cancelInvoiceOperation = cancelInvoiceOperation;
+        this.lateFeeAnnulment = lateFeeAnnulment;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -58,7 +61,7 @@ public class SystemAdmissionInvoiceCancellation {
             return Outcome.NOT_CANCELLABLE;
         }
         AdmissionReceiptSummary receipt = receiptLookup.findLatestReceiptByInvoiceIds(Set.of(invoiceId)).get(invoiceId);
-        if (receipt != null && PENDING_RECEIPT.equals(receipt.status())) {
+        if ((receipt != null && PENDING_RECEIPT.equals(receipt.status())) || lateFeeAnnulment.hasLateFeeDebitNoteUnderPaymentReview(invoiceId)) {
             return Outcome.NOT_CANCELLABLE;
         }
         pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.bySystem(invoiceId, SystemCancellationOrigin.ADMISSION_EXPIRED, JUSTIFICATION))

@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.collections.repository;
 
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCharge;
+import com.red_escuela.backend.billing.note.service.LateFeeDebitNoteLookup;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long> {
+public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>, LateFeeDebitNoteLookup {
 
     LateFeeCharge save(LateFeeCharge charge);
 
@@ -47,6 +48,10 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
     List<Long> findRecentlySettledLateFeeOriginIdsAfter(@Param("lastId") Long lastId, @Param("since") LocalDate since, @Param("pageSize") int pageSize);
 
     List<LateFeeCharge> findByOriginInvoiceIdOrderByPeriodStart(Long originInvoiceId);
+
+    @Override
+    @Query("select c.debitNoteId from LateFeeCharge c where c.originInvoiceId = :originInvoiceId order by c.debitNoteId")
+    List<Long> findDebitNoteIdsOfOriginInvoiceInAscendingOrder(@Param("originInvoiceId") Long originInvoiceId);
 
     Optional<LateFeeCharge> findByDebitNoteId(Long debitNoteId);
 

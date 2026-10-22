@@ -50,7 +50,7 @@ public record InvoiceDiscountCandidate(
     public int typeRank() {
         return switch (discountType) {
             case SCHOLARSHIP -> 1;
-            case PROMOTION, INDIVIDUAL, COHORT_ENTRY -> 2;
+            case PROMOTION, COHORT_PROMOTION, INDIVIDUAL, COHORT_ENTRY -> 2;
             case ANNUAL_UPFRONT -> 3;
         };
     }

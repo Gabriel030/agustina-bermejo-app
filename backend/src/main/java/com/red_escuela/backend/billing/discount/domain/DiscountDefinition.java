@@ -192,6 +192,18 @@ public class DiscountDefinition {
         };
     }
 
+    public boolean hasPlaceLeft(long placesUsed) {
+        return quota == null || placesUsed < quota;
+    }
+
+    public boolean takesLastPlaceAfter(long placesUsedBefore) {
+        return quota != null && placesUsedBefore + 1 == quota && quotaExhaustedNotifiedAt == null;
+    }
+
+    public void markQuotaExhaustionNotified(Instant now) {
+        this.quotaExhaustedNotifiedAt = now;
+    }
+
     public boolean hasQuota() {
         return quota != null;
     }

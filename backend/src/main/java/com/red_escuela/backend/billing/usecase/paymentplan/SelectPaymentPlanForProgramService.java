@@ -8,10 +8,10 @@ import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchException;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
+import com.red_escuela.backend.billing.operation.CohortPromotionAcquirer;
 import com.red_escuela.backend.billing.service.PaymentPlanOptionFinder;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionGuard;
 import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
-import com.red_escuela.backend.billing.service.PromotionRedeemer;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
@@ -29,14 +29,14 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
     private final CurrentPersonService currentPersonService;
     private final PaymentPlanSelectionGuard guard;
     private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
-    private final PromotionRedeemer promotionRedeemer;
+    private final CohortPromotionAcquirer cohortPromotionAcquirer;
     private final PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService;
     private final Clock clock;
 
     public SelectPaymentPlanForProgramService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                                ProgramEnrollmentRepository programEnrollmentRepository, CurrentPersonService currentPersonService,
                                                PaymentPlanSelectionGuard guard, ProgramEnrollmentBillingSetup programEnrollmentBillingSetup,
-                                               PromotionRedeemer promotionRedeemer,
+                                               CohortPromotionAcquirer cohortPromotionAcquirer,
                                                PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService,
                                                Clock clock) {
         this.invoiceGenerationService = invoiceGenerationService;
@@ -46,7 +46,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         this.currentPersonService = currentPersonService;
         this.guard = guard;
         this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
-        this.promotionRedeemer = promotionRedeemer;
+        this.cohortPromotionAcquirer = cohortPromotionAcquirer;
         this.clock = clock;
     }
 
@@ -77,7 +77,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         selection.setCreatedBy(currentPersonService.resolveCurrentPerson());
         PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
         if (isFirstSelection) {
-            promotionRedeemer.redeemIfEligible(programEnrollment, saved);
+            cohortPromotionAcquirer.acquireWhenEligible(programEnrollment, saved);
             programEnrollmentBillingSetup.assignTemplateIfMissing(programEnrollment);
             invoiceGenerationService.issueInvoicesForNewPaymentPlan(programEnrollment, YearMonth.now(clock), LocalDate.now(clock));
         }

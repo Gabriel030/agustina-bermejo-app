@@ -74,6 +74,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | CashPaymentAmountPolicy | CASH_PAYMENT_AMOUNT_INVALID | D-136, D-097, D-098 |
 
+## Momento COHORT_PROMOTION_ACQUISITION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | OneCohortPromotionPerEnrollmentPolicy | COHORT_PROMOTION_ALREADY_ACQUIRED | D-386 |
+
 ## Momento COLLECTION_REMINDER_EFFECTIVE_FROM
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -256,6 +262,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | IssuanceSettingsCoherencePolicy | INVALID_ISSUANCE_SETTINGS | D-053, D-160 |
+
+## Momento LATE_FEE_ANNULMENT_ON_CANCELLATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | LateFeeDebitNoteNotUnderPaymentReviewPolicy | LATE_FEE_UNDER_PAYMENT_REVIEW | D-153, D-291, D-400 |
 
 ## Momento LATE_FEE_CORRECTION_ISSUING
 
@@ -572,6 +584,13 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 | FAILED | — | — | — | — | — | — | — | — |
 
 Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROVIDER; (sin estado) × SEND_VIA_SIMULATOR; (sin estado) × DEFER; (sin estado) × DISCARD; (sin estado) × GIVE_UP; QUEUED × QUEUE_FOR_DISPATCH; QUEUED × DELIVER_IN_APP; SENT × QUEUE_FOR_DISPATCH; SENT × DELIVER_IN_APP; SENT × SUPPRESS; SENT × SEND_VIA_PROVIDER; SENT × SEND_VIA_SIMULATOR; SENT × DEFER; SENT × DISCARD; SENT × GIVE_UP; SENT_SIMULATED × QUEUE_FOR_DISPATCH; SENT_SIMULATED × DELIVER_IN_APP; SENT_SIMULATED × SUPPRESS; SENT_SIMULATED × SEND_VIA_PROVIDER; SENT_SIMULATED × SEND_VIA_SIMULATOR; SENT_SIMULATED × DEFER; SENT_SIMULATED × DISCARD; SENT_SIMULATED × GIVE_UP; SUPPRESSED × QUEUE_FOR_DISPATCH; SUPPRESSED × DELIVER_IN_APP; SUPPRESSED × SUPPRESS; SUPPRESSED × SEND_VIA_PROVIDER; SUPPRESSED × SEND_VIA_SIMULATOR; SUPPRESSED × DEFER; SUPPRESSED × DISCARD; SUPPRESSED × GIVE_UP; DEFERRED × QUEUE_FOR_DISPATCH; DEFERRED × DELIVER_IN_APP; DISCARDED × QUEUE_FOR_DISPATCH; DISCARDED × DELIVER_IN_APP; DISCARDED × SUPPRESS; DISCARDED × SEND_VIA_PROVIDER; DISCARDED × SEND_VIA_SIMULATOR; DISCARDED × DEFER; DISCARDED × DISCARD; DISCARDED × GIVE_UP; FAILED × QUEUE_FOR_DISPATCH; FAILED × DELIVER_IN_APP; FAILED × SUPPRESS; FAILED × SEND_VIA_PROVIDER; FAILED × SEND_VIA_SIMULATOR; FAILED × DEFER; FAILED × DISCARD; FAILED × GIVE_UP.
+
+## Operación ACQUIRE_COHORT_PROMOTION
+
+- Validaciones (momentos): COHORT_PROMOTION_ACQUISITION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: DiscountQuotaExhaustedEvent
+- Post-procesamiento de DiscountQuotaExhaustedEvent: BillingOperationNotificationListener#notifyDiscountQuotaExhausted
 
 ## Operación ALLOCATE_ACCOUNT_CREDIT
 

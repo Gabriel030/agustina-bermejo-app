@@ -16,6 +16,12 @@ class LateFeeCorrectionCreditNoteKindTest {
     }
 
     @Test
+    void anAnnulmentByInstallmentCancellationUsesTheAnnulmentReasonAndItsOwnProcess() {
+        assertThat(LateFeeCorrectionCreditNoteKind.AFTER_INSTALLMENT_CANCELLATION.reason()).isEqualTo(CreditNoteReason.LATE_FEE_ANNULMENT);
+        assertThat(LateFeeCorrectionCreditNoteKind.AFTER_INSTALLMENT_CANCELLATION.actor().processName()).isEqualTo("LateFeeInstallmentCancellationAnnulment");
+    }
+
+    @Test
     void anAnnulmentByPaymentDateUsesTheAnnulmentReasonAndItsOwnProcess() {
         assertThat(LateFeeCorrectionCreditNoteKind.AFTER_PAYMENT_DATE.reason()).isEqualTo(CreditNoteReason.LATE_FEE_ANNULMENT);
         assertThat(LateFeeCorrectionCreditNoteKind.AFTER_PAYMENT_DATE.actor().processName()).isEqualTo("LateFeePaymentDateCorrection");

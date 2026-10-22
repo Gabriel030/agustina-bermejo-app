@@ -38,19 +38,21 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
     private final CreditNoteRepository creditNoteRepository;
     private final CreditNoteNumberGenerator numberGenerator;
     private final PolicySet<InvoiceCancellationContext> cancellationPolicies;
+    private final LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public CancelInvoiceOperation(InvoiceCreditAccessService invoices, StudentCurrentAccountService accountService,
                                   CurrentAccountAllocationService allocationService, CreditNoteRepository creditNoteRepository,
                                   CreditNoteNumberGenerator numberGenerator, PolicySet<InvoiceCancellationContext> cancellationPolicies,
-                                  ApplicationEventPublisher eventPublisher, Clock clock) {
+                                  LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment, ApplicationEventPublisher eventPublisher, Clock clock) {
         this.invoices = invoices;
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.creditNoteRepository = creditNoteRepository;
         this.numberGenerator = numberGenerator;
         this.cancellationPolicies = cancellationPolicies;
+        this.lateFeeAnnulment = lateFeeAnnulment;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -79,6 +81,7 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
     public void requireValidContext(CancelInvoiceCommand command) {
         Invoice invoice = invoices.findInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
+        lateFeeAnnulment.requireNoLateFeeDebitNoteUnderPaymentReview(invoice.getId());
     }
 
     @Override
@@ -98,6 +101,11 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoices.lockInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
+        for (CreditNote annulment : lateFeeAnnulment.annulLiveLateFeesOfInstallment(invoice)) {
+            accountService.recordCreditNoteIssuedCredit(account, annulment.getId(), annulment.getOffsetAmount(), annulment.getFreeCreditAmount(), LocalDate.now(clock),
+                    "Anulación del recargo " + annulment.getInvoiceNumber() + " por la cancelación de la cuota " + invoice.getInvoiceNumber().value() + " (nota de crédito "
+                            + annulment.getCreditNoteNumber().value() + ")");
+        }
         LocalDate businessDate = LocalDate.now(clock);
         StatusChangeActor actor = command.actor();
         CreditNote note = CreditNote.issueCancellationCreditNoteForInvoice(invoice, command.reason(), command.justification(), numberGenerator.nextCreditNoteNumber(),

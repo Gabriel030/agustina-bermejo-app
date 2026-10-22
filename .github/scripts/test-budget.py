@@ -52,6 +52,19 @@ def class_times(reports):
     return totals
 
 
+def flaky_tests(reports):
+    found = []
+    for path in sorted(glob.glob(os.path.join(reports, 'TEST-*.xml'))):
+        try:
+            suite = ET.parse(path).getroot()
+        except ET.ParseError:
+            continue
+        for case in suite.iter('testcase'):
+            if case.find('flakyFailure') is not None or case.find('flakyError') is not None:
+                found.append('%s.%s' % (case.get('classname', suite.get('name', '')), case.get('name', '')))
+    return found
+
+
 def slow_reason(test_root, name):
     path = os.path.join(test_root, name + '.java')
     if not os.path.exists(path):
@@ -133,6 +146,7 @@ def load_shards(directory):
             'dir': path,
             'meta': meta,
             'times': class_times(os.path.join(path, 'reports')),
+            'flaky': flaky_tests(os.path.join(path, 'reports')),
             'contexts': read_contexts(os.path.join(path, 'contexts.txt')),
         })
     return shards
@@ -184,6 +198,8 @@ def aggregate(args):
         if reason is not None:
             slow[name] = (seconds, reason)
 
+    flaky = sorted({name for shard in shards for name in shard['flaky']})
+
     lines = [MARKER, '### Tiempo de tests del backend', '']
     lines.append('| Métrica | Valor | Δ vs última corrida de develop |')
     lines.append('|---|---|---|')
@@ -225,6 +241,10 @@ def aggregate(args):
     if len(contexts) > args.max_contexts:
         failures.append('%d distinct Spring contexts, above the limit of %d' % (len(contexts), args.max_contexts))
         lines.append('> **Tope de contextos superado:** %d > %d. Reutilizá una configuración existente (`@SharedMockBeans`, mismas propiedades) en lugar de crear un contexto nuevo.' % (len(contexts), args.max_contexts))
+    if flaky:
+        lines.append('> **Tests flaky (fallaron y pasaron en el reintento): %d.** No los ignores, estabilizalos:' % len(flaky))
+        lines.extend('> - `%s`' % name for name in flaky)
+        lines.append('')
     lines.append('Presupuestos: clase %ds, @SlowTest %ds, shard %ds de reloj, contextos %d. Ver `docs/context/testing.md`, sección "Presupuesto de tiempo y pirámide de tests".' % (
         args.max_class, args.max_slow_class, args.max_shard, args.max_contexts))
 

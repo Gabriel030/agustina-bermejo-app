@@ -3678,7 +3678,7 @@
             "type" : [ "string", "null" ]
           },
           "type" : {
-            "enum" : [ "SCHOLARSHIP", "PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
+            "enum" : [ "SCHOLARSHIP", "PROMOTION", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
             "type" : "string"
           }
         },
@@ -6449,7 +6449,7 @@
             "type" : "string"
           },
           "type" : {
-            "enum" : [ "SCHOLARSHIP", "PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
+            "enum" : [ "SCHOLARSHIP", "PROMOTION", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
             "type" : "string"
           }
         },
