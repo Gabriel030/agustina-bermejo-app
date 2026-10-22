@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.events.LateFeeAnnulledByPaymentDateEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.notification.LateFeeCorrectionNotificationListener;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
@@ -25,12 +26,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 @Tag("D-378")
 @SlowTest(reason = "Eleven scenarios that each seed overdue installments, annul their late fees by payment date and run the real nightly recovery and events against Postgres")
@@ -44,6 +47,8 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
     private ApplicationEventPublisher eventPublisher;
     @Autowired
     private NotificationRepository notifications;
+    @Autowired
+    private LateFeeCorrectionNotificationListener notificationListener;
 
     private Invoice installmentWithMarchClosed(int year, int graceDays) {
         arrange(year);
@@ -160,13 +165,18 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
         Long creditNoteId = System.nanoTime();
         LateFeeAnnulledByPaymentDateEvent event = LateFeeAnnulledByPaymentDateEvent.annulledFor(creditNoteId, "NC-00000099", 77L, "ND-00000077", person.getId(), 3,
                 d(2532, 3, 28), false, NonNegativeMoney.of(new BigDecimal("600.00"), Currency.ARS));
+        LateFeeCorrectionNotificationListener listener = AopTestUtils.getUltimateTargetObject(notificationListener);
 
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
-        awaitEventsDrained();
+        listener.notifyStudentOfTheAnnulmentByPaymentDate(event);
+        await().atMost(Duration.ofSeconds(25)).until(() -> studentNoticesOf(creditNoteId) == 1L);
+        listener.notifyStudentOfTheAnnulmentByPaymentDate(event);
 
-        assertThat(notifications.findByRecipientIdOrderByCreatedAtDesc(person.getId()).stream()
-                .filter(notification -> creditNoteId.equals(notification.getRelatedEntityId())).count()).isEqualTo(1L);
+        await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() -> studentNoticesOf(creditNoteId) == 1L);
+    }
+
+    private long studentNoticesOf(Long creditNoteId) {
+        return notifications.findByRecipientIdOrderByCreatedAtDesc(person.getId()).stream()
+                .filter(notification -> creditNoteId.equals(notification.getRelatedEntityId())).count();
     }
 
     @ParameterizedTest

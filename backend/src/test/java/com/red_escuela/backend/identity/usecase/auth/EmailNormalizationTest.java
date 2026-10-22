@@ -16,9 +16,9 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedMockBeans
 @Transactional
 class EmailNormalizationTest extends AbstractIntegrationTest {
     @Autowired
@@ -60,7 +61,7 @@ class EmailNormalizationTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @MockBean
+    @Autowired
     private GoogleIdTokenService googleIdTokenService;
 
     private Person persistPerson(String username, String email) {

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -50,7 +51,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.mockito.Mockito;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -79,6 +79,7 @@ import static org.awaitility.Awaitility.await;
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @SlowTest(reason = "Twenty-nine accrual scenarios that each seed invoices and payments and run the real late fee reconciliation against Postgres")
+@SharedSpyBeans
 class LateFeeAccrualIT extends AbstractIntegrationTest {
     private static final StatusChangeActor ACTOR = new StatusChangeActor(null, "LateFeeAccrualIT");
 
@@ -116,9 +117,9 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     private TransactionTemplate transactionTemplate;
     @Autowired
     private InvoiceOverdueSweepService sweepService;
-    @MockitoSpyBean
+    @Autowired
     private PendingInvoiceQueryService pendingInvoiceQueryService;
-    @MockitoSpyBean
+    @Autowired
     private LateFeeChargeRepository chargeRepositorySpy;
 
     @Autowired

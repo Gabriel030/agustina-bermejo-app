@@ -1,5 +1,8 @@
 package com.red_escuela.backend.shared.event;
 
+import com.red_escuela.backend.testsupport.RecordingProbeListenerConfiguration.ProbeEvent;
+import com.red_escuela.backend.testsupport.RecordingProbeListenerConfiguration.RecordingListener;
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
@@ -19,23 +22,16 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.Queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -49,33 +45,9 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(EventPublicationRegistryTest.RecordingListenerConfiguration.class)
+@SharedMockBeans
 @SlowTest(reason = "Boots its own Spring context and waits for the registry to redeliver failed publications")
 class EventPublicationRegistryTest extends AbstractIntegrationTest {
-
-    record ProbeEvent(String correlationId, Instant occurredAt, String payload) implements DomainEvent {
-    }
-
-    static class RecordingListener {
-        private final Queue<Map<String, String>> mdcSnapshots = new ConcurrentLinkedQueue<>();
-
-        @ApplicationModuleListener
-        public void onProbe(ProbeEvent event) {
-            mdcSnapshots.add(MDC.getCopyOfContextMap());
-        }
-
-        public Queue<Map<String, String>> snapshots() {
-            return mdcSnapshots;
-        }
-    }
-
-    @TestConfiguration
-    static class RecordingListenerConfiguration {
-        @Bean
-        RecordingListener recordingListener() {
-            return new RecordingListener();
-        }
-    }
 
     @Autowired
     private RequestPasswordResetUseCase requestPasswordResetUseCase;
@@ -93,7 +65,7 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     private RecordingListener recordingListener;
     @Autowired
     private MeterRegistry meterRegistry;
-    @MockBean
+    @Autowired
     private EmailService emailService;
 
     private String email;
