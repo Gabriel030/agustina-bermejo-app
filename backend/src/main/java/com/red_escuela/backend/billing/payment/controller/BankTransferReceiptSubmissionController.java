@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.payment.controller;
 
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionResponse;
+import com.red_escuela.backend.billing.payment.exception.BankTransferDetailsRequiredException;
 import com.red_escuela.backend.billing.payment.usecase.SubmitBankTransferReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -27,7 +28,7 @@ import java.util.List;
 
 @RestController
 public class BankTransferReceiptSubmissionController {
-    private static final String SUBMISSION_ERRORS = "400: BANK_TRANSFER_DETAILS_REQUIRED con la violación del campo (BANK_TRANSFER_AMOUNT_INVALID, BANK_TRANSFER_DATE_REQUIRED, BANK_TRANSFER_DATE_IN_FUTURE, BANK_TRANSFER_OPERATION_NUMBER_REQUIRED, BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED, BANK_TRANSFER_HOLDER_NAME_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_REQUIRED, BANK_TRANSFER_INVOICES_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_TYPE_NOT_ALLOWED, BANK_TRANSFER_RECEIPT_FILE_CONTENT_MISMATCH), "
+    private static final String SUBMISSION_ERRORS = "400: BANK_TRANSFER_DETAILS_REQUIRED con la violación del campo (BANK_TRANSFER_AMOUNT_INVALID, BANK_TRANSFER_DATE_REQUIRED, BANK_TRANSFER_DATE_IN_FUTURE, BANK_TRANSFER_OPERATION_NUMBER_REQUIRED, BANK_TRANSFER_ORIGIN_ACCOUNT_REQUIRED, BANK_TRANSFER_HOLDER_NAME_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_REQUIRED, BANK_TRANSFER_INVOICES_REQUIRED, BANK_TRANSFER_CURRENCY_REQUIRED, BANK_TRANSFER_RECEIPT_FILE_TYPE_NOT_ALLOWED, BANK_TRANSFER_RECEIPT_FILE_CONTENT_MISMATCH), "
             + "RECEIPT_INVOICE_CURRENCY_MISMATCH, RECEIPT_INVOICE_NOT_PAYABLE, IDEMPOTENCY_KEY_INVALID";
 
     private final SubmitBankTransferReceiptUseCase submitBankTransferReceiptUseCase;
@@ -85,6 +86,12 @@ public class BankTransferReceiptSubmissionController {
     }
 
     private static Money moneyOf(BigDecimal declaredAmount, Currency currency) {
-        return declaredAmount == null ? null : Money.of(declaredAmount, currency == null ? Currency.ARS : currency);
+        if (declaredAmount == null) {
+            return null;
+        }
+        if (currency == null) {
+            throw BankTransferDetailsRequiredException.currencyRequired();
+        }
+        return Money.of(declaredAmount, currency);
     }
 }

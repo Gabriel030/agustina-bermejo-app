@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@PolicyRule(violationCodes = {"INVOICE_ALREADY_UNDER_REVIEW", "RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST"}, decisions = {"D-153", "D-260"})
+@PolicyRule(violationCodes = {"INVOICE_ALREADY_UNDER_REVIEW", "RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST"}, decisions = {"D-153", "D-260", "D-329"})
 public final class ReceiptCoversOldestInvoicesFirstPolicy implements Policy<BankTransferReceiptRegistrationCheck> {
 
     @Override
@@ -23,8 +23,10 @@ public final class ReceiptCoversOldestInvoicesFirstPolicy implements Policy<Bank
         if (check.selectedInvoices().stream().anyMatch(ReceiptInvoiceFact::isUnderReview)) {
             return PolicyVerdict.deny(ruleName(), "INVOICE_ALREADY_UNDER_REVIEW", "La factura ya está en revisión por otro comprobante.");
         }
-        List<ReceiptInvoiceFact> selectable = BankTransferReceiptSelectionPlanner.selectableInOrder(check.openInvoicesOfAccount());
-        Set<Long> selectedIds = check.selectedInvoices().stream().map(ReceiptInvoiceFact::invoiceId).collect(Collectors.toSet());
+        List<ReceiptInvoiceFact> selectable = BankTransferReceiptSelectionPlanner.selectableInOrder(check.openInvoicesOfAccount()).stream()
+                .filter(invoice -> !invoice.programAdmission()).toList();
+        Set<Long> selectedIds = check.selectedInvoices().stream().filter(invoice -> !invoice.programAdmission()).map(ReceiptInvoiceFact::invoiceId)
+                .collect(Collectors.toSet());
         Set<Long> oldestPrefixIds = selectable.stream().limit(selectedIds.size()).map(ReceiptInvoiceFact::invoiceId).collect(Collectors.toSet());
         return oldestPrefixIds.equals(selectedIds)
                 ? PolicyVerdict.allow(ruleName())

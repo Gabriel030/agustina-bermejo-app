@@ -171,7 +171,7 @@ public class EnrollmentFeeRequirementService {
                 invoice.filter(found -> !status.isSatisfied()).map(found -> found.getAmounts().outstandingAmount().value()).orElse(null), status.isSatisfied());
     }
 
-    private ObligationInvoiceFacts invoiceFactsOf(Invoice invoice) {
+    ObligationInvoiceFacts invoiceFactsOf(Invoice invoice) {
         return new ObligationInvoiceFacts(invoice.getPaymentStatus(),
                 receiptRepository.existsByInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW)
                         || receiptRepository.existsByCheckoutItemInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW),

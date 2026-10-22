@@ -98,6 +98,21 @@ class BankTransferReceiptSelectionPlannerTest {
     }
 
     @Test
+    @Tag("D-329")
+    void theProgramAdmissionInvoiceIsPlannedFirstSoTheDeclaredAmountCoversItBeforeAnOlderInstallment() {
+        ReceiptInvoiceFact february = invoice(1, InvoicePaymentStatus.OVERDUE, LocalDate.of(2027, 2, 10), "50000.00");
+        ReceiptInvoiceFact admission = new ReceiptInvoiceFact(2L, 7L, Currency.ARS, true, InvoicePaymentStatus.PENDING, DUE, ars("80000.00"), true);
+
+        List<PlannedCheckoutItem> items = BankTransferReceiptSelectionPlanner.planItems(List.of(february, admission), ars("80000.00"), DUE.minusDays(1), DUE.minusDays(1),
+                REAL_RULE);
+
+        assertThat(items).extracting(PlannedCheckoutItem::invoiceId).containsExactly(2L, 1L);
+        assertThat(items).extracting(PlannedCheckoutItem::position).containsExactly(1, 2);
+        assertThat(items).extracting(PlannedCheckoutItem::coveredByDeclaredAmount).containsExactly(true, false);
+        assertThat(items).extracting(PlannedCheckoutItem::protectedFromOverdue).containsExactly(true, false);
+    }
+
+    @Test
     void selectableInvoicesSkipThoseUnderReviewAndComeOldestFirst() {
         ReceiptInvoiceFact april = invoice(3, InvoicePaymentStatus.PENDING, LocalDate.of(2027, 4, 10), "80000.00");
         ReceiptInvoiceFact march = invoice(2, InvoicePaymentStatus.OVERDUE, DUE, "80000.00");
