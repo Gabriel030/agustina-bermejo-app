@@ -115,7 +115,7 @@ export function currentMonth(today = new Date()) {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function shiftMonth(month, offset) {
+export function shiftMonth(month, offset) {
   const date = monthDate(month);
   date.setUTCMonth(date.getUTCMonth() + offset);
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;

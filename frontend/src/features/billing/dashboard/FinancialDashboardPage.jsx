@@ -1,31 +1,32 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircle, Info, SlidersHorizontal, X } from 'lucide-react';
+import { AlertCircle, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
+import { MonthPicker } from '@/components/MonthPicker';
 import { PageContainer } from '@/components/PageContainer';
+import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useCourses } from '@/features/academic-structure/hooks/useCourses';
 import { usePrograms } from '@/features/academic-structure/hooks/usePrograms';
-import { useDebtors, useFinancialDashboard } from '@/features/billing/hooks/useFinancialDashboard';
+import { useDebtors, useFinancialDashboard, useFirstBillingMonth } from '@/features/billing/hooks/useFinancialDashboard';
 import { FEE_TYPE_LABELS } from '@/lib/billing';
 import { formatMoney } from '@/lib/utils';
-import { DEFAULT_RANGE, RANGE_OPTIONS, formatShortMonth, rangeFor } from './dashboardMetrics';
+import { DEFAULT_RANGE, RANGE_OPTIONS, currentMonth, formatLongMonth, rangeFor, shiftMonth } from './dashboardMetrics';
 import { DASHBOARD_TABS, FINANCIAL_PANELS } from './financialPanels';
 import { MonthKpis, TodayKpis } from './KpiBlocks';
+import { ALL_SCOPE, OfferCombobox } from './OfferCombobox';
 import { MetricPanel } from './MetricPanel';
 
 const ALL_TYPES = 'ALL';
-const ALL_SCOPE = 'ALL';
 const INVOICE_TYPE_OPTIONS = [
   { value: ALL_TYPES, label: 'Todos los tipos' },
   ...Object.entries(FEE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
@@ -52,68 +53,6 @@ function FilterSelect({ id, label, value, onChange, options }) {
               {option.label}
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function OfferSelect({ value, onChange, programs, courses }) {
-  const loading = programs.isLoading || courses.isLoading;
-  const empty = !loading && !programs.data?.length && !courses.data?.length;
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <div className="flex items-center gap-1.5">
-        <Label htmlFor="offer" className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
-          Oferta
-        </Label>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" aria-label="Qué limita la oferta" className="text-ink-faint hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <Info className="size-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Limita los números a una carrera o a un curso.</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id="offer" className="h-10 w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent position="popper" className="max-h-72 bg-dialog-bg">
-          <SelectItem value={ALL_SCOPE}>Todas las ofertas</SelectItem>
-          {loading && (
-            <SelectItem value="loading" disabled>
-              Cargando ofertas…
-            </SelectItem>
-          )}
-          {empty && (
-            <SelectItem value="empty" disabled>
-              No hay carreras ni cursos cargados
-            </SelectItem>
-          )}
-          {!!programs.data?.length && (
-            <SelectGroup>
-              <SelectLabel>Carreras</SelectLabel>
-              {programs.data.map((program) => (
-                <SelectItem key={`program:${program.id}`} value={`program:${program.id}`}>
-                  {program.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          )}
-          {!!courses.data?.length && (
-            <SelectGroup>
-              <SelectLabel>Cursos</SelectLabel>
-              {courses.data.map((course) => (
-                <SelectItem key={`course:${course.id}`} value={`course:${course.id}`}>
-                  {course.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          )}
         </SelectContent>
       </Select>
     </div>
@@ -261,7 +200,13 @@ export function FinancialDashboardPage() {
 
   const currencies = (dashboard.data?.totalsByCurrency ?? []).map((totals) => totals.totalDebt?.currency).filter(Boolean);
   const currency = pickedCurrency ?? currencies[0];
-  const { from, to } = rangeFor(range);
+  const { from: rangeFrom, to } = rangeFor(range);
+  const firstMonth = useFirstBillingMonth();
+  const earliestMonth = firstMonth.data?.month ?? undefined;
+  const noBilling = firstMonth.isSuccess && !firstMonth.data?.month;
+  const month = pickedMonth ?? to;
+  const extendedRange = pickedMonth !== null && pickedMonth < rangeFrom;
+  const from = extendedRange ? shiftMonth(pickedMonth, -1) : rangeFrom;
   const [scopeKind, scopeId] = scope.split(':');
   const offerName = (scopeKind === 'program' ? programs.data : courses.data)?.find((offer) => String(offer.id) === scopeId)?.name;
   const scopeLabel = scope === ALL_SCOPE ? null : `${scopeKind === 'program' ? 'Carrera' : 'Curso'}: ${offerName ?? '…'}`;
@@ -273,25 +218,18 @@ export function FinancialDashboardPage() {
     programId: scopeKind === 'program' ? scopeId : undefined,
     courseId: scopeKind === 'course' ? scopeId : undefined,
   };
-  const months = [];
-  for (let month = from; month <= to; month = nextMonth(month)) months.push(month);
-  const month = pickedMonth && months.includes(pickedMonth) ? pickedMonth : to;
   const activeFilters = [range !== DEFAULT_RANGE, invoiceType !== ALL_TYPES, scope !== ALL_SCOPE].filter(Boolean).length;
 
   const toolbar = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-      <Select value={month} onValueChange={setPickedMonth}>
-        <SelectTrigger aria-label="Mes" className="h-10 min-w-0 flex-1 font-semibold sm:w-32 sm:flex-none">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent position="popper" className="bg-dialog-bg">
-          {[...months].reverse().map((value) => (
-            <SelectItem key={value} value={value}>
-              {formatShortMonth(value)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <MonthPicker
+        value={month}
+        onChange={setPickedMonth}
+        minMonth={earliestMonth}
+        maxMonth={currentMonth()}
+        disabled={noBilling}
+        className="flex-1 sm:w-52 sm:flex-none"
+      />
       {currencies.length > 1 && (
         <ToggleGroup
           type="single"
@@ -320,7 +258,7 @@ export function FinancialDashboardPage() {
         <PopoverContent align="end" className="flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-4 bg-dialog-bg p-4">
           <FilterSelect id="range" label="Período" value={range} onChange={setRange} options={RANGE_OPTIONS} />
           <FilterSelect id="invoice-type" label="Tipo de factura" value={invoiceType} onChange={setInvoiceType} options={INVOICE_TYPE_OPTIONS} />
-          <OfferSelect value={scope} onChange={setScope} programs={programs} courses={courses} />
+          <OfferCombobox value={scope} onChange={setScope} programs={programs} courses={courses} selectedName={offerName} />
           {activeFilters > 0 && (
             <Button
               variant="ghost"
@@ -350,6 +288,12 @@ export function FinancialDashboardPage() {
         </>
       ) : (
         <Skeleton className="h-40 w-full" />
+      )}
+
+      {ready && extendedRange && (
+        <StatusPill tone="warning" className="self-start">
+          Rango ampliado para incluir {formatLongMonth(pickedMonth)}
+        </StatusPill>
       )}
 
       {ready && (
@@ -382,9 +326,4 @@ export function FinancialDashboardPage() {
       {isDirector && <DebtorsSection />}
     </PageContainer>
   );
-}
-
-function nextMonth(month) {
-  const [year, number] = month.split('-').map(Number);
-  return number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`;
 }
