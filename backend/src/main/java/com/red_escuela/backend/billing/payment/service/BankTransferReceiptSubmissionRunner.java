@@ -10,8 +10,6 @@ import com.red_escuela.backend.billing.payment.operation.SubmitBankTransferRecei
 import com.red_escuela.backend.billing.payment.operation.SubmitBankTransferReceiptOperation;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptFileCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRejections;
-import com.red_escuela.backend.shared.domain.Currency;
-import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import org.springframework.stereotype.Component;
@@ -47,10 +45,8 @@ public class BankTransferReceiptSubmissionRunner {
             filePolicies.evaluateRulesUntilFirstViolation(new BankTransferReceiptFileCheck(request.file().getContentType(), ReceiptFileSignature.detectContentType(content)))
                     .throwIfDenied(BankTransferReceiptRejections::rejectionOf);
         }
-        Currency currency = request.currency() == null ? Currency.ARS : request.currency();
-        Money declaredAmount = request.declaredAmount() == null ? null : Money.of(request.declaredAmount(), currency);
         ReceiptFileStorage storage = content == null ? null : ownerStudentId -> fileStorage.store(ownerStudentId, RECEIPT_FOLDER, request.file());
-        SubmitBankTransferReceiptCommand command = new SubmitBankTransferReceiptCommand(studentId, request.invoiceIds(), declaredAmount, request.transferDate(),
+        SubmitBankTransferReceiptCommand command = new SubmitBankTransferReceiptCommand(studentId, request.invoiceIds(), request.declaredAmount(), request.transferDate(),
                 request.operationNumber(), request.originAccount(), request.holderName(), request.bankName(), content == null ? null : sha256Of(content), storage,
                 idempotencyKey, actorResolver.currentPersonAsActor());
         return pipeline.runOperation(operation, command).resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
