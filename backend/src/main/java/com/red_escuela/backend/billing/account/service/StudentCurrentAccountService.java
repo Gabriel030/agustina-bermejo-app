@@ -115,6 +115,11 @@ public class StudentCurrentAccountService {
         return persist(lockedAccount, lockedAccount.recordRefundPaidDebit(refundId, amount, effectiveDate, concept));
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<CurrentAccountEntry> findPaymentCreditNotYetReversed(Long paymentId) {
+        return entryRepository.findPaymentCreditNotYetReversed(paymentId);
+    }
+
     public boolean isCreditNoteBookedInLedger(Long creditNoteId) {
         return entryRepository.existsByCreditNoteId(creditNoteId);
     }
