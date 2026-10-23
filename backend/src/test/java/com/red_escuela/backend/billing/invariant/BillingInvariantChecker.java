@@ -16,6 +16,7 @@ public final class BillingInvariantChecker {
     private final long baselineAccountId;
     private final long baselineEntryId;
     private final long baselineReminderId;
+    private final long baselineDeliveryId;
 
     private static final String ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES =
             "(a.id > ? or exists (select 1 from current_account_entry x where x.student_current_account_id = a.id and x.id > ?))";
@@ -24,7 +25,8 @@ public final class BillingInvariantChecker {
             "(i.id > ? or exists (select 1 from student_current_account a where a.id = i.student_current_account_id and "
                     + ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES + "))";
 
-    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId, long baselineReminderId) {
+    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId, long baselineReminderId,
+                                      long baselineDeliveryId) {
         this.jdbc = jdbc;
         this.baselineEnrollmentId = baselineEnrollmentId;
         this.baselineInvoiceId = baselineInvoiceId;
@@ -32,6 +34,7 @@ public final class BillingInvariantChecker {
         this.baselineAccountId = baselineAccountId;
         this.baselineEntryId = baselineEntryId;
         this.baselineReminderId = baselineReminderId;
+        this.baselineDeliveryId = baselineDeliveryId;
     }
 
     public static BillingInvariantChecker startingNow(JdbcTemplate jdbc) {
@@ -41,7 +44,8 @@ public final class BillingInvariantChecker {
         Long maxAccount = jdbc.queryForObject("select coalesce(max(id), 0) from student_current_account", Long.class);
         Long maxEntry = jdbc.queryForObject("select coalesce(max(id), 0) from current_account_entry", Long.class);
         Long maxReminder = jdbc.queryForObject("select coalesce(max(id), 0) from collection_reminder", Long.class);
-        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry, maxReminder);
+        Long maxDelivery = jdbc.queryForObject("select coalesce(max(id), 0) from notification_delivery", Long.class);
+        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry, maxReminder, maxDelivery);
     }
 
     public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlot() {
@@ -567,6 +571,16 @@ public final class BillingInvariantChecker {
                 """, baselineReminderId);
     }
 
+    public List<String> noEmailIsSentTwice() {
+        return violations("I-R4 the same email was sent more than once", """
+                select 'recipient ' || d.recipient_person_id || ' ' || d.related_entity_type || ' ' || d.related_entity_id || ' sent ' || count(*) || ' times'
+                from notification_delivery d
+                where d.id > ? and d.channel = 'EMAIL' and d.status in ('SENT', 'SENT_SIMULATED') and d.related_entity_id is not null
+                group by d.recipient_person_id, d.related_entity_type, d.related_entity_id, d.subject, md5(d.body_text)
+                having count(*) > 1
+                """, baselineDeliveryId);
+    }
+
     public List<String> reminderNoticesAreNotPlannedForSettledInvoicesOn(LocalDate day) {
         return violations("I-R2 notice planned for an invoice that was settled, cancelled or under review that day", """
                 select 'reminder ' || r.id || ' day ' || r.business_date || ' ' || m.channel || ' invoice ' || i.id || ' ' || i.payment_status
@@ -616,6 +630,7 @@ public final class BillingInvariantChecker {
         all.addAll(lateFeesRespectTheRedefinedI11());
         all.addAll(noLateFeeDebitNoteStaysLiveOverACancelledInstallment());
         all.addAll(atMostOneDigestPerStudentDayAndChannel());
+        all.addAll(noEmailIsSentTwice());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }

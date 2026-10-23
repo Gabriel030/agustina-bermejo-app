@@ -85,7 +85,7 @@ class ReminderDigestDomainTest {
 
     @Test
     void aNoticeFromAnInvoiceOutsideTheListedDebtIsRejected() {
-        ReminderDueNotice stray = new ReminderDueNotice(9L, "x", ReminderMessageType.AFTER_DUE_REMINDER);
+        ReminderDueNotice stray = ReminderDueNotice.of(9L, "x", ReminderMessageType.AFTER_DUE_REMINDER);
 
         assertThatThrownBy(() -> ReminderDigestAssembler.assembleDigestOf(7L, DUE, List.of(), List.of(stray), List.of(), Map.of(), ReminderDigestMode.DAILY_DIGEST, List.of()))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("9");
