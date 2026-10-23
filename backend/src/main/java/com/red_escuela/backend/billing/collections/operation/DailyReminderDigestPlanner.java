@@ -83,6 +83,11 @@ public final class DailyReminderDigestPlanner {
         return ReminderDigestAssembler.assembleDigestOf(student.studentId(), businessDate, debt, inAppNotices, emailNotices, student.creditByCurrency(), mode, suppressed);
     }
 
+    public static boolean sendsReminders(ReminderInvoiceFact fact) {
+        return ELIGIBLE_INVOICE.evaluateRule(withoutPaymentReview(fact)).allowed() && RECEIPT_UNDER_REVIEW.evaluateRule(fact).allowed()
+                && PENDING_CANCELLATION.evaluateRule(fact).allowed();
+    }
+
     private static ReminderInvoiceFact withoutPaymentReview(ReminderInvoiceFact fact) {
         return fact.paymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW ? fact.withPaymentStatus(InvoicePaymentStatus.PENDING) : fact;
     }
