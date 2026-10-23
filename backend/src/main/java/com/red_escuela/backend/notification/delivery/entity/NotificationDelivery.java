@@ -145,6 +145,21 @@ public class NotificationDelivery {
         this.notBefore = notBefore;
     }
 
+    public void deferTo(String reason, LocalDate newScheduledFor, Instant notBefore) {
+        Objects.requireNonNull(newScheduledFor, "newScheduledFor");
+        defer(reason, notBefore);
+        this.scheduledFor = newScheduledFor;
+    }
+
+    public void replaceEmailContent(DeliveryContent content) {
+        if (!status.isWaitingForDispatch()) {
+            throw new IllegalNotificationDeliveryStatusTransitionException(status, DeliveryEvent.DEFER);
+        }
+        this.subject = content.subject();
+        this.bodyText = content.bodyText();
+        this.bodyHtml = content.bodyHtml();
+    }
+
     public void discard(String reason) {
         moveTo(DeliveryEvent.DISCARD, reason);
     }

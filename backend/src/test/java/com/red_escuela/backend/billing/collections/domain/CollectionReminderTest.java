@@ -27,10 +27,10 @@ class CollectionReminderTest {
     private static PlannedReminderMessage message(PlannedReminderFormat format, PlannedReminderNoticeType type, int priority, boolean precedesDueDate) {
         Money balance = Money.of(new BigDecimal("100000.00"), Currency.ARS);
         PlannedReminderLine line = new PlannedReminderLine(5L, null, PlannedReminderInvoiceKind.MONTHLY_INSTALLMENT, false, LocalDate.of(2027, 3, 11), balance, false,
-                precedesDueDate, List.of(new PlannedReminderNotice("before-due", type)), 10L, 11L, 12L, 13L);
+                precedesDueDate, List.of(new PlannedReminderNotice("before-due", type)), 10L, 11L, 12L, 13L, null);
         PlannedReminderBlock block = new PlannedReminderBlock(Currency.ARS, List.of(line), balance, Money.of(new BigDecimal("30000.00"), Currency.ARS), 5L,
                 Money.of(new BigDecimal("70000.00"), Currency.ARS));
-        return new PlannedReminderMessage(format, type, priority, precedesDueDate, List.of(block));
+        return new PlannedReminderMessage(format, type, priority, precedesDueDate, List.of(block), null);
     }
 
     @Test

@@ -21,6 +21,9 @@ import com.red_escuela.backend.billing.configuration.usecase.ValidateBillingConf
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSettings;
+import com.red_escuela.backend.notification.delivery.domain.EmailDispatchWindow;
+import com.red_escuela.backend.notification.delivery.service.EmailDispatchSettingsSource;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -71,6 +74,8 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     private ConfigurationVersionActivator activator;
     @Autowired
     private BillingConfigurationReader reader;
+    @Autowired
+    private EmailDispatchSettingsSource dispatchSettingsSource;
     @Autowired
     private PersonRepository personRepository;
     @Autowired
@@ -190,6 +195,21 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
         assertThat(versionOf(requestId).getStatus()).isEqualTo(ConfigurationVersionStatus.EFFECTIVE);
         assertThat(capOn(MARCH_FOURTH)).isEqualTo(280);
         assertThat(history.listVersionHistory(TOPIC)).extracting(ConfigurationVersion::getStatus).first().isEqualTo(ConfigurationVersionStatus.EFFECTIVE);
+    }
+
+    @Test
+    @Tag("D-343")
+    @Tag("D-351")
+    void theDispatchJobReadsTheCapAndTheWindowOfTheVersionEffectiveThatDay() {
+        authenticateAs(administrative);
+        Long requestId = proposeAwaiting(withDailyCap(280), MARCH_FOURTH);
+        authenticateAs(director);
+        approveRequest.approve(requestId, "de acuerdo");
+        MutableClock.INSTANCE.setDate(MARCH_FOURTH);
+        activator.activateDueVersions();
+
+        assertThat(dispatchSettingsSource.settingsEffectiveOn(MARCH_THIRD)).isEqualTo(new EmailDispatchSettings(EmailDispatchWindow.STANDARD, 250));
+        assertThat(dispatchSettingsSource.settingsEffectiveOn(MARCH_FOURTH)).isEqualTo(new EmailDispatchSettings(EmailDispatchWindow.STANDARD, 280));
     }
 
     @Test

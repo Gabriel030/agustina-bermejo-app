@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.collections.operation;
 import com.red_escuela.backend.billing.collections.domain.CollectionReminder;
 import com.red_escuela.backend.billing.collections.domain.DailyReminderDigest;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
+import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.ReminderDigestMode;
 import com.red_escuela.backend.billing.collections.repository.CollectionReminderRepository;
 import com.red_escuela.backend.billing.collections.service.StudentReminderContext;
@@ -36,7 +37,7 @@ public class StudentCollectionReminderPlanner {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public StudentPlanningOutcome planReminderOfStudentOn(StudentReminderContext context, Map<Long, ResolvedReminderSchedule> schedulesByInvoiceId, LocalDate businessDate,
-                                                          NonBusinessDays nonBusinessDays, ReminderDigestMode mode) {
+                                                          NonBusinessDays nonBusinessDays, ReminderDigestMode mode, ReminderContentTerms terms) {
         if (reminderRepository.existsByStudentIdAndBusinessDate(context.studentId(), businessDate)) {
             return StudentPlanningOutcome.ALREADY_PLANNED;
         }
@@ -44,12 +45,12 @@ public class StudentCollectionReminderPlanner {
         if (digest.hasNothingToSend() && digest.suppressed().isEmpty()) {
             return StudentPlanningOutcome.NOTHING_TO_SEND;
         }
-        List<PlannedReminderMessage> inAppMessages = CollectionReminderPlannedEventFactory.inAppMessagesOf(digest);
-        List<PlannedReminderMessage> emailMessages = CollectionReminderPlannedEventFactory.emailMessagesOf(digest);
+        List<PlannedReminderMessage> inAppMessages = CollectionReminderPlannedEventFactory.inAppMessagesOf(digest, terms);
+        List<PlannedReminderMessage> emailMessages = CollectionReminderPlannedEventFactory.emailMessagesOf(digest, terms);
         CollectionReminder saved = reminderRepository.saveAndFlush(CollectionReminder.recordPlannedFor(context.studentId(), businessDate, inAppMessages, emailMessages,
                 digest.suppressed()));
         if (!digest.hasNothingToSend()) {
-            eventPublisher.publishEvent(CollectionReminderPlannedEventFactory.plannedEventOf(saved.getId(), context.personId(), digest));
+            eventPublisher.publishEvent(CollectionReminderPlannedEventFactory.plannedEventOf(saved.getId(), context.personId(), digest, terms));
         }
         recordMetrics(inAppMessages, emailMessages, digest);
         log.info("Recordatorio de cobranza planificado: alumno={}, fecha={}, mensajesApp={}, mensajesMail={}, suprimidos={}", context.studentId(), businessDate,

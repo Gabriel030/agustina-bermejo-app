@@ -64,7 +64,7 @@ class CollectionReminderPlanningStepTest {
     void aUniqueIndexViolationCountsAsAlreadyPlannedAndNotAsFailure() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L));
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("duplicate", new ConstraintViolationException("duplicate", new SQLException("duplicate key", "23505"), "uq_collection_reminder_student_day")));
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("duplicate", new ConstraintViolationException("duplicate", new SQLException("duplicate key", "23505"), "uq_collection_reminder_student_day")));
 
         CollectionReminderPlanningResult result = step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L));
 
@@ -78,7 +78,7 @@ class CollectionReminderPlanningStepTest {
     void anyOtherConstraintViolationCountsAsAFailureWithItsError() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L));
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("not empty",
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any())).thenThrow(new DataIntegrityViolationException("not empty",
                 new ConstraintViolationException("not empty", new SQLException("check violated", "23514"), "ck_collection_reminder_not_empty")));
 
         CollectionReminderPlanningResult result = step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L));
@@ -93,7 +93,7 @@ class CollectionReminderPlanningStepTest {
     void aCandidateWithoutLoadedFactsIsAFailureWithItsError() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L, 2L));
         when(factsLoader.loadContextsOf(any(), eq(BUSINESS_DATE))).thenReturn(List.of(contextOf(2L)));
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
 
         CollectionReminderPlanningResult result = step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L, 2L));
 
@@ -107,7 +107,7 @@ class CollectionReminderPlanningStepTest {
     void aStudentWithoutAResolvedScheduleFailsAloneAndTheSweepContinues() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L, 2L));
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any()))
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new IllegalArgumentException("The invoice 9 has no resolved reminder schedule"))
                 .thenReturn(StudentPlanningOutcome.PLANNED);
 
@@ -125,7 +125,7 @@ class CollectionReminderPlanningStepTest {
         when(factsLoader.findCandidateStudentIdsAfter(eq(7L), anyInt())).thenReturn(List.of(9L));
         when(factsLoader.findCandidateStudentIdsAfter(eq(9L), anyInt())).thenReturn(List.of());
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.NOTHING_TO_SEND);
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.NOTHING_TO_SEND);
 
         CollectionReminderPlanningResult result = step.planCollectionReminders(BUSINESS_DATE);
 
@@ -138,7 +138,7 @@ class CollectionReminderPlanningStepTest {
     void theDailyDigestFlagOfTheSettingsOfTheDaySelectsTheDigestMode() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L));
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
         CollectionReminderSettings initial = CollectionReminderSettings.initial();
         CollectionReminderSettings withoutDigest = new CollectionReminderSettings(initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(),
                 initial.emailWindowStart(), initial.emailWindowEnd(), initial.dailyEmailCap(), initial.contactListDaysOverdue(), initial.contactListOverdueInstallments(), false);
@@ -149,7 +149,7 @@ class CollectionReminderPlanningStepTest {
         step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L));
 
         ArgumentCaptor<ReminderDigestMode> modes = ArgumentCaptor.forClass(ReminderDigestMode.class);
-        verify(studentPlanner, org.mockito.Mockito.times(2)).planReminderOfStudentOn(any(), any(), any(), any(), modes.capture());
+        verify(studentPlanner, org.mockito.Mockito.times(2)).planReminderOfStudentOn(any(), any(), any(), any(), modes.capture(), any());
         assertThat(modes.getAllValues()).containsExactly(ReminderDigestMode.SEPARATE_MESSAGES, ReminderDigestMode.DAILY_DIGEST);
     }
 
@@ -158,12 +158,12 @@ class CollectionReminderPlanningStepTest {
     void theCalendarOfTheRunCarriesWeekendsAndHolidaysAroundTheBusinessDate() {
         when(factsLoader.findCandidateStudentIdsAmong(any())).thenReturn(List.of(1L));
         everyCandidateHasFacts();
-        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
+        when(studentPlanner.planReminderOfStudentOn(any(), any(), any(), any(), any(), any())).thenReturn(StudentPlanningOutcome.PLANNED);
 
         step.planCollectionRemindersOf(BUSINESS_DATE, List.of(1L));
 
         ArgumentCaptor<NonBusinessDays> calendars = ArgumentCaptor.forClass(NonBusinessDays.class);
-        verify(studentPlanner).planReminderOfStudentOn(any(), any(), any(), calendars.capture(), any());
+        verify(studentPlanner).planReminderOfStudentOn(any(), any(), any(), calendars.capture(), any(), any());
         NonBusinessDays calendar = calendars.getValue();
         assertThat(calendar.isBusinessDay(HOLIDAY)).isFalse();
         assertThat(calendar.isBusinessDay(LocalDate.of(2027, 3, 6))).isFalse();
