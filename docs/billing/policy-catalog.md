@@ -94,6 +94,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 2 | ReceiptUnderReviewSuppressesReminderPolicy | RECEIPT_UNDER_REVIEW | D-346, D-186 |
 | 3 | PendingCancellationSuppressesReminderPolicy | PENDING_CANCELLATION_REQUEST | D-247, D-354 |
 
+## Momento COLLECTION_REMINDER_PRIOR_DEBT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | NewInstallmentWaitsForPriorDebtPolicy | NEW_INSTALLMENT_WAITS_FOR_PRIOR_DEBT | D-347 |
+
 ## Momento COLLECTION_REMINDER_SCHEDULE
 
 | Orden | Policy | Códigos de violación | Decisiones |

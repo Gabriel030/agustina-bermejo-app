@@ -70,7 +70,7 @@ class PlannedReminderMessageTest {
         PlannedReminderMessage filtered = message.withoutLinesPrecedingTheirDueDate().orElseThrow();
 
         assertThat(filtered.leadNoticeType()).isEqualTo(PlannedReminderNoticeType.AFTER_ISSUE_REMINDER);
-        assertThat(filtered.priority()).isEqualTo(4);
+        assertThat(filtered.priority()).isEqualTo(5);
     }
 
     @Test
