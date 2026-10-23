@@ -2,10 +2,12 @@ package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
+import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,6 +15,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PendingTransferRejectionBridgeIT extends AbstractPendingTransferBridgeIT {
+
+    @Autowired
+    InvoiceAllocationQueryService invoiceQueries;
 
     @Test
     @Tag("D-154")
@@ -66,15 +71,21 @@ class PendingTransferRejectionBridgeIT extends AbstractPendingTransferBridgeIT {
         BankTransferReceiptSubmissionResult first = submitOn(debtor, List.of(march, april), "160000.00", "OP-PAID-IN-THE-MIDDLE-1");
         BankTransferReceiptSubmissionResult second = submitOn(debtor, List.of(may), "80000.00", "OP-PAID-IN-THE-MIDDLE-2");
         approve(second);
-        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
         assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(paymentStatusOfInvoice(may)).isEqualTo("PAID");
+        inTransaction(() -> {
+            invoiceQueries.lockInvoice(april).releasePaymentReview(TODAY, 0, actor, "Liberada por otra vía");
+            return null;
+        });
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PENDING");
 
         BankTransferReceipt rejected = reject(first, "El pago ya se aplicó por otro comprobante");
 
         assertThat(rejected.getStatus().name()).isEqualTo("REJECTED");
-        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
         assertThat(paymentStatusOfInvoice(april)).isEqualTo("PENDING");
-        assertThat(paymentStatusOfInvoice(may)).isEqualTo("PENDING");
+        assertThat(paymentStatusOfInvoice(may)).isEqualTo("PAID");
         assertThat(paymentRow(first.paymentId())).containsEntry("status", "REJECTED");
         assertThat(paymentRow(second.paymentId())).containsEntry("status", "APPROVED");
         invariants.assertAllBillingInvariantsHold();

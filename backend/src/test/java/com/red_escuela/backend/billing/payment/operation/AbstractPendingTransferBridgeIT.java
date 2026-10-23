@@ -2,7 +2,12 @@ package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
+import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.billing.payment.domain.CashPaymentPreview;
+import com.red_escuela.backend.billing.payment.domain.CashPaymentRegistrationResult;
+import com.red_escuela.backend.billing.payment.service.CashPaymentPreviewService;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
@@ -29,9 +34,29 @@ abstract class AbstractPendingTransferBridgeIT extends AbstractBankTransferRecei
     StudentRepository studentRepository;
     @Autowired
     ApplicationEvents applicationEvents;
+    @Autowired
+    RegisterCashPaymentOperation cashOperation;
+    @Autowired
+    CashPaymentPreviewService cashPreviewService;
+    @Autowired
+    CurrentAccountAllocationService allocationService;
+
+    CashPaymentPreview previewCashOf(Debtor debtor, String amount) {
+        return inTransaction(() -> cashPreviewService.previewCashPaymentOfStudent(debtor.studentId(), ars(amount)));
+    }
+
+    CashPaymentRegistrationResult registerCash(Debtor debtor, String amount, CashPaymentPreview preview) {
+        RegisterCashPaymentCommand command = new RegisterCashPaymentCommand(debtor.studentId(), ars(amount), null, null, null, preview.fingerprint(), false,
+                nextKey(), actor);
+        return ((BillingOperationOutcome.Processed<CashPaymentRegistrationResult>) pipeline.runOperation(cashOperation, command)).result();
+    }
 
     BankTransferReceipt approve(BankTransferReceiptSubmissionResult submitted) {
         return approveReceipt.approve(submitted.receiptId(), staff, PaymentVerification.none());
+    }
+
+    BankTransferReceipt approve(BankTransferReceiptSubmissionResult submitted, PaymentVerification verification) {
+        return approveReceipt.approve(submitted.receiptId(), staff, verification);
     }
 
     BankTransferReceipt reject(BankTransferReceiptSubmissionResult submitted, String reason) {

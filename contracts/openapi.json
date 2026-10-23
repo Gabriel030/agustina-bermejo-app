@@ -3499,6 +3499,16 @@
         "required" : [ "studentsInDebt", "studentsUpToDate", "totalsByCurrency" ],
         "type" : "object"
       },
+      "FirstBillingMonthResponse" : {
+        "properties" : {
+          "month" : {
+            "pattern" : "^\\d{4}-\\d{2}$",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "month" ],
+        "type" : "object"
+      },
       "ForgotPasswordRequest" : {
         "properties" : {
           "email" : {
@@ -10769,6 +10779,66 @@
           }
         },
         "tags" : [ "billing-configuration-alert-controller" ]
+      }
+    },
+    "/billing/metrics/first-month" : {
+      "get" : {
+        "operationId" : "BillingMetrics_getFirstMonth",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FirstBillingMonthResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-metrics-controller" ]
       }
     },
     "/billing/metrics/{panel}" : {

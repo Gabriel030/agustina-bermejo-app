@@ -34,7 +34,7 @@ class InvoiceIssuingTimelineIT extends AbstractInvoiceIssuingIT {
         var scholar = factory.newLearner(offering, null);
         var promoted = factory.newLearner(offering, null);
         factory.grantScholarship(offering, scholar, Percentage.ofPoints(new BigDecimal("50")), YearMonth.of(2027, 3), YearMonth.of(2027, 4));
-        factory.redeemPromotion(offering, promoted, FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("25")), 3);
+        factory.acquireCohortPromotion(offering, promoted, FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("25")), 3);
         List<BigDecimal> plainTotals = new ArrayList<>();
         List<BigDecimal> scholarTotals = new ArrayList<>();
         List<BigDecimal> promotedTotals = new ArrayList<>();

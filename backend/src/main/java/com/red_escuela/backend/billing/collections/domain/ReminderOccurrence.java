@@ -21,6 +21,12 @@ public record ReminderOccurrence(Long invoiceId, String noticeKey, ReminderMessa
         channels = channels == null || channels.isEmpty() ? EnumSet.noneOf(ReminderChannel.class) : EnumSet.copyOf(channels);
     }
 
+    public ReminderOccurrence withChannel(ReminderChannel channel) {
+        EnumSet<ReminderChannel> extended = channels.isEmpty() ? EnumSet.noneOf(ReminderChannel.class) : EnumSet.copyOf(channels);
+        extended.add(channel);
+        return new ReminderOccurrence(invoiceId, noticeKey, messageType, extended, date, dueDate);
+    }
+
     public boolean sendsEmail() {
         return channels.contains(ReminderChannel.EMAIL);
     }

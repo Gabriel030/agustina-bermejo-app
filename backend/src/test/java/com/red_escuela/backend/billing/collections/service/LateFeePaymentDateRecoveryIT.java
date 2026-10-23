@@ -182,6 +182,7 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @Tag("D-153")
+    @Tag("D-261")
     void annulmentWaitsWhileTheDebitNoteIsUnderReviewAndRetriesOnDecision(boolean approved) {
         int year = approved ? 2503 : 2504;
         Invoice origin = installmentWithMarchClosed(year, 0);
@@ -202,7 +203,8 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
         MutableClock.INSTANCE.setDate(d(year, 4, 5));
         if (approved) {
             receiveMoney(origin, "4000.00", d(year, 4, 5));
-            allocateOn(origin, d(year, 4, 5));
+            transactionTemplate.executeWithoutResult(status -> allocationService.allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(
+                    accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), d(year, 4, 5), ACTOR, java.util.Set.of(), java.util.Set.of(debitNoteId)));
         } else {
             transactionTemplate.executeWithoutResult(status -> {
                 Invoice reviewed = invoiceRepository.findByIdForUpdate(debitNoteId).orElseThrow();

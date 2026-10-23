@@ -86,6 +86,7 @@ class LateFeeCorrectionBackupIT extends AbstractLateFeeCorrectionIT {
 
     @Test
     @Tag("D-153")
+    @Tag("D-261")
     void aDebitNoteUnderPaymentReviewWaitsAndTheApprovedReceiptCorrectsItAsFreeCredit() {
         Invoice origin = aprilDebitNoteOrigin(2170);
         Long debitNoteId = debitNoteIdOf(origin, 0);
@@ -100,7 +101,8 @@ class LateFeeCorrectionBackupIT extends AbstractLateFeeCorrectionIT {
 
         MutableClock.INSTANCE.setDate(d(2170, 5, 6));
         receiveMoney(origin, "103800.00", d(2170, 5, 6));
-        allocateOn(origin, d(2170, 5, 6));
+        transactionTemplate.executeWithoutResult(status -> allocationService.allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(
+                accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), d(2170, 5, 6), ACTOR, java.util.Set.of(), java.util.Set.of(debitNoteId)));
         awaitEventsDrained();
 
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, debitNoteId)).isEqualTo("PAID");

@@ -455,7 +455,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
     void aRealDuplicateOfStudentAndDayIsReportedByTheDatabaseWithTheNameOfItsUniqueConstraint() {
         Student student = newStudent();
         PlannedReminderMessage message = new PlannedReminderMessage(PlannedReminderFormat.OWN_NOTICE, com.red_escuela.backend.billing.events.PlannedReminderNoticeType.ISSUANCE_NOTICE, 1,
-                false, List.of());
+                false, List.of(), null);
         reminderRepository.saveAndFlush(CollectionReminder.recordPlannedFor(student.getId(), MARCH_FIRST, List.of(message), List.of(), List.of()));
 
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() -> reminderRepository.saveAndFlush(

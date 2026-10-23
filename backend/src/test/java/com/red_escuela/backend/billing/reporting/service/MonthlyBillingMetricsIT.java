@@ -105,14 +105,14 @@ class MonthlyBillingMetricsIT extends AbstractMonthlyMetricsIT {
         }
         for (int i = 0; i < 2; i++) {
             seedInvoice(arsAccountId, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
-                    firstOfMarch.plusDays(9), "PENDING", "100000.00", "40000.00", "PROMOTION");
+                    firstOfMarch.plusDays(9), "PENDING", "100000.00", "40000.00", "COHORT_PROMOTION");
         }
         seedManyInvoices(15, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch, "100000.00");
 
         JsonNode body = metric(directorToken, "discounts", "from=2022-03&to=2022-03&currency=ARS");
 
         assertThat(seriesOf(body, "amount.SCHOLARSHIP").get("values").get(0).get("amount").asText()).isEqualTo("120000.00");
-        assertThat(seriesOf(body, "amount.PROMOTION").get("values").get(0).get("amount").asText()).isEqualTo("80000.00");
+        assertThat(seriesOf(body, "amount.COHORT_PROMOTION").get("values").get(0).get("amount").asText()).isEqualTo("80000.00");
         assertThat(seriesOf(body, "count.SCHOLARSHIP").get("values").get(0).asLong()).isEqualTo(3);
         assertThat(seriesOf(body, "totalForegone").get("values").get(0).get("amount").asText()).isEqualTo("200000.00");
         assertThat(seriesOf(body, "percentOfGross").get("values").get(0).decimalValue()).isEqualByComparingTo("10");

@@ -62,6 +62,7 @@ public class ReminderFactsQuery {
         return jdbc.query("""
                 select a.student_id, i.id, i.origin_invoice_id, i.document_type, i.invoice_type, i.document_status, i.payment_status, i.issue_date, i.due_date,
                        i.currency, i.outstanding_amount,
+                       (select l.amount from invoice_line l where l.invoice_id = i.id order by l.id limit 1) as final_price,
                        (select min(l.program_enrollment_id) from invoice_line l where l.invoice_id = i.id) as program_enrollment_id,
                        (select min(l.course_enrollment_id) from invoice_line l where l.invoice_id = i.id) as course_enrollment_id,
                        exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW') as receipt_under_review,
@@ -80,7 +81,7 @@ public class ReminderFactsQuery {
                         rs.getString("invoice_type"), rs.getString("document_status"), rs.getString("payment_status"), rs.getObject("issue_date", LocalDate.class),
                         rs.getObject("due_date", LocalDate.class), rs.getString("currency"), rs.getBigDecimal("outstanding_amount"),
                         (Long) rs.getObject("program_enrollment_id"), (Long) rs.getObject("course_enrollment_id"), rs.getBoolean("receipt_under_review"),
-                        rs.getBoolean("open_cancellation_request"), rs.getBoolean("issued_after_previous_run")));
+                        rs.getBoolean("open_cancellation_request"), rs.getBoolean("issued_after_previous_run"), rs.getBigDecimal("final_price")));
     }
 
     public List<CreditRow> findUnallocatedCreditOf(Collection<Long> studentIds) {
@@ -102,7 +103,7 @@ public class ReminderFactsQuery {
 
     public record OpenInvoiceRow(Long studentId, Long invoiceId, Long originInvoiceId, String documentType, String invoiceType, String documentStatus, String paymentStatus,
                                  LocalDate issueDate, LocalDate dueDate, String currency, BigDecimal outstandingAmount, Long programEnrollmentId, Long courseEnrollmentId,
-                                 boolean receiptUnderReview, boolean openCancellationRequest, boolean issuedAfterPreviousRun) {
+                                 boolean receiptUnderReview, boolean openCancellationRequest, boolean issuedAfterPreviousRun, BigDecimal finalPrice) {
     }
 
     public record CreditRow(Long studentId, String currency, BigDecimal amount) {

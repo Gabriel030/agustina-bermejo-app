@@ -1,8 +1,10 @@
 package com.red_escuela.backend.billing.account.domain;
 
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -15,6 +17,23 @@ public final class ProgramAdmissionInvoicePaidFirstAllocationStrategy implements
     public ProgramAdmissionInvoicePaidFirstAllocationStrategy(AccountCreditAllocationStrategy baseOrder, Set<Long> programAdmissionInvoiceIdsBeingPaid) {
         this.baseOrder = Objects.requireNonNull(baseOrder, "baseOrder");
         this.programAdmissionInvoiceIdsBeingPaid = Set.copyOf(Objects.requireNonNull(programAdmissionInvoiceIdsBeingPaid, "programAdmissionInvoiceIdsBeingPaid"));
+    }
+
+    public static Set<Long> programAdmissionInvoiceIdsFullyCoveredByCredit(AccountCreditAllocationStrategy baseOrder, Set<Long> programAdmissionInvoiceIds,
+                                                                          NonNegativeMoney credit, List<OpenInvoiceView> openInvoices) {
+        Set<Long> covered = new LinkedHashSet<>();
+        Money remaining = credit.value();
+        for (OpenInvoiceView invoice : baseOrder.sortInAllocationOrder(openInvoices)) {
+            if (!programAdmissionInvoiceIds.contains(invoice.invoiceId()) || invoice.outstandingAmount().value().isZero()) {
+                continue;
+            }
+            if (invoice.outstandingAmount().value().isGreaterThan(remaining)) {
+                break;
+            }
+            remaining = remaining.minus(invoice.outstandingAmount().value());
+            covered.add(invoice.invoiceId());
+        }
+        return Set.copyOf(covered);
     }
 
     @Override

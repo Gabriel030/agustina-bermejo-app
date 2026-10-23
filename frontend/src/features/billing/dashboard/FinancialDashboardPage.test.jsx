@@ -6,7 +6,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { FinancialDashboardPage } from './FinancialDashboardPage';
-import { formatPointsDelta, rangeFor } from './dashboardMetrics';
+import { currentMonth, formatPointsDelta, rangeFor, shiftMonth } from './dashboardMetrics';
 
 vi.mock('recharts', async (importOriginal) => {
   const original = await importOriginal();
@@ -101,7 +101,7 @@ function emptyMetric(panel, url) {
   return { panel, available: true, partial: false, months: monthsOf(url), series: [] };
 }
 
-function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], discounts } = {}) {
+function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], discounts, firstMonth = '2020-01' } = {}) {
   server.use(
     http.get(`${API}/financial-dashboard`, () =>
       dashboardStatus !== 200 ? new HttpResponse(null, { status: dashboardStatus }) : HttpResponse.json({
@@ -121,6 +121,7 @@ function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, 
         ? new HttpResponse(null, { status: debtorsStatus })
         : HttpResponse.json([{ studentId: 7, fullName: 'Ana Pérez', dni: '30111222', enrollmentName: 'Tecnicatura', totalDebt: money('150000.00'), debtAgeDays: 20 }]);
     }),
+    http.get(`${API}/billing/metrics/first-month`, () => HttpResponse.json({ month: firstMonth })),
     http.get(`${API}/billing/metrics/:panel`, ({ request, params }) => {
       requests.push(new URL(request.url));
       if (failing.includes(params.panel)) return new HttpResponse(null, { status: 500 });
@@ -333,6 +334,143 @@ describe('FinancialDashboardPage', () => {
     await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
 
     expect(await screen.findByText('No hay carreras ni cursos cargados')).toBeInTheDocument();
+  });
+
+  it('searches the offers by name ignoring case and accents, keeping the fixed option and the groups', async () => {
+    install();
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
+    const search = await screen.findByPlaceholderText('Buscar carrera o curso…');
+
+    await userEvent.type(search, 'FOTOGRAFIA');
+
+    expect(screen.getByRole('option', { name: /Curso de Fotografía/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Tecnicatura en Diseño/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Todas las ofertas/ })).toBeInTheDocument();
+    expect(screen.getByText('Cursos')).toBeVisible();
+    expect(screen.getByText('Carreras')).not.toBeVisible();
+
+    await userEvent.clear(search);
+    await userEvent.type(search, 'diseno');
+
+    expect(screen.getByRole('option', { name: /Tecnicatura en Diseño/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Curso de Fotografía/ })).not.toBeInTheDocument();
+  });
+
+  it('tells there are no results when the search matches no offer', async () => {
+    install();
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
+
+    await userEvent.type(await screen.findByPlaceholderText('Buscar carrera o curso…'), 'zzz');
+
+    expect(screen.getByText('Sin resultados')).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Curso de Fotografía/ })).not.toBeInTheDocument();
+  });
+
+  it('picks the searched offer with the keyboard and keeps the scope state', async () => {
+    const requests = [];
+    install({ requests });
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
+    await userEvent.type(await screen.findByPlaceholderText('Buscar carrera o curso…'), 'tecni');
+    requests.length = 0;
+
+    await userEvent.keyboard('{Enter}');
+
+    await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
+    expect(requests.every((url) => url.searchParams.get('programId') === '5' && !url.searchParams.has('courseId'))).toBe(true);
+    expect(screen.getByRole('combobox', { name: /Oferta/ })).toHaveTextContent('Tecnicatura en Diseño');
+    expect(screen.getByText('Carrera: Tecnicatura en Diseño')).toBeInTheDocument();
+  });
+
+  it('closes the offer search with Escape without changing the offer', async () => {
+    install();
+    installOffers();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await userEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: /Oferta/ }));
+    await screen.findByPlaceholderText('Buscar carrera o curso…');
+
+    await userEvent.keyboard('{Escape}');
+
+    await waitFor(() => expect(screen.queryByPlaceholderText('Buscar carrera o curso…')).not.toBeInTheDocument());
+    expect(screen.getByRole('combobox', { name: /Oferta/ })).toHaveTextContent('Todas las ofertas');
+  });
+
+  it('extends the chart range to include a month picked before it and does not extend it for a month inside', async () => {
+    const requests = [];
+    install({ requests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    const today = currentMonth();
+    const year = Number(today.slice(0, 4));
+    const picked = `${year - 2}-01`;
+    await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+    expect(screen.queryByText(/Rango ampliado/)).not.toBeInTheDocument();
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: /^Mes, / }));
+    await userEvent.click(screen.getByRole('button', { name: `Elegir año, ${year}` }));
+    await userEvent.click(screen.getByRole('button', { name: String(year - 2) }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`^enero ${year - 2}$`) }));
+
+    await waitFor(() => expect(requests.some((url) => url.searchParams.get('from') === shiftMonth(picked, -1))).toBe(true));
+    expect(requests.every((url) => url.searchParams.get('to') === today)).toBe(true);
+    expect(screen.getByText(`Rango ampliado para incluir enero de ${year - 2}`)).toBeInTheDocument();
+  });
+
+  it('asks one month earlier, without the notice, when the picked month is exactly the start of the range', async () => {
+    const requests = [];
+    install({ requests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    const { from } = rangeFor('LAST_12');
+    const [fromYear, fromMonth] = from.split('-').map(Number);
+    const monthName = new Intl.DateTimeFormat('es-AR', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, fromMonth - 1, 1)));
+    await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+
+    requests.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: /^Mes, / }));
+    if (fromYear !== Number(currentMonth().slice(0, 4))) await userEvent.click(screen.getByRole('button', { name: 'Año anterior' }));
+    await userEvent.click(screen.getByRole('button', { name: `${monthName} ${fromYear}` }));
+
+    await waitFor(() => expect(requests.some((url) => url.searchParams.get('from') === shiftMonth(from, -1))).toBe(true));
+    expect(screen.queryByText(/Rango ampliado/)).not.toBeInTheDocument();
+  });
+
+  it('does not offer months before the first billed month', async () => {
+    install({ firstMonth: '2025-06' });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Mes, / })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: /^Mes, / }));
+    const year = Number(currentMonth().slice(0, 4));
+    await userEvent.click(screen.getByRole('button', { name: `Elegir año, ${year}` }));
+
+    expect(await screen.findByRole('button', { name: '2024, sin datos de este año' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: '2025' })).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('disables the month picker with a reason when nothing was ever billed', async () => {
+    install({ firstMonth: null });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+    await screen.findByText('Pago a término', { selector: 'h3' });
+
+    const picker = await screen.findByRole('button', { name: /^Mes, / });
+    await waitFor(() => expect(picker).toHaveAttribute('aria-disabled', 'true'));
+    await userEvent.hover(picker);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Todavía no hay meses con datos');
   });
 
   it('labels the cards of today as independent from the offer filter', async () => {

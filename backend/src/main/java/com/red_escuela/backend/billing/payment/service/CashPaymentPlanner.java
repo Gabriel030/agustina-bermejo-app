@@ -54,7 +54,7 @@ public class CashPaymentPlanner {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public CashPaymentCandidates findCandidatesOfAccount(Long studentCurrentAccountId) {
-        List<Invoice> openInvoices = invoiceQueries.listOpenInvoicesOfAccount(studentCurrentAccountId);
+        List<Invoice> openInvoices = invoiceQueries.listInvoicesAllocatableToAccountCredit(studentCurrentAccountId, Set.of());
         return new CashPaymentCandidates(openInvoices, onlineOnlyInvoices.findInvoiceIdsOfOnlineOnlyOfferings(openInvoices));
     }
 

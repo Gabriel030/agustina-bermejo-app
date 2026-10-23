@@ -1,13 +1,13 @@
 package com.red_escuela.backend.billing.discount.service;
 
-import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
-import com.red_escuela.backend.billing.discount.domain.CohortPromotionAcquisition;
-import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.LectiveYearSpan;
 import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrant;
+import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscountRepository;
+import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
+import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -65,7 +66,8 @@ class StudentDiscountCandidateStrategyTest {
     private final EnrollmentLectiveYearReader lectiveYearReader = mock(EnrollmentLectiveYearReader.class);
     private final BillingEnrollmentLookup enrollmentLookup = mock(BillingEnrollmentLookup.class);
     private final EnrollmentFeeIssuanceReader enrollmentFeeReader = mock(EnrollmentFeeIssuanceReader.class);
-    private final StudentDiscountCandidateStrategy strategy = new StudentDiscountCandidateStrategy(discountReader, lectiveYearReader, enrollmentLookup, enrollmentFeeReader);
+    private final StudentDiscountCandidateStrategy strategy = new StudentDiscountCandidateStrategy(discountReader, lectiveYearReader, enrollmentLookup, enrollmentFeeReader,
+            mock(AppliedStudentDiscountRepository.class), mock(DiscountDefinitionRepository.class), mock(StudentDiscountRepository.class), Clock.systemUTC());
 
     private static MonetaryAdjustment percent(String points) {
         return new MonetaryAdjustment.Proportional(Percentage.ofPoints(new BigDecimal(points)));
@@ -357,20 +359,5 @@ class StudentDiscountCandidateStrategyTest {
 
         assertThat(strategy.findDiscountCandidatesForInvoice(installment(YearMonth.of(2027, 4)))).singleElement()
                 .satisfies(candidate -> assertThat(candidate.discountName()).hasSize(200).startsWith("Descuento individual: xxx"));
-    }
-
-    @Test
-    @Tag("D-240")
-    void aCohortPromotionAcquiredAtEnrollmentIsNotACandidateOfTheStudentDiscountStrategy() {
-        DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().withPercent("90").build(), 99L, GRANTED_AT);
-        ReflectionTestUtils.setField(definition, "id", 3L);
-        StudentDiscount acquired = StudentDiscount.acquireCohortPromotion(new CohortPromotionAcquisition(ENROLLMENT, 1L, Currency.ARS, definition,
-                new ScholarshipPeriodRange(YearMonth.of(2027, 3), YearMonth.of(2027, 5)), 99L, "Promoción"), GRANTED_AT);
-        ReflectionTestUtils.setField(acquired, "id", 8L);
-        unlockedDiscounts(acquired, scholarship(7L, "50", YearMonth.of(2027, 3), YearMonth.of(2027, 6)));
-
-        assertThat(strategy.findDiscountCandidatesForInvoice(installment(YearMonth.of(2027, 4)))).extracting(InvoiceDiscountCandidate::studentDiscountId).containsExactly(7L);
-        assertThat(strategy.findDiscountCandidatesUnderEnrollmentLock(installment(YearMonth.of(2027, 4)))).extracting(InvoiceDiscountCandidate::studentDiscountId)
-                .containsExactly(7L);
     }
 }

@@ -60,7 +60,9 @@ class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
     @Tag("D-208")
     @Tag("D-235")
     @Tag("D-153")
-    void paysUnderReviewInvoiceAndReleasesUncoveredItems() {
+    @Tag("D-261")
+    @Tag("D-318")
+    void approvingSkipsTheInvoiceUnderReviewOfAnotherPendingReceiptAndReleasesItsOwnUncoveredItems() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
@@ -72,20 +74,92 @@ class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
         assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAYMENT_UNDER_REVIEW");
         assertThat(paymentStatusOfInvoice(may)).isEqualTo("PAYMENT_UNDER_REVIEW");
 
-        approve(second);
+        approve(second, new PaymentVerification(ars("80000.00"), null, null));
 
-        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
         assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAID");
         assertThat(paymentStatusOfInvoice(may)).isEqualTo("PENDING");
         assertThat(dueDateOfInvoice(may)).isEqualTo(LocalDate.of(2027, 5, 10));
         assertThat(paymentRow(first.paymentId())).containsEntry("status", "PENDING");
         assertThat(paymentRow(second.paymentId())).containsEntry("status", "APPROVED");
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(2L);
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-261")
+    @Tag("D-318")
+    void twoPendingReceiptsApprovedInReverseOrderEachPaysItsOwnInvoiceAndTheOtherWaitsForItsDecision() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        Long april = invoiceOf(debtor, "80000.00", APRIL_DUE);
+        BankTransferReceiptSubmissionResult receiptA = submitOn(debtor, List.of(march), "80000.00", "OP-D318-A");
+        BankTransferReceiptSubmissionResult receiptB = submitOn(debtor, List.of(april), "80000.00", "OP-D318-B");
+
+        approve(receiptB);
+
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(paymentRow(receiptA.paymentId())).containsEntry("status", "PENDING");
+        assertThat(receiptStatus(receiptA.receiptId())).isEqualTo("PENDING_REVIEW");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("0");
+
+        approve(receiptA);
+
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAID");
+        assertThat(paymentRow(receiptA.paymentId())).containsEntry("status", "APPROVED");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-261")
+    @Tag("D-318")
+    void verifiedSurplusThatCouldCoverTheInvoiceOfAnotherPendingReceiptStaysAsCreditInsteadOfPayingIt() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        Long april = invoiceOf(debtor, "80000.00", APRIL_DUE);
+        submitOn(debtor, List.of(march), "80000.00", "OP-CREDIT-A");
+        BankTransferReceiptSubmissionResult receiptB = submitOn(debtor, List.of(april), "80000.00", "OP-CREDIT-B");
+
+        approve(receiptB, new PaymentVerification(ars("160000.00"), null, null));
+
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("80000.00");
+    }
+
+    @Test
+    @Tag("D-089")
+    @Tag("D-235")
+    void anOlderOverdueInvoiceOutsideTheReceiptIsPaidFirstAndTheReceiptInvoiceStaysPending() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long april = invoiceOf(debtor, "80000.00", APRIL_DUE);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(april), "80000.00", "OP-B18");
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        overdueTransition.markAsOverdueWhenPastDueDate(march, LocalDate.of(2027, 3, 11));
+        MutableClock.INSTANCE.setDate(LocalDate.of(2027, 3, 11));
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("OVERDUE");
+
+        BankTransferReceipt approved = approve(submitted);
+
+        assertThat(approved.getStatus().name()).isEqualTo("APPLIED_TO_DEBT");
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PENDING");
+        assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.PaymentReceiptAppliedToOlderDebtEvent.class).toList()).singleElement()
+                .satisfies(event -> assertThat(event.receiptId()).isEqualTo(submitted.receiptId()));
         invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
     @Tag("D-208")
+    @Tag("D-318")
     void anUncoveredProtectedInvoiceAfterDueDateReturnsToOverdueWithItsOriginalDueDate() {
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
@@ -95,8 +169,9 @@ class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
         BankTransferReceiptSubmissionResult second = submitOn(debtor, List.of(april, may), "160000.00", "OP-SECOND-LATE");
         MutableClock.INSTANCE.setDate(LocalDate.of(2027, 5, 20));
 
-        approve(second);
+        approve(second, new PaymentVerification(ars("80000.00"), null, null));
 
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAID");
         assertThat(paymentStatusOfInvoice(may)).isEqualTo("OVERDUE");
         assertThat(dueDateOfInvoice(may)).isEqualTo(LocalDate.of(2027, 5, 10));
     }
@@ -178,6 +253,43 @@ class PendingTransferApprovalBridgeIT extends AbstractPendingTransferBridgeIT {
         assertThat(paymentStatusOfInvoice(admission)).isEqualTo("PAID");
         assertThat(paymentStatusOfInvoice(february)).isEqualTo("OVERDUE");
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-329")
+    @Tag("D-089")
+    void verifiedAmountThatDoesNotCoverTheProgramAdmissionFallsBackToTheOldestOverdueInvoice() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        List<Long> installments = new java.util.ArrayList<>();
+        Long admission = overdueInstallmentAndProgramAdmission(debtor, installments);
+        Long february = installments.get(0);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(february, admission), "80000.00", "OP-ADMISSION-NOT-COVERED");
+
+        approve(submitted, new PaymentVerification(ars("50000.00"), null, null));
+
+        assertThat(paymentStatusOfInvoice(february)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(admission)).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-329")
+    void verifiedAmountThatCoversTheAdmissionButNotTheOverdueInstallmentSettlesOnlyTheAdmissionAndKeepsTheRest() {
+        Debtor debtor = debtor();
+        List<Long> installments = new java.util.ArrayList<>();
+        Long admission = overdueInstallmentAndProgramAdmission(debtor, installments);
+        Long february = installments.get(0);
+        BankTransferReceiptSubmissionResult submitted = submitOn(debtor, List.of(february, admission), "80000.00", "OP-ADMISSION-COVERED-ONLY");
+
+        approve(submitted, new PaymentVerification(ars("100000.00"), null, null));
+
+        assertThat(paymentStatusOfInvoice(admission)).isEqualTo("PAID");
+        assertThat(paymentStatusOfInvoice(february)).isEqualTo("OVERDUE");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("20000.00");
     }
 
     @Test

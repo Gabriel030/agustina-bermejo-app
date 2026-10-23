@@ -12,8 +12,11 @@ public interface CourseEnrollmentApplicationRepository extends JpaRepository<Cou
     Optional<CourseEnrollmentApplication> findByPaymentReceiptId(Long paymentReceiptId);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select a from CourseEnrollmentApplication a where a.invoiceId = :invoiceId and a.courseEnrollment is null order by a.id desc")
+    @org.springframework.data.jpa.repository.Query("select a from CourseEnrollmentApplication a where a.invoiceId = :invoiceId and a.courseEnrollment is null and a.cancelledAt is null order by a.id desc")
     List<CourseEnrollmentApplication> findLockedPendingByInvoiceId(@org.springframework.data.repository.query.Param("invoiceId") Long invoiceId);
+
+    @org.springframework.data.jpa.repository.Query("select count(a) > 0 from CourseEnrollmentApplication a where a.invoiceId = :invoiceId and a.courseEnrollment is null and a.cancelledAt is null")
+    boolean existsPendingByInvoiceId(@org.springframework.data.repository.query.Param("invoiceId") Long invoiceId);
 
     List<CourseEnrollmentApplication> findByStudentIdOrderByIdDesc(Long studentId);
 
