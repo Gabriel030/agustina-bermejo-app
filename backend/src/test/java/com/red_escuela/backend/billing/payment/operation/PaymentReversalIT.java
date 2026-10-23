@@ -3,6 +3,9 @@ package com.red_escuela.backend.billing.payment.operation;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
+import com.red_escuela.backend.billing.payment.exception.IllegalPaymentStatusTransitionException;
+import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.SlowTest;
@@ -228,27 +231,30 @@ class PaymentReversalIT extends AbstractBankTransferReceiptHttpIT {
         long paymentId = approvedTransfer(debtor, List.of(march), "80000.00");
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        List<Future<Boolean>> attempts = new java.util.ArrayList<>();
+        List<Future<Throwable>> attempts = new java.util.ArrayList<>();
         for (int attempt = 0; attempt < 2; attempt++) {
             String reference = "PAR-" + attempt;
             attempts.add(executor.submit(() -> {
                 start.await();
                 try {
                     pipeline.runOperation(chargebackOperation, new RegisterChargebackCommand(paymentId, ars("80000.00"), TODAY, reference, actor));
-                    return true;
+                    return null;
                 } catch (RuntimeException rejected) {
-                    return false;
+                    return rejected;
                 }
             }));
         }
         start.countDown();
-        long succeeded = 0;
-        for (Future<Boolean> attempt : attempts) {
-            succeeded += attempt.get(60, TimeUnit.SECONDS) ? 1 : 0;
+        List<Throwable> failures = new java.util.ArrayList<>();
+        for (Future<Throwable> attempt : attempts) {
+            Throwable failure = attempt.get(60, TimeUnit.SECONDS);
+            if (failure != null) {
+                failures.add(failure);
+            }
         }
         executor.shutdownNow();
 
-        assertThat(succeeded).isEqualTo(1L);
+        assertThat(failures).singleElement().isInstanceOf(IllegalPaymentStatusTransitionException.class);
         assertThat(countOf("select count(*) from chargeback where payment_id = ?", paymentId)).isEqualTo(1L);
         assertThat(countOf("select count(*) from current_account_entry where payment_id = ? and entry_type = 'PAYMENT_REVERSED'", paymentId)).isEqualTo(1L);
         assertThatThrownBy(() -> jdbc.update("insert into chargeback (payment_id, student_current_account_id, amount, amount_currency, charged_back_on, registered_at, "
@@ -331,6 +337,69 @@ class PaymentReversalIT extends AbstractBankTransferReceiptHttpIT {
         mockMvc.perform(revocation(999999999L, staffToken("DIRECTOR"), "x")).andExpect(status().isNotFound());
         mockMvc.perform(chargeback(999999999L, staffToken("DIRECTOR"), "1.00", "2027-03-09", "x")).andExpect(status().isNotFound());
         mockMvc.perform(chargebackReversal(999999999L, staffToken("DIRECTOR"))).andExpect(status().isNotFound());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"revocation", "chargeback"})
+    @Tag("D-206")
+    @Tag("D-089")
+    @Tag("D-144")
+    void idleCreditOfAnotherPaymentIsAllocatedToTheOldestInvoiceAfterTheReversal(String kind) throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        Long april = invoiceOf(debtor, "30000.00", APRIL_DUE);
+        long reversedPayment = approvedTransfer(debtor, List.of(march), "80000.00");
+        long otherPayment = approvedTransfer(debtor, List.of(april), "110000.00");
+        assertThat(paymentStatusOfInvoice(april)).isEqualTo("PAID");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("80000.00");
+
+        String token = staffToken("DIRECTOR");
+        if (kind.equals("revocation")) {
+            mockMvc.perform(revocation(reversedPayment, token, "Error")).andExpect(status().isOk());
+        } else {
+            mockMvc.perform(chargeback(reversedPayment, token, "80000.00", "2027-03-09", "CB")).andExpect(status().isCreated());
+        }
+
+        assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(jdbc.queryForObject("select s.payment_id from payment_allocation_source s where s.payment_allocation_id = "
+                + "(select max(id) from payment_allocation where invoice_id = ? and reverses_allocation_id is null)", Long.class, march)).isEqualTo(otherPayment);
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, debtor.accountId()))
+                .isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-206")
+    @Tag("D-331")
+    void eachReopenedInvoiceUsesTheGracePeriodOfItsOwnDueDate() throws Exception {
+        LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, staff, 10, java.math.BigDecimal.valueOf(0.05), 30, 2, LocalDate.of(2029, 1, 1));
+        LocalDate paymentDay = LocalDate.of(2028, 12, 1);
+        MutableClock.INSTANCE.setDate(paymentDay);
+        Debtor debtor = debtor();
+        Long withoutGrace = invoiceOf(debtor, "80000.00", LocalDate.of(2028, 12, 10));
+        Long withTenDaysOfGrace = invoiceOf(debtor, "80000.00", LocalDate.of(2029, 1, 10));
+        BankTransferReceiptSubmissionResult submitted = submit(command(debtor, List.of(withoutGrace, withTenDaysOfGrace), "160000.00", paymentDay, nextOperationNumber()));
+        approveReceipt.approve(submitted.receiptId(), staff, PaymentVerification.none());
+        MutableClock.INSTANCE.setDate(LocalDate.of(2029, 1, 15));
+
+        mockMvc.perform(revocation(submitted.paymentId(), staffToken("DIRECTOR"), "Error")).andExpect(status().isOk());
+
+        assertThat(paymentStatusOfInvoice(withoutGrace)).isEqualTo("OVERDUE");
+        assertThat(paymentStatusOfInvoice(withTenDaysOfGrace)).isEqualTo("PENDING");
+    }
+
+    @Test
+    @Tag("D-206")
+    void aSecondCreditOfThePaymentThatWasNotReversedIsRejectedByTheUniqueIndex() {
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
+        long paymentId = approvedTransfer(debtor, List.of(march), "80000.00");
+
+        assertThatThrownBy(() -> inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(debtor.accountId()), paymentId,
+                NonNegativeMoney.of(ars("1.00")), TODAY, "Duplicado"))).rootCause().hasMessageContaining("uk_current_account_entry_payment_credit");
+        assertThat(countOf("select count(*) from current_account_entry where payment_id = ? and entry_type = 'PAYMENT_RECEIVED'", paymentId)).isEqualTo(1L);
     }
 
     private LocalDate dueDateOf(Long invoiceId) {

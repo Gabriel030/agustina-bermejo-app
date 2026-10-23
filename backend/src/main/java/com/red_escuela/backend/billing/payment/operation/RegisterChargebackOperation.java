@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationResult;
+import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
@@ -83,11 +84,13 @@ public class RegisterChargebackOperation implements BillingOperation<RegisterCha
         Long accountId = payments.findStudentCurrentAccountIdById(command.paymentId()).orElseThrow(PaymentNotFoundException::new);
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Payment payment = payments.findById(command.paymentId()).orElseThrow(PaymentNotFoundException::new);
-        chargebackPolicies.evaluateRulesUntilFirstViolation(new PaymentReversalCheck(payment.creditedAmount().value(), payment.getRefundedAmount().value(), command.amount(),
-                payment.getPaidOn(), command.chargedBackOn(), today, command.reference())).throwIfDenied(PaymentReversalRejections::rejectionOf);
         payment.registerChargeback(command.reference(), command.actor());
+        CurrentAccountEntry credit = accountService.findPaymentCreditNotYetReversed(payment.getId())
+                .orElseThrow(() -> new IllegalStateException("The payment " + payment.getId() + " has no credit in the current account to reverse"));
+        chargebackPolicies.evaluateRulesUntilFirstViolation(new PaymentReversalCheck(credit.getAmount().value(), payment.getRefundedAmount().value(), command.amount(),
+                payment.getPaidOn(), command.chargedBackOn(), today, command.reference())).throwIfDenied(PaymentReversalRejections::rejectionOf);
         payments.save(payment);
-        Chargeback chargeback = chargebacks.save(Chargeback.registerFor(payment, payment.creditedAmount(), command.chargedBackOn(), command.reference(), command.actor()));
+        Chargeback chargeback = chargebacks.save(Chargeback.registerFor(payment, credit.getAmount(), command.chargedBackOn(), command.reference(), command.actor()));
         String concept = "Contracargo del pago " + payment.getId();
         PaymentCreditReversal.ReversedPaymentAllocations reversed = creditReversal.reverseAllocationsOf(account, payment, today, concept, command.actor());
         accountService.recordPaymentReversalDebit(account, reversed.credit(), command.chargedBackOn(), concept);
