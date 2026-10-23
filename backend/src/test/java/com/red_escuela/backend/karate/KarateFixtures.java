@@ -287,4 +287,9 @@ public class KarateFixtures {
         result.put("accessToken", accessToken);
         return result;
     }
+
+    public static Long createProgramId() {
+        var factory = context().getBean(com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory.class);
+        return factory.newProgram(com.red_escuela.backend.shared.domain.Currency.ARS, 80000, 50000).programId();
+    }
 }

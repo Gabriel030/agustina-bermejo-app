@@ -12,6 +12,11 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.COLLECTION_REMINDER).toBe('warning');
   });
 
+  it('etiqueta y da tono a la lista de alumnos para contactar', () => {
+    expect(TIPO_NOTIFICACION_LABEL.OVERDUE_CONTACT_LIST_UPDATED).toBe('Alumnos para contactar');
+    expect(TONO_NOTIFICACION.OVERDUE_CONTACT_LIST_UPDATED).toBe('warning');
+  });
+
   it('etiqueta y da tono al aviso de correccion de recargo fuera de plazo', () => {
     expect(TIPO_NOTIFICACION_LABEL.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW).toBe('Corrección de recargo fuera de plazo');
     expect(TONO_NOTIFICACION.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW).toBe('danger');

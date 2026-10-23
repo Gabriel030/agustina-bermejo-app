@@ -25,6 +25,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'Recargo emitido fuera de plazo',
   LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW: 'Corrección de recargo fuera de plazo',
   COLLECTION_REMINDER: 'Aviso de cobranza',
+  OVERDUE_CONTACT_LIST_UPDATED: 'Alumnos para contactar',
   PAYMENT_RECEIPT_REVIEW_OVERDUE: 'Comprobante sin revisar',
 };
 
@@ -55,6 +56,7 @@ export const TONO_NOTIFICACION = {
   LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'danger',
   LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW: 'danger',
   COLLECTION_REMINDER: 'warning',
+  OVERDUE_CONTACT_LIST_UPDATED: 'warning',
   PAYMENT_RECEIPT_REVIEW_OVERDUE: 'warning',
 };
 

@@ -16,11 +16,11 @@ public final class PlannedReminderFixtures {
     public static PlannedReminderLine line(long invoiceId, LocalDate dueDate, Money balance, boolean precedesDueDate, PlannedReminderNoticeType... noticeTypes) {
         List<PlannedReminderNotice> notices = java.util.Arrays.stream(noticeTypes).map(type -> new PlannedReminderNotice("notice-" + type.name(), type)).toList();
         return new PlannedReminderLine(invoiceId, null, PlannedReminderInvoiceKind.MONTHLY_INSTALLMENT, false, dueDate, balance, false, precedesDueDate, notices,
-                1L, null, null, 2L);
+                1L, null, null, 2L, null);
     }
 
     public static PlannedReminderLine receiptUnderReviewLine(long invoiceId, LocalDate dueDate, Money balance) {
-        return new PlannedReminderLine(invoiceId, null, PlannedReminderInvoiceKind.MONTHLY_INSTALLMENT, false, dueDate, balance, true, false, List.of(), 1L, null, null, 2L);
+        return new PlannedReminderLine(invoiceId, null, PlannedReminderInvoiceKind.MONTHLY_INSTALLMENT, false, dueDate, balance, true, false, List.of(), 1L, null, null, 2L, null);
     }
 
     public static PlannedReminderBlock block(Currency currency, Money total, Money credit, Long shortfallInvoiceId, Money missing, PlannedReminderLine... lines) {
@@ -33,11 +33,11 @@ public final class PlannedReminderFixtures {
     }
 
     public static PlannedReminderMessage digest(PlannedReminderNoticeType lead, boolean precedesDueDate, PlannedReminderBlock... blocks) {
-        return new PlannedReminderMessage(PlannedReminderFormat.DAILY_DIGEST, lead, lead.dispatchPriority(), precedesDueDate, List.of(blocks));
+        return new PlannedReminderMessage(PlannedReminderFormat.DAILY_DIGEST, lead, lead.dispatchPriority(), precedesDueDate, List.of(blocks), null);
     }
 
     public static PlannedReminderMessage ownNotice(PlannedReminderNoticeType lead, boolean precedesDueDate, PlannedReminderBlock... blocks) {
-        return new PlannedReminderMessage(PlannedReminderFormat.OWN_NOTICE, lead, lead.dispatchPriority(), precedesDueDate, List.of(blocks));
+        return new PlannedReminderMessage(PlannedReminderFormat.OWN_NOTICE, lead, lead.dispatchPriority(), precedesDueDate, List.of(blocks), null);
     }
 
     public static Money hundredThousand() {
