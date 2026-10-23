@@ -15,10 +15,12 @@ public class CollectionReminderPlanningJob {
     private static final Logger log = LoggerFactory.getLogger(CollectionReminderPlanningJob.class);
 
     private final CollectionReminderPlanningStep planningStep;
+    private final OverdueContactListPublicationStep contactListStep;
     private final Clock clock;
 
-    public CollectionReminderPlanningJob(CollectionReminderPlanningStep planningStep, Clock clock) {
+    public CollectionReminderPlanningJob(CollectionReminderPlanningStep planningStep, OverdueContactListPublicationStep contactListStep, Clock clock) {
         this.planningStep = planningStep;
+        this.contactListStep = contactListStep;
         this.clock = clock;
     }
 
@@ -38,6 +40,15 @@ public class CollectionReminderPlanningJob {
         if (result.failed() > 0) {
             log.warn("La planificación de recordatorios de cobranza terminó con fallas por alumno: fallidos={}, errores={}", result.failed(), result.errors());
         }
+        publishContactList(businessDate);
         return result;
+    }
+
+    private void publishContactList(LocalDate businessDate) {
+        try {
+            contactListStep.publishContactListOf(businessDate);
+        } catch (RuntimeException failure) {
+            log.warn("Falló la publicación de la lista para contactar: fecha={}", businessDate, failure);
+        }
     }
 }
