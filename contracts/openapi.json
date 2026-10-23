@@ -4567,6 +4567,55 @@
         "required" : [ "effectiveFrom", "effectiveTo", "id", "paymentPlanOptionId", "scopeMonths" ],
         "type" : "object"
       },
+      "PaymentReversalResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "chargebackId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "chargedBackOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "effectiveDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paymentStatus" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "reopenedInvoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "reversedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "settledInvoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "amount", "chargebackId", "chargedBackOn", "effectiveDate", "paymentId", "paymentStatus", "reference", "reopenedInvoiceIds", "reversedOn", "settledInvoiceIds" ],
+        "type" : "object"
+      },
       "Percentage" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/MetricValue"
@@ -5597,6 +5646,22 @@
         "required" : [ "amount", "backdateReason", "paidOn", "previewFingerprint", "receiptNumber" ],
         "type" : "object"
       },
+      "RegisterChargebackRequest" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "chargedBackOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "chargedBackOn", "reference" ],
+        "type" : "object"
+      },
       "RegisterRequest" : {
         "properties" : {
           "apellido" : {
@@ -5868,6 +5933,15 @@
           }
         },
         "required" : [ "newPassword", "resetToken" ],
+        "type" : "object"
+      },
+      "RevokeBankTransferApprovalRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "RevokeEnrollmentFeeExemptionRequest" : {
@@ -10953,6 +11027,75 @@
           }
         },
         "tags" : [ "billing-metrics-controller" ]
+      }
+    },
+    "/chargebacks/{chargebackId}/reversal" : {
+      "post" : {
+        "operationId" : "PaymentReversal_reverseChargeback",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "chargebackId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "CHARGEBACK_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "CHARGEBACK_ALREADY_REVERSED o ILLEGAL_PAYMENT_STATUS_TRANSITION"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-controller" ]
       }
     },
     "/classrooms" : {
@@ -21866,6 +22009,164 @@
           }
         },
         "tags" : [ "mp-webhook-controller" ]
+      }
+    },
+    "/payments/{paymentId}/approval-revocation" : {
+      "post" : {
+        "operationId" : "PaymentReversal_revokeBankTransferApproval",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "paymentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RevokeBankTransferApprovalRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "PAYMENT_REJECTION_REASON_REQUIRED, PAYMENT_REJECTION_REASON_TOO_LONG"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "PAYMENT_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "ILLEGAL_PAYMENT_STATUS_TRANSITION (el pago no es una transferencia manual aprobada), PAYMENT_ALREADY_REFUNDED (D-262) o INSUFFICIENT_ACCOUNT_CREDIT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-controller" ]
+      }
+    },
+    "/payments/{paymentId}/chargebacks" : {
+      "post" : {
+        "operationId" : "PaymentReversal_registerChargeback",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "paymentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterChargebackRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "CHARGEBACK_REFERENCE_INVALID, CHARGEBACK_DATE_INVALID"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "PAYMENT_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "ILLEGAL_PAYMENT_STATUS_TRANSITION (el pago no está aprobado), CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT y PAYMENT_ALREADY_REFUNDED (D-262) o INSUFFICIENT_ACCOUNT_CREDIT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-controller" ]
       }
     },
     "/price-versions/{priceVersionId}/cancellation" : {

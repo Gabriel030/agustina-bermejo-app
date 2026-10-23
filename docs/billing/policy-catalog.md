@@ -74,6 +74,15 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | CashPaymentAmountPolicy | CASH_PAYMENT_AMOUNT_INVALID | D-136, D-097, D-098 |
 
+## Momento CHARGEBACK_REGISTRATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ChargebackReferenceRequiredPolicy | CHARGEBACK_REFERENCE_INVALID | D-206 |
+| 2 | ChargebackDateWithinPaymentLifePolicy | CHARGEBACK_DATE_INVALID | D-206 |
+| 3 | PaymentMoneyNotRefundedPolicy | PAYMENT_ALREADY_REFUNDED | D-262 |
+| 4 | ChargebackIsForTheFullAmountPolicy | CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT | D-262 |
+
 ## Momento COHORT_PROMOTION_ACQUISITION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -324,6 +333,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | PaymentAllocationBelongsToLockedAccountPolicy | PAYMENT_ALLOCATION_ACCOUNT_MISMATCH | D-094, D-097 |
 | 2 | PaymentAllocationReversedOnlyOncePolicy | PAYMENT_ALLOCATION_ALREADY_REVERSED | D-094 |
+
+## Momento PAYMENT_APPROVAL_REVOCATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | PaymentMoneyNotRefundedPolicy | PAYMENT_ALREADY_REFUNDED | D-262 |
 
 ## Momento PAYMENT_GATEWAY_CAPABILITY
 
@@ -716,6 +731,16 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: LateFeeIssuedEvent
 - Post-procesamiento de LateFeeIssuedEvent: LateFeeNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow, LateFeeNotificationListener#notifyStudent
 
+## Operación REGISTER_CHARGEBACK
+
+- Validaciones (momentos): CHARGEBACK_REGISTRATION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: PaymentChargedBackEvent, PaymentAllocationReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentChargedBackEvent: PaymentChargedBackNotificationListener#notifyAdministration
+- Post-procesamiento de PaymentAllocationReversedEvent: LateFeeOnPaymentAllocationReversedListener#reconcileLateFeesOfInvoiceWithReversedPayment
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
 ## Operación REGISTER_GATEWAY_PAYMENT
 
 - Validaciones (momentos): —
@@ -741,6 +766,25 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Validaciones (momentos): —
 - Pre-procesamiento (en orden): —
 - Eventos que publica: —
+
+## Operación REVERSE_CHARGEBACK
+
+- Validaciones (momentos): —
+- Pre-procesamiento (en orden): —
+- Eventos que publica: ChargebackReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de ChargebackReversedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
+## Operación REVOKE_BANK_TRANSFER_APPROVAL
+
+- Validaciones (momentos): PAYMENT_REJECTION, PAYMENT_APPROVAL_REVOCATION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: BankTransferApprovalRevokedEvent, PaymentAllocationReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de BankTransferApprovalRevokedEvent: —
+- Post-procesamiento de PaymentAllocationReversedEvent: LateFeeOnPaymentAllocationReversedListener#reconcileLateFeesOfInvoiceWithReversedPayment
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REVOKE_STUDENT_DISCOUNT
 
