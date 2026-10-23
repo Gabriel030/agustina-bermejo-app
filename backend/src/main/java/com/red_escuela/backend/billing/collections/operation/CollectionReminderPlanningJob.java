@@ -16,11 +16,14 @@ public class CollectionReminderPlanningJob {
 
     private final CollectionReminderPlanningStep planningStep;
     private final OverdueContactListPublicationStep contactListStep;
+    private final PostWithdrawalSummaryPlanningStep postWithdrawalSummaryStep;
     private final Clock clock;
 
-    public CollectionReminderPlanningJob(CollectionReminderPlanningStep planningStep, OverdueContactListPublicationStep contactListStep, Clock clock) {
+    public CollectionReminderPlanningJob(CollectionReminderPlanningStep planningStep, OverdueContactListPublicationStep contactListStep,
+                                          PostWithdrawalSummaryPlanningStep postWithdrawalSummaryStep, Clock clock) {
         this.planningStep = planningStep;
         this.contactListStep = contactListStep;
+        this.postWithdrawalSummaryStep = postWithdrawalSummaryStep;
         this.clock = clock;
     }
 
@@ -41,6 +44,7 @@ public class CollectionReminderPlanningJob {
             log.warn("La planificación de recordatorios de cobranza terminó con fallas por alumno: fallidos={}, errores={}", result.failed(), result.errors());
         }
         publishContactList(businessDate);
+        planPostWithdrawalSummaries(businessDate);
         return result;
     }
 
@@ -49,6 +53,14 @@ public class CollectionReminderPlanningJob {
             contactListStep.publishContactListOf(businessDate);
         } catch (RuntimeException failure) {
             log.warn("Falló la publicación de la lista para contactar: fecha={}", businessDate, failure);
+        }
+    }
+
+    private void planPostWithdrawalSummaries(LocalDate businessDate) {
+        try {
+            postWithdrawalSummaryStep.planPostWithdrawalSummariesOf(businessDate);
+        } catch (RuntimeException failure) {
+            log.warn("Falló la planificación de los resúmenes post-baja: fecha={}", businessDate, failure);
         }
     }
 }
