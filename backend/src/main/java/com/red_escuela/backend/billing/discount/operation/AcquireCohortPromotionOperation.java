@@ -15,6 +15,7 @@ import com.red_escuela.backend.billing.discount.policy.CohortPromotionAcquisitio
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.service.DiscountQuotaUsageReader;
+import com.red_escuela.backend.billing.discount.service.EnrollmentDiscountLock;
 import com.red_escuela.backend.billing.events.DiscountQuotaExhaustedEvent;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
@@ -52,18 +53,20 @@ public class AcquireCohortPromotionOperation implements BillingOperation<Acquire
     private final DiscountDefinitionRepository definitionRepository;
     private final StudentDiscountRepository repository;
     private final DiscountQuotaUsageReader quotaUsageReader;
+    private final EnrollmentDiscountLock enrollmentLock;
     private final StudentCurrentAccountService accountService;
     private final PriceReader priceReader;
     private final Clock clock;
 
     public AcquireCohortPromotionOperation(PolicySet<CohortPromotionAcquisitionCheck> acquisitionPolicies, BillingEnrollmentLookup enrollmentLookup,
                                            DiscountDefinitionRepository definitionRepository, StudentDiscountRepository repository,
-                                           DiscountQuotaUsageReader quotaUsageReader, StudentCurrentAccountService accountService, PriceReader priceReader, Clock clock) {
+                                           DiscountQuotaUsageReader quotaUsageReader, EnrollmentDiscountLock enrollmentLock, StudentCurrentAccountService accountService, PriceReader priceReader, Clock clock) {
         this.acquisitionPolicies = acquisitionPolicies;
         this.enrollmentLookup = enrollmentLookup;
         this.definitionRepository = definitionRepository;
         this.repository = repository;
         this.quotaUsageReader = quotaUsageReader;
+        this.enrollmentLock = enrollmentLock;
         this.accountService = accountService;
         this.priceReader = priceReader;
         this.clock = clock;
@@ -103,6 +106,7 @@ public class AcquireCohortPromotionOperation implements BillingOperation<Acquire
             return Optional.empty();
         }
         BillingEnrollmentFacts facts = findFactsOf(command);
+        enrollmentLock.lockDiscountsOf(command.enrollment());
         accountService.findOrOpenAndLockStudentCurrentAccount(facts.studentId(), facts.currency());
         List<DiscountDefinition> lockedDefinitions = candidateIds.stream()
                 .map(id -> definitionRepository.findByIdForUpdate(id).orElseThrow())

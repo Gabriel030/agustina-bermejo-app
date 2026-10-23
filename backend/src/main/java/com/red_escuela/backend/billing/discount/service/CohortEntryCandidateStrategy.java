@@ -61,14 +61,13 @@ public class CohortEntryCandidateStrategy implements InvoiceDiscountCandidateStr
     @Override
     public InvoiceDiscountCandidate registerWinnerBeforeInvoiceIsAssembled(InvoiceDiscountCandidate winner, InvoiceIssuingContext context) {
         InvoiceIssuingRequest request = context.request();
-        CohortEntryVersion version = findEntryTerms(request).orElseThrow(() -> new IllegalStateException("The cohort entry discount of the winner is no longer in effect"));
-        Percentage discount = version.terms().discount();
+        Percentage discount = ((MonetaryAdjustment.Proportional) winner.calculation()).rate();
         String reason = reasonOf(discount);
         CohortEntryRegistration registration = new CohortEntryRegistration(EnrollmentReference.ofProgram(request.programEnrollmentId()), request.studentId(),
-                context.facts().offeringCurrency(), version.versionId(), discount, request.period(), request.actor(), reason);
+                context.facts().offeringCurrency(), winner.sourceVersionId(), discount, request.period(), request.actor(), reason);
         StudentDiscount saved = studentDiscountRepository.saveAndFlush(StudentDiscount.registerCohortEntryDiscount(registration, Instant.now(clock)));
         log.info("Descuento de ingreso de cohorte registrado: id={}, cohorte={}, inscripcion={}, version={}, porcentaje={}", saved.getId(), request.cohortId(),
-                request.programEnrollmentId(), version.versionId(), discount.points());
+                request.programEnrollmentId(), winner.sourceVersionId(), discount.points());
         return winner.withStudentDiscountId(saved.getId());
     }
 
@@ -86,7 +85,7 @@ public class CohortEntryCandidateStrategy implements InvoiceDiscountCandidateStr
         NonNegativeMoney base = context.facts().chargeAmount();
         NonNegativeMoney saving = DiscountSavingCalculator.calculateSavingOnFinalPrice(calculation, base, Optional.empty());
         return new InvoiceDiscountCandidate(DiscountType.COHORT_ENTRY, context.request().cohortId(), null, "Matrícula de ingreso con descuento de " + pointsOf(version.terms().discount()) + "%",
-                InvoiceType.ENROLLMENT_FEE, base, saving, null, null, FIRST_LINE_NUMBER, null, null, calculation, DiscountCandidateOrigin.COHORT_ENTRY);
+                InvoiceType.ENROLLMENT_FEE, base, saving, null, null, FIRST_LINE_NUMBER, null, null, calculation, DiscountCandidateOrigin.COHORT_ENTRY, version.versionId());
     }
 
     private String reasonOf(Percentage discount) {

@@ -156,24 +156,42 @@ class CohortEntryDiscountIT extends AbstractStudentDiscountIssuingIT {
 
     @Test
     @Tag("D-405")
+    @Tag("D-416")
     void reissuingTheFirstEntryFeeWhileASecondOneIsLiveCarriesNoIndividualDiscount() {
         useCohortLearner(Percentage.ofPoints(BigDecimal.ZERO));
         StudentDiscount onFee = grantAsDirector(individual(InvoiceType.ENROLLMENT_FEE, percent("30"), MARCH, null, "Hermano"));
         today(LocalDate.of(2027, 3, 1));
         Long first = issue(enrollmentFeeOf(learner, 1, MARCH, false));
         today(LocalDate.of(2027, 8, 1));
-        issue(enrollmentFeeOf(learner, 2, AUGUST, false));
+        Long second = issue(enrollmentFeeOf(learner, 2, AUGUST, false));
 
         cancelAsDirector(first, CreditNoteReason.BILLING_ERROR);
         today(LocalDate.of(2027, 3, 2));
-        issue(enrollmentFeeOf(learner, 1, MARCH, false));
+        Long reissued = issue(enrollmentFeeOf(learner, 1, MARCH, false));
 
-        List<Map<String, Object>> march = discountsOn(FeeType.ENROLLMENT_FEE, MARCH);
-        assertThat(march).hasSize(1);
-        assertThat(march.get(0).get("student_discount_id")).isEqualTo(onFee.getId());
-        assertThat(discountsOn(FeeType.ENROLLMENT_FEE, AUGUST)).isEmpty();
+        assertThat(reissued).isNotEqualTo(first);
+        assertThat(discountCountOfInvoice(reissued)).isZero();
+        assertThat(discountCountOfInvoice(second)).isZero();
+        assertThat(discountCountOfInvoice(first)).isEqualTo(1L);
         assertThat(discountRowsOf(onFee.getId())).isEqualTo(1L);
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void reissuingAnEntryFeeCancelledByBillingErrorRegistersASecondSingleUseDiscountUntilV2Seven07c2bReturnsTheConsumption() {
+        useCohortLearner(Percentage.ofPoints(new BigDecimal("30")));
+        today(LocalDate.of(2027, 3, 1));
+        Long first = issue(enrollmentFeeOf(learner, 1, MARCH, true));
+
+        cancelAsDirector(first, CreditNoteReason.BILLING_ERROR);
+        issue(enrollmentFeeOf(learner, 1, MARCH, true));
+
+        assertThat(entryDiscountsOfLearner()).isEqualTo(2L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    private long discountCountOfInvoice(Long invoiceId) {
+        return jdbc.queryForObject("select count(*) from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ?", Long.class, invoiceId);
     }
 
     private InvoiceIssuingRequest entryFeeOn(IssuingScenarioFactory.Learner target, LocalDate pricingDate) {

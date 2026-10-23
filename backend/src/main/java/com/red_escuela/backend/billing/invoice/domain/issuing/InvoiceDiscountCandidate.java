@@ -23,9 +23,17 @@ public record InvoiceDiscountCandidate(
         Integer priority,
         Instant grantedAt,
         MonetaryAdjustment calculation,
-        DiscountCandidateOrigin origin) {
+        DiscountCandidateOrigin origin,
+        Long sourceVersionId) {
 
     private static final int FIRST_LINE_NUMBER = 1;
+
+    public InvoiceDiscountCandidate(DiscountType discountType, Long sourceId, Long studentDiscountId, String discountName, InvoiceType applicableInvoiceType,
+                                    NonNegativeMoney baseAmount, NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal, int lineNumber,
+                                    Integer priority, Instant grantedAt, MonetaryAdjustment calculation, DiscountCandidateOrigin origin) {
+        this(discountType, sourceId, studentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount, installmentNumber, installmentsTotal, lineNumber,
+                priority, grantedAt, calculation, origin, null);
+    }
 
     public InvoiceDiscountCandidate {
         Objects.requireNonNull(discountType, "discountType");
@@ -44,12 +52,12 @@ public record InvoiceDiscountCandidate(
                                                           String discountName, InvoiceType applicableInvoiceType, NonNegativeMoney baseAmount,
                                                           NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
         return new InvoiceDiscountCandidate(discountType, sourceId, studentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount,
-                installmentNumber, installmentsTotal, FIRST_LINE_NUMBER, null, null, null, origin);
+                installmentNumber, installmentsTotal, FIRST_LINE_NUMBER, null, null, null, origin, null);
     }
 
     public InvoiceDiscountCandidate withStudentDiscountId(Long registeredStudentDiscountId) {
         return new InvoiceDiscountCandidate(discountType, sourceId, registeredStudentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount,
-                installmentNumber, installmentsTotal, lineNumber, priority, grantedAt, calculation, origin);
+                installmentNumber, installmentsTotal, lineNumber, priority, grantedAt, calculation, origin, sourceVersionId);
     }
 
     public int typeRank() {
