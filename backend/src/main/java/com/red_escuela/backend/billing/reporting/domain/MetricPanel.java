@@ -10,7 +10,8 @@ public enum MetricPanel {
     OVERDUE_DETECTED("overdue-detected"),
     LATE_FEES("late-fees"),
     ON_TIME_PAYMENT("on-time-payment"),
-    RECEIPTS("receipts");
+    RECEIPTS("receipts"),
+    COLLECTIONS_STOCK("collections-stock");
 
     private final String path;
 

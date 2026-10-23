@@ -18,11 +18,12 @@ class MetricPanelTest {
             assertThat(MetricPanel.fromPath(panel.path())).isEqualTo(panel);
         }
         assertThat(MetricPanel.fromPath("on-time-payment")).isEqualTo(MetricPanel.ON_TIME_PAYMENT);
+        assertThat(MetricPanel.fromPath("collections-stock")).isEqualTo(MetricPanel.COLLECTIONS_STOCK);
     }
 
     @Test
     void anUnknownPathIsReportedAsAnUnknownPanel() {
-        assertThatThrownBy(() -> MetricPanel.fromPath("collections-stock")).isInstanceOf(UnknownMetricPanelException.class);
+        assertThatThrownBy(() -> MetricPanel.fromPath("stock-of-nothing")).isInstanceOf(UnknownMetricPanelException.class);
     }
 
     @Test
@@ -33,6 +34,18 @@ class MetricPanelTest {
         assertThat(metric.goalEvaluation()).isEmpty();
         assertThat(metric.withGoal(Optional.empty(), "x")).isSameAs(metric);
         assertThat(MonthlyMetric.unavailable(MetricPanel.LATE_FEES, range).available()).isFalse();
+    }
+
+    @Test
+    void aMetricCanBeMarkedAsPartialWithoutChangingTheRest() {
+        MonthRange range = new MonthRange(YearMonth.of(2026, 3), YearMonth.of(2026, 3));
+        MonthlyMetric metric = MonthlyMetric.available(MetricPanel.COLLECTIONS_STOCK, range, List.of());
+
+        assertThat(metric.partial()).isFalse();
+        assertThat(metric.withPartial(true).partial()).isTrue();
+        assertThat(metric.withPartial(true).available()).isTrue();
+        assertThat(metric.withPartial(true).months()).isEqualTo(metric.months());
+        assertThat(metric.withPartial(true).withPartial(false).partial()).isFalse();
     }
 
     @Test

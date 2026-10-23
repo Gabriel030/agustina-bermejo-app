@@ -132,13 +132,22 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     }
 
     protected Long seedProgramEnrollmentOn(Long invoiceId, Currency currency) {
+        Long programId = seedProgram(currency);
+        enrollInvoiceStudentInProgram(invoiceId, programId);
+        return programId;
+    }
+
+    protected Long seedProgram(Currency currency) {
         Long programId = jdbc.queryForObject("insert into program (name, currency) values ('Carrera filtrada', ?) returning id", Long.class, currency.name());
         seededProgramIds.add(programId);
+        return programId;
+    }
+
+    protected void enrollInvoiceStudentInProgram(Long invoiceId, Long programId) {
         Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
                 Long.class, studentOf(invoiceId), programId);
         seededProgramEnrollmentIds.add(enrollmentId);
         linkInvoiceLines(invoiceId, "program_enrollment_id", enrollmentId);
-        return programId;
     }
 
     protected Long seedCourseEnrollmentOn(Long invoiceId, Currency currency) {

@@ -33,6 +33,18 @@ class MetricSeriesBuilderTest {
     }
 
     @Test
+    void aSeriesDeclaredToLeaveMonthsWithoutDataEmptyKeepsThemNullEvenForMoneyAndCounts() {
+        builder.declareLeavingMonthsWithoutDataEmpty("amount", MetricUnit.MONEY).declareLeavingMonthsWithoutDataEmpty("count", MetricUnit.COUNT).declare("other", MetricUnit.COUNT);
+        builder.put("amount", YearMonth.of(2026, 4), new MoneyValue(Money.zero(Currency.USD)));
+
+        List<MetricSeries> series = builder.build();
+
+        assertThat(series.get(0).values()).containsExactly(null, new MoneyValue(Money.zero(Currency.USD)), null);
+        assertThat(series.get(1).values()).containsExactly(null, null, null);
+        assertThat(series.get(2).values()).containsExactly(new CountValue(0), new CountValue(0), new CountValue(0));
+    }
+
+    @Test
     void valuesLandOnTheirMonthAndSeriesKeepTheirDeclarationOrder() {
         builder.declare("first", MetricUnit.COUNT);
         builder.put("second", YearMonth.of(2026, 4), new PercentValue(Percentage.ofPoints(new BigDecimal("80"))));
