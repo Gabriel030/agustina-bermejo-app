@@ -1,7 +1,5 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.account.domain.InvoiceSettlement;
-import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeChargeCorrection;
 import com.red_escuela.backend.billing.collections.operation.LateFeeDebitNoteIssuingOperation;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
@@ -31,7 +29,6 @@ public class LateFeeReinstatementService implements AnnulledLateFeeReinstatement
 
     private final LateFeeChargeCorrectionRepository correctionRepository;
     private final InvoiceCreditAccessService invoiceAccess;
-    private final InvoiceSettlementQueryService settlementQuery;
     private final LateFeeContextLoader contextLoader;
     private final LatePaymentVersionResolver versionResolver;
     private final PolicySet<LateFeeIssuingContext> issuingPolicies;
@@ -39,12 +36,11 @@ public class LateFeeReinstatementService implements AnnulledLateFeeReinstatement
     private final LateFeeDebitNoteIssuingOperation operation;
 
     public LateFeeReinstatementService(LateFeeChargeCorrectionRepository correctionRepository, InvoiceCreditAccessService invoiceAccess,
-                                       InvoiceSettlementQueryService settlementQuery, LateFeeContextLoader contextLoader, LatePaymentVersionResolver versionResolver,
+                                       LateFeeContextLoader contextLoader, LatePaymentVersionResolver versionResolver,
                                        PolicySet<LateFeeIssuingContext> debitNoteIssuingPolicySet, BillingOperationPipeline pipeline,
                                        LateFeeDebitNoteIssuingOperation operation) {
         this.correctionRepository = correctionRepository;
         this.invoiceAccess = invoiceAccess;
-        this.settlementQuery = settlementQuery;
         this.contextLoader = contextLoader;
         this.versionResolver = versionResolver;
         this.issuingPolicies = debitNoteIssuingPolicySet;
@@ -59,11 +55,7 @@ public class LateFeeReinstatementService implements AnnulledLateFeeReinstatement
         List<Long> reinstatedDebitNoteIds = new ArrayList<>();
         reopenedInvoiceIds.stream().sorted().forEach(originInvoiceId -> {
             Invoice origin = invoiceAccess.findInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
-            Optional<InvoiceSettlement> current = settlementQuery.findCurrentSettlementOfInvoice(originInvoiceId);
             for (LateFeeChargeCorrection correction : correctionRepository.findPaymentCorrectionsNotReinstatedOfOriginInvoice(originInvoiceId)) {
-                if (current.isPresent() && current.get().allocationId().equals(correction.getSettlementAllocationId())) {
-                    continue;
-                }
                 reinstateCorrection(origin, correction, businessDate, timeline).ifPresent(reinstatedDebitNoteIds::add);
             }
         });

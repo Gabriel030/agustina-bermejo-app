@@ -5,6 +5,8 @@ import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.payment.operation.RegisterChargebackCommand;
 import com.red_escuela.backend.billing.payment.operation.RegisterChargebackOperation;
 import com.red_escuela.backend.billing.payment.operation.ReverseChargebackCommand;
+import com.red_escuela.backend.billing.payment.operation.RevokeBankTransferApprovalCommand;
+import com.red_escuela.backend.billing.payment.operation.RevokeBankTransferApprovalOperation;
 import com.red_escuela.backend.billing.payment.operation.ReverseChargebackOperation;
 import com.red_escuela.backend.billing.reporting.domain.CountValue;
 import com.red_escuela.backend.billing.reporting.domain.MetricSeries;
@@ -42,6 +44,8 @@ class LateFeeReinstatementAfterReversalIT extends AbstractLateFeeScenarioIT {
     private RegisterChargebackOperation chargebackOperation;
     @Autowired
     private ReverseChargebackOperation reverseChargebackOperation;
+    @Autowired
+    private RevokeBankTransferApprovalOperation revokeOperation;
     @Autowired
     private LateFeesMetricQuery lateFeesMetricQuery;
 
@@ -122,6 +126,7 @@ class LateFeeReinstatementAfterReversalIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(reinstatementsOf(march.origin())).hasSize(1);
+        assertThat(netBilledOf(march.origin())).isEqualByComparingTo("6000.00");
         assertThat(jdbc.queryForObject("select count(*) from invoice where invoice_type = 'LATE_FEE' and student_current_account_id = ? "
                 + "and total = 600.00", Long.class, march.origin().getStudentCurrentAccountId())).isEqualTo(1L);
         assertScenarioInvariants(d(2402, 4, 10));
@@ -142,6 +147,26 @@ class LateFeeReinstatementAfterReversalIT extends AbstractLateFeeScenarioIT {
                 .containsExactly("2403-03-12..2403-03-31:MONTH_CLOSE", "2403-03-29..2403-03-31:REINSTATEMENT", "2403-04-01..2403-04-30:MONTH_CLOSE");
         assertThat(netBilledOf(march.origin())).isEqualByComparingTo("10000.00");
         assertScenarioInvariants(d(2403, 5, 1));
+    }
+
+    @Test
+    @Tag("D-206")
+    void revokingTheApprovalReinstatesTheDaysThePaymentHadAnnulledWithADebitNoteForThoseDays() {
+        AnnulledMarch march = marchAnnulledByAPaymentDatedThe28th(2405);
+        assertThat(netBilledOf(march.origin())).isEqualByComparingTo("3400.00");
+        MutableClock.INSTANCE.setDate(d(2405, 4, 10));
+        jdbc.update("update payment set method_type = 'BANK_TRANSFER', method_details = cast('{\"type\":\"BANK_TRANSFER\"}' as jsonb) where id = ?", march.paymentId());
+
+        pipeline.runOperation(revokeOperation, new RevokeBankTransferApprovalCommand(march.paymentId(), "Aprobada por error", ACTOR));
+        awaitEventsDrained();
+
+        List<Map<String, Object>> reinstated = reinstatementsOf(march.origin());
+        assertThat(reinstated).hasSize(1);
+        assertThat(reinstated.get(0).get("period_start").toString()).isEqualTo("2405-03-29");
+        assertThat(reinstated.get(0)).containsEntry("charged_days", 3).containsEntry("cutoff_kind", "REINSTATEMENT");
+        assertThat((BigDecimal) reinstated.get(0).get("nd_total")).isEqualByComparingTo("600.00");
+        assertThat(netBilledOf(march.origin())).isEqualByComparingTo("4000.00");
+        assertScenarioInvariants(d(2405, 4, 10));
     }
 
     @Test
