@@ -13,3 +13,5 @@ frontend/coverage/
 
 # MacOS
 .DS_Store
+# Password del scrape de Prometheus (Épica 17 Fase 4) — se arma a partir del .example
+ops/prometheus/scrape_password

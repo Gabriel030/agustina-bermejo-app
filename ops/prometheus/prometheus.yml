@@ -1,0 +1,19 @@
+# Scrape de 60s, igual que el step de la Fase 2 (Grafana Cloud). Acá no hay cuota que
+# lo obligue, pero mantener el mismo intervalo hace que las queries con ventanas [5m]
+# den los mismos números contra los dos backends: bajarlo a 15s solo acá produciría
+# gráficos distintos para el mismo dato.
+global:
+  scrape_interval: 60s
+  external_labels:
+    env: local
+
+scrape_configs:
+  - job_name: 'agustina-bermejo-backend'
+    metrics_path: '/actuator/prometheus'
+    basic_auth:
+      username: 'scraper'
+      # El password NO va en este archivo: es del repo. Se monta aparte y está
+      # gitignoreado (ver scrape_password.example).
+      password_file: '/etc/prometheus/scrape_password'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
