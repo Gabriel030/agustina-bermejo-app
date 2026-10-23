@@ -74,8 +74,9 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
     @Override
     public InvoiceIssued processOperation(InvoiceIssuingContext context) {
         InvoiceIssuingRequest request = context.request();
-        StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(request.studentId(), context.facts().offeringCurrency());
         context.reselectDiscounts();
+        context.replaceWinningDiscounts(strategiesByOrigin.registerWinnersBeforeInvoiceIsAssembled(context.winningDiscounts(), context));
+        StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(request.studentId(), context.facts().offeringCurrency());
         Invoice invoice = InvoiceDraftAssembler.assembleDraftInvoice(context, account.getId());
         invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), context.facts().issueDate(), request.dueDate(),
                 context.facts().studentSnapshot(), request.actor());

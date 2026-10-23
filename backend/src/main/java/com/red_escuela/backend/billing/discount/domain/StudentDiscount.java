@@ -39,6 +39,9 @@ import java.util.List;
 @Entity
 @Table(name = "student_discount")
 public class StudentDiscount {
+    private static final int ENTRY_DISCOUNT_PRIORITY = 1;
+    private static final int SINGLE_USE_INSTALLMENTS = 1;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -101,8 +104,11 @@ public class StudentDiscount {
     @Column(name = "granted_at", nullable = false, updatable = false)
     private Instant grantedAt;
 
-    @Column(name = "granted_by_id", nullable = false, updatable = false)
+    @Column(name = "granted_by_id", updatable = false)
     private Long grantedById;
+
+    @Column(name = "configuration_version_id", updatable = false)
+    private Long configurationVersionId;
 
     @Column(name = "reason", nullable = false, updatable = false)
     private String reason;
@@ -174,6 +180,29 @@ public class StudentDiscount {
         discount.grantedById = acquisition.actorPersonId();
         discount.reason = acquisition.reason();
         discount.moveTo(StudentDiscountEvent.DISCOUNT_GRANTED, StatusChangeActor.ofPerson(acquisition.actorPersonId()), now, acquisition.reason());
+        return discount;
+    }
+
+    public static StudentDiscount registerCohortEntryDiscount(CohortEntryRegistration registration, Instant now) {
+        StudentDiscount discount = new StudentDiscount();
+        discount.programEnrollmentId = registration.enrollment().kind() == EnrollmentKind.PROGRAM ? registration.enrollment().id() : null;
+        discount.courseEnrollmentId = registration.enrollment().kind() == EnrollmentKind.COURSE ? registration.enrollment().id() : null;
+        discount.studentId = registration.studentId();
+        discount.currency = registration.currency();
+        discount.configurationVersionId = registration.configurationVersionId();
+        discount.discountType = DiscountType.COHORT_ENTRY;
+        discount.applicableInvoiceType = InvoiceType.ENROLLMENT_FEE;
+        discount.origin = StudentDiscountOrigin.COHORT_ENTRY_CONFIGURATION;
+        discount.calculation = new MonetaryAdjustment.Proportional(registration.discount());
+        discount.priority = ENTRY_DISCOUNT_PRIORITY;
+        discount.installmentsTotal = SINGLE_USE_INSTALLMENTS;
+        discount.fromPeriod = registration.period();
+        discount.toPeriod = registration.period();
+        discount.grantedAt = now;
+        discount.grantedById = registration.actor().personId();
+        discount.reason = registration.reason();
+        discount.moveTo(StudentDiscountEvent.DISCOUNT_GRANTED, registration.actor(), now, registration.reason());
+        discount.moveTo(StudentDiscountEvent.LAST_INSTALLMENT_CONSUMED, registration.actor(), now, null);
         return discount;
     }
 

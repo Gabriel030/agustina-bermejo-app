@@ -68,7 +68,7 @@ public final class IssuingTestData {
 
     private static DiscountCandidateOrigin legacyOriginOf(DiscountType type) {
         return switch (type) {
-            case COHORT_ENTRY -> DiscountCandidateOrigin.LEGACY_COHORT_ENTRY;
+            case COHORT_ENTRY -> DiscountCandidateOrigin.COHORT_ENTRY;
             case SCHOLARSHIP, PROMOTION, COHORT_PROMOTION, ANNUAL_UPFRONT, INDIVIDUAL -> DiscountCandidateOrigin.STUDENT_DISCOUNT;
         };
     }

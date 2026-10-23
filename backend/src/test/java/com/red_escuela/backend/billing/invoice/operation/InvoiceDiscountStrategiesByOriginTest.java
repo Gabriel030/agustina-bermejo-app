@@ -23,17 +23,17 @@ import static org.mockito.Mockito.when;
 @Tag("D-073")
 class InvoiceDiscountStrategiesByOriginTest {
 
-    private final InvoiceDiscountCandidateStrategy legacyCohortEntry = mock(InvoiceDiscountCandidateStrategy.class);
+    private final InvoiceDiscountCandidateStrategy cohortEntry = mock(InvoiceDiscountCandidateStrategy.class);
     private final InvoiceDiscountCandidateStrategy studentDiscount = mock(InvoiceDiscountCandidateStrategy.class);
 
     private InvoiceDiscountStrategiesByOrigin strategies() {
-        when(legacyCohortEntry.origin()).thenReturn(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+        when(cohortEntry.origin()).thenReturn(DiscountCandidateOrigin.COHORT_ENTRY);
         when(studentDiscount.origin()).thenReturn(DiscountCandidateOrigin.STUDENT_DISCOUNT);
-        return new InvoiceDiscountStrategiesByOrigin(List.of(legacyCohortEntry, studentDiscount));
+        return new InvoiceDiscountStrategiesByOrigin(List.of(cohortEntry, studentDiscount));
     }
 
-    private InvoiceDiscountCandidate legacyCohortEntryWinner() {
-        return withOrigin(candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "50.00"), DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+    private InvoiceDiscountCandidate cohortEntryWinner() {
+        return withOrigin(candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "50.00"), DiscountCandidateOrigin.COHORT_ENTRY);
     }
 
     private InvoiceDiscountCandidate studentScholarshipWinner() {
@@ -42,11 +42,11 @@ class InvoiceDiscountStrategiesByOriginTest {
 
     @Test
     void markingAsAppliedReachesTheStrategyThatProducedTheWinner() {
-        InvoiceDiscountCandidate legacy = legacyCohortEntryWinner();
+        InvoiceDiscountCandidate legacy = cohortEntryWinner();
 
         strategies().markWinnersAsApplied(List.of(legacy));
 
-        verify(legacyCohortEntry).markDiscountAsApplied(legacy);
+        verify(cohortEntry).markDiscountAsApplied(legacy);
         verify(studentDiscount, never()).markDiscountAsApplied(legacy);
     }
 
@@ -57,21 +57,21 @@ class InvoiceDiscountStrategiesByOriginTest {
         strategies().markWinnersAsApplied(List.of(fromStudentDiscount));
 
         verify(studentDiscount).markDiscountAsApplied(fromStudentDiscount);
-        verify(legacyCohortEntry, never()).markDiscountAsApplied(fromStudentDiscount);
+        verify(cohortEntry, never()).markDiscountAsApplied(fromStudentDiscount);
     }
 
     @Test
     void twoStrategiesDeclaringTheSameOriginAreRejectedAtStartup() {
         InvoiceDiscountCandidateStrategy first = mock(InvoiceDiscountCandidateStrategy.class);
         InvoiceDiscountCandidateStrategy second = mock(InvoiceDiscountCandidateStrategy.class);
-        when(first.origin()).thenReturn(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
-        when(second.origin()).thenReturn(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+        when(first.origin()).thenReturn(DiscountCandidateOrigin.COHORT_ENTRY);
+        when(second.origin()).thenReturn(DiscountCandidateOrigin.COHORT_ENTRY);
 
         assertThatThrownBy(() -> new InvoiceDiscountStrategiesByOrigin(List.of(first, second))).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void everyRegisteredStrategyIsReturned() {
-        assertThat(strategies().all()).containsExactlyInAnyOrder(legacyCohortEntry, studentDiscount);
+        assertThat(strategies().all()).containsExactlyInAnyOrder(cohortEntry, studentDiscount);
     }
 }

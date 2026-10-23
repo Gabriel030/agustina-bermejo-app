@@ -124,6 +124,12 @@ public abstract class AbstractCohortPromotionAcquisitionIT extends AbstractInteg
         return learner;
     }
 
+    protected IssuingScenarioFactory.Learner newLearnerOfCohort(Long cohortId) {
+        IssuingScenarioFactory.Learner learner = factory.newLearner(offering, cohortId);
+        studentIds.add(learner.studentId());
+        return learner;
+    }
+
     protected void acquire(IssuingScenarioFactory.Learner learner) {
         acquisitionPort.acquireCohortPromotionWhenEligible(CohortPromotionAcquisitionRequest.forProgramEnrollment(
                 learner.programEnrollmentId(), offering.programId(), null, ENROLLMENT_DATE, director.getId()));

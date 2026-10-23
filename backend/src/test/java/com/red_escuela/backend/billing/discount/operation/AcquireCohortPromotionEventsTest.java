@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-240")
 class AcquireCohortPromotionEventsTest {
     private static final Instant NOW = Instant.parse("2027-02-01T10:00:00Z");
-    private final AcquireCohortPromotionOperation operation = new AcquireCohortPromotionOperation(null, null, null, null, null, null, null, null);
+    private final AcquireCohortPromotionOperation operation = new AcquireCohortPromotionOperation(null, null, null, null, null, null, null, null, null);
 
     private DiscountDefinition definitionWithQuota(Long id, Integer quota) {
         DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().named("Cohorte").withQuota(quota).build(), 7L, NOW);
