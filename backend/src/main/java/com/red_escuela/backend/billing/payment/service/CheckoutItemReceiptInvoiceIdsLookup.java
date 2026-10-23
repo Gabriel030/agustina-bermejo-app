@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.payment.service;
 
 import com.red_escuela.backend.billing.operation.ReceiptInvoiceIdsLookup;
+import com.red_escuela.backend.billing.operation.ReceiptSelectedInvoice;
 import com.red_escuela.backend.billing.payment.domain.PaymentCheckoutItem;
 import com.red_escuela.backend.billing.payment.repository.PaymentCheckoutItemRepository;
 import org.springframework.stereotype.Component;
@@ -29,5 +30,16 @@ public class CheckoutItemReceiptInvoiceIdsLookup implements ReceiptInvoiceIdsLoo
         return checkoutItems.findByPaymentIdInOrderByPaymentIdAscPositionAsc(paymentIds).stream()
                 .collect(Collectors.groupingBy(PaymentCheckoutItem::getPaymentId, LinkedHashMap::new,
                         Collectors.mapping(PaymentCheckoutItem::getInvoiceId, Collectors.toList())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<ReceiptSelectedInvoice>> findSelectedInvoicesByPaymentId(Collection<Long> paymentIds) {
+        if (paymentIds.isEmpty()) {
+            return Map.of();
+        }
+        return checkoutItems.findByPaymentIdInOrderByPaymentIdAscPositionAsc(paymentIds).stream()
+                .collect(Collectors.groupingBy(PaymentCheckoutItem::getPaymentId, LinkedHashMap::new,
+                        Collectors.mapping(item -> new ReceiptSelectedInvoice(item.getInvoiceId(), item.getOutstandingAtSelection()), Collectors.toList())));
     }
 }

@@ -52,7 +52,7 @@ public class BankTransferReceiptController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<BankTransferReceiptResponse> listPending() {
-        return receiptResponseAssembler.assembleBankTransferReceiptResponses(listPendingPaymentReceiptsUseCase.list());
+        return receiptResponseAssembler.assembleReviewerReceiptResponses(listPendingPaymentReceiptsUseCase.list());
     }
 
     @GetMapping("/{id}/file")
@@ -69,14 +69,14 @@ public class BankTransferReceiptController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BankTransferReceiptResponse approve(@PathVariable Long id, @RequestBody(required = false) ApproveBankTransferReceiptRequest request) {
         PaymentVerification verification = request == null ? PaymentVerification.none() : request.toVerification();
-        return receiptResponseAssembler.assembleBankTransferReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson(), verification));
+        return receiptResponseAssembler.assembleReviewerReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson(), verification));
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BankTransferReceiptResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectPaymentReceiptRequest request) {
         String rejectionReason = request == null ? null : request.rejectionReason();
-        return receiptResponseAssembler.assembleBankTransferReceiptResponse(
+        return receiptResponseAssembler.assembleReviewerReceiptResponse(
                 rejectPaymentReceiptUseCase.reject(id, rejectionReason, currentPersonService.resolveCurrentPerson()));
     }
 }
