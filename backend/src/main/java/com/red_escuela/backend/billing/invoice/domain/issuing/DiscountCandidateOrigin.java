@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.invoice.domain.issuing;
 
 public enum DiscountCandidateOrigin {
-    LEGACY_COHORT_ENTRY,
+    COHORT_ENTRY,
     STUDENT_DISCOUNT
 }

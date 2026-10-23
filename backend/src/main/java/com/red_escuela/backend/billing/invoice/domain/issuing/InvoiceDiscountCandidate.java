@@ -47,6 +47,11 @@ public record InvoiceDiscountCandidate(
                 installmentNumber, installmentsTotal, FIRST_LINE_NUMBER, null, null, null, origin);
     }
 
+    public InvoiceDiscountCandidate withStudentDiscountId(Long registeredStudentDiscountId) {
+        return new InvoiceDiscountCandidate(discountType, sourceId, registeredStudentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount,
+                installmentNumber, installmentsTotal, lineNumber, priority, grantedAt, calculation, origin);
+    }
+
     public int typeRank() {
         return switch (discountType) {
             case SCHOLARSHIP -> 1;

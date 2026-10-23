@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.invoice.service.legacy;
+package com.red_escuela.backend.billing.invoice.service;
 
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;

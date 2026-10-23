@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.BillingDashboardGoals;
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
+import com.red_escuela.backend.billing.configuration.domain.CohortEntryVersion;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
@@ -54,6 +55,12 @@ public class BillingConfigurationReader {
 
     public Optional<CohortEntryDiscount> findCohortEntryEffectiveOn(Long cohortId, LocalDate date) {
         return findEffective(ConfigurationTopic.ofCohortEntry(cohortId), date, CohortEntryDiscount.class);
+    }
+
+    public Optional<CohortEntryVersion> findCohortEntryVersionEffectiveOn(Long cohortId, LocalDate date) {
+        ConfigurationTopic topic = ConfigurationTopic.ofCohortEntry(cohortId);
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date)
+                .map(version -> new CohortEntryVersion(version.getId(), CohortEntryDiscount.class.cast(version.values())));
     }
 
     public Optional<LatePaymentTerms> findLatePaymentSettingsEffectiveOn(LocalDate date) {

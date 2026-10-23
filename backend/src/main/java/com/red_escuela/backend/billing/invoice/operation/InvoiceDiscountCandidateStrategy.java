@@ -16,6 +16,10 @@ public interface InvoiceDiscountCandidateStrategy {
         return findDiscountCandidatesForInvoice(context);
     }
 
+    default InvoiceDiscountCandidate registerWinnerBeforeInvoiceIsAssembled(InvoiceDiscountCandidate winner, InvoiceIssuingContext context) {
+        return winner;
+    }
+
     default void markDiscountAsApplied(InvoiceDiscountCandidate winner) {
     }
 }
