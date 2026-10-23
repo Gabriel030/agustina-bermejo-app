@@ -5,6 +5,7 @@ import com.red_escuela.backend.shared.domain.Money;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public record PlannedReminderBlock(Currency currency, List<PlannedReminderLine> lines, Money total, Money availableCredit, Long shortfallInvoiceId, Money missingForNext) {
 
@@ -17,12 +18,16 @@ public record PlannedReminderBlock(Currency currency, List<PlannedReminderLine> 
     }
 
     public Optional<PlannedReminderBlock> withoutLinesPrecedingTheirDueDate() {
-        List<PlannedReminderLine> remaining = lines.stream().filter(line -> !line.precedesDueDate()).toList();
+        return withoutLinesMatching(PlannedReminderLine::precedesDueDate);
+    }
+
+    public Optional<PlannedReminderBlock> withoutLinesMatching(Predicate<PlannedReminderLine> removed) {
+        List<PlannedReminderLine> remaining = lines.stream().filter(line -> !removed.test(line)).toList();
         if (remaining.isEmpty()) {
             return Optional.empty();
         }
         Money remainingTotal = remaining.stream().map(PlannedReminderLine::balance).reduce(Money.zero(currency), Money::plus);
-        boolean shortfallInvoiceRemoved = shortfallInvoiceId != null && lines.stream().anyMatch(line -> shortfallInvoiceId.equals(line.invoiceId()) && line.precedesDueDate());
+        boolean shortfallInvoiceRemoved = shortfallInvoiceId != null && lines.stream().anyMatch(line -> shortfallInvoiceId.equals(line.invoiceId()) && removed.test(line));
         if (!shortfallInvoiceRemoved) {
             return Optional.of(new PlannedReminderBlock(currency, remaining, remainingTotal, availableCredit, shortfallInvoiceId, missingForNext));
         }
