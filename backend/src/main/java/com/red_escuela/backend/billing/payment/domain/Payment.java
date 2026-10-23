@@ -250,6 +250,18 @@ public class Payment {
         changeStatus(PaymentEvent.BANK_TRANSFER_APPROVAL_REVOKED, reviewer, reason, GatewayRawStatus.none());
     }
 
+    public void registerChargeback(String reference, StatusChangeActor actor) {
+        changeStatus(PaymentEvent.CHARGEBACK_REGISTERED, actor, reference, GatewayRawStatus.none());
+    }
+
+    public void reverseChargeback(StatusChangeActor actor) {
+        changeStatus(PaymentEvent.CHARGEBACK_REVERSED, actor, null, GatewayRawStatus.none());
+    }
+
+    public NonNegativeMoney creditedAmount() {
+        return approvedAmount == null ? amount : approvedAmount;
+    }
+
     public List<PaymentStatusChange> statusChanges() {
         return Collections.unmodifiableList(statusChanges);
     }

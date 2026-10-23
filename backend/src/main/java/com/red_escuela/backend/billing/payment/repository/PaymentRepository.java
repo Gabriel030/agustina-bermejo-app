@@ -16,6 +16,9 @@ public interface PaymentRepository extends Repository<Payment, Long> {
 
     Optional<Payment> findById(Long id);
 
+    @Query("select p.studentCurrentAccountId from Payment p where p.id = :paymentId")
+    Optional<Long> findStudentCurrentAccountIdById(@Param("paymentId") Long paymentId);
+
     List<Payment> findByIdIn(Collection<Long> ids);
 
     List<Payment> findByStudentCurrentAccountIdInOrderByRegisteredAtDescIdDesc(Collection<Long> studentCurrentAccountIds);

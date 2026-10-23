@@ -37,6 +37,11 @@ import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityCo
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyReuseConsistencyPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyReuseContext;
+import com.red_escuela.backend.billing.payment.policy.ChargebackDateWithinPaymentLifePolicy;
+import com.red_escuela.backend.billing.payment.policy.ChargebackIsForTheFullAmountPolicy;
+import com.red_escuela.backend.billing.payment.policy.ChargebackReferenceRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.PaymentMoneyNotRefundedPolicy;
+import com.red_escuela.backend.billing.payment.policy.PaymentReversalCheck;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -118,6 +123,17 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet() {
         return PolicySet.named("PAYMENT_REJECTION", List.of(new PaymentRejectionReasonRequiredPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet() {
+        return PolicySet.named("PAYMENT_APPROVAL_REVOCATION", List.of(new PaymentMoneyNotRefundedPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PaymentReversalCheck> chargebackRegistrationPolicySet() {
+        return PolicySet.named("CHARGEBACK_REGISTRATION", List.of(new ChargebackReferenceRequiredPolicy(), new ChargebackDateWithinPaymentLifePolicy(),
+                new PaymentMoneyNotRefundedPolicy(), new ChargebackIsForTheFullAmountPolicy()));
     }
 
     @Bean

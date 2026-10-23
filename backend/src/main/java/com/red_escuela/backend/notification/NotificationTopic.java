@@ -10,7 +10,8 @@ public enum NotificationTopic implements NotificationRecipient {
     EVALUATION_CONFIG_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
     BILLING_CONFIGURATION_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
     DISCOUNT_SUPERVISION(new RoleRecipient("DIRECTOR")),
-    ENROLLMENT_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO"), new RoleRecipient("PRECEPTOR"));
+    ENROLLMENT_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO"), new RoleRecipient("PRECEPTOR")),
+    PAYMENT_REVERSAL_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO"));
 
     private final List<NotificationRecipient> members;
 
