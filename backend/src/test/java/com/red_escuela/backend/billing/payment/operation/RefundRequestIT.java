@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.authorization.service.AuthorizationRequestExpirer;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.testsupport.SlowTest;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -350,5 +351,61 @@ class RefundRequestIT extends AbstractRefundIT {
             executor.shutdownNow();
         }
         assertThat(jdbc.queryForObject("select count(*) from refund where student_current_account_id = ?", Long.class, debtor.accountId())).isEqualTo(1L);
+    }
+
+    @Test
+    @Tag("D-159")
+    @Tag("D-216")
+    void withdrawingTheRequestRejectsItsPartsAndFreesTheReservedCredit() throws Exception {
+        Debtor debtor = debtor();
+        cashPayment(debtor, "100000.00", EARLY_MARCH);
+        String administrative = staffToken("ADMINISTRATIVO");
+        MvcResult pending = mockMvc.perform(requestOnBehalf(debtor, administrative, "80000.00")).andExpect(status().isAccepted()).andReturn();
+        long authorizationRequestId = bodyOf(pending).get("authorizationRequestId").asLong();
+        long refundId = bodyOf(pending).get("parts").get(0).get("id").asLong();
+        assertThat(mockMvc.perform(requestOnBehalf(debtor, administrative, "80000.00")).andReturn().getResponse().getStatus()).isEqualTo(409);
+
+        mockMvc.perform(decision("withdraw", authorizationRequestId, administrative)).andExpect(status().isOk());
+
+        assertThat(authorizationStatus(authorizationRequestId)).isEqualTo("WITHDRAWN");
+        assertThat(refundStatus(refundId)).isEqualTo("REJECTED");
+        assertThat(refundRow(refundId).get("rejection_reason").toString()).contains("retirado");
+        mockMvc.perform(requestOnBehalf(debtor, administrative, "80000.00")).andExpect(status().isAccepted());
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-159")
+    @Tag("D-216")
+    void ifTheCreditWasUsedBeforeTheDirectorApprovesTheRequestIsRejectedOnResumeAndItsPartsAreRejected() throws Exception {
+        Debtor debtor = debtor();
+        cashPayment(debtor, "100000.00", EARLY_MARCH);
+        long authorizationRequestId = bodyOf(mockMvc.perform(requestOnBehalf(debtor, staffToken("ADMINISTRATIVO"), "70000.00")).andReturn()).get("authorizationRequestId").asLong();
+        long refundId = jdbc.queryForObject("select id from refund where authorization_request_id = ?", Long.class, authorizationRequestId);
+        inTransaction(() -> {
+            service.consumeUnallocatedCreditForAllocation(service.lockStudentCurrentAccount(debtor.accountId()), NonNegativeMoney.of(ars("50000.00")));
+            return null;
+        });
+
+        MvcResult result = mockMvc.perform(decision("approve", authorizationRequestId, staffToken("DIRECTOR"))).andReturn();
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(409);
+        assertThat(codeOf(result)).isEqualTo("INSUFFICIENT_ACCOUNT_CREDIT");
+        assertThat(refundStatus(refundId)).isEqualTo("REJECTED");
+        assertThat(jdbc.queryForObject("select resume_outcome from authorization_request where id = ?", String.class, authorizationRequestId)).isEqualTo("REJECTED_ON_RESUME");
+    }
+
+    @Test
+    @Tag("D-216")
+    void aStudentWhoAlsoHoldsTheDirectorRoleStillWaitsForApprovalWhenRequestingOwnRefund() throws Exception {
+        Debtor debtor = debtor();
+        cashPayment(debtor, "100000.00", EARLY_MARCH);
+        studentTokenOf(debtor);
+        String studentAndDirector = tokenOf(personOf(debtor), "DIRECTOR");
+
+        MvcResult result = mockMvc.perform(refundRequest("/me/refund-requests", studentAndDirector, "10000.00", REQUEST_ACCOUNT, REQUEST_HOLDER)).andReturn();
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(202);
+        assertThat(bodyOf(result).get("parts").get(0).get("status").asText()).isEqualTo("REQUESTED");
     }
 }

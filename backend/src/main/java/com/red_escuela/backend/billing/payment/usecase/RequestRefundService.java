@@ -17,12 +17,12 @@ public class RequestRefundService implements RequestRefundUseCase {
     @Override
     @PreAuthorize("hasRole('ALUMNO')")
     public RefundRequestResult requestOwnRefund(Long studentId, RequestRefundRequest request) {
-        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder());
+        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), true);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public RefundRequestResult requestRefundOnBehalfOfStudent(Long studentId, RequestRefundRequest request) {
-        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder());
+        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), false);
     }
 }
