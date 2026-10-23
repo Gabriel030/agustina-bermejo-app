@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.authorization.service.DirectorAuthorizationHandler;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.OperationPreHandlers;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
@@ -18,6 +19,11 @@ public class PaymentOperationHandlersConfiguration {
     public OperationPreHandlers registerPaymentPreHandlers(IdempotencyRecordService recordService, ObjectMapper objectMapper) {
         return new OperationPreHandlers(BillingOperationType.REGISTER_PAYMENT,
                 List.of(new IdempotencyKeyHandler<RegisterCashPaymentCommand>(recordService, objectMapper, CashPaymentRegistrationResult.class)));
+    }
+
+    @Bean
+    public OperationPreHandlers issueRefundPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
+        return new OperationPreHandlers(BillingOperationType.ISSUE_REFUND, List.of(directorAuthorizationHandler));
     }
 
     @Bean

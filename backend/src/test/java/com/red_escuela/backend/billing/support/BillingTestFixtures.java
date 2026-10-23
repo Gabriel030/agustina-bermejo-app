@@ -116,6 +116,21 @@ public final class BillingTestFixtures {
         return seedApprovedPaymentRow(accountId, amount.value().amount());
     }
 
+    public static long seedCompletedRefundRow(Long accountId, NonNegativeMoney amount) {
+        long paymentId = seedApprovedPaymentRow(accountId, amount);
+        org.springframework.jdbc.core.JdbcTemplate jdbc = bean(org.springframework.jdbc.core.JdbcTemplate.class);
+        jdbc.update("update payment set refunded_amount = ?, status = 'REFUNDED' where id = ?", amount.value().amount(), paymentId);
+        long refundId = jdbc.queryForObject(
+                "insert into refund (refund_request_id, payment_id, student_current_account_id, currency, status, method_type, amount, amount_currency, "
+                        + "destination_account, destination_holder, requested_by_person_id, requested_on, approved_on, completed_on, completion_reference) "
+                        + "select nextval('refund_request_id_seq'), ?, a.id, a.currency, 'COMPLETED', 'CASH', ?, a.currency, 'CBU-TEST', 'Titular de prueba', s.person_id, "
+                        + "current_date, current_date, current_date, 'REF-TEST' from student_current_account a join student s on s.id = a.student_id where a.id = ? returning id",
+                Long.class, paymentId, amount.value().amount(), accountId);
+        jdbc.update("insert into refund_status_change (refund_id, event, from_status, to_status, actor_person_id, occurred_at) "
+                + "select r.id, 'REFUND_COMPLETED', 'APPROVED', 'COMPLETED', r.requested_by_person_id, now() from refund r where r.id = ?", refundId);
+        return refundId;
+    }
+
     private static long seedApprovedPaymentRow(Long accountId, java.math.BigDecimal amount) {
         return bean(org.springframework.jdbc.core.JdbcTemplate.class).queryForObject(
                 "insert into payment (student_current_account_id, currency, status, gateway, method_type, amount, amount_currency, approved_amount, "

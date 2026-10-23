@@ -360,6 +360,13 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-159")
+    void refundStatusChangesOnlyThroughItsTransitionTable() {
+        ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable("com.red_escuela.backend.billing.payment.domain.Refund", "status", "changeStatus",
+                "com.red_escuela.backend.billing.payment.domain.RefundStatusStateMachine").check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-082")
     void paymentsArePersistedOnlyByOperations() {
         ArchitectureRules.economicStateIsPersistedOnlyByOperations(PAYMENT_V2_REPOSITORY_CLASS, com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
