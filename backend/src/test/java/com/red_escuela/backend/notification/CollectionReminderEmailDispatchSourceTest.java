@@ -3,6 +3,7 @@ package com.red_escuela.backend.notification;
 import com.red_escuela.backend.billing.api.CollectionReminderApplicabilityQuery;
 import com.red_escuela.backend.billing.api.CollectionReminderEmailsQuery;
 import com.red_escuela.backend.billing.api.StoredReminderEmails;
+import com.red_escuela.backend.billing.events.PlannedReminderFormat;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.billing.events.PlannedReminderNoticeType;
 import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
@@ -80,7 +81,8 @@ class CollectionReminderEmailDispatchSourceTest {
 
         List<DispatchItem> items = source.itemsOf(reminderDelivery(0));
 
-        assertThat(items).containsExactly(new DispatchItem("invoice:2", OVERDUE_SINCE, false, 2), new DispatchItem("invoice:1", DUE_SOON, true, 3));
+        assertThat(items).containsExactly(new DispatchItem("invoice:2", OVERDUE_SINCE, false, PlannedReminderNoticeType.AFTER_DUE_REMINDER.dispatchPriority()),
+                new DispatchItem("invoice:1", DUE_SOON, true, PlannedReminderNoticeType.BEFORE_DUE_REMINDER.dispatchPriority()));
     }
 
     @Test
@@ -161,5 +163,15 @@ class CollectionReminderEmailDispatchSourceTest {
         when(preferences.isPreDueReminderEmailEnabled(PERSON_ID)).thenReturn(false);
         assertThat(source.suppressionReasonOf(reminderDelivery(0))).isEmpty();
         assertThat(source.suppressionReasonOf(deliveryOf("Invoice", 11L, "other:1"))).isEmpty();
+    }
+
+    @Test
+    void aDebtSummaryHasNoItemsSoItNeverExpiresAndIsNeverTrimmed() {
+        PlannedReminderMessage summary = new PlannedReminderMessage(PlannedReminderFormat.DEBT_SUMMARY, PlannedReminderNoticeType.AFTER_DUE_REMINDER, 3, false,
+                mixedDigest().blocks(), null);
+        storedEmails(summary);
+
+        assertThat(source.itemsOf(reminderDelivery(0))).isEmpty();
+        assertThat(source.contentWithoutItems(reminderDelivery(0), Set.of("invoice:1"))).isPresent();
     }
 }

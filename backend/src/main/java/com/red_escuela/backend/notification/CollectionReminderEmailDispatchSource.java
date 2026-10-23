@@ -3,6 +3,7 @@ package com.red_escuela.backend.notification;
 import com.red_escuela.backend.billing.api.CollectionReminderApplicabilityQuery;
 import com.red_escuela.backend.billing.api.CollectionReminderEmailsQuery;
 import com.red_escuela.backend.billing.api.StoredReminderEmails;
+import com.red_escuela.backend.billing.events.PlannedReminderFormat;
 import com.red_escuela.backend.billing.events.PlannedReminderLine;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.billing.events.PlannedReminderNotice;
@@ -78,6 +79,9 @@ public class CollectionReminderEmailDispatchSource implements EmailDispatchSourc
     }
 
     private List<DispatchItem> itemsOf(PlannedReminderMessage message) {
+        if (message.format() == PlannedReminderFormat.DEBT_SUMMARY) {
+            return List.of();
+        }
         return message.lines().stream().filter(PlannedReminderLine::isHighlighted).map(line -> new DispatchItem(ITEM_KEY_PREFIX + line.invoiceId(), line.dueDate(),
                 line.precedesDueDate(), line.notices().stream().mapToInt(CollectionReminderEmailDispatchSource::priorityOf).min().orElseThrow())).toList();
     }
