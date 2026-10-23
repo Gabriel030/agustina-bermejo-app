@@ -73,6 +73,17 @@ final class ReminderTimelineHarness {
     }
 
     void runDay(LocalDate day) {
+        runDayUntilPlanned(day);
+        for (int hour = 9; hour <= 11; hour++) {
+            at(day, hour, 0);
+            dispatchJob.dispatchDueEmails();
+        }
+        at(day, 12, 0);
+        duringTheDay.accept(day);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    void runDayUntilPlanned(LocalDate day) {
         at(day, 3, 0);
         runOverdueSweep(day);
         at(day, 3, 1);
@@ -84,13 +95,16 @@ final class ReminderTimelineHarness {
         at(day, 5, 0);
         planAndAwaitDelivery(day);
         invariants.assertReminderInvariantsHoldOn(day);
-        for (int hour = 9; hour <= 11; hour++) {
-            at(day, hour, 0);
-            dispatchJob.dispatchDueEmails();
-        }
-        at(day, 12, 0);
-        duringTheDay.accept(day);
+    }
+
+    void dispatchAt(LocalDate day, int hour, int minute) {
+        at(day, hour, minute);
+        dispatchJob.dispatchDueEmails();
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    void atTime(LocalDate day, int hour, int minute) {
+        at(day, hour, minute);
     }
 
     private void at(LocalDate day, int hour, int minute) {

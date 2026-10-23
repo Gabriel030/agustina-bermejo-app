@@ -41,12 +41,17 @@ public final class CollectionReminderImpactCalculator {
     private static Set<FiringReminder> firingRemindersOf(ReminderStudentFacts student, Map<Long, ResolvedReminderSchedule> schedulesByInvoiceId, LocalDate windowStart,
                                                          LocalDate windowEnd, NonBusinessDays nonBusinessDays) {
         Set<FiringReminder> firing = new HashSet<>();
+        List<ReminderInvoiceFact> listedDebt = DailyReminderDigestPlanner.listedDebtOf(student);
         for (ReminderInvoiceFact fact : student.invoices()) {
             ResolvedReminderSchedule schedule = schedulesByInvoiceId.get(fact.invoiceId());
             if (schedule == null || !DailyReminderDigestPlanner.sendsReminders(fact)) {
                 continue;
             }
-            for (ReminderOccurrence occurrence : ReminderOccurrenceExpander.expandOccurrencesUpTo(fact, schedule.notices(), windowEnd)) {
+            for (ReminderOccurrence scheduled : ReminderOccurrenceExpander.expandOccurrencesUpTo(fact, schedule.notices(), windowEnd)) {
+                ReminderOccurrence occurrence = DailyReminderDigestPlanner.occurrenceThatSendsOf(fact, scheduled, listedDebt).orElse(null);
+                if (occurrence == null) {
+                    continue;
+                }
                 occurrence.inAppDate().filter(date -> isWithin(date, windowStart, windowEnd))
                         .ifPresent(date -> firing.add(new FiringReminder(occurrence.invoiceId(), occurrence.noticeKey(), ReminderChannel.IN_APP, date)));
                 occurrence.emailDate(nonBusinessDays).filter(date -> isWithin(date, windowStart, windowEnd))

@@ -15,7 +15,7 @@ public record ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceD
                                   InvoiceDocumentStatus documentStatus, InvoicePaymentStatus paymentStatus, LocalDate issueDate,
                                   LocalDate dueDate, LocalDate suspensionDate, NonNegativeMoney balance, Long programEnrollmentId,
                                   Long courseEnrollmentId, boolean receiptUnderReview, boolean openCancellationRequest, boolean enrollmentSuspended,
-                                  boolean issuedAfterPreviousRun) {
+                                  boolean issuedAfterPreviousRun, NonNegativeMoney finalPrice) {
 
     public ReminderInvoiceFact {
         Objects.requireNonNull(invoiceId, "invoiceId");
@@ -32,7 +32,19 @@ public record ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceD
                                InvoicePaymentStatus paymentStatus, LocalDate issueDate, LocalDate dueDate, LocalDate suspensionDate, NonNegativeMoney balance,
                                Long programEnrollmentId, Long courseEnrollmentId, boolean receiptUnderReview, boolean openCancellationRequest) {
         this(invoiceId, originInvoiceId, documentType, invoiceType, documentStatus, paymentStatus, issueDate, dueDate, suspensionDate, balance, programEnrollmentId,
-                courseEnrollmentId, receiptUnderReview, openCancellationRequest, false, false);
+                courseEnrollmentId, receiptUnderReview, openCancellationRequest, false, false, null);
+    }
+
+    public ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceDocumentType documentType, InvoiceType invoiceType, InvoiceDocumentStatus documentStatus,
+                               InvoicePaymentStatus paymentStatus, LocalDate issueDate, LocalDate dueDate, LocalDate suspensionDate, NonNegativeMoney balance,
+                               Long programEnrollmentId, Long courseEnrollmentId, boolean receiptUnderReview, boolean openCancellationRequest,
+                               boolean enrollmentSuspended, boolean issuedAfterPreviousRun) {
+        this(invoiceId, originInvoiceId, documentType, invoiceType, documentStatus, paymentStatus, issueDate, dueDate, suspensionDate, balance, programEnrollmentId,
+                courseEnrollmentId, receiptUnderReview, openCancellationRequest, enrollmentSuspended, issuedAfterPreviousRun, null);
+    }
+
+    public NonNegativeMoney finalPriceOrBalance() {
+        return finalPrice == null ? balance : finalPrice;
     }
 
     public Currency currency() {
@@ -41,7 +53,7 @@ public record ReminderInvoiceFact(Long invoiceId, Long originInvoiceId, InvoiceD
 
     public ReminderInvoiceFact withPaymentStatus(InvoicePaymentStatus newPaymentStatus) {
         return new ReminderInvoiceFact(invoiceId, originInvoiceId, documentType, invoiceType, documentStatus, newPaymentStatus, issueDate, dueDate, suspensionDate,
-                balance, programEnrollmentId, courseEnrollmentId, receiptUnderReview, openCancellationRequest, enrollmentSuspended, issuedAfterPreviousRun);
+                balance, programEnrollmentId, courseEnrollmentId, receiptUnderReview, openCancellationRequest, enrollmentSuspended, issuedAfterPreviousRun, finalPrice);
     }
 
     public boolean isDebitNote() {

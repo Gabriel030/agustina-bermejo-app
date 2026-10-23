@@ -180,6 +180,45 @@ class CollectionReminderImpactCalculatorTest {
 
     @Test
     @Tag("D-350")
+    @Tag("D-347")
+    void aNewInstallmentWaitingForPriorDebtHasNoOwnNoticesSoMovingThemChangesNothing() {
+        ReminderInvoiceFact priorDebt = ReminderInvoiceFacts.installment(10, "2027-01-20", "2027-02-10");
+        ReminderInvoiceFact newInstallment = ReminderInvoiceFacts.installment(20, "2027-03-01", "2027-03-11");
+        List<ReminderStudentFacts> students = List.of(student(1, priorDebt, newInstallment));
+        Map<Long, ResolvedReminderSchedule> current = Map.of(10L, schedule(), 20L, beforeDueSchedule(-1));
+        Map<Long, ResolvedReminderSchedule> proposed = Map.of(10L, schedule(), 20L, beforeDueSchedule(-3));
+
+        assertThat(count(students, current, proposed)).isZero();
+    }
+
+    @Test
+    @Tag("D-350")
+    @Tag("D-347")
+    void theIssuanceNoticeOfAnInstallmentWithPriorDebtAlwaysAddsTheEmailSoAddingItChangesNothing() {
+        ReminderInvoiceFact priorDebt = ReminderInvoiceFacts.installment(10, "2027-01-20", "2027-02-10");
+        ReminderInvoiceFact newInstallment = ReminderInvoiceFacts.installment(20, "2027-03-10", "2027-03-25");
+        List<ReminderStudentFacts> students = List.of(student(1, priorDebt, newInstallment));
+        ReminderNotice inAppIssuance = ReminderNotice.of("issuance", ReminderMessageType.ISSUANCE_NOTICE, ReminderMilestone.ISSUANCE, 0, EnumSet.of(ReminderChannel.IN_APP));
+        ReminderNotice emailIssuance = ReminderNotice.of("issuance", ReminderMessageType.ISSUANCE_NOTICE, ReminderMilestone.ISSUANCE, 0, EnumSet.allOf(ReminderChannel.class));
+        Map<Long, ResolvedReminderSchedule> current = Map.of(10L, schedule(), 20L, schedule(inAppIssuance));
+        Map<Long, ResolvedReminderSchedule> proposed = Map.of(10L, schedule(), 20L, schedule(emailIssuance));
+
+        assertThat(count(students, current, proposed)).isZero();
+    }
+
+    @Test
+    @Tag("D-350")
+    @Tag("D-347")
+    void theIssuanceNoticeOfAnInstallmentWithoutPriorDebtKeepsItsOwnChannels() {
+        List<ReminderStudentFacts> students = List.of(student(1, ReminderInvoiceFacts.installment(20, "2027-03-10", "2027-03-25")));
+        ReminderNotice inAppIssuance = ReminderNotice.of("issuance", ReminderMessageType.ISSUANCE_NOTICE, ReminderMilestone.ISSUANCE, 0, EnumSet.of(ReminderChannel.IN_APP));
+        ReminderNotice emailIssuance = ReminderNotice.of("issuance", ReminderMessageType.ISSUANCE_NOTICE, ReminderMilestone.ISSUANCE, 0, EnumSet.allOf(ReminderChannel.class));
+
+        assertThat(count(students, Map.of(20L, schedule(inAppIssuance)), Map.of(20L, schedule(emailIssuance)))).isEqualTo(1);
+    }
+
+    @Test
+    @Tag("D-350")
     void aDigestModeChangeCountsOnlyStudentsWithSomethingFiringInTheWindow() {
         List<ReminderStudentFacts> students = List.of(student(1, installmentDueOnMarch11(10)), student(2, ReminderInvoiceFacts.installment(20, "2027-02-01", "2027-09-30")));
         Map<Long, ResolvedReminderSchedule> schedules = Map.of(10L, beforeDueSchedule(-1), 20L, beforeDueSchedule(-1));
