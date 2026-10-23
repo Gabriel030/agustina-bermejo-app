@@ -886,7 +886,13 @@
       },
       "BankTransferReceiptResponse" : {
         "properties" : {
+          "declaredAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
           "filePath" : {
+            "type" : "string"
+          },
+          "holderName" : {
             "type" : "string"
           },
           "id" : {
@@ -910,6 +916,22 @@
           "invoicePeriod" : {
             "type" : "string"
           },
+          "invoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReceiptInvoiceSummary"
+            },
+            "type" : "array"
+          },
+          "operationNumber" : {
+            "type" : "string"
+          },
+          "originAccount" : {
+            "type" : "string"
+          },
+          "pendingBusinessDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "productName" : {
             "type" : "string"
           },
@@ -917,6 +939,13 @@
             "type" : "string"
           },
           "rejectionReason" : {
+            "type" : "string"
+          },
+          "reviewAlertSent" : {
+            "type" : "boolean"
+          },
+          "reviewAlertSentAt" : {
+            "format" : "date-time",
             "type" : "string"
           },
           "status" : {
@@ -928,12 +957,16 @@
           "studentName" : {
             "type" : "string"
           },
+          "transferDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "uploadedAt" : {
             "format" : "date-time",
             "type" : "string"
           }
         },
-        "required" : [ "filePath", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "productName", "rejectionCode", "rejectionReason", "status", "studentDni", "studentName", "uploadedAt" ],
+        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentName", "transferDate", "uploadedAt" ],
         "type" : "object"
       },
       "BankTransferReceiptSubmissionResponse" : {
@@ -5563,6 +5596,28 @@
           "type" : "object"
         } ],
         "required" : [ "rate" ]
+      },
+      "ReceiptInvoiceSummary" : {
+        "properties" : {
+          "feeType" : {
+            "type" : "string"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "outstandingAtSubmission" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "period" : {
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "feeType", "invoiceId", "outstandingAtSubmission", "period", "totalAmount" ],
+        "type" : "object"
       },
       "RefreshRequest" : {
         "properties" : {
