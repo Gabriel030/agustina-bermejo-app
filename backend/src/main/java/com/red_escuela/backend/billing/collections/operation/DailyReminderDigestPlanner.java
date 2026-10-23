@@ -83,7 +83,11 @@ public final class DailyReminderDigestPlanner {
         return ReminderDigestAssembler.assembleDigestOf(student.studentId(), businessDate, debt, inAppNotices, emailNotices, student.creditByCurrency(), mode, suppressed);
     }
 
-    private static List<ReminderInvoiceFact> listedDebtOf(ReminderStudentFacts student) {
+    public static boolean sendsReminders(ReminderInvoiceFact fact) {
+        return isRemindable(fact) && RECEIPT_UNDER_REVIEW.evaluateRule(fact).allowed() && PENDING_CANCELLATION.evaluateRule(fact).allowed();
+    }
+
+    public static List<ReminderInvoiceFact> listedDebtOf(ReminderStudentFacts student) {
         return student.invoices().stream()
                 .filter(fact -> (isRemindable(fact) || isOpenLateFeeDebitNote(fact)) && PENDING_CANCELLATION.evaluateRule(fact).allowed())
                 .toList();
@@ -112,12 +116,12 @@ public final class DailyReminderDigestPlanner {
     private static void collectDue(ReminderInvoiceFact fact, ReminderOccurrence occurrence, List<ReminderInvoiceFact> listedDebt, LocalDate businessDate,
                                    NonBusinessDays nonBusinessDays, List<ReminderDueNotice> inAppNotices, List<ReminderDueNotice> emailNotices, List<SuppressedReminder> suppressed) {
         Set<ReminderChannel> ownChannels = channelsFiringOn(occurrence, businessDate, nonBusinessDays);
-        PolicyVerdict waitsForPriorDebt = WAITS_FOR_PRIOR_DEBT.evaluateRule(new PriorDebtReminderContext(fact, occurrence.messageType(), listedDebt));
+        PolicyVerdict waitsForPriorDebt = waitingForPriorDebtVerdictOf(fact, occurrence, listedDebt);
         if (!waitsForPriorDebt.allowed()) {
             ownChannels.forEach(channel -> suppressed.add(new SuppressedReminder(occurrence.invoiceId(), occurrence.noticeKey(), channel, waitsForPriorDebt.code())));
             return;
         }
-        boolean summarizesPriorDebt = occurrence.messageType() == ReminderMessageType.ISSUANCE_NOTICE && ReminderPriorDebt.existsBefore(fact, listedDebt);
+        boolean summarizesPriorDebt = summarizesPriorDebt(fact, occurrence, listedDebt);
         Set<ReminderChannel> channels = summarizesPriorDebt ? channelsFiringOn(occurrence.withChannel(ReminderChannel.EMAIL), businessDate, nonBusinessDays) : ownChannels;
         ReminderDueNotice notice = new ReminderDueNotice(occurrence.invoiceId(), occurrence.noticeKey(), occurrence.messageType(), summarizesPriorDebt);
         if (channels.contains(ReminderChannel.IN_APP)) {
@@ -126,6 +130,21 @@ public final class DailyReminderDigestPlanner {
         if (channels.contains(ReminderChannel.EMAIL)) {
             emailNotices.add(notice);
         }
+    }
+
+    private static PolicyVerdict waitingForPriorDebtVerdictOf(ReminderInvoiceFact fact, ReminderOccurrence occurrence, List<ReminderInvoiceFact> listedDebt) {
+        return WAITS_FOR_PRIOR_DEBT.evaluateRule(new PriorDebtReminderContext(fact, occurrence.messageType(), listedDebt));
+    }
+
+    private static boolean summarizesPriorDebt(ReminderInvoiceFact fact, ReminderOccurrence occurrence, List<ReminderInvoiceFact> listedDebt) {
+        return occurrence.messageType() == ReminderMessageType.ISSUANCE_NOTICE && ReminderPriorDebt.existsBefore(fact, listedDebt);
+    }
+
+    public static Optional<ReminderOccurrence> occurrenceThatSendsOf(ReminderInvoiceFact fact, ReminderOccurrence occurrence, List<ReminderInvoiceFact> listedDebt) {
+        if (!waitingForPriorDebtVerdictOf(fact, occurrence, listedDebt).allowed()) {
+            return Optional.empty();
+        }
+        return Optional.of(summarizesPriorDebt(fact, occurrence, listedDebt) ? occurrence.withChannel(ReminderChannel.EMAIL) : occurrence);
     }
 
     private static void collectSuppressed(ReminderOccurrence occurrence, LocalDate businessDate, NonBusinessDays nonBusinessDays, String reasonCode,

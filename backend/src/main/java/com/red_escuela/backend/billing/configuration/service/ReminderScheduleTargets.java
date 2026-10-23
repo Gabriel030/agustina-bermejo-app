@@ -9,7 +9,9 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
 import com.red_escuela.backend.billing.configuration.exception.ReminderScheduleTargetNotFoundException;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleProposal;
 import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleChangeCheck;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleCheck;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,6 +36,13 @@ public class ReminderScheduleTargets {
             throw new ReminderScheduleTargetNotFoundException(target.targetId());
         }
         return ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId());
+    }
+
+    public void requireValidProposal(ReminderScheduleProposal proposal) {
+        ConfigurationTopic topic = requireExistingTopic(proposal.target());
+        policyEvaluator.requireReminderScheduleChangeNotToFollowGroup(new ReminderScheduleChangeCheck(proposal.schedule()));
+        policyEvaluator.requireCoherentCollectionReminderSchedule(new ReminderScheduleCheck(proposal.schedule(), topic.isReminderScheduleException()));
+        proposal.proposedGlobalSettings().ifPresent(policyEvaluator::requireCoherentCollectionReminderSettings);
     }
 
     public ConfigurationValues requestedValuesOf(TeachingGroup group, ReminderSchedule schedule) {

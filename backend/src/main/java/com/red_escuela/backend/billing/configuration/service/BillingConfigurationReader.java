@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedu
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
 import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleProposal;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleResolver;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTopicState;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -120,14 +122,31 @@ public class BillingConfigurationReader {
     }
 
     public ResolvedReminderSchedule reminderScheduleFor(ReminderScheduleTarget target, LocalDate date) {
+        return resolveReminderSchedule(target, date, null);
+    }
+
+    public ResolvedReminderSchedule reminderScheduleWithProposal(ReminderScheduleTarget target, LocalDate date, ReminderScheduleProposal proposal) {
+        return resolveReminderSchedule(target, date, Objects.requireNonNull(proposal, "proposal"));
+    }
+
+    private ResolvedReminderSchedule resolveReminderSchedule(ReminderScheduleTarget target, LocalDate date, ReminderScheduleProposal proposal) {
         Optional<ReminderScheduleVersion> exception = target.targetId() == null ? Optional.empty()
-                : findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId()), date);
-        Optional<ReminderScheduleVersion> group = findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleGroup(target.group()), date);
+                : proposedVersionFor(proposal, target.group(), target.targetId())
+                        .or(() -> findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId()), date));
+        Optional<ReminderScheduleVersion> group = proposedVersionFor(proposal, target.group(), null)
+                .or(() -> findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleGroup(target.group()), date));
         ConfigurationTopic globalTopic = ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS);
         Optional<ConfigurationVersion> globalVersion = repository.findEffectiveVersion(globalTopic.scope().name(), globalTopic.key(), date);
         CollectionReminderSettings globalSettings = globalVersion.map(version -> CollectionReminderSettings.class.cast(version.values()))
                 .orElse(CollectionReminderSettings.initial());
         return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null));
+    }
+
+    private static Optional<ReminderScheduleVersion> proposedVersionFor(ReminderScheduleProposal proposal, TeachingGroup group, Long targetId) {
+        if (proposal == null || proposal.target().group() != group || !Objects.equals(proposal.target().targetId(), targetId)) {
+            return Optional.empty();
+        }
+        return Optional.of(new ReminderScheduleVersion(null, proposal.schedule()));
     }
 
     public List<ReminderScheduleTopicState> listReminderScheduleTopicsEffectiveOn(TeachingGroup group, LocalDate date) {

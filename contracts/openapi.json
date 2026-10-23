@@ -1322,6 +1322,42 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "CollectionReminderImpactRequest" : {
+        "properties" : {
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "globalSettings" : {
+            "$ref" : "#/components/schemas/CollectionReminderSettingsValues",
+            "description" : "Ajustes globales propuestos; si no vienen, quedan los vigentes"
+          },
+          "group" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/ReminderScheduleDto"
+          },
+          "targetId" : {
+            "description" : "Programa o curso de la excepción; sin valor, el cambio es a la política del grupo",
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "effectiveFrom", "group", "schedule" ],
+        "type" : "object"
+      },
+      "CollectionReminderImpactResponse" : {
+        "properties" : {
+          "studentsWithChangedSchedule" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "studentsWithChangedSchedule" ],
+        "type" : "object"
+      },
       "CollectionReminderSettingsValues" : {
         "properties" : {
           "contactListDaysOverdue" : {
@@ -11426,6 +11462,76 @@
           }
         },
         "tags" : [ "overdue-contact-list-controller" ]
+      }
+    },
+    "/collection-reminders/impact" : {
+      "post" : {
+        "operationId" : "CollectionReminderImpact_getImpact",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CollectionReminderImpactRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CollectionReminderImpactResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-impact-controller" ]
       }
     },
     "/course-enrollments/{id}" : {
