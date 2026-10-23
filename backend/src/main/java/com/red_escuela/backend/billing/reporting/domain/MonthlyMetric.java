@@ -22,6 +22,10 @@ public record MonthlyMetric(MetricPanel panel, boolean available, boolean partia
         return new MonthlyMetric(panel, true, false, range.months(), series, null, null);
     }
 
+    public MonthlyMetric withPartial(boolean partial) {
+        return new MonthlyMetric(panel, available, partial, months, series, goal, goalSeriesKey);
+    }
+
     public MonthlyMetric withGoal(Optional<MetricGoal> goal, String goalSeriesKey) {
         return goal.map(configured -> new MonthlyMetric(panel, available, partial, months, series, configured, goalSeriesKey)).orElse(this);
     }

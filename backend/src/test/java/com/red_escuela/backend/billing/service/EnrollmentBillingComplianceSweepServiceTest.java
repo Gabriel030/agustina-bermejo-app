@@ -52,6 +52,9 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     private InvoiceRepository invoiceRepository;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Autowired
     private ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
@@ -134,10 +137,13 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000101");
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoicePaymentStatus.OVERDUE);
+        jdbc.update("delete from collections_daily_snapshot where business_date = ?", LocalDate.now());
 
         sweepService.run(LocalDate.now());
 
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        assertThat(jdbc.queryForMap("select overdue_31_60, students_with_overdue from collections_daily_snapshot where business_date = ? and currency = 'ARS' and program_id = ?",
+                LocalDate.now(), enrollment.getProgram().getId())).containsEntry("overdue_31_60", new BigDecimal("1000.00")).containsEntry("students_with_overdue", 1);
     }
 
     @Test
