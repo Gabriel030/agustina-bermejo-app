@@ -71,7 +71,7 @@ class OverdueContactListPublicationStepTest {
         CollectionReminderPlanningResult planned = new CollectionReminderPlanningResult(1, 1, 0, 0, 0, new ArrayList<>());
         when(planningStep.planCollectionReminders(MARCH_25)).thenReturn(planned);
         doThrow(new IllegalStateException("boom")).when(contactListStep).publishContactListOf(eq(MARCH_25));
-        CollectionReminderPlanningJob job = new CollectionReminderPlanningJob(planningStep, contactListStep, Clock.systemUTC());
+        CollectionReminderPlanningJob job = new CollectionReminderPlanningJob(planningStep, contactListStep, mock(PostWithdrawalSummaryPlanningStep.class), Clock.systemUTC());
 
         CollectionReminderPlanningResult result = job.run(MARCH_25);
 
