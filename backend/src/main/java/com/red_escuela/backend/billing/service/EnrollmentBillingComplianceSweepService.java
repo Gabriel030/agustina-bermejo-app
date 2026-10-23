@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.service;
 import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.collections.operation.CollectionsDailySnapshotStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
@@ -40,6 +41,7 @@ public class EnrollmentBillingComplianceSweepService {
     private final BillingConfigurationReader configurationReader;
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final EnrollmentBillingComplianceRowProcessor rowProcessor;
+    private final CollectionsDailySnapshotStep snapshotStep;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
@@ -47,13 +49,14 @@ public class EnrollmentBillingComplianceSweepService {
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
                                                      BillingConfigurationReader configurationReader,
                                                      BatchExecutionLogRepository batchExecutionLogRepository,
-                                                     EnrollmentBillingComplianceRowProcessor rowProcessor, ObjectMapper objectMapper,
-                                                     Clock clock) {
+                                                     EnrollmentBillingComplianceRowProcessor rowProcessor, CollectionsDailySnapshotStep snapshotStep,
+                                                     ObjectMapper objectMapper, Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.configurationReader = configurationReader;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
+        this.snapshotStep = snapshotStep;
         this.objectMapper = objectMapper;
         this.clock = clock;
     }
@@ -65,6 +68,22 @@ public class EnrollmentBillingComplianceSweepService {
     }
 
     public void run(LocalDate today) {
+        try {
+            checkCompliance(today);
+        } finally {
+            takeCollectionsSnapshot(today);
+        }
+    }
+
+    private void takeCollectionsSnapshot(LocalDate today) {
+        try {
+            snapshotStep.takeCollectionsSnapshot(today);
+        } catch (RuntimeException e) {
+            log.error("Falló la foto diaria de cobranza de la fecha {}", today, e);
+        }
+    }
+
+    private void checkCompliance(LocalDate today) {
         Optional<LatePaymentTerms> policy = configurationReader.findLatePaymentSettingsEffectiveOn(today);
         if (policy.isEmpty()) {
             log.warn("Barrido de cumplimiento de facturación omitido: no hay política de cobranzas vigente al {}", today);

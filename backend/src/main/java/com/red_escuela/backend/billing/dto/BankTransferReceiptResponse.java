@@ -2,16 +2,28 @@ package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.dto.ReceiptInvoiceSummary;
+import com.red_escuela.backend.billing.invoice.dto.ReceiptReviewDetail;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.shared.domain.Money;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePath, String status, String rejectionReason, String rejectionCode,
                                      LocalDateTime uploadedAt, String studentName, String studentDni,
-                                     String invoicePeriod, String invoiceFeeType, String productName, List<Long> invoiceIds) {
+                                     String invoicePeriod, String invoiceFeeType, String productName, List<Long> invoiceIds,
+                                     Money declaredAmount, LocalDate transferDate, String operationNumber, String originAccount, String holderName,
+                                     List<ReceiptInvoiceSummary> invoices, Integer pendingBusinessDays, Boolean reviewAlertSent,
+                                     LocalDateTime reviewAlertSentAt) {
 
     public static BankTransferReceiptResponse from(BankTransferReceipt receipt, Person payer, String productName, List<Long> invoiceIds) {
+        return from(receipt, payer, productName, invoiceIds, null);
+    }
+
+    public static BankTransferReceiptResponse from(BankTransferReceipt receipt, Person payer, String productName, List<Long> invoiceIds,
+                                                   ReceiptReviewDetail detail) {
         Invoice invoice = receipt.getInvoice();
         return new BankTransferReceiptResponse(
                 receipt.getId(), invoice.getId(), receipt.getFilePath(),
@@ -21,7 +33,16 @@ public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePa
                 invoice.getPrimaryLine().getPeriod().toString(),
                 invoice.getPrimaryLine().getFeeType().name(),
                 productName,
-                invoiceIds);
+                invoiceIds,
+                detail == null ? null : detail.declaredAmount(),
+                detail == null ? null : detail.transferDate(),
+                detail == null ? null : detail.operationNumber(),
+                detail == null ? null : detail.originAccount(),
+                detail == null ? null : detail.holderName(),
+                detail == null ? null : detail.invoices(),
+                detail == null ? null : detail.pendingBusinessDays(),
+                detail == null ? null : detail.reviewAlertSentAt() != null,
+                detail == null ? null : detail.reviewAlertSentAt());
     }
 
     private static String codeOf(BankTransferReceipt receipt) {
