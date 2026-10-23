@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.red_escuela.backend.billing.collections.domain.DailyReminderDigest;
+import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
 import com.red_escuela.backend.billing.collections.domain.ReminderDigestMode;
 import com.red_escuela.backend.billing.collections.domain.ReminderStudentFacts;
@@ -47,7 +48,7 @@ class CollectionReminderPlannedEventFactoryTest {
     @Tag("D-353")
     @Tag("D-409")
     void theEventCarriesTheDigestAsValues() {
-        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digestOf1203());
+        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digestOf1203(), ReminderContentTerms.none());
 
         assertThat(event.reminderId()).isEqualTo(55L);
         assertThat(event.studentPersonId()).isEqualTo(70L);
@@ -87,7 +88,7 @@ class CollectionReminderPlannedEventFactoryTest {
         DailyReminderDigest digest = DailyReminderDigestPlanner.planDailyDigestOf(student, Map.of(1L, schedule), LocalDate.parse("2027-03-10"), NonBusinessDays.weekendsOnly(),
                 ReminderDigestMode.DAILY_DIGEST);
 
-        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digest);
+        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digest, ReminderContentTerms.none());
 
         assertThat(event.emailMessages().get(0).precedesDueDate()).isTrue();
         assertThat(event.emailMessages().get(0).format()).isEqualTo(PlannedReminderFormat.OWN_NOTICE);
@@ -107,7 +108,7 @@ class CollectionReminderPlannedEventFactoryTest {
     @Test
     void theEventSurvivesAJsonRoundTrip() throws Exception {
         ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digestOf1203());
+        CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digestOf1203(), ReminderContentTerms.none());
 
         CollectionReminderPlannedEvent read = mapper.readValue(mapper.writeValueAsString(event), CollectionReminderPlannedEvent.class);
 
