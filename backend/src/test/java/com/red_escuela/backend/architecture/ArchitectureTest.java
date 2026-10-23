@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Tag;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.junit.jupiter.api.Test;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -556,6 +558,29 @@ class ArchitectureTest {
                 .and().areDeclaredInClassesThat().doNotHaveFullyQualifiedName("com.red_escuela.backend.billing.collections.operation.CollectionReminderPlanningJob")
                 .should().beAnnotatedWith(Scheduled.class)
                 .because("the nightly pipeline calls each collections step from the existing sweeps (V2-11a orchestrates them); the only exception is the provisional 05:00 reminder planning job that V2-11a removes")
+                .check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-339")
+    void overdueContactSegmentImplementsThePublicStudentSegmentInterface() {
+        classes()
+                .that().haveFullyQualifiedName("com.red_escuela.backend.billing.collections.service.OverdueContactSegment")
+                .should().implement("com.red_escuela.backend.billing.api.StudentSegment")
+                .because("the contact list is the first reusable segment of the campaigns and exposes it through the public billing api")
+                .check(MAIN_CLASSES);
+        classes()
+                .that().haveFullyQualifiedName("com.red_escuela.backend.billing.api.StudentSegment")
+                .should().beInterfaces()
+                .check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-339")
+    void noCampaignClassExistsYet() {
+        noClasses()
+                .should().haveSimpleNameContaining("Campaign")
+                .because("the campaigns of epic 12 are not implemented by the contact list (D-339)")
                 .check(MAIN_CLASSES);
     }
 }

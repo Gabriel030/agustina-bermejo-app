@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.delivery.repository;
 
+import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
@@ -41,6 +42,22 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
     List<Long> findDispatchableIds(@Param("channel") DeliveryChannel channel, @Param("statuses") List<DeliveryStatus> statuses,
                                    @Param("scheduledFor") LocalDate scheduledFor, @Param("now") Instant now,
                                    @Param("afterId") Long afterId, Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = SKIP_LOCKED_TIMEOUT))
+    @Query("""
+            select d from NotificationDelivery d
+            where d.channel = :channel and d.status in :statuses and d.scheduledFor = :scheduledFor
+              and (d.notBefore is null or d.notBefore <= :now)
+            order by d.priority, d.id""")
+    List<NotificationDelivery> lockDispatchableByPriority(@Param("channel") DeliveryChannel channel, @Param("statuses") List<DeliveryStatus> statuses,
+                                                          @Param("scheduledFor") LocalDate scheduledFor, @Param("now") Instant now);
+
+    @Query("""
+            select count(d) from NotificationDelivery d
+            where d.channel = :channel and d.category = :category and d.status in :statuses and d.sentAt >= :from and d.sentAt < :until""")
+    long countSentBetween(@Param("channel") DeliveryChannel channel, @Param("category") DeliveryCategory category,
+                          @Param("statuses") List<DeliveryStatus> statuses, @Param("from") Instant from, @Param("until") Instant until);
 
     Page<NotificationDelivery> findByChannel(DeliveryChannel channel, Pageable pageable);
 }
