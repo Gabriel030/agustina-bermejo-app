@@ -57,7 +57,7 @@ class BillingDecisionRegistryTest {
         assertThat(registry.find("D-331").orElseThrow().implementation()).isEqualTo("implementada");
         assertThat(registry.find("D-308").orElseThrow().implementation()).isEqualTo("parcial (transferencia en V2-09c2)");
         DecisionRegistryRow reposition = registry.find("D-414").orElseThrow();
-        assertThat(reposition.implementation()).isEqualTo("pendiente (V2-04c1)");
+        assertThat(reposition.implementation()).isEqualTo("implementada");
         assertThat(reposition.isCurrent()).isTrue();
         assertThat(reposition.testCase()).startsWith("Dado un pago que anuló 5 días");
     }

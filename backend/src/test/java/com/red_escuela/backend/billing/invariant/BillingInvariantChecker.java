@@ -396,6 +396,7 @@ public final class BillingInvariantChecker {
                 select 'origin ' || a.origin_invoice_id || ' periods ' || a.period_start || ' and ' || b.period_start
                 from late_fee_charge a join late_fee_charge b on b.origin_invoice_id = a.origin_invoice_id and b.id > a.id
                 where greatest(a.debit_note_id, b.debit_note_id) > ? and daterange(a.period_start, a.period_end, '[]') && daterange(b.period_start, b.period_end, '[]')
+                  and a.reinstates_correction_id is null and b.reinstates_correction_id is null
                 """, baselineInvoiceId));
         found.addAll(violations("I-11b a period crosses months or starts on or before the due date of its origin", """
                 select 'debit note ' || c.debit_note_id
@@ -410,7 +411,9 @@ public final class BillingInvariantChecker {
                 where c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
                     %3$s
-                    where %4$s and %5$s and not (c.paid_from is not null and g.day::date > c.paid_from))
+                    where %4$s and %5$s and not (c.paid_from is not null and g.day::date > c.paid_from)
+                      and not exists (select 1 from late_fee_charge_correction rk join late_fee_charge rc on rc.reinstates_correction_id = rk.id
+                                      where rk.late_fee_charge_id = c.id and g.day::date between rk.first_corrected_day and rk.last_corrected_day))
                 """.formatted(
                 chargeWithItsDayIndependentTerms(",\n" + PAYMENT_THRESHOLD_OF_ORIGIN + " as paid_from", "from late_fee_charge c where c.debit_note_id > " + baselineInvoiceId),
                 LATE_PAYMENT_TIMELINE, TERMS_OF_EACH_DAY, CHARGING_ENABLED_THAT_DAY, NOT_FROZEN_THAT_DAY)));

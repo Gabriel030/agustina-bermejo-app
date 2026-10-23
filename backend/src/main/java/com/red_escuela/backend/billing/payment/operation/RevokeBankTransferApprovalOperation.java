@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.events.BankTransferApprovalRevokedEvent;
 import com.red_escuela.backend.billing.events.PaymentAllocationReversedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
+import com.red_escuela.backend.billing.operation.AnnulledLateFeeReinstatement;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.payment.domain.Payment;
@@ -39,17 +40,19 @@ public class RevokeBankTransferApprovalOperation implements BillingOperation<Rev
     private final PaymentCreditReversal creditReversal;
     private final PolicySet<PaymentRejectionCheck> reasonPolicies;
     private final PolicySet<PaymentReversalCheck> revocationPolicies;
+    private final AnnulledLateFeeReinstatement lateFeeReinstatement;
     private final Clock clock;
 
     public RevokeBankTransferApprovalOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService, PaymentRepository payments,
                                                PaymentCreditReversal creditReversal, PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet,
-                                               PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet, Clock clock) {
+                                               PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet, AnnulledLateFeeReinstatement lateFeeReinstatement, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.payments = payments;
         this.creditReversal = creditReversal;
         this.reasonPolicies = paymentRejectionReasonPolicySet;
         this.revocationPolicies = paymentApprovalRevocationPolicySet;
+        this.lateFeeReinstatement = lateFeeReinstatement;
         this.clock = clock;
     }
 
@@ -91,6 +94,7 @@ public class RevokeBankTransferApprovalOperation implements BillingOperation<Rev
         String concept = "Revocación de la aprobación del pago " + payment.getId();
         PaymentCreditReversal.ReversedPaymentAllocations reversed = creditReversal.reverseAllocationsOf(account, payment, today, concept, command.reviewer());
         accountService.recordPaymentReversalDebit(account, reversed.credit(), today, concept);
+        lateFeeReinstatement.reinstateLateFeesAnnulledByTheReversedPayment(reversed.invoicesReopened(), today);
         AccountCreditAllocationResult reallocation = allocationService.allocateAccountCreditToOldestInvoices(account, today, command.reviewer());
         log.warn("Aprobación de transferencia revocada: pago={}, cuenta={}, monto={}, facturasReabiertas={}, actor={}", payment.getId(), accountId,
                 reversed.credit().getAmount().value().amount(), reversed.invoicesReopened(), command.reviewer());

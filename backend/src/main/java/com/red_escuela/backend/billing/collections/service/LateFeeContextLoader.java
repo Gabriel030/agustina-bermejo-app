@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.account.service.InvoiceSettlementQuerySer
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
 import com.red_escuela.backend.billing.collections.domain.DailyLateFeeSchedule;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
+import com.red_escuela.backend.billing.collections.domain.LateFeeChargeCorrection;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPlanner;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import com.red_escuela.backend.billing.collections.domain.LateFeeFreeze;
@@ -81,6 +82,30 @@ public class LateFeeContextLoader {
                 dueDateVersion.get().versionId(), dueDateTerms, frozenOn, freeze.enrollmentEndDate(),
                 calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
                 resolvedCutoff.get().settlementAllocationId())).toList();
+    }
+
+    public Optional<LateFeeIssuingContext> loadReinstatementContext(Invoice origin, LateFeeChargeCorrection correction, LocalDate businessDate, LatePaymentTimeline timeline) {
+        if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || origin.getPaymentStatus() != InvoicePaymentStatus.OVERDUE) {
+            return Optional.empty();
+        }
+        Optional<LatePaymentVersion> dueDateVersion = versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId());
+        if (dueDateVersion.isEmpty()) {
+            return Optional.empty();
+        }
+        LatePaymentTerms dueDateTerms = dueDateVersion.get().terms();
+        LateFeeOriginFacts facts = originFactsOf(origin);
+        ChargingDays chargingDays = resolveChargingDays(facts, dueDateTerms, timeline);
+        LateFeeAccrualPeriod range = new LateFeeAccrualPeriod(correction.getFirstCorrectedDay(), correction.getLastCorrectedDay());
+        int chargedDays = Math.min(correction.getCorrectedDays(), (int) range.firstDay().datesUntil(range.lastDay().plusDays(1))
+                .filter(day -> chargingDays.enabledOn().test(day) && !chargingDays.freeze().frozenOn().test(day)).count());
+        if (chargedDays == 0) {
+            return Optional.empty();
+        }
+        PlannedLateFeePeriod planned = new PlannedLateFeePeriod(range, chargedDays, LateFeeCutoffKind.REINSTATEMENT);
+        return Optional.of(new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned, dueDateVersion.get().versionId(), dueDateTerms,
+                chargingDays.freeze().frozenOn(), chargingDays.freeze().enrollmentEndDate(),
+                calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), chargedDays), businessDate, Optional.empty(),
+                Optional.of(correction.getId())));
     }
 
     private ChargingDays resolveChargingDays(LateFeeOriginFacts facts, LatePaymentTerms dueDateTerms, LatePaymentTimeline timeline) {

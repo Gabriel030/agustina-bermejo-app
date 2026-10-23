@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.events.PaymentAllocationReversedEvent;
 import com.red_escuela.backend.billing.events.PaymentChargedBackEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
+import com.red_escuela.backend.billing.operation.AnnulledLateFeeReinstatement;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.payment.domain.Chargeback;
@@ -40,17 +41,19 @@ public class RegisterChargebackOperation implements BillingOperation<RegisterCha
     private final ChargebackRepository chargebacks;
     private final PaymentCreditReversal creditReversal;
     private final PolicySet<PaymentReversalCheck> chargebackPolicies;
+    private final AnnulledLateFeeReinstatement lateFeeReinstatement;
     private final Clock clock;
 
     public RegisterChargebackOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService, PaymentRepository payments,
                                        ChargebackRepository chargebacks, PaymentCreditReversal creditReversal, PolicySet<PaymentReversalCheck> chargebackRegistrationPolicySet,
-                                       Clock clock) {
+                                       AnnulledLateFeeReinstatement lateFeeReinstatement, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.payments = payments;
         this.chargebacks = chargebacks;
         this.creditReversal = creditReversal;
         this.chargebackPolicies = chargebackRegistrationPolicySet;
+        this.lateFeeReinstatement = lateFeeReinstatement;
         this.clock = clock;
     }
 
@@ -94,6 +97,7 @@ public class RegisterChargebackOperation implements BillingOperation<RegisterCha
         String concept = "Contracargo del pago " + payment.getId();
         PaymentCreditReversal.ReversedPaymentAllocations reversed = creditReversal.reverseAllocationsOf(account, payment, today, concept, command.actor());
         accountService.recordPaymentReversalDebit(account, reversed.credit(), command.chargedBackOn(), concept);
+        lateFeeReinstatement.reinstateLateFeesAnnulledByTheReversedPayment(reversed.invoicesReopened(), today);
         AccountCreditAllocationResult reallocation = allocationService.allocateAccountCreditToOldestInvoices(account, today, command.actor());
         log.warn("Contracargo registrado: pago={}, contracargo={}, cuenta={}, monto={}, fechaDelContracargo={}, facturasReabiertas={}, actor={}", payment.getId(),
                 chargeback.getId(), accountId, reversed.credit().getAmount().value().amount(), command.chargedBackOn(), reversed.invoicesReopened(), command.actor());
