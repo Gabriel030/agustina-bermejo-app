@@ -193,7 +193,7 @@ class DiscountConsumptionReturnIT extends AbstractStudentDiscountIssuingIT {
                 issuing.get(40, TimeUnit.SECONDS);
 
                 List<Integer> live = liveInstallmentNumbersOf(promotionId);
-                assertThat(live).as("round %d", round).doesNotHaveDuplicates().hasSizeBetween(2, 3);
+                assertThat(live).as("round %d", round).doesNotHaveDuplicates().hasSize(2);
                 assertThat(statusOf(promotionId)).as("round %d", round).isEqualTo(live.size() == 3 ? "EXHAUSTED" : "ACTIVE");
             }
             invariants.assertAllBillingInvariantsHold();

@@ -251,7 +251,7 @@ public final class BillingTestFixtures {
             };
             if (scholarshipAmount != null) {
                 draft.addDiscountToDraftLine(1, new com.red_escuela.backend.billing.invoice.domain.InvoiceDiscountDraft(
-                        com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP, "Beca de prueba", null, NonNegativeMoney.of(baseAmount),
+                        com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP, "Beca de prueba", seedStudentDiscount(studentId, person.getId()), NonNegativeMoney.of(baseAmount),
                         NonNegativeMoney.of(scholarshipAmount), null, null));
             }
             draft.issueInvoice(bean(InvoiceNumberGenerator.class).nextInvoiceNumber(InvoiceDocumentType.INVOICE), dueDate.isAfter(LocalDate.now()) ? LocalDate.now() : dueDate,
@@ -270,6 +270,16 @@ public final class BillingTestFixtures {
             customization.accept(result);
             bean(InvoiceRepository.class).flush();
             return result;
+        }
+
+        private Long seedStudentDiscount(Long studentId, Long personId) {
+            String enrollmentColumn = programEnrollment != null ? "program_enrollment_id" : "course_enrollment_id";
+            Long enrollmentId = programEnrollment != null ? programEnrollment.getId() : courseEnrollment.getId();
+            return bean(JdbcTemplate.class).queryForObject(
+                    "insert into student_discount (" + enrollmentColumn + ", student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
+                            + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, ?, 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "
+                            + "cast('{\"type\":\"PROPORTIONAL\",\"fraction\":\"0.5\"}' as jsonb), 1, date '2027-03-01', date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id",
+                    Long.class, enrollmentId, studentId, baseAmount.currency().name(), personId);
         }
 
         private Long priceVersionId(Long createdById) {
