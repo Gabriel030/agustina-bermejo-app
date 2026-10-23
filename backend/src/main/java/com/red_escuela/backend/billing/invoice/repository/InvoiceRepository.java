@@ -203,6 +203,14 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     List<Long> findStudentIdsByPaymentStatus(@Param("status") InvoicePaymentStatus status);
 
+    @Query("""
+            select count(i) > 0 from Invoice i
+            where i.studentCurrentAccountId = :accountId and i.documentStatus = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.ISSUED
+              and i.paymentStatus in :unpaidStatuses and i.dueDate < :today
+            """)
+    boolean existsUnpaidIssuedDocumentDueBefore(@Param("accountId") Long accountId, @Param("unpaidStatuses") Collection<InvoicePaymentStatus> unpaidStatuses,
+                                                @Param("today") LocalDate today);
+
     @Query("select distinct i from Invoice i join fetch i.lines where i.paymentStatus = :status")
     List<Invoice> findByPaymentStatusWithLines(@Param("status") InvoicePaymentStatus status);
 
