@@ -90,7 +90,8 @@ public class LateFeeDebitNoteIssuingOperation implements BillingOperation<LateFe
     public LateFeeDebitNoteIssued processOperation(LateFeeIssuingContext context) {
         LateFeeOriginFacts origin = context.origin();
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(context.draft().studentCurrentAccountId());
-        ChargeKey chargeKey = ChargeKey.forLateFee(origin.invoiceId(), context.period().period().firstDay());
+        ChargeKey chargeKey = context.reinstatedCorrectionId().map(correctionId -> ChargeKey.forLateFeeReinstatement(origin.invoiceId(), correctionId))
+                .orElseGet(() -> ChargeKey.forLateFee(origin.invoiceId(), context.period().period().firstDay()));
         InvoiceDraftHeader header = new InvoiceDraftHeader(account.getId(), context.draft().currency(), InvoiceDocumentType.DEBIT_NOTE, InvoiceType.LATE_FEE,
                 InvoiceIssuingReason.LATE_FEE, origin.invoiceId());
         InvoiceLineDraft line = new InvoiceLineDraft(FeeType.LATE_FEE, conceptOf(context), origin.period(), origin.programEnrollmentId(),
@@ -98,7 +99,8 @@ public class LateFeeDebitNoteIssuingOperation implements BillingOperation<LateFe
         Invoice issued = debitNoteIssuer.issueLateFeeDebitNote(header, line, context.issueDate(), context.debitNoteDueDate(), context.draft().recipient(), ACTOR);
         accountService.recordDebitNoteIssuedDebit(account, issued, context.issueDate());
         LateFeeCharge charge = chargeRepository.save(LateFeeCharge.recordLateFeeCharge(issued.getId(), origin.invoiceId(), account.getId(), context.period(),
-                context.dueDateVersionId(), context.dueDateTerms().dailyLateFeeRate(), origin.finalLinePrice(), context.settlementAllocationId()));
+                context.dueDateVersionId(), context.dueDateTerms().dailyLateFeeRate(), origin.finalLinePrice(), context.settlementAllocationId(),
+                context.reinstatedCorrectionId()));
         allocationService.allocateAccountCreditToOldestInvoices(account, context.issueDate(), ACTOR);
         recordIssuance(context, issued);
         return new LateFeeDebitNoteIssued(issued, charge);
