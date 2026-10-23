@@ -72,12 +72,15 @@ public abstract class AbstractCohortPromotionAcquisitionIT extends AbstractInteg
     void tearDownAcquisitionScenario() {
         jdbc.execute("alter table student_discount_status_change disable trigger trg_student_discount_status_change_append_only");
         jdbc.execute("alter table discount_definition_status_change disable trigger trg_discount_definition_status_change_append_only");
+        jdbc.execute("alter table invoice_discount disable trigger trg_invoice_discount_immutable_when_issued");
         try {
             studentIds.forEach(studentId -> {
+                jdbc.update("delete from invoice_discount where student_discount_id in (select id from student_discount where student_id = ?)", studentId);
                 jdbc.update("delete from student_discount_status_change where student_discount_id in (select id from student_discount where student_id = ?)", studentId);
                 jdbc.update("delete from student_discount where student_id = ?", studentId);
             });
             definitionIds.forEach(definitionId -> {
+                jdbc.update("delete from invoice_discount where student_discount_id in (select id from student_discount where discount_definition_id = ?)", definitionId);
                 jdbc.update("delete from student_discount_status_change where student_discount_id in (select id from student_discount where discount_definition_id = ?)", definitionId);
                 jdbc.update("delete from student_discount where discount_definition_id = ?", definitionId);
                 jdbc.update("delete from discount_definition_status_change where discount_definition_id = ?", definitionId);
@@ -86,6 +89,7 @@ public abstract class AbstractCohortPromotionAcquisitionIT extends AbstractInteg
         } finally {
             jdbc.execute("alter table student_discount_status_change enable trigger trg_student_discount_status_change_append_only");
             jdbc.execute("alter table discount_definition_status_change enable trigger trg_discount_definition_status_change_append_only");
+            jdbc.execute("alter table invoice_discount enable trigger trg_invoice_discount_immutable_when_issued");
         }
         jdbc.update("delete from notification where recipient_id = ?", director.getId());
     }

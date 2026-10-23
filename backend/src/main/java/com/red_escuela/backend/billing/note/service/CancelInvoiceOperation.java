@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import com.red_escuela.backend.billing.events.CreditNoteIssuedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
@@ -39,13 +40,15 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
     private final CreditNoteNumberGenerator numberGenerator;
     private final PolicySet<InvoiceCancellationContext> cancellationPolicies;
     private final LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment;
+    private final DiscountConsumptionService discountConsumption;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public CancelInvoiceOperation(InvoiceCreditAccessService invoices, StudentCurrentAccountService accountService,
                                   CurrentAccountAllocationService allocationService, CreditNoteRepository creditNoteRepository,
                                   CreditNoteNumberGenerator numberGenerator, PolicySet<InvoiceCancellationContext> cancellationPolicies,
-                                  LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment, ApplicationEventPublisher eventPublisher, Clock clock) {
+                                  LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment, DiscountConsumptionService discountConsumption,
+                                  ApplicationEventPublisher eventPublisher, Clock clock) {
         this.invoices = invoices;
         this.accountService = accountService;
         this.allocationService = allocationService;
@@ -53,6 +56,7 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
         this.numberGenerator = numberGenerator;
         this.cancellationPolicies = cancellationPolicies;
         this.lateFeeAnnulment = lateFeeAnnulment;
+        this.discountConsumption = discountConsumption;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -98,6 +102,7 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
 
     public CreditNote cancelWithoutAllocatingCredit(CancelInvoiceCommand command) {
         Long accountId = invoices.findAccountIdOf(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
+        discountConsumption.lockEnrollmentsOfDiscountsAppliedOn(command.invoiceId());
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoices.lockInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
