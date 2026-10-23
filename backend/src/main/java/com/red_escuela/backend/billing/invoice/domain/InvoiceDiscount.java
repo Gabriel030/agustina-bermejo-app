@@ -43,7 +43,7 @@ public class InvoiceDiscount {
     @JoinColumn(name = "invoice_line_id", nullable = false)
     private InvoiceLine invoiceLine;
 
-    @Column(name = "student_discount_id")
+    @Column(name = "student_discount_id", nullable = false, updatable = false)
     private Long studentDiscountId;
 
     @Enumerated(EnumType.STRING)

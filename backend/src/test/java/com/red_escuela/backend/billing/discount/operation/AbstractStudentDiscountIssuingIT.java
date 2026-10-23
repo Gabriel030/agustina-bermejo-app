@@ -109,13 +109,16 @@ public abstract class AbstractStudentDiscountIssuingIT extends AbstractIntegrati
     void tearDownIssuingScenario() {
         SecurityContextHolder.clearContext();
         jdbc.execute("alter table student_discount_status_change disable trigger trg_student_discount_status_change_append_only");
+        jdbc.execute("alter table invoice_discount disable trigger trg_invoice_discount_immutable_when_issued");
         try {
             learnerStudentIds.forEach(studentId -> {
+                jdbc.update("delete from invoice_discount where student_discount_id in (select id from student_discount where student_id = ?)", studentId);
                 jdbc.update("delete from student_discount_status_change where student_discount_id in (select id from student_discount where student_id = ?)", studentId);
                 jdbc.update("delete from student_discount where student_id = ?", studentId);
             });
         } finally {
             jdbc.execute("alter table student_discount_status_change enable trigger trg_student_discount_status_change_append_only");
+            jdbc.execute("alter table invoice_discount enable trigger trg_invoice_discount_immutable_when_issued");
         }
         String people = director.getId() + "," + administrative.getId();
         jdbc.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id in (" + people + "))");

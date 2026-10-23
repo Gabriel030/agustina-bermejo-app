@@ -241,9 +241,24 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         });
     }
 
+    private long newStudentDiscount() {
+        long studentId = newPersistedStudent();
+        Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
+        Long programId = jdbc.queryForObject("insert into program (name, currency) values (?, 'ARS') returning id", Long.class, "Schema " + System.nanoTime());
+        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentId, programId);
+        return jdbc.queryForObject("""
+                insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period,
+                    to_period, status, granted_at, granted_by_id, reason)
+                values (?, ?, 'ARS', 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', cast('{"type":"PROPORTIONAL","fraction":"0.5"}' as jsonb), 1, date '2027-03-01',
+                    date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id
+                """, Long.class, enrollmentId, studentId, personId);
+    }
+
     private Map<String, Object> discountRow(long lineId, int base, int discount) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("invoice_line_id", lineId);
+        row.put("student_discount_id", newStudentDiscount());
         row.put("discount_type", "INDIVIDUAL");
         row.put("concept", "Manual");
         row.put("currency", "ARS");

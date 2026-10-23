@@ -110,11 +110,12 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
 
     @Override
     public void markDiscountAsApplied(InvoiceDiscountCandidate winner) {
-        if (winner.discountType() != DiscountType.COHORT_PROMOTION || winner.installmentsTotal() == null || !winner.installmentsTotal().equals(winner.installmentNumber())) {
+        if (winner.discountType() != DiscountType.COHORT_PROMOTION || winner.installmentsTotal() == null) {
             return;
         }
         StudentDiscount discount = studentDiscountRepository.findById(winner.studentDiscountId()).orElseThrow();
-        if (discount.getStatus() == StudentDiscountStatus.ACTIVE) {
+        boolean allInstallmentsLive = appliedRepository.findLiveApplicationsOf(List.of(discount.getId())).size() >= winner.installmentsTotal();
+        if (allInstallmentsLive && discount.getStatus() == StudentDiscountStatus.ACTIVE) {
             discount.recordLastInstallmentConsumed(StatusChangeActor.ofProcess(PROCESS_NAME), Instant.now(clock));
             studentDiscountRepository.save(discount);
         }
@@ -128,10 +129,10 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
         }
         Map<Long, DiscountDefinition> definitions = definitionRepository.findAllById(active.stream().map(StudentDiscount::getDiscountDefinitionId).toList()).stream()
                 .collect(Collectors.toMap(DiscountDefinition::getId, Function.identity()));
-        Map<Long, Long> usesById = appliedRepository.findLiveApplicationsOf(active.stream().map(StudentDiscount::getId).toList()).stream()
-                .collect(Collectors.groupingBy(AppliedStudentDiscountInstallment::studentDiscountId, Collectors.counting()));
+        Map<Long, List<AppliedStudentDiscountInstallment>> usesById = appliedRepository.findLiveApplicationsOf(active.stream().map(StudentDiscount::getId).toList()).stream()
+                .collect(Collectors.groupingBy(AppliedStudentDiscountInstallment::studentDiscountId));
         return active.stream()
-                .map(promotion -> new CohortPromotionProgress(promotion, definitions.get(promotion.getDiscountDefinitionId()).getAvailableUntil(), usesById.getOrDefault(promotion.getId(), 0L)))
+                .map(promotion -> new CohortPromotionProgress(promotion, definitions.get(promotion.getDiscountDefinitionId()).getAvailableUntil(), usesById.getOrDefault(promotion.getId(), List.of())))
                 .filter(progress -> progress.canBeAppliedOn(context.facts().issueDate()))
                 .map(progress -> cohortCandidateOf(progress, context))
                 .filter(candidate -> !candidate.discountAmount().value().isZero())

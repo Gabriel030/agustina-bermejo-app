@@ -178,16 +178,31 @@ class CohortEntryDiscountIT extends AbstractStudentDiscountIssuingIT {
     }
 
     @Test
-    void reissuingAnEntryFeeCancelledByBillingErrorRegistersASecondSingleUseDiscountUntilV2Seven07c2bReturnsTheConsumption() {
+    @Tag("D-286")
+    void reissuingAnEntryFeeCancelledByBillingErrorReusesTheSameSingleUseDiscountWithTheSameAmount() {
         useCohortLearner(Percentage.ofPoints(new BigDecimal("30")));
         today(LocalDate.of(2027, 3, 1));
         Long first = issue(enrollmentFeeOf(learner, 1, MARCH, true));
+        Long entryDiscountId = (Long) onlyDiscountOn(FeeType.ENROLLMENT_FEE, MARCH).get("student_discount_id");
 
         cancelAsDirector(first, CreditNoteReason.BILLING_ERROR);
-        issue(enrollmentFeeOf(learner, 1, MARCH, true));
 
-        assertThat(entryDiscountsOfLearner()).isEqualTo(2L);
+        assertThat(statusOf(entryDiscountId)).isEqualTo("ACTIVE");
+        Long reissued = issue(enrollmentFeeOf(learner, 1, MARCH, true));
+
+        assertThat(reissued).isNotEqualTo(first);
+        assertThat(entryDiscountsOfLearner()).isEqualTo(1L);
+        assertThat(statusOf(entryDiscountId)).isEqualTo("EXHAUSTED");
+        List<Map<String, Object>> rows = discountsOn(FeeType.ENROLLMENT_FEE, MARCH);
+        assertThat(rows).hasSize(2).allSatisfy(row -> assertThat(row.get("student_discount_id")).isEqualTo(entryDiscountId));
+        assertThat(rows.get(0).get("consumption_released_at")).isNotNull();
+        assertThat(rows.get(1).get("consumption_released_at")).isNull();
+        assertThat(amount(rows.get(1).get("discount_amount"))).isEqualByComparingTo("15000.00");
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    private String statusOf(Long studentDiscountId) {
+        return jdbc.queryForObject("select status from student_discount where id = ?", String.class, studentDiscountId);
     }
 
     private long discountCountOfInvoice(Long invoiceId) {

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.repository;
 
+import com.red_escuela.backend.billing.discount.domain.DiscountEnrollmentIds;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountOrigin;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.YearMonth;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +45,16 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
     List<StudentDiscount> findByProgramEnrollmentIdAndStatusInOrderByIdAsc(Long programEnrollmentId, Collection<StudentDiscountStatus> statuses);
 
     List<StudentDiscount> findByCourseEnrollmentIdAndStatusInOrderByIdAsc(Long courseEnrollmentId, Collection<StudentDiscountStatus> statuses);
+
+    @Query("""
+            select distinct new com.red_escuela.backend.billing.discount.domain.DiscountEnrollmentIds(s.programEnrollmentId, s.courseEnrollmentId)
+            from StudentDiscount s
+            where s.id in (select d.studentDiscountId from InvoiceDiscount d join d.invoiceLine l where l.invoice.id = :invoiceId and d.consumptionReleasedAt is null)
+            """)
+    List<DiscountEnrollmentIds> findEnrollmentsOfDiscountsLiveOnInvoice(@Param("invoiceId") Long invoiceId);
+
+    Optional<StudentDiscount> findFirstByProgramEnrollmentIdAndOriginAndStatusAndFromPeriodOrderByIdAsc(Long programEnrollmentId, StudentDiscountOrigin origin,
+                                                                                                         StudentDiscountStatus status, YearMonth fromPeriod);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from StudentDiscount d where d.programEnrollmentId = :enrollmentId and d.status in :statuses order by d.id")

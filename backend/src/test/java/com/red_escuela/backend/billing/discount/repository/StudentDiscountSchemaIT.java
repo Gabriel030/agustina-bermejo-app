@@ -111,10 +111,11 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
                     discount_amount_currency, credited_amount, credited_amount_currency, free_credited_amount, free_credited_amount_currency)
                 values (?, 'ARS', 1, 'ADMINISTRATIVE_FEE', 'Tasa', date '2027-03-01', ?, 100, 'ARS', 0, 'ARS', 0, 'ARS', 0, 'ARS') returning id
                 """, Long.class, invoiceId, "K" + number + System.nanoTime());
+        long studentDiscountId = insert(with(validRow(), "discount_type", "INDIVIDUAL", "discount_definition_id", null, "applicable_invoice_type", "ENROLLMENT_FEE"));
         Long discountId = jdbc.queryForObject("""
-                insert into invoice_discount (invoice_line_id, discount_type, concept, currency, base_amount, base_amount_currency, discount_amount, discount_amount_currency)
-                values (?, 'INDIVIDUAL', 'Individual', 'ARS', 100, 'ARS', 10, 'ARS') returning id
-                """, Long.class, lineId);
+                insert into invoice_discount (invoice_line_id, student_discount_id, discount_type, concept, currency, base_amount, base_amount_currency, discount_amount, discount_amount_currency)
+                values (?, ?, 'INDIVIDUAL', 'Individual', 'ARS', 100, 'ARS', 10, 'ARS') returning id
+                """, Long.class, lineId, studentDiscountId);
         jdbc.update("update invoice set document_status = 'ISSUED', payment_status = 'PENDING', invoice_number = ?, issue_date = date '2027-03-03', "
                 + "due_date = date '2027-03-13', student_snapshot = cast('{\"fullName\":\"Ana\"}' as jsonb) where id = ?", number, invoiceId);
         return discountId;
