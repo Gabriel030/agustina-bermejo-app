@@ -225,24 +225,48 @@ class CollectionsDailySnapshotIT extends AbstractMonthlyMetricsIT {
     @Test
     void concurrentRunsOfTheSameDayNeitherDuplicateNorFail() throws Exception {
         Long program = seedProgram(Currency.ARS);
-        seedOverdueInvoiceOfNewStudent(Currency.ARS, END_OF_MARCH.minusDays(10), "100000.00", program);
-        List<CollectionsStockRow> rows = List.of(
-                new CollectionsStockRow(END_OF_MARCH, Currency.ARS, CollectionsStockScope.TOTAL, Map.of(OverdueAgeBucket.FROM_1_TO_30, Money.of(new BigDecimal("10.00"), Currency.ARS)), 1),
-                new CollectionsStockRow(END_OF_MARCH, Currency.ARS, CollectionsStockScope.ofProgram(program), Map.of(OverdueAgeBucket.FROM_1_TO_30, Money.of(new BigDecimal("10.00"), Currency.ARS)), 1));
-        int threads = 6;
+        Money tenPesos = Money.of(new BigDecimal("10.00"), Currency.ARS);
+        int threads = 8;
+        int rounds = 25;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
+        try {
+            for (int round = 0; round < rounds; round++) {
+                LocalDate day = END_OF_MARCH.plusDays(round);
+                List<CollectionsStockRow> rows = List.of(
+                        new CollectionsStockRow(day, Currency.ARS, CollectionsStockScope.TOTAL, Map.of(OverdueAgeBucket.FROM_1_TO_30, tenPesos), 1),
+                        new CollectionsStockRow(day, Currency.ARS, CollectionsStockScope.ofProgram(program), Map.of(OverdueAgeBucket.FROM_1_TO_30, tenPesos), 1));
+                CountDownLatch start = new CountDownLatch(1);
+                List<Future<?>> runs = new ArrayList<>();
+                for (int index = 0; index < threads; index++) {
+                    runs.add(pool.submit(() -> {
+                        start.await();
+                        snapshotStore.replaceSnapshotOf(day, rows, Map.of(), LocalDateTime.of(2022, 3, 31, 3, 1));
+                        return null;
+                    }));
+                }
+                start.countDown();
+                for (Future<?> run : runs) {
+                    run.get(60, TimeUnit.SECONDS);
+                }
+                assertThat(jdbc.queryForObject("select count(*) from collections_daily_snapshot where business_date = ?", Integer.class, day)).isEqualTo(2);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void concurrentNightlyStepsOfTheSameDayLeaveOneRowPerScope() throws Exception {
+        Long program = seedProgram(Currency.ARS);
+        seedOverdueInvoiceOfNewStudent(Currency.ARS, END_OF_MARCH.minusDays(10), "100000.00", program);
+        ExecutorService pool = Executors.newFixedThreadPool(4);
         CountDownLatch start = new CountDownLatch(1);
         List<Future<?>> runs = new ArrayList<>();
         try {
-            for (int index = 0; index < threads; index++) {
-                boolean throughStore = index % 2 == 0;
+            for (int index = 0; index < 4; index++) {
                 runs.add(pool.submit(() -> {
                     start.await();
-                    if (throughStore) {
-                        snapshotStore.replaceSnapshotOf(END_OF_MARCH, rows, Map.of(), LocalDateTime.of(2022, 3, 31, 3, 1));
-                    } else {
-                        snapshotStep.takeCollectionsSnapshot(END_OF_MARCH);
-                    }
+                    snapshotStep.takeCollectionsSnapshot(END_OF_MARCH);
                     return null;
                 }));
             }
@@ -254,10 +278,10 @@ class CollectionsDailySnapshotIT extends AbstractMonthlyMetricsIT {
             pool.shutdownNow();
         }
 
-        assertThat(jdbc.queryForObject("select count(*) from collections_daily_snapshot where business_date = ? and currency = 'ARS' and program_id = ?", Integer.class,
-                END_OF_MARCH, program)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from collections_daily_snapshot where business_date = ? and currency = 'ARS' and program_id is null and course_id is null",
-                Integer.class, END_OF_MARCH)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from collections_daily_snapshot where business_date = ? and program_id = ?", Integer.class, END_OF_MARCH, program)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from collections_daily_snapshot where business_date = ?", Integer.class, END_OF_MARCH))
+                .isEqualTo(jdbc.queryForObject("select count(distinct (currency, coalesce(program_id, 0), coalesce(course_id, 0))) from collections_daily_snapshot "
+                        + "where business_date = ?", Integer.class, END_OF_MARCH));
     }
 
     @Test
