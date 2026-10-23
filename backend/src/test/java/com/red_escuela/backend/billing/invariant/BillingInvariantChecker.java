@@ -133,7 +133,7 @@ public final class BillingInvariantChecker {
                 {"invoice_line", "discount_amount"}, {"invoice_line", "credited_amount"}, {"invoice_discount", "base_amount"},
                 {"invoice_discount", "discount_amount"}, {"student_current_account", "balance_amount"},
                 {"student_current_account", "unallocated_credit_amount"}, {"current_account_entry", "amount"},
-                {"current_account_entry", "running_balance_amount"}};
+                {"current_account_entry", "running_balance_amount"}, {"refund", "amount"}};
         for (String[] column : columns) {
             found.addAll(violations("I-06 negative amount in " + column[0] + "." + column[1],
                     "select '" + column[0] + " ' || id from " + column[0] + " where " + column[1] + " < 0"));
@@ -216,6 +216,33 @@ public final class BillingInvariantChecker {
                         where c.invoice_id = i.id and c.status_kind = 'DOCUMENT' and c.from_status is null and c.to_status = 'DRAFT')
                 """, baselineInvoiceId, baselineAccountId, baselineEntryId));
         return found;
+    }
+
+    public List<String> refundedAmountOfEveryPaymentEqualsItsCompletedRefunds() {
+        return violations("I-21 refunded amount of a payment differs from the sum of its completed refunds", """
+                select 'payment ' || p.id
+                from payment p join student_current_account a on a.id = p.student_current_account_id
+                where @ACCOUNTS@ and exists (select 1 from refund r where r.payment_id = p.id)
+                  and p.refunded_amount <> coalesce((select sum(r.amount) from refund r where r.payment_id = p.id and r.status = 'COMPLETED'), 0)
+                """, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> everyCompletedRefundHasExactlyItsRefundPaidDebit() {
+        return violations("I-22 completed refund without exactly one refund debit of its amount, or a refund debit of a refund that is not completed", """
+                select 'refund ' || r.id
+                from refund r join student_current_account a on a.id = r.student_current_account_id
+                where @ACCOUNTS@ and (select count(*) from current_account_entry e
+                        where e.refund_id = r.id and e.entry_type = 'REFUND_PAID' and e.amount = r.amount)
+                      <> case when r.status = 'COMPLETED' then 1 else 0 end
+                """, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> theLatestRefundStatusChangeMatchesTheCurrentStatus() {
+        return violations("I-17 refund history does not end in the current refund status", """
+                select 'refund ' || r.id
+                from refund r join student_current_account a on a.id = r.student_current_account_id
+                where @ACCOUNTS@ and coalesce((select c.to_status from refund_status_change c where c.refund_id = r.id order by c.id desc limit 1), '') <> r.status
+                """, baselineAccountId, baselineEntryId);
     }
 
     public List<String> accountBalanceEqualsCreditsMinusDebits() {
@@ -624,6 +651,9 @@ public final class BillingInvariantChecker {
         all.addAll(v2RowsHaveTheCurrencyOfTheirInvoiceOrAccount());
         all.addAll(theLatestStatusChangeMatchesTheCurrentStatus());
         all.addAll(accountBalanceEqualsCreditsMinusDebits());
+        all.addAll(refundedAmountOfEveryPaymentEqualsItsCompletedRefunds());
+        all.addAll(everyCompletedRefundHasExactlyItsRefundPaidDebit());
+        all.addAll(theLatestRefundStatusChangeMatchesTheCurrentStatus());
         all.addAll(runningBalancesFollowTheEntrySequence());
         all.addAll(accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices());
         all.addAll(invoicesAreNeverPartiallyAllocated());

@@ -318,7 +318,8 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
                     default -> {
                         BigDecimal unallocated = loadAccount(accountId).getUnallocatedCreditAmount().value().amount();
                         if (unallocated.signum() > 0) {
-                            inTransaction(() -> service.recordRefundPaidDebit(service.lockStudentCurrentAccount(accountId), id, ars(unallocated.toPlainString()), today, "Devolución"));
+                            long refundId = BillingTestFixtures.seedCompletedRefundRow(accountId, ars(unallocated.toPlainString()));
+                            inTransaction(() -> service.recordRefundPaidDebit(service.lockStudentCurrentAccount(accountId), refundId, ars(unallocated.toPlainString()), today, "Devolución"));
                         }
                     }
                 }

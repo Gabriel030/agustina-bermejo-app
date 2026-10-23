@@ -1431,6 +1431,23 @@
         "required" : [ "changeReason", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "status", "values" ],
         "type" : "object"
       },
+      "CompleteRefundRequest" : {
+        "properties" : {
+          "completedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "methodType" : {
+            "enum" : [ "CASH", "BANK_TRANSFER", "CARD", "WALLET" ],
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "completedOn", "methodType", "reference" ],
+        "type" : "object"
+      },
       "ConfigurationChangeValidationResponse" : {
         "properties" : {
           "violations" : {
@@ -3546,6 +3563,15 @@
           }
         },
         "required" : [ "effectiveFrom", "followsGroupFrom", "group", "hasOpenProposal", "noticeCount", "targetId", "versionId" ],
+        "type" : "object"
+      },
+      "FailRefundRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "FinancialDashboardResponse" : {
@@ -5773,6 +5799,80 @@
         "required" : [ "refreshToken" ],
         "type" : "object"
       },
+      "RefundRequestResponse" : {
+        "properties" : {
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "parts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RefundResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "authorizationRequestId", "parts" ],
+        "type" : "object"
+      },
+      "RefundResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "approvedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "completedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "completionReference" : {
+            "type" : "string"
+          },
+          "destinationAccount" : {
+            "type" : "string"
+          },
+          "destinationHolder" : {
+            "type" : "string"
+          },
+          "failureReason" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "methodType" : {
+            "type" : "string"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "refundRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "rejectionReason" : {
+            "type" : "string"
+          },
+          "requestedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "approvedOn", "authorizationRequestId", "completedOn", "completionReference", "destinationAccount", "destinationHolder", "failureReason", "id", "methodType", "paymentId", "refundRequestId", "rejectionReason", "requestedOn", "status" ],
+        "type" : "object"
+      },
       "RegisterCashPaymentRequest" : {
         "properties" : {
           "amount" : {
@@ -6069,6 +6169,21 @@
           }
         },
         "required" : [ "changeReason", "effectiveFrom" ],
+        "type" : "object"
+      },
+      "RequestRefundRequest" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "destinationAccount" : {
+            "type" : "string"
+          },
+          "destinationHolder" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "destinationAccount", "destinationHolder" ],
         "type" : "object"
       },
       "ResetPasswordRequest" : {
@@ -20905,6 +21020,76 @@
         "tags" : [ "me-enrollment-controller" ]
       }
     },
+    "/me/refund-requests" : {
+      "post" : {
+        "operationId" : "Refund_requestOwnRefund",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestRefundRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundRequestResponse"
+                }
+              }
+            },
+            "description" : "Pedido abierto en Aprobaciones; devuelve authorizationRequestId y las partes del reparto"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      }
+    },
     "/me/section-enrollments" : {
       "get" : {
         "operationId" : "MeEnrollment_mine",
@@ -27971,6 +28156,164 @@
         "tags" : [ "prospect-controller" ]
       }
     },
+    "/refunds/{refundId}/completion" : {
+      "post" : {
+        "operationId" : "Refund_completeRefund",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "refundId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CompleteRefundRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "REFUND_COMPLETION_INVALID"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "REFUND_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "ILLEGAL_REFUND_STATUS_TRANSITION (la devolución no está aprobada), REFUND_METHOD_MISMATCH o INSUFFICIENT_ACCOUNT_CREDIT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      }
+    },
+    "/refunds/{refundId}/failure" : {
+      "post" : {
+        "operationId" : "Refund_failRefund",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "refundId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FailRefundRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "REFUND_FAILURE_REASON_INVALID"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "REFUND_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "ILLEGAL_REFUND_STATUS_TRANSITION (la devolución no está aprobada)"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      }
+    },
     "/reports/billing/promotions/lost-benefits" : {
       "get" : {
         "operationId" : "Promotion_lostBenefits",
@@ -30590,6 +30933,95 @@
           }
         },
         "tags" : [ "student-payment-controller" ]
+      }
+    },
+    "/students/{studentId}/refund-requests" : {
+      "post" : {
+        "operationId" : "Refund_requestRefundOnBehalfOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestRefundRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundRequestResponse"
+                }
+              }
+            },
+            "description" : "Pedido cargado por el director: partes aprobadas directo (D-216)"
+          },
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundRequestResponse"
+                }
+              }
+            },
+            "description" : "Pedido del administrativo abierto en Aprobaciones"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-controller" ]
       }
     },
     "/subject-sections/{id}/modification-request" : {

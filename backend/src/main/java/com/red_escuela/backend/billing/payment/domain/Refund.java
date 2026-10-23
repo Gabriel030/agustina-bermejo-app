@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.domain;
 
+import com.red_escuela.backend.billing.payment.exception.RefundRequestNotPendingException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -133,6 +134,12 @@ public class Refund {
                 requestedOn);
         refund.changeStatus(RefundEvent.REFUND_REQUESTED, StatusChangeActor.ofPerson(requestedByPersonId), null);
         return refund;
+    }
+
+    public static void requireAnyRequestedPart(List<Refund> requestedParts) {
+        if (requestedParts.isEmpty()) {
+            throw new RefundRequestNotPendingException();
+        }
     }
 
     public void approve(LocalDate approvedOn, StatusChangeActor actor) {

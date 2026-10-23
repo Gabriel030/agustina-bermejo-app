@@ -16,7 +16,6 @@ import com.red_escuela.backend.billing.payment.domain.RefundPart;
 import com.red_escuela.backend.billing.payment.domain.RefundStatus;
 import com.red_escuela.backend.billing.payment.domain.RefundablePayment;
 import com.red_escuela.backend.billing.payment.exception.RefundNotFoundException;
-import com.red_escuela.backend.billing.payment.exception.RefundRequestNotPendingException;
 import com.red_escuela.backend.billing.payment.policy.RefundAvailabilityCheck;
 import com.red_escuela.backend.billing.payment.policy.RefundDestinationCheck;
 import com.red_escuela.backend.billing.payment.policy.RefundRejections;
@@ -77,9 +76,7 @@ public class RefundRequestRecorder {
                 .orElseThrow(RefundNotFoundException::new).getStudentCurrentAccountId();
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         List<Refund> requested = refunds.findByAuthorizationRequestIdAndStatusOrderByIdAsc(authorizationRequestId, RefundStatus.REQUESTED);
-        if (requested.isEmpty()) {
-            throw new RefundRequestNotPendingException();
-        }
+        Refund.requireAnyRequestedPart(requested);
         Money total = requested.stream().map(refund -> refund.getAmount().value()).reduce(Money.zero(account.getCurrency()), Money::plus);
         availabilityPolicies.evaluateRulesUntilFirstViolation(availabilityCheckFor(account, total, authorizationRequestId, LocalDate.now(clock)))
                 .throwIfDenied(RefundRejections::rejectionOf);
