@@ -106,7 +106,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
         NonNegativeMoney amount = NonNegativeMoney.of(command.amount());
         planner.lockOpenInvoicesOfLockedAccount(account.getId());
         CashPaymentPlanner.CashPaymentCandidates candidates = planner.findCandidatesOfAccount(account.getId());
-        CashPaymentPreview current = planner.previewCashPayment(command.studentId(), currency, candidates, account.getUnallocatedCreditAmount(), amount);
+        CashPaymentPreview current = planner.previewCashPayment(command.studentId(), currency, candidates, accountService.creditAvailableForAllocation(account), amount);
         previewPolicies.evaluateRulesUntilFirstViolation(new CashPaymentPreviewCheck(command.previewFingerprint(), current.fingerprint()))
                 .throwIfDenied(CashPaymentRejections::rejectionOf);
         Payment payment = payments.save(Payment.registerApprovedCashPayment(account, amount, paidOn, new CashPaymentDetails(textOrNull(command.receiptNumber())),

@@ -220,6 +220,12 @@ public class StudentCurrentAccount {
         }
     }
 
+    public void requireCreditCovers(NonNegativeMoney availableCredit, NonNegativeMoney amount) {
+        if (amount.value().isGreaterThan(availableCredit.value())) {
+            throw new InsufficientAccountCreditException();
+        }
+    }
+
     public void requireUnallocatedCreditCovers(NonNegativeMoney amount) {
         if (amount.value().isGreaterThan(unallocatedCreditAmount.value())) {
             throw new InsufficientAccountCreditException();

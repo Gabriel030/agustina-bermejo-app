@@ -24,6 +24,8 @@ public interface RefundRepository extends Repository<Refund, Long> {
 
     List<Refund> findByStudentCurrentAccountIdAndStatusIn(Long studentCurrentAccountId, Collection<RefundStatus> statuses);
 
+    List<Refund> findByPaymentIdAndStatusIn(Long paymentId, Collection<RefundStatus> statuses);
+
     @Query("select r.studentCurrentAccountId from Refund r where r.id = :refundId")
     Optional<Long> findStudentCurrentAccountIdById(@Param("refundId") Long refundId);
 

@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.payment.service;
 
+import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
+import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
+import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestObserver;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.payment.domain.Refund;
@@ -12,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -23,10 +28,17 @@ public class RefundRequestAuthorizationObserver implements AuthorizationRequestO
 
     private final RefundRequestRecorder recorder;
     private final RefundRepository refunds;
+    private final StudentCurrentAccountService accountService;
+    private final CurrentAccountAllocationService allocationService;
+    private final Clock clock;
 
-    public RefundRequestAuthorizationObserver(RefundRequestRecorder recorder, RefundRepository refunds) {
+    public RefundRequestAuthorizationObserver(RefundRequestRecorder recorder, RefundRepository refunds, StudentCurrentAccountService accountService,
+                                              CurrentAccountAllocationService allocationService, Clock clock) {
         this.recorder = recorder;
         this.refunds = refunds;
+        this.accountService = accountService;
+        this.allocationService = allocationService;
+        this.clock = clock;
     }
 
     @Override
@@ -67,6 +79,11 @@ public class RefundRequestAuthorizationObserver implements AuthorizationRequestO
         requested.forEach(refund -> {
             refund.reject(storedReason, actor);
             refunds.save(refund);
+        });
+        requested.stream().map(Refund::getStudentCurrentAccountId).distinct().sorted().forEach(accountId -> {
+            StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
+            int allocations = allocationService.allocateAccountCreditToOldestInvoices(account, LocalDate.now(clock), actor).allocations().size();
+            log.info("Saldo a favor liberado y imputado al cerrarse el pedido de devolución: authorizationRequestId={}, cuenta={}, imputaciones={}", requestId, accountId, allocations);
         });
         log.info("Devolución cerrada sin efecto: authorizationRequestId={}, partes={}, actor={}", requestId, requested.size(), actor);
     }

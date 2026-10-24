@@ -105,7 +105,7 @@ public class CurrentAccountAllocationService {
     private AccountCreditAllocationResult allocateAccountCredit(StudentCurrentAccount lockedAccount, LocalDate businessDate, StatusChangeActor actor,
                                                                 Set<Long> programAdmissionInvoiceIdsBeingPaid, Set<Long> skippedInvoiceIds,
                                                                 Set<Long> underReviewInvoiceIdsThatMayBePaid) {
-        NonNegativeMoney creditToAllocate = lockedAccount.getUnallocatedCreditAmount();
+        NonNegativeMoney creditToAllocate = accountService.creditAvailableForAllocation(lockedAccount);
         if (creditToAllocate.value().isZero()) {
             return AccountCreditAllocationResult.nothingAllocated();
         }
@@ -148,14 +148,26 @@ public class CurrentAccountAllocationService {
     public List<PaymentAllocation> reverseNewestAllocationsUntilCreditCovers(StudentCurrentAccount lockedAccount, NonNegativeMoney creditToRemove,
                                                                              LocalDate businessDate, int gracePeriodDays, String reason,
                                                                              StatusChangeActor actor) {
+        return reverseNewestAllocationsUntilCreditCovers(lockedAccount, creditToRemove, businessDate, invoice -> gracePeriodDays, reason, actor);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<PaymentAllocation> reverseNewestAllocationsUntilCreditCovers(StudentCurrentAccount lockedAccount, NonNegativeMoney creditToRemove,
+                                                                             LocalDate businessDate, ToIntFunction<Long> gracePeriodDaysOfInvoice, String reason,
+                                                                             StatusChangeActor actor) {
         List<PaymentAllocation> reversals = new ArrayList<>();
         for (PaymentAllocation current : NewestAllocationsReversalSelection.selectAllocationsToReverse(
-                allocationRepository.findCurrentAllocationsByAccountNewestFirst(lockedAccount.getId()), lockedAccount.getUnallocatedCreditAmount(),
+                allocationRepository.findCurrentAllocationsByAccountNewestFirst(lockedAccount.getId()), accountService.creditAvailableForAllocation(lockedAccount),
                 creditToRemove)) {
-            reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDays, reason, actor));
+            reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDaysOfInvoice, reason, actor));
         }
-        lockedAccount.requireUnallocatedCreditCovers(creditToRemove);
+        lockedAccount.requireCreditCovers(accountService.creditAvailableForAllocation(lockedAccount), creditToRemove);
         return reversals;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<Long> listInvoiceIdsOfCurrentAllocations(StudentCurrentAccount lockedAccount) {
+        return allocationRepository.findCurrentAllocationsByAccountNewestFirst(lockedAccount.getId()).stream().map(PaymentAllocation::getInvoiceId).distinct().toList();
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
