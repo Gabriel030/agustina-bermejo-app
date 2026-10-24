@@ -42,6 +42,7 @@ import com.red_escuela.backend.billing.payment.policy.ChargebackIsForTheFullAmou
 import com.red_escuela.backend.billing.payment.policy.ChargebackReferenceRequiredPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentMoneyNotRefundedPolicy;
 import com.red_escuela.backend.billing.payment.policy.PaymentReversalCheck;
+import com.red_escuela.backend.billing.payment.policy.PaymentWithoutPendingRefundPolicy;
 import com.red_escuela.backend.billing.payment.policy.RefundAmountPolicy;
 import com.red_escuela.backend.billing.payment.policy.RefundAvailabilityCheck;
 import com.red_escuela.backend.billing.payment.policy.RefundCompletionCheck;
@@ -140,13 +141,13 @@ public class PaymentPolicySetsConfiguration {
 
     @Bean
     public PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet() {
-        return PolicySet.named("PAYMENT_APPROVAL_REVOCATION", List.of(new PaymentMoneyNotRefundedPolicy()));
+        return PolicySet.named("PAYMENT_APPROVAL_REVOCATION", List.of(new PaymentMoneyNotRefundedPolicy(), new PaymentWithoutPendingRefundPolicy()));
     }
 
     @Bean
     public PolicySet<PaymentReversalCheck> chargebackRegistrationPolicySet() {
         return PolicySet.named("CHARGEBACK_REGISTRATION", List.of(new ChargebackReferenceRequiredPolicy(), new ChargebackDateWithinPaymentLifePolicy(),
-                new PaymentMoneyNotRefundedPolicy(), new ChargebackIsForTheFullAmountPolicy()));
+                new PaymentMoneyNotRefundedPolicy(), new PaymentWithoutPendingRefundPolicy(), new ChargebackIsForTheFullAmountPolicy()));
     }
 
     @Bean

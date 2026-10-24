@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.payment.exception.RefundNotFoundException
 import com.red_escuela.backend.billing.payment.policy.RefundFailureCheck;
 import com.red_escuela.backend.billing.payment.policy.RefundRejections;
 import com.red_escuela.backend.billing.payment.repository.RefundRepository;
+import com.red_escuela.backend.billing.payment.service.ReleasedRefundCreditAllocator;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
@@ -24,11 +25,14 @@ public class FailRefundOperation implements BillingOperation<FailRefundCommand, 
     private final StudentCurrentAccountService accountService;
     private final RefundRepository refunds;
     private final PolicySet<RefundFailureCheck> failurePolicies;
+    private final ReleasedRefundCreditAllocator releasedCreditAllocator;
 
-    public FailRefundOperation(StudentCurrentAccountService accountService, RefundRepository refunds, PolicySet<RefundFailureCheck> refundFailurePolicySet) {
+    public FailRefundOperation(StudentCurrentAccountService accountService, RefundRepository refunds, PolicySet<RefundFailureCheck> refundFailurePolicySet,
+                               ReleasedRefundCreditAllocator releasedCreditAllocator) {
         this.accountService = accountService;
         this.refunds = refunds;
         this.failurePolicies = refundFailurePolicySet;
+        this.releasedCreditAllocator = releasedCreditAllocator;
     }
 
     @Override
@@ -64,6 +68,7 @@ public class FailRefundOperation implements BillingOperation<FailRefundCommand, 
         failurePolicies.evaluateRulesUntilFirstViolation(new RefundFailureCheck(command.reason())).throwIfDenied(RefundRejections::rejectionOf);
         refund.fail(command.reason().strip(), command.actor());
         refunds.save(refund);
+        releasedCreditAllocator.allocateAfterCommit(List.of(accountId), command.actor());
         log.warn("Devolución fallida: devolución={}, cuenta={}, motivo={}, actor={}", refund.getId(), accountId, refund.getFailureReason(), command.actor());
         return refund;
     }
