@@ -139,7 +139,7 @@ public class RefundRequestRecorder {
 
     private Map<Long, NonNegativeMoney> pendingAmountsByPayment(Long accountId, Long excludedAuthorizationRequestId) {
         Map<Long, NonNegativeMoney> pending = new HashMap<>();
-        refunds.findByStudentCurrentAccountIdAndStatusIn(accountId, List.of(RefundStatus.REQUESTED, RefundStatus.APPROVED)).stream()
+        refunds.findByStudentCurrentAccountIdAndStatusIn(accountId, RefundStatus.PENDING).stream()
                 .filter(refund -> excludedAuthorizationRequestId == null || !excludedAuthorizationRequestId.equals(refund.getAuthorizationRequestId()))
                 .forEach(refund -> pending.merge(refund.getPaymentId(), refund.getAmount(), NonNegativeMoney::plus));
         return pending;

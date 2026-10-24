@@ -33,15 +33,18 @@ class PaymentCreditReversal {
     ReversedPaymentAllocations reverseAllocationsOf(StudentCurrentAccount lockedAccount, Payment payment, LocalDate businessDate, String concept, StatusChangeActor actor) {
         CurrentAccountEntry credit = accountService.findPaymentCreditNotYetReversed(payment.getId())
                 .orElseThrow(() -> new IllegalStateException("The payment " + payment.getId() + " has no credit in the current account to reverse"));
+        boolean hasReservedCredit = !accountService.reservedCreditOf(lockedAccount).value().isZero();
         List<Long> fundedInvoiceIds = allocationService.listInvoiceIdsOfAllocationsFundedByPayment(lockedAccount, payment.getId());
-        List<Long> invoicesToLock = lockedAccount.getUnallocatedCreditAmount().value().isGreaterThan(accountService.creditAvailableForAllocation(lockedAccount).value())
+        List<Long> invoicesToLock = hasReservedCredit
                 ? Stream.concat(fundedInvoiceIds.stream(), allocationService.listInvoiceIdsOfCurrentAllocations(lockedAccount).stream()).distinct().toList()
                 : fundedInvoiceIds;
         invoiceQueries.lockOpenInvoicesOfAccountAndTheseInIdOrder(lockedAccount.getId(), invoicesToLock);
         List<PaymentAllocation> reversals = new ArrayList<>(allocationService.reverseAllocationsFundedByPayment(lockedAccount, payment.getId(), businessDate,
                 gracePeriods::gracePeriodDaysOf, concept, actor));
-        reversals.addAll(allocationService.reverseNewestAllocationsUntilCreditCovers(lockedAccount, credit.getAmount(), businessDate, gracePeriods::gracePeriodDaysOf,
-                concept, actor));
+        if (hasReservedCredit) {
+            reversals.addAll(allocationService.reverseNewestAllocationsUntilCreditCovers(lockedAccount, credit.getAmount(), businessDate, gracePeriods::gracePeriodDaysOf,
+                    concept, actor));
+        }
         return new ReversedPaymentAllocations(credit, reversals.stream().map(PaymentAllocation::getInvoiceId).distinct().toList());
     }
 

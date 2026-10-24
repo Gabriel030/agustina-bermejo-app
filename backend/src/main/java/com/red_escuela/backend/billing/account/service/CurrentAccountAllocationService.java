@@ -125,7 +125,7 @@ public class CurrentAccountAllocationService {
         }
         Map<Long, Invoice> invoicesById = openInvoices.stream().collect(Collectors.toMap(Invoice::getId, Function.identity()));
         CreditContributions credits = CreditContributions.availableFrom(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(lockedAccount.getId()),
-                allocationRepository.netSourcedByCreditEntry(lockedAccount.getId()), creditToAllocate);
+                allocationRepository.netSourcedByCreditEntry(lockedAccount.getId()), lockedAccount.getUnallocatedCreditAmount()).limitedToOldest(creditToAllocate);
         List<PaymentAllocation> allocations = new ArrayList<>();
         List<Invoice> settledInvoices = new ArrayList<>();
         for (ScheduledAllocation scheduled : AllocationSchedule.scheduleInvoiceAllocations(plan, credits, businessDate)) {

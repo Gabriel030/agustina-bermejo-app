@@ -59,6 +59,20 @@ public record CreditContributions(List<CreditContribution> contributions) {
         return new CreditContributions(usable);
     }
 
+    public CreditContributions limitedToOldest(NonNegativeMoney maximum) {
+        Money remaining = maximum.value();
+        List<CreditContribution> kept = new ArrayList<>();
+        for (CreditContribution contribution : contributions) {
+            if (remaining.isZero()) {
+                break;
+            }
+            Money taken = contribution.amount().value().isGreaterThan(remaining) ? remaining : contribution.amount().value();
+            kept.add(new CreditContribution(contribution.entryId(), contribution.paymentId(), contribution.creditNoteId(), contribution.effectiveDate(), NonNegativeMoney.of(taken)));
+            remaining = remaining.minus(taken);
+        }
+        return new CreditContributions(kept);
+    }
+
     public List<CreditContribution> asList() {
         return contributions;
     }

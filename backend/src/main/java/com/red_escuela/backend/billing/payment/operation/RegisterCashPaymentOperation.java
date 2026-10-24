@@ -120,7 +120,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
                 amount.value().amount(), paidOn, allocatedInvoices.stream().map(CashPaymentRegistrationResult.AllocatedInvoice::invoiceId).toList(),
                 allocatedFromRemainingCredit.stream().map(CashPaymentRegistrationResult.AllocatedInvoice::invoiceId).toList(), command.actor().personId());
         return new CashPaymentRegistrationResult(payment.getId(), account.getId(), amount, paidOn, payment.getRegisteredAt(), allocatedInvoices,
-                allocatedFromRemainingCredit, account.getUnallocatedCreditAmount());
+                allocatedFromRemainingCredit, accountService.creditAvailableForAllocation(account));
     }
 
     @Override

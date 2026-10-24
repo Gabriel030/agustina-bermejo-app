@@ -758,9 +758,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 - Validaciones (momentos): REFUND_FAILURE
 - Pre-procesamiento (en orden): —
-- Eventos que publica: AccountCreditAllocatedEvent, InvoicePaidDomainEvent
-- Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Eventos que publica: —
 
 ## Operación GRANT_STUDENT_DISCOUNT
 
