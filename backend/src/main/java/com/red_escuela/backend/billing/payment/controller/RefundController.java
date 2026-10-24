@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.payment.dto.RefundResponse;
 import com.red_escuela.backend.billing.payment.dto.RequestRefundRequest;
 import com.red_escuela.backend.billing.payment.usecase.CompleteRefundUseCase;
 import com.red_escuela.backend.billing.payment.usecase.FailRefundUseCase;
+import com.red_escuela.backend.billing.payment.usecase.ListStudentRefundsUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RequestRefundUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,23 +17,28 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 public class RefundController {
     private final RequestRefundUseCase requestRefundUseCase;
     private final CompleteRefundUseCase completeRefundUseCase;
     private final FailRefundUseCase failRefundUseCase;
+    private final ListStudentRefundsUseCase listStudentRefundsUseCase;
     private final CurrentStudentService currentStudentService;
 
     public RefundController(RequestRefundUseCase requestRefundUseCase, CompleteRefundUseCase completeRefundUseCase, FailRefundUseCase failRefundUseCase,
-                            CurrentStudentService currentStudentService) {
+                            ListStudentRefundsUseCase listStudentRefundsUseCase, CurrentStudentService currentStudentService) {
         this.requestRefundUseCase = requestRefundUseCase;
         this.completeRefundUseCase = completeRefundUseCase;
         this.failRefundUseCase = failRefundUseCase;
+        this.listStudentRefundsUseCase = listStudentRefundsUseCase;
         this.currentStudentService = currentStudentService;
     }
 
@@ -76,6 +82,19 @@ public class RefundController {
             @ApiResponse(responseCode = "409", description = "ILLEGAL_REFUND_STATUS_TRANSITION (la devolución no está aprobada)")})
     public RefundResponse failRefund(@PathVariable Long refundId, @Valid @RequestBody FailRefundRequest request) {
         return RefundResponse.from(failRefundUseCase.failRefund(refundId, request));
+    }
+
+    @GetMapping("/students/{studentId}/refunds")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponses({@ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe")})
+    public List<RefundResponse> listRefundsOfStudent(@PathVariable Long studentId) {
+        return listStudentRefundsUseCase.listRefundsOfStudent(studentId).stream().map(RefundResponse::from).toList();
+    }
+
+    @GetMapping("/me/refunds")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public List<RefundResponse> listOwnRefunds() {
+        return listStudentRefundsUseCase.listRefundsOfCurrentStudent(currentStudentService.resolveCurrentStudent().getId()).stream().map(RefundResponse::from).toList();
     }
 
     private ResponseEntity<RefundRequestResponse> respondTo(RefundRequestResult result) {
