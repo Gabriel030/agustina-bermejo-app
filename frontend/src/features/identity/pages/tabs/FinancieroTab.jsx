@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { RefundsSection } from '@/features/billing';
 import {
   useInscripcionesACarrera,
   useEstadoMatriculaDeInscripcion,
@@ -171,16 +172,9 @@ function MatriculaDeInscripcion({ inscripcion }) {
   );
 }
 
-export function FinancieroTab({ studentId, puedeHabilitar = false }) {
-  const { data: inscripciones, isLoading } = useInscripcionesACarrera(puedeHabilitar ? studentId : null);
+function EnrollmentFees({ studentId }) {
+  const { data: inscripciones, isLoading } = useInscripcionesACarrera(studentId);
 
-  if (!puedeHabilitar) {
-    return (
-      <div className="flex min-h-[200px] items-center justify-center text-[13px] text-ink-faint">
-        Disponible próximamente
-      </div>
-    );
-  }
   if (isLoading) {
     return <Skeleton rows={3} />;
   }
@@ -188,11 +182,21 @@ export function FinancieroTab({ studentId, puedeHabilitar = false }) {
   if (!activas.length) {
     return <GlassCard className="p-6"><EmptyState title="Sin inscripciones activas" description="El alumno no tiene una carrera activa." /></GlassCard>;
   }
+  return activas.map((inscripcion) => <MatriculaDeInscripcion key={inscripcion.id} inscripcion={inscripcion} />);
+}
+
+export function FinancieroTab({ studentId, puedeHabilitar = false }) {
+  if (!puedeHabilitar) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center text-[13px] text-ink-faint">
+        Disponible próximamente
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-6">
-      {activas.map((inscripcion) => (
-        <MatriculaDeInscripcion key={inscripcion.id} inscripcion={inscripcion} />
-      ))}
+      <EnrollmentFees studentId={studentId} />
+      <RefundsSection studentId={studentId} />
     </div>
   );
 }
