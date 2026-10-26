@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -21,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,15 +45,11 @@ class RefundCreditReservationIT extends AbstractRefundIT {
         inTransaction(() -> allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(debtor.accountId()), TODAY, actor));
     }
 
-    private void waitUntilSessionsAreBlockedOnLocks(int expected) throws InterruptedException {
-        for (int attempt = 0; attempt < 200; attempt++) {
+    private void waitUntilSessionsAreBlockedOnLocks(int expected) {
+        await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(50)).until(() -> {
             Long blocked = jdbc.queryForObject("select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class);
-            if (blocked != null && blocked >= expected) {
-                return;
-            }
-            Thread.sleep(50);
-        }
-        throw new AssertionError("Expected " + expected + " sessions blocked on locks");
+            return blocked != null && blocked >= expected;
+        });
     }
 
     private void breakCreditTraceabilityOf(Debtor debtor) {
