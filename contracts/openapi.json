@@ -5799,6 +5799,124 @@
         "required" : [ "refreshToken" ],
         "type" : "object"
       },
+      "RefundBlockResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ],
+        "type" : "object"
+      },
+      "RefundEligibilityResponse" : {
+        "properties" : {
+          "availableToRefund" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "blockedBy" : {
+            "$ref" : "#/components/schemas/RefundBlockResponse"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "hasOverdueDebt" : {
+            "type" : "boolean"
+          },
+          "payments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RefundablePaymentResponse"
+            },
+            "type" : "array"
+          },
+          "reservedByPendingRefunds" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "unallocatedCredit" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "availableToRefund", "blockedBy", "currency", "hasOverdueDebt", "payments", "reservedByPendingRefunds", "unallocatedCredit" ],
+        "type" : "object"
+      },
+      "RefundPreviewPartResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "destinationAccount" : {
+            "type" : "string"
+          },
+          "destinationComplete" : {
+            "type" : "boolean"
+          },
+          "destinationHolder" : {
+            "type" : "string"
+          },
+          "methodType" : {
+            "type" : "string"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "destinationAccount", "destinationComplete", "destinationHolder", "methodType", "paymentId" ],
+        "type" : "object"
+      },
+      "RefundPreviewResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "blockedBy" : {
+            "$ref" : "#/components/schemas/RefundBlockResponse"
+          },
+          "parts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RefundPreviewPartResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "allowed", "blockedBy", "parts" ],
+        "type" : "object"
+      },
+      "RefundRequestGroupResponse" : {
+        "properties" : {
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "completedAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "parts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RefundResponse"
+            },
+            "type" : "array"
+          },
+          "pendingAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "refundRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "authorizationRequestId", "completedAmount", "parts", "pendingAmount", "refundRequestId", "requestedOn", "totalAmount" ],
+        "type" : "object"
+      },
       "RefundRequestResponse" : {
         "properties" : {
           "authorizationRequestId" : {
@@ -5871,6 +5989,41 @@
           }
         },
         "required" : [ "amount", "approvedOn", "authorizationRequestId", "completedOn", "completionReference", "destinationAccount", "destinationHolder", "failureReason", "id", "methodType", "paymentId", "refundRequestId", "rejectionReason", "requestedOn", "status" ],
+        "type" : "object"
+      },
+      "RefundablePaymentResponse" : {
+        "properties" : {
+          "credited" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "methodType" : {
+            "type" : "string"
+          },
+          "paidOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pending" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "receiptDestinationAccount" : {
+            "type" : "string"
+          },
+          "receiptDestinationHolder" : {
+            "type" : "string"
+          },
+          "refundableNow" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "refunded" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "credited", "methodType", "paidOn", "paymentId", "pending", "receiptDestinationAccount", "receiptDestinationHolder", "refundableNow", "refunded" ],
         "type" : "object"
       },
       "RegisterCashPaymentRequest" : {
@@ -21020,7 +21173,138 @@
         "tags" : [ "me-enrollment-controller" ]
       }
     },
+    "/me/refund-eligibility" : {
+      "get" : {
+        "operationId" : "RefundPreview_describeOwnRefundEligibility",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "default" : "ARS",
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundEligibilityResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-preview-controller" ]
+      }
+    },
     "/me/refund-requests" : {
+      "get" : {
+        "operationId" : "Refund_listOwnRefundRequests",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RefundRequestGroupResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      },
       "post" : {
         "operationId" : "Refund_requestOwnRefund",
         "requestBody" : {
@@ -21088,6 +21372,76 @@
           }
         },
         "tags" : [ "refund-controller" ]
+      }
+    },
+    "/me/refund-requests/preview" : {
+      "post" : {
+        "operationId" : "RefundPreview_previewOwnRefund",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestRefundRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundPreviewResponse"
+                }
+              }
+            },
+            "description" : "Reparto que el sistema aplicaría; si hay bloqueo, allowed=false y blockedBy con el código de la regla"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-preview-controller" ]
       }
     },
     "/me/refunds" : {
@@ -30998,7 +31352,155 @@
         "tags" : [ "student-payment-controller" ]
       }
     },
+    "/students/{studentId}/refund-eligibility" : {
+      "get" : {
+        "operationId" : "RefundPreview_describeRefundEligibilityOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "default" : "ARS",
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundEligibilityResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "STUDENT_NOT_FOUND: el alumno no existe"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-preview-controller" ]
+      }
+    },
     "/students/{studentId}/refund-requests" : {
+      "get" : {
+        "operationId" : "Refund_listRefundRequestsOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RefundRequestGroupResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "STUDENT_NOT_FOUND: el alumno no existe"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      },
       "post" : {
         "operationId" : "Refund_requestRefundOnBehalfOfStudent",
         "parameters" : [ {
@@ -31085,6 +31587,85 @@
           }
         },
         "tags" : [ "refund-controller" ]
+      }
+    },
+    "/students/{studentId}/refund-requests/preview" : {
+      "post" : {
+        "operationId" : "RefundPreview_previewRefundOnBehalfOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestRefundRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RefundPreviewResponse"
+                }
+              }
+            },
+            "description" : "Reparto que el sistema aplicaría; si hay bloqueo, allowed=false y blockedBy con el código de la regla"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "STUDENT_NOT_FOUND: el alumno no existe"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "refund-preview-controller" ]
       }
     },
     "/students/{studentId}/refunds" : {

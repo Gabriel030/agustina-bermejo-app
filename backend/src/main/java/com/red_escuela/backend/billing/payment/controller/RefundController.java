@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.payment.controller;
 import com.red_escuela.backend.billing.payment.domain.RefundRequestResult;
 import com.red_escuela.backend.billing.payment.dto.CompleteRefundRequest;
 import com.red_escuela.backend.billing.payment.dto.FailRefundRequest;
+import com.red_escuela.backend.billing.payment.dto.RefundRequestGroupResponse;
 import com.red_escuela.backend.billing.payment.dto.RefundRequestResponse;
 import com.red_escuela.backend.billing.payment.dto.RefundResponse;
 import com.red_escuela.backend.billing.payment.dto.RequestRefundRequest;
@@ -95,6 +96,20 @@ public class RefundController {
     @PreAuthorize("hasRole('ALUMNO')")
     public List<RefundResponse> listOwnRefunds() {
         return listStudentRefundsUseCase.listRefundsOfCurrentStudent(currentStudentService.resolveCurrentStudent().getId()).stream().map(RefundResponse::from).toList();
+    }
+
+    @GetMapping("/students/{studentId}/refund-requests")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponses({@ApiResponse(responseCode = "404", description = "STUDENT_NOT_FOUND: el alumno no existe")})
+    public List<RefundRequestGroupResponse> listRefundRequestsOfStudent(@PathVariable Long studentId) {
+        return listStudentRefundsUseCase.listRefundRequestsOfStudent(studentId).stream().map(RefundRequestGroupResponse::from).toList();
+    }
+
+    @GetMapping("/me/refund-requests")
+    @PreAuthorize("hasRole('ALUMNO')")
+    public List<RefundRequestGroupResponse> listOwnRefundRequests() {
+        return listStudentRefundsUseCase.listRefundRequestsOfCurrentStudent(currentStudentService.resolveCurrentStudent().getId()).stream()
+                .map(RefundRequestGroupResponse::from).toList();
     }
 
     private ResponseEntity<RefundRequestResponse> respondTo(RefundRequestResult result) {
