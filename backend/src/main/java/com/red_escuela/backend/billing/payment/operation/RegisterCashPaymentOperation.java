@@ -106,7 +106,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
         NonNegativeMoney amount = NonNegativeMoney.of(command.amount());
         planner.lockOpenInvoicesOfLockedAccount(account.getId());
         CashPaymentPlanner.CashPaymentCandidates candidates = planner.findCandidatesOfAccount(account.getId());
-        CashPaymentPreview current = planner.previewCashPayment(command.studentId(), currency, candidates, account.getUnallocatedCreditAmount(), amount);
+        CashPaymentPreview current = planner.previewCashPayment(command.studentId(), currency, candidates, accountService.creditAvailableForAllocation(account), amount);
         previewPolicies.evaluateRulesUntilFirstViolation(new CashPaymentPreviewCheck(command.previewFingerprint(), current.fingerprint()))
                 .throwIfDenied(CashPaymentRejections::rejectionOf);
         Payment payment = payments.save(Payment.registerApprovedCashPayment(account, amount, paidOn, new CashPaymentDetails(textOrNull(command.receiptNumber())),
@@ -120,7 +120,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
                 amount.value().amount(), paidOn, allocatedInvoices.stream().map(CashPaymentRegistrationResult.AllocatedInvoice::invoiceId).toList(),
                 allocatedFromRemainingCredit.stream().map(CashPaymentRegistrationResult.AllocatedInvoice::invoiceId).toList(), command.actor().personId());
         return new CashPaymentRegistrationResult(payment.getId(), account.getId(), amount, paidOn, payment.getRegisteredAt(), allocatedInvoices,
-                allocatedFromRemainingCredit, account.getUnallocatedCreditAmount());
+                allocatedFromRemainingCredit, accountService.creditAvailableForAllocation(account));
     }
 
     @Override

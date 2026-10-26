@@ -81,7 +81,8 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | ChargebackReferenceRequiredPolicy | CHARGEBACK_REFERENCE_INVALID | D-206 |
 | 2 | ChargebackDateWithinPaymentLifePolicy | CHARGEBACK_DATE_INVALID | D-206 |
 | 3 | PaymentMoneyNotRefundedPolicy | PAYMENT_ALREADY_REFUNDED | D-262 |
-| 4 | ChargebackIsForTheFullAmountPolicy | CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT | D-262 |
+| 4 | PaymentWithoutPendingRefundPolicy | PAYMENT_HAS_PENDING_REFUND | D-262, D-265 |
+| 5 | ChargebackIsForTheFullAmountPolicy | CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT | D-262 |
 
 ## Momento COHORT_PROMOTION_ACQUISITION
 
@@ -345,6 +346,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | PaymentMoneyNotRefundedPolicy | PAYMENT_ALREADY_REFUNDED | D-262 |
+| 2 | PaymentWithoutPendingRefundPolicy | PAYMENT_HAS_PENDING_REFUND | D-262, D-265 |
 
 ## Momento PAYMENT_GATEWAY_CAPABILITY
 

@@ -84,7 +84,7 @@ public class RegisterGatewayPaymentOperation implements BillingOperation<Registe
         accountService.recordPaymentReceivedCredit(account, payment.getId(), amount, today, "Pago " + payment.getId());
         AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.actor(),
                 command.programAdmissionInvoiceIds());
-        Money unallocatedAfterwards = account.getUnallocatedCreditAmount().value();
+        Money unallocatedAfterwards = accountService.creditAvailableForAllocation(account).value();
         Money leftAsCredit = unallocatedAfterwards.isGreaterThan(command.amount()) ? command.amount() : unallocatedAfterwards;
         log.info("Pago de pasarela acreditado en la cuenta corriente: pago={}, pasarela={}, monto={}, factura={}, facturas saldadas={}", payment.getId(),
                 command.gateway(), command.amount().amount(), command.reportedInvoiceId(), allocated.settledInvoices().stream().map(invoice -> invoice.getId()).toList());
