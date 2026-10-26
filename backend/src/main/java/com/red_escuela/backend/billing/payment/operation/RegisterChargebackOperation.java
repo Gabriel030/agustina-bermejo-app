@@ -21,6 +21,7 @@ import com.red_escuela.backend.billing.payment.policy.PaymentReversalCheck;
 import com.red_escuela.backend.billing.payment.policy.PaymentReversalRejections;
 import com.red_escuela.backend.billing.payment.repository.ChargebackRepository;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
+import com.red_escuela.backend.billing.payment.service.PaymentPendingRefunds;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
@@ -42,11 +43,12 @@ public class RegisterChargebackOperation implements BillingOperation<RegisterCha
     private final PaymentCreditReversal creditReversal;
     private final PolicySet<PaymentReversalCheck> chargebackPolicies;
     private final AnnulledLateFeeReinstatement lateFeeReinstatement;
+    private final PaymentPendingRefunds pendingRefunds;
     private final Clock clock;
 
     public RegisterChargebackOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService, PaymentRepository payments,
                                        ChargebackRepository chargebacks, PaymentCreditReversal creditReversal, PolicySet<PaymentReversalCheck> chargebackRegistrationPolicySet,
-                                       AnnulledLateFeeReinstatement lateFeeReinstatement, Clock clock) {
+                                       AnnulledLateFeeReinstatement lateFeeReinstatement, PaymentPendingRefunds pendingRefunds, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.payments = payments;
@@ -54,6 +56,7 @@ public class RegisterChargebackOperation implements BillingOperation<RegisterCha
         this.creditReversal = creditReversal;
         this.chargebackPolicies = chargebackRegistrationPolicySet;
         this.lateFeeReinstatement = lateFeeReinstatement;
+        this.pendingRefunds = pendingRefunds;
         this.clock = clock;
     }
 
@@ -90,7 +93,7 @@ public class RegisterChargebackOperation implements BillingOperation<RegisterCha
         payment.registerChargeback(command.reference(), command.actor());
         CurrentAccountEntry credit = accountService.findPaymentCreditNotYetReversed(payment.getId())
                 .orElseThrow(() -> new IllegalStateException("The payment " + payment.getId() + " has no credit in the current account to reverse"));
-        chargebackPolicies.evaluateRulesUntilFirstViolation(new PaymentReversalCheck(credit.getAmount().value(), payment.getRefundedAmount().value(), command.amount(),
+        chargebackPolicies.evaluateRulesUntilFirstViolation(new PaymentReversalCheck(credit.getAmount().value(), payment.getRefundedAmount().value(), pendingRefunds.pendingAmountOf(payment), command.amount(),
                 payment.getPaidOn(), command.chargedBackOn(), today, command.reference())).throwIfDenied(PaymentReversalRejections::rejectionOf);
         payments.save(payment);
         Chargeback chargeback = chargebacks.save(Chargeback.registerFor(payment, credit.getAmount(), command.chargedBackOn(), command.reference(), command.actor()));

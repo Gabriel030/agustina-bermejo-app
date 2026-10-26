@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.service;
 
+import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestObserver;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.payment.domain.Refund;
@@ -23,10 +24,15 @@ public class RefundRequestAuthorizationObserver implements AuthorizationRequestO
 
     private final RefundRequestRecorder recorder;
     private final RefundRepository refunds;
+    private final StudentCurrentAccountService accountService;
+    private final ReleasedRefundCreditAllocator releasedCreditAllocator;
 
-    public RefundRequestAuthorizationObserver(RefundRequestRecorder recorder, RefundRepository refunds) {
+    public RefundRequestAuthorizationObserver(RefundRequestRecorder recorder, RefundRepository refunds, StudentCurrentAccountService accountService,
+                                              ReleasedRefundCreditAllocator releasedCreditAllocator) {
         this.recorder = recorder;
         this.refunds = refunds;
+        this.accountService = accountService;
+        this.releasedCreditAllocator = releasedCreditAllocator;
     }
 
     @Override
@@ -64,10 +70,13 @@ public class RefundRequestAuthorizationObserver implements AuthorizationRequestO
         }
         String storedReason = abbreviated(reason);
         List<Refund> requested = refunds.findByAuthorizationRequestIdAndStatusOrderByIdAsc(requestId, RefundStatus.REQUESTED);
+        List<Long> accountIds = requested.stream().map(Refund::getStudentCurrentAccountId).distinct().sorted().toList();
+        accountIds.forEach(accountService::lockStudentCurrentAccount);
         requested.forEach(refund -> {
             refund.reject(storedReason, actor);
             refunds.save(refund);
         });
+        releasedCreditAllocator.allocateAfterCommit(accountIds, actor);
         log.info("Devolución cerrada sin efecto: authorizationRequestId={}, partes={}, actor={}", requestId, requested.size(), actor);
     }
 
