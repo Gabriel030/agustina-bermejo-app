@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
 import com.red_escuela.backend.billing.payment.domain.Refund;
 import com.red_escuela.backend.billing.payment.domain.RefundDestination;
 import com.red_escuela.backend.billing.payment.domain.RefundPart;
+import com.red_escuela.backend.billing.payment.domain.RefundPlanOutcome;
 import com.red_escuela.backend.billing.payment.domain.RefundStatus;
 import com.red_escuela.backend.billing.payment.domain.RefundablePayment;
 import com.red_escuela.backend.billing.payment.exception.RefundNotFoundException;
@@ -24,6 +25,7 @@ import com.red_escuela.backend.billing.payment.repository.RefundRepository;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -91,16 +93,24 @@ public class RefundRequestRecorder {
 
     private List<RefundPart> planPartsFor(StudentCurrentAccount account, Money amount, RefundDestination requestedDestination, Long excludedAuthorizationRequestId,
                                           LocalDate today) {
-        RefundAvailabilityCheck availability = availabilityCheckFor(account, amount, excludedAuthorizationRequestId, today);
-        availabilityPolicies.evaluateRulesUntilFirstViolation(availability).throwIfDenied(RefundRejections::rejectionOf);
-        List<RefundablePayment> refundable = refundablePaymentsOf(account, requestedDestination, excludedAuthorizationRequestId);
-        List<RefundPart> parts = NewestPaymentFirstRefundSplitter.splitAmountAcross(amount, refundable);
-        destinationPolicies.evaluateRulesUntilFirstViolation(new RefundDestinationCheck(parts.stream().map(RefundPart::destination).toList()))
-                .throwIfDenied(RefundRejections::rejectionOf);
-        return parts;
+        return evaluatePlanFor(account, amount, requestedDestination, excludedAuthorizationRequestId, today).partsOrThrow(RefundRejections::rejectionOf);
     }
 
-    private RefundAvailabilityCheck availabilityCheckFor(StudentCurrentAccount account, Money amount, Long excludedAuthorizationRequestId, LocalDate today) {
+    RefundPlanOutcome evaluatePlanFor(StudentCurrentAccount account, Money amount, RefundDestination requestedDestination, Long excludedAuthorizationRequestId,
+                                      LocalDate today) {
+        RefundAvailabilityCheck availability = availabilityCheckFor(account, amount, excludedAuthorizationRequestId, today);
+        PolicyEvaluationResult availabilityResult = availabilityPolicies.evaluateRulesUntilFirstViolation(availability);
+        if (!availabilityResult.allowed()) {
+            return RefundPlanOutcome.blocked(availabilityResult.violations());
+        }
+        List<RefundablePayment> refundable = refundablePaymentsOf(account, requestedDestination, excludedAuthorizationRequestId);
+        List<RefundPart> parts = NewestPaymentFirstRefundSplitter.splitAmountAcross(amount, refundable);
+        PolicyEvaluationResult destinationResult = destinationPolicies
+                .evaluateRulesUntilFirstViolation(new RefundDestinationCheck(parts.stream().map(RefundPart::destination).toList()));
+        return destinationResult.allowed() ? RefundPlanOutcome.planned(parts) : RefundPlanOutcome.plannedButBlocked(parts, destinationResult.violations());
+    }
+
+    RefundAvailabilityCheck availabilityCheckFor(StudentCurrentAccount account, Money amount, Long excludedAuthorizationRequestId, LocalDate today) {
         Currency currency = account.getCurrency();
         NonNegativeMoney pending = pendingAmountsByPayment(account.getId(), excludedAuthorizationRequestId).values().stream()
                 .reduce(NonNegativeMoney.zero(currency), NonNegativeMoney::plus);
@@ -110,7 +120,7 @@ public class RefundRequestRecorder {
                 refundable);
     }
 
-    private List<RefundablePayment> refundablePaymentsOf(StudentCurrentAccount account, RefundDestination requestedDestination, Long excludedAuthorizationRequestId) {
+    List<RefundablePayment> refundablePaymentsOf(StudentCurrentAccount account, RefundDestination requestedDestination, Long excludedAuthorizationRequestId) {
         Map<Long, NonNegativeMoney> pendingByPayment = pendingAmountsByPayment(account.getId(), excludedAuthorizationRequestId);
         return payments.findByStudentCurrentAccountIdAndGatewayAndStatus(account.getId(), PaymentGatewayCode.MANUAL, PaymentStatus.APPROVED).stream()
                 .filter(payment -> REFUNDABLE_MANUAL_METHODS.contains(payment.getMethodType()))
@@ -139,7 +149,7 @@ public class RefundRequestRecorder {
 
     private Map<Long, NonNegativeMoney> pendingAmountsByPayment(Long accountId, Long excludedAuthorizationRequestId) {
         Map<Long, NonNegativeMoney> pending = new HashMap<>();
-        refunds.findByStudentCurrentAccountIdAndStatusIn(accountId, List.of(RefundStatus.REQUESTED, RefundStatus.APPROVED)).stream()
+        refunds.findByStudentCurrentAccountIdAndStatusIn(accountId, RefundStatus.PENDING).stream()
                 .filter(refund -> excludedAuthorizationRequestId == null || !excludedAuthorizationRequestId.equals(refund.getAuthorizationRequestId()))
                 .forEach(refund -> pending.merge(refund.getPaymentId(), refund.getAmount(), NonNegativeMoney::plus));
         return pending;

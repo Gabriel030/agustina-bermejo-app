@@ -32,6 +32,15 @@ public class StudentCurrentAccountService {
     private final StudentCurrentAccountRepository accountRepository;
     private final CurrentAccountEntryRepository entryRepository;
     private final EntityManager entityManager;
+    private final ReservedAccountCredit reservedAccountCredit;
+
+    public NonNegativeMoney creditAvailableForAllocation(StudentCurrentAccount account) {
+        return account.getUnallocatedCreditAmount().minusNotBelowZero(reservedCreditOf(account));
+    }
+
+    public NonNegativeMoney reservedCreditOf(StudentCurrentAccount account) {
+        return reservedAccountCredit.reservedOn(account.getId(), account.getCurrency());
+    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public StudentCurrentAccount findOrOpenAndLockStudentCurrentAccount(Long studentId, Currency currency) {

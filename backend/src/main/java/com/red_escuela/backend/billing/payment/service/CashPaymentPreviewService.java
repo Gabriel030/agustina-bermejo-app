@@ -32,7 +32,7 @@ public class CashPaymentPreviewService {
         NonNegativeMoney requested = NonNegativeMoney.of(amount);
         return accountService.findStudentCurrentAccount(studentId, amount.currency())
                 .map(account -> planner.previewCashPayment(studentId, amount.currency(), planner.findCandidatesOfAccount(account.getId()),
-                        account.getUnallocatedCreditAmount(), requested))
+                        accountService.creditAvailableForAllocation(account), requested))
                 .orElseGet(() -> planner.previewCashPayment(studentId, amount.currency(), CashPaymentPlanner.CashPaymentCandidates.none(),
                         NonNegativeMoney.zero(amount.currency()), requested));
     }

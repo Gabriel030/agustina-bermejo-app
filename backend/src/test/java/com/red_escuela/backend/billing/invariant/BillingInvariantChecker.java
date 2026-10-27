@@ -237,6 +237,15 @@ public final class BillingInvariantChecker {
                 """, baselineAccountId, baselineEntryId);
     }
 
+    public List<String> theUnallocatedCreditCoversTheAmountReservedByPendingRefunds() {
+        return violations("I-23 unallocated credit below the amount reserved by requested or approved refunds", """
+                select 'account ' || a.id
+                from student_current_account a
+                where @ACCOUNTS@ and a.unallocated_credit_amount < coalesce((select sum(r.amount) from refund r
+                        where r.student_current_account_id = a.id and r.status in ('REQUESTED', 'APPROVED')), 0)
+                """, baselineAccountId, baselineEntryId);
+    }
+
     public List<String> theLatestRefundStatusChangeMatchesTheCurrentStatus() {
         return violations("I-17 refund history does not end in the current refund status", """
                 select 'refund ' || r.id
@@ -654,6 +663,7 @@ public final class BillingInvariantChecker {
         all.addAll(refundedAmountOfEveryPaymentEqualsItsCompletedRefunds());
         all.addAll(everyCompletedRefundHasExactlyItsRefundPaidDebit());
         all.addAll(theLatestRefundStatusChangeMatchesTheCurrentStatus());
+        all.addAll(theUnallocatedCreditCoversTheAmountReservedByPendingRefunds());
         all.addAll(runningBalancesFollowTheEntrySequence());
         all.addAll(accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices());
         all.addAll(invoicesAreNeverPartiallyAllocated());

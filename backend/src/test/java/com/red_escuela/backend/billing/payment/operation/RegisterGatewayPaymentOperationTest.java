@@ -45,6 +45,7 @@ class RegisterGatewayPaymentOperationTest {
         StudentCurrentAccount account = PaymentFixtures.arsAccount();
         ReflectionTestUtils.setField(account, "id", 10L);
         when(accountService.lockStudentCurrentAccount(10L)).thenReturn(account);
+        when(accountService.creditAvailableForAllocation(account)).thenReturn(account.getUnallocatedCreditAmount());
         when(payments.save(any(Payment.class))).thenAnswer(call -> {
             Payment saved = call.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", 99L);

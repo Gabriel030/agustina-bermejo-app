@@ -20,6 +20,7 @@ import com.red_escuela.backend.billing.payment.policy.PaymentReversalCheck;
 import com.red_escuela.backend.billing.payment.policy.PaymentReversalRejections;
 import com.red_escuela.backend.billing.payment.policy.PaymentReviewRejections;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
+import com.red_escuela.backend.billing.payment.service.PaymentPendingRefunds;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
@@ -41,11 +42,12 @@ public class RevokeBankTransferApprovalOperation implements BillingOperation<Rev
     private final PolicySet<PaymentRejectionCheck> reasonPolicies;
     private final PolicySet<PaymentReversalCheck> revocationPolicies;
     private final AnnulledLateFeeReinstatement lateFeeReinstatement;
+    private final PaymentPendingRefunds pendingRefunds;
     private final Clock clock;
 
     public RevokeBankTransferApprovalOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService, PaymentRepository payments,
                                                PaymentCreditReversal creditReversal, PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet,
-                                               PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet, AnnulledLateFeeReinstatement lateFeeReinstatement, Clock clock) {
+                                               PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet, AnnulledLateFeeReinstatement lateFeeReinstatement, PaymentPendingRefunds pendingRefunds, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.payments = payments;
@@ -53,6 +55,7 @@ public class RevokeBankTransferApprovalOperation implements BillingOperation<Rev
         this.reasonPolicies = paymentRejectionReasonPolicySet;
         this.revocationPolicies = paymentApprovalRevocationPolicySet;
         this.lateFeeReinstatement = lateFeeReinstatement;
+        this.pendingRefunds = pendingRefunds;
         this.clock = clock;
     }
 
@@ -87,7 +90,7 @@ public class RevokeBankTransferApprovalOperation implements BillingOperation<Rev
         Long accountId = payments.findStudentCurrentAccountIdById(command.paymentId()).orElseThrow(PaymentNotFoundException::new);
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Payment payment = payments.findById(command.paymentId()).orElseThrow(PaymentNotFoundException::new);
-        revocationPolicies.evaluateRulesUntilFirstViolation(PaymentReversalCheck.ofRevocation(payment.creditedAmount().value(), payment.getRefundedAmount().value()))
+        revocationPolicies.evaluateRulesUntilFirstViolation(PaymentReversalCheck.ofRevocation(payment.creditedAmount().value(), payment.getRefundedAmount().value(), pendingRefunds.pendingAmountOf(payment)))
                 .throwIfDenied(PaymentReversalRejections::rejectionOf);
         payment.revokeBankTransferApproval(command.reason(), command.reviewer());
         payments.save(payment);

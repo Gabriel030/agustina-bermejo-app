@@ -125,4 +125,19 @@ class CreditContributionsTest {
     void noEntriesGiveNoContributions() {
         assertThat(available(List.of(), Map.of(), "0.00").asList()).isEmpty();
     }
+
+    @Test
+    void limitingToTheOldestKeepsTheOldestCreditUntilTheMaximumAndSplitsTheLastOne() {
+        var account = arsAccount();
+        List<CurrentAccountEntry> entries = new ArrayList<>();
+        entries.add(withEntryId(account.recordPaymentReceivedCredit(1L, ars("100.00"), FIRST, "Pago")));
+        entries.add(withEntryId(account.recordPaymentReceivedCredit(2L, ars("100.00"), SECOND, "Pago")));
+        CreditContributions all = available(entries, Map.of(), "200.00");
+
+        assertThat(all.limitedToOldest(ars("100.00")).asList()).extracting(CreditContribution::paymentId, CreditContribution::amount).containsExactly(tuple(1L, ars("100.00")));
+        assertThat(all.limitedToOldest(ars("150.00")).asList()).extracting(CreditContribution::paymentId, CreditContribution::amount)
+                .containsExactly(tuple(1L, ars("100.00")), tuple(2L, ars("50.00")));
+        assertThat(all.limitedToOldest(ars("0.00")).asList()).isEmpty();
+        assertThat(all.limitedToOldest(ars("500.00")).asList()).hasSize(2);
+    }
 }
