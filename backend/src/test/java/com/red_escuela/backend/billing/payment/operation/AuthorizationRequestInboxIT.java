@@ -73,7 +73,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
+    @Tag("D-216")
     void theDirectorListsTheRequestsOfEveryoneAndTheAdministrativeOnlyHisOwn() throws Exception {
         Person administrativeA = newStaffPerson();
         Person administrativeB = newStaffPerson();
@@ -96,7 +96,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
+    @Tag("D-216")
     void theListFiltersByStatusFamilyAndTypeAndSortsByExpiryWithTheUndatedLast() throws Exception {
         Person requester = newStaffPerson();
         long refund = seededRequest(requester, BillingOperationType.ISSUE_REFUND, null);
@@ -121,7 +121,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
+    @Tag("D-216")
     void aRequestWhoseOperationHasNoSpecificDescriptionGetsTheGenericOneWithoutExposingThePayload() throws Exception {
         Person requester = newStaffPerson();
         long unreadable = seededRequest(requester, BillingOperationType.ISSUE_REFUND, null);
@@ -142,7 +142,6 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
     @Tag("D-216")
     void theRefundDetailDescribesTheRequestWithItsPartsAndTheEffectOnlyWhilePendingAndKeepsTheHistory() throws Exception {
         Person administrative = newStaffPerson();
@@ -194,7 +193,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
+    @Tag("D-216")
     void theDetailAndTheListAreForbiddenToStudentsAndToAdministrativesAskingForSomeoneElsesRequest() throws Exception {
         Person owner = newStaffPerson();
         String ownerToken = tokenOf(owner, "ADMINISTRATIVO");
@@ -213,7 +212,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
+    @Tag("D-216")
     @Tag("D-176")
     void onlyTheDirectorDecidesAndNobodyElseNotEvenTheAdministrativeWhoRequested() throws Exception {
         Person owner = newStaffPerson();
@@ -248,7 +247,7 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
+    @Tag("D-216")
     void aDirectorCannotDecideARequestHeRequestedHimselfButAnotherDirectorCan() throws Exception {
         Person requestingDirector = newStaffPerson();
         String requestingToken = tokenOf(requestingDirector, "DIRECTOR");
@@ -264,7 +263,6 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
     }
 
     @Test
-    @Tag("D-221")
     @Tag("D-216")
     void aRefundRequestedByTheDirectorRunsRightAwayAndOpensNoAuthorizationRequest() throws Exception {
         Person director = newStaffPerson();

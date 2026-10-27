@@ -65,7 +65,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Tag("D-221")
+@Tag("D-216")
 class AuthorizationRequestDescribersTest {
 
     private static final Money TOTAL = Money.of(new BigDecimal("520000.00"), Currency.ARS);

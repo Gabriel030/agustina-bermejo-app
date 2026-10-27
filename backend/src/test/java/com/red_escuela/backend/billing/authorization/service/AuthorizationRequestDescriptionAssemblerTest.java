@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Tag("D-221")
+@Tag("D-216")
 class AuthorizationRequestDescriptionAssemblerTest {
 
     record StubContext(String name) {

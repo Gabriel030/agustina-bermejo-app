@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest
 import com.red_escuela.backend.billing.authorization.domain.OwnAuthorizationRequestDecisionException;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,19 +18,13 @@ import java.util.stream.Collectors;
 public class AuthorizationCallerAccess {
     private static final String ADMINISTRATIVE_ROLE = "ADMINISTRATIVO";
 
-    private final CurrentPersonService currentPersonService;
-
-    public AuthorizationCallerAccess(CurrentPersonService currentPersonService) {
-        this.currentPersonService = currentPersonService;
-    }
-
     public InboxScope scopeOfCurrentCaller() {
         Set<String> roles = currentRoleNames();
         if (AuthorizationRole.DIRECTOR.isSatisfiedByAnyOf(roles)) {
             return InboxScope.everyRequest();
         }
         if (roles.contains(ADMINISTRATIVE_ROLE)) {
-            return InboxScope.requestsOf(currentPersonService.resolveCurrentPerson().getId());
+            return InboxScope.requestsOf(Long.valueOf(SecurityContextHolder.getContext().getAuthentication().getName()));
         }
         throw new AuthorizationInboxAccessDeniedException();
     }
