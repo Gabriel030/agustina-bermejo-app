@@ -5,6 +5,7 @@ import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
 import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
 import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
+import { RequestRefundPage } from '@/features/billing/refunds/RequestRefundPage';
 import { FinancialDashboardPage } from '@/features/billing/dashboard/FinancialDashboardPage';
 
 export const routes = {
@@ -19,6 +20,7 @@ export const routes = {
     { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <AlumnoPagarTransferencia /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <AlumnoPagarOnline /> },
     { roles: ['administrativo', 'director'], path: 'facturacion', element: <AdministrativoFacturacion /> },
+    { roles: ['administrativo', 'director'], path: 'alumnos/:id/reembolsos/nuevo', element: <RequestRefundPage /> },
     { roles: ['administrativo', 'director'], path: 'financiero', element: <FinancialDashboardPage /> },
   ],
 };
