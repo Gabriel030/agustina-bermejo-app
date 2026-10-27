@@ -148,6 +148,39 @@ class CohortPromotionCandidateStrategyTest {
     }
 
     @Test
+    @Tag("D-426")
+    void aReissueAfterTheWindowOfAChargeCancelledByErrorKeepsThePromotionWithTheSameInstallmentNumber() {
+        acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        liveUses(1);
+        when(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(PROMOTION_ID, "PE:10:MONTHLY_INSTALLMENT:2027-07")).thenReturn(Optional.of(LocalDate.of(2027, 6, 1)));
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).singleElement()
+                .satisfies(candidate -> assertThat(candidate.installmentNumber()).isEqualTo(2));
+        assertThat(strategy.findDiscountCandidatesUnderEnrollmentLock(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).hasSize(1);
+    }
+
+    @Test
+    @Tag("D-426")
+    void aChargeNeverCancelledByErrorStaysOutsideTheWindowAfterTheAvailableUntilDate() {
+        acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        liveUses(1);
+        when(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(any(), any())).thenReturn(Optional.empty());
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).isEmpty();
+    }
+
+    @Test
+    @Tag("D-426")
+    void theOriginalInvoiceIsOnlyLookedUpWhenTheWindowIsClosed() {
+        acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        liveUses(1);
+
+        strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 6, 30)));
+
+        verify(appliedRepository, never()).findEarliestIssueDateOfChargeCancelledByBillingError(any(), any());
+    }
+
+    @Test
     @Tag("D-283")
     void theReferenceRangeLeftAtAcquisitionDoesNotDecideEligibility() {
         acquire(monthlyPromotion(3));
