@@ -35,7 +35,7 @@ public class PostWithdrawalSummaryStore {
               and i.document_type = 'INVOICE'
               and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
               and i.payment_status in ('PENDING', 'OVERDUE')
-              and i.due_date < :businessDate
+              and i.due_date < :summaryDay
               and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW')
               and not exists (select 1 from post_withdrawal_summary w where w.%2$s = e.id and w.summary_month = :summaryMonth)
             order by e.student_id, e.id, i.id
@@ -47,8 +47,8 @@ public class PostWithdrawalSummaryStore {
         this.jdbc = jdbc;
     }
 
-    public List<WithdrawnEnrollmentDebtLine> findPendingDebtLinesOfWithdrawnEnrollments(LocalDate businessDate) {
-        MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("businessDate", Date.valueOf(businessDate))
+    public List<WithdrawnEnrollmentDebtLine> findPendingDebtLinesOfWithdrawnEnrollments(LocalDate businessDate, LocalDate summaryDay) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("summaryDay", Date.valueOf(summaryDay))
                 .addValue("summaryMonth", Date.valueOf(YearMonth.from(businessDate).atDay(1)));
         List<WithdrawnEnrollmentDebtLine> lines = new ArrayList<>(jdbc.query(DEBT_LINES_SQL.formatted("program_enrollment", "program_enrollment_id"), parameters,
                 (rs, rowNumber) -> lineOf(rs, true)));
