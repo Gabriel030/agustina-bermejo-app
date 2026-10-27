@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +24,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-338")
 class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
 
+    private static final int FIRST_DAYS_OF_MONTH_SCANNED = 4;
     private static final LocalDate JULY_TENTH = LocalDate.of(2027, 7, 10);
     private static final LocalDate JULY_THIRTY_FIRST = LocalDate.of(2027, 7, 31);
 
     @Autowired
     private PostWithdrawalSummaryPlanningStep planningStep;
+    @Autowired
+    private CollectionReminderPlanningJob planningJob;
+
+    private void runJobOn(LocalDate day) {
+        MutableClock.INSTANCE.setDate(day);
+        planningJob.run(day);
+    }
+
+    private List<LocalDate> summaryMonthsOf(Student student) {
+        return jdbc.queryForList("select distinct summary_month from post_withdrawal_summary where student_id = ? order by summary_month", LocalDate.class, student.getId());
+    }
+
+    private List<LocalDate> summaryBusinessDatesOf(Student student) {
+        return jdbc.queryForList("select distinct business_date from post_withdrawal_summary where student_id = ? order by business_date", LocalDate.class, student.getId());
+    }
 
     private void withdrawVoluntarily(CourseEnrollment enrollment, LocalDate effectiveDate) {
         Person registrar = newPerson("secretaria", "ADMINISTRATIVO");
@@ -42,6 +59,9 @@ class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
     private List<LocalDate> summaryDaysOf(Student student, LocalDate from, LocalDate to) {
         List<LocalDate> days = new ArrayList<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            if (day.getDayOfMonth() > FIRST_DAYS_OF_MONTH_SCANNED) {
+                continue;
+            }
             int before = summariesOf(student);
             planningStep.planPostWithdrawalSummariesOf(day);
             if (summariesOf(student) > before) {
@@ -165,14 +185,102 @@ class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
 
     @Test
     @Tag("D-338")
-    void nothingIsPlannedOnADayThatIsNotTheSummaryDayOfTheMonth() {
+    void nothingIsPlannedBeforeTheSummaryDayOfTheMonthNorOnAWeekend() {
         Student student = newStudent();
         CourseEnrollment enrollment = newCourseEnrollment(student);
         installmentDueOn(enrollment, JULY_TENTH);
         withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
 
         assertThat(planningStep.planPostWithdrawalSummariesOf(LocalDate.of(2027, 8, 1))).isZero();
-        assertThat(planningStep.planPostWithdrawalSummariesOf(LocalDate.of(2027, 8, 3))).isZero();
+        assertThat(planningStep.planPostWithdrawalSummariesOf(LocalDate.of(2027, 8, 7))).isZero();
+        assertThat(summariesOf(student)).isZero();
+    }
+
+    @Test
+    @Tag("D-338")
+    void whenTheJobWasDownOnTheSummaryDayTheNextBusinessDayPlansTheSummaryOnceAndTheFollowingDaysDoNotRepeatIt() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        installmentDueOn(enrollment, JULY_TENTH);
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+
+        runJobOn(LocalDate.of(2027, 8, 3));
+        runJobOn(LocalDate.of(2027, 8, 3));
+        runJobOn(LocalDate.of(2027, 8, 4));
+        runJobOn(LocalDate.of(2027, 8, 31));
+
+        assertThat(summariesOf(student)).isEqualTo(1);
+        assertThat(summaryBusinessDatesOf(student)).containsExactly(LocalDate.of(2027, 8, 3));
+        assertThat(summaryMonthsOf(student)).containsExactly(LocalDate.of(2027, 8, 1));
+    }
+
+    @Test
+    @Tag("D-338")
+    void theMonthAfterARecoveredSummaryIsPlannedOnItsOwnSummaryDay() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        installmentDueOn(enrollment, JULY_TENTH);
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+
+        runJobOn(LocalDate.of(2027, 8, 3));
+        runJobOn(LocalDate.of(2027, 9, 1));
+
+        assertThat(summaryBusinessDatesOf(student)).containsExactly(LocalDate.of(2027, 8, 3), LocalDate.of(2027, 9, 1));
+        assertThat(summaryMonthsOf(student)).containsExactly(LocalDate.of(2027, 8, 1), LocalDate.of(2027, 9, 1));
+    }
+
+    @Test
+    @Tag("D-338")
+    void aMonthWhoseWholeMonthPassedWithoutTheJobIsNotRecoveredInTheFollowingMonth() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        installmentDueOn(enrollment, JULY_TENTH);
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+
+        runJobOn(LocalDate.of(2027, 9, 1));
+        runJobOn(LocalDate.of(2027, 9, 2));
+
+        assertThat(summaryMonthsOf(student)).containsExactly(LocalDate.of(2027, 9, 1));
+    }
+
+    @Test
+    @Tag("D-338")
+    void aStudentWhoPaidEverythingBeforeTheRecoveryDayGetsNoRecoveredSummary() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        Invoice invoice = installmentDueOn(enrollment, JULY_TENTH);
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(invoice, LocalDate.of(2027, 8, 2), LocalDate.of(2027, 8, 2));
+
+        runJobOn(LocalDate.of(2027, 8, 3));
+
+        assertThat(summariesOf(student)).isZero();
+    }
+
+    @Test
+    @Tag("D-338")
+    void aReceiptUnderReviewOnTheRecoveryDaySuppressesTheRecoveredSummary() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        putReceiptUnderReview(installmentDueOn(enrollment, JULY_TENTH));
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+
+        runJobOn(LocalDate.of(2027, 8, 3));
+
+        assertThat(summariesOf(student)).isZero();
+    }
+
+    @Test
+    @Tag("D-338")
+    void aDebtThatBecameOverdueAfterTheSummaryDayDoesNotTriggerARecoveredSummaryOfThatMonth() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        installmentDueOn(enrollment, LocalDate.of(2027, 8, 20));
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+
+        runJobOn(LocalDate.of(2027, 8, 2));
+        runJobOn(LocalDate.of(2027, 8, 23));
+
         assertThat(summariesOf(student)).isZero();
     }
 }

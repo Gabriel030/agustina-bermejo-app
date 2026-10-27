@@ -176,6 +176,12 @@ public class CurrentAccountAllocationService {
         return reverseAllocationsFundedByPayment(lockedAccount, paymentId, businessDate, invoice -> gracePeriodDays, reason, actor);
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> listInvoiceIdsFundedByPayment(Long studentCurrentAccountId, Long paymentId) {
+        return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(studentCurrentAccountId, paymentId).stream().map(PaymentAllocation::getInvoiceId)
+                .distinct().sorted().toList();
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public List<Long> listInvoiceIdsOfAllocationsFundedByPayment(StudentCurrentAccount lockedAccount, Long paymentId) {
         return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(lockedAccount.getId(), paymentId).stream().map(PaymentAllocation::getInvoiceId).distinct().toList();

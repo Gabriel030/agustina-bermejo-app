@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -22,6 +22,7 @@ const ESTADO_STATUS_BADGE = {
 
 export function LegajoAlumno() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { usuario } = useAuth();
   const { data: legajo, isLoading, isError } = useLegajoAlumno(id);
 
@@ -59,7 +60,7 @@ export function LegajoAlumno() {
             </div>
           )}
 
-          <Tabs defaultValue="datos-personales">
+          <Tabs defaultValue={searchParams.get('view') === 'financiero' ? 'financiero' : 'datos-personales'}>
             <TabsList variant="segmented" className="w-full">
               <TabsTrigger value="datos-personales" className="flex-1">
                 Datos personales
