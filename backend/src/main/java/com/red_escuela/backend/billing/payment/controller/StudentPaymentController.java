@@ -63,7 +63,7 @@ public class StudentPaymentController {
     @GetMapping("/students/{studentId}/payments")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<StudentPaymentResponse> listPaymentsOfStudent(@PathVariable Long studentId) {
-        return listStudentPaymentsUseCase.listPaymentsOfStudent(studentId).stream().map(StudentPaymentResponse::from).toList();
+        return listStudentPaymentsUseCase.describePaymentsOfStudent(studentId).stream().map(StudentPaymentResponse::from).toList();
     }
 
     @GetMapping("/me/payments")

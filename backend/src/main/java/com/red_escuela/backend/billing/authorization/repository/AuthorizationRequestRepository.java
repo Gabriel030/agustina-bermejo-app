@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.authorization.repository;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +12,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
-public interface AuthorizationRequestRepository extends JpaRepository<AuthorizationRequest, Long> {
+public interface AuthorizationRequestRepository extends JpaRepository<AuthorizationRequest, Long>, JpaSpecificationExecutor<AuthorizationRequest> {
     List<AuthorizationRequest> findByStatusAndExpiresOnLessThanEqual(AuthorizationRequestStatus status, LocalDate date);
 
     interface InvoiceRequestLink {
