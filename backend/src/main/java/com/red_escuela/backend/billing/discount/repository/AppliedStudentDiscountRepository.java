@@ -48,7 +48,7 @@ public interface AppliedStudentDiscountRepository extends JpaRepository<InvoiceD
               and d.consumption_released_at is not null
               and l.charge_key = :chargeKey
               and l.charge_key_released_at is not null
-              and exists (select 1 from credit_note n where n.invoice_id = i.id and n.reason = 'BILLING_ERROR')
+              and (select n.reason from credit_note n where n.invoice_id = i.id order by n.id desc limit 1) = 'BILLING_ERROR'
             """, nativeQuery = true)
     Optional<LocalDate> findEarliestIssueDateOfChargeCancelledByBillingError(@Param("studentDiscountId") Long studentDiscountId, @Param("chargeKey") String chargeKey);
 }

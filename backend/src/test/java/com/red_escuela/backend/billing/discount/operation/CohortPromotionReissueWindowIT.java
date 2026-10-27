@@ -1,14 +1,22 @@
 package com.red_escuela.backend.billing.discount.operation;
 
+import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscountRepository;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
+import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
+import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
 import com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin;
+import com.red_escuela.backend.billing.note.service.IssueCreditNoteOperation;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,6 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-283")
 @Tag("D-286")
 class CohortPromotionReissueWindowIT extends AbstractStudentDiscountIssuingIT {
+
+    @Autowired
+    private AppliedStudentDiscountRepository appliedRepository;
+    @Autowired
+    private IssueCreditNoteOperation issueCreditNoteOperation;
 
     private static final YearMonth MARCH = YearMonth.of(2027, 3);
     private static final YearMonth APRIL = YearMonth.of(2027, 4);
@@ -38,8 +51,9 @@ class CohortPromotionReissueWindowIT extends AbstractStudentDiscountIssuingIT {
         cancelAsDirector(april, CreditNoteReason.BILLING_ERROR);
 
         today(AFTER_WINDOW);
-        issue(lateInstallmentOf(APRIL));
+        Long reissued = issue(lateInstallmentOf(APRIL));
 
+        assertThat(totalOf(reissued)).isEqualByComparingTo(totalOf(april)).isEqualByComparingTo("72000.00");
         List<Map<String, Object>> aprilRows = discountsOn(FeeType.MONTHLY_INSTALLMENT, APRIL);
         assertThat(aprilRows).hasSize(2);
         assertThat(aprilRows.get(1).get("student_discount_id")).isEqualTo(promotionId);
@@ -80,7 +94,7 @@ class CohortPromotionReissueWindowIT extends AbstractStudentDiscountIssuingIT {
     }
 
     @Test
-    void aCancellationWithoutBillingErrorIsNotReissuedAndTheWindowStaysClosed() {
+    void aCancellationWithoutBillingErrorLeavesNoReissueMarkerAndTheChargeCannotBeIssuedAgain() {
         Long promotionId = acquirePromotion(3);
         issueInstallment(MARCH);
         Long april = issueInstallment(APRIL);
@@ -91,9 +105,98 @@ class CohortPromotionReissueWindowIT extends AbstractStudentDiscountIssuingIT {
         InvoiceIssuingResult result = issuingService.issueInvoiceInNewTransaction(lateInstallmentOf(APRIL));
 
         assertThat(result).isNotInstanceOf(InvoiceIssuingResult.InvoiceIssued.class);
+        assertThat(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(promotionId, aprilChargeKey())).isEmpty();
         assertThat(discountsOn(FeeType.MONTHLY_INSTALLMENT, APRIL)).hasSize(1);
         assertThat(liveInstallmentNumbersOf(promotionId)).containsExactly(1);
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void aPartialBillingErrorNoteFollowedByASystemCancellationIsNotAReissueMarker() {
+        Long promotionId = acquirePromotion(3);
+        issueInstallment(MARCH);
+        Long april = issueInstallment(APRIL);
+        today(LocalDate.of(2027, 4, 20));
+        authenticateAs(director);
+        pipeline.runOperation(issueCreditNoteOperation, new IssueCreditNoteCommand(april, CreditNoteReason.BILLING_ERROR, "Error parcial",
+                List.of(new CreditNoteLineAmount(1, Money.of(new BigDecimal("1000.00"), Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, director.getId(), true, null));
+        systemCancellation.cancelInvoiceWithoutDirector(april, SystemCancellationOrigin.ADMISSION_EXPIRED, "La admision venció sin pago");
+
+        today(AFTER_WINDOW);
+        issue(lateInstallmentOf(APRIL));
+
+        assertThat(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(promotionId, aprilChargeKey())).isEmpty();
+        assertThat(discountsOn(FeeType.MONTHLY_INSTALLMENT, APRIL)).hasSize(1);
+        assertThat(liveInstallmentNumbersOf(promotionId)).containsExactly(1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void aReissueInsideTheWindowKeepsTheDiscountAndTheInstallmentNumber() {
+        Long promotionId = acquirePromotion(3);
+        issueInstallment(MARCH);
+        Long april = issueInstallment(APRIL);
+        today(LocalDate.of(2027, 4, 20));
+        cancelAsDirector(april, CreditNoteReason.BILLING_ERROR);
+
+        today(LocalDate.of(2027, 4, 25));
+        issue(lateInstallmentOf(APRIL));
+
+        List<Map<String, Object>> aprilRows = discountsOn(FeeType.MONTHLY_INSTALLMENT, APRIL);
+        assertThat(aprilRows).hasSize(2);
+        assertThat(aprilRows.get(1).get("installment_number")).isEqualTo(2);
+        assertThat(liveInstallmentNumbersOf(promotionId)).containsExactly(1, 2);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void aFreedInstallmentTakenByAnotherChargeInsideTheWindowLeavesNoRoomForTheLateReissue() {
+        Long promotionId = acquirePromotion(2);
+        issueInstallment(MARCH);
+        Long april = issueInstallment(APRIL);
+        today(LocalDate.of(2027, 4, 20));
+        cancelAsDirector(april, CreditNoteReason.BILLING_ERROR);
+        today(LocalDate.of(2027, 4, 25));
+        issue(lateInstallmentOf(MAY));
+        assertThat(liveInstallmentNumbersOf(promotionId)).containsExactly(1, 2);
+
+        today(AFTER_WINDOW);
+        Long reissued = issue(lateInstallmentOf(APRIL));
+
+        assertThat(discountsOn(FeeType.MONTHLY_INSTALLMENT, APRIL)).hasSize(1);
+        assertThat(totalOf(reissued)).isEqualByComparingTo("80000.00");
+        assertThat(liveInstallmentNumbersOf(promotionId)).containsExactly(1, 2);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void theReissueMarkerBelongsToTheStudentDiscountThatWasConsumed() {
+        Long promotionId = acquirePromotion(3);
+        Long otherPromotionId = factory.acquireCohortPromotion(offering, newPlainLearner(), FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("10")), 3, WINDOW_END);
+        issueInstallment(MARCH);
+        Long april = issueInstallment(APRIL);
+        today(LocalDate.of(2027, 4, 20));
+        cancelAsDirector(april, CreditNoteReason.BILLING_ERROR);
+
+        assertThat(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(promotionId, aprilChargeKey())).contains(LocalDate.of(2027, 4, 1));
+        assertThat(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(otherPromotionId, aprilChargeKey())).isEmpty();
+        assertThat(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(promotionId, "PE:0:MONTHLY_INSTALLMENT:2027-04")).isEmpty();
+    }
+
+    @Test
+    void anEndedPromotionIsNotRestoredByALateReissue() {
+        Long promotionId = acquirePromotion(3);
+        issueInstallment(MARCH);
+        Long april = issueInstallment(APRIL);
+        today(LocalDate.of(2027, 4, 20));
+        cancelAsDirector(april, CreditNoteReason.BILLING_ERROR);
+        jdbc.update("update student_discount set status = 'ENDED' where id = ?", promotionId);
+
+        today(AFTER_WINDOW);
+        issue(lateInstallmentOf(APRIL));
+
+        assertThat(discountsOn(FeeType.MONTHLY_INSTALLMENT, APRIL)).hasSize(1);
+        assertThat(liveInstallmentNumbersOf(promotionId)).containsExactly(1);
     }
 
     @Test
@@ -158,6 +261,14 @@ class CohortPromotionReissueWindowIT extends AbstractStudentDiscountIssuingIT {
         return new InvoiceIssuingRequest(base.studentId(), base.programEnrollmentId(), null, base.programId(), null, null, FeeType.MONTHLY_INSTALLMENT, period,
                 LocalDate.now(MutableClock.INSTANCE).plusDays(10), base.pricingDate(), base.issuingReason(), base.paymentPlanSelectionId(), null, null, false, null, null, null,
                 null, null, ACTOR);
+    }
+
+    private String aprilChargeKey() {
+        return "PE:" + learner.programEnrollmentId() + ":MONTHLY_INSTALLMENT:2027-04";
+    }
+
+    private BigDecimal totalOf(Long invoiceId) {
+        return jdbc.queryForObject("select total from invoice where id = ?", BigDecimal.class, invoiceId);
     }
 
     private Long acquirePromotion(int installments) {
