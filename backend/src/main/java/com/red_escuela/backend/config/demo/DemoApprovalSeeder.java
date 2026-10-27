@@ -7,7 +7,7 @@ import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
-import com.red_escuela.backend.entity.ExceptionType;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;

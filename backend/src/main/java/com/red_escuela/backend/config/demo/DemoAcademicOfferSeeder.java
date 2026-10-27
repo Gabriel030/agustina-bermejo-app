@@ -40,7 +40,7 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionReposi
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.config.demo.DemoCatalog.CourseSpec;
 import com.red_escuela.backend.config.demo.DemoCatalog.ProgramSpec;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
@@ -233,6 +233,10 @@ public class DemoAcademicOfferSeeder {
                         "Requiere 80% de asistencia a la práctica y coloquio final."));
     }
 
+    private static com.red_escuela.backend.shared.domain.Grade grade(Double value) {
+        return value == null ? null : com.red_escuela.backend.shared.domain.Grade.of(java.math.BigDecimal.valueOf(value));
+    }
+
     private EvaluationScheme saveScheme(
             String name, int exams, int tps, boolean hasFinal, Double finalWeight,
             GradeAggregationMethod method, Double minRegular, Double minApproval, Double promotion, String notes) {
@@ -243,9 +247,9 @@ public class DemoAcademicOfferSeeder {
         scheme.setHasFinal(hasFinal);
         scheme.setFinalWeight(finalWeight);
         scheme.setAggregationMethod(method);
-        scheme.setMinRegularGrade(minRegular);
-        scheme.setMinApprovalGrade(minApproval);
-        scheme.setPromotionMinGrade(promotion);
+        scheme.setMinRegularGrade(grade(minRegular));
+        scheme.setMinApprovalGrade(grade(minApproval));
+        scheme.setPromotionMinGrade(grade(promotion));
         scheme.setNotes(notes);
         return evaluationSchemeRepository.save(scheme);
     }
@@ -361,7 +365,7 @@ public class DemoAcademicOfferSeeder {
         section.setCapacity(35);
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(term.getStartDate().minusDays(30));
-        section.setMaxAbsencePercentage(25.0);
+        section.setMaxAbsenceRate(com.red_escuela.backend.shared.domain.Percentage.ofPoints(java.math.BigDecimal.valueOf(25)));
         section.setAcademicOfferingCycle(dataset.offeringCycle(spec.name(), year));
         SubjectSection saved = subjectSectionRepository.save(section);
         dataset.getSections().put(spec.name() + "|" + subjectName + "|" + year, saved);
@@ -468,7 +472,7 @@ public class DemoAcademicOfferSeeder {
                 section.setCapacity(spec.capacity());
                 section.setStatus(StatusType.ACTIVE);
                 section.setCreatedAt(term.getStartDate().minusDays(30));
-                section.setMaxAbsencePercentage(25.0);
+                section.setMaxAbsenceRate(com.red_escuela.backend.shared.domain.Percentage.ofPoints(java.math.BigDecimal.valueOf(25)));
                 CourseSubjectSection savedSection = courseSubjectSectionRepository.save(section);
                 dataset.getCourseSections().put(spec.name() + "|" + subjectName, savedSection);
                 saveScheduleSlot(dataset, null, savedSection);

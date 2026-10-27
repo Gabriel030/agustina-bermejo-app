@@ -180,7 +180,7 @@ public class DemoEvaluationSeeder {
             int year = enrollment.getEnrolledAt().getYear();
             List<Assessment> calendar = calendarFor(scheme, year);
             List<Assessment> due = calendar.stream().filter(a -> !a.date().isAfter(TODAY)).toList();
-            int failingTp = outcome == DemoOutcome.FAILED_COURSEWORK && scheme.getPromotionMinGrade() != null ? 1 : -1;
+            int failingTp = outcome == DemoOutcome.FAILED_COURSEWORK && points(scheme.getPromotionMinGrade()) != null ? 1 : -1;
             for (Assessment assessment : due) {
                 double score = courseworkScore(scheme, outcome, assessment, failingTp);
                 gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
@@ -195,10 +195,10 @@ public class DemoEvaluationSeeder {
     }
 
     private double courseworkScore(EvaluationScheme scheme, DemoOutcome outcome, Assessment assessment, int failingTp) {
-        double regular = scheme.getMinRegularGrade();
+        double regular = points(scheme.getMinRegularGrade());
         boolean exam = assessment.type() == GradeItemType.EXAM;
         return switch (outcome) {
-            case PROMOTION -> between(scheme.getPromotionMinGrade(), 10);
+            case PROMOTION -> between(points(scheme.getPromotionMinGrade()), 10);
             case FINAL_PASSED, FINAL_FAILED, REGULAR_PENDING -> exam ? between(regular, Math.min(regular + 3, 9)) : between(regular, 9);
             case FAILED_COURSEWORK -> {
                 if (assessment.type() == GradeItemType.TP && assessment.sequence() == failingTp) {
@@ -206,10 +206,14 @@ public class DemoEvaluationSeeder {
                 }
                 yield exam ? between(1, regular - 2) : between(regular, 8);
             }
-            case ON_TRACK -> exam && scheme.getPromotionMinGrade() != null ? between(scheme.getPromotionMinGrade(), 10) : between(6, 10);
+            case ON_TRACK -> exam && points(scheme.getPromotionMinGrade()) != null ? between(points(scheme.getPromotionMinGrade()), 10) : between(6, 10);
             case STRUGGLING -> exam ? between(Math.max(1, regular - 2), regular + 1) : between(regular, regular + 2);
             case AT_RISK -> exam ? between(regular, regular + 2) : between(regular, regular + 3);
         };
+    }
+
+    private static Double points(com.red_escuela.backend.shared.domain.Grade grade) {
+        return grade == null ? null : grade.value().doubleValue();
     }
 
     private double between(double min, double max) {
@@ -222,7 +226,7 @@ public class DemoEvaluationSeeder {
         Double weight = assessment.type() == GradeItemType.EXAM ? EXAM_WEIGHT
                 : assessment.type() == GradeItemType.TP ? TP_WEIGHT : null;
         return new CreateGradeItemRequest(assessment.type(), assessment.sequence(), weight,
-                assessment.date().atTime(18, 30), score, 10.0, null, examBoardId);
+                assessment.date().atTime(18, 30), java.math.BigDecimal.valueOf(score), null, examBoardId);
     }
 
     private LocalDate finalDateFor(SubjectSectionEnrollment enrollment, DemoOutcome outcome) {
@@ -259,8 +263,8 @@ public class DemoEvaluationSeeder {
 
                 EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
                 double score = sitting.outcome() == DemoOutcome.FINAL_PASSED
-                        ? between(scheme.getMinApprovalGrade(), 10)
-                        : between(1, scheme.getMinApprovalGrade() - 1);
+                        ? between(points(scheme.getMinApprovalGrade()), 10)
+                        : between(1, points(scheme.getMinApprovalGrade()) - 1);
                 Instructor grader = dataset.getSectionInstructors().get(enrollment.getSubjectSection().getId());
                 gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), grader.getId(),
                         request(new Assessment(GradeItemType.FINAL, 1, examDate), score, board.getId()));

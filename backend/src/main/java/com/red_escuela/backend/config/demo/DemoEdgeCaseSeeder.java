@@ -10,19 +10,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
-import com.red_escuela.backend.billing.entity.CreditNote;
-import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.Payment;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PaymentStatus;
-import com.red_escuela.backend.billing.repository.CreditNoteRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentRepository;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -85,9 +73,6 @@ public class DemoEdgeCaseSeeder {
     private final GradeItemRepository gradeItemRepository;
     private final GraduationRequestRepository graduationRequestRepository;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
-    private final InvoiceRepository invoiceRepository;
-    private final PaymentRepository paymentRepository;
-    private final CreditNoteRepository creditNoteRepository;
     private final PersonFactory personFactory;
     private final PasswordEncoder passwordEncoder;
 
@@ -99,8 +84,8 @@ public class DemoEdgeCaseSeeder {
             CourseEnrollmentRepository courseEnrollmentRepository, ExamBoardRepository examBoardRepository,
             ExamBoardRegistrationRepository examBoardRegistrationRepository, GradeItemRepository gradeItemRepository,
             GraduationRequestRepository graduationRequestRepository,
-            CertificateIssuanceRepository certificateIssuanceRepository, InvoiceRepository invoiceRepository,
-            PaymentRepository paymentRepository, CreditNoteRepository creditNoteRepository,
+            CertificateIssuanceRepository certificateIssuanceRepository, 
+            
             PersonFactory personFactory, PasswordEncoder passwordEncoder) {
         this.personRepository = personRepository;
         this.roleRepository = roleRepository;
@@ -116,9 +101,6 @@ public class DemoEdgeCaseSeeder {
         this.gradeItemRepository = gradeItemRepository;
         this.graduationRequestRepository = graduationRequestRepository;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
-        this.invoiceRepository = invoiceRepository;
-        this.paymentRepository = paymentRepository;
-        this.creditNoteRepository = creditNoteRepository;
         this.personFactory = personFactory;
         this.passwordEncoder = passwordEncoder;
     }
@@ -132,8 +114,6 @@ public class DemoEdgeCaseSeeder {
         createGraduatedStudent(dataset);
         createEmptyProgram();
         createFullSection(dataset);
-        createPartialPayment(dataset);
-        createAppliedCreditNote(dataset);
         createLongNamedStudent(dataset);
         log.info("Seed demo: casos borde cargados");
     }
@@ -184,8 +164,6 @@ public class DemoEdgeCaseSeeder {
         second.setProgram(dataset.program(DemoCatalog.EDUCATION_MANAGEMENT));
         second.setStatus(ProgramEnrollmentStatus.ENROLLED);
         second.setEnrollmentDate(LocalDate.of(2026, 3, 5).atStartOfDay());
-        second.setBillingStanding(EnrollmentBillingStanding.UP_TO_DATE);
-        second.setBillingStandingUpdatedAt(TODAY.atStartOfDay());
         programEnrollmentRepository.save(second);
     }
 
@@ -271,51 +249,7 @@ public class DemoEdgeCaseSeeder {
         subjectSectionRepository.save(section);
     }
 
-    private void createPartialPayment(DemoDataset dataset) {
-        List<Invoice> pendientes = invoiceRepository.findAll().stream()
-                .filter(i -> i.getStatus() == InvoiceStatus.PENDING)
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
-                .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
-                .limit(1)
-                .toList();
-        if (pendientes.isEmpty()) {
-            return;
-        }
-        Invoice invoice = pendientes.get(0);
-        BigDecimal mitad = invoice.getAmountDue().divide(BigDecimal.valueOf(2), 2, java.math.RoundingMode.HALF_UP);
-        Payment payment = new Payment();
-        payment.setAmount(mitad);
-        payment.setMethod(PaymentMethod.CASH);
-        payment.setRegisteredBy(dataset.administrativeAt(0));
-        payment.setPaidAt(TODAY.minusDays(2).atTime(12, 0));
-        payment.setStatus(PaymentStatus.CONFIRMED);
-        payment.setNotes("Pago parcial acordado en mostrador");
-        Payment savedPayment = paymentRepository.save(payment);
-        invoice.registerPayment(mitad, savedPayment);
-        invoiceRepository.save(invoice);
-    }
 
-    private void createAppliedCreditNote(DemoDataset dataset) {
-        List<Invoice> pendientes = invoiceRepository.findAll().stream()
-                .filter(i -> i.getStatus() == InvoiceStatus.PENDING)
-                .filter(i -> i.getProgramEnrollment() != null)
-                .sorted((a, b) -> Long.compare(a.getId(), b.getId()))
-                .limit(1)
-                .toList();
-        if (pendientes.isEmpty()) {
-            return;
-        }
-        Invoice invoice = pendientes.get(0);
-        CreditNote note = new CreditNote();
-        note.setStudent(invoice.getProgramEnrollment().getStudent());
-        note.setAmount(new BigDecimal("30000"));
-        note.setReasonType(CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP);
-        note.setReason("Beca otorgada con efecto retroactivo al inicio del ciclo");
-        note.setCreatedBy(dataset.getDirector());
-        CreditNote savedNote = creditNoteRepository.save(note);
-        savedNote.consume(new BigDecimal("30000"), invoice, null);
-        creditNoteRepository.save(savedNote);
-    }
 
     private void createLongNamedStudent(DemoDataset dataset) {
         Person person = createLogin(
@@ -335,8 +269,6 @@ public class DemoEdgeCaseSeeder {
         enrollment.setProgram(dataset.program(DemoCatalog.NURSING));
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(LocalDate.of(2026, 3, 5).atStartOfDay());
-        enrollment.setBillingStanding(EnrollmentBillingStanding.SUSPENDED);
-        enrollment.setBillingStandingUpdatedAt(TODAY.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
     }
 }
