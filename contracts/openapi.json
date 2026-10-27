@@ -16125,7 +16125,7 @@
     "/courses/{id}/promotions" : {
       "post" : {
         "deprecated" : true,
-        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.",
+        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_createForCourse",
         "parameters" : [ {
           "in" : "path",
@@ -28597,7 +28597,7 @@
     "/programs/{id}/promotions" : {
       "post" : {
         "deprecated" : true,
-        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.",
+        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_createForProgram",
         "parameters" : [ {
           "in" : "path",

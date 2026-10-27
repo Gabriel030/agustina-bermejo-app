@@ -36,7 +36,7 @@ public class PromotionController {
         this.lostBenefitsUseCase = lostBenefitsUseCase;
     }
 
-    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.")
+    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.")
     @PostMapping("/courses/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -44,7 +44,7 @@ public class PromotionController {
         return createUseCase.createForCourse(id, request);
     }
 
-    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.")
+    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.")
     @PostMapping("/programs/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")

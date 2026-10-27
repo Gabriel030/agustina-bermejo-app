@@ -9,7 +9,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 import java.util.Set;
 
-@PolicyRule(violationCodes = {"INVALID_DISCOUNT_DEFINITION"}, decisions = {"D-432", "D-326"})
+@PolicyRule(violationCodes = {"INVALID_DISCOUNT_DEFINITION"}, decisions = {"D-433", "D-432", "D-326"})
 public final class CohortPromotionTermsPolicy implements Policy<DiscountDefinitionCheck> {
     private static final String CODE = "INVALID_DISCOUNT_DEFINITION";
     private static final Set<InvoiceType> PROMOTABLE_INVOICE_TYPES = Set.of(InvoiceType.MONTHLY_INSTALLMENT, InvoiceType.ENROLLMENT_FEE, InvoiceType.RETAKEN_SUBJECT_FEE);

@@ -226,6 +226,7 @@ class DiscountDefinitionPoliciesTest {
 
     @Test
     @Tag("D-432")
+    @Tag("D-433")
     void aCohortPromotionWithoutTheWholeEnrollmentWindowIsRejected() {
         DiscountDefinitionDraft openEnded = DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(LocalDate.of(2031, 3, 10), null).build();
         DiscountDefinitionDraft openStarted = DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(null, LocalDate.of(2031, 3, 10)).build();
@@ -239,6 +240,7 @@ class DiscountDefinitionPoliciesTest {
     @ParameterizedTest
     @Tag("D-432")
     @Tag("D-326")
+    @Tag("D-433")
     @EnumSource(value = InvoiceType.class, names = {"EXAM_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "ANNUAL_UPFRONT"})
     void aCohortPromotionOnAnyChargeOtherThanInstallmentEnrollmentOrRetakenSubjectIsRejected(InvoiceType invoiceType) {
         DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().forInvoiceType(invoiceType).withoutInstallments().build();

@@ -196,7 +196,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | DiscountDefinitionCoherencePolicy | INVALID_DISCOUNT_DEFINITION | D-075, D-129, D-171, D-240 |
 | 2 | DiscountAvailabilityPeriodPolicy | INVALID_DISCOUNT_DEFINITION | D-283 |
 | 3 | DiscountScopeMatchesTypePolicy | INVALID_DISCOUNT_DEFINITION | D-240 |
-| 4 | CohortPromotionTermsPolicy | INVALID_DISCOUNT_DEFINITION | D-432, D-326 |
+| 4 | CohortPromotionTermsPolicy | INVALID_DISCOUNT_DEFINITION | D-433, D-432, D-326 |
 | 5 | ScholarshipOnlyForMonthlyInstallmentsPolicy | SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS | D-157 |
 | 6 | DiscountTypeAvailableInCatalogPolicy | DISCOUNT_TYPE_NOT_IN_CATALOG | D-287, D-240 |
 | 7 | InstallmentCountOnlyForMonthlyInstallmentsPolicy | INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS | D-075 |
