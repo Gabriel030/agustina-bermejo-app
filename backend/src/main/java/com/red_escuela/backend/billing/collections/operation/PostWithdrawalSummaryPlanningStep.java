@@ -36,12 +36,10 @@ public class PostWithdrawalSummaryPlanningStep {
     }
 
     public int planPostWithdrawalSummariesOf(LocalDate businessDate) {
-        NonBusinessDays nonBusinessDays = nonBusinessDaysFromStartOfMonthOf(businessDate);
-        if (!businessDate.equals(PostWithdrawalSummarySchedule.summaryDayOfMonth(YearMonth.from(businessDate), nonBusinessDays))) {
-            return 0;
-        }
+        NonBusinessDays nonBusinessDays = nonBusinessDaysFromStartOfMonthTo(businessDate);
+        LocalDate summaryDay = PostWithdrawalSummarySchedule.summaryDayOfMonth(YearMonth.from(businessDate), nonBusinessDays);
         int summaryMonths = configurationReader.collectionReminderSettingsEffectiveOn(businessDate).postWithdrawalSummaryMonths();
-        List<WithdrawnEnrollmentDebtLine> debtLines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(businessDate);
+        List<WithdrawnEnrollmentDebtLine> debtLines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(businessDate, summaryDay);
         int recorded = 0;
         for (PostWithdrawalSummaryCandidate candidate : PostWithdrawalSummaryCandidate.groupDueOn(debtLines, businessDate, summaryMonths, nonBusinessDays)) {
             try {
@@ -55,10 +53,11 @@ public class PostWithdrawalSummaryPlanningStep {
         return recorded;
     }
 
-    private NonBusinessDays nonBusinessDaysFromStartOfMonthOf(LocalDate businessDate) {
+    private NonBusinessDays nonBusinessDaysFromStartOfMonthTo(LocalDate businessDate) {
         Set<LocalDate> holidays = new HashSet<>();
         LocalDate firstDay = businessDate.withDayOfMonth(1);
-        for (LocalDate day = firstDay; !day.isAfter(firstDay.plusDays(CALENDAR_DAYS_FROM_MONTH_START)); day = day.plusDays(1)) {
+        LocalDate lastDay = businessDate.isAfter(firstDay.plusDays(CALENDAR_DAYS_FROM_MONTH_START)) ? businessDate : firstDay.plusDays(CALENDAR_DAYS_FROM_MONTH_START);
+        for (LocalDate day = firstDay; !day.isAfter(lastDay); day = day.plusDays(1)) {
             if (!businessDayCalendar.isBusinessDay(day)) {
                 holidays.add(day);
             }
