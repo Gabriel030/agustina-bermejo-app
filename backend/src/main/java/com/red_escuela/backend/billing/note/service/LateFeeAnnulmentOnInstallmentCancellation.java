@@ -5,6 +5,9 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.domain.LateFeeCorrectionCreditNoteKind;
+import com.red_escuela.backend.billing.note.domain.LiveLateFeeToAnnul;
+import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.billing.note.exception.CreditNoteInvoiceNotFoundException;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.policy.LateFeeAnnulmentRejections;
@@ -54,11 +57,9 @@ public class LateFeeAnnulmentOnInstallmentCancellation {
         lockedDebitNotes.forEach(this::requireNotUnderPaymentReview);
         LocalDate businessDate = LocalDate.now(clock);
         List<CreditNote> notes = new ArrayList<>();
-        for (Invoice debitNote : lockedDebitNotes) {
-            NonNegativeMoney remaining = debitNote.getPrimaryLine().calculateCreditableAmount();
-            if (debitNote.getPaymentStatus() == InvoicePaymentStatus.CANCELLED || remaining.value().isZero()) {
-                continue;
-            }
+        for (LiveLateFeeToAnnul liveLateFee : LiveLateFeeToAnnul.amongDebitNotes(lockedDebitNotes)) {
+            Invoice debitNote = liveLateFee.debitNote();
+            NonNegativeMoney remaining = liveLateFee.amountToAnnul();
             String debitNoteNumber = debitNote.getInvoiceNumber().value();
             String installmentNumber = lockedInstallment.getInvoiceNumber().value();
             CreditNote note = creditNoteIssuer.issueCorrectionCreditNote(debitNote, remaining,
@@ -77,8 +78,24 @@ public class LateFeeAnnulmentOnInstallmentCancellation {
                 .anyMatch(debitNote -> debitNote.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
     }
 
+    public List<LiveLateFeeToAnnul> describeLiveLateFeesOf(Long installmentId) {
+        return LiveLateFeeToAnnul.amongDebitNotes(findDebitNotesOf(installmentId));
+    }
+
+    public List<PolicyViolation> findPaymentReviewViolationsOf(Long installmentId) {
+        return findDebitNotesOf(installmentId).stream().flatMap(debitNote -> evaluateNotUnderPaymentReview(debitNote).violations().stream()).toList();
+    }
+
+    private List<Invoice> findDebitNotesOf(Long installmentId) {
+        return debitNoteLookup.findDebitNoteIdsOfOriginInvoiceInAscendingOrder(installmentId).stream()
+                .map(debitNoteId -> invoices.findInvoice(debitNoteId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(debitNoteId))).toList();
+    }
+
     private void requireNotUnderPaymentReview(Invoice debitNote) {
-        annulmentPolicies.evaluateRulesUntilFirstViolation(new LateFeeDebitNoteAnnulmentContext(debitNote.getId(), debitNote.getInvoiceNumber().value(), debitNote.getPaymentStatus()))
-                .throwIfDenied(LateFeeAnnulmentRejections::rejectionOf);
+        evaluateNotUnderPaymentReview(debitNote).throwIfDenied(LateFeeAnnulmentRejections::rejectionOf);
+    }
+
+    private PolicyEvaluationResult evaluateNotUnderPaymentReview(Invoice debitNote) {
+        return annulmentPolicies.evaluateRulesUntilFirstViolation(new LateFeeDebitNoteAnnulmentContext(debitNote.getId(), debitNote.getInvoiceNumber().value(), debitNote.getPaymentStatus()));
     }
 }

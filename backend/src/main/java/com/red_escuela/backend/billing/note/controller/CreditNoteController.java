@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.note.dto.CreditNotePendingAuthorizationRe
 import com.red_escuela.backend.billing.note.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.note.usecase.IssueCreditNoteUseCase;
 import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentUseCase;
+import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import jakarta.validation.Valid;
@@ -26,8 +27,11 @@ public class CreditNoteController {
     private final ListCreditNotesOfStudentUseCase listCreditNotesOfStudentUseCase;
     private final CurrentStudentService currentStudentService;
 
+    private final ListCreditNotesOfStudentWithAuthorshipUseCase listCreditNotesWithAuthorshipUseCase;
+
     public CreditNoteController(IssueCreditNoteUseCase issueCreditNoteUseCase, ListCreditNotesOfStudentUseCase listCreditNotesOfStudentUseCase,
-                                CurrentStudentService currentStudentService) {
+                                CurrentStudentService currentStudentService, ListCreditNotesOfStudentWithAuthorshipUseCase listCreditNotesWithAuthorshipUseCase) {
+        this.listCreditNotesWithAuthorshipUseCase = listCreditNotesWithAuthorshipUseCase;
         this.issueCreditNoteUseCase = issueCreditNoteUseCase;
         this.listCreditNotesOfStudentUseCase = listCreditNotesOfStudentUseCase;
         this.currentStudentService = currentStudentService;
@@ -46,7 +50,7 @@ public class CreditNoteController {
     @GetMapping("/students/{studentId}/credit-notes")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<CreditNoteResponse> listCreditNotesOfStudent(@PathVariable Long studentId) {
-        return listCreditNotesOfStudentUseCase.listCreditNotesOfStudent(studentId).stream().map(CreditNoteResponse::from).toList();
+        return listCreditNotesWithAuthorshipUseCase.listCreditNotesOfStudentWithAuthorship(studentId);
     }
 
     @GetMapping("/me/credit-notes")

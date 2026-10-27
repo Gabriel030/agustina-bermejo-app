@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.dto;
 
-import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
+import com.red_escuela.backend.billing.authorization.domain.PendingInvoiceAuthorization;
+import com.red_escuela.backend.billing.authorization.dto.PendingAuthorizationResponse;
+import com.red_escuela.backend.billing.invoice.dto.AdminInvoiceLineResponse;
 import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
@@ -17,15 +19,19 @@ public record AdminInvoiceResponse(
         Long id, String invoiceNumber, String invoiceType, String documentType, String documentStatus,
         String paymentStatus, LocalDate issueDate, LocalDate dueDate, String currency,
         Money linesTotalAmount, Money discountsTotalAmount, Money totalAmount, Money paidAmount,
-        Money creditedAmount, Money outstandingAmount, List<InvoiceLineResponse> lines,
+        Money creditedAmount, Money outstandingAmount, List<AdminInvoiceLineResponse> lines,
         String issuingReason, String discardedReason,
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod,
         List<AdminInvoicePaymentResponse> payments, List<AdminInvoiceReceiptResponse> receipts,
-        List<PriceBreakdownCreditNoteResponse> creditNotes) {
+        List<PriceBreakdownCreditNoteResponse> creditNotes, PendingAuthorizationResponse pendingAuthorization) {
 
     public static AdminInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts) {
+        return of(view, receipts, null);
+    }
+
+    public static AdminInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts, PendingInvoiceAuthorization pendingAuthorization) {
         InvoiceResponse base = InvoiceResponse.from(view);
         Map<Long, Long> receiptIdByPaymentId = receipts.stream()
                 .filter(receipt -> receipt.getPaymentId() != null)
@@ -39,12 +45,12 @@ public record AdminInvoiceResponse(
                 base.id(), base.invoiceNumber(), base.invoiceType(), base.documentType(), base.documentStatus(),
                 base.paymentStatus(), base.issueDate(), base.dueDate(), base.currency(),
                 base.linesTotalAmount(), base.discountsTotalAmount(), base.totalAmount(), base.paidAmount(),
-                base.creditedAmount(), base.outstandingAmount(), base.lines(),
+                base.creditedAmount(), base.outstandingAmount(), view.invoice().getLines().stream().map(AdminInvoiceLineResponse::from).toList(),
                 base.issuingReason(), base.discardedReason(),
                 base.studentId(), base.studentDni(), base.productRef(),
                 base.description(), base.subjectId(), base.examBoardRegistrationId(),
                 base.paymentDate(), base.paymentMethod(),
                 payments, receipts.stream().map(AdminInvoiceReceiptResponse::from).toList(),
-                base.creditNotes());
+                base.creditNotes(), PendingAuthorizationResponse.from(pendingAuthorization));
     }
 }
