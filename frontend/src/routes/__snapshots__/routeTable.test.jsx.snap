@@ -7,6 +7,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "public|-|/olvide-mi-contrasena|ForgotPassword",
   "public|-|/registrarse|Registrarse",
   "public|-|/verificar-email|VerificacionEmail",
+  "role|administrativo,director|alumnos/:id/reembolsos/nuevo|RequestRefundPage",
   "role|administrativo,director|facturacion|AdministrativoFacturacion",
   "role|administrativo,director|financiero|FinancialDashboardPage",
   "role|administrativo,director|personal/:id|LegajoPersonal",

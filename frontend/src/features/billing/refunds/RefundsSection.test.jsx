@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -35,7 +35,73 @@ async function expandFirstRequest(user) {
   await user.click(await screen.findByRole('button', { name: 'Ver partes' }));
 }
 
+function eligibility(overrides) {
+  return {
+    currency: 'ARS',
+    unallocatedCredit: { amount: '100000.00', currency: 'ARS' },
+    reservedByPendingRefunds: { amount: '20000.00', currency: 'ARS' },
+    availableToRefund: { amount: '80000.00', currency: 'ARS' },
+    hasOverdueDebt: false,
+    blockedBy: null,
+    payments: [
+      {
+        paymentId: 55,
+        paidOn: '2026-09-01',
+        methodType: 'BANK_TRANSFER',
+        credited: { amount: '100000.00', currency: 'ARS' },
+        refunded: { amount: '0.00', currency: 'ARS' },
+        pending: { amount: '20000.00', currency: 'ARS' },
+        refundableNow: { amount: '80000.00', currency: 'ARS' },
+        receiptDestinationAccount: null,
+        receiptDestinationHolder: null,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function mockEligibility(overrides) {
+  server.use(http.get(`${API}/students/7/refund-eligibility`, () => HttpResponse.json(eligibility(overrides))));
+}
+
 describe('RefundsSection', () => {
+  beforeEach(() => mockEligibility());
+
+  it('shows the credit, the refundable amount and a link to request a refund', async () => {
+    mockRefunds([]);
+    renderWithProviders(<RefundsSection studentId={7} />);
+
+    const link = await screen.findByRole('link', { name: 'Pedir reembolso' });
+    expect(link).toHaveAttribute('href', '/reembolsos/nuevo');
+    expect(screen.getByText(/100\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Incluye .*20\.000,00.* reservados/)).toBeInTheDocument();
+    expect(screen.getAllByText(/80\.000,00/).length).toBeGreaterThan(0);
+  });
+
+  it('disables the request and explains the overdue debt block', async () => {
+    mockRefunds([]);
+    mockEligibility({
+      hasOverdueDebt: true,
+      blockedBy: { code: 'REFUND_BLOCKED_BY_OVERDUE_DEBT', message: 'No se puede devolver saldo a favor mientras haya deuda vencida.' },
+    });
+    renderWithProviders(<RefundsSection studentId={7} />);
+
+    expect(await screen.findByText('Tiene deuda vencida')).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Pedir reembolso' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-describedby', 'refund-block');
+    expect(screen.queryByRole('link', { name: 'Pedir reembolso' })).not.toBeInTheDocument();
+  });
+
+  it('disables the request when nothing is available to refund', async () => {
+    mockRefunds([]);
+    mockEligibility({ availableToRefund: { amount: '0.00', currency: 'ARS' } });
+    renderWithProviders(<RefundsSection studentId={7} />);
+
+    expect(await screen.findByText('No tiene saldo a favor disponible')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pedir reembolso' })).toBeDisabled();
+  });
+
   it('shows an empty state when the student has no refunds', async () => {
     mockRefunds([]);
     renderWithProviders(<RefundsSection studentId={7} />);
