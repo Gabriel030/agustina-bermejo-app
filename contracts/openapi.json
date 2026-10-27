@@ -1258,6 +1258,30 @@
         "required" : [ "newSectionId" ],
         "type" : "object"
       },
+      "ChargebackSummaryResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "chargebackId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "chargedBackOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "reversedOn" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "chargebackId", "chargedBackOn", "reference", "reversedOn" ],
+        "type" : "object"
+      },
       "ClassSessionResponse" : {
         "properties" : {
           "observations" : {
@@ -3883,6 +3907,28 @@
         "required" : [ "id", "name" ],
         "type" : "object"
       },
+      "InvoiceImpactResponse" : {
+        "properties" : {
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "outstandingAfter" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "outstandingBefore" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "paymentStatusAfter" : {
+            "type" : "string"
+          },
+          "paymentStatusBefore" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "invoiceId", "outstandingAfter", "outstandingBefore", "paymentStatusAfter", "paymentStatusBefore" ],
+        "type" : "object"
+      },
       "InvoiceLineDiscountResponse" : {
         "properties" : {
           "baseAmount" : {
@@ -4065,6 +4111,23 @@
           }
         },
         "required" : [ "attachmentUrl", "reason" ],
+        "type" : "object"
+      },
+      "LateFeeReinstatementResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "days" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "days", "invoiceId" ],
         "type" : "object"
       },
       "LatePaymentSettingsResponse" : {
@@ -4649,6 +4712,33 @@
         "required" : [ "dni", "oldestDaysOverdue", "overdueAmounts", "overdueInstallments", "studentId", "studentName" ],
         "type" : "object"
       },
+      "PaymentActionAvailabilityResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "blockedBy" : {
+            "$ref" : "#/components/schemas/RefundBlockResponse"
+          }
+        },
+        "required" : [ "allowed", "blockedBy" ],
+        "type" : "object"
+      },
+      "PaymentActionsResponse" : {
+        "properties" : {
+          "registerChargeback" : {
+            "$ref" : "#/components/schemas/PaymentActionAvailabilityResponse"
+          },
+          "reverseChargeback" : {
+            "$ref" : "#/components/schemas/PaymentActionAvailabilityResponse"
+          },
+          "revokeApproval" : {
+            "$ref" : "#/components/schemas/PaymentActionAvailabilityResponse"
+          }
+        },
+        "required" : [ "registerChargeback", "reverseChargeback", "revokeApproval" ],
+        "type" : "object"
+      },
       "PaymentGatewayConfigResponse" : {
         "properties" : {
           "accountHolder" : {
@@ -4721,6 +4811,71 @@
         "required" : [ "effectiveFrom", "effectiveTo", "id", "paymentPlanOptionId", "scopeMonths" ],
         "type" : "object"
       },
+      "PaymentReversalEffectsResponse" : {
+        "properties" : {
+          "calculated" : {
+            "type" : "boolean"
+          },
+          "lateFeeReinstatements" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LateFeeReinstatementResponse"
+            },
+            "type" : "array"
+          },
+          "reopenedInvoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InvoiceImpactResponse"
+            },
+            "type" : "array"
+          },
+          "settledInvoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InvoiceImpactResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "calculated", "lateFeeReinstatements", "reopenedInvoices", "settledInvoices" ],
+        "type" : "object"
+      },
+      "PaymentReversalPreviewResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "blockedBy" : {
+            "$ref" : "#/components/schemas/RefundBlockResponse"
+          },
+          "creditToReverse" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "effects" : {
+            "$ref" : "#/components/schemas/PaymentReversalEffectsResponse"
+          },
+          "invoiceIdsFundedByPayment" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paymentStatus" : {
+            "type" : "string"
+          },
+          "pendingRefunds" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingRefundResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "allowed", "blockedBy", "creditToReverse", "effects", "invoiceIdsFundedByPayment", "paymentId", "paymentStatus", "pendingRefunds" ],
+        "type" : "object"
+      },
       "PaymentReversalResponse" : {
         "properties" : {
           "amount" : {
@@ -4768,6 +4923,45 @@
           }
         },
         "required" : [ "amount", "chargebackId", "chargedBackOn", "effectiveDate", "paymentId", "paymentStatus", "reference", "reopenedInvoiceIds", "reversedOn", "settledInvoiceIds" ],
+        "type" : "object"
+      },
+      "PendingRefundResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "refundId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "refundId", "requestedOn", "status" ],
+        "type" : "object"
+      },
+      "PendingRefundsSummaryResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "parts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingRefundResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "amount", "count", "parts" ],
         "type" : "object"
       },
       "Percentage" : {
@@ -7000,11 +7194,17 @@
       },
       "StudentPaymentResponse" : {
         "properties" : {
+          "actions" : {
+            "$ref" : "#/components/schemas/PaymentActionsResponse"
+          },
           "amount" : {
             "$ref" : "#/components/schemas/Money"
           },
           "approvedAmount" : {
             "$ref" : "#/components/schemas/Money"
+          },
+          "chargeback" : {
+            "$ref" : "#/components/schemas/ChargebackSummaryResponse"
           },
           "gateway" : {
             "type" : "string"
@@ -7020,6 +7220,9 @@
             "format" : "date",
             "type" : "string"
           },
+          "pendingRefunds" : {
+            "$ref" : "#/components/schemas/PendingRefundsSummaryResponse"
+          },
           "receiptNumber" : {
             "type" : "string"
           },
@@ -7034,7 +7237,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "amount", "approvedAmount", "gateway", "id", "methodType", "paidOn", "receiptNumber", "refundedAmount", "registeredAt", "status" ],
+        "required" : [ "actions", "amount", "approvedAmount", "chargeback", "gateway", "id", "methodType", "paidOn", "pendingRefunds", "receiptNumber", "refundedAmount", "registeredAt", "status" ],
         "type" : "object"
       },
       "StudentRecordResponse" : {
@@ -11514,6 +11717,75 @@
           }
         },
         "tags" : [ "payment-reversal-controller" ]
+      }
+    },
+    "/chargebacks/{chargebackId}/reversal/preview" : {
+      "post" : {
+        "operationId" : "PaymentReversalPreview_previewChargebackReversal",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "chargebackId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalPreviewResponse"
+                }
+              }
+            },
+            "description" : "Impacto de la reversión del contracargo sin aplicarla; si hay bloqueo, allowed=false y blockedBy con el código de la regla"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "CHARGEBACK_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-preview-controller" ]
       }
     },
     "/classrooms" : {
@@ -22999,6 +23271,85 @@
         "tags" : [ "payment-reversal-controller" ]
       }
     },
+    "/payments/{paymentId}/approval-revocation/preview" : {
+      "post" : {
+        "operationId" : "PaymentReversalPreview_previewApprovalRevocation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "paymentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RevokeBankTransferApprovalRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalPreviewResponse"
+                }
+              }
+            },
+            "description" : "Impacto de la revocación sin aplicarla; si hay bloqueo, allowed=false y blockedBy con el código de la regla"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "PAYMENT_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-preview-controller" ]
+      }
+    },
     "/payments/{paymentId}/chargebacks" : {
       "post" : {
         "operationId" : "PaymentReversal_registerChargeback",
@@ -23076,6 +23427,85 @@
           }
         },
         "tags" : [ "payment-reversal-controller" ]
+      }
+    },
+    "/payments/{paymentId}/chargebacks/preview" : {
+      "post" : {
+        "operationId" : "PaymentReversalPreview_previewChargebackRegistration",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "paymentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterChargebackRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalPreviewResponse"
+                }
+              }
+            },
+            "description" : "Impacto del contracargo sin registrarlo; si hay bloqueo, allowed=false y blockedBy con el código de la regla. Los efectos sobre facturas y recargos todavía no se calculan (effects.calculated=false)"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "PAYMENT_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-preview-controller" ]
       }
     },
     "/price-versions/{priceVersionId}/cancellation" : {
