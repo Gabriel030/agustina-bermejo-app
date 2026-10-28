@@ -86,11 +86,18 @@ function HeaderCell({ header }) {
   );
 }
 
-function RowCard({ row, renderExpanded, expandLabel }) {
+function isInteractiveTarget(event) {
+  return Boolean(event.target.closest('a, button, input, [role="checkbox"]'));
+}
+
+function RowCard({ row, renderExpanded, expandLabel, onRowClick }) {
   'use no memo';
   const cells = row.getVisibleCells().filter((cell) => cell.column.id !== EXPANDER_COLUMN_ID);
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4">
+    <div
+      className={cn('flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4', onRowClick && 'cursor-pointer')}
+      onClick={onRowClick ? (event) => !isInteractiveTarget(event) && onRowClick(row.original) : undefined}
+    >
       {cells.map((cell) => {
         const meta = cell.column.columnDef.meta ?? {};
         const header = cell.column.columnDef.header;
@@ -127,6 +134,7 @@ export function DataTable({
   emptyState,
   renderExpanded,
   expandLabel = 'Ver detalle',
+  onRowClick,
   initialSorting = [],
   minWidth = 640,
   className,
@@ -213,7 +221,7 @@ export function DataTable({
     return (
       <div className={cn('flex flex-col gap-2 p-3', className)}>
         {rows.map((row) => (
-          <RowCard key={row.id} row={row} renderExpanded={renderExpanded} expandLabel={expandLabel} />
+          <RowCard key={row.id} row={row} renderExpanded={renderExpanded} expandLabel={expandLabel} onRowClick={onRowClick} />
         ))}
       </div>
     );
@@ -233,7 +241,10 @@ export function DataTable({
       <TableBody>
         {rows.map((row) => (
           <Fragment key={row.id}>
-            <TableRow>
+            <TableRow
+              className={cn(onRowClick && 'cursor-pointer')}
+              onClick={onRowClick ? (event) => !isInteractiveTarget(event) && onRowClick(row.original) : undefined}
+            >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id} className={cn(cell.column.columnDef.meta?.align === 'right' && 'text-right')}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}

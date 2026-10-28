@@ -865,6 +865,143 @@
         "required" : [ "decisionReason" ],
         "type" : "object"
       },
+      "AuthorizationRequestDetailResponse" : {
+        "properties" : {
+          "decidedBy" : {
+            "$ref" : "#/components/schemas/AuthorizationRequestPersonResponse"
+          },
+          "decisionReason" : {
+            "type" : "string"
+          },
+          "detailBlock" : {
+            "$ref" : "#/components/schemas/DetailBlock"
+          },
+          "effectLines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EffectLine"
+            },
+            "type" : "array"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "request" : {
+            "$ref" : "#/components/schemas/AuthorizationRequestListItemResponse"
+          },
+          "requestLines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DescriptionLine"
+            },
+            "type" : "array"
+          },
+          "statusChanges" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StatusChangeResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "decidedBy", "decisionReason", "detailBlock", "effectLines", "reason", "request", "requestLines", "statusChanges" ],
+        "type" : "object"
+      },
+      "AuthorizationRequestListItemResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "expiresOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "family" : {
+            "type" : "string"
+          },
+          "familyLabel" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "operationLabel" : {
+            "type" : "string"
+          },
+          "operationType" : {
+            "type" : "string"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedBy" : {
+            "$ref" : "#/components/schemas/AuthorizationRequestPersonResponse"
+          },
+          "requiredRole" : {
+            "type" : "string"
+          },
+          "resumeOutcome" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "studentName" : {
+            "type" : "string"
+          },
+          "summary" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "decidedAt", "expiresOn", "family", "familyLabel", "id", "operationLabel", "operationType", "requestedAt", "requestedBy", "requiredRole", "resumeOutcome", "status", "studentName", "summary" ],
+        "type" : "object"
+      },
+      "AuthorizationRequestPageResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AuthorizationRequestListItemResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "page", "size", "totalElements" ],
+        "type" : "object"
+      },
+      "AuthorizationRequestPersonResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "id", "name", "roles" ],
+        "type" : "object"
+      },
       "AuthorizationRequestResponse" : {
         "properties" : {
           "id" : {
@@ -1248,6 +1385,24 @@
         "required" : [ "changeReason", "effectiveFrom", "schedule" ],
         "type" : "object"
       },
+      "ChangeRow" : {
+        "properties" : {
+          "difference" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "proposed" : {
+            "type" : "string"
+          },
+          "today" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "difference", "label", "proposed", "today" ],
+        "type" : "object"
+      },
       "ChangeSectionRequest" : {
         "properties" : {
           "newSectionId" : {
@@ -1256,6 +1411,30 @@
           }
         },
         "required" : [ "newSectionId" ],
+        "type" : "object"
+      },
+      "ChargebackSummaryResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "chargebackId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "chargedBackOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "reversedOn" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "chargebackId", "chargedBackOn", "reference", "reversedOn" ],
         "type" : "object"
       },
       "ClassSessionResponse" : {
@@ -2893,6 +3072,40 @@
         "required" : [ "notas" ],
         "type" : "object"
       },
+      "DescriptionLine" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "label", "value" ],
+        "type" : "object"
+      },
+      "DetailBlock" : {
+        "properties" : {
+          "changeRows" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChangeRow"
+            },
+            "type" : "array"
+          },
+          "refundParts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RefundPartLine"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "NONE", "REFUND_PARTS", "CHANGE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "changeRows", "refundParts", "type" ],
+        "type" : "object"
+      },
       "DirectorApprovalRequestResponse" : {
         "properties" : {
           "decidedAt" : {
@@ -2984,6 +3197,11 @@
             "type" : [ "integer", "null" ]
           },
           "closureReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "cohortPromotionStatus" : {
+            "description" : "Solo en promociones de cohorte; null en los demás tipos. Lo calcula el servidor con su fecha de hoy: CLOSED si se cerró; FINISHED si pasó la vigencia; UPCOMING si la vigencia o la ventana de inscripción no empezaron; QUOTA_FULL si el cupo está completo; ENROLLMENT_CLOSED si la ventana de inscripción terminó; OPEN en otro caso.",
+            "enum" : [ "UPCOMING", "OPEN", "QUOTA_FULL", "ENROLLMENT_CLOSED", "FINISHED", "CLOSED" ],
             "type" : [ "string", "null" ]
           },
           "courseId" : {
@@ -3185,6 +3403,19 @@
           }
         },
         "required" : [ "violations" ],
+        "type" : "object"
+      },
+      "EffectLine" : {
+        "properties" : {
+          "text" : {
+            "type" : "string"
+          },
+          "tone" : {
+            "enum" : [ "SUCCESS", "WARNING", "NEUTRAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "text", "tone" ],
         "type" : "object"
       },
       "ElectiveGroupProgressResponse" : {
@@ -3883,6 +4114,28 @@
         "required" : [ "id", "name" ],
         "type" : "object"
       },
+      "InvoiceImpactResponse" : {
+        "properties" : {
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "outstandingAfter" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "outstandingBefore" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "paymentStatusAfter" : {
+            "type" : "string"
+          },
+          "paymentStatusBefore" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "invoiceId", "outstandingAfter", "outstandingBefore", "paymentStatusAfter", "paymentStatusBefore" ],
+        "type" : "object"
+      },
       "InvoiceLineDiscountResponse" : {
         "properties" : {
           "baseAmount" : {
@@ -4065,6 +4318,23 @@
           }
         },
         "required" : [ "attachmentUrl", "reason" ],
+        "type" : "object"
+      },
+      "LateFeeReinstatementResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "days" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "days", "invoiceId" ],
         "type" : "object"
       },
       "LatePaymentSettingsResponse" : {
@@ -4649,6 +4919,33 @@
         "required" : [ "dni", "oldestDaysOverdue", "overdueAmounts", "overdueInstallments", "studentId", "studentName" ],
         "type" : "object"
       },
+      "PaymentActionAvailabilityResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "blockedBy" : {
+            "$ref" : "#/components/schemas/RefundBlockResponse"
+          }
+        },
+        "required" : [ "allowed", "blockedBy" ],
+        "type" : "object"
+      },
+      "PaymentActionsResponse" : {
+        "properties" : {
+          "registerChargeback" : {
+            "$ref" : "#/components/schemas/PaymentActionAvailabilityResponse"
+          },
+          "reverseChargeback" : {
+            "$ref" : "#/components/schemas/PaymentActionAvailabilityResponse"
+          },
+          "revokeApproval" : {
+            "$ref" : "#/components/schemas/PaymentActionAvailabilityResponse"
+          }
+        },
+        "required" : [ "registerChargeback", "reverseChargeback", "revokeApproval" ],
+        "type" : "object"
+      },
       "PaymentGatewayConfigResponse" : {
         "properties" : {
           "accountHolder" : {
@@ -4721,6 +5018,71 @@
         "required" : [ "effectiveFrom", "effectiveTo", "id", "paymentPlanOptionId", "scopeMonths" ],
         "type" : "object"
       },
+      "PaymentReversalEffectsResponse" : {
+        "properties" : {
+          "calculated" : {
+            "type" : "boolean"
+          },
+          "lateFeeReinstatements" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LateFeeReinstatementResponse"
+            },
+            "type" : "array"
+          },
+          "reopenedInvoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InvoiceImpactResponse"
+            },
+            "type" : "array"
+          },
+          "settledInvoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InvoiceImpactResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "calculated", "lateFeeReinstatements", "reopenedInvoices", "settledInvoices" ],
+        "type" : "object"
+      },
+      "PaymentReversalPreviewResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "blockedBy" : {
+            "$ref" : "#/components/schemas/RefundBlockResponse"
+          },
+          "creditToReverse" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "effects" : {
+            "$ref" : "#/components/schemas/PaymentReversalEffectsResponse"
+          },
+          "invoiceIdsFundedByPayment" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paymentStatus" : {
+            "type" : "string"
+          },
+          "pendingRefunds" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingRefundResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "allowed", "blockedBy", "creditToReverse", "effects", "invoiceIdsFundedByPayment", "paymentId", "paymentStatus", "pendingRefunds" ],
+        "type" : "object"
+      },
       "PaymentReversalResponse" : {
         "properties" : {
           "amount" : {
@@ -4768,6 +5130,45 @@
           }
         },
         "required" : [ "amount", "chargebackId", "chargedBackOn", "effectiveDate", "paymentId", "paymentStatus", "reference", "reopenedInvoiceIds", "reversedOn", "settledInvoiceIds" ],
+        "type" : "object"
+      },
+      "PendingRefundResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "refundId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "refundId", "requestedOn", "status" ],
+        "type" : "object"
+      },
+      "PendingRefundsSummaryResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "parts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingRefundResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "amount", "count", "parts" ],
         "type" : "object"
       },
       "Percentage" : {
@@ -5841,6 +6242,35 @@
         "required" : [ "availableToRefund", "blockedBy", "currency", "hasOverdueDebt", "payments", "reservedByPendingRefunds", "unallocatedCredit" ],
         "type" : "object"
       },
+      "RefundPartLine" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "destinationAccount" : {
+            "type" : "string"
+          },
+          "destinationHolder" : {
+            "type" : "string"
+          },
+          "methodType" : {
+            "type" : "string"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "refundId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "destinationAccount", "destinationHolder", "methodType", "paymentId", "refundId", "status" ],
+        "type" : "object"
+      },
       "RefundPreviewPartResponse" : {
         "properties" : {
           "amount" : {
@@ -6861,6 +7291,38 @@
         "required" : [ "apellido", "dni", "email", "id", "nombre", "role", "telefono", "username" ],
         "type" : "object"
       },
+      "StatusChangeResponse" : {
+        "properties" : {
+          "actorName" : {
+            "type" : "string"
+          },
+          "actorPersonId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "actorProcess" : {
+            "type" : "string"
+          },
+          "changedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "event" : {
+            "type" : "string"
+          },
+          "fromStatus" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "toStatus" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "actorName", "actorPersonId", "actorProcess", "changedAt", "event", "fromStatus", "reason", "toStatus" ],
+        "type" : "object"
+      },
       "StudentDiscountPendingAuthorizationResponse" : {
         "properties" : {
           "authorizationRequestId" : {
@@ -7000,11 +7462,17 @@
       },
       "StudentPaymentResponse" : {
         "properties" : {
+          "actions" : {
+            "$ref" : "#/components/schemas/PaymentActionsResponse"
+          },
           "amount" : {
             "$ref" : "#/components/schemas/Money"
           },
           "approvedAmount" : {
             "$ref" : "#/components/schemas/Money"
+          },
+          "chargeback" : {
+            "$ref" : "#/components/schemas/ChargebackSummaryResponse"
           },
           "gateway" : {
             "type" : "string"
@@ -7020,6 +7488,9 @@
             "format" : "date",
             "type" : "string"
           },
+          "pendingRefunds" : {
+            "$ref" : "#/components/schemas/PendingRefundsSummaryResponse"
+          },
           "receiptNumber" : {
             "type" : "string"
           },
@@ -7034,7 +7505,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "amount", "approvedAmount", "gateway", "id", "methodType", "paidOn", "receiptNumber", "refundedAmount", "registeredAt", "status" ],
+        "required" : [ "actions", "amount", "approvedAmount", "chargeback", "gateway", "id", "methodType", "paidOn", "pendingRefunds", "receiptNumber", "refundedAmount", "registeredAt", "status" ],
         "type" : "object"
       },
       "StudentRecordResponse" : {
@@ -9732,6 +10203,215 @@
         "tags" : [ "auth-controller" ]
       }
     },
+    "/authorization-requests" : {
+      "get" : {
+        "operationId" : "AuthorizationRequest_list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "PENDING", "APPROVED", "REJECTED", "WITHDRAWN", "EXPIRED" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "operationType",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "CREATE_LATE_PAYMENT_SETTINGS", "ISSUE_INVOICE", "CHANGE_BILLING_CONFIGURATION", "CANCEL_CONFIGURATION_VERSION", "ALLOCATE_ACCOUNT_CREDIT", "ISSUE_CREDIT_NOTE", "ISSUE_LATE_FEE_DEBIT_NOTE", "ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE", "CANCEL_INVOICE", "CANCEL_INVOICES_AFTER_WITHDRAWAL", "REGISTER_PAYMENT", "CREATE_DISCOUNT_DEFINITION", "CLOSE_DISCOUNT_DEFINITION", "GRANT_STUDENT_DISCOUNT", "REVOKE_STUDENT_DISCOUNT", "ACQUIRE_COHORT_PROMOTION", "REGISTER_GATEWAY_PAYMENT", "APPROVE_BANK_TRANSFER_RECEIPT_PAYMENT", "SUBMIT_BANK_TRANSFER_RECEIPT", "APPROVE_PENDING_BANK_TRANSFER_PAYMENT", "REJECT_PENDING_BANK_TRANSFER_PAYMENT", "REVOKE_BANK_TRANSFER_APPROVAL", "REGISTER_CHARGEBACK", "REVERSE_CHARGEBACK", "ISSUE_REFUND", "COMPLETE_REFUND", "FAIL_REFUND", "CHANGE_PRICE", "CANCEL_PRICE_VERSION" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "family",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "REFUNDS", "INVOICES_AND_NOTES", "PAYMENTS_AND_CHARGEBACKS", "DISCOUNTS_AND_PRICES", "CONFIGURATION" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "requestedBy",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "default" : "EXPIRES_ON",
+            "enum" : [ "EXPIRES_ON", "REQUESTED_AT" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "descending",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorizationRequestPageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "authorization-request-controller" ]
+      }
+    },
+    "/authorization-requests/{id}" : {
+      "get" : {
+        "operationId" : "AuthorizationRequest_get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorizationRequestDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "authorization-request-controller" ]
+      }
+    },
     "/authorization-requests/{id}/approve" : {
       "post" : {
         "operationId" : "AuthorizationRequest_approve",
@@ -11514,6 +12194,75 @@
           }
         },
         "tags" : [ "payment-reversal-controller" ]
+      }
+    },
+    "/chargebacks/{chargebackId}/reversal/preview" : {
+      "post" : {
+        "operationId" : "PaymentReversalPreview_previewChargebackReversal",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "chargebackId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalPreviewResponse"
+                }
+              }
+            },
+            "description" : "Impacto de la reversión del contracargo sin aplicarla; si hay bloqueo, allowed=false y blockedBy con el código de la regla"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "CHARGEBACK_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-preview-controller" ]
       }
     },
     "/classrooms" : {
@@ -15375,6 +16124,8 @@
     },
     "/courses/{id}/promotions" : {
       "post" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_createForCourse",
         "parameters" : [ {
           "in" : "path",
@@ -15993,6 +16744,14 @@
             "enum" : [ "ACTIVE", "CLOSED" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "cohortPromotionStatus",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "UPCOMING", "OPEN", "QUOTA_FULL", "ENROLLMENT_CLOSED", "FINISHED", "CLOSED" ],
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -16181,6 +16940,75 @@
               }
             },
             "description" : "La carrera, el curso o la cohorte del alcance no existen"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      }
+    },
+    "/discount-definitions/{id}" : {
+      "get" : {
+        "operationId" : "DiscountDefinition_findDiscountDefinition",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionCatalogEntryResponse"
+                }
+              }
+            },
+            "description" : "La definición con su disponibilidad, su costo estimado de cupo y, en promociones de cohorte, su estado derivado"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "No existe la definición"
           },
           "409" : {
             "content" : {
@@ -22999,6 +23827,85 @@
         "tags" : [ "payment-reversal-controller" ]
       }
     },
+    "/payments/{paymentId}/approval-revocation/preview" : {
+      "post" : {
+        "operationId" : "PaymentReversalPreview_previewApprovalRevocation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "paymentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RevokeBankTransferApprovalRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalPreviewResponse"
+                }
+              }
+            },
+            "description" : "Impacto de la revocación sin aplicarla; si hay bloqueo, allowed=false y blockedBy con el código de la regla"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "PAYMENT_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-preview-controller" ]
+      }
+    },
     "/payments/{paymentId}/chargebacks" : {
       "post" : {
         "operationId" : "PaymentReversal_registerChargeback",
@@ -23076,6 +23983,85 @@
           }
         },
         "tags" : [ "payment-reversal-controller" ]
+      }
+    },
+    "/payments/{paymentId}/chargebacks/preview" : {
+      "post" : {
+        "operationId" : "PaymentReversalPreview_previewChargebackRegistration",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "paymentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterChargebackRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentReversalPreviewResponse"
+                }
+              }
+            },
+            "description" : "Impacto del contracargo sin registrarlo; si hay bloqueo, allowed=false y blockedBy con el código de la regla. Los efectos sobre facturas y recargos todavía no se calculan (effects.calculated=false)"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "PAYMENT_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "payment-reversal-preview-controller" ]
       }
     },
     "/price-versions/{priceVersionId}/cancellation" : {
@@ -27610,6 +28596,8 @@
     },
     "/programs/{id}/promotions" : {
       "post" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_createForProgram",
         "parameters" : [ {
           "in" : "path",
@@ -27995,6 +28983,8 @@
     },
     "/promotions" : {
       "get" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar GET /discount-definitions?type=COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_findActive",
         "parameters" : [ {
           "in" : "query",
@@ -28067,6 +29057,8 @@
     },
     "/promotions/{id}/close" : {
       "post" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar POST /discount-definitions/{id}/closure. Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_close",
         "parameters" : [ {
           "in" : "path",

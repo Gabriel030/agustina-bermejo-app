@@ -32,7 +32,7 @@ public final class DiscountDraftBuilder {
     }
 
     public static DiscountDraftBuilder cohortPromotion() {
-        return new DiscountDraftBuilder();
+        return new DiscountDraftBuilder().withEnrollmentWindow(LocalDate.of(2000, 1, 1), LocalDate.of(2099, 12, 31));
     }
 
     public static DiscountDraftBuilder scholarship() {

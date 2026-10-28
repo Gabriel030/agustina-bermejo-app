@@ -56,6 +56,24 @@ export function useBreadcrumb() {
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
 
+  const billingInboxDetail = /^\/(director\/aprobaciones\/facturacion|administrativo\/aprobaciones)\/(\d+)$/.exec(location.pathname);
+  if (billingInboxDetail) {
+    const rolBase = location.pathname.split('/')[1];
+    const requestLabel = `Pedido N.º ${billingInboxDetail[2]}`;
+    if (rolBase === 'director') {
+      return [
+        { label: 'Aprobaciones', to: '/director/aprobaciones' },
+        { label: 'Operaciones de facturación', to: '/director/aprobaciones/facturacion' },
+        { label: requestLabel },
+      ];
+    }
+    return [{ label: 'Aprobaciones', to: '/administrativo/aprobaciones' }, { label: requestLabel }];
+  }
+
+  if (location.pathname === '/director/aprobaciones/facturacion') {
+    return [{ label: 'Aprobaciones', to: '/director/aprobaciones' }, { label: 'Operaciones de facturación' }];
+  }
+
   const enPagos = location.pathname === '/alumno/pagos';
   if (enPagos) {
     return [{ label: 'Mis pagos' }];

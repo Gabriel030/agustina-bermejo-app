@@ -173,6 +173,28 @@ public class DiscountDefinition {
         return availableUntil != null && date.isAfter(availableUntil) ? DiscountDefinitionAvailability.EXPIRED : DiscountDefinitionAvailability.AVAILABLE;
     }
 
+    public Optional<CohortPromotionStatus> cohortPromotionStatusOn(LocalDate date, long placesUsed) {
+        if (discountType != DiscountDefinitionType.COHORT_PROMOTION) {
+            return Optional.empty();
+        }
+        if (status == DiscountDefinitionStatus.CLOSED) {
+            return Optional.of(CohortPromotionStatus.CLOSED);
+        }
+        if (availableUntil != null && date.isAfter(availableUntil)) {
+            return Optional.of(CohortPromotionStatus.FINISHED);
+        }
+        if (date.isBefore(availableFrom) || (enrollmentWindowFrom != null && date.isBefore(enrollmentWindowFrom))) {
+            return Optional.of(CohortPromotionStatus.UPCOMING);
+        }
+        if (!hasPlaceLeft(placesUsed)) {
+            return Optional.of(CohortPromotionStatus.QUOTA_FULL);
+        }
+        if (enrollmentWindowTo != null && date.isAfter(enrollmentWindowTo)) {
+            return Optional.of(CohortPromotionStatus.ENROLLMENT_CLOSED);
+        }
+        return Optional.of(CohortPromotionStatus.OPEN);
+    }
+
     public Optional<OfferingReference> findPricedOffering() {
         if (programId != null) {
             return Optional.of(OfferingReference.ofProgram(programId));
