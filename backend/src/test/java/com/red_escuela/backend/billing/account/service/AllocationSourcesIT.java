@@ -165,7 +165,7 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
 
         List<Object> responses = inTransaction(() -> {
             var view = invoiceViewLoader.loadInvoiceView(invoiceRepository.findInvoiceWithLinesById(invoice).orElseThrow());
-            return List.<Object>of(InvoiceResponse.from(view), MeInvoiceResponse.of(view, List.of()), AdminInvoiceResponse.of(view, List.of()));
+            return List.<Object>of(InvoiceResponse.from(view), MeInvoiceResponse.of(view, List.of()), AdminInvoiceResponse.of(view, List.of(), List.of()));
         });
 
         InvoiceResponse base = (InvoiceResponse) responses.get(0);
