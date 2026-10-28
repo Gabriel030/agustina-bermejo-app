@@ -33,6 +33,9 @@ public class PendingInvoiceAuthorizationReader {
             return Map.of();
         }
         List<AuthorizationRequestRepository.InvoiceRequestLink> links = requests.findPendingRequestLinksOfInvoices(invoiceIds);
+        if (links.isEmpty()) {
+            return Map.of();
+        }
         Map<Long, AuthorizationRequest> requestById = requests.findAllById(links.stream().map(AuthorizationRequestRepository.InvoiceRequestLink::getRequestId).collect(Collectors.toSet()))
                 .stream().collect(Collectors.toMap(AuthorizationRequest::getId, Function.identity()));
         Set<Long> requesterIds = requestById.values().stream().map(request -> request.getRequestedBy().getId()).collect(Collectors.toSet());
