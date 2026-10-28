@@ -200,12 +200,32 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
                 .andReturn().getResponse().getContentAsString();
         JsonNode node = discountNode(objectMapper.readTree(raw), revoked);
 
-        assertThat(raw).doesNotContain("Motivo interno confidencial del director");
+        assertThat(raw).doesNotContain("Motivo interno confidencial del director").doesNotContain("Situación económica");
+        assertThat(node.get("reason").isNull()).isTrue();
+        assertThat(node.get("grantedById").isNull()).isTrue();
+        assertThat(node.get("authorizationRequestId").isNull()).isTrue();
         assertThat(node.get("revocationReason").isNull()).isTrue();
         assertThat(node.get("status").asText()).isEqualTo("REVOKED");
         assertThat(node.get("endCause").asText()).isEqualTo("INSTITUTION_DECISION");
         assertThat(node.get("endCauseText").asText()).isEqualTo("Decisión de la institución");
         assertThat(node.get("revokedFromPeriod").asText()).isEqualTo("2027-03");
+    }
+
+    @Test
+    @Tag("D-284")
+    void aDiscountApprovedByTheDirectorNeverShowsTheStudentTheInternalFields() throws Exception {
+        Long requestId = proposeGrant(individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), APRIL, APRIL, "Justificación interna del administrativo"));
+        approveAsDirector(requestId);
+
+        String raw = mockMvc.perform(get("/me/student-discounts").header("Authorization", "Bearer " + studentToken(learner.studentId()))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode node = objectMapper.readTree(raw).get(0);
+
+        assertThat(raw).doesNotContain("Justificación interna del administrativo");
+        assertThat(node.get("reason").isNull()).isTrue();
+        assertThat(node.get("grantedById").isNull()).isTrue();
+        assertThat(node.get("authorizationRequestId").isNull()).isTrue();
+        assertThat(node.get("status").asText()).isEqualTo("ACTIVE");
     }
 
     @Test
@@ -217,6 +237,8 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
         JsonNode node = discountNode(read("/program-enrollments/" + learner.programEnrollmentId() + "/student-discounts", directorToken()), revoked);
 
         assertThat(node.get("revocationReason").asText()).isEqualTo("Motivo interno del director");
+        assertThat(node.get("reason").asText()).isEqualTo("Situación económica");
+        assertThat(node.get("grantedById").asLong()).isEqualTo(director.getId());
         assertThat(node.get("endCause").asText()).isEqualTo("INSTITUTION_DECISION");
     }
 

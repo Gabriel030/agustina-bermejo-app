@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record StudentDiscountResponse(Long id, DiscountType type, InvoiceType applicableInvoiceType, MonetaryAdjustment calculation, @Nullable Money capPerInvoice,
-                                      int priority, YearMonth fromPeriod, YearMonth toPeriod, StudentDiscountStatus status, Instant grantedAt, Long grantedById,
-                                      String reason, @Nullable Long authorizationRequestId, @Nullable Instant revokedAt, @Nullable String revocationReason,
+                                      int priority, YearMonth fromPeriod, YearMonth toPeriod, StudentDiscountStatus status, Instant grantedAt, @Nullable Long grantedById,
+                                      @Nullable String reason, @Nullable Long authorizationRequestId, @Nullable Instant revokedAt, @Nullable String revocationReason,
                                       @Nullable YearMonth revokedFromPeriod, @Nullable Long programEnrollmentId, @Nullable Long courseEnrollmentId,
                                       @Nullable List<AppliedStudentDiscountInstallmentResponse> appliedInstallments, @Nullable List<YearMonth> lostPeriods,
                                       Long studentId, @Nullable Long discountDefinitionId, @Nullable DiscountDefinitionType definitionType, @Nullable String definitionName,
@@ -43,12 +43,13 @@ public record StudentDiscountResponse(Long id, DiscountType type, InvoiceType ap
         return from(discountWithUsage.discount(), discountWithUsage.usage(), labels, true);
     }
 
-    private static StudentDiscountResponse from(StudentDiscount discount, @Nullable StudentDiscountUsage usage, StudentDiscountLabels labels, boolean hideInternalRevocationReason) {
+    private static StudentDiscountResponse from(StudentDiscount discount, @Nullable StudentDiscountUsage usage, StudentDiscountLabels labels, boolean hideInternal) {
         Optional<StudentDiscountEndCause> endCause = StudentDiscountEndCause.of(discount.getStatus());
         return new StudentDiscountResponse(discount.getId(), discount.getDiscountType(), discount.getApplicableInvoiceType(), discount.getCalculation(),
                 discount.getCapPerInvoice() == null ? null : discount.getCapPerInvoice().value(), discount.getPriority(), discount.getFromPeriod(), discount.getToPeriod(),
-                discount.getStatus(), discount.getGrantedAt(), discount.getGrantedById(), discount.getReason(), discount.getAuthorizationRequestId(), discount.getRevokedAt(),
-                hideInternalRevocationReason ? null : discount.getRevocationReason(), discount.getRevokedFromPeriod(), discount.getProgramEnrollmentId(), discount.getCourseEnrollmentId(),
+                discount.getStatus(), discount.getGrantedAt(), hideInternal ? null : discount.getGrantedById(), hideInternal ? null : discount.getReason(),
+                hideInternal ? null : discount.getAuthorizationRequestId(), discount.getRevokedAt(),
+                hideInternal ? null : discount.getRevocationReason(), discount.getRevokedFromPeriod(), discount.getProgramEnrollmentId(), discount.getCourseEnrollmentId(),
                 usage == null ? null : usage.appliedInstallments().stream().map(AppliedStudentDiscountInstallmentResponse::from).toList(),
                 usage == null ? null : usage.lostPeriods(), discount.getStudentId(), discount.getDiscountDefinitionId(), labels.definitionType(), labels.definitionName(),
                 labels.enrollmentName(), labels.studentName(), usage == null ? null : usage.lostPeriods().size(), endCause.orElse(null),

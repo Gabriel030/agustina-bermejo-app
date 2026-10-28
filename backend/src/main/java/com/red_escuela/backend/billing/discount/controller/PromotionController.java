@@ -12,6 +12,9 @@ import com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyC
 import com.red_escuela.backend.billing.discount.usecase.FindLostCohortPromotionBenefitsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ListActivePromotionsByLegacyContractUseCase;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -72,6 +75,8 @@ public class PromotionController {
 
     @GetMapping("/reports/billing/promotions/lost-benefits")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponse(responseCode = "200", description = "Beneficios perdidos; el total sin paginar viaja en el header X-Total-Count",
+            headers = @Header(name = "X-Total-Count", description = "Cantidad total de beneficios perdidos que cumplen los filtros, sin paginar", schema = @Schema(type = "integer", format = "int64")))
     public ResponseEntity<List<LostPromotionBenefitResponse>> lostBenefits(@RequestParam(required = false) Long discountDefinitionId,
                                                                           @RequestParam(required = false) InvoiceType feeType,
                                                                           @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth cutOffFrom,

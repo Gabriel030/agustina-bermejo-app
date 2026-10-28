@@ -111,6 +111,19 @@ class GrantStudentDiscountPreviewTest {
 
     @Test
     @Tag("D-282")
+    void aScholarshipWithoutAnyActiveScholarshipDefinitionIsBlockedAndNoDefinitionIsReported() {
+        when(definitionRepository.findFirstByDiscountTypeAndStatusOrderByIdAsc(any(), any())).thenReturn(Optional.empty());
+        StudentDiscountGrantRequest scholarship = new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, null, THIRTY_PERCENT, InvoiceType.MONTHLY_INSTALLMENT,
+                YearMonth.of(2027, 5), YearMonth.of(2027, 8), "Situación económica");
+
+        StudentDiscountGrantPreview preview = preview(scholarship, true);
+
+        assertThat(preview.discountDefinitionId()).isNull();
+        assertThat(preview.violations()).extracting(violation -> violation.code()).containsExactly("INVALID_STUDENT_DISCOUNT");
+    }
+
+    @Test
+    @Tag("D-282")
     void aScholarshipStartingBeforeTheNextInstallmentIsBlockedAndTheNextInstallmentIsReported() {
         when(definitionRepository.findFirstByDiscountTypeAndStatusOrderByIdAsc(any(), any())).thenReturn(Optional.empty());
         StudentDiscountGrantRequest scholarship = new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, null, THIRTY_PERCENT, InvoiceType.MONTHLY_INSTALLMENT,
