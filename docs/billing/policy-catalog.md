@@ -398,6 +398,24 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | PriceChangeReasonPolicy | CHANGE_REASON_REQUIRED | D-095 |
 | 2 | EffectiveDateNotRetroactivePolicy | RETROACTIVE_EFFECTIVE_DATE | D-059, D-111 |
 
+## Momento PRICE_PROPOSAL
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | SingleOpenPriceProposalPolicy | PROPOSAL_ALREADY_OPEN | D-116, D-211 |
+
+## Momento PRICE_PROPOSAL_APPROVAL
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ProposalNotExpiredPolicy | PROPOSAL_EXPIRED | D-180 |
+
+## Momento PRICE_PROPOSAL_REJECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | PriceRejectionReasonPolicy | REJECTION_REASON_REQUIRED | D-114 |
+
 ## Momento PRICE_VERSION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -736,9 +754,10 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación CHANGE_PRICE
 
-- Validaciones (momentos): PRICE_CHANGE, PRICE_VERSION
-- Pre-procesamiento (en orden): —
-- Eventos que publica: —
+- Validaciones (momentos): PRICE_CHANGE, PRICE_VERSION, PRICE_PROPOSAL, PRICE_PROPOSAL_APPROVAL, PRICE_PROPOSAL_REJECTION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: PriceChangeDecidedEvent
+- Post-procesamiento de PriceChangeDecidedEvent: BillingOperationNotificationListener#notifyPriceChangeDecided
 
 ## Operación CLOSE_DISCOUNT_DEFINITION
 
