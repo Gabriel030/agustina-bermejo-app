@@ -47,6 +47,8 @@ abstract class AuthorizationMatrixSupport extends AbstractIntegrationTest {
 
     protected AuthorizationMatrixFixtures fixtures;
 
+    protected OwnershipFixtures ownership;
+
     protected String lastResponseBody = "";
 
     protected final MatrixRequestFactory requestFactory = new MatrixRequestFactory(new MinimalRequestBodies());
@@ -55,10 +57,18 @@ abstract class AuthorizationMatrixSupport extends AbstractIntegrationTest {
     void createRoleFixtures() {
         fixtures = new AuthorizationMatrixFixtures(
                 new TransactionTemplate(transactionManager), entityManager, roleRepository, jwtService);
+        ownership = new OwnershipFixtures(
+                new TransactionTemplate(transactionManager), entityManager, roleRepository, jwtService);
     }
 
     protected List<MappedEndpoint> mappedEndpoints() {
         return MappedEndpointCatalog.listApplicationEndpoints(handlerMapping);
+    }
+
+    protected int statusWithToken(MappedEndpoint endpoint, String bodyOverride, String token, Long resourceId) throws Exception {
+        var result = mockMvc.perform(requestFactory.build(endpoint, bodyOverride, token, resourceId)).andReturn();
+        lastResponseBody = result.getResponse().getContentAsString() + " EX " + result.getResolvedException();
+        return result.getResponse().getStatus();
     }
 
     protected int statusOf(MappedEndpoint endpoint, String bodyOverride, MatrixRole role) throws Exception {

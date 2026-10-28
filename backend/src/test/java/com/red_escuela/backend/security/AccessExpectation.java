@@ -5,7 +5,8 @@ import java.util.Optional;
 enum AccessExpectation {
     ALLOW,
     DENY,
-    PUBLIC;
+    PUBLIC,
+    OWNER;
 
     Optional<String> describeMismatch(int status, boolean anonymousCaller) {
         boolean forbidden = status == 403;
@@ -20,7 +21,7 @@ enum AccessExpectation {
                 }
                 yield Optional.of("esperado DENY (403), obtenido " + status);
             }
-            case ALLOW, PUBLIC -> forbidden
+            case ALLOW, PUBLIC, OWNER -> forbidden
                     ? Optional.of("esperado " + name() + " (distinto de 403), obtenido " + status)
                     : Optional.empty();
         };

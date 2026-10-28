@@ -49,4 +49,26 @@ class AuthorizationMatrixCompletenessTest extends AuthorizationMatrixSupport {
 
         assertThat(rowsWithoutMapping).as("fila de la matriz sin mapping existente").isEmpty();
     }
+
+    @Test
+    void ownershipColumnAndOwnerCellsAgree() {
+        List<String> inconsistent = AuthorizationMatrixFile.read().stream()
+                .filter(row -> !ownershipAgreesWithOwnerCells(row))
+                .map(AuthorizationMatrixRow::key)
+                .sorted()
+                .toList();
+
+        assertThat(inconsistent).as("filas con ownership y celdas OWNER que no coinciden").isEmpty();
+    }
+
+    private boolean ownershipAgreesWithOwnerCells(AuthorizationMatrixRow row) {
+        List<MatrixRole> ownerRoles = row.byRole().entrySet().stream()
+                .filter(entry -> entry.getValue() == AccessExpectation.OWNER)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (row.ownership().isEmpty()) {
+            return ownerRoles.isEmpty() && row.anonymous() != AccessExpectation.OWNER;
+        }
+        return ownerRoles.equals(List.of(OwnershipKind.fromLabel(row.ownership()).ownerRole()));
+    }
 }
