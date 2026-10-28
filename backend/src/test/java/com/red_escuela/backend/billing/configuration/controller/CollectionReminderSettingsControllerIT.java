@@ -53,14 +53,18 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
     }
 
     private String tokenWithRole(String roleName) {
+        return tokenOf(roleName, "Persona", "Prueba");
+    }
+
+    private String tokenOf(String roleName, String name, String lastname) {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
         String username = roleName.toLowerCase() + "." + System.nanoTime();
         person.setUsername(username);
         person.setDni(Long.toString(Math.abs((long) username.hashCode())));
-        person.setName("Persona");
-        person.setLastname("Prueba");
+        person.setName(name);
+        person.setLastname(lastname);
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -106,6 +110,31 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].values.emailWindowStart").value("09:00:00"));
+    }
+
+    @Test
+    @Tag("D-351")
+    void aPendingProposalNamesItsProposerAndNoDecider() throws Exception {
+        String administrative = tokenOf("ADMINISTRATIVO", "Ana", "Proponente");
+
+        postTo("/changes", administrative, body(280, 1, "09:00", "11:00", TODAY.plusDays(1))).andExpect(status().isAccepted());
+        mockMvc.perform(get(BASE + "/versions").header("Authorization", "Bearer " + administrative)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposedByName").value("Ana Proponente"))
+                .andExpect(jsonPath("$[0].decidedById").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$[0].decidedByName").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    @Tag("D-351")
+    void aDirectPublicationNamesTheDirectorAsProposerAndDeciderInTheResponseAndInTheHistory() throws Exception {
+        String director = tokenOf("DIRECTOR", "Dario", "Decisor");
+
+        postTo("/changes", director, body(290, 1, "09:00", "11:00", TODAY.plusDays(2))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.proposedByName").value("Dario Decisor"))
+                .andExpect(jsonPath("$.decidedByName").value("Dario Decisor"));
+        mockMvc.perform(get(BASE + "/versions").header("Authorization", "Bearer " + director)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposedByName").value("Dario Decisor"))
+                .andExpect(jsonPath("$[0].decidedByName").value("Dario Decisor"));
     }
 
     @Test

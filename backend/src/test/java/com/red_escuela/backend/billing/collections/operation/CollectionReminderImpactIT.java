@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CollectionReminderImpactIT extends AbstractReminderTimelineIT {
     private static final LocalDate TODAY = LocalDate.of(2027, 3, 2);
@@ -167,5 +168,41 @@ class CollectionReminderImpactIT extends AbstractReminderTimelineIT {
                 scheduleWithBeforeDueAt(-1), digestToggled);
 
         assertThat(impactUseCase.getImpactOf(new CollectionReminderImpactQuery(proposal, march(4))).studentsWithChangedSchedule()).isGreaterThanOrEqualTo(3);
+    }
+
+    private CollectionReminderSettings digestToggledSettings() {
+        CollectionReminderSettings current = configurationReader.collectionReminderSettingsEffectiveOn(march(4));
+        return new CollectionReminderSettings(current.suspensionNoticeEnabled(), current.postWithdrawalSummaryMonths(), current.emailWindowStart(),
+                current.emailWindowEnd(), current.dailyEmailCap(), current.contactListDaysOverdue(), current.contactListOverdueInstallments(), !current.dailyDigestEnabled());
+    }
+
+    @Test
+    @Tag("D-350")
+    void aGlobalSettingsOnlyChangeCountsEveryStudentWithAnOpenInstallmentAcrossCoursesAndSkipsThePaidOnes() {
+        int alreadyThere = impactUseCase.getImpactOf(CollectionReminderImpactQuery.ofGlobalSettings(digestToggledSettings(), march(4))).studentsWithChangedSchedule();
+        Course first = newCourse();
+        Course second = newCourse();
+        studentsWithAnInstallment(first, 3, march(11));
+        studentsWithAnInstallment(second, 2, march(11));
+        studentsWithAnInstallment(second, 2, march(11)).forEach(invoice -> pay(invoice, march(1)));
+
+        int withFixtures = impactUseCase.getImpactOf(CollectionReminderImpactQuery.ofGlobalSettings(digestToggledSettings(), march(4))).studentsWithChangedSchedule();
+
+        assertThat(withFixtures - alreadyThere).isEqualTo(5);
+    }
+
+    @Test
+    @Tag("D-350")
+    void aGlobalSettingsOnlyChangeThatKeepsTheDigestModeMovesNoOne() {
+        studentsWithAnInstallment(newCourse(), 3, march(11));
+        CollectionReminderSettings unchanged = configurationReader.collectionReminderSettingsEffectiveOn(march(4));
+
+        assertThat(impactUseCase.getImpactOf(CollectionReminderImpactQuery.ofGlobalSettings(unchanged, march(4))).studentsWithChangedSchedule()).isZero();
+    }
+
+    @Test
+    @Tag("D-350")
+    void aQueryWithoutScheduleNorGlobalSettingsIsRefused() {
+        assertThatThrownBy(() -> new CollectionReminderImpactQuery(null, null, march(4))).isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.configuration.dto.ChangeCollectionReminde
 import com.red_escuela.backend.billing.configuration.dto.CollectionReminderSettingsVersionResponse;
 import com.red_escuela.backend.billing.configuration.dto.ConfigurationChangePendingAuthorizationResponse;
 import com.red_escuela.backend.billing.configuration.dto.ConfigurationChangeValidationResponse;
+import com.red_escuela.backend.billing.configuration.usecase.FindConfigurationVersionAuthorNamesUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ListConfigurationVersionHistoryUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfigurationChangeUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ValidateBillingConfigurationChangeUseCase;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS")
@@ -31,13 +33,16 @@ public class CollectionReminderSettingsController {
     private final ProposeBillingConfigurationChangeUseCase proposeChangeUseCase;
     private final ValidateBillingConfigurationChangeUseCase validateChangeUseCase;
     private final ListConfigurationVersionHistoryUseCase listVersionHistoryUseCase;
+    private final FindConfigurationVersionAuthorNamesUseCase findAuthorNamesUseCase;
 
     public CollectionReminderSettingsController(ProposeBillingConfigurationChangeUseCase proposeChangeUseCase,
                                                 ValidateBillingConfigurationChangeUseCase validateChangeUseCase,
-                                                ListConfigurationVersionHistoryUseCase listVersionHistoryUseCase) {
+                                                ListConfigurationVersionHistoryUseCase listVersionHistoryUseCase,
+                                                FindConfigurationVersionAuthorNamesUseCase findAuthorNamesUseCase) {
         this.proposeChangeUseCase = proposeChangeUseCase;
         this.validateChangeUseCase = validateChangeUseCase;
         this.listVersionHistoryUseCase = listVersionHistoryUseCase;
+        this.findAuthorNamesUseCase = findAuthorNamesUseCase;
     }
 
     @PostMapping("/changes")
@@ -47,7 +52,8 @@ public class CollectionReminderSettingsController {
                 request.effectiveFrom(), request.changeReason());
         return switch (outcome) {
             case BillingOperationOutcome.Processed<ConfigurationVersion> processed ->
-                    ResponseEntity.status(HttpStatus.CREATED).body(CollectionReminderSettingsVersionResponse.from(processed.result()));
+                    ResponseEntity.status(HttpStatus.CREATED).body(CollectionReminderSettingsVersionResponse.from(processed.result(),
+                            findAuthorNamesUseCase.findAuthorNamesOf(List.of(processed.result()))));
             case BillingOperationOutcome.AwaitingAuthorization<ConfigurationVersion> awaiting ->
                     ResponseEntity.status(HttpStatus.ACCEPTED).body(new ConfigurationChangePendingAuthorizationResponse(awaiting.authorizationRequestId()));
         };
@@ -63,6 +69,8 @@ public class CollectionReminderSettingsController {
     @GetMapping("/versions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<CollectionReminderSettingsVersionResponse> listVersions() {
-        return listVersionHistoryUseCase.listVersionHistory(TOPIC).stream().map(CollectionReminderSettingsVersionResponse::from).toList();
+        List<ConfigurationVersion> versions = listVersionHistoryUseCase.listVersionHistory(TOPIC);
+        Map<Long, String> authorNames = findAuthorNamesUseCase.findAuthorNamesOf(versions);
+        return versions.stream().map(version -> CollectionReminderSettingsVersionResponse.from(version, authorNames)).toList();
     }
 }

@@ -82,14 +82,18 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
     }
 
     private String tokenWithRole(String roleName) {
+        return tokenOf(roleName, "Persona", "Prueba");
+    }
+
+    private String tokenOf(String roleName, String name, String lastname) {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
         String username = roleName.toLowerCase() + "." + System.nanoTime();
         person.setUsername(username);
         person.setDni(Long.toString(Math.abs((long) username.hashCode())));
-        person.setName("Persona");
-        person.setLastname("Prueba");
+        person.setName(name);
+        person.setLastname(lastname);
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -125,6 +129,27 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
     private int beforeDueDaysFor(TeachingGroup group, Long targetId, LocalDate date) {
         return reader.reminderScheduleFor(new ReminderScheduleTarget(group, targetId), date).notices().stream()
                 .filter(notice -> notice.noticeKey().equals("before-due")).findFirst().orElseThrow().offsetDays();
+    }
+
+    @Test
+    @Tag("D-351")
+    @Tag("D-368")
+    void theVersionsNameWhoProposedAndWhoDecidedBesideTheirIds() throws Exception {
+        String administrative = tokenOf("ADMINISTRATIVO", "Ana", "Proponente");
+        String director = tokenOf("DIRECTOR", "Dario", "Decisor");
+
+        postTo("/PROGRAMS/changes", administrative, body(standardNotices(-2), TODAY.plusDays(1))).andExpect(status().isAccepted());
+        getFrom("/PROGRAMS/versions", director).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposedById").isNumber())
+                .andExpect(jsonPath("$[0].proposedByName").value("Ana Proponente"))
+                .andExpect(jsonPath("$[0].decidedById").value(nullValue()))
+                .andExpect(jsonPath("$[0].decidedByName").value(nullValue()));
+        postTo("/MONTHLY_COURSES/changes", director, body(standardNotices(-2), TODAY.plusDays(1))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.proposedByName").value("Dario Decisor"))
+                .andExpect(jsonPath("$.decidedByName").value("Dario Decisor"));
+        getFrom("/MONTHLY_COURSES/versions", director).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposedByName").value("Dario Decisor"))
+                .andExpect(jsonPath("$[0].decidedByName").value("Dario Decisor"));
     }
 
     @Test

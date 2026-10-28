@@ -19,12 +19,12 @@ public class PostWithdrawalSummaryMessageComposer {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final Locale ARGENTINA = Locale.forLanguageTag("es-AR");
     private static final String INTRO = "Este es el resumen mensual de la deuda pendiente de tus inscripciones dadas de baja.";
-    private static final String RECEIPT_LINE = "Si ya realizaste el pago, subí el comprobante desde la plataforma.";
+    private static final String RECEIPT_LINE = "Si ya realizaste el pago, subí el comprobante desde la sección Pagos de la plataforma.";
 
     public DeliveryContent composeInApp(PostWithdrawalSummaryPlannedEvent event) {
         StringBuilder text = new StringBuilder(INTRO);
         for (PostWithdrawalSummaryPlannedEvent.Block block : event.blocks()) {
-            String lines = block.lines().stream().map(line -> kindLabelOf(line) + " (venció el " + DAY.format(line.dueDate()) + ", " + formatted(line.balance()) + ")")
+            String lines = block.lines().stream().map(line -> labelOf(line) + " (venció el " + DAY.format(line.dueDate()) + ", " + formatted(line.balance()) + ")")
                     .collect(Collectors.joining("; "));
             text.append(" ").append(lines).append(". Total adeudado en ").append(block.total().currency()).append(": ").append(formatted(block.total())).append(".");
         }
@@ -40,12 +40,21 @@ public class PostWithdrawalSummaryMessageComposer {
                 body.append("Deuda en ").append(block.total().currency()).append(":\n");
             }
             for (PostWithdrawalSummaryPlannedEvent.Line line : block.lines()) {
-                body.append("- ").append(kindLabelOf(line)).append(": venció el ").append(DAY.format(line.dueDate())).append(", ").append(formatted(line.balance())).append("\n");
+                body.append("- ").append(labelOf(line)).append(": venció el ").append(DAY.format(line.dueDate())).append(", ").append(formatted(line.balance())).append("\n");
             }
             body.append("Total adeudado en ").append(block.total().currency()).append(": ").append(formatted(block.total())).append("\n");
         }
         body.append("\n").append(RECEIPT_LINE).append("\n");
         return DeliveryContent.forEmail(SUBJECT, body.toString(), null);
+    }
+
+    private static String labelOf(PostWithdrawalSummaryPlannedEvent.Line line) {
+        String kind = kindLabelOf(line);
+        if (line.withdrawnEnrollmentName() == null) {
+            return kind;
+        }
+        String withdrawal = line.withdrawalDate() == null ? "" : " (baja del " + DAY.format(line.withdrawalDate()) + ")";
+        return kind + " · " + line.withdrawnEnrollmentName() + withdrawal;
     }
 
     private static String kindLabelOf(PostWithdrawalSummaryPlannedEvent.Line line) {

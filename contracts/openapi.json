@@ -1555,14 +1555,16 @@
           },
           "globalSettings" : {
             "$ref" : "#/components/schemas/CollectionReminderSettingsValues",
-            "description" : "Ajustes globales propuestos; si no vienen, quedan los vigentes"
+            "description" : "Ajustes globales propuestos; si no vienen, quedan los vigentes. Obligatorios cuando no hay agenda"
           },
           "group" : {
+            "description" : "Grupo de la agenda propuesta; va junto con schedule. Sin ninguno de los dos, el cambio es solo de ajustes globales",
             "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
             "type" : "string"
           },
           "schedule" : {
-            "$ref" : "#/components/schemas/ReminderScheduleDto"
+            "$ref" : "#/components/schemas/ReminderScheduleDto",
+            "description" : "Agenda propuesta; va junto con group"
           },
           "targetId" : {
             "description" : "Programa o curso de la excepción; sin valor, el cambio es a la política del grupo",
@@ -1570,7 +1572,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "effectiveFrom", "group", "schedule" ],
+        "required" : [ "effectiveFrom" ],
         "type" : "object"
       },
       "CollectionReminderImpactResponse" : {
@@ -1627,6 +1629,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "decidedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "decisionReason" : {
             "type" : "string"
           },
@@ -1644,6 +1649,9 @@
           "proposedById" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "proposedByName" : {
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
@@ -4985,6 +4993,16 @@
       },
       "NotificationPreferencesResponse" : {
         "properties" : {
+          "mandatoryChannels" : {
+            "additionalProperties" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            },
+            "description" : "Por evento, los canales que no se pueden apagar; siempre figuran activos en preferences",
+            "type" : "object"
+          },
           "preferences" : {
             "additionalProperties" : {
               "additionalProperties" : {
@@ -4995,7 +5013,7 @@
             "type" : "object"
           }
         },
-        "required" : [ "preferences" ],
+        "required" : [ "mandatoryChannels", "preferences" ],
         "type" : "object"
       },
       "NotificationResponse" : {
@@ -5057,10 +5075,19 @@
           "dni" : {
             "type" : "string"
           },
+          "entryReason" : {
+            "description" : "Qué parte del criterio cumple hoy",
+            "enum" : [ "DAYS_OVERDUE", "OVERDUE_INSTALLMENTS", "DAYS_AND_INSTALLMENTS" ],
+            "type" : "string"
+          },
           "lastReminderDate" : {
             "description" : "Opcional; null si nunca se le avisó",
             "format" : "date",
             "type" : [ "string", "null" ]
+          },
+          "newlyListed" : {
+            "description" : "true si ayer todavía no estaba en la lista",
+            "type" : "boolean"
           },
           "oldestDaysOverdue" : {
             "format" : "int32",
@@ -5084,7 +5111,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "dni", "oldestDaysOverdue", "overdueAmounts", "overdueInstallments", "studentId", "studentName" ],
+        "required" : [ "dni", "entryReason", "newlyListed", "oldestDaysOverdue", "overdueAmounts", "overdueInstallments", "studentId", "studentName" ],
         "type" : "object"
       },
       "PaymentActionAvailabilityResponse" : {
@@ -6876,6 +6903,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "decidedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "decisionReason" : {
             "type" : "string"
           },
@@ -6893,6 +6923,9 @@
           "proposedById" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "proposedByName" : {
+            "type" : [ "string", "null" ]
           },
           "schedule" : {
             "$ref" : "#/components/schemas/ReminderScheduleDto"
@@ -12899,6 +12932,38 @@
           "required" : false,
           "schema" : {
             "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "minDaysOverdue",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "minOverdueInstallments",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "onlyNewlyListed",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "entryReason",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "DAYS_OVERDUE", "OVERDUE_INSTALLMENTS", "DAYS_AND_INSTALLMENTS" ],
             "type" : "string"
           }
         } ],

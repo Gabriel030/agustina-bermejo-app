@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.configuration.dto.ConfigurationChangeVali
 import com.red_escuela.backend.billing.configuration.dto.ReminderSchedulePoliciesResponse;
 import com.red_escuela.backend.billing.configuration.dto.ReminderScheduleVersionResponse;
 import com.red_escuela.backend.billing.configuration.dto.RemoveReminderScheduleExceptionRequest;
+import com.red_escuela.backend.billing.configuration.usecase.FindConfigurationVersionAuthorNamesUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ListReminderSchedulePoliciesUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ListReminderScheduleVersionsUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ProposeReminderScheduleChangeUseCase;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/billing-configuration/collection-reminder-schedules")
@@ -35,13 +37,16 @@ public class CollectionReminderScheduleController {
     private final ProposeReminderScheduleChangeUseCase proposeChangeUseCase;
     private final ValidateReminderScheduleChangeUseCase validateChangeUseCase;
     private final ListReminderScheduleVersionsUseCase listVersionsUseCase;
+    private final FindConfigurationVersionAuthorNamesUseCase findAuthorNamesUseCase;
 
     public CollectionReminderScheduleController(ListReminderSchedulePoliciesUseCase listPoliciesUseCase, ProposeReminderScheduleChangeUseCase proposeChangeUseCase,
-                                                ValidateReminderScheduleChangeUseCase validateChangeUseCase, ListReminderScheduleVersionsUseCase listVersionsUseCase) {
+                                                ValidateReminderScheduleChangeUseCase validateChangeUseCase, ListReminderScheduleVersionsUseCase listVersionsUseCase,
+                                                FindConfigurationVersionAuthorNamesUseCase findAuthorNamesUseCase) {
         this.listPoliciesUseCase = listPoliciesUseCase;
         this.proposeChangeUseCase = proposeChangeUseCase;
         this.validateChangeUseCase = validateChangeUseCase;
         this.listVersionsUseCase = listVersionsUseCase;
+        this.findAuthorNamesUseCase = findAuthorNamesUseCase;
     }
 
     @GetMapping
@@ -92,13 +97,15 @@ public class CollectionReminderScheduleController {
     }
 
     private List<ReminderScheduleVersionResponse> versionsOf(ReminderScheduleTarget target) {
-        return listVersionsUseCase.listVersions(target).stream().map(ReminderScheduleVersionResponse::from).toList();
+        List<ConfigurationVersion> versions = listVersionsUseCase.listVersions(target);
+        Map<Long, String> authorNames = findAuthorNamesUseCase.findAuthorNamesOf(versions);
+        return versions.stream().map(version -> ReminderScheduleVersionResponse.from(version, authorNames)).toList();
     }
 
     private ResponseEntity<?> respond(BillingOperationOutcome<ConfigurationVersion> outcome) {
         return switch (outcome) {
             case BillingOperationOutcome.Processed<ConfigurationVersion> processed ->
-                    ResponseEntity.status(HttpStatus.CREATED).body(ReminderScheduleVersionResponse.from(processed.result()));
+                    ResponseEntity.status(HttpStatus.CREATED).body(ReminderScheduleVersionResponse.from(processed.result(), findAuthorNamesUseCase.findAuthorNamesOf(List.of(processed.result()))));
             case BillingOperationOutcome.AwaitingAuthorization<ConfigurationVersion> awaiting ->
                     ResponseEntity.status(HttpStatus.ACCEPTED).body(new ConfigurationChangePendingAuthorizationResponse(awaiting.authorizationRequestId()));
         };

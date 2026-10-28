@@ -53,7 +53,8 @@ public class StudentPostWithdrawalSummaryRecorder {
         for (WithdrawnEnrollmentDebtLine line : candidate.distinctInvoiceLines()) {
             Currency currency = line.balance().currency();
             PlannedReminderInvoiceKind kind = line.enrollmentFee() ? PlannedReminderInvoiceKind.ENROLLMENT_FEE : PlannedReminderInvoiceKind.MONTHLY_INSTALLMENT;
-            linesByCurrency.computeIfAbsent(currency, key -> new ArrayList<>()).add(new PostWithdrawalSummaryPlannedEvent.Line(kind, line.dueDate(), line.balance()));
+            linesByCurrency.computeIfAbsent(currency, key -> new ArrayList<>()).add(new PostWithdrawalSummaryPlannedEvent.Line(kind, line.dueDate(), line.balance(),
+                    line.enrollmentName(), line.withdrawalEffectiveDate()));
             totalsByCurrency.merge(currency, line.balance(), Money::plus);
         }
         return linesByCurrency.entrySet().stream()
