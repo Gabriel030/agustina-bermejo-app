@@ -10,7 +10,7 @@ const API = 'http://localhost:8080';
 
 const mail = {
   id: 7,
-  kind: 'COLLECTION_REMINDER',
+  kind: 'OWN_NOTICE:BEFORE_DUE_REMINDER',
   status: 'SENT_SIMULATED',
   statusReason: 'Entorno de demostración',
   maskedRecipient: 'fl***@gmail.com',
@@ -26,10 +26,22 @@ describe('SimulatedMailsPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<SimulatedMailsPage />);
 
-    expect(await screen.findByText('Recordatorio de pago')).toBeInTheDocument();
+    expect(await screen.findByText('Recordatorio antes del vencimiento')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Tu cuota de octubre vence pronto' }));
 
     expect(await screen.findByText(/subí tu comprobante desde la plataforma/)).toBeInTheDocument();
+  });
+
+  it('labels a daily digest and a post withdrawal summary in Spanish', async () => {
+    const mails = [
+      { ...mail, id: 8, kind: 'DAILY_DIGEST:AFTER_DUE_REMINDER', subject: 'Resumen de tus cuotas' },
+      { ...mail, id: 9, kind: 'POST_WITHDRAWAL_SUMMARY', subject: 'Resumen de tu baja' },
+    ];
+    server.use(http.get(`${API}/notification-deliveries/simulated`, () => HttpResponse.json({ items: mails, page: 0, size: 20, totalElements: 2 })));
+    renderWithProviders(<SimulatedMailsPage />);
+
+    expect(await screen.findByText('Resumen diario')).toBeInTheDocument();
+    expect(screen.getByText('Resumen tras una baja')).toBeInTheDocument();
   });
 
   it('shows the page as non-existent when the server answers 404', async () => {

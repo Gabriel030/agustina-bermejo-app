@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDate } from '@/lib/billing';
 import { useSimulatedEmails } from '@/features/billing/hooks/useCollectionReminders';
+import { MESSAGE_TYPES } from './reminderSchedule';
 
 const PAGE_SIZE = 20;
 
@@ -35,13 +36,16 @@ const STATUS_TONES = {
 };
 
 const DELIVERY_KIND_LABELS = {
-  COLLECTION_REMINDER: 'Recordatorio de pago',
   POST_WITHDRAWAL_SUMMARY: 'Resumen tras una baja',
-  COLLECTION_DAILY_DIGEST: 'Resumen diario',
 };
 
+const DIGEST_FORMAT = 'DAILY_DIGEST';
+
 function deliveryKindLabel(kind) {
-  return DELIVERY_KIND_LABELS[kind] ?? kind;
+  if (DELIVERY_KIND_LABELS[kind]) return DELIVERY_KIND_LABELS[kind];
+  const [format, messageType] = String(kind ?? '').split(':');
+  if (format === DIGEST_FORMAT) return 'Resumen diario';
+  return MESSAGE_TYPES[messageType]?.label ?? 'Recordatorio de pago';
 }
 
 function StatusCell({ mail }) {

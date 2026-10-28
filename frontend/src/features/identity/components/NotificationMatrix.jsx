@@ -43,7 +43,7 @@ function LockedMark({ label }) {
       <TooltipTrigger asChild>
         <span role="img" aria-label={`${label}: ${LOCK_TEXT}`} className="inline-flex items-center gap-1.5 text-ink-faint">
           <Lock className="size-3.5" />
-          <span className="text-xs">Siempre activo</span>
+          <span className="hidden text-xs sm:inline">Siempre activo</span>
         </span>
       </TooltipTrigger>
       <TooltipContent>{LOCK_TEXT}</TooltipContent>
@@ -120,7 +120,7 @@ export function NotificationMatrix() {
 
   const renderRow = (event) => (
     <TableRow key={event}>
-      <TableCell className="text-ink">{EVENT_LABELS[event]}</TableCell>
+      <TableCell className="whitespace-normal text-ink">{EVENT_LABELS[event]}</TableCell>
       {CHANNELS.map((channel) => (
         <ChannelCell
           key={channel}
@@ -139,7 +139,7 @@ export function NotificationMatrix() {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <div className="overflow-x-auto">
-          <Table className="min-w-[400px]">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Notificación</TableHead>
@@ -155,7 +155,7 @@ export function NotificationMatrix() {
               {renderRow(COLLECTION_EVENT)}
               {ALWAYS_ON_COLLECTION_ROWS.map((label) => (
                 <TableRow key={label}>
-                  <TableCell className="text-ink">{label}</TableCell>
+                  <TableCell className="whitespace-normal text-ink">{label}</TableCell>
                   {CHANNELS.map((channel) => (
                     <TableCell key={channel} className="text-center">
                       <LockedMark label={`${label} — ${CHANNEL_LABELS[channel]}`} />
