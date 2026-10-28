@@ -59,14 +59,49 @@ docker exec -i <proyecto>-postgres-demo-1 psql -U postgres -d agustina_bermejo_d
 
 Cualquier persona del padrón entra con `nombre.apellido` (sin tildes) y `Test1234`.
 
+## Escenarios sembrados (`DemoBillingScenarios`, con operaciones reales del pipeline)
+
+Corren al final del seed de facturación con el usuario correspondiente en el `SecurityContext` (administrativo o director). Cada uno se registra en el log como `Seed demo escenario ok|fallido: ...`; si uno falla, el resto sigue.
+
+| Escenario | Qué queda en la base | Alumnos |
+|---|---|---|
+| Transferencia pendiente de revisión | comprobante subido, pago pendiente | 1 alumno que nunca paga |
+| Transferencia aprobada | pago confirmado por el administrativo | otro alumno que nunca paga |
+| Transferencia rechazada | pago rechazado con motivo | otro más |
+| Reembolso pendiente de autorización | pedido del administrativo en la bandeja del director | alumno al día con saldo a favor (cobro extra de 80.000) |
+| Reembolso emitido (aprobado) | emitido por el director | otro alumno |
+| Reembolso completado | `COMPLETE_REFUND` | otro alumno |
+| Reembolso fallido | `FAIL_REFUND` con motivo | otro alumno |
+| Cancelación de cuota (pedido) | `CANCEL_INVOICE` iniciado por el administrativo, pendiente | alumno que dejó de pagar en julio |
+| Nota de crédito (pedido) | `ISSUE_CREDIT_NOTE` iniciado por el administrativo, pendiente | otro alumno que dejó de pagar |
+| Contracargo con reversión | `REGISTER_CHARGEBACK` y `REVERSE_CHARGEBACK` | alumno al día |
+| Contracargo vigente | contracargo sin revertir | otro alumno al día |
+| Beca 50% | descuento individual (nov 2026 a mar 2027) | alumno al día |
+| Promoción de cohorte | definición `COHORT_PROMOTION` con cupo 10 y 2 matrículas adquiridas (cupo parcialmente usado) | 2 alumnos de la primera cohorte |
+| Baja con deuda | `ProgramEnrollmentService.withdraw` de un alumno que nunca pagó | 1 alumno |
+
+Avisos de cobranza: se publican por publicación directa de `ConfigurationVersion` el aviso global (`COLLECTION_REMINDERS`) y el cronograma inicial de carreras y cursos, y desde agosto se corre `CollectionReminderPlanningJob.run(fecha)` día por día con el `DemoClock`. Resultado: unos 170 recordatorios y unos 150 mails simulados (`notification_delivery`, estados `SENT` y `QUEUED`), y la lista de contacto de morosos.
+
 ## Guion de demo por rol
 
-**Con datos hoy en esta base** (verificado por API; la UI en navegador NO se verificó en esta corrida):
+**Director (`director.demo`)**
+- Tablero financiero con selector de mes (marzo a octubre 2026): paneles issued-invoices, overdue-detected, late-fees, receipts, collections-stock, on-time-payment, discounts.
+- Aprobaciones > Operaciones de facturación: bandeja con 3 pedidos pendientes del administrativo (reembolso, nota de crédito sobre una cuota de julio, cancelación de cuota). Aprobar o rechazar desde ahí.
+- Ficha del alumno > Financiero: reembolsos en estado aprobado, completado y fallido (alumnos con saldo a favor); cuotas pagadas, vencidas y notas de débito por mora.
+- Facturación del staff > Pagos del alumno: contracargo vigente, contracargo revertido y revocación de aprobación de transferencia.
+- Lista de morosos para contactar (`GET /collection-reminders/contact-list`, 4 alumnos con 9 cuotas vencidas) y los mails simulados.
 
-- Director: tablero financiero con selector de mes (`/billing/metrics/overdue-detected?from=2026-03&to=2026-10` devolvió 8 meses con conteos y montos crecientes; paneles disponibles: issued-invoices, discounts, overdue-detected, late-fees, on-time-payment, receipts, collections-stock). Ficha de alumno > Financiero para ver cuotas pagadas, vencidas y notas de débito por mora (hay unas 200 notas de débito).
-- Administrativo: ficha de alumno > Financiero, registrar pago en efectivo (la vista previa devuelve el fingerprint que exige el registro).
-- Alumno (`alumno.demo` y cualquier otro con carrera): ve sus cuotas; los que dejan de pagar tienen varias vencidas con recargo.
-- Preceptor y docente: lo académico (padrón, oferta, mesas, notas, asistencia).
+**Administrativo (`administrativo.demo`)**
+- Aprobaciones: los mismos 3 pedidos que inició, en estado pendiente.
+- Comprobantes de transferencia: uno pendiente de revisión para aprobar o rechazar en vivo; hay uno ya aprobado y uno rechazado.
+- Ficha del alumno > Financiero: registrar pago en efectivo y pedir un reembolso (queda pendiente de autorización).
 
-**NO sembrado en esta corrida (hay que generarlo en vivo o queda pendiente):** transferencias con comprobante (pendientes, aprobadas, rechazadas), pagos online simulados, contracargo y reversión, reembolsos (pedido, aprobado, completado, fallido), pedidos de autorización pendientes para la bandeja del director, notas de crédito, descuentos y promociones de cohorte, avisos de cobranza y lista de contacto de morosos, alumnos de baja con deuda, alertas de configuración, mails simulados. En vivo se pueden mostrar por pantalla: comprobantes (alumno sube, staff aprueba/rechaza), pago en efectivo, reembolso desde ficha del alumno > Financiero. Sin pantalla (contracargos, notas de crédito, descuentos, avisos de cobranza, bandeja de autorizaciones, precios/períodos) hay que usar curl contra los controllers de `billing/*` con el token del director; Swagger no se verificó si está habilitado en el perfil demo.
+**Alumno (`alumno.demo` y cualquiera con carrera)**: sus cuotas pagadas y vencidas con recargo, y su estado de cuenta.
 
+**Preceptor y docente**: lo académico (padrón, oferta, mesas, notas, asistencia).
+
+**Verificado por API** (login real `POST /auth/login`, token en `Authorization: Bearer`): `GET /authorization-requests?status=PENDING` devuelve 3 pedidos tanto con director como con administrativo; `GET /students/{id}/refunds` devuelve reembolsos aprobado y fallido; `GET /collection-reminders/contact-list` devuelve morosos; `GET /billing/metrics/{panel}?from=2026-03&to=2026-10` devuelve 8 meses; `GET /notification-deliveries/simulated` (solo perfiles local y demo) lista los mails simulados con asunto y cuerpo.
+
+**Sin pantalla / alternativa por curl:** descuentos, promociones y definiciones de cohorte, avisos de cobranza (cronograma), precios y períodos: usar los controllers de `billing/*` con el token del director. Swagger no se verificó.
+
+**Qué no está sembrado**: el resumen post-baja (la baja existe pero el resumen no se generó con el reloj de negocio), cursos facturados (solo carreras), años anteriores a 2026, pagos online simulados, notas de crédito ya emitidas (solo el pedido pendiente), alertas de configuración. Los comprobantes de transferencia apuntan a una ruta de archivo que no existe en disco, así que la vista previa del archivo no abre.
