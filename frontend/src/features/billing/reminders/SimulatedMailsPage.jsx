@@ -8,7 +8,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { DataTable } from '@/components/table/DataTable';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatDate } from '@/lib/billing';
 import { useSimulatedEmails } from '@/features/billing/hooks/useCollectionReminders';
 import { MESSAGE_TYPES } from './reminderSchedule';
@@ -52,12 +52,14 @@ function StatusCell({ mail }) {
   const pill = <StatusPill tone={STATUS_TONES[mail.status] ?? 'neutral'}>{DELIVERY_STATUS_LABELS[mail.status] ?? mail.status}</StatusPill>;
   if (!mail.statusReason) return pill;
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex">{pill}</span>
-      </TooltipTrigger>
-      <TooltipContent>{mail.statusReason}</TooltipContent>
-    </Tooltip>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" aria-label={`${DELIVERY_STATUS_LABELS[mail.status] ?? mail.status}: ver el motivo`} className="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          {pill}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 bg-dialog-bg p-3 text-xs text-ink-soft text-pretty">{mail.statusReason}</PopoverContent>
+    </Popover>
   );
 }
 
@@ -93,6 +95,7 @@ function buildColumns(onOpen) {
           {row.original.subject}
         </button>
       ),
+      meta: { cardTitle: true },
     },
     {
       id: 'status',
@@ -133,23 +136,20 @@ export function SimulatedMailsPage() {
 
   return (
     <PageContainer title="Mails simulados" description="Los mails que el sistema enviaría en producción. Acá no sale ninguno de verdad.">
-      <TooltipProvider>
-        <GlassCard className="p-0">
-          <DataTable
-            columns={columns}
-            data={mails.data?.items ?? []}
-            getRowId={(mail) => String(mail.id)}
-            isLoading={mails.isLoading}
-            isError={mails.isError}
-            onRetry={mails.refetch}
-            errorMessage="No pudimos cargar los mails simulados."
-            emptyState={<EmptyState icon="📭" title="Todavía no hay mails simulados" />}
-            initialSorting={[{ id: 'date', desc: true }]}
-            mobileLayout="scroll"
-            minWidth={760}
-          />
+      <GlassCard className="p-0">
+        <DataTable
+          columns={columns}
+          data={mails.data?.items ?? []}
+          getRowId={(mail) => String(mail.id)}
+          isLoading={mails.isLoading}
+          isError={mails.isError}
+          onRetry={mails.refetch}
+          errorMessage="No pudimos cargar los mails simulados."
+          emptyState={<EmptyState icon="📭" title="Todavía no hay mails simulados" />}
+          initialSorting={[{ id: 'date', desc: true }]}
+          minWidth={760}
+        />
         </GlassCard>
-      </TooltipProvider>
       <Paginador page={page} totalPages={Math.ceil(total / PAGE_SIZE)} onChange={setPage} />
       <Sheet open={opened !== null} onOpenChange={(open) => !open && setOpened(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">

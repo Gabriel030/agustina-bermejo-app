@@ -19,7 +19,7 @@ const statusLabel = (status) => VERSION_STATUS[status]?.label ?? status;
 
 function buildColumns() {
   return [
-    { id: 'effectiveFrom', header: 'Rige desde', accessorFn: (version) => version.effectiveFrom, cell: ({ row }) => formatDate(row.original.effectiveFrom) },
+    { id: 'effectiveFrom', header: 'Rige desde', accessorFn: (version) => version.effectiveFrom, cell: ({ row }) => formatDate(row.original.effectiveFrom), meta: { cardTitle: true } },
     {
       id: 'status',
       header: 'Estado',
@@ -38,7 +38,7 @@ function buildColumns() {
       header: 'Decidió',
       accessorFn: (version) => version.decidedByName ?? '—',
     },
-    { id: 'reason', header: 'Motivo', enableSorting: false, accessorFn: (version) => version.changeReason ?? '' },
+    { id: 'reason', header: 'Motivo', enableSorting: false, accessorFn: (version) => version.changeReason ?? '', meta: { cardBlock: true } },
   ];
 }
 
@@ -55,7 +55,6 @@ export function VersionHistory({ versions, isLoading, isError, onRetry }) {
       errorMessage="No pudimos cargar el historial."
       emptyState={<EmptyState title="Todavía no hay cambios registrados" />}
       initialSorting={[{ id: 'effectiveFrom', desc: true }]}
-      mobileLayout="scroll"
       minWidth={720}
     />
   );

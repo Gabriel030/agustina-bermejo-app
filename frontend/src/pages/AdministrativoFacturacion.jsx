@@ -25,6 +25,7 @@ import {
   isInvoicePayable,
 } from '@/lib/billing';
 import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
+import { TabCount } from '@/components/TabCount';
 import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
 import { STUDENT_PAYMENTS_ANCHOR, StudentPaymentsCard } from '@/features/billing/payment-reversals/StudentPaymentsCard';
 import { CancelInvoiceDialog } from '@/features/billing/credit-notes/CancelInvoiceDialog';
@@ -617,10 +618,12 @@ export function AdministrativoFacturacion() {
         <TabsList variant="segmented">
           <TabsTrigger value={TAB_ACCOUNT}>Estado de cuenta</TabsTrigger>
           <TabsTrigger value={TAB_RECEIPTS}>
-            {pendingCount > 0 ? `Comprobantes · ${pendingCount}` : 'Comprobantes'}
+            Comprobantes{' '}
+            <TabCount count={pendingCount} />
           </TabsTrigger>
           <TabsTrigger value={TAB_CONTACT}>
-            {contactTotal > 0 ? `Para contactar · ${contactTotal}` : 'Para contactar'}
+            Para contactar{' '}
+            <TabCount count={contactTotal} />
           </TabsTrigger>
         </TabsList>
 
