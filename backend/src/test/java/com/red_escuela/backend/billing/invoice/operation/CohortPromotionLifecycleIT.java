@@ -65,7 +65,24 @@ class CohortPromotionLifecycleIT extends AbstractInvoiceIssuingIT {
     }
 
     @Test
-    void aReleasedLastInstallmentIsNotRestoredOnceTheAvailableUntilDateHasPassed() {
+    @Tag("D-426")
+    void aNewInstallmentFirstIssuedAfterTheAvailableUntilDateDoesNotGetTheDiscount() {
+        var offering = factory.newProgram(Currency.ARS, 80000, 50000);
+        var learner = factory.newLearner(offering, null);
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 3, LocalDate.of(2027, 5, 31));
+
+        issueInstallmentOn(offering, learner, 3, LocalDate.of(2027, 3, 1));
+        issueInstallmentOn(offering, learner, 4, LocalDate.of(2027, 4, 1));
+        Invoice may = issueInstallmentOn(offering, learner, 5, LocalDate.of(2027, 6, 2));
+
+        assertThat(may.getLines().get(0).getDiscount()).isNull();
+        assertThat(may.getAmounts().total()).isEqualTo(ars("80000.00"));
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, promotionId)).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @Tag("D-426")
+    void aLastInstallmentCancelledByErrorAndReissuedAfterTheAvailableUntilDateKeepsTheDiscount() {
         var offering = factory.newProgram(Currency.ARS, 80000, 50000);
         var learner = factory.newLearner(offering, null);
         Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, percent("30"), 3, LocalDate.of(2027, 5, 31));
@@ -78,7 +95,8 @@ class CohortPromotionLifecycleIT extends AbstractInvoiceIssuingIT {
         cancel(offering, may);
         Invoice reissued = issueInstallmentOn(offering, learner, 5, LocalDate.of(2027, 6, 2));
 
-        assertThat(reissued.getLines().get(0).getDiscount()).isNull();
-        assertThat(reissued.getAmounts().total()).isEqualTo(ars("80000.00"));
+        assertThat(reissued.getLines().get(0).getDiscount().describeInstallmentProgress()).contains("3 de 3");
+        assertThat(reissued.getAmounts().total()).isEqualTo(ars("56000.00"));
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, promotionId)).isEqualTo("EXHAUSTED");
     }
 }
