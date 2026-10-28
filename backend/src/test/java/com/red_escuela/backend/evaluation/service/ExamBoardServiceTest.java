@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.Grade;
 import java.math.BigDecimal;
 
 import com.red_escuela.backend.academicstructure.entity.Holiday;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;

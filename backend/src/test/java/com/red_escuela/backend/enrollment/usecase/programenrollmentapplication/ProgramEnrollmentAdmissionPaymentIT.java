@@ -3,7 +3,7 @@ package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
 import com.red_escuela.backend.testsupport.SharedSpyBeans;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;

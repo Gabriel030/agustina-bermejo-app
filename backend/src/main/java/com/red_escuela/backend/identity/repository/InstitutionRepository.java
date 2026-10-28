@@ -1,6 +1,6 @@
-package com.red_escuela.backend.academicstructure.repository;
+package com.red_escuela.backend.identity.repository;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

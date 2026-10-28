@@ -40,7 +40,7 @@ import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.R
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.AfterEach;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
