@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.discount.domain.LectiveYearSpan;
 import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrant;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantPreview;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.discount.exception.DiscountDefinitionNotFoundException;
@@ -31,6 +32,7 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.slf4j.Logger;
@@ -40,6 +42,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -118,7 +121,36 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
         return List.of();
     }
 
+    public StudentDiscountGrantPreview previewGrant(GrantStudentDiscountCommand command) {
+        GrantAssessment assessment = assessGrant(command);
+        StudentDiscountGrantCheck check = assessment.check();
+        StudentDiscountGrantRequest request = assessment.request();
+        int priority = assessment.resolution().definition().map(DiscountDefinition::getPriority).orElse(INDIVIDUAL_DISCOUNT_PRIORITY);
+        return new StudentDiscountGrantPreview(assessment.result().violations(), request.discountType(), request.invoiceType(), request.calculation(), request.fromPeriod(),
+                request.toPeriod(), check.nextInstallmentPeriod(), coveredPeriodsOf(request), priority, assessment.resolution().definition().map(DiscountDefinition::getId).orElse(null),
+                check.annualUpfrontCoversRange(), check.enrollmentFeeAlreadyIssued(), check.overlappingDiscount() == null ? null : check.overlappingDiscount().id(),
+                !command.requestedByDirector());
+    }
+
+    private int coveredPeriodsOf(StudentDiscountGrantRequest request) {
+        if (request.fromPeriod() == null || request.toPeriod() == null || request.toPeriod().isBefore(request.fromPeriod())) {
+            return 0;
+        }
+        return (int) ChronoUnit.MONTHS.between(request.fromPeriod(), request.toPeriod()) + 1;
+    }
+
     private StudentDiscountGrant prepareGrant(GrantStudentDiscountCommand command) {
+        GrantAssessment assessment = assessGrant(command);
+        assessment.result().throwIfDenied(StudentDiscountRejections::rejectionOf);
+        StudentDiscountGrantRequest request = assessment.request();
+        Optional<DiscountDefinition> definition = assessment.resolution().definition();
+        int priority = definition.map(DiscountDefinition::getPriority).orElse(INDIVIDUAL_DISCOUNT_PRIORITY);
+        return new StudentDiscountGrant(command.enrollment(), assessment.facts().studentId(), assessment.facts().currency(), definition.map(DiscountDefinition::getId).orElse(null),
+                request.discountType(), request.invoiceType(), request.calculation(), assessment.check().capPerInvoice(), priority,
+                new ScholarshipPeriodRange(request.fromPeriod(), request.toPeriod()), request.reason().strip());
+    }
+
+    private GrantAssessment assessGrant(GrantStudentDiscountCommand command) {
         BillingEnrollmentFacts facts = findFactsOf(command);
         Optional<LectiveYearSpan> lectiveYear = lectiveYearReader.findLectiveYearCovering(command.enrollment(), facts, command.request().fromPeriod());
         StudentDiscountGrantRequest request = withDefaultToPeriod(command.request(), lectiveYear);
@@ -131,11 +163,11 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
                 annualUpfrontReader.annualUpfrontCoversAnyMonthOf(command.enrollment(), request.fromPeriod(), request.toPeriod()), request.reason(), resolution.fault(),
                 command.requestedByDirector() ? null : command.authorizationExpiresOn(), today,
                 findOverlappingDiscount(command.enrollment(), request, lectiveYear), enrollmentFeeIssued(command.enrollment(), request, lectiveYear));
-        grantPolicies.evaluateAllRules(check).throwIfDenied(StudentDiscountRejections::rejectionOf);
-        int priority = definition.map(DiscountDefinition::getPriority).orElse(INDIVIDUAL_DISCOUNT_PRIORITY);
-        return new StudentDiscountGrant(command.enrollment(), facts.studentId(), facts.currency(), definition.map(DiscountDefinition::getId).orElse(null),
-                request.discountType(), request.invoiceType(), request.calculation(), cap, priority,
-                new ScholarshipPeriodRange(request.fromPeriod(), request.toPeriod()), request.reason().strip());
+        return new GrantAssessment(facts, request, resolution, check, grantPolicies.evaluateAllRules(check));
+    }
+
+    private record GrantAssessment(BillingEnrollmentFacts facts, StudentDiscountGrantRequest request, DefinitionResolution resolution, StudentDiscountGrantCheck check,
+                                   PolicyEvaluationResult result) {
     }
 
     private StudentDiscountGrantRequest withDefaultToPeriod(StudentDiscountGrantRequest request, Optional<LectiveYearSpan> lectiveYear) {

@@ -189,4 +189,112 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
         assertThat(jdbc.queryForList("select event from student_discount_status_change where student_discount_id = ? order by id", String.class, active.getId()))
                 .containsExactly("DISCOUNT_GRANTED", "ENROLLMENT_ENDED");
     }
+
+    @Test
+    @Tag("D-284")
+    void aRevokedDiscountShowsTheStudentAGenericCauseAndNeverTheDirectorsReason() throws Exception {
+        StudentDiscount revoked = grantAsDirector(scholarship("50", MARCH, MAY));
+        revokeAsDirector(revoked.getId(), "Motivo interno confidencial del director");
+
+        String raw = mockMvc.perform(get("/me/student-discounts").header("Authorization", "Bearer " + studentToken(learner.studentId()))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode node = discountNode(objectMapper.readTree(raw), revoked);
+
+        assertThat(raw).doesNotContain("Motivo interno confidencial del director").doesNotContain("Situación económica");
+        assertThat(node.get("reason").isNull()).isTrue();
+        assertThat(node.get("grantedById").isNull()).isTrue();
+        assertThat(node.get("authorizationRequestId").isNull()).isTrue();
+        assertThat(node.get("revocationReason").isNull()).isTrue();
+        assertThat(node.get("status").asText()).isEqualTo("REVOKED");
+        assertThat(node.get("endCause").asText()).isEqualTo("INSTITUTION_DECISION");
+        assertThat(node.get("endCauseText").asText()).isEqualTo("Decisión de la institución");
+        assertThat(node.get("revokedFromPeriod").asText()).isEqualTo("2027-03");
+    }
+
+    @Test
+    @Tag("D-284")
+    void aDiscountApprovedByTheDirectorNeverShowsTheStudentTheInternalFields() throws Exception {
+        Long requestId = proposeGrant(individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), APRIL, APRIL, "Justificación interna del administrativo"));
+        approveAsDirector(requestId);
+
+        String raw = mockMvc.perform(get("/me/student-discounts").header("Authorization", "Bearer " + studentToken(learner.studentId()))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode node = objectMapper.readTree(raw).get(0);
+
+        assertThat(raw).doesNotContain("Justificación interna del administrativo");
+        assertThat(node.get("reason").isNull()).isTrue();
+        assertThat(node.get("grantedById").isNull()).isTrue();
+        assertThat(node.get("authorizationRequestId").isNull()).isTrue();
+        assertThat(node.get("status").asText()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @Tag("D-284")
+    void theStaffKeepsSeeingTheRevocationReasonOfTheDirector() throws Exception {
+        StudentDiscount revoked = grantAsDirector(scholarship("50", MARCH, MAY));
+        revokeAsDirector(revoked.getId(), "Motivo interno del director");
+
+        JsonNode node = discountNode(read("/program-enrollments/" + learner.programEnrollmentId() + "/student-discounts", directorToken()), revoked);
+
+        assertThat(node.get("revocationReason").asText()).isEqualTo("Motivo interno del director");
+        assertThat(node.get("reason").asText()).isEqualTo("Situación económica");
+        assertThat(node.get("grantedById").asLong()).isEqualTo(director.getId());
+        assertThat(node.get("endCause").asText()).isEqualTo("INSTITUTION_DECISION");
+    }
+
+    @Test
+    @Tag("D-284")
+    void aDiscountEndedByTheWithdrawalShowsTheEndOfTheEnrollmentAsCause() throws Exception {
+        StudentDiscount active = grantAsDirector(scholarship("40", JULY, YearMonth.of(2027, 12)));
+        StudentDiscount stays = grantAsDirectorTo(EnrollmentReference.ofProgram(newPlainLearner().programEnrollmentId()), scholarship("40", JULY, YearMonth.of(2027, 12)));
+
+        programEnrollmentService.withdraw(learner.programEnrollmentId(), EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.of(2027, 3, 1), director.getId()));
+
+        JsonNode mine = read("/me/student-discounts", studentToken(learner.studentId()));
+        JsonNode node = discountNode(mine, active);
+        assertThat(node.get("status").asText()).isEqualTo("ENDED");
+        assertThat(node.get("endCause").asText()).isEqualTo("ENROLLMENT_ENDED");
+        assertThat(node.get("endCauseText").asText()).isEqualTo("Finalizó la inscripción");
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, stays.getId())).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void anActiveDiscountHasNoEndCause() throws Exception {
+        StudentDiscount active = grantAsDirector(scholarship("50", MARCH, JUNE));
+
+        JsonNode node = discountNode(read("/me/student-discounts", studentToken(learner.studentId())), active);
+
+        assertThat(node.get("endCause").isNull()).isTrue();
+        assertThat(node.get("endCauseText").isNull()).isTrue();
+    }
+
+    @Test
+    void theStudentSeesTheNamesOfTheEnrollmentAndOfTheDefinitionButNotTheirOwnName() throws Exception {
+        StudentDiscount scholarship = grantAsDirector(scholarship("50", MARCH, JUNE));
+        StudentDiscount individual = grantAsDirector(individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), JULY, JULY, "Hermano"));
+        String programName = jdbc.queryForObject("select p.name from program p join program_enrollment e on e.program_id = p.id where e.id = ?", String.class, learner.programEnrollmentId());
+        String definitionName = jdbc.queryForObject("select name from discount_definition where id = ?", String.class, scholarship.getDiscountDefinitionId());
+
+        JsonNode mine = read("/me/student-discounts", studentToken(learner.studentId()));
+
+        assertThat(discountNode(mine, scholarship).get("enrollmentName").asText()).isEqualTo(programName);
+        assertThat(discountNode(mine, scholarship).get("definitionName").asText()).isEqualTo(definitionName);
+        assertThat(discountNode(mine, individual).get("enrollmentName").asText()).isEqualTo(programName);
+        assertThat(discountNode(mine, individual).get("definitionName").isNull()).isTrue();
+        assertThat(discountNode(mine, scholarship).get("studentName").isNull()).isTrue();
+    }
+
+    @Test
+    void theLostBenefitCountEqualsTheLostMonths() throws Exception {
+        StudentDiscount scholarship = grantAsDirector(scholarship("50", MARCH, JUNE));
+        grantAsDirector(individual(InvoiceType.MONTHLY_INSTALLMENT, percent("60"), APRIL, APRIL, "Hermano en la institución"));
+        for (YearMonth month : List.of(MARCH, APRIL, MAY, JUNE)) {
+            issueInstallment(month);
+        }
+
+        JsonNode node = discountNode(read("/me/student-discounts", studentToken(learner.studentId())), scholarship);
+
+        assertThat(node.get("lostPeriods")).hasSize(1);
+        assertThat(node.get("lostBenefitCount").asInt()).isEqualTo(1);
+    }
 }

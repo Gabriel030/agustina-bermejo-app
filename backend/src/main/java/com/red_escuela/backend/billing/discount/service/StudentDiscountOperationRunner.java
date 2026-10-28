@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.discount.service;
 
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantPreview;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
 import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountCommand;
 import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountOperation;
@@ -33,6 +34,11 @@ public class StudentDiscountOperationRunner {
 
     public BillingOperationOutcome<StudentDiscount> runGrant(EnrollmentReference enrollment, StudentDiscountGrantRequest request) {
         return pipeline.runOperation(grantOperation,
+                GrantStudentDiscountCommand.byPerson(enrollment, request, actorResolver.currentPersonId(), actorResolver.currentActorIsDirector()));
+    }
+
+    public StudentDiscountGrantPreview previewGrant(EnrollmentReference enrollment, StudentDiscountGrantRequest request) {
+        return grantOperation.previewGrant(
                 GrantStudentDiscountCommand.byPerson(enrollment, request, actorResolver.currentPersonId(), actorResolver.currentActorIsDirector()));
     }
 

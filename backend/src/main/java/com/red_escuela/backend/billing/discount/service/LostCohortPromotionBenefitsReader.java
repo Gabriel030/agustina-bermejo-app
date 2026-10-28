@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.discount.service;
 
 import com.red_escuela.backend.billing.discount.domain.AppliedStudentDiscountInstallment;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
+import com.red_escuela.backend.billing.discount.domain.LostBenefitFilter;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountOrigin;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
@@ -10,6 +11,7 @@ import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscoun
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse;
+import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitsSlice;
 import com.red_escuela.backend.identity.api.StudentNameLookup;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class LostCohortPromotionBenefitsReader {
+    public static final int MAX_PAGE_SIZE = 100;
+    public static final int DEFAULT_PAGE_SIZE = 20;
     private static final Set<StudentDiscountStatus> CANDIDATE_STATUSES = Set.of(StudentDiscountStatus.ACTIVE, StudentDiscountStatus.ENDED);
 
     private final StudentDiscountRepository repository;
@@ -42,7 +46,18 @@ public class LostCohortPromotionBenefitsReader {
         this.clock = clock;
     }
 
-    public List<LostPromotionBenefitResponse> readLostBenefits() {
+    public LostPromotionBenefitsSlice readLostBenefitsSlice(LostBenefitFilter filter, Integer page, Integer size) {
+        List<LostPromotionBenefitResponse> all = readLostBenefits(filter);
+        if (page == null && size == null) {
+            return new LostPromotionBenefitsSlice(all, all.size());
+        }
+        int boundedSize = Math.min(Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1), MAX_PAGE_SIZE);
+        long firstIndex = (long) Math.max(page == null ? 0 : page, 0) * boundedSize;
+        List<LostPromotionBenefitResponse> items = firstIndex >= all.size() ? List.of() : all.subList((int) firstIndex, (int) Math.min(firstIndex + boundedSize, all.size()));
+        return new LostPromotionBenefitsSlice(items, all.size());
+    }
+
+    private List<LostPromotionBenefitResponse> readLostBenefits(LostBenefitFilter filter) {
         List<StudentDiscount> promotions = repository.findByOriginAndStatusInOrderByIdAsc(StudentDiscountOrigin.COHORT_ACQUISITION, CANDIDATE_STATUSES).stream()
                 .filter(promotion -> promotion.getInstallmentsTotal() != null).toList();
         if (promotions.isEmpty()) {
@@ -55,17 +70,22 @@ public class LostCohortPromotionBenefitsReader {
         Map<Long, String> names = studentNames.findFullNamesByStudentId(promotions.stream().map(StudentDiscount::getStudentId).distinct().toList());
         LocalDate today = LocalDate.now(clock);
         return promotions.stream()
-                .flatMap(promotion -> lostBenefitOf(promotion, definitions.get(promotion.getDiscountDefinitionId()), usesById.getOrDefault(promotion.getId(), 0L), names, today).stream())
+                .filter(promotion -> filter.discountDefinitionId() == null || filter.discountDefinitionId().equals(promotion.getDiscountDefinitionId()))
+                .flatMap(promotion -> lostBenefitOf(promotion, definitions.get(promotion.getDiscountDefinitionId()), usesById.getOrDefault(promotion.getId(), 0L), names, today, filter).stream())
                 .toList();
     }
 
-    private Optional<LostPromotionBenefitResponse> lostBenefitOf(StudentDiscount promotion, DiscountDefinition definition, long used, Map<Long, String> names, LocalDate today) {
+    private Optional<LostPromotionBenefitResponse> lostBenefitOf(StudentDiscount promotion, DiscountDefinition definition, long used, Map<Long, String> names, LocalDate today,
+                                                                 LostBenefitFilter filter) {
         int remaining = (int) (promotion.getInstallmentsTotal() - used);
         if (remaining <= 0) {
             return Optional.empty();
         }
-        return findCutOff(promotion, definition, today).map(cutOff -> new LostPromotionBenefitResponse(promotion.getId(), definition.getName(), names.get(promotion.getStudentId()),
-                promotion.getApplicableInvoiceType().name(), (int) used, promotion.getInstallmentsTotal(), remaining, cutOff));
+        return findCutOff(promotion, definition, today)
+                .filter(cutOff -> filter.admits(promotion.getDiscountDefinitionId(), promotion.getApplicableInvoiceType(), cutOff))
+                .map(cutOff -> new LostPromotionBenefitResponse(promotion.getId(), definition.getName(), names.get(promotion.getStudentId()),
+                        promotion.getApplicableInvoiceType().name(), (int) used, promotion.getInstallmentsTotal(), remaining, cutOff, promotion.getDiscountDefinitionId(),
+                        promotion.getStudentId(), remaining));
     }
 
     private Optional<YearMonth> findCutOff(StudentDiscount promotion, DiscountDefinition definition, LocalDate today) {

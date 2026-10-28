@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.discount.usecase;
 
-import com.red_escuela.backend.billing.discount.domain.StudentDiscountWithUsage;
+import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.service.CurrentStudentDiscountReader;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,7 +19,7 @@ public class ListMyStudentDiscountsService implements ListMyStudentDiscountsUseC
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasRole('ALUMNO')")
-    public List<StudentDiscountWithUsage> listMyStudentDiscounts() {
+    public List<LabeledStudentDiscount> listMyStudentDiscounts() {
         return currentStudentDiscountReader.readDiscountsOfCurrentStudent();
     }
 }
