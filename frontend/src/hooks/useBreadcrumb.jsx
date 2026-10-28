@@ -56,6 +56,7 @@ export function useBreadcrumb() {
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
 
+  const enNotaDeCredito = /^\/(administrativo|director)\/facturacion\/cuotas\/[^/]+\/nota-de-credito$/.test(location.pathname);
   const billingInboxDetail = /^\/(director\/aprobaciones\/facturacion|administrativo\/aprobaciones)\/(\d+)$/.exec(location.pathname);
   if (billingInboxDetail) {
     const rolBase = location.pathname.split('/')[1];
@@ -72,6 +73,19 @@ export function useBreadcrumb() {
 
   if (location.pathname === '/director/aprobaciones/facturacion') {
     return [{ label: 'Aprobaciones', to: '/director/aprobaciones' }, { label: 'Operaciones de facturación' }];
+  }
+
+  if (enNotaDeCredito) {
+    const rolBase = location.pathname.split('/')[1];
+    const alumno = searchParams.get('alumno');
+    return [
+      { label: 'Facturación', to: `/${rolBase}/facturacion${alumno ? `?alumno=${alumno}` : ''}` },
+      { label: 'Nota de crédito' },
+    ];
+  }
+
+  if (location.pathname === '/alumno/pagos/notas-de-credito') {
+    return [{ label: 'Mis pagos', to: '/alumno/pagos' }, { label: 'Mis notas de crédito' }];
   }
 
   const enPagos = location.pathname === '/alumno/pagos';
