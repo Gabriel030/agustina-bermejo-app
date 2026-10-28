@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-const MAX_REASON_LENGTH = 500;
+const DEFAULT_MAX_REASON_LENGTH = 500;
 
 export function ModalMotivo({
   open,
@@ -16,13 +16,15 @@ export function ModalMotivo({
   placeholder = 'Motivo del rechazo',
   confirmarLabel = 'Rechazar',
   confirmarVariant = 'gradient',
+  maxLength = DEFAULT_MAX_REASON_LENGTH,
+  mensajeRequerido = 'El motivo del rechazo es obligatorio.',
 }) {
   const [motivo, setMotivo] = useState('');
   const [error, setError] = useState('');
 
   async function confirmar() {
     if (requerido && !motivo.trim()) {
-      setError('El motivo del rechazo es obligatorio.');
+      setError(mensajeRequerido);
       return;
     }
     const saved = await onConfirmar(motivo.trim());
@@ -46,7 +48,7 @@ export function ModalMotivo({
           onChange={(e) => setMotivo(e.target.value)}
           placeholder={placeholder}
           rows={3}
-          maxLength={MAX_REASON_LENGTH}
+          maxLength={maxLength}
         />
         {error && <div className="text-[12px] font-semibold text-danger">{error}</div>}
         <DialogFooter>

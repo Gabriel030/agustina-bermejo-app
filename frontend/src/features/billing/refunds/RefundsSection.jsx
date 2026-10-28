@@ -91,7 +91,7 @@ export function RefundsSection({ studentId }) {
             )}
           </h2>
           {eligibility && !block ? (
-            <Button asChild variant="gradient" size="sm">
+            <Button asChild variant="outline" size="sm">
               <Link to="reembolsos/nuevo">
                 <Plus aria-hidden="true" />
                 Pedir reembolso

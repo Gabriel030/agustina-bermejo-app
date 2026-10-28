@@ -46,6 +46,9 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `InvoiceSummary` [domain: alumno] | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
 | `BankAccountDetails` [domain: catalogo] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
 | `Card` [ui] | Sin uso hoy; usar `GlassCard` | — |
+| `DataTable` [shared: table] | Tabla con orden, filtro Excel por columna (`meta.filterable`; no se dibuja con una sola opción), filas expandibles y modo tarjeta bajo 768px | `columns`, `data`, `renderExpanded`, `onRowClick`, `emptyState` |
+| `ProgressBar` [shared] | Barra de avance con `aria-label`; en Mis descuentos con `showValue={false}` y el texto "N de M" en `label` | `value`, `label`, `showValue`, `tone` |
+| `MonthPicker` [shared] | Selector de mes (`YYYY-MM`) con mínimo/máximo; en el otorgamiento de descuentos el mínimo es la próxima cuota | `value`, `onChange`, `minMonth`, `maxMonth` |
 
 ## 4. Formularios y entrada
 | Componente | Uso | API relevante |
@@ -54,6 +57,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `PasswordInput` [ui] | Contraseñas con mostrar/ocultar | — |
 | `Textarea` [ui] | Texto largo | — |
 | `Select` [ui] | Lista cerrada de opciones | compound (`SelectTrigger`, `SelectContent`, `SelectItem`) |
+| `RadioGroup` [ui] | Elección exclusiva corta (Porcentaje / Monto fijo); en billing se usa envuelto por `RadioChoice` | compound |
 | `Command` + `Popover` [ui] | Combobox con búsqueda | compound |
 | `Checkbox` [ui] | Casilla (la usa `ColumnFilter`); en el archivo generado por la CLI se corrigió el import de `cn` y el estado `data-[state=checked]` | `checked`, `onCheckedChange` |
 | `Buscador` [domain: catalogo] | Campo de búsqueda de listados | `value`, `onChange`, `placeholder` |
@@ -91,6 +95,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 - **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`, `AmountBreakdown`, `InvoiceSummary`.
 - **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
 - **director:** `BandejaTramites`.
+- **billing (descuentos):** `features/billing/discounts/` — `DiscountsPage` (catálogo, promociones, otorgados), `DiscountDefinitionFormPage`, `DiscountDefinitionDetailPage`, `GrantDiscountPage`, `StudentDiscountsSection` (Financiero del legajo), `MyDiscountsTab` (Pagos del alumno), `ViolationList`, `DiscountStatusPill` / `PromotionStatusPill` (constantes sobre `StatusPill`).
 - **docente:** `CalendarioConfiguracion`.
 - **billing/payment-reversals:** `StudentPaymentsCard` (card "Pagos del alumno" de la ficha de Facturación del staff), `PaymentActionsMenu`, `ReversalDialog` (contracargo, reversión y revocación con vista previa del impacto), `ReversalImpact`, `PendingRefundsNotice`.
 - **billing (`features/billing/credit-notes/`):** `ReasonCards` (dos o más tarjetas seleccionables como `radiogroup`, con flechas), `AmountDiffTable` (tabla Hoy / Nuevo / Diferencia con filas sin cambios; en móvil se apila en pares etiqueta/valor), `CancelInvoiceDialog` (cancelar cuota / anular recargo con vista previa de efectos), `InvoiceActions` (acciones de la cuota; entra a `InvoiceDetail` por su prop `actions`, que no conoce roles), `CreditNoteLinesForm`, `CreateCreditNotePage` (2 pasos con `Stepper`), `StudentCreditNotesSection`, `PendingAuthorizationBanner`, `CreditBalanceCard` (alumno) y `MyCreditNotesPage`.

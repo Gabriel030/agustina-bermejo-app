@@ -8,12 +8,14 @@ import { FinancieroTab } from './FinancieroTab';
 
 const API = 'http://localhost:8080';
 
-function mockStudent({ obligations, exemptions = [] }) {
+function mockStudent({ obligations, exemptions = [], courses = [], discounts = [] }) {
   server.use(
     http.get(`${API}/students/9/program-enrollments`, () =>
       HttpResponse.json([{ id: 4, programId: 2, programName: 'Tecnicatura', status: 'ENROLLED' }])),
     http.get(`${API}/program-enrollments/4/enrollment-fee-status`, () => HttpResponse.json(obligations)),
     http.get(`${API}/program-enrollments/4/enrollment-fee-exemptions`, () => HttpResponse.json(exemptions)),
+    http.get(`${API}/students/9/course-enrollments`, () => HttpResponse.json(courses)),
+    http.get(`${API}/program-enrollments/4/student-discounts`, () => HttpResponse.json(discounts)),
     http.get(`${API}/students/9/refunds`, () => HttpResponse.json([])),
   );
 }
@@ -35,7 +37,7 @@ describe('FinancieroTab', () => {
       }),
     );
     const user = userEvent.setup();
-    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar />);
+    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar roleBase="director" />);
 
     await user.click(await screen.findByRole('button', { name: 'Permitir inscripción sin matrícula 1' }));
     const submit = screen.getByRole('button', { name: 'Registrar habilitación' });
@@ -63,7 +65,7 @@ describe('FinancieroTab', () => {
       return new HttpResponse(null, { status: 204 });
     }));
     const user = userEvent.setup();
-    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar />);
+    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar roleBase="director" />);
 
     expect(await screen.findByText('Habilitado sin pagar')).toBeInTheDocument();
     expect(screen.getByText(/Otorgada por Ana Dir el 01\/02\/2027/)).toBeInTheDocument();
@@ -75,8 +77,47 @@ describe('FinancieroTab', () => {
 
   it('shows an empty state when the career has no enrollment fee configured', async () => {
     mockStudent({ obligations: [] });
-    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar />);
+    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar roleBase="director" />);
 
     expect(await screen.findByText('Sin matrícula configurada')).toBeInTheDocument();
+  });
+
+  it('shows the discounts of the only enrollment and offers to grant one', async () => {
+    mockStudent({ obligations: [], discounts: [] });
+    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar roleBase="director" />);
+
+    expect(await screen.findByText('Inscripción:')).toBeInTheDocument();
+    expect(await screen.findByText('Sin descuentos')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Otorgar descuento' })).toHaveAttribute('href', '/director/alumnos/9/descuentos/nuevo?enrollment=program-4');
+  });
+
+  it('switches between the career and the course and keeps the enrollment fee only for the career', async () => {
+    mockStudent({
+      obligations: [{ templateId: 5, slot: 1, status: 'PENDING', satisfied: false, dueDate: '2027-03-10' }],
+      courses: [{ id: 11, courseId: 3, courseName: 'Primeros Auxilios', status: 'ENROLLED' }],
+      discounts: [],
+    });
+    server.use(
+      http.get(`${API}/course-enrollments/11/student-discounts`, () =>
+        HttpResponse.json([
+          {
+            id: 70, type: 'COHORT_PROMOTION', applicableInvoiceType: 'MONTHLY_INSTALLMENT', calculation: { type: 'PROPORTIONAL', ratePercent: 10 },
+            fromPeriod: '2026-10', toPeriod: '2026-11', status: 'ACTIVE', appliedInstallments: [{ period: '2026-10', installmentNumber: 1, installmentsTotal: 2 }],
+            lostPeriods: [], definitionName: 'Ingreso Primeros Auxilios', grantedAt: '2026-10-01T10:00:00Z',
+          },
+        ])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<FinancieroTab studentId={9} puedeHabilitar roleBase="administrativo" />);
+
+    expect(await screen.findByText('Matrícula 1 del año')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Proponer descuento' })).toHaveAttribute('href', '/administrativo/alumnos/9/descuentos/nuevo?enrollment=program-4');
+    await user.click(screen.getByRole('combobox', { name: 'Inscripción' }));
+    await user.click(await screen.findByRole('option', { name: 'Primeros Auxilios · curso' }));
+
+    expect(await screen.findByText('Ingreso Primeros Auxilios')).toBeInTheDocument();
+    expect(screen.getByText('1 de 2')).toBeInTheDocument();
+    expect(screen.queryByText('Matrícula 1 del año')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Proponer descuento' })).toHaveAttribute('href', '/administrativo/alumnos/9/descuentos/nuevo?enrollment=course-11');
   });
 });

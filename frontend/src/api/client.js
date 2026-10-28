@@ -126,6 +126,14 @@ export async function apiFetch(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+export async function apiFetchWithTotal(path, options = {}) {
+  const response = await fetchWithAuth(path, options);
+  const text = await response.text();
+  const items = text ? JSON.parse(text) : [];
+  const header = response.headers.get('X-Total-Count');
+  return { items, total: header == null ? items.length : Number(header) };
+}
+
 // Descarga de archivos (ej. exportar asistencia a PDF/XLS) — a diferencia de apiFetch, el body
 // de la respuesta no es JSON, así que no puede pasar por el mismo parseo.
 export async function apiFetchBlob(path, options = {}) {

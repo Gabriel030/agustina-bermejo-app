@@ -17,7 +17,7 @@ describe('billing screen access by role', () => {
 
   it('keeps the administrative menu order untouched', () => {
     expect(ROLE_CONFIG.administrativo.pages).toEqual([
-      'inicio', 'alumnos', 'personal', 'facturacion', 'aprobaciones', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica',
+      'inicio', 'alumnos', 'personal', 'facturacion', 'descuentos', 'aprobaciones', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica',
     ]);
   });
 });

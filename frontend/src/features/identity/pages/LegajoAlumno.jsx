@@ -92,7 +92,7 @@ export function LegajoAlumno() {
               <EvaluacionTab />
             </TabsContent>
             <TabsContent value="financiero" className="mt-4">
-              <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} />
+              <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} roleBase={rolBase} />
             </TabsContent>
           </Tabs>
         </GlassCard>

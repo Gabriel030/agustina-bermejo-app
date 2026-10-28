@@ -73,7 +73,7 @@ function HeaderCell({ header }) {
         ) : (
           label
         )}
-        {meta.filterable && (
+        {meta.filterable && filterOptions.length > 1 && (
           <ColumnFilter
             label={meta.filterTitle ?? String(column.columnDef.header)}
             options={filterOptions}

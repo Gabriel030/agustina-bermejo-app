@@ -11,6 +11,10 @@ import { AuthorizationRequestDetailPage } from '@/features/billing/authorization
 import { CreateCreditNotePage } from '@/features/billing/credit-notes/CreateCreditNotePage';
 import { MyCreditNotesPage } from '@/features/billing/credit-notes/MyCreditNotesPage';
 import { FinancialDashboardPage } from '@/features/billing/dashboard/FinancialDashboardPage';
+import { DiscountsPage } from '@/features/billing/discounts/DiscountsPage';
+import { DiscountDefinitionFormPage } from '@/features/billing/discounts/DiscountDefinitionFormPage';
+import { DiscountDefinitionDetailPage } from '@/features/billing/discounts/DiscountDefinitionDetailPage';
+import { GrantDiscountPage } from '@/features/billing/discounts/GrantDiscountPage';
 
 export const routes = {
   public: [],
@@ -27,6 +31,11 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'facturacion', element: <AdministrativoFacturacion /> },
     { roles: ['administrativo', 'director'], path: 'facturacion/cuotas/:invoiceId/nota-de-credito', element: <CreateCreditNotePage /> },
     { roles: ['administrativo', 'director'], path: 'alumnos/:id/reembolsos/nuevo', element: <RequestRefundPage /> },
+    { roles: ['administrativo', 'director'], path: 'alumnos/:id/descuentos/nuevo', element: <GrantDiscountPage /> },
+    { roles: ['administrativo', 'director'], path: 'descuentos', element: <DiscountsPage /> },
+    { roles: ['administrativo', 'director'], path: 'descuentos/nuevo', element: <DiscountDefinitionFormPage mode="discount" /> },
+    { roles: ['administrativo', 'director'], path: 'descuentos/promociones/nueva', element: <DiscountDefinitionFormPage mode="promotion" /> },
+    { roles: ['administrativo', 'director'], path: 'descuentos/:id', element: <DiscountDefinitionDetailPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion', element: <AuthorizationInboxPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion/:id', element: <AuthorizationRequestDetailPage /> },
     { roles: ['administrativo'], path: 'aprobaciones', element: <AuthorizationInboxPage /> },

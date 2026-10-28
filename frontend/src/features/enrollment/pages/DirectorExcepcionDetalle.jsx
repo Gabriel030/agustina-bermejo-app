@@ -6,7 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { ModalMotivo } from '@/components/director/ModalMotivo';
+import { ModalMotivo } from '@/components/ModalMotivo';
 import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
 import {
   useExcepcion,
