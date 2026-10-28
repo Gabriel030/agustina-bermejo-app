@@ -129,6 +129,11 @@ public class StudentCurrentAccountService {
         return entryRepository.findPaymentCreditNotYetReversed(paymentId);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<CurrentAccountEntry> findPaymentCreditToReverse(Long paymentId) {
+        return entryRepository.findPaymentCreditNotYetReversed(paymentId);
+    }
+
     public boolean isCreditNoteBookedInLedger(Long creditNoteId) {
         return entryRepository.existsByCreditNoteId(creditNoteId);
     }

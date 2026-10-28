@@ -9,11 +9,24 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record CohortPromotionProgress(StudentDiscount promotion, LocalDate availableUntil, List<AppliedStudentDiscountInstallment> liveApplications) {
+public record CohortPromotionProgress(StudentDiscount promotion, LocalDate availableUntil, List<AppliedStudentDiscountInstallment> liveApplications,
+                                      LocalDate reissuedInvoiceOriginalIssueDate) {
 
     public CohortPromotionProgress {
         Objects.requireNonNull(promotion, "promotion");
         liveApplications = List.copyOf(liveApplications);
+    }
+
+    public CohortPromotionProgress(StudentDiscount promotion, LocalDate availableUntil, List<AppliedStudentDiscountInstallment> liveApplications) {
+        this(promotion, availableUntil, liveApplications, null);
+    }
+
+    public CohortPromotionProgress withReissuedInvoiceOriginalIssueDate(LocalDate originalIssueDate) {
+        return new CohortPromotionProgress(promotion, availableUntil, liveApplications, originalIssueDate);
+    }
+
+    public boolean isWindowClosedOn(LocalDate issueDate) {
+        return availableUntil != null && issueDate.isAfter(availableUntil);
     }
 
     public long liveUses() {
@@ -21,8 +34,14 @@ public record CohortPromotionProgress(StudentDiscount promotion, LocalDate avail
     }
 
     public boolean canBeAppliedOn(LocalDate issueDate) {
-        boolean withinWindow = availableUntil == null || !issueDate.isAfter(availableUntil);
-        return withinWindow && liveUses() < maximumUses();
+        return !isWindowClosedOn(windowDateOf(issueDate)) && liveUses() < maximumUses();
+    }
+
+    private LocalDate windowDateOf(LocalDate issueDate) {
+        if (reissuedInvoiceOriginalIssueDate == null || !reissuedInvoiceOriginalIssueDate.isBefore(issueDate)) {
+            return issueDate;
+        }
+        return reissuedInvoiceOriginalIssueDate;
     }
 
     public OptionalInt nextInstallmentNumber() {

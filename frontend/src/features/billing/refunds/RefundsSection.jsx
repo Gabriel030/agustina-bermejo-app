@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Undo2 } from 'lucide-react';
+import { Plus, Undo2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
+import { StatCard } from '@/components/StatCard';
 import { StatusPill } from '@/components/StatusPill';
+import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/table/DataTable';
 import { formatDate, formatMoney } from '@/lib/billing';
-import { useStudentRefunds } from '../hooks/useRefunds';
+import { useRefundEligibility, useStudentRefunds } from '../hooks/useRefunds';
 import { CompleteRefundDialog } from './CompleteRefundDialog';
 import { FailRefundDialog } from './FailRefundDialog';
+import { RefundBlockAlert } from './RefundBlockAlert';
 import { RefundPartsList } from './RefundPartsList';
+import { describeRefundBlock, refundableNowCap, toCents } from './refundForm';
 import { REFUND_REQUEST_STATUS, groupRefundsByRequest } from './refundRequests';
 
 const columns = [
@@ -52,11 +57,29 @@ const columns = [
 
 export function RefundsSection({ studentId }) {
   const { data, isLoading, isError, refetch } = useStudentRefunds(studentId);
+  const { data: eligibility } = useRefundEligibility(studentId);
   const [dialog, setDialog] = useState(null);
+  const block = eligibility ? describeRefundBlock(eligibility) : null;
   const requests = useMemo(() => (data ? groupRefundsByRequest(data) : []), [data]);
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="refunds-heading">
+      {block && <RefundBlockAlert id="refund-block" block={block} />}
+      {eligibility && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <StatCard label="Saldo a favor">
+            <span className="text-2xl font-bold text-success">{formatMoney(eligibility.unallocatedCredit)}</span>
+            {toCents(eligibility.reservedByPendingRefunds) > 0 && (
+              <p className="text-xs font-normal text-ink-faint">
+                Incluye {formatMoney(eligibility.reservedByPendingRefunds)} reservados en reembolsos sin transferir
+              </p>
+            )}
+          </StatCard>
+          <StatCard label="Reembolsable ahora">
+            <span className="text-2xl font-bold text-ink">{formatMoney(refundableNowCap(eligibility))}</span>
+          </StatCard>
+        </div>
+      )}
       <GlassCard className="overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
           <h2 id="refunds-heading" className="font-heading text-base font-semibold text-ink">
@@ -67,6 +90,19 @@ export function RefundsSection({ studentId }) {
               </span>
             )}
           </h2>
+          {eligibility && !block ? (
+            <Button asChild variant="gradient" size="sm">
+              <Link to="reembolsos/nuevo">
+                <Plus aria-hidden="true" />
+                Pedir reembolso
+              </Link>
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" disabled aria-describedby={block ? 'refund-block' : undefined}>
+              <Plus aria-hidden="true" />
+              Pedir reembolso
+            </Button>
+          )}
         </div>
         <DataTable
           columns={columns}

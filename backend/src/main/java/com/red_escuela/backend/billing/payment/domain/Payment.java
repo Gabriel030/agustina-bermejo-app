@@ -243,6 +243,10 @@ public class Payment {
         changeStatus(PaymentEvent.PENDING_PAYMENT_CANCELLED, actor, reason, GatewayRawStatus.none());
     }
 
+    public void requireAllows(PaymentEvent event) {
+        resolveNextStatusFor(event);
+    }
+
     public void revokeBankTransferApproval(String reason, StatusChangeActor reviewer) {
         resolveNextStatusFor(PaymentEvent.BANK_TRANSFER_APPROVAL_REVOKED);
         this.rejectionReason = reason;
