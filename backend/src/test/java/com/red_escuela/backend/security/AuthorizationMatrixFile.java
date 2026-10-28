@@ -18,7 +18,7 @@ final class AuthorizationMatrixFile {
 
     private static final String HEADER = "method,path,anonymous,"
             + Stream.of(MatrixRole.values()).map(Enum::name).collect(Collectors.joining(","))
-            + ",body";
+            + ",ownership,body";
 
     private AuthorizationMatrixFile() {
     }
@@ -49,7 +49,7 @@ final class AuthorizationMatrixFile {
             for (MatrixRole role : MatrixRole.values()) {
                 line.append(',').append(row.byRole().get(role));
             }
-            line.append(',').append(quote(row.body()));
+            line.append(',').append(row.ownership()).append(',').append(quote(row.body()));
             lines.add(line.toString());
         }
         try {
@@ -69,7 +69,7 @@ final class AuthorizationMatrixFile {
 
     private static AuthorizationMatrixRow parseRow(String line, int lineNumber) {
         List<String> cells = splitCells(line);
-        int expectedCells = 3 + MatrixRole.values().length + 1;
+        int expectedCells = 3 + MatrixRole.values().length + 2;
         if (cells.size() != expectedCells) {
             throw new IllegalStateException("authorization-matrix.csv linea " + lineNumber + ": se esperaban "
                     + expectedCells + " columnas y hay " + cells.size());
@@ -83,6 +83,7 @@ final class AuthorizationMatrixFile {
                 cells.get(1),
                 AccessExpectation.valueOf(cells.get(2)),
                 byRole,
+                cells.get(expectedCells - 2),
                 cells.get(expectedCells - 1));
     }
 

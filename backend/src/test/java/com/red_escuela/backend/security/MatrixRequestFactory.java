@@ -38,7 +38,11 @@ final class MatrixRequestFactory {
     }
 
     MockHttpServletRequestBuilder build(MappedEndpoint endpoint, String bodyOverride, String bearerToken) {
-        String uri = expandPathVariables(endpoint);
+        return build(endpoint, bodyOverride, bearerToken, MISSING_ID);
+    }
+
+    MockHttpServletRequestBuilder build(MappedEndpoint endpoint, String bodyOverride, String bearerToken, Long resourceId) {
+        String uri = expandPathVariables(endpoint, resourceId);
         MockHttpServletRequestBuilder request = isMultipart(endpoint)
                 ? multipartRequest(endpoint, uri)
                 : MockMvcRequestBuilders.request(HttpMethod.valueOf(endpoint.method()), uri);
@@ -93,7 +97,7 @@ final class MatrixRequestFactory {
         return false;
     }
 
-    private String expandPathVariables(MappedEndpoint endpoint) {
+    private String expandPathVariables(MappedEndpoint endpoint, Long resourceId) {
         String uri = endpoint.path();
         for (MethodParameter parameter : endpoint.handler().getMethodParameters()) {
             PathVariable annotation = parameter.getParameterAnnotation(PathVariable.class);
@@ -102,7 +106,9 @@ final class MatrixRequestFactory {
                 if (name.isEmpty()) {
                     name = nameOf(parameter);
                 }
-                uri = uri.replace("{" + name + "}", valueFor(parameter.getParameterType()));
+                Class<?> type = parameter.getParameterType();
+                boolean isIdentifier = type == Long.class || type == long.class;
+                uri = uri.replace("{" + name + "}", isIdentifier ? String.valueOf(resourceId) : valueFor(type));
             }
         }
         return uri;

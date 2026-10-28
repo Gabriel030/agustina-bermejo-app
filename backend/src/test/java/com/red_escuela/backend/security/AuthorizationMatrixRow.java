@@ -7,6 +7,7 @@ record AuthorizationMatrixRow(
         String path,
         AccessExpectation anonymous,
         Map<MatrixRole, AccessExpectation> byRole,
+        String ownership,
         String body) {
 
     String key() {
