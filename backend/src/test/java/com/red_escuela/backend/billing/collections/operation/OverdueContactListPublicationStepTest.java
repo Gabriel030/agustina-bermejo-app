@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.operation;
 
+import com.red_escuela.backend.billing.collections.domain.MissedReminderRecovery;
+import com.red_escuela.backend.billing.collections.repository.CollectionReminderRunStore;
 import com.red_escuela.backend.billing.collections.service.OverdueContactSegment;
 import com.red_escuela.backend.billing.collections.service.OverdueContactSegment.ContactListCounts;
 import com.red_escuela.backend.billing.events.OverdueContactListUpdatedEvent;
@@ -69,9 +71,12 @@ class OverdueContactListPublicationStepTest {
         CollectionReminderPlanningStep planningStep = mock(CollectionReminderPlanningStep.class);
         OverdueContactListPublicationStep contactListStep = mock(OverdueContactListPublicationStep.class);
         CollectionReminderPlanningResult planned = new CollectionReminderPlanningResult(1, 1, 0, 0, 0, new ArrayList<>());
-        when(planningStep.planCollectionReminders(MARCH_25)).thenReturn(planned);
+        MissedReminderDaysFinder missedDaysFinder = mock(MissedReminderDaysFinder.class);
+        when(missedDaysFinder.findRecoveryBefore(MARCH_25)).thenReturn(MissedReminderRecovery.none());
+        when(planningStep.planCollectionReminders(MARCH_25, MissedReminderRecovery.none())).thenReturn(planned);
         doThrow(new IllegalStateException("boom")).when(contactListStep).publishContactListOf(eq(MARCH_25));
-        CollectionReminderPlanningJob job = new CollectionReminderPlanningJob(planningStep, contactListStep, mock(PostWithdrawalSummaryPlanningStep.class), Clock.systemUTC());
+        CollectionReminderPlanningJob job = new CollectionReminderPlanningJob(planningStep, contactListStep, mock(PostWithdrawalSummaryPlanningStep.class), missedDaysFinder,
+                mock(CollectionReminderRunStore.class), Clock.systemUTC());
 
         CollectionReminderPlanningResult result = job.run(MARCH_25);
 

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.billing.collections.domain.DailyReminderDigest;
+import com.red_escuela.backend.billing.collections.domain.MissedReminderRecovery;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
 import com.red_escuela.backend.billing.collections.domain.ReminderConfigurationVersions;
 import com.red_escuela.backend.billing.collections.domain.ReminderDebtEntry;
@@ -52,6 +53,11 @@ public final class DailyReminderDigestPlanner {
 
     public static DailyReminderDigest planDailyDigestOf(ReminderStudentFacts student, Map<Long, ResolvedReminderSchedule> schedulesByInvoiceId, LocalDate businessDate,
                                                         NonBusinessDays nonBusinessDays, ReminderDigestMode mode) {
+        return planDailyDigestOf(student, schedulesByInvoiceId, businessDate, nonBusinessDays, mode, MissedReminderRecovery.none());
+    }
+
+    public static DailyReminderDigest planDailyDigestOf(ReminderStudentFacts student, Map<Long, ResolvedReminderSchedule> schedulesByInvoiceId, LocalDate businessDate,
+                                                        NonBusinessDays nonBusinessDays, ReminderDigestMode mode, MissedReminderRecovery recovery) {
         List<ReminderInvoiceFact> listed = listedDebtOf(student);
         List<ReminderDueNotice> inAppNotices = new ArrayList<>();
         List<ReminderDueNotice> emailNotices = new ArrayList<>();
@@ -73,7 +79,7 @@ public final class DailyReminderDigestPlanner {
             if (denial.isEmpty()) {
                 ResolvedReminderSchedule resolved = schedule.orElseThrow(() -> new IllegalArgumentException("The invoice " + fact.invoiceId() + " has no resolved reminder schedule"));
                 for (ReminderOccurrence occurrence : ReminderOccurrenceExpander.expandOccurrencesUpTo(fact, resolved.notices(), horizon)) {
-                    collectDue(fact, occurrence, listed, businessDate, nonBusinessDays, inAppNotices, emailNotices, suppressed);
+                    collectDue(fact, occurrence, listed, businessDate, nonBusinessDays, recovery, inAppNotices, emailNotices, suppressed);
                 }
             }
         }
@@ -114,20 +120,21 @@ public final class DailyReminderDigestPlanner {
     }
 
     private static void collectDue(ReminderInvoiceFact fact, ReminderOccurrence occurrence, List<ReminderInvoiceFact> listedDebt, LocalDate businessDate,
-                                   NonBusinessDays nonBusinessDays, List<ReminderDueNotice> inAppNotices, List<ReminderDueNotice> emailNotices, List<SuppressedReminder> suppressed) {
-        Set<ReminderChannel> ownChannels = channelsFiringOn(occurrence, businessDate, nonBusinessDays);
+                                   NonBusinessDays nonBusinessDays, MissedReminderRecovery recovery, List<ReminderDueNotice> inAppNotices, List<ReminderDueNotice> emailNotices,
+                                   List<SuppressedReminder> suppressed) {
+        Set<ReminderChannel> ownChannels = channelsFiringOn(occurrence, businessDate, nonBusinessDays, recovery);
         PolicyVerdict waitsForPriorDebt = waitingForPriorDebtVerdictOf(fact, occurrence, listedDebt);
         if (!waitsForPriorDebt.allowed()) {
             ownChannels.forEach(channel -> suppressed.add(new SuppressedReminder(occurrence.invoiceId(), occurrence.noticeKey(), channel, waitsForPriorDebt.code())));
             return;
         }
         boolean summarizesPriorDebt = summarizesPriorDebt(fact, occurrence, listedDebt);
-        Set<ReminderChannel> channels = summarizesPriorDebt ? channelsFiringOn(occurrence.withChannel(ReminderChannel.EMAIL), businessDate, nonBusinessDays) : ownChannels;
+        Set<ReminderChannel> channels = summarizesPriorDebt ? channelsFiringOn(occurrence.withChannel(ReminderChannel.EMAIL), businessDate, nonBusinessDays, recovery) : ownChannels;
         ReminderDueNotice notice = new ReminderDueNotice(occurrence.invoiceId(), occurrence.noticeKey(), occurrence.messageType(), summarizesPriorDebt);
-        if (channels.contains(ReminderChannel.IN_APP)) {
+        if (channels.contains(ReminderChannel.IN_APP) && !inAppNotices.contains(notice)) {
             inAppNotices.add(notice);
         }
-        if (channels.contains(ReminderChannel.EMAIL)) {
+        if (channels.contains(ReminderChannel.EMAIL) && !emailNotices.contains(notice)) {
             emailNotices.add(notice);
         }
     }
@@ -149,20 +156,25 @@ public final class DailyReminderDigestPlanner {
 
     private static void collectSuppressed(ReminderOccurrence occurrence, LocalDate businessDate, NonBusinessDays nonBusinessDays, String reasonCode,
                                           List<SuppressedReminder> suppressed) {
-        for (ReminderChannel channel : channelsFiringOn(occurrence, businessDate, nonBusinessDays)) {
+        for (ReminderChannel channel : channelsFiringOn(occurrence, businessDate, nonBusinessDays, MissedReminderRecovery.none())) {
             suppressed.add(new SuppressedReminder(occurrence.invoiceId(), occurrence.noticeKey(), channel, reasonCode));
         }
     }
 
-    private static Set<ReminderChannel> channelsFiringOn(ReminderOccurrence occurrence, LocalDate businessDate, NonBusinessDays nonBusinessDays) {
+    private static Set<ReminderChannel> channelsFiringOn(ReminderOccurrence occurrence, LocalDate businessDate, NonBusinessDays nonBusinessDays,
+                                                         MissedReminderRecovery recovery) {
         Set<ReminderChannel> channels = EnumSet.noneOf(ReminderChannel.class);
-        if (occurrence.inAppDate().filter(businessDate::equals).isPresent()) {
+        if (occurrence.inAppDate().filter(date -> firesOn(occurrence, ReminderChannel.IN_APP, date, businessDate, recovery)).isPresent()) {
             channels.add(ReminderChannel.IN_APP);
         }
-        if (occurrence.emailDate(nonBusinessDays).filter(businessDate::equals).isPresent()) {
+        if (occurrence.emailDate(nonBusinessDays).filter(date -> firesOn(occurrence, ReminderChannel.EMAIL, date, businessDate, recovery)).isPresent()) {
             channels.add(ReminderChannel.EMAIL);
         }
         return channels;
+    }
+
+    private static boolean firesOn(ReminderOccurrence occurrence, ReminderChannel channel, LocalDate firingDate, LocalDate businessDate, MissedReminderRecovery recovery) {
+        return firingDate.equals(businessDate) || recovery.recovers(occurrence, channel, firingDate, businessDate);
     }
 
     private static ReminderDebtEntry debtEntryOf(ReminderInvoiceFact fact, ResolvedReminderSchedule schedule) {
