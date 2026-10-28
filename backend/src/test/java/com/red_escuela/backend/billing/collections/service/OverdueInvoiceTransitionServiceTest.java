@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.invoice.service.InvoiceLockingService;
+import com.red_escuela.backend.billing.invoice.service.SubjectLockSequence;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.junit.jupiter.api.Tag;
@@ -28,10 +28,10 @@ import static org.mockito.Mockito.when;
 class OverdueInvoiceTransitionServiceTest {
     private static final LocalDate DUE_DATE = LocalDate.of(2020, 3, 12);
 
-    private final InvoiceLockingService invoiceLockingService = mock(InvoiceLockingService.class);
+    private final SubjectLockSequence subjectLockSequence = mock(SubjectLockSequence.class);
     private final BillingConfigurationReader reader = mock(BillingConfigurationReader.class);
     private final Invoice invoice = mock(Invoice.class);
-    private final OverdueInvoiceTransitionService service = new OverdueInvoiceTransitionService(invoiceLockingService, reader,
+    private final OverdueInvoiceTransitionService service = new OverdueInvoiceTransitionService(subjectLockSequence, reader,
             PolicySet.<OverdueDetectionContext>named("OVERDUE_DETECTION", List.of(new InvoiceIsPastDueDatePolicy())), mock(ApplicationEventPublisher.class));
 
     private LatePaymentTerms termsWithGrace(int graceDays) {
@@ -41,7 +41,7 @@ class OverdueInvoiceTransitionServiceTest {
     private void arrangeInvoiceDueBeforeEveryVersion() {
         when(invoice.getPaymentStatus()).thenReturn(InvoicePaymentStatus.PENDING);
         when(invoice.getDueDate()).thenReturn(DUE_DATE);
-        when(invoiceLockingService.lockInvoiceForUpdate(7L)).thenReturn(invoice);
+        when(subjectLockSequence.lockInvoiceFollowingTheEnrollmentAndAccount(7L)).thenReturn(invoice);
         when(reader.findLatePaymentSettingsEffectiveOn(DUE_DATE)).thenReturn(Optional.empty());
     }
 
