@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.annualupfront;
 
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontBlockedByOverdueDebtPolicy;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontEnrollmentActivePolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontLineCountSupportedPolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontMonthsStillAvailablePolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontPriceAvailablePolicy;
@@ -21,6 +22,7 @@ public class AnnualUpfrontPolicySetsConfiguration {
     @Bean
     public PolicySet<AnnualUpfrontRequestCheck> annualUpfrontRequestPolicies() {
         List<Policy<AnnualUpfrontRequestCheck>> ordered = List.of(
+                new AnnualUpfrontEnrollmentActivePolicy(),
                 new AnnualUpfrontRequestWindowPolicy(),
                 new ScholarshipHolderCannotChooseAnnualUpfrontPolicy(),
                 new AnnualUpfrontBlockedByOverdueDebtPolicy(),

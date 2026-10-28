@@ -27,7 +27,7 @@ public class RepositoryBillingEnrollmentLookup implements BillingEnrollmentLooku
         Optional<ProgramEnrollmentRepository.BillingTemplateRef> ref = programEnrollmentRepository.findBillingTemplateRef(programEnrollmentId);
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .map(enrollment -> new BillingEnrollmentFacts(enrollment.getStudent().getId(), enrollment.getProgram().getCurrency(), enrollment.getProgram().getId(),
-                        ref.map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null), null, null));
+                        ref.map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null), null, null, programEnrollmentRepository.isEnrolledAndNotSuspendedForNonPayment(programEnrollmentId)));
     }
 
     @Override

@@ -19,17 +19,28 @@ class AnnualUpfrontRequestPoliciesTest {
     private final PolicySet<AnnualUpfrontRequestCheck> policies = new AnnualUpfrontPolicySetsConfiguration().annualUpfrontRequestPolicies();
 
     private static AnnualUpfrontRequestCheck allowedOn(LocalDate today) {
-        return new AnnualUpfrontRequestCheck(today, DEADLINE, false, false, null, false, 10, true);
+        return new AnnualUpfrontRequestCheck(true, today, DEADLINE, false, false, null, false, 10, true);
     }
 
     private static AnnualUpfrontRequestCheck with(AnnualUpfrontRequestCheck base, boolean scholarship, boolean debt, Long openInvoiceId, boolean monthlyIssued, int lineCount,
                                                   boolean price) {
-        return new AnnualUpfrontRequestCheck(base.today(), base.requestDeadline(), scholarship, debt, openInvoiceId, monthlyIssued, lineCount, price);
+        return new AnnualUpfrontRequestCheck(base.enrollmentActive(), base.today(), base.requestDeadline(), scholarship, debt, openInvoiceId, monthlyIssued, lineCount, price);
     }
 
     private String firstCodeOf(AnnualUpfrontRequestCheck check) {
         PolicyEvaluationResult result = policies.evaluateRulesUntilFirstViolation(check);
         return result.allowed() ? null : result.violations().get(0).code();
+    }
+
+    @Test
+    @Tag("D-066")
+    @Tag("D-053")
+    void anInactiveEnrollmentIsNotEligibleWhateverElseHolds() {
+        AnnualUpfrontRequestCheck inactive = new AnnualUpfrontRequestCheck(false, LocalDate.of(2027, 2, 1), DEADLINE, false, false, null, false, 10, true);
+
+        assertThat(firstCodeOf(inactive)).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        assertThat(firstCodeOf(new AnnualUpfrontRequestCheck(false, LocalDate.of(2027, 3, 1), DEADLINE, true, true, 5L, true, 0, false))).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        assertThat(firstCodeOf(allowedOn(LocalDate.of(2027, 2, 1)))).isNull();
     }
 
     @Test
@@ -43,7 +54,7 @@ class AnnualUpfrontRequestPoliciesTest {
     @Test
     @Tag("D-156")
     void aYearWithoutAnnualUpfrontSettingsIsClosed() {
-        AnnualUpfrontRequestCheck withoutDeadline = new AnnualUpfrontRequestCheck(LocalDate.of(2027, 2, 1), null, false, false, null, false, 10, true);
+        AnnualUpfrontRequestCheck withoutDeadline = new AnnualUpfrontRequestCheck(true, LocalDate.of(2027, 2, 1), null, false, false, null, false, 10, true);
 
         assertThat(firstCodeOf(withoutDeadline)).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
     }
@@ -96,7 +107,7 @@ class AnnualUpfrontRequestPoliciesTest {
     @Test
     @Tag("D-156")
     void theFirstViolationFollowsTheDeclaredOrder() {
-        AnnualUpfrontRequestCheck everythingWrong = new AnnualUpfrontRequestCheck(LocalDate.of(2027, 3, 1), DEADLINE, true, true, 5L, true, 0, false);
+        AnnualUpfrontRequestCheck everythingWrong = new AnnualUpfrontRequestCheck(true, LocalDate.of(2027, 3, 1), DEADLINE, true, true, 5L, true, 0, false);
 
         assertThat(firstCodeOf(everythingWrong)).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
         assertThat(firstCodeOf(with(allowedOn(LocalDate.of(2027, 2, 1)), true, true, 5L, true, 0, false))).isEqualTo("ANNUAL_UPFRONT_NOT_AVAILABLE_WITH_SCHOLARSHIP");
@@ -111,6 +122,7 @@ class AnnualUpfrontRequestPoliciesTest {
     void thePolicySetHasExactlyTheDeclaredRulesInOrder() {
         assertThat(policies.moment()).isEqualTo("ANNUAL_UPFRONT_REQUEST");
         assertThat(policies.policies().stream().map(Policy::ruleName).toList()).isEqualTo(List.of(
+                "AnnualUpfrontEnrollmentActivePolicy",
                 "AnnualUpfrontRequestWindowPolicy",
                 "ScholarshipHolderCannotChooseAnnualUpfrontPolicy",
                 "AnnualUpfrontBlockedByOverdueDebtPolicy",

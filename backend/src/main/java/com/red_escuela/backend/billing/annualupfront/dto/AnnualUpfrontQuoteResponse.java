@@ -36,10 +36,10 @@ public record AnnualUpfrontQuoteResponse(boolean eligible,
         }
     }
 
-    public record Discount(Long definitionId, String name, MonetaryAdjustment calculation, Money savingPerLine, Money totalSaving) {
+    public record Discount(Long definitionId, String name, MonetaryAdjustment calculation, Money totalSaving) {
 
         static Discount from(AnnualUpfrontDiscountSummary summary) {
-            return summary == null ? null : new Discount(summary.definitionId(), summary.name(), summary.calculation(), summary.savingPerLine(), summary.totalSaving());
+            return summary == null ? null : new Discount(summary.definitionId(), summary.name(), summary.calculation(), summary.totalSaving());
         }
     }
 

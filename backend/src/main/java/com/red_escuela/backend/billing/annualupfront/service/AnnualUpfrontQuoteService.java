@@ -15,7 +15,6 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
-import com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCalculator;
 import com.red_escuela.backend.billing.invoice.service.EnrollmentInvoiceQueryService;
 import com.red_escuela.backend.billing.invoice.service.InvoiceFollowUpQueries;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
@@ -53,14 +52,14 @@ public class AnnualUpfrontQuoteService {
     private final StudentCurrentAccountService accountService;
     private final ScholarshipCoverageReader scholarshipCoverage;
     private final AnnualUpfrontDiscountCandidateFinder candidateFinder;
-    private final InvoiceDiscountCalculator discountCalculator;
+    private final AnnualUpfrontDiscountSelector discountSelector;
     private final PolicySet<AnnualUpfrontRequestCheck> eligibilityPolicies;
     private final Clock clock;
 
     public AnnualUpfrontQuoteService(BillingEnrollmentLookup enrollmentLookup, CurrentStudentService currentStudentService, AnnualUpfrontCycleReader cycleReader,
                                      BillingConfigurationReader configurationReader, PriceReader priceReader, EnrollmentInvoiceQueryService enrollmentInvoices,
                                      InvoiceFollowUpQueries invoiceFollowUp, StudentCurrentAccountService accountService, ScholarshipCoverageReader scholarshipCoverage,
-                                     AnnualUpfrontDiscountCandidateFinder candidateFinder, InvoiceDiscountCalculator discountCalculator,
+                                     AnnualUpfrontDiscountCandidateFinder candidateFinder, AnnualUpfrontDiscountSelector discountSelector,
                                      PolicySet<AnnualUpfrontRequestCheck> annualUpfrontRequestPolicies, Clock clock) {
         this.enrollmentLookup = enrollmentLookup;
         this.currentStudentService = currentStudentService;
@@ -72,7 +71,7 @@ public class AnnualUpfrontQuoteService {
         this.accountService = accountService;
         this.scholarshipCoverage = scholarshipCoverage;
         this.candidateFinder = candidateFinder;
-        this.discountCalculator = discountCalculator;
+        this.discountSelector = discountSelector;
         this.eligibilityPolicies = annualUpfrontRequestPolicies;
         this.clock = clock;
     }
@@ -102,7 +101,7 @@ public class AnnualUpfrontQuoteService {
         Optional<AnnualUpfrontSettings> settings = cycle.flatMap(found -> configurationReader.findAnnualUpfrontSettingsEffectiveOn(facts.programId(), found.template().termId(), today));
         Optional<PriceVersionResolution> price = priceReader.findPriceVersionEffectiveOn(OfferingReference.ofProgram(facts.programId()), FeeType.MONTHLY_INSTALLMENT, today);
         List<Invoice> invoices = enrollmentInvoices.findInvoicesOfEnrollment(programEnrollmentId, null);
-        AnnualUpfrontRequestCheck check = new AnnualUpfrontRequestCheck(today, settings.map(AnnualUpfrontSettings::requestDeadline).orElse(null),
+        AnnualUpfrontRequestCheck check = new AnnualUpfrontRequestCheck(facts.active(), today, settings.map(AnnualUpfrontSettings::requestDeadline).orElse(null),
                 cycle.isPresent() && scholarshipCoverage.activeScholarshipCoversAnyMonthOf(programEnrollmentId, cycle.get().termStart(), cycle.get().end()),
                 hasOverdueDebt(facts.studentId(), today), findOpenRequestInvoiceId(invoices, cycle).orElse(null), monthlyInstallmentIssued(invoices, cycle),
                 periods.size(), price.isPresent());
@@ -120,7 +119,7 @@ public class AnnualUpfrontQuoteService {
         NonNegativeMoney pricePerMonth = price.finalAmount();
         List<InvoiceDiscountCandidate> candidates = candidateFinder.findCandidatesForLines(facts.programId(), facts.currency(), today,
                 IntStream.range(0, periods.size()).mapToObj(index -> pricePerMonth).toList());
-        Map<Integer, InvoiceDiscountCandidate> winners = discountCalculator.selectBestDiscountPerInvoiceLine(InvoiceType.ANNUAL_UPFRONT, candidates);
+        Map<Integer, InvoiceDiscountCandidate> winners = discountSelector.selectWinningPromotionForEveryLine(candidates);
         return AnnualUpfrontQuoteCalculator.calculateQuote(periods, pricePerMonth, winners, paymentDeadline);
     }
 

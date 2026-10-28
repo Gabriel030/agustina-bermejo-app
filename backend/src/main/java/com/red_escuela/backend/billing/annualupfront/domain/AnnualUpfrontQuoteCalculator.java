@@ -37,6 +37,6 @@ public final class AnnualUpfrontQuoteCalculator {
             return null;
         }
         InvoiceDiscountCandidate first = winnerByLine.values().iterator().next();
-        return new AnnualUpfrontDiscountSummary(first.sourceId(), first.discountName(), first.calculation(), first.discountAmount().value(), totalSaving);
+        return new AnnualUpfrontDiscountSummary(first.sourceId(), first.discountName(), first.calculation(), totalSaving);
     }
 }

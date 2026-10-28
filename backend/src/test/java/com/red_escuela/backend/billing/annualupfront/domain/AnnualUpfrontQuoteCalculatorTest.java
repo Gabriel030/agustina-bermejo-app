@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
-import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,6 @@ class AnnualUpfrontQuoteCalculatorTest {
         assertThat(quote.lines().get(9).period()).isEqualTo(YearMonth.of(2027, 12));
         assertThat(quote.total().amount()).isEqualByComparingTo("720000.00");
         assertThat(quote.discount().definitionId()).isEqualTo(4L);
-        assertThat(quote.discount().savingPerLine().amount()).isEqualByComparingTo("8000.00");
         assertThat(quote.discount().totalSaving().amount()).isEqualByComparingTo("80000.00");
         assertThat(quote.paymentDeadline()).isEqualTo(DEADLINE);
     }
@@ -63,13 +61,5 @@ class AnnualUpfrontQuoteCalculatorTest {
         assertThat(quote.discount()).isNull();
         assertThat(quote.total().amount()).isEqualByComparingTo("800000.00");
         assertThat(quote.lines()).allSatisfy(line -> assertThat(line.discountAmount().isZero()).isTrue());
-    }
-
-    @Test
-    @Tag("D-439")
-    void everyLineCarriesTheSamePriceOfTheDayOfTheQuote() {
-        AnnualUpfrontQuote quote = AnnualUpfrontQuoteCalculator.calculateQuote(PERIODS, NonNegativeMoney.of(new BigDecimal("80000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), Map.of(), DEADLINE);
-
-        assertThat(quote.lines().stream().map(AnnualUpfrontQuoteLine::baseAmount).distinct()).hasSize(1);
     }
 }

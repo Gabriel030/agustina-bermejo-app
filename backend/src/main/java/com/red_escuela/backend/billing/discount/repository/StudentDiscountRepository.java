@@ -29,7 +29,7 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
 
     List<StudentDiscount> findByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, StudentDiscountStatus status);
 
-    long countByDiscountDefinitionId(Long discountDefinitionId);
+    long countByDiscountDefinitionIdAndStatusIn(Long discountDefinitionId, java.util.Collection<StudentDiscountStatus> statuses);
 
     long countByDiscountDefinitionIdAndOrigin(Long discountDefinitionId, StudentDiscountOrigin origin);
 

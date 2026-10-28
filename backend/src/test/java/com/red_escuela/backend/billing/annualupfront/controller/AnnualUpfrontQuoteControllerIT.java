@@ -19,7 +19,12 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceFactory;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLineDraft;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
+import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
+import com.red_escuela.backend.billing.support.PriceFixtures;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -79,6 +84,9 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
     private InvoiceRepository invoiceRepository;
     @Autowired
     private StudentCurrentAccountService accountService;
+
+    @Autowired
+    private InvoiceNumberGenerator numberGenerator;
 
     private final List<Long> createdDefinitionIds = new ArrayList<>();
 
@@ -156,6 +164,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
     @Test
     void withoutAnyPromotionTheStudentSeesTenInstallmentsAtTheFullPrice() throws Exception {
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 2, 10, 12, 0));
         JsonNode quote = studentQuote();
 
         assertThat(quote.get("eligible").asBoolean()).isTrue();
@@ -166,7 +175,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         assertThat(quote.get("quote").get("lines").get(9).get("period").asText()).isEqualTo("2027-12");
         assertThat(new BigDecimal(quote.get("quote").get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
         assertThat(quote.get("quote").get("discount").isNull()).isTrue();
-        assertThat(quote.get("quote").get("paymentDeadline").asText()).startsWith("2027-02-12T");
+        assertThat(quote.get("quote").get("paymentDeadline").asText()).isEqualTo("2027-02-12T12:00:00");
     }
 
     @Test
@@ -177,7 +186,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
         assertThat(quote.get("lines")).allSatisfy(line -> assertThat(new BigDecimal(line.get("discountAmount").get("amount").asText())).isEqualByComparingTo("8000.00"));
         assertThat(new BigDecimal(quote.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
-        assertThat(new BigDecimal(quote.get("discount").get("savingPerLine").get("amount").asText())).isEqualByComparingTo("8000.00");
+        assertThat(new BigDecimal(quote.get("discount").get("totalSaving").get("amount").asText())).isEqualByComparingTo("80000.00");
     }
 
     @Test
@@ -276,5 +285,83 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         mockMvc.perform(get(staffPath).header("Authorization", "Bearer " + tokenOf(persistPerson("aq.docente", "DOCENTE")))).andExpect(status().isForbidden());
         mockMvc.perform(get(staffPath).header("Authorization", "Bearer " + tokenOf(director))).andExpect(status().isOk());
         mockMvc.perform(get(path)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Tag("D-439")
+    void theQuoteUsesTheMonthlyPriceOfTheDayWithTheMarketingDiscountAndIgnoresLaterIncreases() throws Exception {
+        PriceFixtures.persistPriceVersion(offering.programId(), null, FeeType.MONTHLY_INSTALLMENT, "Precio", Money.of(new BigDecimal("100000.00"), Currency.ARS),
+                LocalDate.of(2027, 2, 1), director.getId(), "FIXED", new BigDecimal("10000.00"));
+        PriceFixtures.persistPriceVersion(offering.programId(), null, FeeType.MONTHLY_INSTALLMENT, "Aumento de abril", Money.of(new BigDecimal("120000.00"), Currency.ARS),
+                LocalDate.of(2027, 4, 1), director.getId());
+
+        JsonNode quote = studentQuote().get("quote");
+
+        assertThat(quote.get("lines")).hasSize(10);
+        assertThat(quote.get("lines")).allSatisfy(line -> assertThat(new BigDecimal(line.get("baseAmount").get("amount").asText())).isEqualByComparingTo("90000.00"));
+        assertThat(new BigDecimal(quote.get("total").get("amount").asText())).isEqualByComparingTo("900000.00");
+    }
+
+    @Test
+    @Tag("D-156")
+    void aYearWithoutAnnualUpfrontSettingsHasTheWindowClosed() throws Exception {
+        IssuingScenarioFactory.Offering other = factory.newProgram(Currency.ARS, 80000, 50000);
+        Long otherTemplate = factory.newTemplate(other, 2027);
+        Long otherCohort = factory.newCohort(otherTemplate, CohortIntake.FIRST, LocalDate.of(2027, 3, 1), Percentage.ofPoints(BigDecimal.TEN));
+        IssuingScenarioFactory.Learner unconfigured = factory.newLearner(other, otherCohort);
+        learnerStudentIds.add(unconfigured.studentId());
+
+        JsonNode quote = objectMapper.readTree(mockMvc.perform(get("/program-enrollments/" + unconfigured.programEnrollmentId() + "/annual-upfront/quote")
+                .header("Authorization", "Bearer " + tokenOf(administrative))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+
+        assertThat(quote.get("eligible").asBoolean()).isFalse();
+        assertThat(quote.get("reasonCode").asText()).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
+    }
+
+    @Test
+    @Tag("D-292")
+    void aLateFeeAloneBlocksTheYearFromTheDayAfterItsDueDate() throws Exception {
+        Long origin = issue(adHocChargeOf(FeeType.ADMINISTRATIVE_FEE, YearMonth.of(2027, 2), "1000.00", "origin-" + System.nanoTime()));
+        jdbc.update("update invoice set payment_status = 'PAID', paid_amount = total, outstanding_amount = 0 where id = ?", origin);
+        seedLateFeeOf(origin, LocalDate.of(2027, 2, 24));
+
+        today(LocalDate.of(2027, 2, 24));
+        assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
+
+        today(LocalDate.of(2027, 2, 25));
+        JsonNode blocked = studentQuote();
+        assertThat(blocked.get("reasonCode").asText()).isEqualTo("OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT");
+    }
+
+    @Test
+    @Tag("D-066")
+    void aSuspendedWithdrawnPausedOrCompletedEnrollmentIsNotEligible() throws Exception {
+        assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
+
+        jdbc.update("update program_enrollment set payment_status = 'SUSPENDED' where id = ?", learner.programEnrollmentId());
+        assertThat(studentQuote().get("reasonCode").asText()).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        jdbc.update("update program_enrollment set payment_status = 'WITHDRAWN_FOR_NONPAYMENT' where id = ?", learner.programEnrollmentId());
+        assertThat(studentQuote().get("reasonCode").asText()).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        jdbc.update("update program_enrollment set payment_status = 'UP_TO_DATE' where id = ?", learner.programEnrollmentId());
+        assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
+        for (String status : List.of("PAUSED", "COMPLETED", "WITHDRAWN")) {
+            jdbc.update("update program_enrollment set status = ? where id = ?", status, learner.programEnrollmentId());
+            assertThat(studentQuote().get("reasonCode").asText()).as(status).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        }
+    }
+
+    private void seedLateFeeOf(Long originInvoiceId, LocalDate dueDate) {
+        transactionTemplate.executeWithoutResult(status -> {
+            Long accountId = accountService.findOrOpenAndLockStudentCurrentAccount(learner.studentId(), Currency.ARS).getId();
+            InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.DEBIT_NOTE, InvoiceType.LATE_FEE, InvoiceIssuingReason.MONTHLY_RUN,
+                    originInvoiceId);
+            InvoiceLineDraft line = new InvoiceLineDraft(FeeType.LATE_FEE, "Recargo", YearMonth.of(2027, 2), null, null, null, null, null, "LF:" + originInvoiceId,
+                    NonNegativeMoney.of(new BigDecimal("100.00"), Currency.ARS));
+            Invoice note = InvoiceFactory.createLateFeeDebitNoteDraft(header, line, ACTOR);
+            note.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.DEBIT_NOTE), dueDate.minusDays(9), dueDate,
+                    new StudentSnapshot("Persona Prueba", "1", "Calle 1"), ACTOR);
+            Invoice saved = invoiceRepository.save(note);
+            accountService.recordDebitNoteIssuedDebit(accountService.lockStudentCurrentAccount(accountId), saved, dueDate.minusDays(9));
+        });
     }
 }

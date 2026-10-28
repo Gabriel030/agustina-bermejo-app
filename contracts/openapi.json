@@ -3296,14 +3296,11 @@
           "name" : {
             "type" : "string"
           },
-          "savingPerLine" : {
-            "$ref" : "#/components/schemas/Money"
-          },
           "totalSaving" : {
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "calculation", "definitionId", "name", "savingPerLine", "totalSaving" ],
+        "required" : [ "calculation", "definitionId", "name", "totalSaving" ],
         "type" : "object"
       },
       "DiscountConsumptionResponse" : {

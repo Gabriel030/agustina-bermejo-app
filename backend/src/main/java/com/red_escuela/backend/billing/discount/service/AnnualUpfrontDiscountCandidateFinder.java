@@ -1,7 +1,8 @@
 package com.red_escuela.backend.billing.discount.service;
 
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
-import com.red_escuela.backend.billing.discount.domain.DiscountSavingCalculator;
+import com.red_escuela.backend.billing.discount.domain.InvoiceSavingDistributor;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
@@ -16,12 +17,14 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.IntStream;
 
 @Component
 public class AnnualUpfrontDiscountCandidateFinder {
     private static final int MAX_NAME_LENGTH = 200;
+    private static final Set<StudentDiscountStatus> PLACE_HOLDING_STATUSES = Set.of(StudentDiscountStatus.ACTIVE, StudentDiscountStatus.EXHAUSTED);
 
     private final DiscountDefinitionRepository definitionRepository;
     private final StudentDiscountRepository studentDiscountRepository;
@@ -33,7 +36,7 @@ public class AnnualUpfrontDiscountCandidateFinder {
 
     public List<InvoiceDiscountCandidate> findCandidatesForLines(Long programId, Currency currency, LocalDate date, List<NonNegativeMoney> lineBaseAmounts) {
         return candidatesOf(definitionRepository.findActiveAnnualUpfrontDefinitions(), programId, currency, date, lineBaseAmounts,
-                studentDiscountRepository::countByDiscountDefinitionId);
+                definitionId -> studentDiscountRepository.countByDiscountDefinitionIdAndStatusIn(definitionId, PLACE_HOLDING_STATUSES));
     }
 
     public static List<InvoiceDiscountCandidate> candidatesOf(List<DiscountDefinition> definitions, Long programId, Currency currency, LocalDate date,
@@ -43,7 +46,7 @@ public class AnnualUpfrontDiscountCandidateFinder {
                 .filter(definition -> definition.getProgramId() == null || definition.getProgramId().equals(programId))
                 .filter(definition -> definition.getCalculation() != null && hasCurrency(definition.getCalculation(), currency))
                 .filter(definition -> definition.hasPlaceLeft(placesUsedOf.applyAsLong(definition.getId())))
-                .flatMap(definition -> IntStream.range(0, lineBaseAmounts.size()).mapToObj(index -> candidateOf(definition, index + 1, lineBaseAmounts.get(index))))
+                .flatMap(definition -> candidatesOfDefinition(definition, lineBaseAmounts).stream())
                 .filter(candidate -> !candidate.discountAmount().value().isZero())
                 .toList();
     }
@@ -52,8 +55,13 @@ public class AnnualUpfrontDiscountCandidateFinder {
         return !(calculation instanceof MonetaryAdjustment.Nominal nominal) || nominal.amount().currency() == currency;
     }
 
-    private static InvoiceDiscountCandidate candidateOf(DiscountDefinition definition, int lineNumber, NonNegativeMoney base) {
-        NonNegativeMoney saving = DiscountSavingCalculator.calculateSavingOnFinalPrice(definition.getCalculation(), base, Optional.ofNullable(definition.getCapPerInvoice()));
+    private static List<InvoiceDiscountCandidate> candidatesOfDefinition(DiscountDefinition definition, List<NonNegativeMoney> lineBaseAmounts) {
+        List<NonNegativeMoney> savings = InvoiceSavingDistributor.distributeInvoiceSavingAcrossLines(definition.getCalculation(), Optional.ofNullable(definition.getCapPerInvoice()),
+                lineBaseAmounts);
+        return IntStream.range(0, lineBaseAmounts.size()).mapToObj(index -> candidateOf(definition, index + 1, lineBaseAmounts.get(index), savings.get(index))).toList();
+    }
+
+    private static InvoiceDiscountCandidate candidateOf(DiscountDefinition definition, int lineNumber, NonNegativeMoney base, NonNegativeMoney saving) {
         String name = definition.getName();
         return new InvoiceDiscountCandidate(DiscountType.ANNUAL_UPFRONT, definition.getId(), null, name.substring(0, Math.min(name.length(), MAX_NAME_LENGTH)),
                 InvoiceType.ANNUAL_UPFRONT, base, saving, null, null, lineNumber, definition.getPriority(), definition.getCreatedAt(), definition.getCalculation(),

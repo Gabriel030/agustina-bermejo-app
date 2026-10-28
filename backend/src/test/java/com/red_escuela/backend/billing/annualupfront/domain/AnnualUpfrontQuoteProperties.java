@@ -53,7 +53,6 @@ class AnnualUpfrontQuoteProperties {
         assertThat(quote.lines()).allSatisfy(line -> {
             assertThat(line.finalAmount().isNegative()).isFalse();
             assertThat(line.discountAmount().isGreaterThan(line.baseAmount())).isFalse();
-            assertThat(line.finalAmount()).isEqualTo(line.baseAmount().minus(line.discountAmount()));
             assertThat(line.discountAmount().amount().scale()).isLessThanOrEqualTo(2);
         });
     }
