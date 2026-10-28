@@ -22,7 +22,7 @@ public final class ReversalEffectsParity {
     public record InvoiceState(String paymentStatus, BigDecimal outstanding) {
     }
 
-    public record Snapshot(Map<Long, InvoiceState> invoices, Map<Long, BigDecimal> reversedAllocationsByInvoice, long lastLateFeeChargeId) {
+    public record Snapshot(Map<Long, InvoiceState> invoices, Map<Long, BigDecimal> reversedAllocationsByInvoice, long lastLateFeeChargeId, Map<String, Object> ledger) {
     }
 
     public static Snapshot takeSnapshot(JdbcTemplate jdbc, Long accountId) {
@@ -34,7 +34,25 @@ public final class ReversalEffectsParity {
                 + "group by invoice_id", accountId).forEach(row -> reversed.put(((Number) row.get("invoice_id")).longValue(), (BigDecimal) row.get("total")));
         long lastCharge = jdbc.queryForObject("select coalesce(max(c.id), 0) from late_fee_charge c join invoice d on d.id = c.debit_note_id where d.student_current_account_id = ?",
                 Long.class, accountId);
-        return new Snapshot(invoices, reversed, lastCharge);
+        Map<String, Object> ledger = jdbc.queryForMap("select (select count(*) from current_account_entry where student_current_account_id = ?) as entries, "
+                + "(select count(*) from payment_allocation where student_current_account_id = ?) as allocations, "
+                + "(select count(*) from chargeback where student_current_account_id = ?) as chargebacks, "
+                + "(select string_agg(id || ':' || status, ',' order by id) from payment where student_current_account_id = ?) as payment_statuses, "
+                + "(select string_agg(id || ':' || coalesce(reversed_on::text, '-'), ',' order by id) from chargeback where student_current_account_id = ?) as chargeback_states, "
+                + "(select unallocated_credit_amount from student_current_account where id = ?) as unallocated_credit, "
+                + "(select balance_amount from student_current_account where id = ?) as balance, "
+                + "(select count(*) from invoice where student_current_account_id = ?) as invoices, "
+                + "(select count(*) from invoice_status_change c join invoice i on i.id = c.invoice_id where i.student_current_account_id = ?) as status_changes",
+                accountId, accountId, accountId, accountId, accountId, accountId, accountId, accountId, accountId);
+        return new Snapshot(invoices, reversed, lastCharge, ledger);
+    }
+
+    public static void assertThePreviewChangedNothing(JdbcTemplate jdbc, Long accountId, Snapshot before) {
+        Snapshot after = takeSnapshot(jdbc, accountId);
+        assertThat(after.ledger()).isEqualTo(before.ledger());
+        assertThat(after.invoices()).isEqualTo(before.invoices());
+        assertThat(after.reversedAllocationsByInvoice()).isEqualTo(before.reversedAllocationsByInvoice());
+        assertThat(after.lastLateFeeChargeId()).isEqualTo(before.lastLateFeeChargeId());
     }
 
     public static void assertThePredictionMatchesWhatTheRealOperationDid(JdbcTemplate jdbc, Long accountId, Snapshot before, PaymentReversalEffects predicted) {

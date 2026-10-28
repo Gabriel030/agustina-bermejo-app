@@ -79,28 +79,32 @@ public class LateFeeReinstatementService implements AnnulledLateFeeReinstatement
         }
         Invoice origin = invoiceAccess.findInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
         LateFeeChargeCorrection correction = correctionRepository.findById(correctionId).orElseThrow();
-        return findIssuableContext(origin, InvoicePaymentStatus.OVERDUE, correction, businessDate, versionResolver.timelineUpTo(businessDate)).map(context -> new PlannedLateFeeReinstatement(
+        return findIssuableContext(origin, InvoicePaymentStatus.OVERDUE, correction, businessDate, versionResolver.timelineUpTo(businessDate), false).map(context -> new PlannedLateFeeReinstatement(
                 originInvoiceId, correctionId, context.period().period().firstDay(), context.period().period().lastDay(), context.period().chargedDays(),
                 context.lateFeeAmount(), context.issueDate(), context.debitNoteDueDate()));
     }
 
     private Optional<LateFeeIssuingContext> findIssuableContext(Invoice origin, InvoicePaymentStatus originStatus, LateFeeChargeCorrection correction, LocalDate businessDate,
-                                                                 LatePaymentTimeline timeline) {
+                                                                 LatePaymentTimeline timeline, boolean logOmission) {
         Optional<LateFeeIssuingContext> context = contextLoader.loadReinstatementContext(origin, originStatus, correction, businessDate, timeline);
         if (context.isEmpty()) {
-            log.warn("Reposición de recargo omitida: origen={}, corrección={}, la factura no admite recargo o no quedan días cobrables", origin.getId(), correction.getId());
+            if (logOmission) {
+                log.warn("Reposición de recargo omitida: origen={}, corrección={}, la factura no admite recargo o no quedan días cobrables", origin.getId(), correction.getId());
+            }
             return Optional.empty();
         }
         PolicyEvaluationResult evaluation = issuingPolicies.evaluateRulesUntilFirstViolation(context.get());
         if (!evaluation.allowed()) {
-            log.warn("Reposición de recargo omitida: origen={}, corrección={}, codigos={}", origin.getId(), correction.getId(), evaluation.describeDenials());
+            if (logOmission) {
+                log.warn("Reposición de recargo omitida: origen={}, corrección={}, codigos={}", origin.getId(), correction.getId(), evaluation.describeDenials());
+            }
             return Optional.empty();
         }
         return context;
     }
 
     private Optional<Long> reinstateCorrection(Invoice origin, LateFeeChargeCorrection correction, LocalDate businessDate, LatePaymentTimeline timeline) {
-        Optional<LateFeeIssuingContext> context = findIssuableContext(origin, origin.getPaymentStatus(), correction, businessDate, timeline);
+        Optional<LateFeeIssuingContext> context = findIssuableContext(origin, origin.getPaymentStatus(), correction, businessDate, timeline, true);
         if (context.isEmpty()) {
             return Optional.empty();
         }

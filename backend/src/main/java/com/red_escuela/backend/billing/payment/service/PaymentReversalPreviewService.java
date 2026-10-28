@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationS
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.payment.domain.Chargeback;
 import com.red_escuela.backend.billing.account.exception.InsufficientAccountCreditException;
+import com.red_escuela.backend.billing.invoice.exception.IllegalInvoicePaymentStatusTransitionException;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentReversalEffects;
 import com.red_escuela.backend.billing.payment.domain.PaymentReversalPreview;
@@ -24,6 +25,8 @@ import java.util.List;
 
 @Service
 public class PaymentReversalPreviewService {
+    private static final PolicyViolation INVOICE_CANNOT_BE_REOPENED = new PolicyViolation("INVOICE_CANNOT_BE_REOPENED",
+            "Una factura imputada con este pago no está en un estado que admita reabrirla.");
     private static final PolicyViolation INSUFFICIENT_ACCOUNT_CREDIT = new PolicyViolation("INSUFFICIENT_ACCOUNT_CREDIT",
             "La cuenta no tiene crédito suficiente para revertir este pago.");
 
@@ -82,6 +85,8 @@ public class PaymentReversalPreviewService {
                 effects = effectsPlanner.planPaymentCreditReversal(payment, credit, LocalDate.now(clock));
             } catch (InsufficientAccountCreditException insufficient) {
                 blockedBy = INSUFFICIENT_ACCOUNT_CREDIT;
+            } catch (IllegalInvoicePaymentStatusTransitionException cannotReopen) {
+                blockedBy = INVOICE_CANNOT_BE_REOPENED;
             }
         }
         return new PaymentReversalPreview(payment.getId(), payment.getStatus(), blockedBy, credit, pending.stream().map(PendingRefundOfPayment::of).toList(),

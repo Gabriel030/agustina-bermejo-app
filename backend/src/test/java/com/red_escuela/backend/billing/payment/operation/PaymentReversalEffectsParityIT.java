@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.LocalDate;
@@ -39,6 +41,9 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
     @Autowired
     CurrentAccountAllocationService allocationService;
 
+    @Autowired
+    PlatformTransactionManager transactionManager;
+
     private void allocateAccountCredit(Debtor debtor) {
         inTransaction(() -> allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(debtor.accountId()), TODAY, actor));
     }
@@ -57,16 +62,30 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
                 .content("{\"reason\":\"Aprobada por error\"}");
     }
 
+    private PaymentReversalPreview readOnlyPreview(Long accountId, java.util.function.Supplier<PaymentReversalPreview> preview) {
+        Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, accountId);
+        TransactionTemplate readOnly = new TransactionTemplate(transactionManager);
+        readOnly.setReadOnly(true);
+        PaymentReversalPreview result = readOnly.execute(status -> preview.get());
+        ReversalEffectsParity.assertThePreviewChangedNothing(jdbc, accountId, before);
+        return result;
+    }
+
+    private Long accountOfPayment(long paymentId) {
+        return jdbc.queryForObject("select student_current_account_id from payment where id = ?", Long.class, paymentId);
+    }
+
     private PaymentReversalPreview previewChargeback(long paymentId, String amount) {
-        return inTransaction(() -> previewService.previewChargebackRegistration(paymentId, ars(amount), TODAY, REFERENCE));
+        return readOnlyPreview(accountOfPayment(paymentId), () -> previewService.previewChargebackRegistration(paymentId, ars(amount), TODAY, REFERENCE));
     }
 
     private PaymentReversalPreview previewRevocation(long paymentId) {
-        return inTransaction(() -> previewService.previewApprovalRevocation(paymentId, "Aprobada por error"));
+        return readOnlyPreview(accountOfPayment(paymentId), () -> previewService.previewApprovalRevocation(paymentId, "Aprobada por error"));
     }
 
     private PaymentReversalPreview previewReversal(long chargebackId) {
-        return inTransaction(() -> previewService.previewChargebackReversal(chargebackId));
+        Long paymentId = jdbc.queryForObject("select payment_id from chargeback where id = ?", Long.class, chargebackId);
+        return readOnlyPreview(accountOfPayment(paymentId), () -> previewService.previewChargebackReversal(chargebackId));
     }
 
     private long registerChargeback(long paymentId, String amount) throws Exception {
@@ -84,13 +103,6 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
         return april;
     }
 
-    private long stateFingerprint(Debtor debtor) {
-        return jdbc.queryForObject("select (select count(*) from current_account_entry where student_current_account_id = ?) * 1000000"
-                + " + (select count(*) from payment_allocation where student_current_account_id = ?) * 1000"
-                + " + (select count(*) from chargeback where student_current_account_id = ?) + (select count(*) from invoice where student_current_account_id = ?) * 1000000000",
-                Long.class, debtor.accountId(), debtor.accountId(), debtor.accountId(), debtor.accountId());
-    }
-
     @Test
     void aSimpleChargebackPredictsTheReopenedInvoiceAndTheCreditReversedAndMatchesTheRealOperation() throws Exception {
         Debtor debtor = debtor();
@@ -98,11 +110,9 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
         long paymentId = cashPayment(debtor, "80000.00", EARLY_MARCH);
         allocateAccountCredit(debtor);
         Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, debtor.accountId());
-        long fingerprint = stateFingerprint(debtor);
 
         PaymentReversalPreview preview = previewChargeback(paymentId, "80000.00");
 
-        assertThat(stateFingerprint(debtor)).isEqualTo(fingerprint);
         assertThat(preview.allowed()).isTrue();
         PaymentReversalEffects effects = preview.effects();
         assertThat(effects.calculated()).isTrue();
@@ -142,11 +152,9 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
         long[] reversed = new long[1];
         long april = reservedRefundScenarioOf(debtor, false, reversed);
         Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, debtor.accountId());
-        long fingerprint = stateFingerprint(debtor);
 
         PaymentReversalEffects effects = previewChargeback(reversed[0], "100000.00").effects();
 
-        assertThat(stateFingerprint(debtor)).isEqualTo(fingerprint);
         assertThat(effects.reopenedInvoices()).hasSize(1);
         assertThat(effects.reopenedInvoices().get(0).invoiceId()).isEqualTo(april);
         assertThat(effects.reopenedInvoices().get(0).statusAfter()).isEqualTo(InvoicePaymentStatus.PENDING);
@@ -197,11 +205,9 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
         allocateAccountCredit(debtor);
         long chargebackId = registerChargeback(paymentId, "80000.00");
         Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, debtor.accountId());
-        long fingerprint = stateFingerprint(debtor);
 
         PaymentReversalPreview preview = previewReversal(chargebackId);
 
-        assertThat(stateFingerprint(debtor)).isEqualTo(fingerprint);
         assertThat(preview.effects().calculated()).isTrue();
         assertThat(preview.effects().reopenedInvoices()).isEmpty();
         assertThat(preview.effects().settledInvoices()).containsExactly(new InvoiceImpact(march, InvoicePaymentStatus.PENDING, InvoicePaymentStatus.PAID,

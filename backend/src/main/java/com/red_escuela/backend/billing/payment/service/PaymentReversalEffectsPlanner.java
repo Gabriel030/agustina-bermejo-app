@@ -58,8 +58,9 @@ class PaymentReversalEffectsPlanner {
         }
         simulation.removePaymentCredit(credit);
         for (Long originInvoiceId : simulation.reopenedInvoiceIdsInAscendingOrder()) {
+            boolean originIsOverdueWhenLoaded = simulation.currentStatusOf(originInvoiceId) == InvoicePaymentStatus.OVERDUE;
             for (Long correctionId : lateFeePlanning.findCorrectionIdsAwaitingReinstatement(originInvoiceId)) {
-                lateFeePlanning.planReinstatement(originInvoiceId, correctionId, simulation.currentStatusOf(originInvoiceId) == InvoicePaymentStatus.OVERDUE, today).ifPresent(
+                lateFeePlanning.planReinstatement(originInvoiceId, correctionId, originIsOverdueWhenLoaded, today).ifPresent(
                         planned -> simulation.issueLateFeeDebitNote(originInvoiceId, planned.firstDay(), planned.lastDay(), planned.chargedDays(), planned.amount(),
                                 planned.issueDate(), planned.debitNoteDueDate()));
             }

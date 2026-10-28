@@ -52,14 +52,6 @@ public final class AccountReversalSimulation {
         return simulation;
     }
 
-    public boolean hasReservedCredit() {
-        return !reservedCredit.value().isZero();
-    }
-
-    public List<PaymentAllocation> currentAllocationsNewestFirst() {
-        return List.copyOf(currentAllocationsNewestFirst);
-    }
-
     public void reverseAllocations(List<PaymentAllocation> allocations, LocalDate businessDate, ToIntFunction<Long> gracePeriodDaysOfInvoice) {
         for (PaymentAllocation allocation : allocations) {
             SimulatedInvoice invoice = invoicesById.get(allocation.getInvoiceId());

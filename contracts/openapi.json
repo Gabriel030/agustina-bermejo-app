@@ -5037,7 +5037,12 @@
           "calculated" : {
             "type" : "boolean"
           },
+          "lateFeeAccrualIncluded" : {
+            "description" : "Siempre falso: la lista de recargos no incluye devengamientos de mora posteriores.",
+            "type" : "boolean"
+          },
           "lateFeeReinstatements" : {
+            "description" : "Solo reposiciones de días de recargo anulados por el pago; no incluye la mora que se devengue después de la operación.",
             "items" : {
               "$ref" : "#/components/schemas/LateFeeReinstatementResponse"
             },
@@ -5056,7 +5061,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "calculated", "lateFeeReinstatements", "reopenedInvoices", "settledInvoices" ],
+        "required" : [ "calculated", "lateFeeAccrualIncluded", "lateFeeReinstatements", "reopenedInvoices", "settledInvoices" ],
         "type" : "object"
       },
       "PaymentReversalPreviewResponse" : {

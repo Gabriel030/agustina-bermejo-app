@@ -3,11 +3,15 @@ package com.red_escuela.backend.billing.payment.dto;
 import com.red_escuela.backend.billing.payment.domain.PaymentReversalEffects;
 import com.red_escuela.backend.shared.domain.Money;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDate;
 import java.util.List;
 
 public record PaymentReversalEffectsResponse(boolean calculated, List<InvoiceImpactResponse> reopenedInvoices, List<InvoiceImpactResponse> settledInvoices,
-                                             List<LateFeeReinstatementResponse> lateFeeReinstatements) {
+                                             @Schema(description = "Solo reposiciones de días de recargo anulados por el pago; no incluye la mora que se devengue después de la operación.")
+                                             List<LateFeeReinstatementResponse> lateFeeReinstatements,
+                                             @Schema(description = "Siempre falso: la lista de recargos no incluye devengamientos de mora posteriores.") boolean lateFeeAccrualIncluded) {
 
     public record InvoiceImpactResponse(Long invoiceId, String paymentStatusBefore, String paymentStatusAfter, Money outstandingBefore, Money outstandingAfter,
                                         Money creditReversed) {
@@ -29,6 +33,6 @@ public record PaymentReversalEffectsResponse(boolean calculated, List<InvoiceImp
     public static PaymentReversalEffectsResponse from(PaymentReversalEffects effects) {
         return new PaymentReversalEffectsResponse(effects.calculated(), effects.reopenedInvoices().stream().map(InvoiceImpactResponse::from).toList(),
                 effects.settledInvoices().stream().map(InvoiceImpactResponse::from).toList(),
-                effects.lateFeeReinstatements().stream().map(LateFeeReinstatementResponse::from).toList());
+                effects.lateFeeReinstatements().stream().map(LateFeeReinstatementResponse::from).toList(), false);
     }
 }

@@ -84,10 +84,6 @@ public class LateFeeContextLoader {
                 resolvedCutoff.get().settlementAllocationId())).toList();
     }
 
-    public Optional<LateFeeIssuingContext> loadReinstatementContext(Invoice origin, LateFeeChargeCorrection correction, LocalDate businessDate, LatePaymentTimeline timeline) {
-        return loadReinstatementContext(origin, origin.getPaymentStatus(), correction, businessDate, timeline);
-    }
-
     public Optional<LateFeeIssuingContext> loadReinstatementContext(Invoice origin, InvoicePaymentStatus originStatus, LateFeeChargeCorrection correction, LocalDate businessDate,
                                                                     LatePaymentTimeline timeline) {
         if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || originStatus != InvoicePaymentStatus.OVERDUE) {
