@@ -61,4 +61,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     @Query("select e.id as enrollmentId, e.course.id as targetId, e.paymentStatus as paymentStatus from CourseEnrollment e where e.id in :ids")
     List<EnrollmentReminderTargetRow> findReminderTargetRows(@Param("ids") Collection<Long> ids);
+
+    @Query("select e.id as enrollmentId, e.course.name as name from CourseEnrollment e where e.id in :ids")
+    List<EnrollmentNameRow> findNameRows(@Param("ids") Collection<Long> ids);
 }

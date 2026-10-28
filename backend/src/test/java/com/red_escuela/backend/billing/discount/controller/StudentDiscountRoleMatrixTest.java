@@ -108,6 +108,37 @@ class StudentDiscountRoleMatrixTest extends AbstractIntegrationTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"PRECEPTOR", "DOCENTE", "ALUMNO"})
+    void rolesWithoutAdministrativeAccessCannotUseTheGlobalListingThePerStudentListingThePreviewNorTheLostBenefitsReport(String role) throws Exception {
+        String token = "ALUMNO".equals(role) ? studentToken() : tokenWithRole(role);
+        Long studentId = learner.studentId();
+
+        mockMvc.perform(get("/student-discounts").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/student-discounts?studentId=" + studentId).header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/students/" + studentId + "/student-discounts").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+        mockMvc.perform(withBody(post("/program-enrollments/" + learner.programEnrollmentId() + "/student-discounts/preview"), token, GRANT_BODY)).andExpect(status().isForbidden());
+        mockMvc.perform(withBody(post("/course-enrollments/1/student-discounts/preview"), token, GRANT_BODY)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/reports/billing/promotions/lost-benefits").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/reports/billing/promotions/lost-benefits?page=0&size=5&cutOffFrom=2027-01").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"DIRECTOR", "ADMINISTRATIVO"})
+    void theStaffThatManagesDiscountsCanUseTheNewListingsAndThePreview(String role) throws Exception {
+        String token = tokenWithRole(role);
+
+        mockMvc.perform(get("/student-discounts?studentId=" + learner.studentId()).header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mockMvc.perform(get("/students/" + learner.studentId() + "/student-discounts").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mockMvc.perform(withBody(post("/program-enrollments/" + learner.programEnrollmentId() + "/student-discounts/preview"), token, GRANT_BODY)).andExpect(status().isOk());
+        mockMvc.perform(get("/reports/billing/promotions/lost-benefits?page=0&size=5").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+    }
+
+    @Test
+    void aStudentCannotReachTheDiscountsOfAnotherStudentByTheStaffRoutes() throws Exception {
+        mockMvc.perform(get("/students/" + (learner.studentId() + 1) + "/student-discounts").header("Authorization", "Bearer " + studentToken())).andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"PRECEPTOR", "DOCENTE"})
     void preceptorAndTeacherCannotReadTheStudentView(String role) throws Exception {
         mockMvc.perform(get("/me/student-discounts").header("Authorization", "Bearer " + tokenWithRole(role))).andExpect(status().isForbidden());

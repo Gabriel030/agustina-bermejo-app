@@ -1,5 +1,10 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.billing.discount.domain.LostBenefitFilter;
+import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitsSlice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest;
 import com.red_escuela.backend.billing.discount.dto.PromotionResponse;
 import com.red_escuela.backend.billing.discount.usecase.ClosePromotionByLegacyContractUseCase;
@@ -18,10 +23,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.YearMonth;
 import java.util.List;
 
 @RestController
 public class PromotionController {
+    public static final String TOTAL_COUNT_HEADER = "X-Total-Count";
+
     private final CreatePromotionByLegacyContractUseCase createUseCase;
     private final ClosePromotionByLegacyContractUseCase closeUseCase;
     private final ListActivePromotionsByLegacyContractUseCase listUseCase;
@@ -64,7 +72,12 @@ public class PromotionController {
 
     @GetMapping("/reports/billing/promotions/lost-benefits")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public List<LostPromotionBenefitResponse> lostBenefits() {
-        return lostBenefitsUseCase.findLostBenefits();
+    public ResponseEntity<List<LostPromotionBenefitResponse>> lostBenefits(@RequestParam(required = false) Long discountDefinitionId,
+                                                                          @RequestParam(required = false) InvoiceType feeType,
+                                                                          @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth cutOffFrom,
+                                                                          @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth cutOffTo,
+                                                                          @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        LostPromotionBenefitsSlice slice = lostBenefitsUseCase.findLostBenefits(new LostBenefitFilter(discountDefinitionId, feeType, cutOffFrom, cutOffTo), page, size);
+        return ResponseEntity.ok().header(TOTAL_COUNT_HEADER, Long.toString(slice.totalElements())).body(slice.items());
     }
 }

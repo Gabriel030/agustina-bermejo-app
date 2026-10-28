@@ -4125,8 +4125,16 @@
           "cutOffAt" : {
             "type" : "string"
           },
+          "discountDefinitionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "feeType" : {
             "type" : "string"
+          },
+          "lostBenefitCount" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "promotionDescription" : {
             "type" : "string"
@@ -4143,6 +4151,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "studentName" : {
             "type" : "string"
           },
@@ -4151,7 +4163,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "cutOffAt", "feeType", "promotionDescription", "promotionRedemptionId", "remaining", "scopeCount", "studentName", "used" ],
+        "required" : [ "cutOffAt", "discountDefinitionId", "feeType", "lostBenefitCount", "promotionDescription", "promotionRedemptionId", "remaining", "scopeCount", "studentId", "studentName", "used" ],
         "type" : "object"
       },
       "MarketingDiscountRequest" : {
@@ -6861,6 +6873,94 @@
         "required" : [ "apellido", "dni", "email", "id", "nombre", "role", "telefono", "username" ],
         "type" : "object"
       },
+      "StudentDiscountGrantPreviewResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "annualUpfrontCoversRange" : {
+            "type" : "boolean"
+          },
+          "calculation" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "coveredPeriods" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "discountDefinitionId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "enrollmentFeeAlreadyIssued" : {
+            "type" : "boolean"
+          },
+          "fromPeriod" : {
+            "type" : [ "string", "null" ]
+          },
+          "invoiceType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "nextInstallmentPeriod" : {
+            "type" : "string"
+          },
+          "overlappingDiscountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "priority" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "requiresDirectorApproval" : {
+            "type" : "boolean"
+          },
+          "toPeriod" : {
+            "type" : [ "string", "null" ]
+          },
+          "type" : {
+            "enum" : [ "SCHOLARSHIP", "PROMOTION", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
+            "type" : "string"
+          },
+          "violations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyViolation"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "allowed", "annualUpfrontCoversRange", "calculation", "coveredPeriods", "enrollmentFeeAlreadyIssued", "invoiceType", "nextInstallmentPeriod", "priority", "requiresDirectorApproval", "type", "violations" ],
+        "type" : "object"
+      },
+      "StudentDiscountPageResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StudentDiscountResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "page", "size", "totalElements" ],
+        "type" : "object"
+      },
       "StudentDiscountPendingAuthorizationResponse" : {
         "properties" : {
           "authorizationRequestId" : {
@@ -6901,6 +7001,27 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "definitionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "definitionType" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : [ "string", "null" ]
+          },
+          "discountDefinitionId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "endCause" : {
+            "enum" : [ "INSTITUTION_DECISION", "ENROLLMENT_ENDED" ],
+            "type" : [ "string", "null" ]
+          },
+          "endCauseText" : {
+            "type" : [ "string", "null" ]
+          },
+          "enrollmentName" : {
+            "type" : [ "string", "null" ]
+          },
           "fromPeriod" : {
             "type" : "string"
           },
@@ -6915,6 +7036,10 @@
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "lostBenefitCount" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           },
           "lostPeriods" : {
             "items" : {
@@ -6947,6 +7072,13 @@
             "enum" : [ "ACTIVE", "EXHAUSTED", "REVOKED", "ENDED" ],
             "type" : "string"
           },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "studentName" : {
+            "type" : [ "string", "null" ]
+          },
           "toPeriod" : {
             "type" : "string"
           },
@@ -6955,7 +7087,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "applicableInvoiceType", "calculation", "fromPeriod", "grantedAt", "grantedById", "id", "priority", "reason", "status", "toPeriod", "type" ],
+        "required" : [ "applicableInvoiceType", "calculation", "fromPeriod", "grantedAt", "grantedById", "id", "priority", "reason", "status", "studentId", "toPeriod", "type" ],
         "type" : "object"
       },
       "StudentDocumentResponse" : {
@@ -12501,6 +12633,85 @@
               }
             },
             "description" : "El administrativo dejó un pedido pendiente de aprobación"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-discount-controller" ]
+      }
+    },
+    "/course-enrollments/{id}/student-discounts/preview" : {
+      "post" : {
+        "operationId" : "StudentDiscount_previewForCourseEnrollment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantStudentDiscountRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudentDiscountGrantPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
           },
           "400" : {
             "content" : {
@@ -24879,6 +25090,85 @@
         "tags" : [ "student-discount-controller" ]
       }
     },
+    "/program-enrollments/{id}/student-discounts/preview" : {
+      "post" : {
+        "operationId" : "StudentDiscount_previewForProgramEnrollment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GrantStudentDiscountRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudentDiscountGrantPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-discount-controller" ]
+      }
+    },
     "/program-enrollments/{id}/withdraw" : {
       "post" : {
         "operationId" : "ProgramEnrollment_withdraw",
@@ -28734,6 +29024,53 @@
     "/reports/billing/promotions/lost-benefits" : {
       "get" : {
         "operationId" : "Promotion_lostBenefits",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "discountDefinitionId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "feeType",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cutOffFrom",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cutOffTo",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -29998,6 +30335,141 @@
           }
         },
         "tags" : [ "staff-controller" ]
+      }
+    },
+    "/student-discounts" : {
+      "get" : {
+        "operationId" : "StudentDiscount_searchStudentDiscounts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "EXHAUSTED", "REVOKED", "ENDED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SCHOLARSHIP", "PROMOTION", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "definitionType",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "discountDefinitionId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "studentId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "programEnrollmentId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "courseEnrollmentId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudentDiscountPageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-discount-controller" ]
       }
     },
     "/student-discounts/{id}/revocation" : {
@@ -31738,6 +32210,78 @@
           }
         },
         "tags" : [ "refund-controller" ]
+      }
+    },
+    "/students/{studentId}/student-discounts" : {
+      "get" : {
+        "operationId" : "StudentDiscount_listForStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/StudentDiscountResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-discount-controller" ]
       }
     },
     "/subject-sections/{id}/modification-request" : {

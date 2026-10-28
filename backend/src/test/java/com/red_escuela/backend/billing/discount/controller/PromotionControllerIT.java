@@ -202,6 +202,93 @@ class PromotionControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[?(@.promotionRedemptionId == " + promotionId + ")]").isEmpty());
     }
 
+    private Long lostPromotion(LocalDate availableUntil) {
+        var offering = factory.newProgram(Currency.ARS, 80000, 50000);
+        var learner = factory.newLearner(offering, null);
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("30")), 3, availableUntil);
+        entityManager.flush();
+        return promotionId;
+    }
+
+    private List<Long> lostPromotionIds(String query) throws Exception {
+        MvcResult result = mockMvc.perform(get("/reports/billing/promotions/lost-benefits" + query).header("Authorization", "Bearer " + directorToken)).andExpect(status().isOk()).andReturn();
+        List<Long> ids = new java.util.ArrayList<>();
+        objectMapper.readTree(result.getResponse().getContentAsString()).forEach(node -> ids.add(node.get("promotionRedemptionId").asLong()));
+        return ids;
+    }
+
+    @Test
+    @Tag("D-283")
+    void theLostBenefitsReportFiltersByDefinitionFeeTypeAndCutOffRange() throws Exception {
+        Long february = lostPromotion(LocalDate.of(2031, 2, 28));
+        Long january = lostPromotion(LocalDate.of(2031, 1, 31));
+        MvcResult unfiltered = mockMvc.perform(get("/reports/billing/promotions/lost-benefits").header("Authorization", "Bearer " + directorToken)).andExpect(status().isOk()).andReturn();
+        long februaryDefinition = 0;
+        for (var node : objectMapper.readTree(unfiltered.getResponse().getContentAsString())) {
+            if (node.get("promotionRedemptionId").asLong() == february) {
+                februaryDefinition = node.get("discountDefinitionId").asLong();
+            }
+        }
+
+        assertThat(lostPromotionIds("")).contains(february, january);
+        assertThat(lostPromotionIds("?discountDefinitionId=" + februaryDefinition)).containsExactly(february);
+        assertThat(lostPromotionIds("?cutOffFrom=2031-02")).contains(february).doesNotContain(january);
+        assertThat(lostPromotionIds("?cutOffTo=2031-01")).contains(january).doesNotContain(february);
+        assertThat(lostPromotionIds("?cutOffFrom=2031-01&cutOffTo=2031-02&feeType=MONTHLY_INSTALLMENT")).contains(february, january);
+        assertThat(lostPromotionIds("?feeType=ENROLLMENT_FEE")).doesNotContain(february, january);
+    }
+
+    @Test
+    @Tag("D-283")
+    void theLostBenefitsReportPaginatesAndTellsTheTotalInAHeader() throws Exception {
+        Long first = lostPromotion(LocalDate.of(2031, 2, 28));
+        Long second = lostPromotion(LocalDate.of(2031, 2, 28));
+        String unpaged = mockMvc.perform(get("/reports/billing/promotions/lost-benefits").header("Authorization", "Bearer " + directorToken)).andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("X-Total-Count");
+        long total = Long.parseLong(unpaged);
+
+        MvcResult firstPage = mockMvc.perform(get("/reports/billing/promotions/lost-benefits?page=0&size=1").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult lastPage = mockMvc.perform(get("/reports/billing/promotions/lost-benefits?page=" + (total - 1) + "&size=1").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult beyond = mockMvc.perform(get("/reports/billing/promotions/lost-benefits?page=" + total + "&size=1").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk()).andReturn();
+
+        assertThat(total).isGreaterThanOrEqualTo(2);
+        assertThat(objectMapper.readTree(firstPage.getResponse().getContentAsString())).hasSize(1);
+        assertThat(firstPage.getResponse().getHeader("X-Total-Count")).isEqualTo(unpaged);
+        assertThat(objectMapper.readTree(lastPage.getResponse().getContentAsString())).hasSize(1);
+        assertThat(objectMapper.readTree(beyond.getResponse().getContentAsString())).isEmpty();
+        assertThat(lostPromotionIds("")).contains(first, second).hasSize((int) total);
+    }
+
+    @Test
+    @Tag("D-283")
+    void aLostBenefitsPageIsTheSliceOfTheUnpagedReportAtPageTimesSize() throws Exception {
+        lostPromotion(LocalDate.of(2031, 2, 28));
+        lostPromotion(LocalDate.of(2031, 2, 28));
+        lostPromotion(LocalDate.of(2031, 2, 28));
+        List<Long> all = lostPromotionIds("");
+
+        List<Long> secondPageOfTwo = lostPromotionIds("?page=1&size=2");
+        List<Long> thirdPageOfOne = lostPromotionIds("?page=2&size=1");
+
+        assertThat(secondPageOfTwo).containsExactlyElementsOf(all.subList(2, Math.min(4, all.size())));
+        assertThat(thirdPageOfOne).containsExactly(all.get(2));
+    }
+
+    @Test
+    @Tag("D-283")
+    void theLostBenefitsReportKeepsTheOldFieldsAndAddsTheUnifiedCount() throws Exception {
+        Long promotionId = lostPromotion(LocalDate.of(2031, 2, 28));
+
+        mockMvc.perform(get("/reports/billing/promotions/lost-benefits").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.promotionRedemptionId == " + promotionId + ")].remaining").value(3))
+                .andExpect(jsonPath("$[?(@.promotionRedemptionId == " + promotionId + ")].lostBenefitCount").value(3))
+                .andExpect(jsonPath("$[?(@.promotionRedemptionId == " + promotionId + ")].studentId").isNotEmpty());
+    }
+
     private long createPromotionAndReturnId(Long programId, String description) throws Exception {
         MvcResult created = mockMvc.perform(post("/programs/{id}/promotions", programId).header("Authorization", "Bearer " + directorToken)
                 .contentType(MediaType.APPLICATION_JSON).content(twoBenefitPromotion(description))).andExpect(status().isCreated()).andReturn();
