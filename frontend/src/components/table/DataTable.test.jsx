@@ -117,4 +117,11 @@ describe('DataTable', () => {
     expect(screen.getByText('Gamma')).toBeInTheDocument();
     expect(screen.getAllByText('Nombre')).toHaveLength(3);
   });
+
+  it('keeps the table with horizontal scroll on mobile when the layout is scroll', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    renderTable({ mobileLayout: 'scroll' });
+
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
 });

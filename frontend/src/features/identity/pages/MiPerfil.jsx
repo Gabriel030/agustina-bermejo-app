@@ -10,34 +10,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Skeleton } from '@/components/Skeleton';
+import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
 import {
   usePerfilPropio,
   useActualizarPerfil,
   useCambiarContrasena,
   useSesionesActivas,
   useRevocarTodasLasSesiones,
-  usePreferenciasNotificaciones,
-  useActualizarPreferenciasNotificaciones,
   useAvatar,
   useSubirAvatar,
 } from '@/features/identity/hooks/useMiPerfil';
-
-const ETIQUETAS_EVENTO = {
-  ACCOUNT_CREATED: 'Cuenta creada',
-  SUBJECT_ENROLLMENT: 'Inscripción a materia',
-  GRADE_POSTED: 'Nota publicada',
-  INVOICE_GENERATED: 'Factura generada',
-  PAYMENT_DUE_SOON: 'Vencimiento próximo',
-  EXAM_BOARD_REGISTERED: 'Mesa de examen registrada',
-  INSTITUTIONAL_NOTICE: 'Aviso institucional',
-};
-
-const ETIQUETAS_CANAL = {
-  APP: 'En la app',
-  EMAIL: 'Por email',
-};
 
 const AVATAR_TYPES = ['image/jpeg', 'image/png'];
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
@@ -444,112 +427,6 @@ function TabSeguridad() {
   );
 }
 
-function TabNotificaciones() {
-  const { data, isLoading } = usePreferenciasNotificaciones();
-  const actualizar = useActualizarPreferenciasNotificaciones();
-  const [pendiente, setPendiente] = useState(null);
-  const [error, setError] = useState('');
-
-  const prefsOriginales = data?.preferences ?? {};
-  const prefs = pendiente ?? prefsOriginales;
-  const haycambios = pendiente !== null;
-
-  function togglePref(evento, canal) {
-    const base = pendiente ?? prefsOriginales;
-    const valorActual = base[evento]?.[canal] ?? true;
-    setPendiente({
-      ...base,
-      [evento]: { ...(base[evento] ?? {}), [canal]: !valorActual },
-    });
-    setError('');
-  }
-
-  async function guardar() {
-    try {
-      await actualizar.mutateAsync({ preferences: pendiente });
-      setPendiente(null);
-    } catch (err) {
-      setError(err.message ?? 'No se pudo guardar.');
-    }
-  }
-
-  function cancelar() {
-    setPendiente(null);
-    setError('');
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        {[...Array(7)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
-
-  const eventos = Object.keys(ETIQUETAS_EVENTO);
-  const canales = Object.keys(ETIQUETAS_CANAL);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="overflow-x-auto">
-      <Table className="min-w-[400px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Notificación</TableHead>
-            {canales.map((canal) => (
-              <TableHead key={canal} className="text-center">
-                {ETIQUETAS_CANAL[canal]}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {eventos.map((evento) => (
-            <TableRow key={evento}>
-              <TableCell className="text-ink">{ETIQUETAS_EVENTO[evento]}</TableCell>
-              {canales.map((canal) => {
-                const activo = prefs[evento]?.[canal] ?? true;
-                return (
-                  <TableCell key={canal} className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => togglePref(evento, canal)}
-                      disabled={actualizar.isPending}
-                      aria-label={`${ETIQUETAS_EVENTO[evento]} — ${ETIQUETAS_CANAL[canal]}: ${activo ? 'activado' : 'desactivado'}`}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                        activo ? 'bg-gradient-to-br from-primary to-brand' : 'bg-neutral-bg'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform ${
-                          activo ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      </div>
-      {error && <p className="text-[13px] text-danger">{error}</p>}
-      {haycambios && (
-        <div className="flex items-center justify-end gap-2">
-          <Button size="sm" variant="ghost" onClick={cancelar} disabled={actualizar.isPending}>
-            Cancelar
-          </Button>
-          <Button size="sm" onClick={guardar} disabled={actualizar.isPending}>
-            {actualizar.isPending ? 'Guardando…' : 'Guardar'}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function MiPerfil() {
   return (
@@ -573,7 +450,7 @@ export function MiPerfil() {
             <TabSeguridad />
           </TabsContent>
           <TabsContent value="notificaciones">
-            <TabNotificaciones />
+            <NotificationMatrix />
           </TabsContent>
         </Tabs>
       </GlassCard>
