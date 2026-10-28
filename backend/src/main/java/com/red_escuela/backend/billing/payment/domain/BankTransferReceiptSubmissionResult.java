@@ -1,10 +1,12 @@
 package com.red_escuela.backend.billing.payment.domain;
 
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import org.springframework.modulith.NamedInterface;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@NamedInterface("api")
 public record BankTransferReceiptSubmissionResult(Long receiptId, Long paymentId, Long studentCurrentAccountId, NonNegativeMoney declaredAmount,
                                                   LocalDate uploadDate, List<Item> items) {
 

@@ -38,7 +38,6 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -46,6 +45,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.newIdempotencyKey;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.signedInAs;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.transferReceiptOf;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -125,12 +127,13 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
                 .dueOn(LocalDate.now().minusDays(20)).withBaseAmount(ars(10000)).inState(InvoicePaymentStatus.OVERDUE).build();
     }
 
-    private MultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
+    private CourseEnrollmentApplication request(Student student, Course course) {
+        return applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
     }
 
-    private CourseEnrollmentApplication request(Student student, Course course) {
-        return applicationService.requestWithPayment(student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
+    private CourseEnrollmentApplication requestCoveringOnly(Student student, Course course, Invoice olderInvoice, long declaredAmount) {
+        return applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null),
+                transferReceiptOf(declaredAmount, List.of(olderInvoice.getId())), newIdempotencyKey());
     }
 
     private void awaitEnrollments(Student student, int expected) {
@@ -143,16 +146,16 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     void aReceiptAppliedToAnOlderDebtDoesNotStrandTheRequestBecauseTheSecondReceiptThatPaysTheCourseInvoiceEnrollsOnce() {
         Student student = persistStudent();
         Course course = persistPricedCourse();
-        persistOverdueInstallment(student);
+        Invoice overdue = persistOverdueInstallment(student);
         Person admin = persistAdministrative();
-        CourseEnrollmentApplication application = request(student, course);
+        CourseEnrollmentApplication application = requestCoveringOnly(student, course, overdue, 10000);
         Long invoiceId = application.getInvoiceId();
 
         var first = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
 
         assertThat(first.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
-        var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), receiptFile());
+        var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
         approvePaymentReceiptUseCase.approve(second.getId(), admin, PaymentVerification.none());
 
         awaitEnrollments(student, 1);

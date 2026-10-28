@@ -23,14 +23,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.newIdempotencyKey;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.signedInAs;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.transferReceiptOf;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -97,12 +98,8 @@ class CourseAdmissionChargeReleaseIT extends AbstractIntegrationTest {
         return jdbc.queryForObject("select charge_key from invoice_line where invoice_id = ?", String.class, invoiceId);
     }
 
-    private MultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
-    }
-
     private CourseEnrollmentApplication request(Student student, Course course) {
-        return applicationService.requestWithPayment(student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
+        return applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
     }
 
     @Test

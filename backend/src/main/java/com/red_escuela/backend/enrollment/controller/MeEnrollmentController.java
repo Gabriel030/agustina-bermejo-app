@@ -22,13 +22,19 @@ import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationSer
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
+import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
+import com.red_escuela.backend.shared.domain.Currency;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -36,6 +42,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -63,13 +71,27 @@ public class MeEnrollmentController {
 
     @PostMapping(value = "/course-enrollments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    @ApiResponses({
+            @ApiResponse(responseCode = "400", description = "BANK_TRANSFER_DETAILS_REQUIRED con la violación del campo cuando el curso es de pago, IDEMPOTENCY_KEY_INVALID, RECEIPT_INVOICE_CURRENCY_MISMATCH, RECEIPT_INVOICE_NOT_PAYABLE"),
+            @ApiResponse(responseCode = "409", description = "POSSIBLE_DUPLICATE_BANK_TRANSFER, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST, INVOICE_ALREADY_UNDER_REVIEW, LEGACY_RECEIPT_PENDING_ON_INVOICE, IDEMPOTENCY_KEY_CONFLICT")})
     public CourseEnrollmentApplicationResponse enrollInCourse(
             @RequestParam Long courseId,
             @RequestParam(required = false) String sectionOverrides,
-            @RequestPart(required = false) MultipartFile comprobante) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestPart(name = "file", required = false) MultipartFile file,
+            @RequestParam(name = "invoiceIds", required = false) List<Long> invoiceIds,
+            @RequestParam(name = "declaredAmount", required = false) BigDecimal declaredAmount,
+            @RequestParam(name = "currency", required = false) Currency currency,
+            @RequestParam(name = "transferDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transferDate,
+            @RequestParam(name = "operationNumber", required = false) String operationNumber,
+            @RequestParam(name = "originAccount", required = false) String originAccount,
+            @RequestParam(name = "holderName", required = false) String holderName,
+            @RequestParam(name = "bankName", required = false) String bankName) {
         Student student = currentStudentService.resolveCurrentStudent();
         CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializarOverrides(sectionOverrides));
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request, comprobante);
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request,
+                BankTransferReceiptSubmissionRequest.fromForm(file, invoiceIds, declaredAmount, currency, transferDate, operationNumber, originAccount, holderName, bankName),
+                idempotencyKey);
         return CourseEnrollmentApplicationResponse.from(application);
     }
 

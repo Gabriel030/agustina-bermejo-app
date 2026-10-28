@@ -196,7 +196,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile comprobante() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
+        return new MockMultipartFile("file", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes());
     }
 
     private RegisterRequest validRegistration(String sufijo, Long institutionId) {
@@ -501,6 +501,13 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(multipart("/me/course-enrollments")
                         .file(comprobante())
                         .param("courseId", course.getId().toString())
+                        .param("declaredAmount", "15000.00")
+                        .param("currency", "ARS")
+                        .param("transferDate", java.time.LocalDate.now().toString())
+                        .param("operationNumber", "OP-REGISTRATION-1")
+                        .param("originAccount", "0170099220000067797370")
+                        .param("holderName", "Titular de prueba")
+                        .header("Idempotency-Key", java.util.UUID.randomUUID().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.paymentStatus").value("PENDING_REVIEW"))

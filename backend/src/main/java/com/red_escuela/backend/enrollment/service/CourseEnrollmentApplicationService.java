@@ -20,10 +20,8 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplication
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.enrollment.exception.PaymentReceiptRequiredException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -33,7 +31,9 @@ import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.exception.ChargeRejectedException;
-import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
+import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
+import com.red_escuela.backend.billing.payment.usecase.SubmitBankTransferReceiptUseCase;
+import jakarta.persistence.EntityManager;
 
 @Service
 public class CourseEnrollmentApplicationService {
@@ -42,27 +42,30 @@ public class CourseEnrollmentApplicationService {
     private final CourseEnrollmentService courseEnrollmentService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
     private final InvoiceIssuingService invoiceIssuingService;
-    private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+    private final SubmitBankTransferReceiptUseCase submitBankTransferReceiptUseCase;
+    private final EntityManager entityManager;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
     public CourseEnrollmentApplicationService(StudentRepository studentRepository, CourseRepository courseRepository,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
-            InvoiceIssuingService invoiceIssuingService, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper,
-            Clock clock) {
+            InvoiceIssuingService invoiceIssuingService, SubmitBankTransferReceiptUseCase submitBankTransferReceiptUseCase, EntityManager entityManager,
+            ObjectMapper objectMapper, Clock clock) {
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.courseEnrollmentService = courseEnrollmentService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
         this.invoiceIssuingService = invoiceIssuingService;
-        this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
+        this.submitBankTransferReceiptUseCase = submitBankTransferReceiptUseCase;
+        this.entityManager = entityManager;
         this.objectMapper = objectMapper;
         this.clock = clock;
     }
 
     @Transactional
-    public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request, MultipartFile comprobante) {
+    public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request,
+            BankTransferReceiptSubmissionRequest receipt, String idempotencyKey) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         String dni = student.getPerson().getDni();
@@ -93,10 +96,8 @@ public class CourseEnrollmentApplicationService {
             invoice.assignInvoiceToCourseEnrollment(application.getCourseEnrollment().getId());
             return courseEnrollmentApplicationRepository.save(application);
         }
-        if (comprobante == null || comprobante.isEmpty()) {
-            throw new PaymentReceiptRequiredException(invoiceId);
-        }
-        application.setPaymentReceipt(uploadPaymentReceiptUseCase.upload(invoiceId, studentId, comprobante));
+        Long receiptId = submitBankTransferReceiptUseCase.submitReceiptOfOwnCourseAdmission(studentId, receipt.withAdditionalInvoice(invoiceId), idempotencyKey).receiptId();
+        application.setPaymentReceipt(entityManager.find(BankTransferReceipt.class, receiptId));
         return courseEnrollmentApplicationRepository.save(application);
     }
 
