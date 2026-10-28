@@ -74,34 +74,37 @@ Corren al final del seed de facturación con el usuario correspondiente en el `S
 | Reembolso fallido | `FAIL_REFUND` con motivo | otro alumno |
 | Cancelación de cuota (pedido) | `CANCEL_INVOICE` iniciado por el administrativo, pendiente | alumno que dejó de pagar en julio |
 | Nota de crédito (pedido) | `ISSUE_CREDIT_NOTE` iniciado por el administrativo, pendiente | otro alumno que dejó de pagar |
+| Nota de crédito emitida | `ISSUE_CREDIT_NOTE` por error de facturación, emitida directamente por el director | alumno que dejó de pagar |
+| Pago online simulado | `REGISTER_GATEWAY_PAYMENT` con `MERCADO_PAGO` y estado `approved` (sin pasarela real) | último alumno que dejó de pagar |
 | Contracargo con reversión | `REGISTER_CHARGEBACK` y `REVERSE_CHARGEBACK` | alumno al día |
 | Contracargo vigente | contracargo sin revertir | otro alumno al día |
-| Beca 50% | descuento individual (nov 2026 a mar 2027) | alumno al día |
-| Promoción de cohorte | definición `COHORT_PROMOTION` con cupo 10 y 2 matrículas adquiridas (cupo parcialmente usado) | 2 alumnos de la primera cohorte |
-| Baja con deuda | `ProgramEnrollmentService.withdraw` de un alumno que nunca pagó | 1 alumno |
+| Beca 50% | descuento individual otorgado el 12/08/2026 desde sep 2026 hasta mar 2027; baja el importe de las cuotas de sep y oct | alumno al día |
+| Promoción de cohorte | definición `COHORT_PROMOTION` con cupo 10, creada el 15/02/2026 antes de emitir las matrículas; 2 matrículas adquiridas (cupo parcialmente usado) y su descuento (20%) aparece en la factura de matrícula | 2 alumnos de la primera cohorte |
+| Baja con deuda | `ProgramEnrollmentService.withdraw` el 12/08/2026 (con `DemoClock`) de un alumno que nunca pagó; el planificador genera 2 resúmenes post-baja | 1 alumno |
 
 Avisos de cobranza: se publican por publicación directa de `ConfigurationVersion` el aviso global (`COLLECTION_REMINDERS`) y el cronograma inicial de carreras y cursos, y desde agosto se corre `CollectionReminderPlanningJob.run(fecha)` día por día con el `DemoClock`. Resultado: unos 170 recordatorios y unos 150 mails simulados (`notification_delivery`, estados `SENT` y `QUEUED`), y la lista de contacto de morosos.
 
-## Guion de demo por rol
+## Guion de demo por rol (rutas verificadas en el navegador el 27/10/2026)
 
 **Director (`director.demo`)**
-- Tablero financiero con selector de mes (marzo a octubre 2026): paneles issued-invoices, overdue-detected, late-fees, receipts, collections-stock, on-time-payment, discounts.
-- Aprobaciones > Operaciones de facturación: bandeja con 3 pedidos pendientes del administrativo (reembolso, nota de crédito sobre una cuota de julio, cancelación de cuota). Aprobar o rechazar desde ahí.
-- Ficha del alumno > Financiero: reembolsos en estado aprobado, completado y fallido (alumnos con saldo a favor); cuotas pagadas, vencidas y notas de débito por mora.
-- Facturación del staff > Pagos del alumno: contracargo vigente, contracargo revertido y revocación de aprobación de transferencia.
-- Lista de morosos para contactar (`GET /collection-reminders/contact-list`, 4 alumnos con 9 cuotas vencidas) y los mails simulados.
+- `/director/financiero`: tablero con selector de mes (Octubre 2026 por defecto), pago a término, facturas emitidas, recargos, deuda total, alumnos con deuda vencida (16 de 38) y gráficos de cobranza, emisión, comprobantes.
+- `/director/aprobaciones`: tarjetas de tramites; "Operaciones de facturación" tiene 3 pendientes y "Ver los 3 pendientes" lleva a `/director/aprobaciones/facturacion` (pestañas Pendientes e Historial). Cada fila abre `/director/aprobaciones/facturacion/{id}` con el detalle y los botones Rechazar y Aprobar.
+- `/director/alumnos/{id}?view=financiero` (ficha del alumno > Financiero): matrícula, saldo a favor, reembolsable ahora y la tabla de Reembolsos. Ejemplos: alumno 1 (Lucía Fernández, reembolso pendiente de aprobación), alumno 8 (Sofía Castro, reembolso "No se pudo"), alumno 3 (aprobado), alumno 9 (completado). Las cuotas no se listan en esta pestaña.
+- `/director/facturacion` > Estado de cuenta > buscar al alumno por apellido (por ejemplo "Juárez") > abre el estado de cuenta con todas las cuotas (con recargo por mora y descuentos) y al pie "Pagos del alumno", donde se hacen contracargos y revocaciones. Juárez, Lucas tiene un pago contracargado vigente; Coronel un contracargo revertido.
+- `GET /collection-reminders/contact-list` (sin pantalla verificada) y `GET /notification-deliveries/simulated` para ver los mails simulados.
 
 **Administrativo (`administrativo.demo`)**
-- Aprobaciones: los mismos 3 pedidos que inició, en estado pendiente.
-- Comprobantes de transferencia: uno pendiente de revisión para aprobar o rechazar en vivo; hay uno ya aprobado y uno rechazado.
-- Ficha del alumno > Financiero: registrar pago en efectivo y pedir un reembolso (queda pendiente de autorización).
+- `/administrativo/aprobaciones`: "Mis pedidos (3)" (nota de crédito, cancelación de factura y reembolso, con el botón Retirar) e Historial.
+- `/administrativo/facturacion?tab=comprobantes`: 1 comprobante pendiente de revisión (Lautaro Carrizo) con Ver comprobante, Aprobar y Rechazar. En Pagos del alumno se ven los comprobantes ya aprobado (Luna) y rechazado (Herrera). El archivo del comprobante es un PNG mínimo real (`students/{id}/comprobantes_demo-*.png` bajo `app.uploads.directory`); `GET /bank-transfer-receipts/{id}/file` devuelve 200 `image/png`.
+- `/administrativo/facturacion` > Estado de cuenta: Cobrar en efectivo y Pedir reembolso (queda pendiente de autorización).
 
-**Alumno (`alumno.demo` y cualquiera con carrera)**: sus cuotas pagadas y vencidas con recargo, y su estado de cuenta.
+**Alumno (`alumno.demo`)** y **preceptor/docente**: no recorridos en el navegador en esta corrida.
 
-**Preceptor y docente**: lo académico (padrón, oferta, mesas, notas, asistencia).
+## Verificado por API
+`POST /auth/login` (director y administrativo), `GET /authorization-requests?status=PENDING` (3 pedidos en ambos), `GET /students/{id}/refunds`, `GET /collection-reminders/contact-list`, `GET /billing/metrics/{panel}?from=2026-03&to=2026-10`, `GET /notification-deliveries/simulated`, `GET /bank-transfer-receipts/{id}/file`.
 
-**Verificado por API** (login real `POST /auth/login`, token en `Authorization: Bearer`): `GET /authorization-requests?status=PENDING` devuelve 3 pedidos tanto con director como con administrativo; `GET /students/{id}/refunds` devuelve reembolsos aprobado y fallido; `GET /collection-reminders/contact-list` devuelve morosos; `GET /billing/metrics/{panel}?from=2026-03&to=2026-10` devuelve 8 meses; `GET /notification-deliveries/simulated` (solo perfiles local y demo) lista los mails simulados con asunto y cuerpo.
+## Sin pantalla / alternativa por curl
+Descuentos y promociones (definiciones de cohorte), cronograma de avisos de cobranza, precios y períodos: usar los controllers de `billing/*` con el token del director. Swagger no se verificó.
 
-**Sin pantalla / alternativa por curl:** descuentos, promociones y definiciones de cohorte, avisos de cobranza (cronograma), precios y períodos: usar los controllers de `billing/*` con el token del director. Swagger no se verificó.
-
-**Qué no está sembrado**: el resumen post-baja (la baja existe pero el resumen no se generó con el reloj de negocio), cursos facturados (solo carreras), años anteriores a 2026, pagos online simulados, notas de crédito ya emitidas (solo el pedido pendiente), alertas de configuración. Los comprobantes de transferencia apuntan a una ruta de archivo que no existe en disco, así que la vista previa del archivo no abre.
+## Qué no está sembrado
+Cursos facturados (solo carreras), años anteriores a 2026, alertas de configuración (`billing_configuration_alert`) y un pago online real contra la pasarela (el pago de Mercado Pago es simulado por la operación, sin webhook). La matrícula de marzo de todos los alumnos se paga el día 8, seis días después de vencida, por eso aparece un recargo por mora chico en marzo incluso para los alumnos al día.

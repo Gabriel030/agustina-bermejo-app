@@ -15,6 +15,10 @@ import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
+import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
@@ -68,6 +72,9 @@ public class DemoBillingScenarios {
     private static final String DESTINATION_ACCOUNT = "0170099220000067890123";
 
     private final JdbcTemplate jdbc;
+    private final ApprovePaymentReceiptUseCase approveReceipt;
+    private final RejectPaymentReceiptUseCase rejectReceipt;
+    private final PersonRepository personRepository;
     private final String uploadsDirectory;
     private final DemoClock clock;
     private final TransactionTemplate transactions;
@@ -78,7 +85,11 @@ public class DemoBillingScenarios {
 
     public DemoBillingScenarios(@org.springframework.beans.factory.annotation.Value("${app.uploads.directory}") String uploadsDirectory, JdbcTemplate jdbc, DemoClock clock, TransactionTemplate transactions, BillingOperations operations,
                                 BillingOperationPipeline pipeline, CashPaymentPreviewService cashPreview,
-                                ProgramEnrollmentService programEnrollmentService) {
+                                ProgramEnrollmentService programEnrollmentService, ApprovePaymentReceiptUseCase approveReceipt,
+                                RejectPaymentReceiptUseCase rejectReceipt, PersonRepository personRepository) {
+        this.approveReceipt = approveReceipt;
+        this.rejectReceipt = rejectReceipt;
+        this.personRepository = personRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.uploadsDirectory = uploadsDirectory;
         this.jdbc = jdbc;
@@ -103,16 +114,17 @@ public class DemoBillingScenarios {
         StatusChangeActor director = new StatusChangeActor(directorId, null);
 
         attempt("transferencia pendiente de revision", () -> submitTransfer(neverPay.get(0), "TRF-DEMO-0001"));
-        attempt("transferencia aprobada", () -> {
+        attemptAs("transferencia aprobada", String.valueOf(administrativeId), "ADMINISTRATIVO", () -> {
             submitTransfer(neverPay.get(1), "TRF-DEMO-0002");
             Long paymentId = lastId("payment", neverPay.get(1));
-            run(BillingOperationType.APPROVE_PENDING_BANK_TRANSFER_PAYMENT, new ApprovePendingBankTransferPaymentCommand(paymentId, admin));
+            Long receiptId = jdbc.queryForObject("select id from bank_transfer_receipt where payment_id = ?", Long.class, paymentId);
+            transactions.executeWithoutResult(status -> approveReceipt.approve(receiptId, personRepository.findById(administrativeId).orElseThrow(), PaymentVerification.none()));
         });
-        attempt("transferencia rechazada", () -> {
+        attemptAs("transferencia rechazada", String.valueOf(administrativeId), "ADMINISTRATIVO", () -> {
             submitTransfer(neverPay.get(2), "TRF-DEMO-0003");
             Long paymentId = lastId("payment", neverPay.get(2));
-            run(BillingOperationType.REJECT_PENDING_BANK_TRANSFER_PAYMENT,
-                    new RejectPendingBankTransferPaymentCommand(paymentId, "El comprobante no coincide con el monto de la cuota", admin));
+            Long receiptId = jdbc.queryForObject("select id from bank_transfer_receipt where payment_id = ?", Long.class, paymentId);
+            transactions.executeWithoutResult(status -> rejectReceipt.reject(receiptId, "El comprobante no coincide con el monto de la cuota", personRepository.findById(administrativeId).orElseThrow()));
         });
 
         for (int i = 0; i < 6; i++) {
