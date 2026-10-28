@@ -28,6 +28,10 @@ test.describe('@flow bank transfer receipt', () => {
     expect(openInvoiceIds.length).toBeGreaterThanOrEqual(2);
   });
 
+  function transferDetails(invoiceId) {
+    return { operationNumber: `${Date.now()}${invoiceId}`, originAccount: 'alumno.demo.e2e' };
+  }
+
   async function submitReceiptAsStudent(browser, invoiceId) {
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -38,8 +42,12 @@ test.describe('@flow bank transfer receipt', () => {
     const transferPage = new StudentTransferPage(page);
     await transferPage.open(invoiceId);
     await expect(page.getByText('escuela.e2e')).toBeVisible();
-    await transferPage.uploadReceipt(RECEIPT_FILE);
-    await expect(page.getByText('Pendiente de revisión')).toBeVisible();
+    await transferPage.openReceiptStep();
+    await expect(transferPage.holderNameInput).toHaveValue('Alumno Demo');
+    const details = transferDetails(invoiceId);
+    await transferPage.fillReceipt(RECEIPT_FILE, details);
+    await transferPage.sendReceiptButton.click();
+    await expect(page.getByText('Comprobante en revisión')).toBeVisible();
     await context.close();
   }
 
@@ -86,5 +94,17 @@ test.describe('@flow bank transfer receipt', () => {
     expect(body.status).not.toBe('PAID');
     const receipts = await student.get('/me/bank-transfer-receipts');
     expect(receipts.body.find((receipt) => receipt.invoiceId === invoiceId).status).toBe('REJECTED');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const loginPage = new LoginPage(page);
+    await loginPage.open();
+    await loginPage.signInAs('alumno');
+    await expect(page).toHaveURL(/\/alumno\/inicio$/);
+    await new StudentTransferPage(page).open(invoiceId);
+    await expect(page.getByText('Comprobante rechazado')).toBeVisible();
+    await expect(page.getByText('El monto no coincide')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Corregir y reenviar' })).toBeVisible();
+    await context.close();
   });
 });
