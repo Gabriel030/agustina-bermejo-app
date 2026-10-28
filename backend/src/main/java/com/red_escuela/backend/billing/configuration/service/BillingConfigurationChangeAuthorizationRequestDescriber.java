@@ -4,11 +4,14 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescriber;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription;
+import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.ChangeRow;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DescriptionLine;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DetailBlock;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.EffectLine;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.EffectTone;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -17,7 +20,14 @@ import java.util.List;
 
 @Component
 public class BillingConfigurationChangeAuthorizationRequestDescriber implements AuthorizationRequestDescriber<ChangeBillingConfigurationCommand> {
+    private static final Logger log = LoggerFactory.getLogger(BillingConfigurationChangeAuthorizationRequestDescriber.class);
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private final BillingConfigurationChangeRowsAssembler rowsAssembler;
+
+    public BillingConfigurationChangeAuthorizationRequestDescriber(BillingConfigurationChangeRowsAssembler rowsAssembler) {
+        this.rowsAssembler = rowsAssembler;
+    }
 
     @Override
     public BillingOperationType type() {
@@ -34,7 +44,17 @@ public class BillingConfigurationChangeAuthorizationRequestDescriber implements 
             lines.add(new DescriptionLine("Motivo del cambio", command.changeReason().strip()));
         }
         List<EffectLine> effects = List.of(new EffectLine(EffectTone.WARNING, "La nueva configuración rige desde el " + DAY.format(command.effectiveFrom()) + "."));
-        return new AuthorizationRequestDescription("Cambio de " + topic.toLowerCase(), null, null, lines, effects, DetailBlock.none());
+        return new AuthorizationRequestDescription("Cambio de " + topic.toLowerCase(), null, null, lines, effects, changeBlockOf(command));
+    }
+
+    private DetailBlock changeBlockOf(ChangeBillingConfigurationCommand command) {
+        try {
+            List<ChangeRow> rows = rowsAssembler.assembleRows(command);
+            return rows.isEmpty() ? DetailBlock.none() : DetailBlock.change(rows);
+        } catch (RuntimeException e) {
+            log.warn("Configuration change cannot be compared with the current values, describing it without the table: topic={}", command.topic().key(), e);
+            return DetailBlock.none();
+        }
     }
 
     static String labelOf(ConfigurationScope scope) {
