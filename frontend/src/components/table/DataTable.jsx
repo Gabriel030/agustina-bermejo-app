@@ -12,6 +12,7 @@ import {
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -86,6 +87,64 @@ function HeaderCell({ header }) {
   );
 }
 
+function facetOptions(column) {
+  const meta = column.columnDef.meta ?? {};
+  return Array.from(column.getFacetedUniqueValues().entries())
+    .map(([value, count]) => ({ value, count, label: meta.filterLabel ? meta.filterLabel(value) : String(value) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+}
+
+function CardToolbar({ table }) {
+  'use no memo';
+  const columns = table.getAllLeafColumns();
+  const sortable = columns.filter((column) => column.getCanSort() && typeof column.columnDef.header === 'string' && column.columnDef.header !== '');
+  const filterable = columns.filter((column) => column.columnDef.meta?.filterable && facetOptions(column).length > 1);
+  if (!sortable.length && !filterable.length) return null;
+  const current = table.getState().sorting[0];
+  const value = current ? `${current.id}:${current.desc ? 'desc' : 'asc'}` : undefined;
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 pb-1">
+      {sortable.length > 0 && (
+        <Select
+          value={value}
+          onValueChange={(next) => {
+            const [id, direction] = next.split(':');
+            table.setSorting([{ id, desc: direction === 'desc' }]);
+          }}
+        >
+          <SelectTrigger aria-label="Ordenar por" className="h-8 w-auto gap-2 text-xs">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            {sortable.flatMap((column) => [
+              <SelectItem key={`${column.id}:asc`} value={`${column.id}:asc`}>
+                {column.columnDef.header} (menor a mayor)
+              </SelectItem>,
+              <SelectItem key={`${column.id}:desc`} value={`${column.id}:desc`}>
+                {column.columnDef.header} (mayor a menor)
+              </SelectItem>,
+            ])}
+          </SelectContent>
+        </Select>
+      )}
+      {filterable.map((column) => {
+        const meta = column.columnDef.meta;
+        return (
+          <span key={column.id} className="inline-flex items-center gap-1 text-xs font-semibold text-ink-soft">
+            {meta.filterTitle ?? column.columnDef.header}
+            <ColumnFilter
+              label={meta.filterTitle ?? String(column.columnDef.header)}
+              options={facetOptions(column)}
+              selected={column.getFilterValue()}
+              onChange={(next) => column.setFilterValue(next)}
+            />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function isInteractiveTarget(event) {
   return Boolean(event.target.closest('a, button, input, [role="checkbox"]'));
 }
@@ -93,15 +152,34 @@ function isInteractiveTarget(event) {
 function RowCard({ row, renderExpanded, expandLabel, onRowClick }) {
   'use no memo';
   const cells = row.getVisibleCells().filter((cell) => cell.column.id !== EXPANDER_COLUMN_ID);
+  const titleCells = cells.filter((cell) => cell.column.columnDef.meta?.cardTitle);
+  const isActionCell = (cell) => cell.column.columnDef.header === '';
+  const fieldCells = cells.filter((cell) => !cell.column.columnDef.meta?.cardTitle && !isActionCell(cell));
+  const actionCells = cells.filter(isActionCell);
   return (
     <div
       className={cn('flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4', onRowClick && 'cursor-pointer')}
       onClick={onRowClick ? (event) => !isInteractiveTarget(event) && onRowClick(row.original) : undefined}
     >
-      {cells.map((cell) => {
+      {titleCells.map((cell) => (
+        <div key={cell.id} className="min-w-0 text-sm text-ink">
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </div>
+      ))}
+      {fieldCells.map((cell) => {
         const meta = cell.column.columnDef.meta ?? {};
         const header = cell.column.columnDef.header;
         if (meta.hideInCard) return null;
+        if (meta.cardBlock) {
+          return (
+            <div key={cell.id} className="flex flex-col gap-0.5">
+              {typeof header === 'string' && header !== '' && (
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">{header}</span>
+              )}
+              <div className="min-w-0 text-sm text-ink">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+            </div>
+          );
+        }
         return (
           <div key={cell.id} className="flex items-center justify-between gap-3">
             {typeof header === 'string' && header !== '' && (
@@ -113,6 +191,11 @@ function RowCard({ row, renderExpanded, expandLabel, onRowClick }) {
           </div>
         );
       })}
+      {actionCells.map((cell) => (
+        <div key={cell.id} className="border-t border-border pt-2 text-sm">
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </div>
+      ))}
       {renderExpanded && (
         <div className="flex justify-end">
           <ExpandToggle row={row} label={expandLabel} />
@@ -222,6 +305,7 @@ export function DataTable({
   if (isCardMode) {
     return (
       <div className={cn('flex flex-col gap-2 p-3', className)}>
+        <CardToolbar table={table} />
         {rows.map((row) => (
           <RowCard key={row.id} row={row} renderExpanded={renderExpanded} expandLabel={expandLabel} onRowClick={onRowClick} />
         ))}

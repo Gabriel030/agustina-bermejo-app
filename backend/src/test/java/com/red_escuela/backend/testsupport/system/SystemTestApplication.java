@@ -30,7 +30,7 @@ public final class SystemTestApplication {
                 .run(systemTestArguments(postgres, args));
     }
 
-    private static PostgreSQLContainer<?> startPostgres() {
+    static PostgreSQLContainer<?> startPostgres() {
         PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
                 .withTmpFs(Map.of("/var/lib/postgresql/data", "rw"))
                 .withCommand("postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off");
@@ -38,7 +38,7 @@ public final class SystemTestApplication {
         return postgres;
     }
 
-    private static String[] systemTestArguments(PostgreSQLContainer<?> postgres, String[] passedArguments) {
+    static String[] systemTestArguments(PostgreSQLContainer<?> postgres, String[] passedArguments) {
         List<String> arguments = new ArrayList<>(List.of(
                 "--spring.profiles.active=local",
                 "--spring.datasource.url=" + postgres.getJdbcUrl(),

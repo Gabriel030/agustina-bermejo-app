@@ -44,6 +44,7 @@ function buildContactColumns(accountBase) {
           <span className="text-xs text-ink-faint">DNI {row.original.dni}</span>
         </div>
       ),
+      meta: { cardTitle: true },
     },
     {
       id: 'daysOverdue',
@@ -210,7 +211,6 @@ export function ContactListTab({ accountBase }) {
           errorMessage="No pudimos cargar la lista de alumnos para contactar."
           emptyState={emptyState}
           initialSorting={[{ id: 'daysOverdue', desc: true }]}
-          mobileLayout="scroll"
           minWidth={880}
         />
       </GlassCard>

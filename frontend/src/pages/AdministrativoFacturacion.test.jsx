@@ -768,7 +768,7 @@ describe('AdministrativoFacturacion — pestañas', () => {
 
     expect(screen.getByRole('heading', { name: 'Facturación' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Estado de cuenta' })).toHaveAttribute('aria-selected', 'true');
-    expect(await screen.findByRole('tab', { name: 'Comprobantes · 1' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Comprobantes 1' })).toBeInTheDocument();
   });
 
   it('hides the counter when there are no pending receipts', async () => {

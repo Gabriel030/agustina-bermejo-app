@@ -31,6 +31,20 @@ const SUPPRESSION_LABELS = {
 
 const DEFERRAL_LABELS = { DAILY_CAP_REACHED: 'Tope diario de mails', UNSPECIFIED: 'Sin motivo registrado' };
 
+const AGE_BUCKET_LABELS = {
+  FROM_1_TO_30: '1 a 30 días',
+  FROM_31_TO_60: '31 a 60 días',
+  FROM_61_TO_90: '61 a 90 días',
+  OVER_90: 'Más de 90 días',
+};
+
+const AGE_BUCKET_COLORS = {
+  FROM_1_TO_30: 'var(--accent)',
+  FROM_31_TO_60: 'var(--warning)',
+  FROM_61_TO_90: 'var(--danger)',
+  OVER_90: 'var(--accent-2)',
+};
+
 const COLORS = ['var(--accent)', 'var(--accent-2)', 'var(--success)', 'var(--warning)', 'var(--danger)', 'var(--ink-soft)'];
 
 function describe(metric, key, label, extra = {}) {
@@ -107,6 +121,26 @@ export const FINANCIAL_PANELS = [
           describe(metric, 'paidWithin72Hours', 'Con pago dentro de 72 h'),
         ],
         goal: withGoal(metric, 'right'),
+      };
+    },
+  },
+  {
+    id: 'collections-stock',
+    tab: 'COLLECTIONS',
+    title: 'Deuda vencida por antigüedad',
+    subtitle: 'Saldo vencido al cierre de cada mes y alumnos con deuda',
+    info: 'Foto del último día de cada mes. La antigüedad cuenta desde el vencimiento de cada factura. Si falta la foto del último día se usa la última del mes y se avisa. Los meses anteriores a la primera foto figuran sin dato.',
+    unavailableText: 'Disponible cuando esté el stock de deuda',
+    drilldown: { path: 'facturacion?tab=para-contactar', label: 'Ver en Cobranza' },
+    build(metric) {
+      const buckets = Object.entries(AGE_BUCKET_LABELS).map(([bucket, label]) =>
+        describe(metric, `amount.${bucket}`, label, { color: AGE_BUCKET_COLORS[bucket], type: 'area' }),
+      );
+      const students = describe(metric, 'students', 'Alumnos con deuda', { color: 'var(--ink)', type: 'line', axis: 'right' });
+      return {
+        rows: buildRows(metric),
+        series: [...buckets, students],
+        tableSeries: [...buckets, describe(metric, 'amount.TOTAL', 'Deuda vencida total'), students],
       };
     },
   },

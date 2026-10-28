@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { ComposedTrendChart } from '@/components/charts';
 import { StatusPill } from '@/components/StatusPill';
@@ -21,6 +22,14 @@ function GoalBadge({ status, month }) {
   );
 }
 
+function PartialBadge() {
+  return (
+    <StatusPill tone="warning" className="px-2.5 text-warning-ink">
+      Último dato del mes
+    </StatusPill>
+  );
+}
+
 function withData(built) {
   if (!built) return null;
   const hasValue = (item) => built.rows.some((row) => row[item.key] != null);
@@ -34,6 +43,9 @@ export function MetricPanel({ panel, filters, month, className }) {
   const metric = query.data;
   const unavailable = metric && !metric.available ? panel.unavailableText : undefined;
   const built = useMemo(() => (metric?.available ? withData(panel.build(metric)) : null), [panel, metric]);
+  const navigate = useNavigate();
+  const rolePrefix = useLocation().pathname.split('/')[1];
+  const drilldown = panel.drilldown;
   const months = metric?.months ?? [];
   const period = months.length ? `${formatShortMonth(months[0])} a ${formatShortMonth(months[months.length - 1])}` : '';
 
@@ -43,7 +55,14 @@ export function MetricPanel({ panel, filters, month, className }) {
       subtitle={panel.subtitle}
       info={panel.info}
       ariaLabel={`${panel.title}, ${period}`}
-      badge={built?.goal ? <GoalBadge status={goalStatusAt(metric, month)} month={month} /> : null}
+      badge={
+        <>
+          {built?.goal && <GoalBadge status={goalStatusAt(metric, month)} month={month} />}
+          {metric?.partial && <PartialBadge />}
+        </>
+      }
+      onCategoryClick={drilldown ? () => navigate(`/${rolePrefix}/${drilldown.path}`) : undefined}
+      openLabel={drilldown?.label}
       data={built?.rows ?? EMPTY}
       series={built?.series ?? EMPTY}
       tableSeries={built?.tableSeries}
