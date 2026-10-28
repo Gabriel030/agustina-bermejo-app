@@ -27,7 +27,7 @@ prueba encuentra bugs que los demás no ven.
 | Karate | API (regresión HTTP) | ¿La API responde lo esperado (status, body, códigos de error) en los flujos de punta a punta? | En uso |
 | Awaitility | Procesos asíncronos | ¿El efecto en segundo plano ocurrió? (esperar siempre por el propio eventId, nunca por conteos globales) | En uso |
 | Vitest + RTL + MSW | Front unitario/componente | ¿El componente muestra y reacciona bien ante cada respuesta del backend? | En uso |
-| Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | Propuesto |
+| Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | En uso (solo local: `scripts/system-tests.sh`) |
 | OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | En uso (lado backend: instantánea `contracts/openapi.json` + `oasdiff`); falta la validación de los mocks del front (Q13b) |
 | Gatling o k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | Propuesto |
 | OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); ZAP y matriz por rol: propuesto |
@@ -301,10 +301,15 @@ esas viven y se testean en el backend. El frontend testea que **la pantalla haga
 la llamada correcta y reaccione bien a la respuesta**, no que reimplemente la
 regla de negocio en el test.
 
-**E2E real contra navegador (Playwright)**: no está en el alcance de esta fase —
-se evalúa recién cuando haya CI armado para correrlo contra un backend real
-levantado (Docker Compose + Postgres). Hasta entonces, el nivel 3 de arriba
-(integration test con MSW) es el que blinda los flujos críticos.
+**E2E real contra navegador (Playwright)**: carpeta `e2e/` en la raíz, con su propio
+`package.json`. `scripts/system-tests.sh [args de playwright]` toma el semáforo, elige
+puertos libres (`E2E_BACKEND_PORT` / `E2E_FRONTEND_PORT` los pisan), levanta el backend de
+sistema (`backend/src/test/.../testsupport/system/SystemTestApplication`, con
+`./mvnw spring-boot:test-run`: Postgres de Testcontainers, las 5 cuentas `.demo` con
+`Test1234` y dos cuotas abiertas para `alumno.demo`) y el build de producción del front
+(`vite preview`), y corre Chromium. Requiere Docker Desktop arriba. Etiquetas: `@smoke`
+(login y ruteo por rol, sesión) y `@flow` (flujos de dinero). Corre solo en local, nunca
+en Actions.
 
 ## QA de contrato HTTP — dos herramientas, dos propósitos distintos
 
