@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
+import com.red_escuela.backend.billing.collections.domain.MissedReminderRecovery;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
 import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.ReminderDigestMode;
@@ -48,7 +49,11 @@ public class CollectionReminderPlanningStep {
     }
 
     public CollectionReminderPlanningResult planCollectionReminders(LocalDate businessDate) {
-        PlanningRun run = startRun(businessDate);
+        return planCollectionReminders(businessDate, MissedReminderRecovery.none());
+    }
+
+    public CollectionReminderPlanningResult planCollectionReminders(LocalDate businessDate, MissedReminderRecovery recovery) {
+        PlanningRun run = startRun(businessDate, recovery);
         Long lastStudentId = 0L;
         while (true) {
             List<Long> page = factsLoader.findCandidateStudentIdsAfter(lastStudentId, PAGE_SIZE);
@@ -62,7 +67,7 @@ public class CollectionReminderPlanningStep {
     }
 
     public CollectionReminderPlanningResult planCollectionRemindersOf(LocalDate businessDate, Collection<Long> studentIds) {
-        PlanningRun run = startRun(businessDate);
+        PlanningRun run = startRun(businessDate, MissedReminderRecovery.none());
         List<Long> candidates = factsLoader.findCandidateStudentIdsAmong(studentIds);
         if (!candidates.isEmpty()) {
             planPage(candidates, run);
@@ -70,10 +75,10 @@ public class CollectionReminderPlanningStep {
         return run.result();
     }
 
-    private PlanningRun startRun(LocalDate businessDate) {
+    private PlanningRun startRun(LocalDate businessDate, MissedReminderRecovery recovery) {
         CollectionReminderSettings settings = configurationReader.collectionReminderSettingsEffectiveOn(businessDate);
         ReminderDigestMode mode = settings.dailyDigestEnabled() ? ReminderDigestMode.DAILY_DIGEST : ReminderDigestMode.SEPARATE_MESSAGES;
-        return new PlanningRun(businessDate, nonBusinessDaysAround(businessDate), mode);
+        return new PlanningRun(businessDate, nonBusinessDaysAround(businessDate), mode, recovery);
     }
 
     private NonBusinessDays nonBusinessDaysAround(LocalDate businessDate) {
@@ -107,7 +112,7 @@ public class CollectionReminderPlanningStep {
         try {
             Map<Long, ResolvedReminderSchedule> schedules = factsLoader.resolveSchedulesOf(context, run.businessDate, run.scheduleCache);
             ReminderContentTerms terms = factsLoader.resolveContentTermsOf(context, run.businessDate, run.termsCache);
-            StudentPlanningOutcome outcome = studentPlanner.planReminderOfStudentOn(context, schedules, run.businessDate, run.nonBusinessDays, run.mode, terms);
+            StudentPlanningOutcome outcome = studentPlanner.planReminderOfStudentOn(context, schedules, run.businessDate, run.nonBusinessDays, run.mode, terms, run.recovery);
             switch (outcome) {
                 case PLANNED -> run.planned++;
                 case ALREADY_PLANNED -> run.alreadyPlanned++;
@@ -144,6 +149,7 @@ public class CollectionReminderPlanningStep {
         private final LocalDate businessDate;
         private final NonBusinessDays nonBusinessDays;
         private final ReminderDigestMode mode;
+        private final MissedReminderRecovery recovery;
         private final Map<ReminderScheduleTarget, ResolvedReminderSchedule> scheduleCache = new HashMap<>();
         private final ReminderContentTermsCache termsCache = new ReminderContentTermsCache();
         private final List<PlanningError> errors = new ArrayList<>();
@@ -153,7 +159,8 @@ public class CollectionReminderPlanningStep {
         private int nothingToSend;
         private int failed;
 
-        private PlanningRun(LocalDate businessDate, NonBusinessDays nonBusinessDays, ReminderDigestMode mode) {
+        private PlanningRun(LocalDate businessDate, NonBusinessDays nonBusinessDays, ReminderDigestMode mode, MissedReminderRecovery recovery) {
+            this.recovery = recovery;
             this.businessDate = businessDate;
             this.nonBusinessDays = nonBusinessDays;
             this.mode = mode;

@@ -2,13 +2,18 @@ package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.billing.collections.domain.CollectionReminder;
 import com.red_escuela.backend.billing.collections.domain.DailyReminderDigest;
+import com.red_escuela.backend.billing.collections.domain.FiredReminderOccurrence;
+import com.red_escuela.backend.billing.collections.domain.MissedReminderRecovery;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
 import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.ReminderDigestMode;
 import com.red_escuela.backend.billing.collections.repository.CollectionReminderRepository;
 import com.red_escuela.backend.billing.collections.service.StudentReminderContext;
 import com.red_escuela.backend.billing.configuration.domain.ResolvedReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderChannel;
+import com.red_escuela.backend.billing.events.PlannedReminderLine;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
+import com.red_escuela.backend.billing.events.PlannedReminderNotice;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +23,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class StudentCollectionReminderPlanner {
@@ -35,13 +42,19 @@ public class StudentCollectionReminderPlanner {
         this.meterRegistry = meterRegistry;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public StudentPlanningOutcome planReminderOfStudentOn(StudentReminderContext context, Map<Long, ResolvedReminderSchedule> schedulesByInvoiceId, LocalDate businessDate,
                                                           NonBusinessDays nonBusinessDays, ReminderDigestMode mode, ReminderContentTerms terms) {
+        return planReminderOfStudentOn(context, schedulesByInvoiceId, businessDate, nonBusinessDays, mode, terms, MissedReminderRecovery.none());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public StudentPlanningOutcome planReminderOfStudentOn(StudentReminderContext context, Map<Long, ResolvedReminderSchedule> schedulesByInvoiceId, LocalDate businessDate,
+                                                          NonBusinessDays nonBusinessDays, ReminderDigestMode mode, ReminderContentTerms terms, MissedReminderRecovery recovery) {
         if (reminderRepository.existsByStudentIdAndBusinessDate(context.studentId(), businessDate)) {
             return StudentPlanningOutcome.ALREADY_PLANNED;
         }
-        DailyReminderDigest digest = DailyReminderDigestPlanner.planDailyDigestOf(context.facts(), schedulesByInvoiceId, businessDate, nonBusinessDays, mode);
+        DailyReminderDigest digest = DailyReminderDigestPlanner.planDailyDigestOf(context.facts(), schedulesByInvoiceId, businessDate, nonBusinessDays, mode,
+                recoveryExcludingWhatWasHandled(context.studentId(), recovery));
         if (digest.hasNothingToSend() && digest.suppressed().isEmpty()) {
             return StudentPlanningOutcome.NOTHING_TO_SEND;
         }
@@ -56,6 +69,28 @@ public class StudentCollectionReminderPlanner {
         log.info("Recordatorio de cobranza planificado: alumno={}, fecha={}, mensajesApp={}, mensajesMail={}, suprimidos={}", context.studentId(), businessDate,
                 inAppMessages.size(), emailMessages.size(), digest.suppressed().size());
         return StudentPlanningOutcome.PLANNED;
+    }
+
+    private MissedReminderRecovery recoveryExcludingWhatWasHandled(Long studentId, MissedReminderRecovery recovery) {
+        if (!recovery.isRecovering()) {
+            return recovery;
+        }
+        Set<FiredReminderOccurrence> handled = new HashSet<>();
+        for (CollectionReminder reminder : reminderRepository.findByStudentIdAndBusinessDateIn(studentId, recovery.missedDays())) {
+            LocalDate day = reminder.getBusinessDate();
+            reminder.getInAppMessages().forEach(message -> collectHandled(message, ReminderChannel.IN_APP, day, handled));
+            reminder.getEmailMessages().forEach(message -> collectHandled(message, ReminderChannel.EMAIL, day, handled));
+            reminder.getSuppressed().forEach(suppressed -> handled.add(new FiredReminderOccurrence(suppressed.invoiceId(), suppressed.noticeKey(), suppressed.channel(), day)));
+        }
+        return recovery.withAlreadyHandled(handled);
+    }
+
+    private static void collectHandled(PlannedReminderMessage message, ReminderChannel channel, LocalDate day, Set<FiredReminderOccurrence> handled) {
+        for (PlannedReminderLine line : message.lines()) {
+            for (PlannedReminderNotice notice : line.notices()) {
+                handled.add(new FiredReminderOccurrence(line.invoiceId(), notice.noticeKey(), channel, day));
+            }
+        }
     }
 
     private void recordMetrics(List<PlannedReminderMessage> inAppMessages, List<PlannedReminderMessage> emailMessages, DailyReminderDigest digest) {
