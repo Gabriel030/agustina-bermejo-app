@@ -226,9 +226,9 @@ POST,/payments/{paymentId}/chargebacks/preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 POST,/price-versions/{priceVersionId}/cancellation,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/prices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 GET,/prices/{priceId}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
-POST,/prices/{priceId}/versions,DENY,DENY,DENY,DENY,DENY,ALLOW,,"{""amount"":{""amount"":1,""currency"":""ARS""},""changeReason"":""x"",""effectiveFrom"":""2026-01-15"",""marketingDiscount"":{""type"":""PERCENTAGE"",""percent"":10}}"
+POST,/prices/{priceId}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,"{""amount"":{""amount"":1,""currency"":""ARS""},""changeReason"":""x"",""effectiveFrom"":""2026-01-15"",""marketingDiscount"":{""type"":""PERCENTAGE"",""percent"":10}}"
 POST,/prices/{priceId}/versions/impact,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,"{""amount"":{""amount"":1,""currency"":""ARS""},""changeReason"":""x"",""effectiveFrom"":""2026-01-15"",""marketingDiscount"":{""type"":""PERCENTAGE"",""percent"":10}}"
-POST,/prices/{priceId}/versions/validation,DENY,DENY,DENY,DENY,DENY,ALLOW,,"{""amount"":{""amount"":1,""currency"":""ARS""},""changeReason"":""x"",""effectiveFrom"":""2026-01-15"",""marketingDiscount"":{""type"":""PERCENTAGE"",""percent"":10}}"
+POST,/prices/{priceId}/versions/validation,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,"{""amount"":{""amount"":1,""currency"":""ARS""},""changeReason"":""x"",""effectiveFrom"":""2026-01-15"",""marketingDiscount"":{""type"":""PERCENTAGE"",""percent"":10}}"
 GET,/program-enrollment-applications,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/program-enrollment-applications/{id}/approve,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/program-enrollment-applications/{id}/reject,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,

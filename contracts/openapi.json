@@ -5745,6 +5745,16 @@
         "required" : [ "affectedStudents", "currentMonthlyIncome", "effectiveFrom", "monthlyIncomeDifference", "monthlyMarketingDiscountCost", "proposedFinalAmount", "proposedMonthlyIncome", "reachesActiveEnrollments" ],
         "type" : "object"
       },
+      "PriceChangePendingAuthorizationResponse" : {
+        "properties" : {
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "authorizationRequestId" ],
+        "type" : "object"
+      },
       "PriceChangeValidationResponse" : {
         "properties" : {
           "violations" : {
@@ -25269,6 +25279,16 @@
               }
             },
             "description" : "OK"
+          },
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PriceChangePendingAuthorizationResponse"
+                }
+              }
+            },
+            "description" : "Accepted"
           },
           "400" : {
             "content" : {

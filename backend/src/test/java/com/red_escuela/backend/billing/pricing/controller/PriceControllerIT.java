@@ -220,13 +220,16 @@ class PriceControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-110")
-    void everyRoleButTheDirectorIsForbiddenToPublishValidateOrCancel() throws Exception {
+    void onlyTheDirectorMayCancelAndNoRoleBeyondDirectorAndAdministrativeMayPublishOrValidate() throws Exception {
         long versionId = idOf(publish(directorToken, 120000, TODAY.plusDays(30)));
         for (String role : new String[]{"ADMINISTRATIVO", "PRECEPTOR", "DOCENTE", "ALUMNO"}) {
             String token = tokenWithRole(role);
+            postJson("/price-versions/{id}/cancellation", token, "{\"reason\":\"motivo\"}", versionId).andExpect(status().isForbidden());
+        }
+        for (String role : new String[]{"PRECEPTOR", "DOCENTE", "ALUMNO"}) {
+            String token = tokenWithRole(role);
             publish(token, 130000, TODAY.plusDays(40)).andExpect(status().isForbidden());
             postJson("/prices/{priceId}/versions/validation", token, body(130000, "ARS", TODAY.plusDays(40), "motivo", null)).andExpect(status().isForbidden());
-            postJson("/price-versions/{id}/cancellation", token, "{\"reason\":\"motivo\"}", versionId).andExpect(status().isForbidden());
         }
         assertThat(count("select count(*) from price_version where id = ? and status = 'SCHEDULED'", versionId)).isEqualTo(1);
         assertThat(count("select count(*) from price_version where price_id = ?", priceId)).isEqualTo(2);

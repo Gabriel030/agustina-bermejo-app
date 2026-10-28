@@ -37,7 +37,7 @@ public class PriceChangeImpactCalculator {
     public PriceChangeImpact calculatePriceChangeImpact(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount discount, LocalDate effectiveFrom) {
         Price price = priceRepository.findById(priceId).orElseThrow(() -> new PriceNotFoundException(priceId));
         policyEvaluator.requireNotRetroactiveStart(new PriceChangeCheck(effectiveFrom, LocalDate.now(clock), null));
-        policyEvaluator.requireValidPriceVersion(new ChangePriceCommand(priceId, baseAmount, discount, effectiveFrom, null, null).toDraft(price.getCurrency()));
+        policyEvaluator.requireValidPriceVersion(new ChangePriceCommand(priceId, baseAmount, discount, effectiveFrom, null, null, false).toDraft(price.getCurrency()));
         NonNegativeMoney discountAmount = discount == null ? NonNegativeMoney.zero(price.getCurrency()) : discount.discountOn(baseAmount);
         NonNegativeMoney proposedFinalAmount = baseAmount.minusNotBelowZero(discountAmount);
         NonNegativeMoney currentFinalAmount = findBaselineVersion(price, effectiveFrom).map(PriceVersion::finalAmount).orElse(null);
