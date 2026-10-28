@@ -80,6 +80,12 @@ public class EnrollmentDebtFactsQuery {
         return jdbc.queryForObject(sql, new MapSqlParameterSource("id", enrollmentId), Long.class) > 0;
     }
 
+    public boolean isEnrollmentWithdrawnForNonpayment(EnrollmentKind kind, Long enrollmentId) {
+        String table = kind == EnrollmentKind.PROGRAM ? "program_enrollment" : "course_enrollment";
+        return jdbc.queryForObject("select count(*) from " + table + " where id = :id and payment_status = 'WITHDRAWN_FOR_NONPAYMENT'",
+                new MapSqlParameterSource("id", enrollmentId), Long.class) > 0;
+    }
+
     public Optional<Long> findStudentIdOf(EnrollmentKind kind, Long enrollmentId) {
         String table = kind == EnrollmentKind.PROGRAM ? "program_enrollment" : "course_enrollment";
         List<Long> students = jdbc.queryForList("select student_id from " + table + " where id = :id and student_id is not null",
