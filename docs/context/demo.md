@@ -40,7 +40,7 @@ Código en `backend/src/main/java/com/red_escuela/backend/config/demo/` (`DemoSe
 
 ## Auditoría de coherencia
 
-`docs/context/demo-auditoria.sql` corre 37 reglas sobre la base demo (notas contra condición, correlativas, mesas, asistencia, cuotas, egresos y excepciones) y devuelve cuántos casos viola cada una. Después de tocar el seed, cargarlo en una base vacía y correr la auditoría: todas tienen que dar 0.
+`docs/context/demo-auditoria.sql` corre 33 reglas sobre la base demo (notas contra condición, correlativas, mesas, asistencia, cuotas, egresos y excepciones) y devuelve cuántos casos viola cada una. Después de tocar el seed, cargarlo en una base vacía y correr la auditoría: todas tienen que dar 0.
 
 ```bash
 docker exec -i <proyecto>-postgres-demo-1 psql -U postgres -d agustina_bermejo_demo -F' | ' -A < docs/context/demo-auditoria.sql
