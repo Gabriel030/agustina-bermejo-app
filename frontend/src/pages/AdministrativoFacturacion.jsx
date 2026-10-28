@@ -8,6 +8,9 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
+import { ContactListTab } from '@/features/billing/reminders/ContactListTab';
+import { useContactList } from '@/features/billing/hooks/useCollectionReminders';
+import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -588,12 +591,17 @@ function TabComprobantes() {
 
 const TAB_ACCOUNT = 'estado-de-cuenta';
 const TAB_RECEIPTS = 'comprobantes';
+const TAB_CONTACT = 'para-contactar';
 
 export function AdministrativoFacturacion() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') === TAB_RECEIPTS ? TAB_RECEIPTS : TAB_ACCOUNT;
+  const requestedTab = searchParams.get('tab');
+  const tab = [TAB_RECEIPTS, TAB_CONTACT].includes(requestedTab) ? requestedTab : TAB_ACCOUNT;
   const { data: pendingReceipts } = useComprobantesAdmin();
   const pendingCount = pendingReceipts?.length ?? 0;
+  const contactTotal = useContactList({ size: 1 }).data?.totalElements ?? 0;
+  const { usuario } = useAuth();
+  const accountBase = usuario?.roles?.includes('DIRECTOR') ? '/director' : '/administrativo';
 
   function handleTabChange(value) {
     const next = new URLSearchParams();
@@ -611,6 +619,9 @@ export function AdministrativoFacturacion() {
           <TabsTrigger value={TAB_RECEIPTS}>
             {pendingCount > 0 ? `Comprobantes · ${pendingCount}` : 'Comprobantes'}
           </TabsTrigger>
+          <TabsTrigger value={TAB_CONTACT}>
+            {contactTotal > 0 ? `Para contactar · ${contactTotal}` : 'Para contactar'}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value={TAB_ACCOUNT} className="mt-5">
@@ -619,6 +630,10 @@ export function AdministrativoFacturacion() {
 
         <TabsContent value={TAB_RECEIPTS} className="mt-5">
           <TabComprobantes />
+        </TabsContent>
+
+        <TabsContent value={TAB_CONTACT} className="mt-5">
+          <ContactListTab accountBase={accountBase} />
         </TabsContent>
       </Tabs>
     </PageContainer>

@@ -137,10 +137,12 @@ export function DataTable({
   onRowClick,
   initialSorting = [],
   minWidth = 640,
+  mobileLayout = 'cards',
   className,
 }) {
   'use no memo';
-  const isCardMode = useMediaQuery('(max-width: 767px)');
+  const isCompactViewport = useMediaQuery('(max-width: 767px)');
+  const isCardMode = isCompactViewport && mobileLayout === 'cards';
 
   const allColumns = renderExpanded
     ? [
