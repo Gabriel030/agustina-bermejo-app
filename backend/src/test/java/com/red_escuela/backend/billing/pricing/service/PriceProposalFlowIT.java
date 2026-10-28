@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.pricing.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeOutcome;
+import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.authorization.service.AuthorizationRequestExpirer;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -62,6 +64,8 @@ class PriceProposalFlowIT extends AbstractIntegrationTest {
     private PriceReader priceReader;
     @Autowired
     private AuthorizationRequestExpirer expirer;
+    @Autowired
+    private AuthorizationRequestRepository authorizationRequests;
 
     private Person director;
     private Person administrative;
@@ -301,6 +305,23 @@ class PriceProposalFlowIT extends AbstractIntegrationTest {
         assertThat(amountOn(SEPTEMBER_FIRST)).isEqualTo(100000);
         assertThat(count("select count(*) from price_version where price_id = ? and status in ('SCHEDULED', 'EFFECTIVE') and amount = 120000", priceId)).isZero();
         assertThat(versionStatusOf(requestId)).isEqualTo("REJECTED");
+        assertThat(authorizationRequests.findById(requestId).orElseThrow().getResumeOutcome()).isEqualTo(AuthorizationResumeOutcome.REJECTED_ON_RESUME);
+        assertThat(jdbc.queryForObject("select decision_reason from price_version where authorization_request_id = ?", String.class, requestId)).startsWith("Rechazada al aprobar: ");
+        await().until(() -> count("select count(*) from notification where recipient_id = ? and type = 'PRICE_CHANGE_REJECTED' and message like '%Rechazada al aprobar: %'",
+                administrative.getId()) >= 1);
+    }
+
+    @Test
+    @Tag("D-180")
+    @Tag("D-116")
+    void approvingARequestWhoseProposalIsNoLongerOpenIsAConflictAndRecordsTheFailedResume() throws Exception {
+        long requestId = proposeAccepted(120000, SEPTEMBER_FIRST);
+        jdbc.update("update price_version set status = 'WITHDRAWN' where authorization_request_id = ?", requestId);
+
+        decide(directorToken, requestId, "approve", "{}").andExpect(status().isConflict()).andExpect(content().string(containsString("PROPOSAL_NO_LONGER_OPEN")));
+
+        assertThat(authorizationRequests.findById(requestId).orElseThrow().getResumeOutcome()).isEqualTo(AuthorizationResumeOutcome.REJECTED_ON_RESUME);
+        assertThat(amountOn(SEPTEMBER_FIRST)).isEqualTo(100000);
     }
 
     @Test

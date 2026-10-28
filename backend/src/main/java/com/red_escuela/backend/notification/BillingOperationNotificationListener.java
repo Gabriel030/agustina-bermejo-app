@@ -75,8 +75,8 @@ public class BillingOperationNotificationListener {
     @ApplicationModuleListener
     public void notifyPriceChangeDecided(PriceChangeDecidedEvent event) {
         boolean approved = "APPROVED".equals(event.decision());
-        String message = approved ? "El director aprobó tu propuesta de precio (" + event.priceDescription() + ") con vigencia desde el " + event.effectiveFrom() + "."
-                : "El director rechazó tu propuesta de precio (" + event.priceDescription() + "): " + event.reason();
+        String message = approved ? "Se aprobó la propuesta de precio (" + event.priceDescription() + ") con vigencia desde el " + event.effectiveFrom() + "."
+                : "Se rechazó la propuesta de precio (" + event.priceDescription() + "): " + event.reason();
         sendOnce(event, PRICE_DECIDED_HANDLER, new BillingOperationNotification(
                 approved ? NotificationType.PRICE_CHANGE_APPROVED : NotificationType.PRICE_CHANGE_REJECTED,
                 message, List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "PriceVersion", event.priceVersionId()));

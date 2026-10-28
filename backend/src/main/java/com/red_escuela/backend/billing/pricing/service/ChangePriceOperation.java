@@ -9,7 +9,7 @@ import com.red_escuela.backend.billing.pricing.domain.Price;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersion;
 import com.red_escuela.backend.billing.pricing.exception.PriceChangedConcurrentlyException;
 import com.red_escuela.backend.billing.pricing.exception.PriceNotFoundException;
-import com.red_escuela.backend.billing.pricing.exception.PriceVersionNotFoundException;
+import com.red_escuela.backend.billing.pricing.exception.ProposalNoLongerOpenException;
 import com.red_escuela.backend.billing.pricing.policy.ChangePriceCommand;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
@@ -110,7 +110,7 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     private PriceVersion approveProposal(Price price, ChangePriceCommand command) {
         LocalDate today = LocalDate.now(clock);
         Instant now = Instant.now(clock);
-        PriceVersion proposal = price.findOpenProposalOfRequest(command.authorizationRequestId()).orElseThrow(() -> new PriceVersionNotFoundException(null));
+        PriceVersion proposal = price.findOpenProposalOfRequest(command.authorizationRequestId()).orElseThrow(() -> new ProposalNoLongerOpenException(command.authorizationRequestId()));
         policyEvaluator.requireProposalNotExpired(new ProposalApprovalCheck(proposal.getEffectiveFrom(), today, proposal.getProposedAt().atZone(clock.getZone()).toLocalDate()));
         Long deciderId = actorResolver.currentPersonId();
         price.makeRoomForVersionStartingOn(proposal.getEffectiveFrom(), today, deciderId, now);

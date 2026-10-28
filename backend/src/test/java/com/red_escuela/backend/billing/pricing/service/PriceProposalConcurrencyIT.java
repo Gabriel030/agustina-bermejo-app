@@ -64,15 +64,21 @@ class PriceProposalConcurrencyIT extends AbstractIntegrationTest {
 
     private Person firstAdministrative;
     private Person secondAdministrative;
+    private Person director;
 
     @BeforeEach
     void setUp() {
         MutableClock.INSTANCE.setDate(TODAY);
         firstAdministrative = administrative("proposal-race-first");
         secondAdministrative = administrative("proposal-race-second");
+        director = person("proposal-race-director", "DIRECTOR");
     }
 
     private Person administrative(String prefix) {
+        return person(prefix, "ADMINISTRATIVO");
+    }
+
+    private Person person(String prefix, String roleName) {
         return transactionTemplate.execute(status -> {
             String username = prefix + "." + System.nanoTime();
             Person person = new Person();
@@ -83,7 +89,7 @@ class PriceProposalConcurrencyIT extends AbstractIntegrationTest {
             person.setEmail(username + "@example.com");
             person.setAddress(addressRepository.save(new Address()));
             person.setStatus(StatusType.ACTIVE);
-            person.getRoles().add(roleRepository.findByName("ADMINISTRATIVO").orElseThrow());
+            person.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
             return personRepository.save(person);
         });
     }
@@ -156,6 +162,46 @@ class PriceProposalConcurrencyIT extends AbstractIntegrationTest {
             assertThat(statuses).containsExactly(202, 202);
             assertThat(jdbc.queryForObject("select count(*) from price_version v join price p on p.id = v.price_id where p.program_id = ? and v.status = 'PROPOSED'",
                     Long.class, programId)).isEqualTo(2L);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @Tag("D-225")
+    @Tag("D-114")
+    void approvingAndWithdrawingTheSameProposalAtTheSameTimeLeavesOneWinnerAndAConsistentState() throws Exception {
+        String administrativeToken = jwtService.generateAccessToken(firstAdministrative);
+        String directorToken = jwtService.generateAccessToken(director);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < ROUNDS; round++) {
+                long priceId = priceId(createProgram(administrativeToken, round), "MONTHLY_INSTALLMENT");
+                String proposed = mockMvc.perform(post("/prices/{id}/versions", priceId).header("Authorization", "Bearer " + administrativeToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"amount\":{\"amount\":120000,\"currency\":\"ARS\"},\"effectiveFrom\":\"" + START + "\",\"changeReason\":\"aumento\"}"))
+                        .andReturn().getResponse().getContentAsString();
+                long requestId = objectMapper.readTree(proposed).get("authorizationRequestId").asLong();
+                CyclicBarrier barrier = new CyclicBarrier(2);
+                Future<Integer> approval = executor.submit(() -> {
+                    barrier.await(10, TimeUnit.SECONDS);
+                    return mockMvc.perform(post("/authorization-requests/{id}/approve", requestId).header("Authorization", "Bearer " + directorToken)
+                            .contentType(MediaType.APPLICATION_JSON).content("{}")).andReturn().getResponse().getStatus();
+                });
+                Future<Integer> withdrawal = executor.submit(() -> {
+                    barrier.await(10, TimeUnit.SECONDS);
+                    return mockMvc.perform(post("/authorization-requests/{id}/withdraw", requestId).header("Authorization", "Bearer " + administrativeToken))
+                            .andReturn().getResponse().getStatus();
+                });
+                int approvalStatus = approval.get(60, TimeUnit.SECONDS);
+                int withdrawalStatus = withdrawal.get(60, TimeUnit.SECONDS);
+
+                String requestStatus = jdbc.queryForObject("select status from authorization_request where id = ?", String.class, requestId);
+                String versionStatus = jdbc.queryForObject("select status from price_version where authorization_request_id = ?", String.class, requestId);
+                assertThat(approvalStatus == 200 ^ withdrawalStatus == 200).as("exactly one of approval=%s and withdrawal=%s wins", approvalStatus, withdrawalStatus).isTrue();
+                assertThat(approvalStatus == 200 ? withdrawalStatus : approvalStatus).isEqualTo(409);
+                assertThat(requestStatus + "/" + versionStatus).isIn("APPROVED/SCHEDULED", "WITHDRAWN/WITHDRAWN");
+            }
         } finally {
             executor.shutdownNow();
         }
