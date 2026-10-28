@@ -105,7 +105,7 @@ public class SuspendedEnrollmentClosureService {
         }
         enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         programEnrollmentService.withdrawForNonpayment(enrollmentId);
-        eventPublisher.publishEvent(new EnrollmentClosedWhileSuspendedEvent(EnrollmentKind.PROGRAM, enrollmentId, today));
+        eventPublisher.publishEvent(EnrollmentClosedWhileSuspendedEvent.closedOn(EnrollmentKind.PROGRAM, enrollmentId, today));
         enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());

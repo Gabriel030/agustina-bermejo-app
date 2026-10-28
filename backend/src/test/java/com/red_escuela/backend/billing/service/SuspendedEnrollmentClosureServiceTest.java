@@ -39,6 +39,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.mockito.ArgumentMatchers;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -136,7 +138,9 @@ class SuspendedEnrollmentClosureServiceTest {
         assertThat(enrollment.getWithdrawalEffectiveDate()).isEqualTo(LocalDate.of(2028, 1, 1));
         verify(port).registerWithdrawalForBilling(nonpaymentOn(LocalDate.of(2028, 1, 1)));
         assertThat(paymentStatusWhenNotified).containsExactly(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        verify(eventPublisher).publishEvent(new EnrollmentClosedWhileSuspendedEvent(EnrollmentKind.PROGRAM, enrollment.getId(), LocalDate.of(2028, 1, 1)));
+        verify(eventPublisher).publishEvent(ArgumentMatchers.<Object>argThat(published -> published instanceof EnrollmentClosedWhileSuspendedEvent event
+                && event.eventId() != null && event.kind() == EnrollmentKind.PROGRAM && event.enrollmentId().equals(enrollment.getId())
+                && event.businessDate().equals(LocalDate.of(2028, 1, 1))));
         verifyNoInteractions(invoices);
     }
 
