@@ -58,7 +58,7 @@ POST,/classrooms,DENY,DENY,DENY,ALLOW,ALLOW,DENY,
 POST,/classrooms/{id}/deactivate,DENY,DENY,DENY,ALLOW,ALLOW,DENY,
 PATCH,/cohorts/{id}/entry-fee-discount,DENY,DENY,DENY,DENY,ALLOW,ALLOW,"{""discountPoints"":10}"
 GET,/collection-reminders/contact-list,DENY,DENY,DENY,DENY,ALLOW,ALLOW,
-POST,/collection-reminders/impact,DENY,DENY,DENY,DENY,ALLOW,ALLOW,
+POST,/collection-reminders/impact,DENY,DENY,DENY,DENY,ALLOW,ALLOW,"{""effectiveFrom"":""2026-01-15"",""globalSettings"":{""contactListDaysOverdue"":1,""contactListOverdueInstallments"":1,""dailyEmailCap"":1,""emailWindowEnd"":""18:00"",""emailWindowStart"":""09:00"",""postWithdrawalSummaryMonths"":1,""suspensionNoticeEnabled"":true}}"
 GET,/course-enrollments/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,
 GET,/course-enrollments/{id}/invoices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,
 POST,/course-enrollments/{id}/invoices/ad-hoc,DENY,DENY,DENY,DENY,ALLOW,DENY,
