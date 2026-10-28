@@ -1,7 +1,8 @@
 package com.red_escuela.backend.billing.support;
 
-import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
+import com.red_escuela.backend.enrollment.dto.CourseTransferReceiptForm;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Student;
 import org.springframework.mock.web.MockMultipartFile;
@@ -19,12 +20,12 @@ public final class TransferReceiptFixtures {
     private TransferReceiptFixtures() {
     }
 
-    public static BankTransferReceiptSubmissionRequest transferReceiptOf(long amount) {
+    public static CourseTransferReceiptForm transferReceiptOf(long amount) {
         return transferReceiptOf(amount, List.of());
     }
 
-    public static BankTransferReceiptSubmissionRequest transferReceiptOf(long amount, List<Long> additionalInvoiceIds) {
-        return BankTransferReceiptSubmissionRequest.fromForm(pdfFile(), additionalInvoiceIds, BigDecimal.valueOf(amount), Currency.ARS, ApplicationTime.today(),
+    public static CourseTransferReceiptForm transferReceiptOf(long amount, List<Long> additionalInvoiceIds) {
+        return new CourseTransferReceiptForm(pdfFile(), additionalInvoiceIds, Money.of(BigDecimal.valueOf(amount), Currency.ARS), ApplicationTime.today(),
                 "OP-" + OPERATION_SEQUENCE.getAndIncrement(), "0170099220000067797370", "Ana Pérez", "Banco de prueba");
     }
 

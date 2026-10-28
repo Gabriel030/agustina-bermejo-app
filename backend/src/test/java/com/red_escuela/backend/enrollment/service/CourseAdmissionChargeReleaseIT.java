@@ -109,7 +109,9 @@ class CourseAdmissionChargeReleaseIT extends AbstractIntegrationTest {
         Course course = persistPricedCourse();
         CourseEnrollmentApplication first = request(student, course);
         String key = chargeKeyOf(first.getInvoiceId());
+        jdbc.update("update payment set status = 'REJECTED' where id = (select payment_id from bank_transfer_receipt where id = ?)", first.getPaymentReceipt().getId());
         jdbc.update("update bank_transfer_receipt set status = 'REJECTED' where id = ?", first.getPaymentReceipt().getId());
+        jdbc.update("update invoice set payment_status = 'PENDING' where id = ?", first.getInvoiceId());
         assertThatThrownBy(() -> request(student, course)).isInstanceOf(DuplicateChargeException.class);
 
         systemCancellation.cancelInvoiceWithoutDirector(first.getInvoiceId(), SystemCancellationOrigin.REJECTED_COURSE_RECEIPT, "Comprobante rechazado");

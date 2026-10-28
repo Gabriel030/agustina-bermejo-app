@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.payment.dto;
 import com.red_escuela.backend.billing.payment.exception.BankTransferDetailsRequiredException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
-import org.springframework.modulith.NamedInterface;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -11,7 +10,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-@NamedInterface("api")
 public record BankTransferReceiptSubmissionRequest(MultipartFile file, List<Long> invoiceIds, Money declaredAmount, LocalDate transferDate,
                                                    String operationNumber, String originAccount, String holderName, String bankName) {
 

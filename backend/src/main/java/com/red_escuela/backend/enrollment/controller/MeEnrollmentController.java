@@ -22,8 +22,9 @@ import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationSer
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
-import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
+import com.red_escuela.backend.enrollment.dto.CourseTransferReceiptForm;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
@@ -90,7 +91,7 @@ public class MeEnrollmentController {
         Student student = currentStudentService.resolveCurrentStudent();
         CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializarOverrides(sectionOverrides));
         CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request,
-                BankTransferReceiptSubmissionRequest.fromForm(file, invoiceIds, declaredAmount, currency, transferDate, operationNumber, originAccount, holderName, bankName),
+                new CourseTransferReceiptForm(file, invoiceIds, declaredAmount == null || currency == null ? null : Money.of(declaredAmount, currency), transferDate, operationNumber, originAccount, holderName, bankName),
                 idempotencyKey);
         return CourseEnrollmentApplicationResponse.from(application);
     }

@@ -29,7 +29,7 @@ import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.enrollment.dto.CourseEnrollmentApplicationResponse;
-import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
+import com.red_escuela.backend.enrollment.dto.CourseTransferReceiptForm;
 import com.red_escuela.backend.billing.payment.exception.BankTransferDetailsRequiredException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
@@ -60,6 +60,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 @Transactional
 class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
+    @Autowired
+    private LegacyCourseRequestSeeder legacySeeder;
+
     @Autowired
     private CourseEnrollmentApplicationService courseEnrollmentApplicationService;
 
@@ -171,8 +174,8 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistPriceRevision(olderCourse, BigDecimal.valueOf(15000), director);
         persistPriceRevision(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
-        CourseEnrollmentApplication older = courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(olderCourse.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
+        CourseEnrollmentApplication older = legacySeeder.requestWithLegacyReceipt(student.getId(), olderCourse.getId());
+        CourseEnrollmentApplication application = legacySeeder.requestWithLegacyReceipt(student.getId(), course.getId());
 
         approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer(), PaymentVerification.none());
         entityManager.flush();
@@ -183,6 +186,27 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         assertThat(afterwards.getCourseEnrollment()).isNull();
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
         assertThatInvoice(entityManager.find(CourseEnrollmentApplication.class, older.getId()).getPaymentReceipt().getInvoice()).isPaid();
+    }
+
+    @Test
+    @Tag("D-260")
+    @Tag("D-153")
+    void aSecondCourseRequestSkipsTheAdmissionInvoiceUnderReviewByAnotherReceiptAndItsApprovalEnrollsOnlyTheSecondCourse() {
+        Student student = persistStudent("82260001");
+        Course olderCourse = persistCourse(20);
+        Course course = persistCourse(20);
+        Person director = persistPersonBase("DIR" + System.nanoTime());
+        persistPriceRevision(olderCourse, BigDecimal.valueOf(15000), director);
+        persistPriceRevision(course, BigDecimal.valueOf(15000), director);
+        entityManager.flush();
+        CourseEnrollmentApplication older = courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(olderCourse.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
+
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer(), PaymentVerification.none());
+
+        assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
+        assertThatInvoice(invoiceRepository.findById(application.getInvoiceId()).orElseThrow()).isPaid();
+        assertThat(invoiceRepository.findById(older.getInvoiceId()).orElseThrow().getPaymentStatus()).isEqualTo(com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
     }
 
     @Test
@@ -228,7 +252,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null),
-                BankTransferReceiptSubmissionRequest.fromForm(null, null, null, null, null, null, null, null, null), newIdempotencyKey()))
+                new CourseTransferReceiptForm(null, null, null, null, null, null, null, null), newIdempotencyKey()))
                 .isInstanceOf(BankTransferDetailsRequiredException.class);
     }
 
