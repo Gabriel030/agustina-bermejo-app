@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatMoney } from '@/lib/billing';
+import { inboxPath } from '../authorization/authorizationRequests';
 import { useRefundEligibility, useRefundPreview, useRequestRefund } from '../hooks/useRefunds';
 import { RefundBlockAlert } from './RefundBlockAlert';
 import { RefundSplitPreview } from './RefundSplitPreview';
@@ -122,7 +123,10 @@ export function RequestRefundPage() {
       const result = await mutation.mutateAsync(payload);
       const awaitingAuthorization = result?.authorizationRequestId != null;
       if (awaitingAuthorization) {
-        toast.success('Pedido enviado a la dirección.', { description: 'Queda pendiente de autorización del director y la plata ya está reservada.' });
+        toast.success('Pedido enviado a la dirección.', {
+          description: 'Queda pendiente de autorización del director y la plata ya está reservada.',
+          action: { label: 'Ver mis pedidos', onClick: () => navigate(inboxPath(roleBase)) },
+        });
       } else {
         toast.success('Reembolso aprobado.', { description: 'Falta transferir cada parte desde la sección Reembolsos.' });
       }

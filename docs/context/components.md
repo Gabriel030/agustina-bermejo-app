@@ -36,7 +36,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `StatusPill` [shared] | Estado con color semántico | `tone`: `success` `warning` `danger` `accent` `neutral`; `dot` |
 | `EstadoSolicitudBadge` [shared] | `StatusPill` ya mapeado para estados de solicitud | `status` |
 | `Badge` [ui] | Sin uso hoy; preferir `StatusPill` | variantes `default` `secondary` `destructive` `outline` `ghost` `link` |
-| `DataTable` [shared: `components/table/`] | Tabla con `@tanstack/react-table` v8: orden por encabezado, filtro estilo Excel, filas expandibles, estados cargando/vacío/error y cards bajo 768px. Las columnas son definiciones de TanStack; `meta`: `filterable`, `filterTitle`, `filterLabel(valor)`, `align: 'right'`, `hideInCard` | `columns`, `data`, `getRowId`, `isLoading`, `isError`, `onRetry`, `errorMessage`, `emptyState`, `renderExpanded(row)`, `expandLabel`, `initialSorting`, `minWidth` |
+| `DataTable` [shared: `components/table/`] | Tabla con `@tanstack/react-table` v8: orden por encabezado, filtro estilo Excel, filas expandibles, estados cargando/vacío/error y cards bajo 768px. Las columnas son definiciones de TanStack; `meta`: `filterable`, `filterTitle`, `filterLabel(valor)`, `align: 'right'`, `hideInCard` | `columns`, `data`, `getRowId`, `isLoading`, `isError`, `onRetry`, `errorMessage`, `emptyState`, `renderExpanded(row)`, `expandLabel`, `onRowClick(item)` (clic en la fila fuera de enlaces/botones; el acceso por teclado va con un enlace en la celda), `initialSorting`, `minWidth` |
 | `ColumnFilter` [shared: `components/table/`] | Filtro multi-selección (Popover + `Checkbox`) con los valores presentes en los datos; lo usa `DataTable` cuando la columna tiene `meta.filterable` | `label`, `options` (`{ value, label, count }`), `selected`, `onChange` |
 | `RefundsSection` [domain: billing] | Reembolsos de un alumno (pedidos agrupados, partes expandibles, "Marcar como hecho" / "No se pudo"); vive en el Financiero de la ficha del alumno | `studentId` |
 | `SortableColumnHeader` [domain: alumno] | Encabezado ordenable (hook `useOrdenamiento`) | — |
@@ -73,7 +73,9 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `EmptyState` [shared] | Listas/tablas vacías | `icon`, `title`, `description`, `action` |
 | `NotificationBell` [shared] | Campana con badge de no leídas | — |
 | `Dialog` [ui] | Confirmaciones y acciones breves; no para flujos de varios pasos | compound |
-| `ModalMotivo` [domain: director] | Pide un motivo al aprobar/rechazar | `open`, `onClose`, `onConfirmar`, `confirmando`, `requerido` |
+| `DropdownMenu` `DropdownMenuTrigger` `DropdownMenuContent` `DropdownMenuItem` `DropdownMenuGroup` `DropdownMenuLabel` `DropdownMenuSeparator` [ui] | Menú de acciones por fila (flechas, foco, `disabled` real). Fijar el ancho del contenido con `className="w-72"`: por defecto toma el ancho del trigger | `DropdownMenuItem variant="destructive"` |
+| `ModalMotivo` [domain: director] | Pide un motivo al aprobar/rechazar | `open`, `onClose`, `onConfirmar`, `confirmando`, `requerido`, `titulo`, `descripcion`, `placeholder`, `confirmarLabel`, `confirmarVariant` |
+| `AuthorizationInboxPage` / `AuthorizationRequestDetailPage` [domain: billing] | Bandeja de autorizaciones (director: `aprobaciones/facturacion`; administrativo: `aprobaciones`) y detalle con barra fija Aprobar/Rechazar/Retirar | — |
 | `*Modal` [domain: gestion-personas] | `AltaPersonalModal`, `EditarPersonalModal`, `DarDeBajaModal`, `DarDeBajaPersonalModal`, `ReactivarPersonalModal`, `ResetPasswordModal` | — |
 
 ## 6. Motion
@@ -90,6 +92,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 - **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
 - **director:** `BandejaTramites`.
 - **docente:** `CalendarioConfiguracion`.
+- **billing/payment-reversals:** `StudentPaymentsCard` (card "Pagos del alumno" de la ficha de Facturación del staff), `PaymentActionsMenu`, `ReversalDialog` (contracargo, reversión y revocación con vista previa del impacto), `ReversalImpact`, `PendingRefundsNotice`.
 - **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).
 Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `frontend.md`).
 

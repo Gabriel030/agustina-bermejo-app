@@ -16,11 +16,11 @@ class PostWithdrawalSummaryScheduleTest {
     @Test
     @Tag("D-338")
     void theSummaryGoesOutOnTheFirstOfEachOfTheSixMonthsAfterTheWithdrawalAndNotOnTheSeventh() {
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 9, 1), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 10, 1), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 12, 1), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2028, 1, 3), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2028, 2, 1), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 9, 1), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 10, 1), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 12, 1), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2028, 1, 3), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2028, 2, 1), 6, WEEKENDS_ONLY)).isFalse();
     }
 
     @Test
@@ -28,10 +28,10 @@ class PostWithdrawalSummaryScheduleTest {
     void theFirstSummaryIsOfTheMonthAfterTheWithdrawalAndNeverOfTheMonthOfTheWithdrawal() {
         LocalDate withdrawalOnTheFirst = LocalDate.of(2027, 9, 1);
 
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(withdrawalOnTheFirst, LocalDate.of(2027, 9, 1), 6, WEEKENDS_ONLY)).isFalse();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(withdrawalOnTheFirst, LocalDate.of(2027, 10, 1), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(LocalDate.of(2027, 7, 15), LocalDate.of(2027, 8, 2), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(LocalDate.of(2027, 7, 15), LocalDate.of(2027, 7, 1), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(withdrawalOnTheFirst, LocalDate.of(2027, 9, 1), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(withdrawalOnTheFirst, LocalDate.of(2027, 10, 1), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(LocalDate.of(2027, 7, 15), LocalDate.of(2027, 8, 2), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(LocalDate.of(2027, 7, 15), LocalDate.of(2027, 7, 1), 6, WEEKENDS_ONLY)).isFalse();
     }
 
     @Test
@@ -41,17 +41,35 @@ class PostWithdrawalSummaryScheduleTest {
         assertThat(PostWithdrawalSummarySchedule.summaryDayOfMonth(YearMonth.of(2027, 9), WEEKENDS_ONLY)).isEqualTo(LocalDate.of(2027, 9, 1));
         NonBusinessDays holidayOnFirstAndSecond = new NonBusinessDays(Set.of(LocalDate.of(2027, 9, 1), LocalDate.of(2027, 9, 2)));
         assertThat(PostWithdrawalSummarySchedule.summaryDayOfMonth(YearMonth.of(2027, 9), holidayOnFirstAndSecond)).isEqualTo(LocalDate.of(2027, 9, 3));
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 8, 1), 6, WEEKENDS_ONLY)).isFalse();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 8, 2), 6, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 8, 3), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 1), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 2), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 3), 6, WEEKENDS_ONLY)).isTrue();
     }
 
     @Test
     @Tag("D-338")
     void theNumberOfMonthsComesFromTheConfigurationOfTheDayAndOneMonthStopsAfterTheFirstSummary() {
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 8, 2), 1, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2027, 9, 1), 1, WEEKENDS_ONLY)).isFalse();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2029, 7, 2), 24, WEEKENDS_ONLY)).isTrue();
-        assertThat(PostWithdrawalSummarySchedule.isSummaryDay(WITHDRAWAL, LocalDate.of(2029, 8, 1), 24, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 2), 1, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 9, 1), 1, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2029, 7, 2), 24, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2029, 8, 1), 24, WEEKENDS_ONLY)).isFalse();
+    }
+
+    @Test
+    @Tag("D-338")
+    void aBusinessDayAfterTheSummaryDayOfTheSameMonthStillOwesTheSummaryButAWeekendOrAHolidayDoesNot() {
+        NonBusinessDays holidayOnThe4th = new NonBusinessDays(Set.of(LocalDate.of(2027, 8, 4)));
+
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 31), 6, WEEKENDS_ONLY)).isTrue();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 7), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 4), 6, holidayOnThe4th)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 8, 5), 6, holidayOnThe4th)).isTrue();
+    }
+
+    @Test
+    @Tag("D-338")
+    void theRecoveryNeverReachesAMonthOutsideTheConfiguredWindow() {
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2028, 2, 3), 6, WEEKENDS_ONLY)).isFalse();
+        assertThat(PostWithdrawalSummarySchedule.isSummaryDueOn(WITHDRAWAL, LocalDate.of(2027, 7, 30), 6, WEEKENDS_ONLY)).isFalse();
     }
 }

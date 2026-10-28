@@ -14,12 +14,12 @@ public final class PostWithdrawalSummarySchedule {
         return nonBusinessDays.isBusinessDay(firstDay) ? firstDay : nonBusinessDays.nextBusinessDayAfter(firstDay);
     }
 
-    public static boolean isSummaryDay(LocalDate withdrawalEffectiveDate, LocalDate businessDate, int summaryMonths, NonBusinessDays nonBusinessDays) {
+    public static boolean isSummaryDueOn(LocalDate withdrawalEffectiveDate, LocalDate businessDate, int summaryMonths, NonBusinessDays nonBusinessDays) {
         YearMonth currentMonth = YearMonth.from(businessDate);
         long monthsSinceWithdrawal = ChronoUnit.MONTHS.between(YearMonth.from(withdrawalEffectiveDate), currentMonth);
         if (monthsSinceWithdrawal < 1 || monthsSinceWithdrawal > summaryMonths) {
             return false;
         }
-        return businessDate.equals(summaryDayOfMonth(currentMonth, nonBusinessDays));
+        return nonBusinessDays.isBusinessDay(businessDate) && !businessDate.isBefore(summaryDayOfMonth(currentMonth, nonBusinessDays));
     }
 }

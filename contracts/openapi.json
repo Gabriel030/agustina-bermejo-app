@@ -3199,6 +3199,11 @@
           "closureReason" : {
             "type" : [ "string", "null" ]
           },
+          "cohortPromotionStatus" : {
+            "description" : "Solo en promociones de cohorte; null en los demás tipos. Lo calcula el servidor con su fecha de hoy: CLOSED si se cerró; FINISHED si pasó la vigencia; UPCOMING si la vigencia o la ventana de inscripción no empezaron; QUOTA_FULL si el cupo está completo; ENROLLMENT_CLOSED si la ventana de inscripción terminó; OPEN en otro caso.",
+            "enum" : [ "UPCOMING", "OPEN", "QUOTA_FULL", "ENROLLMENT_CLOSED", "FINISHED", "CLOSED" ],
+            "type" : [ "string", "null" ]
+          },
           "courseId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -16133,6 +16138,8 @@
     },
     "/courses/{id}/promotions" : {
       "post" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_createForCourse",
         "parameters" : [ {
           "in" : "path",
@@ -16751,6 +16758,14 @@
             "enum" : [ "ACTIVE", "CLOSED" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "cohortPromotionStatus",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "UPCOMING", "OPEN", "QUOTA_FULL", "ENROLLMENT_CLOSED", "FINISHED", "CLOSED" ],
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -16939,6 +16954,75 @@
               }
             },
             "description" : "La carrera, el curso o la cohorte del alcance no existen"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      }
+    },
+    "/discount-definitions/{id}" : {
+      "get" : {
+        "operationId" : "DiscountDefinition_findDiscountDefinition",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionCatalogEntryResponse"
+                }
+              }
+            },
+            "description" : "La definición con su disponibilidad, su costo estimado de cupo y, en promociones de cohorte, su estado derivado"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "No existe la definición"
           },
           "409" : {
             "content" : {
@@ -28526,6 +28610,8 @@
     },
     "/programs/{id}/promotions" : {
       "post" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_createForProgram",
         "parameters" : [ {
           "in" : "path",
@@ -28911,6 +28997,8 @@
     },
     "/promotions" : {
       "get" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar GET /discount-definitions?type=COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_findActive",
         "parameters" : [ {
           "in" : "query",
@@ -28983,6 +29071,8 @@
     },
     "/promotions/{id}/close" : {
       "post" : {
+        "deprecated" : true,
+        "description" : "Deprecado (D-432): usar POST /discount-definitions/{id}/closure. Se retira cuando el front use el contrato nuevo.",
         "operationId" : "Promotion_close",
         "parameters" : [ {
           "in" : "path",
