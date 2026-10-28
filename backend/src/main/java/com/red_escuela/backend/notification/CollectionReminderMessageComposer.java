@@ -27,7 +27,7 @@ public class CollectionReminderMessageComposer {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final Locale ARGENTINA = Locale.forLanguageTag("es-AR");
     private static final String PAYMENT_ORDER_LINE = "Los pagos se aplican primero a lo más vencido.";
-    private static final String RECEIPT_LINE = "Si ya realizaste el pago, subí el comprobante desde la plataforma.";
+    private static final String RECEIPT_LINE = "Si ya realizaste el pago, subí el comprobante desde la sección Pagos de la plataforma.";
 
     public DeliveryContent composeInApp(PlannedReminderMessage message, LocalDate businessDate) {
         StringBuilder text = new StringBuilder(introOf(message));

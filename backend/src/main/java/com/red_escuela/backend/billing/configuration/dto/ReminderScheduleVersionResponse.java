@@ -7,15 +7,24 @@ import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedu
 import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 
+import org.springframework.lang.Nullable;
+
 import java.time.LocalDate;
+import java.util.Map;
 
 public record ReminderScheduleVersionResponse(Long id, ConfigurationVersionStatus status, LocalDate effectiveFrom, String changeReason, boolean directPublication,
-                                              Long proposedById, Long decidedById, String decisionReason, ReminderScheduleDto schedule) {
+                                              Long proposedById, @Nullable String proposedByName, Long decidedById, @Nullable String decidedByName,
+                                              String decisionReason, ReminderScheduleDto schedule) {
 
-    public static ReminderScheduleVersionResponse from(ConfigurationVersion version) {
+    public static ReminderScheduleVersionResponse from(ConfigurationVersion version, Map<Long, String> authorNames) {
         return new ReminderScheduleVersionResponse(version.getId(), version.getStatus(), version.getEffectiveFrom(), version.getChangeReason(),
-                version.isDirectPublication(), version.getProposedById(), version.getDecidedById(), version.getDecisionReason(),
+                version.isDirectPublication(), version.getProposedById(), nameOf(authorNames, version.getProposedById()),
+                version.getDecidedById(), nameOf(authorNames, version.getDecidedById()), version.getDecisionReason(),
                 ReminderScheduleDto.from(scheduleOf(version.values())));
+    }
+
+    private static String nameOf(Map<Long, String> authorNames, Long personId) {
+        return personId == null ? null : authorNames.get(personId);
     }
 
     private static ReminderSchedule scheduleOf(ConfigurationValues values) {

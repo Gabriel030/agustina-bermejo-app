@@ -21,10 +21,11 @@ import java.util.List;
 public class PostWithdrawalSummaryStore {
 
     private static final String DEBT_LINES_SQL = """
-            select distinct e.student_id, s.person_id, e.id as enrollment_id, e.withdrawal_effective_date, i.id as invoice_id,
+            select distinct e.student_id, s.person_id, e.id as enrollment_id, e.withdrawal_effective_date, t.name as enrollment_name, i.id as invoice_id,
                    i.invoice_type, i.due_date, i.currency, i.outstanding_amount
             from %1$s e
             join student s on s.id = e.student_id
+            join %3$s t on t.id = e.%4$s
             join invoice_line l on l.%2$s = e.id
             join invoice i on i.id = l.invoice_id
             where e.status = 'WITHDRAWN'
@@ -50,9 +51,9 @@ public class PostWithdrawalSummaryStore {
     public List<WithdrawnEnrollmentDebtLine> findPendingDebtLinesOfWithdrawnEnrollments(LocalDate businessDate, LocalDate summaryDay) {
         MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("summaryDay", Date.valueOf(summaryDay))
                 .addValue("summaryMonth", Date.valueOf(YearMonth.from(businessDate).atDay(1)));
-        List<WithdrawnEnrollmentDebtLine> lines = new ArrayList<>(jdbc.query(DEBT_LINES_SQL.formatted("program_enrollment", "program_enrollment_id"), parameters,
+        List<WithdrawnEnrollmentDebtLine> lines = new ArrayList<>(jdbc.query(DEBT_LINES_SQL.formatted("program_enrollment", "program_enrollment_id", "program", "program_id"), parameters,
                 (rs, rowNumber) -> lineOf(rs, true)));
-        lines.addAll(jdbc.query(DEBT_LINES_SQL.formatted("course_enrollment", "course_enrollment_id"), parameters, (rs, rowNumber) -> lineOf(rs, false)));
+        lines.addAll(jdbc.query(DEBT_LINES_SQL.formatted("course_enrollment", "course_enrollment_id", "course", "course_id"), parameters, (rs, rowNumber) -> lineOf(rs, false)));
         return lines;
     }
 
@@ -71,6 +72,6 @@ public class PostWithdrawalSummaryStore {
         return new WithdrawnEnrollmentDebtLine(rs.getLong("student_id"), rs.getLong("person_id"), programEnrollment ? enrollmentId : null,
                 programEnrollment ? null : enrollmentId, rs.getDate("withdrawal_effective_date").toLocalDate(), rs.getLong("invoice_id"),
                 "ENROLLMENT_FEE".equals(rs.getString("invoice_type")), rs.getDate("due_date").toLocalDate(),
-                Money.of(rs.getBigDecimal("outstanding_amount"), currency));
+                Money.of(rs.getBigDecimal("outstanding_amount"), currency), rs.getString("enrollment_name"));
     }
 }

@@ -3,9 +3,11 @@ package com.red_escuela.backend.billing.collections.service;
 import com.red_escuela.backend.billing.api.StudentSegment;
 import com.red_escuela.backend.billing.api.StudentSegmentMember;
 import com.red_escuela.backend.billing.api.StudentSegmentParameter;
+import com.red_escuela.backend.billing.collections.domain.ListedOverdueContact;
 import com.red_escuela.backend.billing.collections.domain.OverdueAccountBalance;
 import com.red_escuela.backend.billing.collections.domain.OverdueContact;
 import com.red_escuela.backend.billing.collections.domain.OverdueContactCriteria;
+import com.red_escuela.backend.billing.collections.domain.OverdueContactFilter;
 import com.red_escuela.backend.billing.collections.domain.OverdueContactSelection;
 import com.red_escuela.backend.billing.collections.repository.OverdueContactQuery;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class OverdueContactSegment implements StudentSegment {
@@ -62,6 +65,20 @@ public class OverdueContactSegment implements StudentSegment {
         int from = (int) Math.min(pageable.getOffset(), contacts.size());
         int to = Math.min(from + pageable.getPageSize(), contacts.size());
         return new PageImpl<>(contacts.subList(from, to), pageable, contacts.size());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ListedOverdueContact> findListedContacts(LocalDate asOf, OverdueContactFilter filter, Pageable pageable) {
+        OverdueContactCriteria criteria = criteriaEffectiveOn(asOf);
+        List<OverdueContact> today = contactsOn(asOf, criteria);
+        Set<Long> newcomers = OverdueContactSelection.studentsNewlyIn(today, contactsOn(asOf.minusDays(1), criteria));
+        List<ListedOverdueContact> listed = today.stream()
+                .map(contact -> new ListedOverdueContact(contact, newcomers.contains(contact.studentId()),
+                        criteria.reasonFor(contact.oldestDaysOverdue(), contact.overdueInstallments()).orElseThrow()))
+                .filter(filter::accepts).toList();
+        int from = (int) Math.min(pageable.getOffset(), listed.size());
+        int to = Math.min(from + pageable.getPageSize(), listed.size());
+        return new PageImpl<>(listed.subList(from, to), pageable, listed.size());
     }
 
     @Transactional(readOnly = true)

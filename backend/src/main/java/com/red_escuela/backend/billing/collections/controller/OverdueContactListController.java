@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.controller;
 
+import com.red_escuela.backend.billing.collections.domain.OverdueContactFilter;
+import com.red_escuela.backend.billing.collections.domain.OverdueContactReason;
 import com.red_escuela.backend.billing.collections.dto.OverdueContactPageResponse;
 import com.red_escuela.backend.billing.collections.usecase.ListOverdueContactsUseCase;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -21,7 +23,10 @@ public class OverdueContactListController {
     @GetMapping("/contact-list")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public OverdueContactPageResponse list(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
-                                           @RequestParam(required = false) Currency currency) {
-        return listOverdueContactsUseCase.listOverdueContacts(page, size, currency);
+                                           @RequestParam(required = false) Currency currency, @RequestParam(required = false) Integer minDaysOverdue,
+                                           @RequestParam(required = false) Integer minOverdueInstallments, @RequestParam(defaultValue = "false") boolean onlyNewlyListed,
+                                           @RequestParam(required = false) OverdueContactReason entryReason) {
+        return listOverdueContactsUseCase.listOverdueContacts(page, size,
+                new OverdueContactFilter(currency, minDaysOverdue, minOverdueInstallments, onlyNewlyListed, entryReason));
     }
 }

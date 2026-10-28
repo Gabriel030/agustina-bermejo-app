@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.operation;
 
+import com.red_escuela.backend.billing.collections.domain.WithdrawnEnrollmentDebtLine;
+import com.red_escuela.backend.billing.collections.repository.PostWithdrawalSummaryStore;
 import com.red_escuela.backend.billing.collections.service.AbstractOverdueContactIT;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
@@ -32,6 +34,8 @@ class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
     private PostWithdrawalSummaryPlanningStep planningStep;
     @Autowired
     private CollectionReminderPlanningJob planningJob;
+    @Autowired
+    private PostWithdrawalSummaryStore summaryStore;
 
     private void runJobOn(LocalDate day) {
         MutableClock.INSTANCE.setDate(day);
@@ -131,6 +135,23 @@ class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
 
         assertThat(students).isGreaterThanOrEqualTo(1);
         assertThat(summariesOf(student)).isEqualTo(2);
+    }
+
+    @Test
+    @Tag("D-338")
+    void theDebtLinesOfAWithdrawnEnrollmentCarryTheNameOfItsCourse() {
+        Student student = newStudent();
+        CourseEnrollment enrollment = newCourseEnrollment(student);
+        installmentDueOn(enrollment, JULY_TENTH);
+        withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
+
+        List<WithdrawnEnrollmentDebtLine> lines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(LocalDate.of(2027, 8, 2), LocalDate.of(2027, 8, 2)).stream()
+                .filter(line -> line.studentId().equals(student.getId())).toList();
+
+        assertThat(lines).singleElement().satisfies(line -> {
+            assertThat(line.enrollmentName()).isEqualTo(enrollment.getCourse().getName()).startsWith("Curso para contactar");
+            assertThat(line.withdrawalEffectiveDate()).isEqualTo(JULY_THIRTY_FIRST);
+        });
     }
 
     @Test

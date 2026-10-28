@@ -151,4 +151,39 @@ class CollectionReminderImpactControllerIT extends AbstractIntegrationTest {
         postImpact(director, "{\"group\":\"PROGRAMS\",\"targetId\":999999999,\"schedule\":{\"notices\":" + standardNotices(-1) + "},\"effectiveFrom\":\"" + TODAY.plusDays(1) + "\"}")
                 .andExpect(status().isNotFound());
     }
+
+    private static String globalSettings(String windowStart, String windowEnd) {
+        return "{\"suspensionNoticeEnabled\":true,\"postWithdrawalSummaryMonths\":6,\"emailWindowStart\":\"" + windowStart + "\",\"emailWindowEnd\":\"" + windowEnd + "\","
+                + "\"dailyEmailCap\":250,\"contactListDaysOverdue\":14,\"contactListOverdueInstallments\":2,\"dailyDigestEnabled\":false}";
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @Tag("D-350")
+    @Tag("D-351")
+    @ValueSource(strings = {"ADMINISTRATIVO", "DIRECTOR"})
+    void aGlobalSettingsOnlyChangeGetsTheImpactWithoutGroupNorSchedule(String role) throws Exception {
+        String content = "{\"effectiveFrom\":\"" + TODAY.plusDays(1) + "\",\"globalSettings\":" + globalSettings("09:00:00", "11:00:00") + "}";
+
+        postImpact(tokenWithRole(role), content).andExpect(status().isOk()).andExpect(jsonPath("$.studentsWithChangedSchedule").isNumber());
+    }
+
+    @Test
+    @Tag("D-350")
+    void aGlobalSettingsOnlyChangeWithBrokenSettingsIsRefused() throws Exception {
+        String content = "{\"effectiveFrom\":\"" + TODAY.plusDays(1) + "\",\"globalSettings\":" + globalSettings("11:00:00", "09:00:00") + "}";
+
+        postImpact(tokenWithRole("DIRECTOR"), content).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @Tag("D-350")
+    void theImpactNeedsAScheduleWithItsGroupOrGlobalSettingsAndNeverATargetAlone() throws Exception {
+        String director = tokenWithRole("DIRECTOR");
+        String effectiveFrom = "\"effectiveFrom\":\"" + TODAY.plusDays(1) + "\"";
+
+        postImpact(director, "{" + effectiveFrom + "}").andExpect(status().isBadRequest());
+        postImpact(director, "{\"group\":\"PROGRAMS\"," + effectiveFrom + ",\"globalSettings\":" + globalSettings("09:00:00", "11:00:00") + "}").andExpect(status().isBadRequest());
+        postImpact(director, "{\"targetId\":1," + effectiveFrom + ",\"globalSettings\":" + globalSettings("09:00:00", "11:00:00") + "}").andExpect(status().isBadRequest());
+        postImpact(director, "{\"schedule\":{\"notices\":" + standardNotices(-1) + "}," + effectiveFrom + "}").andExpect(status().isBadRequest());
+    }
 }

@@ -277,4 +277,13 @@ class CollectionReminderMessageComposerTest {
 
         assertThat(body).contains("recargo", "suspenderse").doesNotContain("intimación", "estudio jurídico", "acciones legales", "último aviso");
     }
+
+    @ParameterizedTest
+    @EnumSource(PlannedReminderNoticeType.class)
+    @Tag("D-345")
+    void everyMailTellsTheStudentWhereToUploadTheReceipt(PlannedReminderNoticeType noticeType) {
+        String body = composer.composeEmail(ownNoticeOf(noticeType), TODAY).bodyText();
+
+        assertThat(body).contains("Si ya realizaste el pago, subí el comprobante desde la sección Pagos de la plataforma.");
+    }
 }

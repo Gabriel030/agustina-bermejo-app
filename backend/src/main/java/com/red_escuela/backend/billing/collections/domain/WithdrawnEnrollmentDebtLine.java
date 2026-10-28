@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 public record WithdrawnEnrollmentDebtLine(Long studentId, Long personId, Long programEnrollmentId, Long courseEnrollmentId, LocalDate withdrawalEffectiveDate,
-                                          Long invoiceId, boolean enrollmentFee, LocalDate dueDate, Money balance) {
+                                          Long invoiceId, boolean enrollmentFee, LocalDate dueDate, Money balance, String enrollmentName) {
 
     public WithdrawnEnrollmentDebtLine {
         Objects.requireNonNull(studentId, "studentId");
