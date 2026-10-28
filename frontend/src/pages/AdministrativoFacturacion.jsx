@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard, ReceiptText } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ContactListTab } from '@/features/billing/reminders/ContactListTab';
 import { useContactList } from '@/features/billing/hooks/useCollectionReminders';
 import { useAuth } from '@/context/AuthContext';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -244,6 +245,28 @@ function outstandingDebtOf(overview) {
   return sumMoney(invoices.map((invoice) => invoice.outstandingAmount));
 }
 
+function UploadReceiptButton({ disabled, reason, onClick }) {
+  const button = (
+    <Button variant="outline" className="w-full sm:w-auto" onClick={onClick} disabled={disabled}>
+      <ReceiptText />
+      Cargar comprobante
+    </Button>
+  );
+  if (!reason) return button;
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="inline-flex w-full sm:w-auto [&>button]:w-full">
+            {button}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{reason}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function TabFacturacion() {
   const [searchInput, setSearchInput] = useState('');
   const searchDebounced = useDebounce(searchInput, 300);
@@ -254,6 +277,8 @@ function TabFacturacion() {
   const [pickedStudent, setPickedStudent] = useState(null);
   const [showCashPayment, setShowCashPayment] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const { usuario } = useAuth();
+  const canCollect = (usuario?.roles ?? []).some((role) => role === 'ADMINISTRATIVO' || role === 'DIRECTOR');
 
   const { data: legajo, isError: legajoFailed } = useLegajoAlumno(studentId);
   const selectedStudent = legajo ?? (pickedStudent && String(pickedStudent.id) === studentId ? pickedStudent : null);
@@ -272,6 +297,8 @@ function TabFacturacion() {
   const allInvoices = (overview ?? []).flatMap((enrollment) => enrollment.invoices ?? []);
   const showResults = searchDebounced.length >= 2;
   const debt = debtIsCurrent ? outstandingDebtOf(overview) : null;
+  const hasPayableInvoices = payableInvoicesOf(overview).length > 0;
+  const accountBase = usuario?.roles?.includes('DIRECTOR') ? '/director' : '/administrativo';
   const availableCredit = creditBalance?.availableCredit;
   const studentName = selectedStudent ? `${selectedStudent.apellido}, ${selectedStudent.nombre}` : undefined;
   const requestedCancelId = location.state?.cancelInvoiceId;
@@ -328,10 +355,19 @@ function TabFacturacion() {
                 </div>
               )}
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={!debtIsCurrent}>
-                  <CreditCard size={14} className="mr-1.5" />
-                  Cobrar en efectivo
-                </Button>
+                {canCollect && (
+                  <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={!debtIsCurrent}>
+                    <CreditCard size={14} className="mr-1.5" />
+                    Cobrar en efectivo
+                  </Button>
+                )}
+                {canCollect && (
+                  <UploadReceiptButton
+                    disabled={!debtIsCurrent || !hasPayableInvoices}
+                    reason={debtIsCurrent && !hasPayableInvoices ? 'No tiene cuotas pendientes.' : null}
+                    onClick={() => navigate(`${accountBase}/facturacion/alumnos/${studentId}/cargar-comprobante`)}
+                  />
+                )}
                 <Button variant="outline" className="w-full sm:w-auto" onClick={() => selectStudent(null)}>
                   Cambiar alumno
                 </Button>
@@ -496,7 +532,15 @@ function RechazarModal({ receipt, onClose }) {
   );
 }
 
+function ReceiptOrigin({ uploadedBy, currentPersonId }) {
+  if (!uploadedBy) return null;
+  if (!uploadedBy.internal) return <StatusPill tone="neutral">Subido por el alumno</StatusPill>;
+  const who = uploadedBy.personId === currentPersonId ? 'vos' : uploadedBy.name;
+  return <StatusPill tone="accent">Carga interna · {who}</StatusPill>;
+}
+
 function TabComprobantes() {
+  const { usuario } = useAuth();
   const { data: comprobantes, isLoading } = useComprobantesAdmin();
   const { mutate: aprobar, isPending: aprobando } = useAprobarComprobante();
   const [pendingApproveId, setPendingApproveId] = useState(null);
@@ -530,6 +574,14 @@ function TabComprobantes() {
                 <p className="text-sm text-ink-faint">DNI {receipt.studentDni}</p>
               )}
               {receipt.productName && <p className="text-sm text-ink-soft">{receipt.productName}</p>}
+              <div className="mt-1.5">
+                <ReceiptOrigin uploadedBy={receipt.uploadedBy} currentPersonId={usuario?.id} />
+              </div>
+              {receipt.uploadedBy?.internal && receipt.uploadedBy.personId === usuario?.id && (
+                <p role="note" className="mt-2 text-xs text-ink-faint">
+                  Lo cargaste vos. Podés aprobarlo; queda registrado quién lo cargó y quién lo aprobó.
+                </p>
+              )}
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-faint">
                 {receipt.invoiceFeeType && (
                   <span>{FEE_TYPE_LABELS[receipt.invoiceFeeType] ?? receipt.invoiceFeeType}</span>

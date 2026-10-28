@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.dto;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.dto.ReceiptInvoiceSummary;
+import com.red_escuela.backend.billing.invoice.dto.ReceiptUploader;
 import com.red_escuela.backend.billing.invoice.dto.ReceiptReviewDetail;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Money;
@@ -16,14 +17,14 @@ public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePa
                                      String invoicePeriod, String invoiceFeeType, String productName, List<Long> invoiceIds,
                                      Money declaredAmount, LocalDate transferDate, String operationNumber, String originAccount, String holderName,
                                      List<ReceiptInvoiceSummary> invoices, Integer pendingBusinessDays, Boolean reviewAlertSent,
-                                     LocalDateTime reviewAlertSentAt) {
+                                     LocalDateTime reviewAlertSentAt, ReceiptUploader uploadedBy) {
 
     public static BankTransferReceiptResponse from(BankTransferReceipt receipt, Person payer, String productName, List<Long> invoiceIds) {
-        return from(receipt, payer, productName, invoiceIds, null);
+        return from(receipt, payer, productName, invoiceIds, null, null);
     }
 
     public static BankTransferReceiptResponse from(BankTransferReceipt receipt, Person payer, String productName, List<Long> invoiceIds,
-                                                   ReceiptReviewDetail detail) {
+                                                   ReceiptReviewDetail detail, ReceiptUploader uploadedBy) {
         Invoice invoice = receipt.getInvoice();
         return new BankTransferReceiptResponse(
                 receipt.getId(), invoice.getId(), receipt.getFilePath(),
@@ -42,13 +43,14 @@ public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePa
                 detail == null ? null : detail.invoices(),
                 detail == null ? null : detail.pendingBusinessDays(),
                 detail == null ? null : detail.reviewAlertSentAt() != null,
-                detail == null ? null : detail.reviewAlertSentAt());
+                detail == null ? null : detail.reviewAlertSentAt(),
+                uploadedBy);
     }
 
     public BankTransferReceiptResponse withoutReviewAlertState() {
         return new BankTransferReceiptResponse(id, invoiceId, filePath, status, rejectionReason, rejectionCode, uploadedAt, studentName, studentDni, invoicePeriod,
                 invoiceFeeType, productName, invoiceIds, declaredAmount, transferDate, operationNumber, originAccount, holderName, invoices, pendingBusinessDays,
-                null, reviewAlertSentAt);
+                null, reviewAlertSentAt, null);
     }
 
     private static String codeOf(BankTransferReceipt receipt) {
