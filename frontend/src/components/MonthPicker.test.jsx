@@ -205,6 +205,7 @@ describe('MonthPicker', () => {
     expect(screen.queryByRole('group', { name: 'Meses de 2026' })).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
 
+    await userEvent.unhover(trigger());
     await userEvent.hover(trigger());
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Todavía no hay meses con datos');
   });

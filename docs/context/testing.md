@@ -29,7 +29,7 @@ prueba encuentra bugs que los demás no ven.
 | Vitest + RTL + MSW | Front unitario/componente | ¿El componente muestra y reacciona bien ante cada respuesta del backend? | En uso |
 | Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | En uso (solo local: `scripts/system-tests.sh`) |
 | OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | En uso (lado backend: instantánea `contracts/openapi.json` + `oasdiff`); falta la validación de los mocks del front (Q13b) |
-| Gatling o k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | Propuesto |
+| k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | En uso para HTTP (solo local: `scripts/load-tests.sh`); falta el batch (Q15b) |
 | OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); matriz por rol (`security/AuthorizationMatrixTest`, `authorization-matrix.csv`): en uso, corre en cada PR y todo endpoint nuevo o cambio de permisos exige tocar el CSV; ZAP: propuesto |
 
 ## Criterio: qué tests escribir para un cambio
@@ -538,3 +538,20 @@ Antes de pedir el merge de un PR que cierra una fase del roadmap:
    de alcance amplio (ej. un `@ExceptionHandler` nuevo) puede tener efectos
    secundarios en código no relacionado; correr toda la suite es la única
    forma de confirmarlo, no asumirlo.
+
+**Carga HTTP (k6)**: carpeta `load/` con `q15a.js` y `scripts/load-tests.sh [args de k6]`
+(requiere `k6` y Docker arriba). El script toma el semáforo, elige un puerto libre, levanta
+`testsupport/system/LoadTestApplication` (Postgres de Testcontainers, las cuentas `.demo` y
+un seed volumétrico: alumnos con matrícula y cuotas, 10 docentes con una comisión de 40
+alumnos y un administrativo), espera a que el seed publique las sesiones ya firmadas en
+`backend/target/load-test-sessions.json` (así el rate limit de login no interviene) y corre
+tres escenarios a la vez: alumnos mirando y subiendo comprobantes (C2), staff con listados
+de comprobantes y facturas (C4) y docentes con el roster. El código de salida de k6 es el
+del script: 99 si algún umbral se cruza. Volúmenes y umbrales se pisan por variable de
+entorno: `LOAD_TEST_STUDENTS`, `LOAD_TEST_TEACHERS`, `LOAD_TEST_ROSTER_SIZE`,
+`LOAD_TEST_INVOICES_PER_STUDENT`, `LOAD_DURATION`, `LOAD_STUDENT_VUS`, `LOAD_STAFF_VUS`,
+`LOAD_TEACHER_VUS`, `LOAD_THINK_TIME_SECONDS`, `THRESHOLD_ERROR_RATE`,
+`THRESHOLD_READ_P95_MS`, `THRESHOLD_READ_P99_MS`, `THRESHOLD_UPLOAD_P95_MS`,
+`THRESHOLD_ROSTER_P95_MS`, `THRESHOLD_STAFF_LIST_P95_MS`. Los defaults son los de la spec
+(Q15). Pendiente: C1 (cupo) y C3 (contención de cuenta) con verificación SQL posterior, y
+el delta de deadlocks.
