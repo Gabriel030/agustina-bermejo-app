@@ -7,17 +7,29 @@
 
 * `c.r.b.i.service.CurrentPersonService`
 * `c.r.b.i.service.CurrentStudentService`
+
+_Repositories_
+
+* `c.r.b.i.repository.InstitutionRepository`
+
+_Others_
+
+* `c.r.b.i.api.EmailRecipientLookup` (via `c.r.b.i.service.RepositoryEmailRecipientLookup`)
+* `c.r.b.i.api.NotificationPreferenceQuery` (via `c.r.b.i.service.RepositoryNotificationPreferenceQuery`)
+* `c.r.b.i.api.PersonNameLookup` (via `c.r.b.i.service.RepositoryPersonNameLookup`)
+* `c.r.b.i.api.PersonRoleNamesLookup` (via `c.r.b.i.service.RepositoryPersonRoleNamesLookup`)
+* `c.r.b.i.api.StudentExistenceLookup` (via `c.r.b.i.service.RepositoryStudentExistenceLookup`)
+* `c.r.b.i.api.StudentNameLookup` (via `c.r.b.i.service.RepositoryStudentNameLookup`)
 |Bean references
 |* `c.r.b.s.storage.FileStorageService` (in Shared)
 * `c.r.b.b.usecase.invoice.GetStudentBillingOverviewUseCase` (in Billing)
-* `c.r.b.b.usecase.creditnote.ListCreditNotesForStudentUseCase` (in Billing)
-* `c.r.b.b.usecase.creditnote.CreateManualCreditNoteUseCase` (in Billing)
 * `c.r.b.e.repository.StudentDocumentRepository` (in Enrollment)
 * `c.r.b.s.mail.EmailService` (in Shared)
-* `c.r.b.a.repository.InstitutionRepository` (in Academic structure)
+* `c.r.b.s.event.ProcessedEffectGuard` (in Shared)
 * `c.r.b.s.storage.TransactionBoundFileCleanup` (in Shared)
 * `c.r.b.a.repository.InstructorRepository` (in Academic structure)
 |Aggregate roots
-|* `c.r.b.i.entity.Person`
+|* `c.r.b.i.entity.Institution`
+* `c.r.b.i.entity.Person`
 * `c.r.b.i.entity.Student`
 |===

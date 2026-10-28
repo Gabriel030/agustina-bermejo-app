@@ -8,15 +8,25 @@
 * `c.r.b.s.mail.EmailService` (via `c.r.b.s.mail.BrevoEmailService`)
 * `c.r.b.s.storage.FileStorageService`
 
+_Event listeners_
+
+* `c.r.b.s.event.EventPublicationMetrics`
+
 _Others_
 
 * `c.r.b.s.UseCaseMetricsAspect`
+* `c.r.b.s.event.DomainEventCorrelationAspect`
+* `c.r.b.s.event.EventPublicationResubmissionJob`
+* `c.r.b.s.event.ProcessedEffectGuard`
 * `c.r.b.s.exception.GlobalExceptionHandler`
+* `c.r.b.s.mail.TransactionalEmailGateway` (via `c.r.b.s.mail.MockTransactionalEmailGateway`)
 * `c.r.b.s.serialization.ValueObjectJacksonModule`
 * `c.r.b.s.storage.TransactionBoundFileCleanup`
 * `c.r.b.s.time.ClockConfig`
 * `c.r.b.s.validation.NonNegativeMoneyValidator`
 * `c.r.b.s.validation.PositiveMoneyValidator`
 |Bean references
-|* `c.r.b.a.repository.InstitutionRepository` (in Academic structure)
+|* `c.r.b.i.repository.InstitutionRepository` (in Identity)
+|Events listened to
+|* `org.springframework.boot.context.event.ApplicationReadyEvent` 
 |===

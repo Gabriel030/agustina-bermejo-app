@@ -23,11 +23,9 @@ Rel(BackendApplication.BackendApplication.Academicrecord, BackendApplication.Bac
 Rel(BackendApplication.BackendApplication.Academicrecord, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Academicrecord, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Attendance, BackendApplication.BackendApplication.Enrollment, "uses", $techn="", $tags="", $link="")
-Rel(BackendApplication.BackendApplication.Attendance, BackendApplication.BackendApplication.Evaluation, "depends on", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Attendance, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Attendance, BackendApplication.BackendApplication.Shared, "depends on", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Attendance, "uses", $techn="", $tags="", $link="")
-Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Evaluation, "depends on", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Evaluation, BackendApplication.BackendApplication.Attendance, "listens to", $techn="", $tags="", $link="")
@@ -37,7 +35,7 @@ Rel(BackendApplication.BackendApplication.Evaluation, BackendApplication.Backend
 Rel(BackendApplication.BackendApplication.Evaluation, BackendApplication.BackendApplication.Shared, "depends on", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Enrollment, "uses", $techn="", $tags="", $link="")
 Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
-Rel(BackendApplication.BackendApplication.Shared, BackendApplication.BackendApplication.Identity, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Shared, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 @enduml

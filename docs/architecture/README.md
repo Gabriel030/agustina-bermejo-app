@@ -16,11 +16,21 @@ no cambió, no hay diff.
 ## Cómo regenerar
 
 Por defecto el test escribe en `backend/target/modulith-docs/` (no toca el árbol). Para
-actualizar lo versionado aquí:
+actualizar lo versionado aquí, desde `backend/`:
 
 ```
-./mvnw -f backend/pom.xml test -Dtest=ModuleDocumentationTest -DargLine=-Dmodulith.docs.update=true
+./mvnw -o test -Dtest=ModuleDocumentationTest -Dtest.excludedGroups=none -Dmodulith.docs.update=true -Darchunit.freeze.store.default.allowStoreUpdate=false
 ```
+
+Dos detalles que hacen que el comando no sea "silencioso":
+
+- El test lleva `@Tag("docs")` y el pom excluye ese grupo por defecto (`test.excludedGroups=docs`);
+  sin `-Dtest.excludedGroups=none` corre 0 tests y termina en `BUILD SUCCESS`. Verificar que el
+  output diga `Tests run: 1`.
+- La propiedad se pasa como `-Dmodulith.docs.update=true`: con `-DargLine=...` el flag no llegó al
+  JVM del test y escribió en `target/modulith-docs/` en vez de en esta carpeta.
+- El `Documenter` vacía la carpeta antes de escribir, así que borra este `README.md`: restaurarlo
+  con `git checkout -- docs/architecture/README.md` antes de commitear.
 
 Luego revisar el diff, commitear en una rama propia y abrir PR contra `develop`. El CI normal
 ignora `docs/**`; el test de documentación corre en los pushes y en el nightly
@@ -28,18 +38,4 @@ ignora `docs/**`; el test de documentación corre en los pushes y en el nightly
 
 ## Estado
 
-Última regeneración versionada: 2026-10-21 (commit `27c33fd1`). Quedó desactualizada respecto de
-cambios posteriores, entre ellos:
-
-- M3a (reubicación de clases): `Institution` pasó de `academicstructure` a `identity`,
-  `FinalGradeType` a `enrollment`, `NotOwnSectionException` a `academicstructure`. Los canvases
-  siguen mostrando `c.r.b.a.entity.Institution` y `c.r.b.a.repository.InstitutionRepository`
-  como pertenecientes a Academic structure.
-- Billing v2: reembolsos, autorizaciones, descuentos, recordatorios, collections, reporting
-  (subpaquetes `authorization`, `collections`, `discount`, `pricing`, `reporting`, etc. del módulo
-  `billing`) y las dependencias entre módulos que introdujeron.
-
-Pendiente: regenerar con el comando de arriba cuando haya un slot de Maven libre. La lista de
-módulos de primer nivel no cambió (academicrecord, academicstructure, announcement, attendance,
-billing, config, enrollment, evaluation, graduation, identity, notification, shared), por lo que
-no se esperan archivos nuevos, solo cambios de contenido.
+Última regeneración versionada: 2026-10-28. Refleja M3a (`Institution` en `identity`) y billing v2.

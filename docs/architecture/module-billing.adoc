@@ -2,25 +2,61 @@
 |===
 |Base package
 |`com.red_escuela.backend.billing`
+|Spring components
+|_Services_
+
+* `c.r.b.b.api.AdmissionReceiptLookup` (via `c.r.b.b.api.BankTransferAdmissionReceiptLookup`)
+* `c.r.b.b.api.VersionedYearEnrollmentFeeTermsLookup`
+* `c.r.b.b.api.WithdrawalCorrectsLateFeesPort`
+* `c.r.b.b.api.StudentSegment` (via `c.r.b.b.collections.service.OverdueContactSegment`)
+* `c.r.b.b.api.CollectionReminderApplicabilityQuery` (via `c.r.b.b.collections.service.StoredCollectionReminderApplicabilityQuery`)
+* `c.r.b.b.api.CollectionReminderEmailsQuery` (via `c.r.b.b.collections.service.StoredCollectionReminderEmailsQuery`)
+* `c.r.b.b.api.CollectionReminderEmailSettingsQuery` (via `c.r.b.b.configuration.service.StoredCollectionReminderEmailSettingsQuery`)
+* `c.r.b.b.api.EnrollmentDebtGuard` (via `c.r.b.b.invoice.service.InvoiceDebtEnrollmentGuard`)
 |Bean references
-|* `c.r.b.i.service.CurrentStudentService` (in Identity)
+|* `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.s.domain.policy.PolicySet` (in Shared)
+* `c.r.b.i.api.PersonNameLookup` (in Identity)
+* `c.r.b.i.api.PersonRoleNamesLookup` (in Identity)
+* `c.r.b.a.api.BusinessDayCalendar` (in Academic structure)
+* `c.r.b.e.api.EnrollmentReminderTargetLookup` (in Enrollment)
+* `c.r.b.s.event.ProcessedEffectGuard` (in Shared)
+* `c.r.b.e.usecase.EnrollmentLifecycleQuery` (in Enrollment)
+* `c.r.b.a.api.TeachingTargetLookup` (in Academic structure)
+* `c.r.b.i.service.CurrentStudentService` (in Identity)
 * `c.r.b.e.repository.CourseEnrollmentRepository` (in Enrollment)
 * `c.r.b.e.repository.ProgramEnrollmentRepository` (in Enrollment)
-* `c.r.b.i.service.CurrentPersonService` (in Identity)
 * `c.r.b.s.storage.FileStorageService` (in Shared)
-* `c.r.b.s.domain.policy.PolicySet` (in Shared)
+* `c.r.b.e.api.BillingEnrollmentLookup` (in Enrollment)
+* `c.r.b.a.api.OfferingCurrencyLookup` (in Academic structure)
+* `c.r.b.i.api.StudentNameLookup` (in Identity)
+* `c.r.b.e.api.EnrollmentNameLookup` (in Enrollment)
+* `c.r.b.i.api.StudentExistenceLookup` (in Identity)
+* `c.r.b.e.usecase.OnlineOnlyEnrollmentLookup` (in Enrollment)
+* `c.r.b.e.api.AdmissionApplicationExpiryPort` (in Enrollment)
+* `c.r.b.e.api.WithdrawalFactsLookup` (in Enrollment)
+* `c.r.b.s.billingterms.ProgramTermStartLookup` (in Shared)
+* `c.r.b.s.storage.TransactionBoundFileCleanup` (in Shared)
+* `c.r.b.e.api.CourseEnrollmentApplicationCancellationPort` (in Enrollment)
 * `c.r.b.a.repository.SubjectRepository` (in Academic structure)
 * `c.r.b.e.repository.ExamBoardRegistrationRepository` (in Evaluation)
 * `c.r.b.a.repository.ProgramRepository` (in Academic structure)
+* `c.r.b.e.repository.EnrollmentFeeExemptionRepository` (in Enrollment)
 * `c.r.b.a.repository.TermRepository` (in Academic structure)
 * `c.r.b.e.service.ProgramEnrollmentService` (in Enrollment)
-* `c.r.b.e.service.CourseEnrollmentService` (in Enrollment)
-* `c.r.b.e.repository.EnrollmentFeeExemptionRepository` (in Enrollment)
 * `c.r.b.i.repository.StudentRepository` (in Identity)
-* `c.r.b.s.storage.TransactionBoundFileCleanup` (in Shared)
 * `c.r.b.a.repository.CourseRepository` (in Academic structure)
-* `c.r.b.e.repository.CourseEnrollmentApplicationRepository` (in Enrollment)
 |Events listened to
-|* `c.r.b.n.SuspensionLiftedEvent` 
+|
+
+* `c.r.b.b.events.EnrollmentWithdrawnForBillingEvent` (async) 
+
+
+* `c.r.b.b.events.PaymentAllocationReversedEvent` (async) 
+
+* `c.r.b.e.events.CourseEnrollmentConfirmedByAdmissionPaymentEvent` 
+
+
+
 
 |===

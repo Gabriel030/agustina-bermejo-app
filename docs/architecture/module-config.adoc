@@ -4,9 +4,13 @@
 |`com.red_escuela.backend.config`
 |Spring components
 |* `c.r.b.c.ActuatorSecurityConfig`
+* `c.r.b.c.AsyncEventListenerConfiguration`
 * `c.r.b.c.JwtAuthenticationFilter`
 * `c.r.b.c.LocalSeedRunner`
 * `c.r.b.c.MetricsConfig`
+* `c.r.b.c.OpenApiConfig`
+* `c.r.b.c.OpenApiSecurityConfig`
+* `c.r.b.c.RecordRequiredModelConverter`
 * `c.r.b.c.RequestIdFilter`
 * `c.r.b.c.SchedulerLockConfig`
 * `c.r.b.c.SecurityConfig`

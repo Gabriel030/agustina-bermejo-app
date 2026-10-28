@@ -6,20 +6,22 @@
 |_Services_
 
 * `c.r.b.a.service.CurrentInstructorService`
+* `c.r.b.a.api.BusinessDayCalendar` (via `c.r.b.a.service.HolidayBusinessDayCalendar`)
 
 _Others_
 
+* `c.r.b.a.api.OfferingCurrencyLookup` (via `c.r.b.a.service.RepositoryOfferingCurrencyLookup`)
+* `c.r.b.a.api.TeachingTargetLookup` (via `c.r.b.a.service.TeachingTargetLookupService`)
 * `c.r.b.a.usecase.SetCourseCatalogVisibilityUseCase` (via `c.r.b.a.usecase.SetCourseCatalogVisibilityService`)
 * `c.r.b.a.usecase.SetProgramCatalogVisibilityUseCase` (via `c.r.b.a.usecase.SetProgramCatalogVisibilityService`)
 |Bean references
 |* `c.r.b.e.service.CourseEnrollmentService` (in Enrollment)
-* `c.r.b.b.service.PriceRevisionService` (in Billing)
+* `c.r.b.s.pricing.OfferingPriceCatalog` (in Shared)
 * `c.r.b.i.service.CurrentPersonService` (in Identity)
 * `c.r.b.e.service.SectionEvaluationConfigDraftInitializer` (in Evaluation)
 |Aggregate roots
 |* `c.r.b.a.entity.Course`
 * `c.r.b.a.entity.CourseSubjectSection`
-* `c.r.b.a.entity.Institution`
 * `c.r.b.a.entity.Instructor`
 * `c.r.b.a.entity.Program`
 * `c.r.b.a.entity.Subject`
