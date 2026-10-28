@@ -182,6 +182,16 @@ public class CurrentAccountAllocationService {
                 .distinct().sorted().toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PaymentAllocation> listCurrentAllocationsFundedByPaymentNewestFirst(Long studentCurrentAccountId, Long paymentId) {
+        return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(studentCurrentAccountId, paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentAllocation> listCurrentAllocationsNewestFirst(Long studentCurrentAccountId) {
+        return allocationRepository.findCurrentAllocationsByAccountNewestFirst(studentCurrentAccountId);
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public List<Long> listInvoiceIdsOfAllocationsFundedByPayment(StudentCurrentAccount lockedAccount, Long paymentId) {
         return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(lockedAccount.getId(), paymentId).stream().map(PaymentAllocation::getInvoiceId).distinct().toList();

@@ -3,7 +3,9 @@ package com.red_escuela.backend.billing.payment.service;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.payment.domain.Chargeback;
+import com.red_escuela.backend.billing.account.exception.InsufficientAccountCreditException;
 import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.domain.PaymentReversalEffects;
 import com.red_escuela.backend.billing.payment.domain.PaymentReversalPreview;
 import com.red_escuela.backend.billing.payment.domain.PendingRefundOfPayment;
 import com.red_escuela.backend.billing.payment.domain.Refund;
@@ -22,23 +24,28 @@ import java.util.List;
 
 @Service
 public class PaymentReversalPreviewService {
+    private static final PolicyViolation INSUFFICIENT_ACCOUNT_CREDIT = new PolicyViolation("INSUFFICIENT_ACCOUNT_CREDIT",
+            "La cuenta no tiene crédito suficiente para revertir este pago.");
+
     private final PaymentRepository payments;
     private final ChargebackRepository chargebacks;
     private final StudentCurrentAccountService accountService;
     private final CurrentAccountAllocationService allocationService;
     private final PaymentPendingRefunds pendingRefunds;
     private final PaymentReversalEvaluator evaluator;
+    private final PaymentReversalEffectsPlanner effectsPlanner;
     private final Clock clock;
 
     public PaymentReversalPreviewService(PaymentRepository payments, ChargebackRepository chargebacks, StudentCurrentAccountService accountService,
                                          CurrentAccountAllocationService allocationService, PaymentPendingRefunds pendingRefunds, PaymentReversalEvaluator evaluator,
-                                         Clock clock) {
+                                         PaymentReversalEffectsPlanner effectsPlanner, Clock clock) {
         this.payments = payments;
         this.chargebacks = chargebacks;
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.pendingRefunds = pendingRefunds;
         this.evaluator = evaluator;
+        this.effectsPlanner = effectsPlanner;
         this.clock = clock;
     }
 
@@ -63,12 +70,22 @@ public class PaymentReversalPreviewService {
         Chargeback chargeback = chargebacks.findById(chargebackId).orElseThrow(ChargebackNotFoundException::new);
         Payment payment = payments.findById(chargeback.getPaymentId()).orElseThrow(PaymentNotFoundException::new);
         PolicyViolation violation = evaluator.findChargebackReversalViolation(chargeback, payment).orElse(null);
-        return new PaymentReversalPreview(payment.getId(), payment.getStatus(), violation, chargeback.getAmount(), List.of(), List.of());
+        PaymentReversalEffects effects = violation == null ? effectsPlanner.planChargebackReversal(payment, chargeback) : PaymentReversalEffects.notCalculated();
+        return new PaymentReversalPreview(payment.getId(), payment.getStatus(), violation, chargeback.getAmount(), List.of(), List.of(), effects);
     }
 
     private PaymentReversalPreview previewOf(Payment payment, PolicyViolation violation, NonNegativeMoney credit, List<Refund> pending) {
-        return new PaymentReversalPreview(payment.getId(), payment.getStatus(), violation, credit, pending.stream().map(PendingRefundOfPayment::of).toList(),
-                allocationService.listInvoiceIdsFundedByPayment(payment.getStudentCurrentAccountId(), payment.getId()));
+        PolicyViolation blockedBy = violation;
+        PaymentReversalEffects effects = PaymentReversalEffects.notCalculated();
+        if (violation == null) {
+            try {
+                effects = effectsPlanner.planPaymentCreditReversal(payment, credit, LocalDate.now(clock));
+            } catch (InsufficientAccountCreditException insufficient) {
+                blockedBy = INSUFFICIENT_ACCOUNT_CREDIT;
+            }
+        }
+        return new PaymentReversalPreview(payment.getId(), payment.getStatus(), blockedBy, credit, pending.stream().map(PendingRefundOfPayment::of).toList(),
+                allocationService.listInvoiceIdsFundedByPayment(payment.getStudentCurrentAccountId(), payment.getId()), effects);
     }
 
     private NonNegativeMoney creditToReverseOf(Payment payment) {

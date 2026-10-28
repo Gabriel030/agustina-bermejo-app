@@ -11,6 +11,6 @@ public record PaymentReversalPreviewResponse(Long paymentId, String paymentStatu
     public static PaymentReversalPreviewResponse from(PaymentReversalPreview preview) {
         return new PaymentReversalPreviewResponse(preview.paymentId(), preview.paymentStatus().name(), preview.allowed(), RefundBlockResponse.from(preview.blockedBy()),
                 preview.creditToReverse().value(), preview.pendingRefunds().stream().map(PendingRefundResponse::from).toList(), preview.invoiceIdsFundedByPayment(),
-                PaymentReversalEffectsResponse.notCalculated());
+                PaymentReversalEffectsResponse.from(preview.effects()));
     }
 }

@@ -339,11 +339,23 @@ public class Invoice {
         recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, event, businessDate));
     }
 
-    public void reversePaymentAllocation(LocalDate businessDate, int gracePeriodDays, StatusChangeActor actor, String reason) {
-        requireBusinessContext(businessDate, actor);
-        InvoicePaymentEvent event = resolveEventByDueDate(businessDate, gracePeriodDays,
+    public InvoicePaymentStatus getPaymentStatusIfAllocationReversedOn(LocalDate businessDate, int gracePeriodDays) {
+        return InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, allocationReversalEventOn(businessDate, gracePeriodDays));
+    }
+
+    public NonNegativeMoney getOutstandingAmountIfAllocationReversed() {
+        return amounts.withPaymentAllocationReversed().outstandingAmount();
+    }
+
+    private InvoicePaymentEvent allocationReversalEventOn(LocalDate businessDate, int gracePeriodDays) {
+        return resolveEventByDueDate(businessDate, gracePeriodDays,
                 InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_BEFORE_DUE_DATE_PASSED,
                 InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_AFTER_DUE_DATE_PASSED);
+    }
+
+    public void reversePaymentAllocation(LocalDate businessDate, int gracePeriodDays, StatusChangeActor actor, String reason) {
+        requireBusinessContext(businessDate, actor);
+        InvoicePaymentEvent event = allocationReversalEventOn(businessDate, gracePeriodDays);
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         if (!amounts.hasPaidAmount()) {
             throw new IllegalInvoicePaymentStatusTransitionException(paymentStatus, event);

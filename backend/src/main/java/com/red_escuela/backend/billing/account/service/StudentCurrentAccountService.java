@@ -55,6 +55,11 @@ public class StudentCurrentAccountService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<StudentCurrentAccount> findStudentCurrentAccountById(Long studentCurrentAccountId) {
+        return accountRepository.findById(studentCurrentAccountId);
+    }
+
+    @Transactional(readOnly = true)
     public List<Long> findStudentCurrentAccountIds(Long studentId) {
         return accountRepository.findIdsByStudentId(studentId);
     }

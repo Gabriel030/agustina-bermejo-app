@@ -85,7 +85,12 @@ public class LateFeeContextLoader {
     }
 
     public Optional<LateFeeIssuingContext> loadReinstatementContext(Invoice origin, LateFeeChargeCorrection correction, LocalDate businessDate, LatePaymentTimeline timeline) {
-        if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || origin.getPaymentStatus() != InvoicePaymentStatus.OVERDUE) {
+        return loadReinstatementContext(origin, origin.getPaymentStatus(), correction, businessDate, timeline);
+    }
+
+    public Optional<LateFeeIssuingContext> loadReinstatementContext(Invoice origin, InvoicePaymentStatus originStatus, LateFeeChargeCorrection correction, LocalDate businessDate,
+                                                                    LatePaymentTimeline timeline) {
+        if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || originStatus != InvoicePaymentStatus.OVERDUE) {
             return Optional.empty();
         }
         Optional<LatePaymentVersion> dueDateVersion = versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId());
@@ -93,7 +98,7 @@ public class LateFeeContextLoader {
             return Optional.empty();
         }
         LatePaymentTerms dueDateTerms = dueDateVersion.get().terms();
-        LateFeeOriginFacts facts = originFactsOf(origin);
+        LateFeeOriginFacts facts = originFactsOf(origin, originStatus);
         ChargingDays chargingDays = resolveChargingDays(facts, dueDateTerms, timeline);
         LateFeeAccrualPeriod range = new LateFeeAccrualPeriod(correction.getFirstCorrectedDay(), correction.getLastCorrectedDay());
         int chargedDays = Math.min(correction.getCorrectedDays(), (int) range.firstDay().datesUntil(range.lastDay().plusDays(1))
@@ -117,9 +122,13 @@ public class LateFeeContextLoader {
     }
 
     private LateFeeOriginFacts originFactsOf(Invoice origin) {
+        return originFactsOf(origin, origin.getPaymentStatus());
+    }
+
+    private LateFeeOriginFacts originFactsOf(Invoice origin, InvoicePaymentStatus paymentStatus) {
         InvoiceLine line = origin.getPrimaryLine();
         return new LateFeeOriginFacts(origin.getId(), origin.getInvoiceNumber().value(), origin.getStudentCurrentAccountId(), origin.getDocumentType(),
-                origin.getInvoiceType(), origin.getPaymentStatus(), origin.getDueDate(), origin.getCurrency(), line.getAmount(), origin.getStudentSnapshot(),
+                origin.getInvoiceType(), paymentStatus, origin.getDueDate(), origin.getCurrency(), line.getAmount(), origin.getStudentSnapshot(),
                 line.getPeriod(), line.getProgramEnrollmentId(), line.getCourseEnrollmentId());
     }
 }

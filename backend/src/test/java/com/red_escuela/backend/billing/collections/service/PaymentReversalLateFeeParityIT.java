@@ -1,0 +1,177 @@
+package com.red_escuela.backend.billing.collections.service;
+
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.billing.payment.domain.PaymentReversalEffects;
+import com.red_escuela.backend.billing.payment.domain.PaymentReversalEffects.InvoiceImpact;
+import com.red_escuela.backend.billing.payment.domain.PaymentReversalEffects.LateFeeReinstatementImpact;
+import com.red_escuela.backend.billing.payment.operation.RegisterChargebackCommand;
+import com.red_escuela.backend.billing.payment.operation.RegisterChargebackOperation;
+import com.red_escuela.backend.billing.payment.operation.ReverseChargebackCommand;
+import com.red_escuela.backend.billing.payment.operation.ReverseChargebackOperation;
+import com.red_escuela.backend.billing.payment.operation.RevokeBankTransferApprovalCommand;
+import com.red_escuela.backend.billing.payment.operation.RevokeBankTransferApprovalOperation;
+import com.red_escuela.backend.billing.payment.service.PaymentReversalPreviewService;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.ReversalEffectsParity;
+import com.red_escuela.backend.billing.support.ReversalEffectsParity.Snapshot;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.testsupport.SlowTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.LocalDate;
+
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@Tag("D-414")
+@Tag("D-206")
+@SlowTest(reason = "Scenarios that seed overdue invoices, annul late fee days by payment date and run the preview and then the real reversal against Postgres")
+class PaymentReversalLateFeeParityIT extends AbstractLateFeeScenarioIT {
+
+    @Autowired
+    private BillingOperationPipeline pipeline;
+    @Autowired
+    private RegisterChargebackOperation chargebackOperation;
+    @Autowired
+    private ReverseChargebackOperation reverseChargebackOperation;
+    @Autowired
+    private RevokeBankTransferApprovalOperation revokeOperation;
+    @Autowired
+    private PaymentReversalPreviewService previewService;
+
+    @AfterEach
+    void resetClock() {
+        MutableClock.INSTANCE.reset();
+    }
+
+    private record AnnulledMarch(Invoice origin, long paymentId) {
+    }
+
+    private AnnulledMarch marchAnnulledByAPaymentDatedThe28th(int year) {
+        arrange(year);
+        publishDefaults(year);
+        Invoice origin = overdueInstallmentDueOn(d(year, 3, 11));
+        reconcile(origin, d(year, 4, 1));
+        MutableClock.INSTANCE.setDate(d(year, 4, 2));
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(origin.getStudentCurrentAccountId(), NonNegativeMoney.of(ars("100000.00")));
+        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()),
+                paymentId, NonNegativeMoney.of(ars("100000.00")), d(year, 3, 28), "Pago"));
+        allocateOn(origin, d(year, 4, 2));
+        awaitEventsDrained();
+        MutableClock.INSTANCE.setDate(d(year, 4, 10));
+        return new AnnulledMarch(origin, paymentId);
+    }
+
+    private PaymentReversalEffects previewChargeback(AnnulledMarch march, int year) {
+        return transactionTemplate.execute(status -> previewService.previewChargebackRegistration(march.paymentId(), ars("100000.00"), d(year, 4, 10), "ref-" + march.paymentId()))
+                .effects();
+    }
+
+    private Long chargeback(AnnulledMarch march, int year) {
+        return pipeline.runOperation(chargebackOperation, new RegisterChargebackCommand(march.paymentId(), ars("100000.00"), d(year, 4, 10), "ref-" + march.paymentId(), ACTOR))
+                .resultOrThrowIfAwaitingAuthorization(id -> new IllegalStateException("authorization " + id)).chargebackId();
+    }
+
+    private void addIdleCredit(Invoice origin, String amount, LocalDate paidOn) {
+        long extraPayment = BillingTestFixtures.seedApprovedPaymentRow(origin.getStudentCurrentAccountId(), NonNegativeMoney.of(ars(amount)));
+        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()),
+                extraPayment, NonNegativeMoney.of(ars(amount)), paidOn, "Pago adelantado"));
+    }
+
+    @Test
+    void aChargebackPredictsTheLateFeeDaysItReinstatesAndTheRealOperationIssuesExactlyThatDebitNote() {
+        int year = 2421;
+        AnnulledMarch march = marchAnnulledByAPaymentDatedThe28th(year);
+        Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, march.origin().getStudentCurrentAccountId());
+        long entriesBefore = jdbc.queryForObject("select count(*) from invoice where student_current_account_id = ?", Long.class, march.origin().getStudentCurrentAccountId());
+
+        PaymentReversalEffects effects = previewChargeback(march, year);
+
+        assertThat(jdbc.queryForObject("select count(*) from invoice where student_current_account_id = ?", Long.class, march.origin().getStudentCurrentAccountId()))
+                .isEqualTo(entriesBefore);
+        assertThat(effects.calculated()).isTrue();
+        assertThat(effects.reopenedInvoices()).extracting(InvoiceImpact::invoiceId).containsExactly(march.origin().getId());
+        assertThat(effects.reopenedInvoices().get(0).statusAfter()).isEqualTo(InvoicePaymentStatus.OVERDUE);
+        assertThat(effects.lateFeeReinstatements()).containsExactly(new LateFeeReinstatementImpact(march.origin().getId(), d(year, 3, 29), d(year, 3, 31), 3,
+                NonNegativeMoney.of(ars("600.00")), false));
+        assertThat(effects.settledInvoices()).isEmpty();
+        chargeback(march, year);
+        awaitEventsDrained();
+        ReversalEffectsParity.assertThePredictionMatchesWhatTheRealOperationDid(jdbc, march.origin().getStudentCurrentAccountId(), before, effects);
+    }
+
+    @Test
+    void aRevocationPredictsTheSameReinstatementAndMatchesTheRealOperation() {
+        int year = 2422;
+        AnnulledMarch march = marchAnnulledByAPaymentDatedThe28th(year);
+        jdbc.update("update payment set method_type = 'BANK_TRANSFER', method_details = cast('{\"type\":\"BANK_TRANSFER\"}' as jsonb) where id = ?", march.paymentId());
+        Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, march.origin().getStudentCurrentAccountId());
+
+        PaymentReversalEffects effects = transactionTemplate.execute(status -> previewService.previewApprovalRevocation(march.paymentId(), "Aprobada por error")).effects();
+
+        assertThat(effects.lateFeeReinstatements()).hasSize(1);
+        assertThat(effects.lateFeeReinstatements().get(0).chargedDays()).isEqualTo(3);
+        pipeline.runOperation(revokeOperation, new RevokeBankTransferApprovalCommand(march.paymentId(), "Aprobada por error", ACTOR));
+        awaitEventsDrained();
+        ReversalEffectsParity.assertThePredictionMatchesWhatTheRealOperationDid(jdbc, march.origin().getStudentCurrentAccountId(), before, effects);
+    }
+
+    @Test
+    void creditThatCoversTheOriginTheOlderLateFeeNoteAndTheReinstatedNoteSettlesAllAndThePredictionSaysSo() {
+        int year = 2423;
+        AnnulledMarch march = marchAnnulledByAPaymentDatedThe28th(year);
+        addIdleCredit(march.origin(), "104000.00", d(year, 4, 3));
+        Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, march.origin().getStudentCurrentAccountId());
+
+        PaymentReversalEffects effects = previewChargeback(march, year);
+
+        assertThat(effects.reopenedInvoices()).extracting(InvoiceImpact::invoiceId).containsExactly(march.origin().getId());
+        assertThat(effects.settledInvoices()).extracting(InvoiceImpact::invoiceId).contains(march.origin().getId());
+        assertThat(effects.lateFeeReinstatements()).hasSize(1);
+        assertThat(effects.lateFeeReinstatements().get(0).settledByAccountCredit()).isTrue();
+        chargeback(march, year);
+        awaitEventsDrained();
+        ReversalEffectsParity.assertThePredictionMatchesWhatTheRealOperationDid(jdbc, march.origin().getStudentCurrentAccountId(), before, effects);
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, march.origin().getId())).isEqualTo("PAID");
+    }
+
+    @Test
+    void creditThatCoversTheOriginButNotTheNoteSettlesOnlyTheOriginAndTheNoteStaysOpen() {
+        int year = 2424;
+        AnnulledMarch march = marchAnnulledByAPaymentDatedThe28th(year);
+        addIdleCredit(march.origin(), "100300.00", d(year, 4, 3));
+        Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, march.origin().getStudentCurrentAccountId());
+
+        PaymentReversalEffects effects = previewChargeback(march, year);
+
+        assertThat(effects.settledInvoices()).extracting(InvoiceImpact::invoiceId).containsExactly(march.origin().getId());
+        assertThat(effects.lateFeeReinstatements().get(0).settledByAccountCredit()).isFalse();
+        chargeback(march, year);
+        awaitEventsDrained();
+        ReversalEffectsParity.assertThePredictionMatchesWhatTheRealOperationDid(jdbc, march.origin().getStudentCurrentAccountId(), before, effects);
+    }
+
+    @Test
+    void reversingTheChargebackPredictsWhichInvoicesTheRestoredCreditSettlesIncludingTheReinstatedNote() {
+        int year = 2425;
+        AnnulledMarch march = marchAnnulledByAPaymentDatedThe28th(year);
+        Long chargebackId = chargeback(march, year);
+        awaitEventsDrained();
+        Snapshot before = ReversalEffectsParity.takeSnapshot(jdbc, march.origin().getStudentCurrentAccountId());
+
+        PaymentReversalEffects effects = transactionTemplate.execute(status -> previewService.previewChargebackReversal(chargebackId)).effects();
+
+        assertThat(effects.calculated()).isTrue();
+        assertThat(effects.settledInvoices()).extracting(InvoiceImpact::invoiceId).containsExactly(march.origin().getId());
+        assertThat(effects.lateFeeReinstatements()).isEmpty();
+        pipeline.runOperation(reverseChargebackOperation, new ReverseChargebackCommand(chargebackId, ACTOR));
+        awaitEventsDrained();
+        ReversalEffectsParity.assertThePredictionMatchesWhatTheRealOperationDid(jdbc, march.origin().getStudentCurrentAccountId(), before, effects);
+    }
+}
