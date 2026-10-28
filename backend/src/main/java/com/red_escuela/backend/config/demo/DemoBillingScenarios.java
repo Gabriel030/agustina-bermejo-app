@@ -28,6 +28,11 @@ import com.red_escuela.backend.billing.payment.operation.ApprovePendingBankTrans
 import com.red_escuela.backend.billing.payment.operation.CompleteRefundCommand;
 import com.red_escuela.backend.billing.payment.operation.FailRefundCommand;
 import com.red_escuela.backend.billing.payment.operation.IssueRefundCommand;
+import com.red_escuela.backend.billing.operation.CardPaymentType;
+import com.red_escuela.backend.billing.payment.domain.CardPaymentDetails;
+import com.red_escuela.backend.billing.payment.domain.GatewayRawStatus;
+import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
+import com.red_escuela.backend.billing.payment.operation.RegisterGatewayPaymentCommand;
 import com.red_escuela.backend.billing.payment.operation.RegisterCashPaymentCommand;
 import com.red_escuela.backend.billing.payment.operation.RegisterChargebackCommand;
 import com.red_escuela.backend.billing.payment.operation.RejectPendingBankTransferPaymentCommand;
@@ -63,6 +68,7 @@ public class DemoBillingScenarios {
     private static final String DESTINATION_ACCOUNT = "0170099220000067890123";
 
     private final JdbcTemplate jdbc;
+    private final String uploadsDirectory;
     private final DemoClock clock;
     private final TransactionTemplate transactions;
     private final BillingOperations operations;
@@ -70,10 +76,11 @@ public class DemoBillingScenarios {
     private final CashPaymentPreviewService cashPreview;
     private final ProgramEnrollmentService programEnrollmentService;
 
-    public DemoBillingScenarios(JdbcTemplate jdbc, DemoClock clock, TransactionTemplate transactions, BillingOperations operations,
+    public DemoBillingScenarios(@org.springframework.beans.factory.annotation.Value("${app.uploads.directory}") String uploadsDirectory, JdbcTemplate jdbc, DemoClock clock, TransactionTemplate transactions, BillingOperations operations,
                                 BillingOperationPipeline pipeline, CashPaymentPreviewService cashPreview,
                                 ProgramEnrollmentService programEnrollmentService) {
         this.programEnrollmentService = programEnrollmentService;
+        this.uploadsDirectory = uploadsDirectory;
         this.jdbc = jdbc;
         this.clock = clock;
         this.transactions = transactions;
@@ -138,31 +145,23 @@ public class DemoBillingScenarios {
                     CreditNoteDestination.DEBT_OFFSET, administrativeId, false, null));
         });
 
-        attemptAs("beca del 50% otorgada a un alumno", String.valueOf(directorId), "DIRECTOR", () -> {
-            Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, current.get(6));
-            run(BillingOperationType.GRANT_STUDENT_DISCOUNT, GrantStudentDiscountCommand.byPerson(EnrollmentReference.ofProgram(enrollmentId),
-                    new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, null, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.50"))), InvoiceType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 11),
-                            YearMonth.of(2027, 3), "Beca por rendimiento academico"), directorId, true));
+        attemptAs("nota de credito emitida por el director", String.valueOf(directorId), "DIRECTOR", () -> {
+            Long invoiceId = (Long) oldestOpenInvoice(stopped.get(2), "OVERDUE").get("id");
+            run(BillingOperationType.ISSUE_CREDIT_NOTE, new IssueCreditNoteCommand(invoiceId, CreditNoteReason.BILLING_ERROR,
+                    "Error de facturacion: importe duplicado en la cuota", List.of(new CreditNoteLineAmount(1, Money.of(new BigDecimal("15000"), Currency.ARS))),
+                    CreditNoteDestination.DEBT_OFFSET, directorId, true, null));
         });
-        attemptAs("promocion de cohorte con cupo parcialmente usado", String.valueOf(directorId), "DIRECTOR", () -> {
-            Map<String, Object> target = jdbc.queryForMap("select program_id, program_cohort_id from program_enrollment where program_cohort_id is not null order by id limit 1");
-            Long programId = (Long) target.get("program_id");
-            Long cohortId = (Long) target.get("program_cohort_id");
-            run(BillingOperationType.CREATE_DISCOUNT_DEFINITION, CreateDiscountDefinitionCommand.byPerson(new DiscountDefinitionDraft("Matricula bonificada 20% - inscripcion temprana",
-                    DiscountDefinitionType.COHORT_PROMOTION, InvoiceType.ENROLLMENT_FEE, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.20"))),
-                    null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 5, null, programId, cohortId, null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 10),
-                    directorId, true));
-            List<Long> enrollmentIds = jdbc.queryForList("select id from program_enrollment where program_cohort_id = ? order by id limit 2", Long.class, cohortId);
-            for (Long enrollmentId : enrollmentIds) {
-                run(BillingOperationType.ACQUIRE_COHORT_PROMOTION, new AcquireCohortPromotionCommand(EnrollmentReference.ofProgram(enrollmentId),
-                        new OfferingReference(programId, null), cohortId, LocalDate.of(2026, 2, 15), directorId));
-            }
+        attempt("pago online simulado de Mercado Pago", () -> {
+            Long studentId = stopped.get(stopped.size() - 1);
+            Map<String, Object> invoice = jdbc.queryForMap("select i.id, i.student_current_account_id, i.outstanding_amount from invoice i "
+                    + "join student_current_account a on a.id = i.student_current_account_id where a.student_id = ? and i.document_type = 'INVOICE' "
+                    + "and i.outstanding_amount > 0 order by i.due_date desc, i.id desc limit 1", studentId);
+            Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
+            run(BillingOperationType.REGISTER_GATEWAY_PAYMENT, new RegisterGatewayPaymentCommand((Long) invoice.get("student_current_account_id"), (Long) invoice.get("id"),
+                    java.util.Set.of(), Money.of((BigDecimal) invoice.get("outstanding_amount"), Currency.ARS), PaymentGatewayCode.MERCADO_PAGO,
+                    new CardPaymentDetails(CardPaymentType.CREDIT, 1, "4242"), "MP-DEMO-0001", new GatewayRawStatus("approved", null),
+                    StatusChangeActor.ofPerson(personId)));
         });
-        attemptAs("alumno dado de baja con deuda", String.valueOf(administrativeId), "ADMINISTRATIVO", () -> {
-            Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, neverPay.get(3));
-            programEnrollmentService.withdraw(enrollmentId, EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.now(clock).minusDays(3), administrativeId));
-        });
-
         attemptAs("contracargo con reversion", String.valueOf(directorId), "DIRECTOR", () -> {
             Long studentId = current.get(4);
             chargeBack(studentId, "CB-DEMO-0001", director);
@@ -232,7 +231,55 @@ public class DemoBillingScenarios {
         Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
         run(BillingOperationType.SUBMIT_BANK_TRANSFER_RECEIPT, new SubmitBankTransferReceiptCommand(studentId, List.of((Long) invoice.get("id")), amount,
                 LocalDate.now(clock), operationNumber, DESTINATION_ACCOUNT, "Titular " + studentId, "Banco Nacion", "demo-sha-" + operationNumber,
-                id -> "demo/receipts/comprobante-" + operationNumber + ".pdf", "demo-transfer-" + operationNumber, new StatusChangeActor(personId, null)));
+                id -> storeDemoReceipt(id, operationNumber), "demo-transfer-" + operationNumber, new StatusChangeActor(personId, null)));
+    }
+
+    private static final byte[] RECEIPT_PNG = java.util.Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+
+    private String storeDemoReceipt(Long studentId, String operationNumber) {
+        String relative = "students/" + studentId + "/comprobantes_demo-" + operationNumber + ".png";
+        try {
+            java.nio.file.Path target = java.nio.file.Path.of(uploadsDirectory).resolve(relative);
+            java.nio.file.Files.createDirectories(target.getParent());
+            java.nio.file.Files.write(target, RECEIPT_PNG);
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+        return relative;
+    }
+
+    public void grantScholarship(Long studentId, Long directorId) {
+        attemptAs("beca del 50% otorgada a un alumno", String.valueOf(directorId), "DIRECTOR", () -> {
+            Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, studentId);
+            run(BillingOperationType.GRANT_STUDENT_DISCOUNT, GrantStudentDiscountCommand.byPerson(EnrollmentReference.ofProgram(enrollmentId),
+                    new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, null, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.50"))), InvoiceType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 9),
+                            YearMonth.of(2027, 3), "Beca por rendimiento academico"), directorId, true));
+        });
+    }
+
+    public void createCohortPromotion(Long directorId) {
+        attemptAs("promocion de cohorte con cupo parcialmente usado", String.valueOf(directorId), "DIRECTOR", () -> {
+            Map<String, Object> target = jdbc.queryForMap("select program_id, program_cohort_id from program_enrollment where program_cohort_id is not null order by id limit 1");
+            Long programId = (Long) target.get("program_id");
+            Long cohortId = (Long) target.get("program_cohort_id");
+            run(BillingOperationType.CREATE_DISCOUNT_DEFINITION, CreateDiscountDefinitionCommand.byPerson(new DiscountDefinitionDraft("Matricula bonificada 20% - inscripcion temprana",
+                    DiscountDefinitionType.COHORT_PROMOTION, InvoiceType.ENROLLMENT_FEE, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.20"))),
+                    null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 5, null, programId, cohortId, null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 10),
+                    directorId, true));
+            List<Long> enrollmentIds = jdbc.queryForList("select id from program_enrollment where program_cohort_id = ? order by id limit 2", Long.class, cohortId);
+            for (Long enrollmentId : enrollmentIds) {
+                run(BillingOperationType.ACQUIRE_COHORT_PROMOTION, new AcquireCohortPromotionCommand(EnrollmentReference.ofProgram(enrollmentId),
+                        new OfferingReference(programId, null), cohortId, LocalDate.of(2026, 2, 15), directorId));
+            }
+        });    }
+
+    public void withdrawNeverPayer(List<Long> neverPayAll, LocalDate informedDate, Long administrativeId) {
+        List<Long> neverPay = billedStudents(neverPayAll, true);
+        attemptAs("alumno dado de baja con deuda", String.valueOf(administrativeId), "ADMINISTRATIVO", () -> {
+            Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, neverPay.get(3));
+            programEnrollmentService.withdraw(enrollmentId, EnrollmentWithdrawal.voluntaryRegisteredBy(informedDate, administrativeId));
+        });
     }
 
     private void issueRefund(Long studentId, Long requesterId, boolean byDirector) {

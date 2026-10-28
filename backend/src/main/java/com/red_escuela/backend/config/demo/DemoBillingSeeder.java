@@ -154,11 +154,18 @@ public class DemoBillingSeeder implements ApplicationRunner {
                 return configureBillingAndSelectPlans(director);
             });
             behaviors = assignBehaviors(billed);
+            clock.travelTo(LocalDate.of(2026, 2, 15));
+            scenarios.createCohortPromotion(director.getId());
             for (YearMonth month = FIRST_MONTH; !month.isAfter(YearMonth.from(today)); month = month.plusMonths(1)) {
                 clock.travelTo(month.atDay(2));
                 issuanceJob.run(month);
                 clock.travelTo(month.atDay(8));
                 payOnTime(month, behaviors, actor);
+                if (month.equals(YearMonth.of(2026, 8))) {
+                    clock.travelTo(month.atDay(12));
+                    scenarios.grantScholarship(studentsOf(behaviors, Behavior.PAYS_ON_TIME, Behavior.PAYS_ON_TIME_B, Behavior.PAYS_ON_TIME_C).get(6), director.getId());
+                    scenarios.withdrawNeverPayer(studentsOf(behaviors, Behavior.NEVER_PAYS), month.atDay(12), administrative.getId());
+                }
                 clock.travelTo(month.atDay(Math.min(20, month.lengthOfMonth())));
                 overdueSweep.run(LocalDate.now(clock));
                 if (!month.isBefore(YearMonth.of(2026, 8))) {
