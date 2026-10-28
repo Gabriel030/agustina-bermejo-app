@@ -13,7 +13,6 @@ import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -56,8 +55,6 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     @Autowired
     private EnrollmentPaymentStandingReader reader;
     @Autowired
-    private EnrollmentBillingComplianceSweepService sweepService;
-    @Autowired
     private CourseRepository courseRepository;
     @Autowired
     private CourseEnrollmentRepository courseEnrollmentRepository;
@@ -65,6 +62,10 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     @AfterEach
     void restoreTheClock() {
         MutableClock.INSTANCE.reset();
+    }
+
+    private void runStepFor(LocalDate businessDate) {
+        standingStep.evaluateEnrollmentsWithIds(EnrollmentKind.COURSE, List.of(enrollment.getId()), businessDate, LatePaymentTerms.initial());
     }
 
     private void evaluate(LocalDate businessDate) {
@@ -210,19 +211,19 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         publishPolicy(0, 90, 1, d(POLICY_YEAR, 6, 1));
         overdueInstallmentDueOn(d(POLICY_YEAR, 5, 10));
         MutableClock.INSTANCE.setDate(d(POLICY_YEAR, 5, 20));
-        sweepService.run(d(POLICY_YEAR, 5, 20));
+        runStepFor(d(POLICY_YEAR, 5, 20));
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.OVERDUE);
 
         MutableClock.INSTANCE.setDate(d(POLICY_YEAR, 6, 3));
-        sweepService.run(d(POLICY_YEAR, 6, 3));
+        runStepFor(d(POLICY_YEAR, 6, 3));
 
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         List<EnrollmentPaymentStatusChangeView> history = standingQuery.listStatusChangesOfCourseEnrollment(enrollment.getId());
         assertThat(history.getLast().event()).isEqualTo("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
         assertThat(history.getLast().businessDate()).isEqualTo(d(POLICY_YEAR, 6, 3));
         int changes = history.size();
-        sweepService.run(d(POLICY_YEAR, 6, 4));
-        sweepService.run(d(POLICY_YEAR, 6, 5));
+        runStepFor(d(POLICY_YEAR, 6, 4));
+        runStepFor(d(POLICY_YEAR, 6, 5));
         assertThat(standingQuery.listStatusChangesOfCourseEnrollment(enrollment.getId())).hasSize(changes);
         assertThat(jdbc.queryForObject("select last_closed_month::text from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollment.getId()))
                 .isEqualTo(d(POLICY_YEAR, 5, 1).toString());
