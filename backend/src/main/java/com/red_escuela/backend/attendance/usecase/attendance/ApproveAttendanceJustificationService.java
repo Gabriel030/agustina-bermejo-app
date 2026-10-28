@@ -9,7 +9,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
-import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
+import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 

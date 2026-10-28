@@ -11,7 +11,7 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionReposi
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceSectionAccess;
-import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
+import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.attendance.service.ClassSessionUpserter;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
