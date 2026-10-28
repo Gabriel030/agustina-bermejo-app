@@ -139,13 +139,9 @@ public class DemoBillingScenarios {
         });
 
         attemptAs("beca del 50% otorgada a un alumno", String.valueOf(directorId), "DIRECTOR", () -> {
-            run(BillingOperationType.CREATE_DISCOUNT_DEFINITION, CreateDiscountDefinitionCommand.byPerson(new DiscountDefinitionDraft("Beca de excelencia academica 50%",
-                    DiscountDefinitionType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.50"))),
-                    null, LocalDate.of(2026, 1, 1), null, 10, null, null, null, null, null, null, null), directorId, true));
-            Long definitionId = jdbc.queryForObject("select max(id) from discount_definition", Long.class);
             Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, current.get(6));
             run(BillingOperationType.GRANT_STUDENT_DISCOUNT, GrantStudentDiscountCommand.byPerson(EnrollmentReference.ofProgram(enrollmentId),
-                    new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, definitionId, null, InvoiceType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 11),
+                    new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, null, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.50"))), InvoiceType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 11),
                             YearMonth.of(2027, 3), "Beca por rendimiento academico"), directorId, true));
         });
         attemptAs("promocion de cohorte con cupo parcialmente usado", String.valueOf(directorId), "DIRECTOR", () -> {
@@ -154,7 +150,7 @@ public class DemoBillingScenarios {
             Long cohortId = (Long) target.get("program_cohort_id");
             run(BillingOperationType.CREATE_DISCOUNT_DEFINITION, CreateDiscountDefinitionCommand.byPerson(new DiscountDefinitionDraft("Matricula bonificada 20% - inscripcion temprana",
                     DiscountDefinitionType.COHORT_PROMOTION, InvoiceType.ENROLLMENT_FEE, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.20"))),
-                    1, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 5, null, programId, cohortId, null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 10),
+                    null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 5, null, programId, cohortId, null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 10),
                     directorId, true));
             List<Long> enrollmentIds = jdbc.queryForList("select id from program_enrollment where program_cohort_id = ? order by id limit 2", Long.class, cohortId);
             for (Long enrollmentId : enrollmentIds) {

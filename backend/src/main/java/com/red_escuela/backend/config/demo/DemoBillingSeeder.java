@@ -4,6 +4,11 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
+import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
@@ -156,7 +161,13 @@ public class DemoBillingSeeder implements ApplicationRunner {
                 payOnTime(month, behaviors, actor);
                 clock.travelTo(month.atDay(Math.min(20, month.lengthOfMonth())));
                 overdueSweep.run(LocalDate.now(clock));
-                reminderJob.run(LocalDate.now(clock));
+                if (!month.isBefore(YearMonth.of(2026, 8))) {
+                    int lastDay = month.equals(YearMonth.from(today)) ? Math.min(today.getDayOfMonth(), month.lengthOfMonth()) : month.lengthOfMonth();
+                    for (int day = 3; day <= lastDay; day++) {
+                        clock.travelTo(month.atDay(day));
+                        reminderJob.run(month.atDay(day));
+                    }
+                }
             }
         } finally {
             clock.backToPresent();
@@ -177,6 +188,11 @@ public class DemoBillingSeeder implements ApplicationRunner {
     private void publishLatePaymentTerms(Person director) {
         LatePaymentTerms terms = new LatePaymentTerms(5, Percentage.ofFraction(new BigDecimal("0.002")), 60, 3, true, 10, true, true);
         publish(ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT), terms, director, "Recargo por mora inicial de la institucion");
+        publish(ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS), CollectionReminderSettings.initial(), director, "Avisos de cobranza iniciales");
+        publish(ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.PROGRAMS), new ProgramReminderSchedule(ReminderSchedule.initial()), director,
+                "Cronograma de avisos para carreras");
+        publish(ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.MONTHLY_COURSES), new CourseReminderSchedule(ReminderSchedule.initial()), director,
+                "Cronograma de avisos para cursos");
     }
 
     private void publish(ConfigurationTopic topic, ConfigurationValues values, Person director, String reason) {
