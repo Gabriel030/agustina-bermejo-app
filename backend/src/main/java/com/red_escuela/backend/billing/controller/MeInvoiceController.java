@@ -80,7 +80,7 @@ public class MeInvoiceController {
     @GetMapping("/bank-transfer-receipts")
     public List<BankTransferReceiptResponse> myReceipts() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return receiptResponseAssembler.assembleBankTransferReceiptResponses(findOwnPaymentReceiptsUseCase.findOwn(studentId));
+        return receiptResponseAssembler.assembleOwnReceiptResponses(findOwnPaymentReceiptsUseCase.findOwn(studentId));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")

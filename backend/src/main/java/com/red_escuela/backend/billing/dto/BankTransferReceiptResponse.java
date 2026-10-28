@@ -45,6 +45,12 @@ public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePa
                 detail == null ? null : detail.reviewAlertSentAt());
     }
 
+    public BankTransferReceiptResponse withoutReviewAlertState() {
+        return new BankTransferReceiptResponse(id, invoiceId, filePath, status, rejectionReason, rejectionCode, uploadedAt, studentName, studentDni, invoicePeriod,
+                invoiceFeeType, productName, invoiceIds, declaredAmount, transferDate, operationNumber, originAccount, holderName, invoices, pendingBusinessDays,
+                null, reviewAlertSentAt);
+    }
+
     private static String codeOf(BankTransferReceipt receipt) {
         return receipt.getRejectionCode() == null ? null : receipt.getRejectionCode().name();
     }
