@@ -55,7 +55,7 @@ class BillingDecisionRegistryTest {
 
         assertThat(registry.find("D-378").orElseThrow().implementation()).isEqualTo("implementada");
         assertThat(registry.find("D-331").orElseThrow().implementation()).isEqualTo("implementada");
-        assertThat(registry.find("D-308").orElseThrow().implementation()).isEqualTo("parcial (transferencia en V2-09c2)");
+        assertThat(registry.find("D-308").orElseThrow().implementation()).isEqualTo("implementada");
         DecisionRegistryRow reposition = registry.find("D-414").orElseThrow();
         assertThat(reposition.implementation()).isEqualTo("implementada");
         assertThat(reposition.isCurrent()).isTrue();

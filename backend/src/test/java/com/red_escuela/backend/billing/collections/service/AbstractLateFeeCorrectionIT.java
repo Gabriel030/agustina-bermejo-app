@@ -2,6 +2,14 @@ package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.collections.operation.LateFeeWithdrawalCorrectionStep;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
+import com.red_escuela.backend.billing.payment.operation.SubmitBankTransferReceiptCommand;
+import com.red_escuela.backend.billing.payment.operation.SubmitBankTransferReceiptOperation;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.notification.entity.NotificationType;
@@ -20,6 +28,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
+
 abstract class AbstractLateFeeCorrectionIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
@@ -30,6 +40,14 @@ abstract class AbstractLateFeeCorrectionIT extends AbstractLateFeeScenarioIT {
     private EntityManager entityManager;
     @Autowired
     private RoleRepository roleRepository;
+    @Autowired
+    private BillingOperationPipeline receiptPipeline;
+    @Autowired
+    private SubmitBankTransferReceiptOperation receiptSubmission;
+    @Autowired
+    protected ApprovePaymentReceiptUseCase approveReceipt;
+    @Autowired
+    protected RejectPaymentReceiptUseCase rejectReceipt;
     @Autowired
     private NotificationRepository notificationRepository;
 
@@ -44,6 +62,24 @@ abstract class AbstractLateFeeCorrectionIT extends AbstractLateFeeScenarioIT {
         Invoice origin = overdueInstallmentDueOn(d(year, 4, 11));
         reconcile(origin, d(year, 5, 1));
         return origin;
+    }
+
+    protected BankTransferReceiptSubmissionResult submitReceiptOn(LocalDate uploadDate, List<Long> invoiceIds, String amount, LocalDate transferDate, String operationNumber) {
+        MutableClock.INSTANCE.setDate(uploadDate);
+        SubmitBankTransferReceiptCommand command = new SubmitBankTransferReceiptCommand(student.getId(), invoiceIds, ars(amount),
+                transferDate, operationNumber, "0170099220000067797370", "Ana Pérez", "Banco Nación", "sha-" + operationNumber,
+                studentId -> "students/" + studentId + "/comprobantes_" + operationNumber + ".pdf", "key-" + operationNumber, ACTOR);
+        return ((BillingOperationOutcome.Processed<BankTransferReceiptSubmissionResult>) receiptPipeline.runOperation(receiptSubmission, command)).result();
+    }
+
+    protected void approveReceiptOn(LocalDate decisionDate, BankTransferReceiptSubmissionResult submitted, PaymentVerification verification) {
+        MutableClock.INSTANCE.setDate(decisionDate);
+        approveReceipt.approve(submitted.receiptId(), person, verification);
+    }
+
+    protected void rejectReceiptOn(LocalDate decisionDate, BankTransferReceiptSubmissionResult submitted) {
+        MutableClock.INSTANCE.setDate(decisionDate);
+        rejectReceipt.reject(submitted.receiptId(), "Comprobante ilegible", person);
     }
 
     protected Long debitNoteIdOf(Invoice origin, int index) {

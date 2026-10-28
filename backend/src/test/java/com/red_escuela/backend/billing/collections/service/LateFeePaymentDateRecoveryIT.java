@@ -4,6 +4,8 @@ import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResul
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
 import com.red_escuela.backend.billing.events.LateFeeAnnulledByPaymentDateEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.LateFeeCorrectionNotificationListener;
@@ -20,7 +22,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -43,8 +44,6 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
     private LateFeeAccrualStep accrualStep;
     @Autowired
     private LateFeeSettlementCorrectionService settlementCorrectionService;
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
     @Autowired
     private NotificationRepository notifications;
     @Autowired
@@ -187,12 +186,10 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
         int year = approved ? 2503 : 2504;
         Invoice origin = installmentWithMarchClosed(year, 0);
         Long debitNoteId = debitNoteIdOf(origin, 0);
-        transactionTemplate.executeWithoutResult(status -> invoiceRepository.findByIdForUpdate(debitNoteId).orElseThrow()
-                .markPaymentUnderReview(d(year, 4, 1), ACTOR, "Comprobante"));
-        MutableClock.INSTANCE.setDate(d(year, 4, 2));
-
-        payInFull(origin, d(year, 3, 28), d(year, 4, 2));
-        awaitEventsDrained();
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(year, 3, 28), d(year, 4, 2));
+        BankTransferReceiptSubmissionResult submitted = submitReceiptOn(d(year, 4, 2), List.of(debitNoteId), "4000.00", d(year, 4, 2), "OP-RECOVERY-" + year);
+        assertThat(submitted.items()).singleElement().satisfies(item -> assertThat(item.markedUnderReview()).isTrue());
+        assertThat(paymentStatusOf(debitNoteId)).isEqualTo("PAYMENT_UNDER_REVIEW");
         MutableClock.INSTANCE.setDate(d(year, 4, 3));
         accrualStep.accrueLateFees(d(year, 4, 3));
         awaitEventsDrained();
@@ -200,17 +197,10 @@ class LateFeePaymentDateRecoveryIT extends AbstractLateFeeCorrectionIT {
         assertThat(creditNotesOf(debitNoteId)).isEmpty();
         assertThat(paymentStatusOf(debitNoteId)).isEqualTo("PAYMENT_UNDER_REVIEW");
 
-        MutableClock.INSTANCE.setDate(d(year, 4, 5));
         if (approved) {
-            receiveMoney(origin, "4000.00", d(year, 4, 5));
-            transactionTemplate.executeWithoutResult(status -> allocationService.allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(
-                    accountService.lockStudentCurrentAccount(origin.getStudentCurrentAccountId()), d(year, 4, 5), ACTOR, java.util.Set.of(), java.util.Set.of(debitNoteId)));
+            approveReceiptOn(d(year, 4, 5), submitted, PaymentVerification.none());
         } else {
-            transactionTemplate.executeWithoutResult(status -> {
-                Invoice reviewed = invoiceRepository.findByIdForUpdate(debitNoteId).orElseThrow();
-                reviewed.releasePaymentReview(d(year, 4, 5), 0, ACTOR, "Comprobante rechazado");
-                reviewed.pullRecordedDomainEvents().forEach(eventPublisher::publishEvent);
-            });
+            rejectReceiptOn(d(year, 4, 5), submitted);
         }
         awaitEventsDrained();
         assertThat(creditNotesOf(debitNoteId)).as("the decision of the receipt retries the annulment before the nightly run").hasSize(1);

@@ -4,7 +4,9 @@ import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.dto.CancelInvoiceRequest;
 import com.red_escuela.backend.billing.note.dto.CreditNotePendingAuthorizationResponse;
 import com.red_escuela.backend.billing.note.dto.CreditNoteResponse;
+import com.red_escuela.backend.billing.note.dto.InvoiceCancellationPreviewResponse;
 import com.red_escuela.backend.billing.note.usecase.CancelInvoiceUseCase;
+import com.red_escuela.backend.billing.note.usecase.PreviewInvoiceCancellationUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,8 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class InvoiceCancellationController {
     private final CancelInvoiceUseCase cancelInvoiceUseCase;
 
-    public InvoiceCancellationController(CancelInvoiceUseCase cancelInvoiceUseCase) {
+    private final PreviewInvoiceCancellationUseCase previewInvoiceCancellationUseCase;
+
+    public InvoiceCancellationController(CancelInvoiceUseCase cancelInvoiceUseCase, PreviewInvoiceCancellationUseCase previewInvoiceCancellationUseCase) {
         this.cancelInvoiceUseCase = cancelInvoiceUseCase;
+        this.previewInvoiceCancellationUseCase = previewInvoiceCancellationUseCase;
+    }
+
+    @PostMapping("/invoices/{invoiceId}/cancellations/preview")
+    public InvoiceCancellationPreviewResponse previewInvoiceCancellation(@PathVariable Long invoiceId, @Valid @RequestBody CancelInvoiceRequest request) {
+        return InvoiceCancellationPreviewResponse.from(previewInvoiceCancellationUseCase.previewInvoiceCancellation(invoiceId, request));
     }
 
     @PostMapping("/invoices/{invoiceId}/cancellations")

@@ -154,6 +154,34 @@
         "required" : [ "enrollmentId", "enrollmentType", "invoices", "paymentStatus", "paymentStatusUpdatedAt", "productId", "productName" ],
         "type" : "object"
       },
+      "AdminInvoiceLineResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "creditableAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "discount" : {
+            "$ref" : "#/components/schemas/InvoiceLineDiscountResponse"
+          },
+          "feeType" : {
+            "type" : "string"
+          },
+          "lineNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "period" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "creditableAmount", "description", "discount", "feeType", "lineNumber", "period" ],
+        "type" : "object"
+      },
       "AdminInvoicePaymentResponse" : {
         "properties" : {
           "amountApplied" : {
@@ -292,7 +320,7 @@
           },
           "lines" : {
             "items" : {
-              "$ref" : "#/components/schemas/InvoiceLineResponse"
+              "$ref" : "#/components/schemas/AdminInvoiceLineResponse"
             },
             "type" : "array"
           },
@@ -321,6 +349,12 @@
             },
             "type" : "array"
           },
+          "pendingAuthorizations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingAuthorizationResponse"
+            },
+            "type" : "array"
+          },
           "productRef" : {
             "$ref" : "#/components/schemas/ProductRef"
           },
@@ -345,7 +379,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "pendingAuthorizations", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
         "type" : "object"
       },
       "AdmissionInvoiceSummary" : {
@@ -1194,6 +1228,18 @@
           }
         },
         "required" : [ "effectiveFrom", "endDay", "id", "startDay" ],
+        "type" : "object"
+      },
+      "BlockResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ],
         "type" : "object"
       },
       "CancelInvoiceRequest" : {
@@ -2927,6 +2973,13 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "authorizedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "authorizedByName" : {
+            "type" : "string"
+          },
           "creditNoteNumber" : {
             "type" : "string"
           },
@@ -2967,11 +3020,14 @@
           "reason" : {
             "type" : "string"
           },
+          "requestedByName" : {
+            "type" : "string"
+          },
           "totalAmount" : {
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "authorizationRequestId", "creditNoteNumber", "factDate", "freeCreditAmount", "id", "invoiceId", "invoiceNumber", "issueDate", "justification", "lines", "offsetAmount", "reason", "totalAmount" ],
+        "required" : [ "authorizationRequestId", "authorizedAt", "authorizedByName", "creditNoteNumber", "factDate", "freeCreditAmount", "id", "invoiceId", "invoiceNumber", "issueDate", "justification", "lines", "offsetAmount", "reason", "requestedByName", "totalAmount" ],
         "type" : "object"
       },
       "CurrencyTotals" : {
@@ -3151,6 +3207,19 @@
           }
         },
         "required" : [ "decidedAt", "decisionNotes", "id", "justification", "programEnrollmentId", "programName", "requestedAt", "status", "studentName", "subjectId", "subjectName", "type" ],
+        "type" : "object"
+      },
+      "DiscountConsumptionResponse" : {
+        "properties" : {
+          "reactivatesDiscount" : {
+            "type" : "boolean"
+          },
+          "studentDiscountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "reactivatesDiscount", "studentDiscountId" ],
         "type" : "object"
       },
       "DiscountDefinitionCatalogEntryResponse" : {
@@ -3575,6 +3644,21 @@
           }
         },
         "required" : [ "dueDate", "invoiceId", "periodFrom", "periodTo", "remainingBalance", "satisfied", "slot", "slotCount", "status", "templateId" ],
+        "type" : "object"
+      },
+      "EnrollmentFeeResponse" : {
+        "properties" : {
+          "carriesDiscount" : {
+            "type" : "boolean"
+          },
+          "otherLiveEnrollmentFeeInSameLectiveYear" : {
+            "type" : "boolean"
+          },
+          "reissueWouldLoseDiscount" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "carriesDiscount", "otherLiveEnrollmentFeeInSameLectiveYear", "reissueWouldLoseDiscount" ],
         "type" : "object"
       },
       "EnrollmentPaymentStatusResponse" : {
@@ -4114,6 +4198,45 @@
         "required" : [ "id", "name" ],
         "type" : "object"
       },
+      "InvoiceCancellationPreviewResponse" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "blockedBy" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BlockResponse"
+            },
+            "type" : "array"
+          },
+          "creditNoteAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "discountConsumptionReleased" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DiscountConsumptionResponse"
+            },
+            "type" : "array"
+          },
+          "enrollmentFee" : {
+            "$ref" : "#/components/schemas/EnrollmentFeeResponse"
+          },
+          "executesImmediately" : {
+            "type" : "boolean"
+          },
+          "lateFeesToAnnul" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LateFeeToAnnulResponse"
+            },
+            "type" : "array"
+          },
+          "releasesChargeKey" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "allowed", "blockedBy", "creditNoteAmount", "discountConsumptionReleased", "enrollmentFee", "executesImmediately", "lateFeesToAnnul", "releasesChargeKey" ],
+        "type" : "object"
+      },
       "InvoiceImpactResponse" : {
         "properties" : {
           "creditReversed" : {
@@ -4349,6 +4472,25 @@
           }
         },
         "required" : [ "amount", "days", "firstDay", "invoiceId", "lastDay", "settledByAccountCredit" ],
+        "type" : "object"
+      },
+      "LateFeeToAnnulResponse" : {
+        "properties" : {
+          "amountToAnnul" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "debitNoteId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "invoiceNumber" : {
+            "type" : "string"
+          },
+          "paidAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "amountToAnnul", "debitNoteId", "invoiceNumber", "paidAmount" ],
         "type" : "object"
       },
       "LatePaymentSettingsResponse" : {
@@ -5149,6 +5291,30 @@
           }
         },
         "required" : [ "amount", "chargebackId", "chargedBackOn", "effectiveDate", "paymentId", "paymentStatus", "reference", "reopenedInvoiceIds", "reversedOn", "settledInvoiceIds" ],
+        "type" : "object"
+      },
+      "PendingAuthorizationResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedByName" : {
+            "type" : "string"
+          },
+          "requestedByPersonId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "requestedAt", "requestedByName", "requestedByPersonId", "type" ],
         "type" : "object"
       },
       "PendingRefundResponse" : {
@@ -7340,6 +7506,24 @@
           }
         },
         "required" : [ "actorName", "actorPersonId", "actorProcess", "changedAt", "event", "fromStatus", "reason", "toStatus" ],
+        "type" : "object"
+      },
+      "StudentCreditBalanceResponse" : {
+        "properties" : {
+          "availableCredit" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "reservedByPendingRefunds" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "unallocatedCredit" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "availableCredit", "currency", "reservedByPendingRefunds", "unallocatedCredit" ],
         "type" : "object"
       },
       "StudentDiscountPendingAuthorizationResponse" : {
@@ -19078,6 +19262,85 @@
         "tags" : [ "invoice-cancellation-controller" ]
       }
     },
+    "/invoices/{invoiceId}/cancellations/preview" : {
+      "post" : {
+        "operationId" : "InvoiceCancellation_previewInvoiceCancellation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "invoiceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelInvoiceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InvoiceCancellationPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "invoice-cancellation-controller" ]
+      }
+    },
     "/invoices/{invoiceId}/credit-notes" : {
       "post" : {
         "operationId" : "CreditNote_issueOrRequestCreditNote",
@@ -20249,6 +20512,76 @@
           }
         },
         "tags" : [ "me-invoice-controller" ]
+      }
+    },
+    "/me/credit-balance" : {
+      "get" : {
+        "operationId" : "StudentCreditBalance_describeOwnCreditBalance",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "default" : "ARS",
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudentCreditBalanceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-credit-balance-controller" ]
       }
     },
     "/me/credit-notes" : {
@@ -32148,6 +32481,84 @@
           }
         },
         "tags" : [ "student-payment-controller" ]
+      }
+    },
+    "/students/{studentId}/credit-balance" : {
+      "get" : {
+        "operationId" : "StudentCreditBalance_describeCreditBalanceOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "default" : "ARS",
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudentCreditBalanceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "STUDENT_NOT_FOUND: el alumno no existe"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-credit-balance-controller" ]
       }
     },
     "/students/{studentId}/credit-notes" : {

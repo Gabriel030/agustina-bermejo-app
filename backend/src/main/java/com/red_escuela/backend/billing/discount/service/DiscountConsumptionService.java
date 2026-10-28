@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.discount.domain.DiscountEnrollmentIds;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.LiveInvoiceDiscount;
+import com.red_escuela.backend.billing.discount.domain.ReleasedDiscountConsumption;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscountRepository;
@@ -61,11 +62,23 @@ public class DiscountConsumptionService {
         List<StudentDiscount> discounts = studentDiscountIds.stream().map(id -> studentDiscountRepository.findByIdForUpdate(id).orElseThrow()).toList();
         appliedRepository.markConsumptionReleased(live.stream().map(LiveInvoiceDiscount::invoiceDiscountId).toList(), LocalDateTime.now(clock));
         Instant now = Instant.now(clock);
-        discounts.stream().filter(discount -> discount.getStatus() == StudentDiscountStatus.EXHAUSTED).forEach(discount -> {
+        discounts.stream().filter(DiscountConsumptionService::returnsInstallmentConsumption).forEach(discount -> {
             discount.returnInstallmentConsumption(StatusChangeActor.ofProcess(PROCESS_NAME), now);
             studentDiscountRepository.save(discount);
         });
         log.info("Consumo de descuentos devuelto por cancelacion: factura={}, descuentos={}, aplicaciones={}", event.invoiceId(), studentDiscountIds, live.size());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReleasedDiscountConsumption> describeConsumptionReleasedByCancellationOf(Long invoiceId) {
+        List<Long> studentDiscountIds = appliedRepository.findLiveDiscountsOfInvoice(invoiceId).stream().map(LiveInvoiceDiscount::studentDiscountId).distinct().sorted().toList();
+        return studentDiscountRepository.findAllById(studentDiscountIds).stream()
+                .sorted(Comparator.comparing(StudentDiscount::getId))
+                .map(discount -> new ReleasedDiscountConsumption(discount.getId(), returnsInstallmentConsumption(discount))).toList();
+    }
+
+    private static boolean returnsInstallmentConsumption(StudentDiscount discount) {
+        return discount.getStatus() == StudentDiscountStatus.EXHAUSTED;
     }
 
     private Stream<EnrollmentReference> referencesOf(DiscountEnrollmentIds ids) {
