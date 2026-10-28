@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
+import com.red_escuela.backend.billing.collections.service.EnrollmentPaymentStandingService;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -93,7 +94,7 @@ class SuspendedEnrollmentClosureServiceTest {
         logs.start();
         closureLogger.addAppender(logs);
         return new SuspendedEnrollmentClosureService(enrollments, templates, mock(TermRepository.class), invoices, enrollmentService, clock,
-                mock(PlatformTransactionManager.class), cycleFactory);
+                mock(PlatformTransactionManager.class), cycleFactory, mock(EnrollmentPaymentStandingService.class));
     }
 
     @AfterEach

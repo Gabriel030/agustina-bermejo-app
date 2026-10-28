@@ -2,6 +2,8 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
+import com.red_escuela.backend.billing.collections.service.EnrollmentPaymentStandingService;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -47,11 +49,14 @@ public class SuspendedEnrollmentClosureService {
     private final ProgramEnrollmentService programEnrollmentService;
     private final Clock clock;
     private final TransactionTemplate requiresNew;
+    private final EnrollmentPaymentStandingService standingService;
 
     public SuspendedEnrollmentClosureService(ProgramEnrollmentRepository programEnrollmentRepository,
                                              ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository, InvoiceRepository invoiceRepository,
                                              ProgramEnrollmentService programEnrollmentService, Clock clock,
-                                             PlatformTransactionManager transactionManager, YearCycleFactory cycleFactory) {
+                                             PlatformTransactionManager transactionManager, YearCycleFactory cycleFactory,
+                                             EnrollmentPaymentStandingService standingService) {
+        this.standingService = standingService;
         this.cycleFactory = cycleFactory;
         this.requiresNew = new TransactionTemplate(transactionManager);
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -99,6 +104,7 @@ public class SuspendedEnrollmentClosureService {
         }
         enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         programEnrollmentService.withdrawForNonpayment(enrollmentId);
+        standingService.recordTermClosedWhileSuspended(EnrollmentKind.PROGRAM, enrollmentId, today);
         enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());
