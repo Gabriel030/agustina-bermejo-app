@@ -25,13 +25,9 @@ public record AdminInvoiceResponse(
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod,
         List<AdminInvoicePaymentResponse> payments, List<AdminInvoiceReceiptResponse> receipts,
-        List<PriceBreakdownCreditNoteResponse> creditNotes, PendingAuthorizationResponse pendingAuthorization) {
+        List<PriceBreakdownCreditNoteResponse> creditNotes, List<PendingAuthorizationResponse> pendingAuthorizations) {
 
-    public static AdminInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts) {
-        return of(view, receipts, null);
-    }
-
-    public static AdminInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts, PendingInvoiceAuthorization pendingAuthorization) {
+    public static AdminInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts, List<PendingInvoiceAuthorization> pendingAuthorizations) {
         InvoiceResponse base = InvoiceResponse.from(view);
         Map<Long, Long> receiptIdByPaymentId = receipts.stream()
                 .filter(receipt -> receipt.getPaymentId() != null)
@@ -51,6 +47,6 @@ public record AdminInvoiceResponse(
                 base.description(), base.subjectId(), base.examBoardRegistrationId(),
                 base.paymentDate(), base.paymentMethod(),
                 payments, receipts.stream().map(AdminInvoiceReceiptResponse::from).toList(),
-                base.creditNotes(), PendingAuthorizationResponse.from(pendingAuthorization));
+                base.creditNotes(), pendingAuthorizations.stream().map(PendingAuthorizationResponse::from).toList());
     }
 }

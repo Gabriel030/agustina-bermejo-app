@@ -6,9 +6,9 @@ import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 
 import java.util.List;
 
-public record InvoiceWithReceipts(InvoiceView view, List<BankTransferReceipt> receipts, PendingInvoiceAuthorization pendingAuthorization) {
+public record InvoiceWithReceipts(InvoiceView view, List<BankTransferReceipt> receipts, List<PendingInvoiceAuthorization> pendingAuthorizations) {
 
     public InvoiceWithReceipts(InvoiceView view, List<BankTransferReceipt> receipts) {
-        this(view, receipts, null);
+        this(view, receipts, List.of());
     }
 }

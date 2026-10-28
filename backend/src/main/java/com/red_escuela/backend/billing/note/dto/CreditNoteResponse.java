@@ -16,7 +16,13 @@ public record CreditNoteResponse(Long id, String creditNoteNumber, Long invoiceI
         return from(note, CreditNoteAuthorshipTrace.unknown());
     }
 
-    public static CreditNoteResponse from(CreditNote note, CreditNoteAuthorshipTrace trace) {
+    public static CreditNoteResponse forStudent(CreditNote note) {
+        CreditNoteResponse full = from(note);
+        return new CreditNoteResponse(full.id(), full.creditNoteNumber(), full.invoiceId(), full.invoiceNumber(), full.reason(), null, full.offsetAmount(),
+                full.freeCreditAmount(), full.totalAmount(), full.issueDate(), full.factDate(), full.authorizationRequestId(), full.lines(), null, null, null);
+    }
+
+    public static CreditNoteResponse from(CreditNote note,CreditNoteAuthorshipTrace trace) {
         return new CreditNoteResponse(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(), note.getReason().name(),
                 note.getJustification(), note.getOffsetAmount().value(), note.getFreeCreditAmount().value(), note.getTotalAmount().value(),
                 note.getIssueDate(), note.getFactDate(), note.getAuthorizationRequestId(),

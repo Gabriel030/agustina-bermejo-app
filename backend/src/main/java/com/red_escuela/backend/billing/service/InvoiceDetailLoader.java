@@ -49,9 +49,9 @@ public class InvoiceDetailLoader {
         List<Long> ids = invoices.stream().map(Invoice::getId).toList();
         Map<Long, List<BankTransferReceipt>> receiptsByInvoiceId = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(ids).stream()
                 .collect(Collectors.groupingBy(receipt -> receipt.getInvoice().getId()));
-        Map<Long, PendingInvoiceAuthorization> pendingByInvoiceId = pendingAuthorizations.findNewestPendingByInvoiceId(ids);
+        Map<Long, List<PendingInvoiceAuthorization>> pendingByInvoiceId = pendingAuthorizations.findPendingByInvoiceIdNewestFirst(ids);
         return invoiceViewLoader.loadInvoiceViews(invoices).stream()
-                .map(view -> new InvoiceWithReceipts(view, receiptsByInvoiceId.getOrDefault(view.invoice().getId(), List.of()), pendingByInvoiceId.get(view.invoice().getId())))
+                .map(view -> new InvoiceWithReceipts(view, receiptsByInvoiceId.getOrDefault(view.invoice().getId(), List.of()), pendingByInvoiceId.getOrDefault(view.invoice().getId(), List.of())))
                 .toList();
     }
 }

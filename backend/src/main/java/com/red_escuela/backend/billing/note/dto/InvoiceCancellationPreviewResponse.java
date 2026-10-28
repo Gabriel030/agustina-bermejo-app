@@ -32,9 +32,9 @@ public record InvoiceCancellationPreviewResponse(boolean allowed, List<BlockResp
         }
     }
 
-    public record EnrollmentFeeResponse(boolean carriesDiscount, boolean otherLiveEnrollmentFeeInSameCalendarYear, boolean reissueWouldLoseDiscount) {
-        static EnrollmentFeeResponse from(EnrollmentFeeDiscountFacts facts) {
-            return new EnrollmentFeeResponse(facts.carriesDiscount(), facts.otherLiveEnrollmentFeeInSameCalendarYear(), facts.reissueWouldLoseDiscount());
+    public record EnrollmentFeeResponse(boolean carriesDiscount, boolean otherLiveEnrollmentFeeInSameLectiveYear, boolean reissueWouldLoseDiscount) {
+        static EnrollmentFeeResponse from(EnrollmentFeeDiscountFacts facts, boolean releasesChargeKey) {
+            return new EnrollmentFeeResponse(facts.carriesDiscount(), facts.otherLiveEnrollmentFeeInSameLectiveYear(), facts.reissueWouldLoseDiscount() && releasesChargeKey);
         }
     }
 
@@ -42,6 +42,6 @@ public record InvoiceCancellationPreviewResponse(boolean allowed, List<BlockResp
         return new InvoiceCancellationPreviewResponse(preview.allowed(), preview.blockedBy().stream().map(BlockResponse::from).toList(), preview.creditNoteAmount().value(),
                 preview.releasesChargeKey(), preview.executesImmediately(), preview.lateFeesToAnnul().stream().map(LateFeeToAnnulResponse::from).toList(),
                 preview.discountConsumptionReleased().stream().map(DiscountConsumptionResponse::from).toList(),
-                preview.enrollmentFee().map(EnrollmentFeeResponse::from).orElse(null));
+                preview.enrollmentFee().map(facts -> EnrollmentFeeResponse.from(facts, preview.releasesChargeKey())).orElse(null));
     }
 }

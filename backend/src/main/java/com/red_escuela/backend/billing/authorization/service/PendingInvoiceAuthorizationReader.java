@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.api.PersonNameLookup;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ public class PendingInvoiceAuthorizationReader {
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, PendingInvoiceAuthorization> findNewestPendingByInvoiceId(Collection<Long> invoiceIds) {
+    public Map<Long, List<PendingInvoiceAuthorization>> findPendingByInvoiceIdNewestFirst(Collection<Long> invoiceIds) {
         if (invoiceIds.isEmpty()) {
             return Map.of();
         }
@@ -36,13 +37,13 @@ public class PendingInvoiceAuthorizationReader {
                 .stream().collect(Collectors.toMap(AuthorizationRequest::getId, Function.identity()));
         Set<Long> requesterIds = requestById.values().stream().map(request -> request.getRequestedBy().getId()).collect(Collectors.toSet());
         Map<Long, String> names = personNames.findFullNamesByPersonId(requesterIds);
-        Map<Long, PendingInvoiceAuthorization> newestByInvoice = new HashMap<>();
-        links.stream().sorted(Comparator.comparing(AuthorizationRequestRepository.InvoiceRequestLink::getRequestId)).forEach(link -> {
+        Map<Long, List<PendingInvoiceAuthorization>> pendingByInvoice = new HashMap<>();
+        links.stream().sorted(Comparator.comparing(AuthorizationRequestRepository.InvoiceRequestLink::getRequestId).reversed()).forEach(link -> {
             AuthorizationRequest request = requestById.get(link.getRequestId());
             Long requesterId = request.getRequestedBy().getId();
-            newestByInvoice.put(link.getInvoiceId(),
-                    new PendingInvoiceAuthorization(request.getId(), request.getOperationType(), requesterId, names.get(requesterId), request.getRequestedAt()));
+            pendingByInvoice.computeIfAbsent(link.getInvoiceId(), invoiceId -> new ArrayList<>())
+                    .add(new PendingInvoiceAuthorization(request.getId(), request.getOperationType(), requesterId, names.get(requesterId), request.getRequestedAt()));
         });
-        return newestByInvoice;
+        return pendingByInvoice;
     }
 }

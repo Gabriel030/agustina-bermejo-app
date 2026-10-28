@@ -349,8 +349,11 @@
             },
             "type" : "array"
           },
-          "pendingAuthorization" : {
-            "$ref" : "#/components/schemas/PendingAuthorizationResponse"
+          "pendingAuthorizations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingAuthorizationResponse"
+            },
+            "type" : "array"
           },
           "productRef" : {
             "$ref" : "#/components/schemas/ProductRef"
@@ -376,7 +379,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "pendingAuthorization", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "pendingAuthorizations", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
         "type" : "object"
       },
       "AdmissionInvoiceSummary" : {
@@ -3643,14 +3646,14 @@
           "carriesDiscount" : {
             "type" : "boolean"
           },
-          "otherLiveEnrollmentFeeInSameCalendarYear" : {
+          "otherLiveEnrollmentFeeInSameLectiveYear" : {
             "type" : "boolean"
           },
           "reissueWouldLoseDiscount" : {
             "type" : "boolean"
           }
         },
-        "required" : [ "carriesDiscount", "otherLiveEnrollmentFeeInSameCalendarYear", "reissueWouldLoseDiscount" ],
+        "required" : [ "carriesDiscount", "otherLiveEnrollmentFeeInSameLectiveYear", "reissueWouldLoseDiscount" ],
         "type" : "object"
       },
       "EnrollmentPaymentStatusResponse" : {

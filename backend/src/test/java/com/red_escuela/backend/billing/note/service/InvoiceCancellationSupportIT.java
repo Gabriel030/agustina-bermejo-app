@@ -116,17 +116,22 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
         Staff administrative = newStaff("ADMINISTRATIVO");
         Staff director = newStaff("DIRECTOR");
 
-        assertThat(pendingAuthorizationReader.findNewestPendingByInvoiceId(List.of(scenario.invoiceId()))).isEmpty();
-        long requestId = pendingRequestId(requestCancellation(scenario.invoiceId(), administrative, cancellationBody("CANCELLATION", "baja"), 202));
+        assertThat(pendingAuthorizationReader.findPendingByInvoiceIdNewestFirst(List.of(scenario.invoiceId()))).isEmpty();
+        long cancellationId = pendingRequestId(requestCancellation(scenario.invoiceId(), administrative, cancellationBody("CANCELLATION", "baja"), 202));
+        long creditNoteId = pendingRequestId(requestCreditNote(scenario.invoiceId(), administrative, creditNoteBody("BILLING_ERROR", "monto de mas", 1, "100.00"), 202));
 
-        Map<Long, PendingInvoiceAuthorization> pending = pendingAuthorizationReader.findNewestPendingByInvoiceId(List.of(scenario.invoiceId()));
+        Map<Long, List<PendingInvoiceAuthorization>> pending = pendingAuthorizationReader.findPendingByInvoiceIdNewestFirst(List.of(scenario.invoiceId()));
 
-        assertThat(pending.get(scenario.invoiceId()).id()).isEqualTo(requestId);
-        assertThat(pending.get(scenario.invoiceId()).type().name()).isEqualTo("CANCEL_INVOICE");
-        assertThat(pending.get(scenario.invoiceId()).requestedByPersonId()).isEqualTo(administrative.personId());
-        assertThat(pending.get(scenario.invoiceId()).requestedByName()).isNotBlank();
-        decide("reject", requestId, director, 200);
-        assertThat(pendingAuthorizationReader.findNewestPendingByInvoiceId(List.of(scenario.invoiceId()))).isEmpty();
+        List<PendingInvoiceAuthorization> ofInvoice = pending.get(scenario.invoiceId());
+        assertThat(ofInvoice).extracting(PendingInvoiceAuthorization::id).containsExactly(creditNoteId, cancellationId);
+        assertThat(ofInvoice).extracting(entry -> entry.type().name()).containsExactly("ISSUE_CREDIT_NOTE", "CANCEL_INVOICE");
+        assertThat(ofInvoice.get(1).requestedByPersonId()).isEqualTo(administrative.personId());
+        assertThat(ofInvoice.get(1).requestedByName()).isNotBlank();
+        decide("reject", creditNoteId, director, 200);
+        assertThat(pendingAuthorizationReader.findPendingByInvoiceIdNewestFirst(List.of(scenario.invoiceId())).get(scenario.invoiceId()))
+                .extracting(PendingInvoiceAuthorization::id).containsExactly(cancellationId);
+        decide("reject", cancellationId, director, 200);
+        assertThat(pendingAuthorizationReader.findPendingByInvoiceIdNewestFirst(List.of(scenario.invoiceId()))).isEmpty();
     }
 
     @Test
@@ -151,6 +156,8 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
         assertThat(staffNotes.get(0).get("authorizedAt").isNull()).isFalse();
         assertThat(staffNotes.get(0).get("authorizationRequestId").asLong()).isEqualTo(requestId);
         assertThat(studentNotes).hasSize(1);
+        assertThat(staffNotes.get(0).get("justification").asText()).isEqualTo("baja");
+        assertThat(studentNotes.get(0).get("justification").isNull()).isTrue();
         assertThat(studentNotes.get(0).get("requestedByName").isNull()).isTrue();
         assertThat(studentNotes.get(0).get("authorizedByName").isNull()).isTrue();
     }

@@ -57,6 +57,6 @@ public class CreditNoteController {
     @PreAuthorize("hasRole('ALUMNO')")
     public List<CreditNoteResponse> listMyCreditNotes() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return listCreditNotesOfStudentUseCase.listCreditNotesOfStudent(studentId).stream().map(CreditNoteResponse::from).toList();
+        return listCreditNotesOfStudentUseCase.listCreditNotesOfStudent(studentId).stream().map(CreditNoteResponse::forStudent).toList();
     }
 }

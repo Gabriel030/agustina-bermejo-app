@@ -151,4 +151,51 @@ class LateFeeUnderReviewOnWithdrawalCancellationIT extends AbstractInvoiceCancel
         assertThat(paymentStatusOf(fee)).isEqualTo("CANCELLED");
         assertThat(paymentStatusOf(lateFee)).isEqualTo("CANCELLED");
     }
+
+    private com.fasterxml.jackson.databind.JsonNode previewCancellation(Long invoiceId, Staff staff) throws Exception {
+        String body = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/invoices/" + invoiceId + "/cancellations/preview")
+                        .header("Authorization", "Bearer " + staff.token()).contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(cancellationBody("BILLING_ERROR", "cargo mal emitido")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk()).andReturn().getResponse().getContentAsString();
+        return new com.fasterxml.jackson.databind.ObjectMapper().readTree(body);
+    }
+
+    @Test
+    @Tag("D-291")
+    void thePreviewListsTheLiveLateFeeWritesNothingAndMatchesWhatTheRealCancellationAnnuls() throws Exception {
+        ProgramEnrollment enrollment = newProgramEnrollment(newStudentId());
+        Long fee = overdueNextYearFeeWithItsLateFee(enrollment);
+        Long lateFee = lateFeeOf(fee);
+        Staff director = newStaff("DIRECTOR");
+
+        com.fasterxml.jackson.databind.JsonNode preview = previewCancellation(fee, director);
+
+        assertThat(creditNoteCountOf(fee) + creditNoteCountOf(lateFee)).isZero();
+        assertThat(paymentStatusOf(lateFee)).isNotEqualTo("CANCELLED");
+        assertThat(preview.get("allowed").asBoolean()).isTrue();
+        assertThat(preview.get("lateFeesToAnnul")).hasSize(1);
+        assertThat(preview.get("lateFeesToAnnul").get(0).get("debitNoteId").asLong()).isEqualTo(lateFee);
+        BigDecimal previewed = new BigDecimal(preview.get("lateFeesToAnnul").get(0).get("amountToAnnul").get("amount").asText());
+        assertThat(previewed).isPositive();
+
+        requestCancellation(fee, director, cancellationBody("BILLING_ERROR", "cargo mal emitido"), 201);
+
+        assertThat(paymentStatusOf(lateFee)).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ? and reason = 'LATE_FEE_ANNULMENT'", BigDecimal.class, lateFee))
+                .isEqualByComparingTo(previewed);
+    }
+
+    @Test
+    void thePreviewReportsALateFeeUnderPaymentReviewAsABlockTheRealCancellationAlsoReturns() throws Exception {
+        ProgramEnrollment enrollment = newProgramEnrollment(newStudentId());
+        Long fee = overdueNextYearFeeWithItsLateFee(enrollment);
+        putUnderReview(lateFeeOf(fee));
+        Staff director = newStaff("DIRECTOR");
+
+        com.fasterxml.jackson.databind.JsonNode preview = previewCancellation(fee, director);
+
+        assertThat(preview.get("allowed").asBoolean()).isFalse();
+        assertThat(preview.get("blockedBy").findValuesAsText("code")).contains("LATE_FEE_UNDER_PAYMENT_REVIEW");
+        requestCancellation(fee, director, cancellationBody("BILLING_ERROR", "cargo mal emitido"), 409);
+    }
 }
