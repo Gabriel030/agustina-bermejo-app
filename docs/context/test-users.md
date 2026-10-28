@@ -30,6 +30,10 @@ Arranque local: `JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES
 - **Alumno nuevo con flujo real:** `/registrarse` crea una persona con `Student` confirmado, sin rol hasta la primera inscripción (sirve para probar catálogo e inscripción). Alta de prospecto: `alumno/nuevo` como Preceptor o Administrativo, y verificación de email en `GET /verify-email`.
 - **Brecha conocida:** no hay un alumno o docente demo con datos académicos y contraseña conocida. Recomendado: extender `LocalSeedRunner` (es el lugar acordado en `debugging.md`) antes de la siguiente épica de UI que necesite datos.
 
+## 2b. Seed de sistema (E2E)
+
+`SystemTestApplication` (solo `src/test`, nunca en el jar) levanta el backend con Postgres de Testcontainers nuevo en cada arranque: las 5 cuentas `.demo` con `Test1234` (vía `LocalSeedRunner`), más un `Student` para `alumno.demo` con dos cuotas administrativas abiertas de ARS 80.000. Se usa desde `scripts/system-tests.sh`.
+
 ## 3. Casos de uso y con qué usuario probarlos
 
 Rutas reales de `RUTAS_POR_ROL` (`frontend/src/routes/AppRouter.jsx`). "Necesita datos" = la pantalla se ve vacía con la cuenta demo pelada.
