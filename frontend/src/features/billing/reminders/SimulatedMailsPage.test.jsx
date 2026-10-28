@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -49,5 +49,25 @@ describe('SimulatedMailsPage', () => {
     renderWithProviders(<SimulatedMailsPage />);
 
     expect(await screen.findByText('Esta pantalla no existe')).toBeInTheDocument();
+  });
+
+  it('shows each mail as a card with its status on mobile instead of a scrolling table', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    server.use(http.get(`${API}/notification-deliveries/simulated`, () => HttpResponse.json({ items: [mail], page: 0, size: 20, totalElements: 1 })));
+    renderWithProviders(<SimulatedMailsPage />);
+
+    expect(await screen.findByRole('button', { name: 'Tu cuota de octubre vence pronto' })).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('Simulado')).toBeInTheDocument();
+  });
+
+  it('opens the status reason with a tap on the status', async () => {
+    server.use(http.get(`${API}/notification-deliveries/simulated`, () => HttpResponse.json({ items: [mail], page: 0, size: 20, totalElements: 1 })));
+    const user = userEvent.setup();
+    renderWithProviders(<SimulatedMailsPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Simulado: ver el motivo' }));
+
+    expect(await screen.findByText('Entorno de demostración')).toBeInTheDocument();
   });
 });

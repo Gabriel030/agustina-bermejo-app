@@ -64,8 +64,9 @@ export function ExceptionsTable({ group, exceptions, names, selectedId, canAdd, 
             {nameOf(row.original.targetId)}
           </button>
         ),
+        meta: { cardTitle: true },
       },
-      { id: 'inherits', header: 'Hereda de', enableSorting: false, accessorFn: () => GROUP_LABELS[group] },
+      { id: 'inherits', header: 'Hereda de', enableSorting: false, accessorFn: () => GROUP_LABELS[group], meta: { hideInCard: true } },
       { id: 'since', header: 'Vigente desde', accessorFn: (exception) => exception.effectiveFrom, cell: ({ row }) => formatDate(row.original.effectiveFrom) },
       { id: 'notices', header: 'Avisos', accessorFn: (exception) => exception.noticeCount, meta: { align: 'right' } },
       {
@@ -95,7 +96,6 @@ export function ExceptionsTable({ group, exceptions, names, selectedId, canAdd, 
         data={exceptions}
         getRowId={(exception) => String(exception.targetId)}
         emptyState={<EmptyState title="Sin excepciones" description="Todos siguen la política general de este grupo." />}
-        mobileLayout="scroll"
         minWidth={640}
         key={selectedId ?? 'none'}
       />

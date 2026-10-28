@@ -125,4 +125,15 @@ describe('ContactListTab', () => {
     expect(await screen.findByText('No pudimos cargar la lista de alumnos para contactar.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
+
+  it('shows each student as a card with debt and reason on mobile instead of a scrolling table', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    mockList(() => HttpResponse.json({ items, page: 0, size: 100, totalElements: 2 }));
+    renderWithProviders(<ContactListTab accountBase="/administrativo" />);
+
+    expect(await screen.findByText('Benítez, Joaquín')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Deuda vencida')).toHaveLength(2);
+    expect(screen.getAllByText('Motivo')).toHaveLength(2);
+  });
 });

@@ -27,7 +27,7 @@ describe('NotificationMatrix', () => {
     renderWithProviders(<NotificationMatrix />);
 
     expect(await screen.findByText('Recordatorio antes del vencimiento')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Recordatorio antes del vencimiento — En la app: .*obligatorio/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Recordatorio antes del vencimiento — En la app: .*obligatorio/ })).toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: /Recordatorio antes del vencimiento — En la app/ })).not.toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Recordatorio antes del vencimiento — Por email: activado' })).toBeEnabled();
   });
@@ -37,7 +37,7 @@ describe('NotificationMatrix', () => {
     renderWithProviders(<NotificationMatrix />);
 
     await screen.findByText('Nota publicada');
-    expect(screen.getByRole('img', { name: /Nota publicada — Por email/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Nota publicada — Por email/ })).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: /Recordatorio antes del vencimiento — En la app/ })).toBeInTheDocument();
   });
 
@@ -68,5 +68,24 @@ describe('NotificationMatrix', () => {
 
     expect(screen.getByRole('switch', { name: 'Recordatorio antes del vencimiento — Por email: activado' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
+  });
+
+  it('explains the lock when tapping the lock of a mandatory notice', async () => {
+    mockPreferences({ preferences: {}, mandatoryChannels: { PAYMENT_DUE_SOON: ['APP'] } });
+    const user = userEvent.setup();
+    renderWithProviders(<NotificationMatrix />);
+
+    await user.click(await screen.findByRole('button', { name: /Recordatorio antes del vencimiento — En la app/ }));
+
+    expect(await screen.findByText('Este aviso es obligatorio: no se puede desactivar.')).toBeInTheDocument();
+  });
+
+  it('writes the always-on state under the name of fully mandatory notices only', async () => {
+    mockPreferences({ preferences: {}, mandatoryChannels: { PAYMENT_DUE_SOON: ['APP'] } });
+    renderWithProviders(<NotificationMatrix />);
+
+    await screen.findByText('Recordatorio antes del vencimiento');
+
+    expect(screen.getAllByText('Siempre activo, no se puede apagar')).toHaveLength(4);
   });
 });

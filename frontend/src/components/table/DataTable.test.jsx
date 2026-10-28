@@ -124,4 +124,51 @@ describe('DataTable', () => {
 
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
+
+  it('shows the card title column first and without a label on mobile', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    const titled = [{ ...columns[0], meta: { cardTitle: true } }, columns[1]];
+    renderTable({ columns: titled });
+
+    expect(screen.getByText('Gamma')).toBeInTheDocument();
+    expect(screen.queryByText('Nombre')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Estado')).toHaveLength(3);
+  });
+
+  it('keeps sorting and filtering reachable on mobile cards', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    const user = userEvent.setup();
+    renderTable();
+
+    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Filtrar por estado' }));
+    await user.click(screen.getByRole('checkbox', { name: /Baja/ }));
+
+    expect(screen.queryByText('Alfa')).not.toBeInTheDocument();
+    expect(screen.getByText('Beta')).toBeInTheDocument();
+  });
+
+  it('renders header-less columns as a full width footer of the card', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    const withAction = [...columns, { id: 'action', header: '', enableSorting: false, cell: () => <a href="/x">Abrir</a> }];
+    renderTable({ columns: withAction });
+
+    expect(screen.getAllByRole('link', { name: 'Abrir' })[0].parentElement).toHaveClass('border-t');
+  });
+
+  it('lays out a card block column with its label above the value', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    const block = [columns[0], { ...columns[1], meta: { cardBlock: true } }];
+    renderTable({ columns: block });
+
+    expect(screen.getAllByText('Estado')[0].parentElement).toHaveClass('flex-col');
+  });
+
+  it('hides columns marked hideInCard on mobile', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    const hidden = [columns[0], { ...columns[1], meta: { hideInCard: true } }];
+    renderTable({ columns: hidden });
+
+    expect(screen.queryByText('Estado')).not.toBeInTheDocument();
+  });
 });
