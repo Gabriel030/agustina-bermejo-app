@@ -225,8 +225,13 @@ describe('RequestRefundPage', () => {
     expect(await screen.findByText('Ficha del alumno')).toBeInTheDocument();
     expect(toastMock.success).toHaveBeenCalledWith(
       'Pedido enviado a la dirección.',
-      expect.objectContaining({ description: expect.stringContaining('pendiente de autorización del director') }),
+      expect.objectContaining({
+        description: expect.stringContaining('pendiente de autorización del director'),
+        action: expect.objectContaining({ label: 'Ver mis pedidos' }),
+      }),
     );
+    const { action } = toastMock.success.mock.calls[0][1];
+    expect(action.onClick).toEqual(expect.any(Function));
   });
 
   it('registers the refund as approved when the director requests it', async () => {

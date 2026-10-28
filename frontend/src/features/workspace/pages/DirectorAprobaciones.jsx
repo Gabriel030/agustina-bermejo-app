@@ -9,9 +9,11 @@ import { formatearFecha } from '@/lib/comisiones';
 import { useConfigsPendientes } from '@/features/evaluation';
 import { useEgresosPendientes } from '@/features/graduation';
 import { useExcepcionesPendientes } from '@/features/enrollment';
+import { useAuthorizationRequests } from '@/features/billing';
 import { TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 
 const PREVIEW = 3;
+const BILLING_PENDING_SEARCH = { statuses: ['PENDING'], sort: 'EXPIRES_ON', descending: false, page: 0, size: 50 };
 
 function pendingLinkLabel(total, failed) {
   if (failed || total === 0) {
@@ -20,11 +22,11 @@ function pendingLinkLabel(total, failed) {
   return total === 1 ? 'Ver el pendiente' : `Ver los ${total} pendientes`;
 }
 
-function PendingCounter({ query }) {
+function PendingCounter({ query, count }) {
   if (query.isLoading) {
     return <Skeleton className="h-8 w-12" />;
   }
-  return <div className="font-heading text-2xl font-bold text-ink">{query.isError ? '—' : (query.data ?? []).length}</div>;
+  return <div className="font-heading text-2xl font-bold text-ink">{query.isError ? '—' : (count ?? (query.data ?? []).length)}</div>;
 }
 
 function SeccionPreview({ titulo, ruta, cargando, fallo, items, tituloVacio, renderItem }) {
@@ -62,10 +64,12 @@ export function DirectorAprobaciones() {
   const configsQuery = useConfigsPendientes();
   const graduationsQuery = useEgresosPendientes();
   const exceptionsQuery = useExcepcionesPendientes();
+  const billingQuery = useAuthorizationRequests(BILLING_PENDING_SEARCH);
 
   const listaPendientes = configsQuery.data ?? [];
   const listaEgresosPendientes = graduationsQuery.data ?? [];
   const listaExcepcionesPendientes = exceptionsQuery.data ?? [];
+  const listaBillingPendientes = billingQuery.data?.items ?? [];
 
   return (
     <PageContainer>
@@ -74,7 +78,7 @@ export function DirectorAprobaciones() {
         <p className="mt-0.5 text-sm text-ink-soft">Trámites esperando tu decisión, y lo que ya decidiste</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Egresos por aprobar">
           <PendingCounter query={graduationsQuery} />
         </StatCard>
@@ -84,7 +88,27 @@ export function DirectorAprobaciones() {
         <StatCard label="Config. de evaluación pendientes">
           <PendingCounter query={configsQuery} />
         </StatCard>
+        <StatCard label="Operaciones de facturación">
+          <PendingCounter query={billingQuery} count={billingQuery.data?.totalElements} />
+        </StatCard>
       </div>
+
+      <SeccionPreview
+        titulo="Operaciones de facturación"
+        ruta="/director/aprobaciones/facturacion"
+        cargando={billingQuery.isLoading}
+        fallo={billingQuery.isError}
+        items={listaBillingPendientes}
+        tituloVacio="Nada de facturación esperando tu decisión"
+        renderItem={(r) => (
+          <div key={r.id} className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5">
+            <div className="text-[13.5px] font-semibold text-ink">
+              {r.operationLabel} · {r.studentName ?? r.summary}
+            </div>
+            <div className="text-[12px] text-ink-faint">pedido por {r.requestedBy?.name ?? '—'}</div>
+          </div>
+        )}
+      />
 
       <SeccionPreview
         titulo="Configuración de evaluación pendiente"

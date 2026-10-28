@@ -21,7 +21,7 @@ public record PostWithdrawalSummaryCandidate(Long studentId, Long personId, List
                                                                   NonBusinessDays nonBusinessDays) {
         Map<Long, List<WithdrawnEnrollmentDebtLine>> dueByStudent = new LinkedHashMap<>();
         for (WithdrawnEnrollmentDebtLine line : debtLines) {
-            if (PostWithdrawalSummarySchedule.isSummaryDay(line.withdrawalEffectiveDate(), businessDate, summaryMonths, nonBusinessDays)) {
+            if (PostWithdrawalSummarySchedule.isSummaryDueOn(line.withdrawalEffectiveDate(), businessDate, summaryMonths, nonBusinessDays)) {
                 dueByStudent.computeIfAbsent(line.studentId(), id -> new ArrayList<>()).add(line);
             }
         }

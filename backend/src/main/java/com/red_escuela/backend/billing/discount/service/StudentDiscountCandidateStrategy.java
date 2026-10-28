@@ -133,10 +133,21 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
                 .collect(Collectors.groupingBy(AppliedStudentDiscountInstallment::studentDiscountId));
         return active.stream()
                 .map(promotion -> new CohortPromotionProgress(promotion, definitions.get(promotion.getDiscountDefinitionId()).getAvailableUntil(), usesById.getOrDefault(promotion.getId(), List.of())))
+                .map(progress -> withReissuedInvoiceOriginalIssueDate(progress, context))
                 .filter(progress -> progress.canBeAppliedOn(context.facts().issueDate()))
                 .map(progress -> cohortCandidateOf(progress, context))
                 .filter(candidate -> !candidate.discountAmount().value().isZero())
                 .toList();
+    }
+
+    private CohortPromotionProgress withReissuedInvoiceOriginalIssueDate(CohortPromotionProgress progress, InvoiceIssuingContext context) {
+        if (!progress.isWindowClosedOn(context.facts().issueDate())) {
+            return progress;
+        }
+        return context.request().findChargeKey()
+                .flatMap(chargeKey -> appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(progress.promotion().getId(), chargeKey.value()))
+                .map(progress::withReissuedInvoiceOriginalIssueDate)
+                .orElse(progress);
     }
 
     private InvoiceDiscountCandidate cohortCandidateOf(CohortPromotionProgress progress, InvoiceIssuingContext context) {

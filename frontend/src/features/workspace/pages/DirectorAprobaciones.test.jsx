@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -11,7 +11,13 @@ function counterOf(label) {
   return screen.getAllByText(label)[0].nextElementSibling;
 }
 
+const emptyBillingPage = { items: [], page: 0, size: 50, totalElements: 0 };
+
 describe('DirectorAprobaciones', () => {
+  beforeEach(() => {
+    server.use(http.get(`${API}/authorization-requests`, () => HttpResponse.json(emptyBillingPage)));
+  });
+
   it('does not show zero in the counters while the trays are still loading', async () => {
     server.use(
       http.get(`${API}/section-evaluation-configs`, async () => {
