@@ -11,7 +11,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;

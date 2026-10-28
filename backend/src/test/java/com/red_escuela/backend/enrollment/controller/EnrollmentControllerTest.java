@@ -16,7 +16,7 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;

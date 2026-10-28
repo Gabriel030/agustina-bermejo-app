@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.authorization.repository.AuthorizationReq
 import com.red_escuela.backend.billing.authorization.service.AuthorizationRequestExpirer;
 import com.red_escuela.backend.billing.authorization.usecase.ApproveAuthorizationRequestUseCase;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;

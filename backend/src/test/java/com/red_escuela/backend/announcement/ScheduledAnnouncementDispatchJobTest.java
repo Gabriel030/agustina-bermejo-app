@@ -2,7 +2,7 @@ package com.red_escuela.backend.announcement;
 
 import com.red_escuela.backend.config.TestSubjectCodes;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;

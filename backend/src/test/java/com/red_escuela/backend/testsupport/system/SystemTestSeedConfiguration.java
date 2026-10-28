@@ -1,7 +1,7 @@
 package com.red_escuela.backend.testsupport.system;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.entity.Institution;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;

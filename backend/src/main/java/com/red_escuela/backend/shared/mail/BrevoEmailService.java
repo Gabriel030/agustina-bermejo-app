@@ -1,8 +1,8 @@
 package com.red_escuela.backend.shared.mail;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;

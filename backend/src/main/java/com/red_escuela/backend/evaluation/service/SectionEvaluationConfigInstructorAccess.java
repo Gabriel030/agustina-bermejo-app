@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.evaluation.dto.SectionInstructorSummary;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.stereotype.Service;

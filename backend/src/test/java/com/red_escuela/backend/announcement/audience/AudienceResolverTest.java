@@ -13,7 +13,7 @@ import com.red_escuela.backend.announcement.service.audience.StudentSnapshot;
 import com.red_escuela.backend.announcement.service.audience.TpGradeResolver;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
+import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.Test;
 

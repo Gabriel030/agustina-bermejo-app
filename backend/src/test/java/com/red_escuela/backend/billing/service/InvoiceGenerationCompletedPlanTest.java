@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;

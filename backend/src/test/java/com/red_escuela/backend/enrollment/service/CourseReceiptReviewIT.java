@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;

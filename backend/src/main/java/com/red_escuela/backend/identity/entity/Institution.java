@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.entity;
+package com.red_escuela.backend.identity.entity;
 
 import org.springframework.modulith.NamedInterface;
 

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.announcement.service.audience;
 
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
+import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.identity.entity.Student;
 
 import java.util.Map;

@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;

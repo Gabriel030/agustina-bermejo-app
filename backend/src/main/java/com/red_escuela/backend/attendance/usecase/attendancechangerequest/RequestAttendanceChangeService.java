@@ -8,7 +8,7 @@ import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepo
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.shared.UseCase;

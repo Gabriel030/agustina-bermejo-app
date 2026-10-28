@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.account.service;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.entity.Institution;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.repository.CurrentAccountEntryRepository;
 import com.red_escuela.backend.billing.account.repository.StudentCurrentAccountRepository;
