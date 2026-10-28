@@ -190,6 +190,10 @@ public class Price {
         return versions.stream().filter(PriceVersion::isOpenProposal).max(RESOLUTION_ORDER);
     }
 
+    public Optional<PriceVersion> findOpenProposalOfRequest(Long authorizationRequestId) {
+        return versions.stream().filter(PriceVersion::isOpenProposal).filter(version -> Objects.equals(version.getAuthorizationRequestId(), authorizationRequestId)).findFirst();
+    }
+
     public List<PriceVersion> versionsNewestFirst() {
         return versions.stream().sorted(RESOLUTION_ORDER.reversed()).toList();
     }

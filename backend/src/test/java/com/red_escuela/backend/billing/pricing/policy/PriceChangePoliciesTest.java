@@ -28,7 +28,8 @@ class PriceChangePoliciesTest {
 
     private final PricingPolicySetsConfiguration configuration = new PricingPolicySetsConfiguration();
     private final PriceVersionPolicyEvaluator evaluator = new PriceVersionPolicyEvaluator(configuration.priceVersionPolicySet(),
-            configuration.priceChangePolicySet(), configuration.priceVersionCancellationPolicySet());
+            configuration.priceChangePolicySet(), configuration.priceVersionCancellationPolicySet(), configuration.priceProposalPolicySet(),
+            configuration.priceProposalApprovalPolicySet(), configuration.priceProposalRejectionPolicySet());
 
     @Test
     void aChangeStartingYesterdayIsRejectedAsRetroactiveAndTodayOrTomorrowAreAccepted() {
