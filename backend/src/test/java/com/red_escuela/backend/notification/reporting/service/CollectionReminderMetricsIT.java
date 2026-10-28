@@ -162,8 +162,8 @@ class CollectionReminderMetricsIT extends AbstractCreditNoteIT {
 
         JsonNode metric = panel(director, MARCH_2031);
 
-        assertThat(countAt(metric, "emailsSent", 1)).isEqualTo(100);
-        assertThat(countAt(metric, "paidWithin72Hours", 1)).isEqualTo(30);
+        assertThat(countAt(metric, "studentsNotified", 1)).isEqualTo(100);
+        assertThat(countAt(metric, "studentsPaidWithin72Hours", 1)).isEqualTo(30);
         assertThat(seriesOf(metric, "paidWithin72HoursPercent").get("values").get(1).decimalValue()).isEqualByComparingTo("30");
         assertThat(seriesOf(metric, "paidWithin72HoursPercent").get("values").get(0).isNull()).isTrue();
         assertThat(metric.has("goal")).isFalse();
@@ -178,7 +178,7 @@ class CollectionReminderMetricsIT extends AbstractCreditNoteIT {
 
         JsonNode metric = panel(director, MARCH_2031);
 
-        assertThat(countAt(metric, "paidWithin72Hours", 1)).isEqualTo(1);
+        assertThat(countAt(metric, "studentsPaidWithin72Hours", 1)).isEqualTo(1);
     }
 
     @Test

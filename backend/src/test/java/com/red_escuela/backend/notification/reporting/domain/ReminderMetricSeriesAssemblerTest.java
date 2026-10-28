@@ -132,24 +132,43 @@ class ReminderMetricSeriesAssemblerTest {
 
         List<ReminderMetricSeries> series = ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), emails, arrivals);
 
-        assertThat(valuesOf(series, "emailsSent").get(0)).isEqualByComparingTo("100");
-        assertThat(valuesOf(series, "paidWithin72Hours").get(0)).isEqualByComparingTo("30");
+        assertThat(valuesOf(series, "studentsNotified").get(0)).isEqualByComparingTo("100");
+        assertThat(valuesOf(series, "studentsPaidWithin72Hours").get(0)).isEqualByComparingTo("30");
         assertThat(valuesOf(series, "paidWithin72HoursPercent").get(0)).isEqualByComparingTo("30");
         assertThat(valuesOf(series, "paidWithin72HoursPercent").get(1)).isNull();
     }
 
     @Test
-    void eachMailIsJudgedAgainstItsOwnWindowEvenWhenTheSameStudentGotTwoOfThem() {
+    void aStudentWithSeveralMailsInTheMonthCountsOnceAndIsJudgedFromTheFirstMail() {
         Instant firstMail = TENTH_AT_TEN;
         Instant secondMail = Instant.parse("2026-03-20T10:00:00Z");
-        List<SentReminderEmail> emails = List.of(new SentReminderEmail(1L, MARCH, firstMail), new SentReminderEmail(1L, MARCH, secondMail));
+        List<SentReminderEmail> emails = List.of(new SentReminderEmail(1L, MARCH, secondMail), new SentReminderEmail(1L, MARCH, firstMail),
+                new SentReminderEmail(2L, MARCH, firstMail));
+        List<SentReminderEmail> chronological = List.of(new SentReminderEmail(1L, MARCH, firstMail), new SentReminderEmail(1L, MARCH, secondMail),
+                new SentReminderEmail(2L, MARCH, firstMail));
 
-        List<ReminderMetricSeries> series = ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), emails,
+        List<ReminderMetricSeries> paidAfterFirst = ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), emails,
                 Map.of(1L, List.of(Instant.parse("2026-03-11T10:00:00Z"))));
+        List<ReminderMetricSeries> paidOnlyAfterSecond = ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), emails,
+                Map.of(1L, List.of(Instant.parse("2026-03-21T10:00:00Z"))));
 
-        assertThat(valuesOf(series, "emailsSent").get(0)).isEqualByComparingTo("2");
-        assertThat(valuesOf(series, "paidWithin72Hours").get(0)).isEqualByComparingTo("1");
-        assertThat(valuesOf(series, "paidWithin72HoursPercent").get(0)).isEqualByComparingTo("50");
+        assertThat(valuesOf(paidAfterFirst, "studentsNotified").get(0)).isEqualByComparingTo("2");
+        assertThat(valuesOf(paidAfterFirst, "studentsPaidWithin72Hours").get(0)).isEqualByComparingTo("1");
+        assertThat(valuesOf(paidAfterFirst, "paidWithin72HoursPercent").get(0)).isEqualByComparingTo("50");
+        assertThat(valuesOf(paidOnlyAfterSecond, "studentsPaidWithin72Hours").get(0)).isEqualByComparingTo("0");
+        assertThat(valuesOf(ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), chronological,
+                Map.of(1L, List.of(Instant.parse("2026-03-11T10:00:00Z")))), "studentsPaidWithin72Hours").get(0)).isEqualByComparingTo("1");
+        assertThat(valuesOf(ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), chronological,
+                Map.of(1L, List.of(Instant.parse("2026-03-21T10:00:00Z")))), "studentsPaidWithin72Hours").get(0)).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void theSameStudentIsCountedOncePerMonth() {
+        List<SentReminderEmail> emails = List.of(new SentReminderEmail(1L, MARCH, TENTH_AT_TEN), new SentReminderEmail(1L, APRIL, Instant.parse("2026-04-10T10:00:00Z")));
+
+        List<ReminderMetricSeries> series = ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), emails, Map.of());
+
+        assertThat(valuesOf(series, "studentsNotified")).extracting(BigDecimal::intValue).containsExactly(1, 1);
     }
 
     @Test
@@ -158,6 +177,6 @@ class ReminderMetricSeriesAssemblerTest {
 
         List<ReminderMetricSeries> series = ReminderMetricSeriesAssembler.assemble(MARCH_AND_APRIL, List.of(), emails, Map.of());
 
-        assertThat(valuesOf(series, "emailsSent")).extracting(BigDecimal::intValue).containsExactly(0, 0);
+        assertThat(valuesOf(series, "studentsNotified")).extracting(BigDecimal::intValue).containsExactly(0, 0);
     }
 }

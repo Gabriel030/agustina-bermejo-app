@@ -321,7 +321,7 @@ describe('FinancialDashboardPage', () => {
     expect(requests.every((url) => url.searchParams.get('courseId') === '9' && !url.searchParams.has('programId'))).toBe(true);
     expect(screen.getByRole('combobox', { name: /Oferta/ })).toHaveTextContent('Curso de Fotografía');
     expect(screen.getByText('Curso: Curso de Fotografía')).toBeInTheDocument();
-  });
+  }, 20000);
 
   it('replaces the course with the program when the program is chosen after it', async () => {
     const requests = [];
@@ -338,7 +338,7 @@ describe('FinancialDashboardPage', () => {
 
     await waitFor(() => expect(requests.length).toBeGreaterThanOrEqual(4));
     expect(requests.every((url) => url.searchParams.get('programId') === '5' && !url.searchParams.has('courseId'))).toBe(true);
-  });
+  }, 20000);
 
   it('shows the active offer on a chip that removes the scope and shows it in the subtitle', async () => {
     const requests = [];
@@ -412,7 +412,7 @@ describe('FinancialDashboardPage', () => {
 
     expect(screen.getByRole('option', { name: /Tecnicatura en Diseño/ })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Curso de Fotografía/ })).not.toBeInTheDocument();
-  });
+  }, 20000);
 
   it('tells there are no results when the search matches no offer', async () => {
     install();

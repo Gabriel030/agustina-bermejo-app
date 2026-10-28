@@ -20,8 +20,8 @@ public final class ReminderMetricSeriesAssembler {
     public static final String SENT_BY_NOTICE_PREFIX = "sentByNotice.";
     public static final String SUPPRESSED_BY_REASON_PREFIX = "suppressedByReason.";
     public static final String DEFERRED_BY_REASON_PREFIX = "deferredByReason.";
-    public static final String EMAILS_SENT = "emailsSent";
-    public static final String PAID_WITHIN_72_HOURS = "paidWithin72Hours";
+    public static final String STUDENTS_NOTIFIED = "studentsNotified";
+    public static final String STUDENTS_PAID_WITHIN_72_HOURS = "studentsPaidWithin72Hours";
     public static final String PAID_WITHIN_72_HOURS_PERCENT = "paidWithin72HoursPercent";
     public static final String NO_REASON = "UNSPECIFIED";
 
@@ -41,7 +41,7 @@ public final class ReminderMetricSeriesAssembler {
         series.declareCount(SENT).declareCount(SUPPRESSED).declareCount(DEFERRED).declareCount(FAILED);
         Arrays.stream(DeliveryChannel.values()).forEach(channel -> series.declareCount(SENT_BY_CHANNEL_PREFIX + channel));
         Arrays.stream(ReminderNotice.values()).filter(ReminderNotice::isAlwaysReported).forEach(notice -> series.declareCount(SENT_BY_NOTICE_PREFIX + notice));
-        series.declareCount(EMAILS_SENT).declareCount(PAID_WITHIN_72_HOURS).declarePercent(PAID_WITHIN_72_HOURS_PERCENT);
+        series.declareCount(STUDENTS_NOTIFIED).declareCount(STUDENTS_PAID_WITHIN_72_HOURS).declarePercent(PAID_WITHIN_72_HOURS_PERCENT);
     }
 
     private static void tally(ReminderMetricSeriesBuilder series, ReminderDeliveryCount count) {
@@ -68,20 +68,27 @@ public final class ReminderMetricSeriesAssembler {
 
     private static void tallyPaymentFollowUp(ReminderMetricSeriesBuilder series, MonthWindow window, List<SentReminderEmail> sentEmails,
                                              Map<Long, List<Instant>> paymentArrivalsByPerson) {
-        Map<YearMonth, long[]> emailsAndPaidByMonth = new HashMap<>();
+        Map<YearMonth, Map<Long, Instant>> firstMailByStudentAndMonth = new HashMap<>();
         for (SentReminderEmail email : sentEmails) {
-            if (!window.contains(email.month())) {
-                continue;
-            }
-            long[] tally = emailsAndPaidByMonth.computeIfAbsent(email.month(), month -> new long[2]);
-            tally[0]++;
-            if (ReminderPaymentFollowUp.isFollowedByPayment(email.sentAt(), paymentArrivalsByPerson.getOrDefault(email.recipientPersonId(), List.of()))) {
-                tally[1]++;
+            if (window.contains(email.month())) {
+                firstMailByStudentAndMonth.computeIfAbsent(email.month(), month -> new HashMap<>())
+                        .merge(email.recipientPersonId(), email.sentAt(), (first, other) -> other.isBefore(first) ? other : first);
             }
         }
+        Map<YearMonth, long[]> emailsAndPaidByMonth = new HashMap<>();
+        firstMailByStudentAndMonth.forEach((month, firstMails) -> {
+            long[] tally = new long[2];
+            firstMails.forEach((person, firstSentAt) -> {
+                tally[0]++;
+                if (ReminderPaymentFollowUp.isFollowedByPayment(firstSentAt, paymentArrivalsByPerson.getOrDefault(person, List.of()))) {
+                    tally[1]++;
+                }
+            });
+            emailsAndPaidByMonth.put(month, tally);
+        });
         emailsAndPaidByMonth.forEach((month, tally) -> {
-            series.addCount(EMAILS_SENT, month, tally[0]);
-            series.addCount(PAID_WITHIN_72_HOURS, month, tally[1]);
+            series.addCount(STUDENTS_NOTIFIED, month, tally[0]);
+            series.addCount(STUDENTS_PAID_WITHIN_72_HOURS, month, tally[1]);
             Percentage.ratio(tally[1], tally[0]).ifPresent(percentage -> series.putPercent(PAID_WITHIN_72_HOURS_PERCENT, month, percentage));
         });
     }

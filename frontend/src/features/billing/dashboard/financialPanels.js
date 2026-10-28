@@ -97,8 +97,8 @@ export const FINANCIAL_PANELS = [
     basePath: '/notification-metrics',
     tab: 'COLLECTIONS',
     title: 'Avisos de cobranza',
-    subtitle: 'Avisos por estado y % de mails seguidos de un pago dentro de las 72 h',
-    info: 'Se cuenta por aviso, en el mes de su fecha de envío. El porcentaje es de los mails enviados que tuvieron un pago del alumno dentro de las 72 horas siguientes.',
+    subtitle: 'Avisos por estado y % de alumnos que pagó dentro de las 72 h',
+    info: 'Se cuenta por aviso, en el mes de su fecha de envío. El porcentaje cuenta cada alumno una vez por mes: pagó o no dentro de las 72 horas del primer mail que se le envió ese mes.',
     unavailableText: 'Disponible cuando estén los avisos',
     build(metric) {
       const series = [
@@ -117,8 +117,8 @@ export const FINANCIAL_PANELS = [
           ...typed(metric, 'sentByNotice.', NOTICE_LABELS),
           ...typed(metric, 'suppressedByReason.', SUPPRESSION_LABELS),
           ...typed(metric, 'deferredByReason.', DEFERRAL_LABELS),
-          describe(metric, 'emailsSent', 'Mails enviados'),
-          describe(metric, 'paidWithin72Hours', 'Con pago dentro de 72 h'),
+          describe(metric, 'studentsNotified', 'Alumnos avisados por mail'),
+          describe(metric, 'studentsPaidWithin72Hours', 'Alumnos con pago dentro de 72 h'),
         ],
         goal: withGoal(metric, 'right'),
       };
