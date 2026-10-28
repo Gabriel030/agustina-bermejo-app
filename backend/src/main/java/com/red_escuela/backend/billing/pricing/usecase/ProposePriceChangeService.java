@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.pricing.usecase;
 
 import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
-import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
+import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.pricing.domain.MarketingDiscount;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersion;
@@ -26,9 +26,10 @@ public class ProposePriceChangeService implements ProposePriceChangeUseCase {
     }
 
     @Override
-    @PreAuthorize("hasRole('DIRECTOR')")
-    public PriceVersion publishPriceVersion(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason) {
-        ChangePriceCommand command = new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId());
-        return pipeline.runOperation(operation, command).resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
+    public BillingOperationOutcome<PriceVersion> proposeOrPublishPriceVersion(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason) {
+        ChangePriceCommand command = new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId(),
+                actorResolver.currentActorIsDirector());
+        return pipeline.runOperation(operation, command);
     }
 }
