@@ -73,6 +73,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `EmptyState` [shared] | Listas/tablas vacías | `icon`, `title`, `description`, `action` |
 | `NotificationBell` [shared] | Campana con badge de no leídas | — |
 | `Dialog` [ui] | Confirmaciones y acciones breves; no para flujos de varios pasos | compound |
+| `DropdownMenu` `DropdownMenuTrigger` `DropdownMenuContent` `DropdownMenuItem` `DropdownMenuGroup` `DropdownMenuLabel` `DropdownMenuSeparator` [ui] | Menú de acciones por fila (flechas, foco, `disabled` real). Fijar el ancho del contenido con `className="w-72"`: por defecto toma el ancho del trigger | `DropdownMenuItem variant="destructive"` |
 | `ModalMotivo` [domain: director] | Pide un motivo al aprobar/rechazar | `open`, `onClose`, `onConfirmar`, `confirmando`, `requerido` |
 | `*Modal` [domain: gestion-personas] | `AltaPersonalModal`, `EditarPersonalModal`, `DarDeBajaModal`, `DarDeBajaPersonalModal`, `ReactivarPersonalModal`, `ResetPasswordModal` | — |
 
@@ -90,6 +91,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 - **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
 - **director:** `BandejaTramites`.
 - **docente:** `CalendarioConfiguracion`.
+- **billing/payment-reversals:** `StudentPaymentsCard` (card "Pagos del alumno" de la ficha de Facturación del staff), `PaymentActionsMenu`, `ReversalDialog` (contracargo, reversión y revocación con vista previa del impacto), `ReversalImpact`, `PendingRefundsNotice`.
 - **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).
 Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `frontend.md`).
 
