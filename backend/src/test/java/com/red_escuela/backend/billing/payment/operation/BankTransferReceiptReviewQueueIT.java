@@ -173,7 +173,7 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
     @Test
     @Tag("D-268")
     @Tag("D-110")
-    void theStudentsOwnListDoesNotExposeTheReviewerFields() throws Exception {
+    void theStudentsOwnListShowsTheirDeclaredDataAndHidesTheReviewerFields() throws Exception {
         clockAt(MONDAY, 10);
         Debtor debtor = debtor();
         Long invoice = invoiceOf(debtor, "80000.00", LATER_DUE);
@@ -184,6 +184,66 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         JsonNode entry = StreamSupport.stream(bodyOf(result).spliterator(), false).filter(node -> node.get("id").asLong() == submitted.receiptId()).findFirst().orElseThrow();
         assertThat(entry.get("reviewAlertSent").isNull()).isTrue();
         assertThat(entry.get("pendingBusinessDays").isNull()).isTrue();
-        assertThat(entry.get("invoices").isNull()).isTrue();
+        assertThat(entry.get("originAccount").isNull()).isTrue();
+        assertThat(entry.get("holderName").isNull()).isTrue();
+        assertThat(entry.get("reviewAlertSentAt").isNull()).isTrue();
+    }
+
+    @Test
+    @Tag("D-139")
+    void theStudentsOwnListShowsDeclaredAmountOperationDateAndTheCoveredInstallments() throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor debtor = debtor();
+        Long march = invoiceOf(debtor, "50000.00", LATER_DUE);
+        Long april = invoiceOf(debtor, "30000.00", LATER_DUE.plusMonths(1));
+        BankTransferReceiptSubmissionResult submitted = submit(command(debtor, List.of(march, april), "80000.00", MONDAY, "OP-OWN-1"));
+
+        JsonNode entry = ownEntryOf(submitted.receiptId(), studentTokenOf(debtor));
+
+        assertThat(amountOf(entry.get("declaredAmount"))).isEqualByComparingTo("80000.00");
+        assertThat(entry.get("transferDate").asText()).isEqualTo("2027-03-15");
+        assertThat(entry.get("operationNumber").asText()).isEqualTo("OP-OWN-1");
+        assertThat(entry.get("invoices")).hasSize(2);
+        assertThat(entry.get("invoices").get(0).get("invoiceId").asLong()).isEqualTo(march);
+        assertThat(amountOf(entry.get("invoices").get(0).get("totalAmount"))).isEqualByComparingTo("50000.00");
+        assertThat(amountOf(entry.get("invoices").get(0).get("outstandingAtSubmission"))).isEqualByComparingTo("50000.00");
+        assertThat(entry.get("invoices").get(1).get("invoiceId").asLong()).isEqualTo(april);
+        assertThat(amountOf(entry.get("invoices").get(1).get("totalAmount"))).isEqualByComparingTo("30000.00");
+    }
+
+    @Test
+    @Tag("D-139")
+    void aStudentNeverSeesAnotherStudentsReceiptNorItsDeclaredData() throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor owner = debtor();
+        Debtor stranger = debtor();
+        Long invoice = invoiceOf(owner, "80000.00", LATER_DUE);
+        BankTransferReceiptSubmissionResult submitted = submit(command(owner, List.of(invoice), "80000.00", MONDAY, "OP-OWN-SECRET"));
+
+        MvcResult result = mockMvc.perform(get("/me/bank-transfer-receipts").header("Authorization", "Bearer " + studentTokenOf(stranger))).andExpect(status().isOk()).andReturn();
+
+        assertThat(bodyOf(result).toString()).doesNotContain("OP-OWN-SECRET");
+        assertThat(StreamSupport.stream(bodyOf(result).spliterator(), false).anyMatch(node -> node.get("id").asLong() == submitted.receiptId())).isFalse();
+    }
+
+    @Test
+    @Tag("D-139")
+    void aLegacyReceiptInTheStudentsListKeepsItsSingleInvoiceAndNoDeclaredData() throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor debtor = debtor();
+        Long invoice = invoiceOf(debtor, "80000.00", LATER_DUE);
+        BankTransferReceipt legacy = legacyUpload.upload(invoice, debtor.studentId(), new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 legado propio".getBytes()));
+
+        JsonNode entry = ownEntryOf(legacy.getId(), studentTokenOf(debtor));
+
+        assertThat(entry.get("declaredAmount").isNull()).isTrue();
+        assertThat(entry.get("operationNumber").isNull()).isTrue();
+        assertThat(entry.get("invoices")).hasSize(1);
+        assertThat(entry.get("invoices").get(0).get("invoiceId").asLong()).isEqualTo(invoice);
+    }
+
+    private JsonNode ownEntryOf(Long receiptId, String token) throws Exception {
+        MvcResult result = mockMvc.perform(get("/me/bank-transfer-receipts").header("Authorization", "Bearer " + token)).andExpect(status().isOk()).andReturn();
+        return StreamSupport.stream(bodyOf(result).spliterator(), false).filter(node -> node.get("id").asLong() == receiptId).findFirst().orElseThrow();
     }
 }

@@ -2,6 +2,8 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -19,6 +21,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -47,11 +50,14 @@ public class SuspendedEnrollmentClosureService {
     private final ProgramEnrollmentService programEnrollmentService;
     private final Clock clock;
     private final TransactionTemplate requiresNew;
+    private final ApplicationEventPublisher eventPublisher;
 
     public SuspendedEnrollmentClosureService(ProgramEnrollmentRepository programEnrollmentRepository,
                                              ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository, InvoiceRepository invoiceRepository,
                                              ProgramEnrollmentService programEnrollmentService, Clock clock,
-                                             PlatformTransactionManager transactionManager, YearCycleFactory cycleFactory) {
+                                             PlatformTransactionManager transactionManager, YearCycleFactory cycleFactory,
+                                             ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.cycleFactory = cycleFactory;
         this.requiresNew = new TransactionTemplate(transactionManager);
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -99,6 +105,7 @@ public class SuspendedEnrollmentClosureService {
         }
         enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         programEnrollmentService.withdrawForNonpayment(enrollmentId);
+        eventPublisher.publishEvent(new EnrollmentClosedWhileSuspendedEvent(EnrollmentKind.PROGRAM, enrollmentId, today));
         enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());

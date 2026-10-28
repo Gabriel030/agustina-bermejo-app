@@ -42,9 +42,17 @@ public class BankTransferReceiptResponseAssembler {
     }
 
     @Transactional(readOnly = true)
-    public List<BankTransferReceiptResponse> assembleBankTransferReceiptResponses(List<BankTransferReceipt> receipts) {
+    public List<BankTransferReceiptResponse> assembleOwnReceiptResponses(List<BankTransferReceipt> receipts) {
         Map<Long, List<Long>> invoiceIdsByPaymentId = invoiceIdsByPaymentId(receipts);
-        return receipts.stream().map(receipt -> assemble(receipt, invoiceIdsByPaymentId, null)).toList();
+        Map<Long, ReceiptReviewFacts> factsByReceiptId = receiptReviewFacts.findFactsByReceiptId(receipts.stream().map(BankTransferReceipt::getId).toList());
+        Map<Long, List<ReceiptSelectedInvoice>> selectionsByPaymentId = receiptInvoiceIds.findSelectedInvoicesByPaymentId(paymentIdsOf(receipts));
+        Map<Long, Invoice> invoicesById = invoicesById(receipts, selectionsByPaymentId);
+        return receipts.stream().map(receipt -> assemble(receipt, invoiceIdsByPaymentId,
+                ownDetail(reviewDetail(receipt, factsByReceiptId.get(receipt.getId()), selectionsByPaymentId, invoicesById))).withoutReviewAlertState()).toList();
+    }
+
+    private ReceiptReviewDetail ownDetail(ReceiptReviewDetail full) {
+        return new ReceiptReviewDetail(full.declaredAmount(), full.transferDate(), full.operationNumber(), null, null, full.invoices(), null, null);
     }
 
     @Transactional(readOnly = true)

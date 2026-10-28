@@ -178,14 +178,3 @@ export function receiptFileError(file) {
   }
   return null;
 }
-
-const RECEIPT_UPLOAD_ERRORS = {
-  PAYMENT_RECEIPT_ALREADY_PENDING: 'Ya enviaste un comprobante para esta cuota y está en revisión.',
-  UNSUPPORTED_FILE_TYPE: 'El comprobante tiene que ser un PDF, JPG o PNG.',
-  MAX_UPLOAD_SIZE_EXCEEDED: 'El archivo pesa más de 5 MB. Subí uno más liviano.',
-  INVOICE_NOT_PAYABLE: 'Esta cuota ya no admite pagos: puede que ya esté saldada.',
-};
-
-export function receiptUploadErrorMessage(error) {
-  return RECEIPT_UPLOAD_ERRORS[error?.code] ?? error?.message ?? 'No pudimos enviar el comprobante. Probá de nuevo.';
-}

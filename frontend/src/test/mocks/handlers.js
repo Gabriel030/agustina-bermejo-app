@@ -74,6 +74,7 @@ export const handlers = [
   http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
   http.get(`${API}/me/documents`, () => HttpResponse.json([])),
   http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json([])),
+  http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
   http.get(`${API}/payment-config`, () =>
     HttpResponse.json({ bankAlias: null, bankCbu: null, accountHolder: null, qrImageUrl: null, mpEnabled: false }),
   ),

@@ -4,6 +4,7 @@ import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.operation.CollectionsDailySnapshotStep;
+import com.red_escuela.backend.billing.collections.operation.EnrollmentPaymentStandingStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
@@ -42,6 +43,7 @@ public class EnrollmentBillingComplianceSweepService {
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final EnrollmentBillingComplianceRowProcessor rowProcessor;
     private final CollectionsDailySnapshotStep snapshotStep;
+    private final EnrollmentPaymentStandingStep standingStep;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
@@ -50,13 +52,14 @@ public class EnrollmentBillingComplianceSweepService {
                                                      BillingConfigurationReader configurationReader,
                                                      BatchExecutionLogRepository batchExecutionLogRepository,
                                                      EnrollmentBillingComplianceRowProcessor rowProcessor, CollectionsDailySnapshotStep snapshotStep,
-                                                     ObjectMapper objectMapper, Clock clock) {
+                                                     EnrollmentPaymentStandingStep standingStep, ObjectMapper objectMapper, Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.configurationReader = configurationReader;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
         this.snapshotStep = snapshotStep;
+        this.standingStep = standingStep;
         this.objectMapper = objectMapper;
         this.clock = clock;
     }
@@ -139,6 +142,7 @@ public class EnrollmentBillingComplianceSweepService {
             lastProgramEnrollmentId = batch.get(batch.size() - 1).getId();
         }
 
+        evaluateEnrollmentPaymentStanding(today, policy.get());
         long durationMs = System.currentTimeMillis() - start;
         log.info("Barrido de cumplimiento de facturación finalizado: candidatas={}, procesadas={}, fallidas={}, duracion={}ms",
                 candidates, processed, failed, durationMs);
@@ -146,6 +150,14 @@ public class EnrollmentBillingComplianceSweepService {
                 : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         batchExecutionLogRepository.save(new BatchExecutionLog(
                 JOB_NAME, LocalDateTime.now(clock), candidates, processed, failed, durationMs, status, serialize(errors)));
+    }
+
+    private void evaluateEnrollmentPaymentStanding(LocalDate today, LatePaymentTerms terms) {
+        try {
+            standingStep.evaluateEnrollments(today, terms);
+        } catch (RuntimeException e) {
+            log.error("Falló el estado de cobranza nuevo de la fecha {}", today, e);
+        }
     }
 
     private Map<String, Object> errorOf(String enrollmentType, Long id, Exception e) {
