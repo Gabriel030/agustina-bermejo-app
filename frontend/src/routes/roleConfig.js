@@ -19,10 +19,10 @@ export const ROLE_CONFIG = {
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'facturacion', 'descuentos', 'aprobaciones', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica'],
+    pages: ['inicio', 'alumnos', 'personal', 'facturacion', 'descuentos', 'recordatorios-de-pago', 'aprobaciones', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica'],
   },
   director: {
     Layout: DirectorLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'facturacion', 'descuentos', 'financiero'],
+    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'facturacion', 'descuentos', 'recordatorios-de-pago', 'financiero'],
   },
 };
