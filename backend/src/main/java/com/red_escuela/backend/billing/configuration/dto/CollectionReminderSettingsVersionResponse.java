@@ -4,11 +4,13 @@ import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSe
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
 
+import org.springframework.lang.Nullable;
+
 import java.time.LocalDate;
 import java.util.Map;
 
 public record CollectionReminderSettingsVersionResponse(Long id, ConfigurationVersionStatus status, LocalDate effectiveFrom, String changeReason,
-                                                        boolean directPublication, Long proposedById, String proposedByName, Long decidedById, String decidedByName,
+                                                        boolean directPublication, Long proposedById, @Nullable String proposedByName, Long decidedById, @Nullable String decidedByName,
                                                         String decisionReason,
                                                         CollectionReminderSettingsValues values) {
 

@@ -7,11 +7,13 @@ import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedu
 import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 
+import org.springframework.lang.Nullable;
+
 import java.time.LocalDate;
 import java.util.Map;
 
 public record ReminderScheduleVersionResponse(Long id, ConfigurationVersionStatus status, LocalDate effectiveFrom, String changeReason, boolean directPublication,
-                                              Long proposedById, String proposedByName, Long decidedById, String decidedByName,
+                                              Long proposedById, @Nullable String proposedByName, Long decidedById, @Nullable String decidedByName,
                                               String decisionReason, ReminderScheduleDto schedule) {
 
     public static ReminderScheduleVersionResponse from(ConfigurationVersion version, Map<Long, String> authorNames) {

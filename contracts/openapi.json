@@ -1630,7 +1630,7 @@
             "type" : "integer"
           },
           "decidedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "decisionReason" : {
             "type" : "string"
@@ -1651,7 +1651,7 @@
             "type" : "integer"
           },
           "proposedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
@@ -1661,7 +1661,7 @@
             "$ref" : "#/components/schemas/CollectionReminderSettingsValues"
           }
         },
-        "required" : [ "changeReason", "decidedById", "decidedByName", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "proposedByName", "status", "values" ],
+        "required" : [ "changeReason", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "status", "values" ],
         "type" : "object"
       },
       "CompleteRefundRequest" : {
@@ -6904,7 +6904,7 @@
             "type" : "integer"
           },
           "decidedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "decisionReason" : {
             "type" : "string"
@@ -6925,7 +6925,7 @@
             "type" : "integer"
           },
           "proposedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "schedule" : {
             "$ref" : "#/components/schemas/ReminderScheduleDto"
@@ -6935,7 +6935,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "changeReason", "decidedById", "decidedByName", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "proposedByName", "schedule", "status" ],
+        "required" : [ "changeReason", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "schedule", "status" ],
         "type" : "object"
       },
       "ReminderSendingOverridesDto" : {

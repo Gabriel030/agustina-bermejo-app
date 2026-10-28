@@ -42,13 +42,16 @@ class NotificationPreferencesServicesTest {
     }
 
     @Test
-    void onlyTheInAppChannelOfTheDueSoonReminderCannotBeTurnedOff() {
-        for (NotificationEvent event : NotificationEvent.values()) {
-            for (NotificationChannel channel : NotificationChannel.values()) {
-                boolean expected = event == NotificationEvent.PAYMENT_DUE_SOON && channel == NotificationChannel.APP;
-                assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(event, channel)).as(event + "/" + channel).isEqualTo(expected);
-            }
-        }
+    void theInAppChannelOfTheDueSoonReminderCannotBeTurnedOff() {
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.PAYMENT_DUE_SOON, NotificationChannel.APP)).isTrue();
+    }
+
+    @Test
+    void everyOtherEventAndChannelPairCanBeTurnedOff() {
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.PAYMENT_DUE_SOON, NotificationChannel.EMAIL)).isFalse();
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.GRADE_POSTED, NotificationChannel.APP)).isFalse();
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.INVOICE_GENERATED, NotificationChannel.EMAIL)).isFalse();
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.INSTITUTIONAL_NOTICE, NotificationChannel.APP)).isFalse();
     }
 
     @Test
