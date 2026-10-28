@@ -38,6 +38,13 @@ public interface DiscountDefinitionRepository extends JpaRepository<DiscountDefi
             order by d.id""")
     List<Long> findActiveCohortPromotionIdsOfCourse(@Param("courseId") Long courseId);
 
+    @Query("""
+            select d from DiscountDefinition d
+            where d.discountType = com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType.ANNUAL_UPFRONT
+              and d.status = com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus.ACTIVE
+            order by d.id""")
+    List<DiscountDefinition> findActiveAnnualUpfrontDefinitions();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from DiscountDefinition d where d.id = :id")
     Optional<DiscountDefinition> findByIdForUpdate(@Param("id") Long id);
