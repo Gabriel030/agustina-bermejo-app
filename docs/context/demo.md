@@ -1,32 +1,26 @@
 # Entorno demo — base separada con datos de una institución completa
 
-Para mostrar la app, hacer QA funcional o probar pantallas con datos realistas sin tocar la base de desarrollo. Vive en la rama **`demo/seed-data`** (rama reutilizable, no se mergea a develop): para usarlo sobre otra rama, traer sus commits con `git cherry-pick` o rebasear la rama sobre develop.
+Rama **`demo/seed-data-v2`** (sobre develop, nunca se mergea a develop). Base Postgres propia (puerto 5433) y perfil Spring `local,demo`; no toca la base de desarrollo.
 
-## Dos bases locales que no se mezclan
+## Levantarlo (comandos exactos)
 
-| | Base de desarrollo | Base demo |
-|---|---|---|
-| Servicio de `docker-compose.yml` | `postgres` | `postgres-demo` (solo con `--profile demo`) |
-| Puerto / base | `5432` / `agustina_bermejo` | `5433` / `agustina_bermejo_demo` |
-| Volumen | `postgres_data` | `postgres_demo_data` |
-| Perfil de Spring | `local` | `local,demo` |
-| De dónde sale la URL | `DB_URL` (`application.properties`) | `DEMO_DB_URL` (`application-demo.properties`); **ignora `DB_URL` a propósito** |
-
-La separación la decide el perfil: con `demo` activo, `application-demo.properties` pisa la URL de la base, así que un `DB_URL` olvidado en la terminal no puede mandar los datos demo a la base de desarrollo. Sin el perfil `demo`, todo sigue igual que siempre. En producción el perfil `demo` nunca se activa: el seed no existe ahí.
-
-## Levantarlo
-
-Desde la raíz del repo, en una rama que tenga los commits de `demo/seed-data`:
+Docker Desktop tiene que estar corriendo. Desde la raíz del repo:
 
 ```bash
-docker compose --profile demo up -d
+docker compose --profile demo up -d postgres-demo
 cd backend && JWT_SECRET=dev-secret-local SPRING_PROFILES_ACTIVE=local,demo ./mvnw spring-boot:run
 npm --prefix frontend run dev
 ```
 
-El `mvnw` está en `backend/`, no en la raíz. Si el `docker compose` no levanta un contenedor `postgres-demo`, la rama en la que estás no tiene el servicio: cambiá a `demo/seed-data`.
+El `mvnw` está en `backend/`. La primera vez el seed académico tarda entre 6 y 11 minutos (log `Seed demo listo en ... ms`) y después el seed de facturación unos 2-3 minutos más (`Seed demo de facturacion listo en ... ms`); recién ahí hay datos de plata. Las veces siguientes no hace nada. Para empezar de cero: `docker compose --profile demo down` y `docker volume rm <proyecto>_postgres_demo_data`. Para sembrar solo lo académico: `-Dspring-boot.run.jvmArguments=-Ddemo.skip-billing=true`.
 
-La primera vez el seed tarda ~30 s y lo informa en el log (`Seed demo listo en ... ms`). Las veces siguientes no hace nada (`Seed demo: ya hay datos cargados`). Para empezar de cero: `docker compose --profile demo down` y borrar el volumen con `docker volume rm <proyecto>_postgres_demo_data`.
+Login por API: `POST http://localhost:8080/auth/login` con `{"username":"director.demo","password":"Test1234"}` devuelve `accessToken` (usar `Authorization: Bearer ...`).
+
+## Cómo se siembra la facturación (`DemoBillingSeeder`)
+
+Corre como `ApplicationRunner` (orden 200) después del seed académico y usa un reloj de negocio mutable (`DemoClock`, que reemplaza al `Clock` en el perfil `demo`). Recorre marzo a la fecha actual de 2026: cada mes viaja al día 2 y corre `MonthlyInstallmentIssuanceJob.run(YearMonth)`, el día 8 registra pagos en efectivo con `RegisterCashPaymentOperation` a través de `BillingOperationPipeline` (con la vista previa y su fingerprint reales) y el día 20 corre `InvoiceOverdueSweepService.run(fecha)`, que detecta vencidas y genera las notas de débito por mora. Los estados (pagada, vencida, recargo, saldo de cuenta) los calcula el motor; no hay estados fijados a mano.
+
+Por SQL / publicación directa (no hay operación de servicio equivalente sin pasar por autorización o pantalla): las versiones de configuración (mora global y calendario anual por carrera, con `ConfigurationVersion.publish`) y los precios (`price` y `price_version` insertados por SQL, igual que `PriceFixtures` de los tests). Los 6 comportamientos de pago (al día x3, deja de pagar en julio, no paga el último mes, nunca paga) se reparten por orden entre los alumnos con carrera.
 
 ## Qué carga el seed
 
@@ -41,7 +35,7 @@ Código en `backend/src/main/java/com/red_escuela/backend/config/demo/` (`DemoSe
 - **Asistencia:** de todas las cursadas desde 2023, con una cantidad de faltas acorde al resultado (quien promocionó nunca supera el máximo de inasistencias).
 - **Egresos:** la cohorte 2023 completó el plan en 2025: un egresado con certificado y solicitudes de egreso en cada estado. Los egresados dejan de recibir cuotas al terminar el plan.
 - **Excepciones:** salen de casos reales del seed (dispensa de correlativa para quien la tiene sin aprobar, mesa fuera de término para un regular).
-- **Facturación:** 9 perfiles (al día, una cuota vencida, suspendido, pago anticipado, beca, comprobante pendiente, comprobante rechazado, Mercado Pago y promoción). Toda cuota impaga vencida queda vencida con recargo, y el estado de cuenta (al día, moroso o suspendido) se calcula desde las cuotas reales.
+- **Facturación:** ver sección anterior (cuotas de marzo a la fecha, pagos en efectivo, vencidas y recargos).
 - **Casos borde:** lista de espera, nombre muy largo, docente sin comisiones, multirol, aspirante sin rol, entre otros.
 
 ## Auditoría de coherencia
@@ -54,13 +48,25 @@ docker exec -i <proyecto>-postgres-demo-1 psql -U postgres -d agustina_bermejo_d
 
 ## Usuarios (contraseña de todos: `Test1234`)
 
-| Usuario | Para qué |
+| Rol | Usuario |
 |---|---|
-| `alumno.demo` | Lucía Fernández, 3er año del Profesorado de Educación Inicial: 10 de 18 aprobadas (dos recursadas: Pedagogía y Alfabetización Académica), Literatura Infantil regular con el final pendiente, 7 materias en curso (una en riesgo de quedar libre) y una cuota vencida |
-| `docente.demo` | 22 comisiones, configuraciones de evaluación, avisos, asistencia |
-| `preceptor.demo` | Padrón, oferta académica con ciclos en los 4 estados, mesas |
-| `administrativo.demo` | Comprobantes pendientes, cuenta corriente, banco de materias |
-| `director.demo` | Bandeja de aprobaciones cargada y tablero financiero |
-| `aspirante.demo`, `espera.demo`, `nombrelargo.demo`, `docente.sincomisiones`, `multirol.demo` | Casos borde |
+| Director | `director.demo` |
+| Administrativo | `administrativo.demo` |
+| Preceptor | `preceptor.demo` |
+| Docente | `docente.demo` (22 comisiones), `docente.sincomisiones` |
+| Alumno | `alumno.demo` (Lucía Fernández, Profesorado de Educación Inicial) |
+| Casos borde | `aspirante.demo`, `espera.demo`, `nombrelargo.demo`, `multirol.demo` |
 
-Cualquier otra persona del padrón entra con `nombre.apellido` (sin tildes) y `Test1234`; por ejemplo `tomas.aguirre` (mora profunda). El detalle de cada caso borde está en `DemoEdgeCaseSeeder.java`.
+Cualquier persona del padrón entra con `nombre.apellido` (sin tildes) y `Test1234`.
+
+## Guion de demo por rol
+
+**Con datos hoy en esta base** (verificado por API; la UI en navegador NO se verificó en esta corrida):
+
+- Director: tablero financiero con selector de mes (`/billing/metrics/overdue-detected?from=2026-03&to=2026-10` devolvió 8 meses con conteos y montos crecientes; paneles disponibles: issued-invoices, discounts, overdue-detected, late-fees, on-time-payment, receipts, collections-stock). Ficha de alumno > Financiero para ver cuotas pagadas, vencidas y notas de débito por mora (hay unas 200 notas de débito).
+- Administrativo: ficha de alumno > Financiero, registrar pago en efectivo (la vista previa devuelve el fingerprint que exige el registro).
+- Alumno (`alumno.demo` y cualquier otro con carrera): ve sus cuotas; los que dejan de pagar tienen varias vencidas con recargo.
+- Preceptor y docente: lo académico (padrón, oferta, mesas, notas, asistencia).
+
+**NO sembrado en esta corrida (hay que generarlo en vivo o queda pendiente):** transferencias con comprobante (pendientes, aprobadas, rechazadas), pagos online simulados, contracargo y reversión, reembolsos (pedido, aprobado, completado, fallido), pedidos de autorización pendientes para la bandeja del director, notas de crédito, descuentos y promociones de cohorte, avisos de cobranza y lista de contacto de morosos, alumnos de baja con deuda, alertas de configuración, mails simulados. En vivo se pueden mostrar por pantalla: comprobantes (alumno sube, staff aprueba/rechaza), pago en efectivo, reembolso desde ficha del alumno > Financiero. Sin pantalla (contracargos, notas de crédito, descuentos, avisos de cobranza, bandeja de autorizaciones, precios/períodos) hay que usar curl contra los controllers de `billing/*` con el token del director; Swagger no se verificó si está habilitado en el perfil demo.
+

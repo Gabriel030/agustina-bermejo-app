@@ -23,7 +23,6 @@ public class DemoSeedRunner implements ApplicationRunner {
     private final DemoEnrollmentSeeder enrollmentSeeder;
     private final DemoEvaluationSeeder evaluationSeeder;
     private final DemoAttendanceSeeder attendanceSeeder;
-    private final DemoBillingSeeder billingSeeder;
     private final DemoAnnouncementSeeder announcementSeeder;
     private final DemoApprovalSeeder approvalSeeder;
     private final DemoEdgeCaseSeeder edgeCaseSeeder;
@@ -35,7 +34,6 @@ public class DemoSeedRunner implements ApplicationRunner {
             DemoEnrollmentSeeder enrollmentSeeder,
             DemoEvaluationSeeder evaluationSeeder,
             DemoAttendanceSeeder attendanceSeeder,
-            DemoBillingSeeder billingSeeder,
             DemoAnnouncementSeeder announcementSeeder,
             DemoApprovalSeeder approvalSeeder,
             DemoEdgeCaseSeeder edgeCaseSeeder) {
@@ -45,7 +43,6 @@ public class DemoSeedRunner implements ApplicationRunner {
         this.enrollmentSeeder = enrollmentSeeder;
         this.evaluationSeeder = evaluationSeeder;
         this.attendanceSeeder = attendanceSeeder;
-        this.billingSeeder = billingSeeder;
         this.announcementSeeder = announcementSeeder;
         this.approvalSeeder = approvalSeeder;
         this.edgeCaseSeeder = edgeCaseSeeder;
@@ -65,7 +62,6 @@ public class DemoSeedRunner implements ApplicationRunner {
         enrollmentSeeder.seed(dataset);
         evaluationSeeder.seed(dataset);
         attendanceSeeder.seed(dataset);
-        billingSeeder.seed(dataset);
         announcementSeeder.seed(dataset);
         approvalSeeder.seed(dataset);
         edgeCaseSeeder.seed(dataset);

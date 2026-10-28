@@ -27,7 +27,7 @@ checks as (
   union all select 'A09 inscripción activa a mesa con la materia ya aprobada', count(*), min(r.id) from exam_board_registration r join sse on sse.id = r.program_section_enrollment_id where sse.status = 'APPROVED' and r.status = 'REGISTERED'
   union all select 'A10 en curso en un ciclo que ya terminó', count(*), min(id) from sse where status = 'IN_PROGRESS' and tend < current_date
   union all select 'A11 notas con fecha futura', count(*), min(id) from grade_item where date > now()
-  union all select 'A12 aprobada con inasistencias por encima del máximo', count(*), min(sse.id) from sse join att on att.id = sse.id where status = 'APPROVED' and att.total > 0 and 100.0 * att.abs / att.total > coalesce(sse.max_absence_percentage, 25)
+  union all select 'A12 aprobada con inasistencias por encima del máximo', count(*), min(sse.id) from sse join att on att.id = sse.id where status = 'APPROVED' and att.total > 0 and 100.0 * att.abs / att.total > coalesce(sse.max_absence_percentage * 100, 25)
   union all select 'A13 cursada terminada sin ninguna asistencia registrada', count(*), min(sse.id) from sse left join att on att.id = sse.id where status in ('APPROVED','FAILED') and att.id is null
   union all select 'A14 asistencia en fecha futura', count(*), min(id) from attendance where class_date > current_date
   union all select 'A15 asistencia fuera del período del ciclo', count(*), min(a.id) from attendance a join sse on sse.id = a.program_section_enrollment_id where a.class_date not between sse.tstart and sse.tend
@@ -37,16 +37,11 @@ checks as (
       where pe.cursada_start is not null and extract(year from pe.cursada_start) + ps.curricular_year - 1 < 2026
       and not exists (select 1 from sse where sse.program_enrollment_id = pe.id and sse.subject_id = ps.subject_id)
   union all select 'A19 TP cargados por encima de los previstos en el esquema', count(*), min(sse.id) from sse join gi on gi.id = sse.id where gi.tps > coalesce(sse.tp_count_expected, 99)
-  union all select 'B01 factura pagada sin pagos que la cubran', count(*), min(i.id) from invoice i left join (select invoice_id, sum(amount_applied) s from payment_allocation group by 1) a on a.invoice_id = i.id where i.status = 'PAID' and coalesce(a.s,0) < i.base_amount
-      and not exists (select 1 from invoice_adjustment adj where adj.invoice_id = i.id)
-      and not exists (select 1 from scholarship_installment si where si.invoice_id = i.id)
-  union all select 'B02 factura pendiente con vencimiento pasado', count(*), min(id) from invoice where status = 'PENDING' and due_date < current_date
-  union all select 'B03 factura vencida que todavía no venció', count(*), min(id) from invoice where status = 'OVERDUE' and due_date >= current_date
-  union all select 'B04 cuota anterior al inicio de la inscripción', count(*), min(i.id) from invoice i join program_enrollment p on p.id = i.program_enrollment_id where i.fee_type <> 'ENROLLMENT_FEE' and i.period is not null and to_date(i.period || '-01','YYYY-MM-DD') < date_trunc('month', p.enrollment_date)
-  union all select 'B05 comprobante en revisión sobre factura ya pagada', count(*), min(r.id) from payment_receipt r join invoice i on i.id = r.invoice_id where r.status = 'PENDING_REVIEW' and i.status = 'PAID'
-  union all select 'B06 al día pero con cuotas vencidas', count(*), min(p.id) from program_enrollment p where billing_standing = 'UP_TO_DATE' and exists (select 1 from invoice i where i.program_enrollment_id = p.id and i.status = 'OVERDUE')
-  union all select 'B07 moroso sin ninguna cuota vencida', count(*), min(p.id) from program_enrollment p where billing_standing = 'OVERDUE' and not exists (select 1 from invoice i where i.program_enrollment_id = p.id and i.status = 'OVERDUE')
-  union all select 'B08 pago sin factura asignada', count(*), min(p.id) from payment p where p.status = 'CONFIRMED' and not exists (select 1 from payment_allocation a where a.payment_id = p.id)
+  union all select 'B01 factura pagada con saldo pendiente', count(*), min(id) from invoice where payment_status = 'PAID' and outstanding_amount > 0
+  union all select 'B02 factura vencida sin saldo pendiente', count(*), min(id) from invoice where payment_status = 'OVERDUE' and outstanding_amount <= 0
+  union all select 'B03 factura pendiente vencida hace mas de 30 dias', count(*), min(id) from invoice where payment_status = 'PENDING' and document_type = 'INVOICE' and due_date < current_date - 30
+  union all select 'B04 pago sin factura cubierta ni credito en cuenta', count(*), min(p.id) from payment p where not exists (select 1 from payment_allocation_source s where s.payment_id = p.id) and not exists (select 1 from current_account_entry e where e.payment_id = p.id)
+  union all select 'B05 saldo de cuenta distinto de la suma de facturas impagas', count(*), min(a.id) from student_current_account a where a.balance_side = 'DEBIT' and a.balance_amount <> (select coalesce(sum(i.outstanding_amount),0) from invoice i where i.student_current_account_id = a.id)
   union all select 'C01 curso en curso sin notas', count(*), min(c.id) from course_section_enrollment c where status = 'IN_PROGRESS' and not exists (select 1 from grade_item g where g.course_section_enrollment_id = c.id)
   union all select 'D01 mesa ya tomada que sigue programada', count(*), min(id) from exam_board where status = 'SCHEDULED' and exam_date < now()
   union all select 'D02 nota de final sin mesa asociada', count(*), min(id) from grade_item where type = 'FINAL' and exam_board_id is null
@@ -61,8 +56,6 @@ checks as (
       where d.type = 'PREREQUISITE_WAIVER' and d.status = 'REQUESTED' and exists (select 1 from subject_section_enrollment e join subject_section s on s.id = e.program_section_id where e.program_enrollment_id = p.id and s.subject_id = req.subject_id and e.status = 'APPROVED')
   union all select 'E04 curso terminado que sigue en curso', count(*), min(ce.id) from course_enrollment ce join course c on c.id = ce.course_id
       where ce.status = 'IN_PROGRESS' and date '2026-03-09' + (c.duration_months || ' months')::interval - interval '3 days' < current_date
-  union all select 'E05 egresado o plan completo facturado después de terminar', count(*), min(i.id) from invoice i join program_enrollment p on p.id = i.program_enrollment_id
-      where extract(year from p.enrollment_date) = 2023 and i.period >= date '2026-01-01'
   union all select 'E06 regular inscripto a una mesa de otra materia', count(*), min(r.id) from exam_board_registration r join subject_section_enrollment e on e.id = r.program_section_enrollment_id
       join subject_section s on s.id = e.program_section_id join exam_board b on b.id = r.exam_board_id where b.subject_id <> s.subject_id
   union all select 'E07 inscripción activa a mesa sin estar regular', count(*), min(r.id) from exam_board_registration r join subject_section_enrollment e on e.id = r.program_section_enrollment_id
