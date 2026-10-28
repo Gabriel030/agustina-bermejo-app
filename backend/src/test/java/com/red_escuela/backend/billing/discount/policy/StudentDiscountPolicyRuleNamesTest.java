@@ -12,7 +12,7 @@ class StudentDiscountPolicyRuleNamesTest {
     @Test
     void everyDiscountPolicyReportsItsClassNameAsRuleName() {
         List<Policy<?>> policies = List.of(
-                new DiscountDefinitionCoherencePolicy(), new DiscountAvailabilityPeriodPolicy(), new DiscountScopeMatchesTypePolicy(),
+                new DiscountDefinitionCoherencePolicy(), new DiscountAvailabilityPeriodPolicy(), new DiscountScopeMatchesTypePolicy(), new CohortPromotionTermsPolicy(),
                 new ScholarshipOnlyForMonthlyInstallmentsPolicy(), new DiscountTypeAvailableInCatalogPolicy(), new InstallmentCountOnlyForMonthlyInstallmentsPolicy(),
                 new DiscountCurrencyMatchesOfferingPolicy(), new DiscountClosureReasonRequiredPolicy(), new StudentDiscountCoherencePolicy(), new ProposalNotExpiredPolicy(),
                 new StudentDiscountDefinitionPolicy(), new StudentDiscountInvoiceTypePolicy(), new StudentDiscountPeriodRangePolicy(), new StudentDiscountCurrencyPolicy(),

@@ -126,8 +126,8 @@ class DiscountDefinitionPoliciesTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = InvoiceType.class, names = {"ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "ANNUAL_UPFRONT", "MONTHLY_INSTALLMENT"})
-    void everyInvoiceTypeExceptLateFeeIsAccepted(InvoiceType invoiceType) {
+    @EnumSource(value = InvoiceType.class, names = {"ENROLLMENT_FEE", "RETAKEN_SUBJECT_FEE", "MONTHLY_INSTALLMENT"})
+    void everyPromotableInvoiceTypeIsAccepted(InvoiceType invoiceType) {
         DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().forInvoiceType(invoiceType).withoutInstallments().build();
 
         assertThat(violationsOf(draft)).isEmpty();
@@ -225,9 +225,35 @@ class DiscountDefinitionPoliciesTest {
     }
 
     @Test
-    void anOpenEnrollmentWindowIsAccepted() {
-        assertThat(violationsOf(DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(LocalDate.of(2031, 3, 10), null).build())).isEmpty();
-        assertThat(violationsOf(DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(null, LocalDate.of(2031, 3, 10)).build())).isEmpty();
+    @Tag("D-432")
+    @Tag("D-433")
+    void aCohortPromotionWithoutTheWholeEnrollmentWindowIsRejected() {
+        DiscountDefinitionDraft openEnded = DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(LocalDate.of(2031, 3, 10), null).build();
+        DiscountDefinitionDraft openStarted = DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(null, LocalDate.of(2031, 3, 10)).build();
+        DiscountDefinitionDraft withoutWindow = DiscountDraftBuilder.cohortPromotion().withEnrollmentWindow(null, null).build();
+
+        assertThat(violationsOf(openEnded)).extracting(PolicyViolation::message).containsExactly("La promoción de cohorte necesita la ventana de inscripción completa, con su inicio y su fin.");
+        assertThat(codesOf(violationsOf(openStarted))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+        assertThat(codesOf(violationsOf(withoutWindow))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+    }
+
+    @ParameterizedTest
+    @Tag("D-432")
+    @Tag("D-326")
+    @Tag("D-433")
+    @EnumSource(value = InvoiceType.class, names = {"EXAM_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "ANNUAL_UPFRONT"})
+    void aCohortPromotionOnAnyChargeOtherThanInstallmentEnrollmentOrRetakenSubjectIsRejected(InvoiceType invoiceType) {
+        DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().forInvoiceType(invoiceType).withoutInstallments().build();
+
+        assertThat(codesOf(violationsOf(draft))).contains("INVALID_DISCOUNT_DEFINITION");
+        assertThat(violationsOf(draft)).extracting(PolicyViolation::message).contains("La promoción de cohorte solo aplica a la cuota mensual, la matrícula o la materia recursada.");
+    }
+
+    @Test
+    @Tag("D-432")
+    void theTermsOfACohortPromotionDoNotRestrictTheOtherDiscountTypes() {
+        assertThat(violationsOf(DiscountDraftBuilder.scholarship().build())).isEmpty();
+        assertThat(violationsOf(DiscountDraftBuilder.annualUpfront().build())).isEmpty();
     }
 
     @Test
@@ -237,7 +263,7 @@ class DiscountDefinitionPoliciesTest {
         DiscountDefinitionDraft course = DiscountDraftBuilder.cohortPromotion().forCourse(2L).build();
         DiscountDefinitionDraft both = new DiscountDefinitionDraft(program.name(), program.discountType(), program.applicableInvoiceType(), program.calculation(),
                 program.installmentsTotal(), program.availableFrom(), program.availableUntil(), program.priority(), program.capPerInvoice(), 1L, null, 2L,
-                null, null, null);
+                program.enrollmentWindowFrom(), program.enrollmentWindowTo(), null);
 
         assertThat(codesOf(violationsOf(none))).containsExactly("INVALID_DISCOUNT_DEFINITION");
         assertThat(violationsOf(program)).isEmpty();
@@ -282,14 +308,14 @@ class DiscountDefinitionPoliciesTest {
 
     @Test
     void aCohortEntryTypeIsNotInTheCatalog() {
-        DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().ofType(DiscountDefinitionType.COHORT_ENTRY).withoutScope().build();
+        DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().ofType(DiscountDefinitionType.COHORT_ENTRY).withoutScope().withEnrollmentWindow(null, null).build();
 
         assertThat(codesOf(violationsOf(draft))).containsExactly("DISCOUNT_TYPE_NOT_IN_CATALOG");
     }
 
     @Test
     void thePaymentMethodTypeIsNotOfferedUntilItsMechanismIsDecided() {
-        DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().ofType(DiscountDefinitionType.PAYMENT_METHOD).withoutScope().build();
+        DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().ofType(DiscountDefinitionType.PAYMENT_METHOD).withoutScope().withEnrollmentWindow(null, null).build();
 
         assertThat(codesOf(violationsOf(draft))).containsExactly("DISCOUNT_TYPE_NOT_IN_CATALOG");
     }
