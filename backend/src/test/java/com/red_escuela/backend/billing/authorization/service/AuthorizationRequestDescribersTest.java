@@ -1,9 +1,11 @@
 package com.red_escuela.backend.billing.authorization.service;
 
+import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationChangeAuthorizationRequestDescriber;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationChangeRowsAssembler;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentKind;
@@ -33,6 +35,7 @@ import com.red_escuela.backend.billing.note.service.InvoiceBriefReader;
 import com.red_escuela.backend.billing.note.service.InvoiceBriefReader.InvoiceBrief;
 import com.red_escuela.backend.billing.note.service.WithdrawalCancellationAuthorizationRequestDescriber;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription;
+import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.ChangeRow;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DescriptionLine;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DetailBlockType;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.EffectTone;
@@ -193,12 +196,53 @@ class AuthorizationRequestDescribersTest {
         ChangeBillingConfigurationCommand command = new ChangeBillingConfigurationCommand(new ConfigurationTopic(ConfigurationScope.LATE_PAYMENT, null, null, null, null), null,
                 LocalDate.of(2026, 12, 1), " Nuevo recargo ", 3L, false);
 
-        AuthorizationRequestDescription description = new BillingConfigurationChangeAuthorizationRequestDescriber().describe(command, 18L);
+        AuthorizationRequestDescription description = new BillingConfigurationChangeAuthorizationRequestDescriber(mock(BillingConfigurationChangeRowsAssembler.class)).describe(command, 18L);
 
         assertThat(description.summary()).isEqualTo("Cambio de recargo por mora");
         assertThat(valuesOf(description)).containsEntry("Configuración", "Recargo por mora").containsEntry("Vigente desde", "01/12/2026")
                 .containsEntry("Motivo del cambio", "Nuevo recargo");
         assertThat(description.effectLines().get(0).text()).isEqualTo("La nueva configuración rige desde el 01/12/2026.");
+        assertThat(description.detailBlock().type()).isEqualTo(DetailBlockType.NONE);
+    }
+
+    @Test
+    void aConfigurationChangeCarriesTheTodayVersusNewRowsInTheChangeBlock() {
+        BillingConfigurationChangeRowsAssembler rowsAssembler = mock(BillingConfigurationChangeRowsAssembler.class);
+        ChangeBillingConfigurationCommand command = new ChangeBillingConfigurationCommand(new ConfigurationTopic(ConfigurationScope.ALLOCATION, null, null, null, null),
+                new AllocationSettings(true), LocalDate.of(2026, 12, 1), "Motivo", 3L, false);
+        List<ChangeRow> rows = List.of(new ChangeRow("Aplicar el saldo a favor automáticamente", "No", "Sí", "Cambia"));
+        when(rowsAssembler.assembleRows(command)).thenReturn(rows);
+
+        AuthorizationRequestDescription description = new BillingConfigurationChangeAuthorizationRequestDescriber(rowsAssembler).describe(command, 18L);
+
+        assertThat(description.detailBlock().type()).isEqualTo(DetailBlockType.CHANGE);
+        assertThat(description.detailBlock().changeRows()).isEqualTo(rows);
+        assertThat(description.detailBlock().refundParts()).isEmpty();
+    }
+
+    @Test
+    void aConfigurationChangeThatCannotBeComparedKeepsItsDescriptionWithoutATableAndNeverShowsThePayload() {
+        BillingConfigurationChangeRowsAssembler rowsAssembler = mock(BillingConfigurationChangeRowsAssembler.class);
+        ChangeBillingConfigurationCommand command = new ChangeBillingConfigurationCommand(new ConfigurationTopic(ConfigurationScope.ALLOCATION, null, null, null, null),
+                new AllocationSettings(true), LocalDate.of(2026, 12, 1), "Motivo", 3L, false);
+        when(rowsAssembler.assembleRows(command)).thenThrow(new IllegalStateException("autoApplyCreditBalance=true"));
+
+        AuthorizationRequestDescription description = new BillingConfigurationChangeAuthorizationRequestDescriber(rowsAssembler).describe(command, 18L);
+
+        assertThat(description.detailBlock().type()).isEqualTo(DetailBlockType.NONE);
+        assertThat(description.detailBlock().changeRows()).isEmpty();
+        assertThat(valuesOf(description)).containsEntry("Configuración", "Imputación de pagos").containsEntry("Vigente desde", "01/12/2026");
+        assertThat(description.toString()).doesNotContain("autoApplyCreditBalance");
+    }
+
+    @Test
+    void aConfigurationChangeWithoutAnyDifferenceToShowHasNoTable() {
+        BillingConfigurationChangeRowsAssembler rowsAssembler = mock(BillingConfigurationChangeRowsAssembler.class);
+        ChangeBillingConfigurationCommand command = new ChangeBillingConfigurationCommand(new ConfigurationTopic(ConfigurationScope.ALLOCATION, null, null, null, null),
+                new AllocationSettings(true), LocalDate.of(2026, 12, 1), "Motivo", 3L, false);
+        when(rowsAssembler.assembleRows(command)).thenReturn(List.of());
+
+        assertThat(new BillingConfigurationChangeAuthorizationRequestDescriber(rowsAssembler).describe(command, 18L).detailBlock().type()).isEqualTo(DetailBlockType.NONE);
     }
 
     @Test

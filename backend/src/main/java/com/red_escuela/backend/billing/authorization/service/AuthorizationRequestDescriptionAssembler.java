@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.operation.AuthorizationRequestDescriber;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DescriptionLine;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DetailBlock;
+import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription.DetailBlockType;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.BillingOperations;
@@ -41,7 +42,11 @@ public class AuthorizationRequestDescriptionAssembler {
     public AuthorizationRequestDescription describe(AuthorizationRequest request) {
         AuthorizationRequestDescription description = describeOperation(request);
         return request.isPending() ? description : new AuthorizationRequestDescription(description.summary(), description.studentName(), description.amount(),
-                description.requestLines(), List.of(), description.detailBlock());
+                description.requestLines(), List.of(), withoutComparison(description.detailBlock()));
+    }
+
+    private static DetailBlock withoutComparison(DetailBlock block) {
+        return block.type() == DetailBlockType.CHANGE ? DetailBlock.none() : block;
     }
 
     private AuthorizationRequestDescription describeOperation(AuthorizationRequest request) {
