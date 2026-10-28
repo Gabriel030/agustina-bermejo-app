@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   usePreferenciasNotificaciones,
   useActualizarPreferenciasNotificaciones,
@@ -35,19 +35,33 @@ const ALWAYS_ON_COLLECTION_ROWS = [
   'Resumen mensual tras una baja con deuda',
 ];
 
+const ALWAYS_ON_CAPTION = 'Siempre activo, no se puede apagar';
 const LOCK_TEXT = 'Este aviso es obligatorio: no se puede desactivar.';
 
 function LockedMark({ label }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span role="img" aria-label={`${label}: ${LOCK_TEXT}`} className="inline-flex items-center gap-1.5 text-ink-faint">
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`${label}: ${LOCK_TEXT}`}
+          className="inline-flex items-center gap-1.5 rounded-md p-1 text-ink-faint hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <Lock className="size-3.5" />
           <span className="hidden text-xs sm:inline">Siempre activo</span>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{LOCK_TEXT}</TooltipContent>
-    </Tooltip>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-60 bg-dialog-bg p-3 text-xs text-ink-soft text-pretty">{LOCK_TEXT}</PopoverContent>
+    </Popover>
+  );
+}
+
+function NotificationName({ children, alwaysOn }) {
+  return (
+    <TableCell className="whitespace-normal text-ink">
+      {children}
+      {alwaysOn && <span className="mt-0.5 block text-xs text-ink-faint sm:hidden">{ALWAYS_ON_CAPTION}</span>}
+    </TableCell>
   );
 }
 
@@ -120,7 +134,7 @@ export function NotificationMatrix() {
 
   const renderRow = (event) => (
     <TableRow key={event}>
-      <TableCell className="whitespace-normal text-ink">{EVENT_LABELS[event]}</TableCell>
+      <NotificationName alwaysOn={CHANNELS.every((channel) => isLocked(event, channel))}>{EVENT_LABELS[event]}</NotificationName>
       {CHANNELS.map((channel) => (
         <ChannelCell
           key={channel}
@@ -136,55 +150,53 @@ export function NotificationMatrix() {
   );
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col gap-4">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Notificación</TableHead>
+    <div className="flex flex-col gap-4">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Notificación</TableHead>
+              {CHANNELS.map((channel) => (
+                <TableHead key={channel} className="text-center">
+                  {CHANNEL_LABELS[channel]}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <SectionRow title="Cobranza" />
+            {renderRow(COLLECTION_EVENT)}
+            {ALWAYS_ON_COLLECTION_ROWS.map((label) => (
+              <TableRow key={label}>
+                <NotificationName alwaysOn>{label}</NotificationName>
                 {CHANNELS.map((channel) => (
-                  <TableHead key={channel} className="text-center">
-                    {CHANNEL_LABELS[channel]}
-                  </TableHead>
+                  <TableCell key={channel} className="text-center">
+                    <LockedMark label={`${label} — ${CHANNEL_LABELS[channel]}`} />
+                  </TableCell>
                 ))}
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              <SectionRow title="Cobranza" />
-              {renderRow(COLLECTION_EVENT)}
-              {ALWAYS_ON_COLLECTION_ROWS.map((label) => (
-                <TableRow key={label}>
-                  <TableCell className="whitespace-normal text-ink">{label}</TableCell>
-                  {CHANNELS.map((channel) => (
-                    <TableCell key={channel} className="text-center">
-                      <LockedMark label={`${label} — ${CHANNEL_LABELS[channel]}`} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-              <SectionRow title="General" />
-              {GENERAL_EVENTS.map(renderRow)}
-            </TableBody>
-          </Table>
-        </div>
-        {emailOffForCollection && (
-          <p role="status" className="rounded-xl bg-neutral-bg px-3 py-2 text-xs text-ink-soft">
-            Si apagás el mail, no te escribimos antes del vencimiento de cada cuota. Vas a seguir viendo el aviso en la app y
-            vas a recibir por mail los avisos de cuota vencida y de deuda.
-          </p>
-        )}
-        {pending !== null && (
-          <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setPending(null)} disabled={update.isPending}>
-              Cancelar
-            </Button>
-            <Button size="sm" variant="gradient" onClick={save} loading={update.isPending}>
-              Guardar
-            </Button>
-          </div>
-        )}
+            ))}
+            <SectionRow title="General" />
+            {GENERAL_EVENTS.map(renderRow)}
+          </TableBody>
+        </Table>
       </div>
-    </TooltipProvider>
+      {emailOffForCollection && (
+        <p role="status" className="rounded-xl bg-neutral-bg px-3 py-2 text-xs text-ink-soft">
+          Si apagás el mail, no te escribimos antes del vencimiento de cada cuota. Vas a seguir viendo el aviso en la app y
+          vas a recibir por mail los avisos de cuota vencida y de deuda.
+        </p>
+      )}
+      {pending !== null && (
+        <div className="flex items-center justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setPending(null)} disabled={update.isPending}>
+            Cancelar
+          </Button>
+          <Button size="sm" variant="gradient" onClick={save} loading={update.isPending}>
+            Guardar
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
