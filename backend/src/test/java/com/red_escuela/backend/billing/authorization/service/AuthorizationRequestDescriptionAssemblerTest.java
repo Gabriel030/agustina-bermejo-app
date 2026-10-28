@@ -95,6 +95,28 @@ class AuthorizationRequestDescriptionAssemblerTest {
     }
 
     @Test
+    void aDecidedRequestDropsTheTodayVersusNewTableBecauseTodayNoLongerIsWhatWasInForceWhenItWasAskedButKeepsTheRefundParts() {
+        AuthorizationRequestDescription withTable = new AuthorizationRequestDescription("Cambio", null, null, List.of(), List.of(),
+                DetailBlock.change(List.of(new AuthorizationRequestDescription.ChangeRow("Plazo", "1 día", "2 días", "+1 día"))));
+        AuthorizationRequestDescription withParts = new AuthorizationRequestDescription("Reembolso", null, null, List.of(), List.of(),
+                DetailBlock.refundParts(List.of(new AuthorizationRequestDescription.RefundPartLine(1L, 2L, "CASH", "APPROVED", null, null, null))));
+        AuthorizationRequestDescriptionAssembler assembler = new AuthorizationRequestDescriptionAssembler(List.of(
+                describerOf(BillingOperationType.CHANGE_BILLING_CONFIGURATION, context -> withTable), describerOf(BillingOperationType.ISSUE_REFUND, context -> withParts)),
+                operations, objectMapper);
+        Person decider = new Person();
+        decider.setId(4L);
+        AuthorizationRequest pendingChange = requestOf(BillingOperationType.CHANGE_BILLING_CONFIGURATION, "{\"name\":\"x\"}");
+        AuthorizationRequest rejectedChange = requestOf(BillingOperationType.CHANGE_BILLING_CONFIGURATION, "{\"name\":\"x\"}");
+        rejectedChange.reject(decider, "No corresponde", Instant.parse("2026-10-21T10:00:00Z"));
+        AuthorizationRequest rejectedRefund = requestOf(BillingOperationType.ISSUE_REFUND, "{\"name\":\"x\"}");
+        rejectedRefund.reject(decider, "No corresponde", Instant.parse("2026-10-21T10:00:00Z"));
+
+        assertThat(assembler.describe(pendingChange).detailBlock().changeRows()).hasSize(1);
+        assertThat(assembler.describe(rejectedChange).detailBlock().type()).isEqualTo(AuthorizationRequestDescription.DetailBlockType.NONE);
+        assertThat(assembler.describe(rejectedRefund).detailBlock().refundParts()).hasSize(1);
+    }
+
+    @Test
     void anOperationWithoutDescriberGetsTheGenericDescriptionMadeOfItsLabelAndReason() {
         AuthorizationRequestDescriptionAssembler assembler = new AuthorizationRequestDescriptionAssembler(List.of(), operations, objectMapper);
 
