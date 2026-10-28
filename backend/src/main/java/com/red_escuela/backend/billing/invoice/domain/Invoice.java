@@ -59,7 +59,7 @@ import java.util.Optional;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Invoice {
 
-    private static final int MAX_ANNUAL_UPFRONT_LINES = 10;
+    public static final int MAX_ANNUAL_UPFRONT_LINES = 10;
     private static final int MAX_DISCARD_REASON_LENGTH = 500;
 
     @Id

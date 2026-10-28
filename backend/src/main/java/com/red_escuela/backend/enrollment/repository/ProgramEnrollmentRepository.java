@@ -48,6 +48,14 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     @Query("select e from ProgramEnrollment e where e.id = :id")
     java.util.Optional<ProgramEnrollment> findByIdForUpdate(@Param("id") Long id);
 
+    @Query("""
+            select count(e) > 0 from ProgramEnrollment e
+            where e.id = :id and e.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED
+              and e.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED,
+                                          com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+            """)
+    boolean isEnrolledAndNotSuspendedForNonPayment(@Param("id") Long id);
+
     interface BillingTemplateRef {
         Long getProgramId();
 
