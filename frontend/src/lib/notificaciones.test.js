@@ -12,9 +12,19 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.COLLECTION_REMINDER).toBe('warning');
   });
 
+  it('etiqueta y da tono a la lista de alumnos para contactar', () => {
+    expect(TIPO_NOTIFICACION_LABEL.OVERDUE_CONTACT_LIST_UPDATED).toBe('Alumnos para contactar');
+    expect(TONO_NOTIFICACION.OVERDUE_CONTACT_LIST_UPDATED).toBe('warning');
+  });
+
   it('etiqueta y da tono al aviso de correccion de recargo fuera de plazo', () => {
     expect(TIPO_NOTIFICACION_LABEL.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW).toBe('Corrección de recargo fuera de plazo');
     expect(TONO_NOTIFICACION.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW).toBe('danger');
+  });
+
+  it('etiqueta y da tono a la alerta de comprobante sin revisar', () => {
+    expect(TIPO_NOTIFICACION_LABEL.PAYMENT_RECEIPT_REVIEW_OVERDUE).toBe('Comprobante sin revisar');
+    expect(TONO_NOTIFICACION.PAYMENT_RECEIPT_REVIEW_OVERDUE).toBe('warning');
   });
 
   it('todo tipo con etiqueta tiene tono', () => {

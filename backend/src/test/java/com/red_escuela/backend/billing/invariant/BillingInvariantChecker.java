@@ -16,6 +16,7 @@ public final class BillingInvariantChecker {
     private final long baselineAccountId;
     private final long baselineEntryId;
     private final long baselineReminderId;
+    private final long baselineDeliveryId;
 
     private static final String ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES =
             "(a.id > ? or exists (select 1 from current_account_entry x where x.student_current_account_id = a.id and x.id > ?))";
@@ -24,7 +25,8 @@ public final class BillingInvariantChecker {
             "(i.id > ? or exists (select 1 from student_current_account a where a.id = i.student_current_account_id and "
                     + ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES + "))";
 
-    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId, long baselineReminderId) {
+    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId, long baselineReminderId,
+                                      long baselineDeliveryId) {
         this.jdbc = jdbc;
         this.baselineEnrollmentId = baselineEnrollmentId;
         this.baselineInvoiceId = baselineInvoiceId;
@@ -32,6 +34,7 @@ public final class BillingInvariantChecker {
         this.baselineAccountId = baselineAccountId;
         this.baselineEntryId = baselineEntryId;
         this.baselineReminderId = baselineReminderId;
+        this.baselineDeliveryId = baselineDeliveryId;
     }
 
     public static BillingInvariantChecker startingNow(JdbcTemplate jdbc) {
@@ -41,7 +44,8 @@ public final class BillingInvariantChecker {
         Long maxAccount = jdbc.queryForObject("select coalesce(max(id), 0) from student_current_account", Long.class);
         Long maxEntry = jdbc.queryForObject("select coalesce(max(id), 0) from current_account_entry", Long.class);
         Long maxReminder = jdbc.queryForObject("select coalesce(max(id), 0) from collection_reminder", Long.class);
-        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry, maxReminder);
+        Long maxDelivery = jdbc.queryForObject("select coalesce(max(id), 0) from notification_delivery", Long.class);
+        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry, maxReminder, maxDelivery);
     }
 
     public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlot() {
@@ -129,7 +133,7 @@ public final class BillingInvariantChecker {
                 {"invoice_line", "discount_amount"}, {"invoice_line", "credited_amount"}, {"invoice_discount", "base_amount"},
                 {"invoice_discount", "discount_amount"}, {"student_current_account", "balance_amount"},
                 {"student_current_account", "unallocated_credit_amount"}, {"current_account_entry", "amount"},
-                {"current_account_entry", "running_balance_amount"}};
+                {"current_account_entry", "running_balance_amount"}, {"refund", "amount"}};
         for (String[] column : columns) {
             found.addAll(violations("I-06 negative amount in " + column[0] + "." + column[1],
                     "select '" + column[0] + " ' || id from " + column[0] + " where " + column[1] + " < 0"));
@@ -212,6 +216,42 @@ public final class BillingInvariantChecker {
                         where c.invoice_id = i.id and c.status_kind = 'DOCUMENT' and c.from_status is null and c.to_status = 'DRAFT')
                 """, baselineInvoiceId, baselineAccountId, baselineEntryId));
         return found;
+    }
+
+    public List<String> refundedAmountOfEveryPaymentEqualsItsCompletedRefunds() {
+        return violations("I-21 refunded amount of a payment differs from the sum of its completed refunds", """
+                select 'payment ' || p.id
+                from payment p join student_current_account a on a.id = p.student_current_account_id
+                where @ACCOUNTS@ and exists (select 1 from refund r where r.payment_id = p.id)
+                  and p.refunded_amount <> coalesce((select sum(r.amount) from refund r where r.payment_id = p.id and r.status = 'COMPLETED'), 0)
+                """, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> everyCompletedRefundHasExactlyItsRefundPaidDebit() {
+        return violations("I-22 completed refund without exactly one refund debit of its amount, or a refund debit of a refund that is not completed", """
+                select 'refund ' || r.id
+                from refund r join student_current_account a on a.id = r.student_current_account_id
+                where @ACCOUNTS@ and (select count(*) from current_account_entry e
+                        where e.refund_id = r.id and e.entry_type = 'REFUND_PAID' and e.amount = r.amount)
+                      <> case when r.status = 'COMPLETED' then 1 else 0 end
+                """, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> theUnallocatedCreditCoversTheAmountReservedByPendingRefunds() {
+        return violations("I-23 unallocated credit below the amount reserved by requested or approved refunds", """
+                select 'account ' || a.id
+                from student_current_account a
+                where @ACCOUNTS@ and a.unallocated_credit_amount < coalesce((select sum(r.amount) from refund r
+                        where r.student_current_account_id = a.id and r.status in ('REQUESTED', 'APPROVED')), 0)
+                """, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> theLatestRefundStatusChangeMatchesTheCurrentStatus() {
+        return violations("I-17 refund history does not end in the current refund status", """
+                select 'refund ' || r.id
+                from refund r join student_current_account a on a.id = r.student_current_account_id
+                where @ACCOUNTS@ and coalesce((select c.to_status from refund_status_change c where c.refund_id = r.id order by c.id desc limit 1), '') <> r.status
+                """, baselineAccountId, baselineEntryId);
     }
 
     public List<String> accountBalanceEqualsCreditsMinusDebits() {
@@ -392,6 +432,7 @@ public final class BillingInvariantChecker {
                 select 'origin ' || a.origin_invoice_id || ' periods ' || a.period_start || ' and ' || b.period_start
                 from late_fee_charge a join late_fee_charge b on b.origin_invoice_id = a.origin_invoice_id and b.id > a.id
                 where greatest(a.debit_note_id, b.debit_note_id) > ? and daterange(a.period_start, a.period_end, '[]') && daterange(b.period_start, b.period_end, '[]')
+                  and a.reinstates_correction_id is null and b.reinstates_correction_id is null
                 """, baselineInvoiceId));
         found.addAll(violations("I-11b a period crosses months or starts on or before the due date of its origin", """
                 select 'debit note ' || c.debit_note_id
@@ -406,7 +447,9 @@ public final class BillingInvariantChecker {
                 where c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
                     %3$s
-                    where %4$s and %5$s and not (c.paid_from is not null and g.day::date > c.paid_from))
+                    where %4$s and %5$s and not (c.paid_from is not null and g.day::date > c.paid_from)
+                      and not exists (select 1 from late_fee_charge_correction rk join late_fee_charge rc on rc.reinstates_correction_id = rk.id
+                                      where rk.late_fee_charge_id = c.id and g.day::date between rk.first_corrected_day and rk.last_corrected_day))
                 """.formatted(
                 chargeWithItsDayIndependentTerms(",\n" + PAYMENT_THRESHOLD_OF_ORIGIN + " as paid_from", "from late_fee_charge c where c.debit_note_id > " + baselineInvoiceId),
                 LATE_PAYMENT_TIMELINE, TERMS_OF_EACH_DAY, CHARGING_ENABLED_THAT_DAY, NOT_FROZEN_THAT_DAY)));
@@ -567,6 +610,16 @@ public final class BillingInvariantChecker {
                 """, baselineReminderId);
     }
 
+    public List<String> noEmailIsSentTwice() {
+        return violations("I-R4 the same email was sent more than once", """
+                select 'recipient ' || d.recipient_person_id || ' ' || d.related_entity_type || ' ' || d.related_entity_id || ' sent ' || count(*) || ' times'
+                from notification_delivery d
+                where d.id > ? and d.channel = 'EMAIL' and d.status in ('SENT', 'SENT_SIMULATED') and d.related_entity_id is not null
+                group by d.recipient_person_id, d.related_entity_type, d.related_entity_id, d.subject, md5(d.body_text)
+                having count(*) > 1
+                """, baselineDeliveryId);
+    }
+
     public List<String> reminderNoticesAreNotPlannedForSettledInvoicesOn(LocalDate day) {
         return violations("I-R2 notice planned for an invoice that was settled, cancelled or under review that day", """
                 select 'reminder ' || r.id || ' day ' || r.business_date || ' ' || m.channel || ' invoice ' || i.id || ' ' || i.payment_status
@@ -607,6 +660,10 @@ public final class BillingInvariantChecker {
         all.addAll(v2RowsHaveTheCurrencyOfTheirInvoiceOrAccount());
         all.addAll(theLatestStatusChangeMatchesTheCurrentStatus());
         all.addAll(accountBalanceEqualsCreditsMinusDebits());
+        all.addAll(refundedAmountOfEveryPaymentEqualsItsCompletedRefunds());
+        all.addAll(everyCompletedRefundHasExactlyItsRefundPaidDebit());
+        all.addAll(theLatestRefundStatusChangeMatchesTheCurrentStatus());
+        all.addAll(theUnallocatedCreditCoversTheAmountReservedByPendingRefunds());
         all.addAll(runningBalancesFollowTheEntrySequence());
         all.addAll(accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices());
         all.addAll(invoicesAreNeverPartiallyAllocated());
@@ -616,6 +673,7 @@ public final class BillingInvariantChecker {
         all.addAll(lateFeesRespectTheRedefinedI11());
         all.addAll(noLateFeeDebitNoteStaysLiveOverACancelledInstallment());
         all.addAll(atMostOneDigestPerStudentDayAndChannel());
+        all.addAll(noEmailIsSentTwice());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }

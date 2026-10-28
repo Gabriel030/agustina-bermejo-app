@@ -14,6 +14,7 @@ function mockStudent({ obligations, exemptions = [] }) {
       HttpResponse.json([{ id: 4, programId: 2, programName: 'Tecnicatura', status: 'ENROLLED' }])),
     http.get(`${API}/program-enrollments/4/enrollment-fee-status`, () => HttpResponse.json(obligations)),
     http.get(`${API}/program-enrollments/4/enrollment-fee-exemptions`, () => HttpResponse.json(exemptions)),
+    http.get(`${API}/students/9/refunds`, () => HttpResponse.json([])),
   );
 }
 

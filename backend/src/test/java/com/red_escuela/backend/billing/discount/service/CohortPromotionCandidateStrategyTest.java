@@ -148,6 +148,39 @@ class CohortPromotionCandidateStrategyTest {
     }
 
     @Test
+    @Tag("D-426")
+    void aReissueAfterTheWindowOfAChargeCancelledByErrorKeepsThePromotionWithTheSameInstallmentNumber() {
+        acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        liveUses(1);
+        when(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(PROMOTION_ID, "PE:10:MONTHLY_INSTALLMENT:2027-07")).thenReturn(Optional.of(LocalDate.of(2027, 6, 1)));
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).singleElement()
+                .satisfies(candidate -> assertThat(candidate.installmentNumber()).isEqualTo(2));
+        assertThat(strategy.findDiscountCandidatesUnderEnrollmentLock(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).hasSize(1);
+    }
+
+    @Test
+    @Tag("D-426")
+    void aChargeNeverCancelledByErrorStaysOutsideTheWindowAfterTheAvailableUntilDate() {
+        acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        liveUses(1);
+        when(appliedRepository.findEarliestIssueDateOfChargeCancelledByBillingError(any(), any())).thenReturn(Optional.empty());
+
+        assertThat(strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 7, 1)))).isEmpty();
+    }
+
+    @Test
+    @Tag("D-426")
+    void theOriginalInvoiceIsOnlyLookedUpWhenTheWindowIsClosed() {
+        acquire(monthlyPromotion(3).availableUntil(LocalDate.of(2027, 6, 30)));
+        liveUses(1);
+
+        strategy.findDiscountCandidatesForInvoice(context(FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 6, 30)));
+
+        verify(appliedRepository, never()).findEarliestIssueDateOfChargeCancelledByBillingError(any(), any());
+    }
+
+    @Test
     @Tag("D-283")
     void theReferenceRangeLeftAtAcquisitionDoesNotDecideEligibility() {
         acquire(monthlyPromotion(3));
@@ -250,6 +283,7 @@ class CohortPromotionCandidateStrategyTest {
     void winningTheLastInstallmentExhaustsThePromotion() {
         StudentDiscount promotion = acquire(monthlyPromotion(3));
         when(studentDiscountRepository.findById(PROMOTION_ID)).thenReturn(Optional.of(promotion));
+        when(appliedRepository.findLiveApplicationsOf(List.of(PROMOTION_ID))).thenReturn(liveInstallments(3));
         InvoiceDiscountCandidate last = candidateOf(3, 3);
 
         strategy.markDiscountAsApplied(last);
@@ -264,10 +298,17 @@ class CohortPromotionCandidateStrategyTest {
         StudentDiscount promotion = acquire(monthlyPromotion(3));
         when(studentDiscountRepository.findById(PROMOTION_ID)).thenReturn(Optional.of(promotion));
 
+        when(appliedRepository.findLiveApplicationsOf(List.of(PROMOTION_ID))).thenReturn(liveInstallments(2));
+
         strategy.markDiscountAsApplied(candidateOf(2, 3));
 
         assertThat(promotion.getStatus()).isEqualTo(StudentDiscountStatus.ACTIVE);
         verify(studentDiscountRepository, never()).save(any());
+    }
+
+    private List<AppliedStudentDiscountInstallment> liveInstallments(int count) {
+        return java.util.stream.IntStream.rangeClosed(1, count)
+                .mapToObj(number -> new AppliedStudentDiscountInstallment(PROMOTION_ID, YearMonth.of(2027, 2 + number), number, 3)).toList();
     }
 
     private InvoiceDiscountCandidate candidateOf(int number, int total) {

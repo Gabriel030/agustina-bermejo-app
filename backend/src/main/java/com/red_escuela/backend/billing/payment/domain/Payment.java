@@ -243,11 +243,45 @@ public class Payment {
         changeStatus(PaymentEvent.PENDING_PAYMENT_CANCELLED, actor, reason, GatewayRawStatus.none());
     }
 
+    public void requireAllows(PaymentEvent event) {
+        resolveNextStatusFor(event);
+    }
+
     public void revokeBankTransferApproval(String reason, StatusChangeActor reviewer) {
         resolveNextStatusFor(PaymentEvent.BANK_TRANSFER_APPROVAL_REVOKED);
         this.rejectionReason = reason;
         this.reviewedByPersonId = reviewer.personId();
         changeStatus(PaymentEvent.BANK_TRANSFER_APPROVAL_REVOKED, reviewer, reason, GatewayRawStatus.none());
+    }
+
+    public void registerChargeback(String reference, StatusChangeActor actor) {
+        changeStatus(PaymentEvent.CHARGEBACK_REGISTERED, actor, reference, GatewayRawStatus.none());
+    }
+
+    public void reverseChargeback(StatusChangeActor actor) {
+        changeStatus(PaymentEvent.CHARGEBACK_REVERSED, actor, null, GatewayRawStatus.none());
+    }
+
+    public void registerRefundedAmount(NonNegativeMoney refunded, StatusChangeActor actor, String reason) {
+        Objects.requireNonNull(refunded, "refunded");
+        if (refunded.value().currency() != currency) {
+            throw new StudentCurrentAccountCurrencyMismatchException();
+        }
+        if (refunded.value().isZero()) {
+            throw new IllegalArgumentException("A refunded amount must be greater than zero");
+        }
+        NonNegativeMoney refundedAfter = refundedAmount.plus(refunded);
+        if (refundedAfter.value().isGreaterThan(creditedAmount().value())) {
+            throw new IllegalArgumentException("The refunded amount of a payment cannot exceed what the payment credited");
+        }
+        PaymentEvent event = refundedAfter.equals(creditedAmount()) ? PaymentEvent.FULL_REFUND_REGISTERED : PaymentEvent.PARTIAL_REFUND_REGISTERED;
+        resolveNextStatusFor(event);
+        this.refundedAmount = refundedAfter;
+        changeStatus(event, actor, reason, GatewayRawStatus.none());
+    }
+
+    public NonNegativeMoney creditedAmount() {
+        return approvedAmount == null ? amount : approvedAmount;
     }
 
     public List<PaymentStatusChange> statusChanges() {

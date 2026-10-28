@@ -37,6 +37,25 @@ import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityCo
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyReuseConsistencyPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyReuseContext;
+import com.red_escuela.backend.billing.payment.policy.ChargebackDateWithinPaymentLifePolicy;
+import com.red_escuela.backend.billing.payment.policy.ChargebackIsForTheFullAmountPolicy;
+import com.red_escuela.backend.billing.payment.policy.ChargebackReferenceRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.PaymentMoneyNotRefundedPolicy;
+import com.red_escuela.backend.billing.payment.policy.PaymentReversalCheck;
+import com.red_escuela.backend.billing.payment.policy.PaymentWithoutPendingRefundPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundAmountPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundAvailabilityCheck;
+import com.red_escuela.backend.billing.payment.policy.RefundCompletionCheck;
+import com.red_escuela.backend.billing.payment.policy.RefundCompletionPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundDestinationCheck;
+import com.red_escuela.backend.billing.payment.policy.RefundDestinationFormatPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundDestinationRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundFailureCheck;
+import com.red_escuela.backend.billing.payment.policy.RefundFailureReasonPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundNotGreaterThanAvailablePolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundRequestCheck;
+import com.red_escuela.backend.billing.payment.policy.RefundSameMethodAsOriginalPolicy;
+import com.red_escuela.backend.billing.payment.policy.RefundWithoutOverdueDebtPolicy;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -118,6 +137,42 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<PaymentRejectionCheck> paymentRejectionReasonPolicySet() {
         return PolicySet.named("PAYMENT_REJECTION", List.of(new PaymentRejectionReasonRequiredPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PaymentReversalCheck> paymentApprovalRevocationPolicySet() {
+        return PolicySet.named("PAYMENT_APPROVAL_REVOCATION", List.of(new PaymentMoneyNotRefundedPolicy(), new PaymentWithoutPendingRefundPolicy()));
+    }
+
+    @Bean
+    public PolicySet<PaymentReversalCheck> chargebackRegistrationPolicySet() {
+        return PolicySet.named("CHARGEBACK_REGISTRATION", List.of(new ChargebackReferenceRequiredPolicy(), new ChargebackDateWithinPaymentLifePolicy(),
+                new PaymentMoneyNotRefundedPolicy(), new PaymentWithoutPendingRefundPolicy(), new ChargebackIsForTheFullAmountPolicy()));
+    }
+
+    @Bean
+    public PolicySet<RefundRequestCheck> refundRequestFormatPolicySet() {
+        return PolicySet.named("REFUND_REQUEST_FORMAT", List.of(new RefundAmountPolicy(), new RefundDestinationFormatPolicy()));
+    }
+
+    @Bean
+    public PolicySet<RefundAvailabilityCheck> refundAvailabilityPolicySet() {
+        return PolicySet.named("REFUND_AVAILABILITY", List.of(new RefundWithoutOverdueDebtPolicy(), new RefundNotGreaterThanAvailablePolicy()));
+    }
+
+    @Bean
+    public PolicySet<RefundDestinationCheck> refundDestinationPolicySet() {
+        return PolicySet.named("REFUND_DESTINATION", List.of(new RefundDestinationRequiredPolicy()));
+    }
+
+    @Bean
+    public PolicySet<RefundCompletionCheck> refundCompletionPolicySet() {
+        return PolicySet.named("REFUND_COMPLETION", List.of(new RefundCompletionPolicy(), new RefundSameMethodAsOriginalPolicy()));
+    }
+
+    @Bean
+    public PolicySet<RefundFailureCheck> refundFailurePolicySet() {
+        return PolicySet.named("REFUND_FAILURE", List.of(new RefundFailureReasonPolicy()));
     }
 
     @Bean

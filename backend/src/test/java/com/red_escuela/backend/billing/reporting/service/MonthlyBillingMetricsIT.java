@@ -49,7 +49,7 @@ class MonthlyBillingMetricsIT extends AbstractMonthlyMetricsIT {
     @Test
     @Tag("D-097")
     void everyPanelAsksForTheCurrencyWhenAccountsExistInMoreThanOne() throws Exception {
-        for (String panel : new String[]{"issued-invoices", "discounts", "overdue-detected", "late-fees", "on-time-payment", "receipts"}) {
+        for (String panel : new String[]{"issued-invoices", "discounts", "overdue-detected", "late-fees", "on-time-payment", "receipts", "collections-stock"}) {
             assertThat(errorOf(directorToken, "/billing/metrics/" + panel + "?from=2020-03&to=2020-03", 400).get("code").asText())
                     .isEqualTo("CURRENCY_REQUIRED");
         }
@@ -333,7 +333,7 @@ class MonthlyBillingMetricsIT extends AbstractMonthlyMetricsIT {
                 .isEqualTo("INVALID_MONTH_RANGE");
         assertThat(errorOf(directorToken, "/billing/metrics/discounts?currency=ARS&from=2026-04&to=2026-03", 400).get("code").asText())
                 .isEqualTo("INVALID_MONTH_RANGE");
-        assertThat(errorOf(directorToken, "/billing/metrics/collections-stock?currency=ARS", 404).get("code").asText())
+        assertThat(errorOf(directorToken, "/billing/metrics/stock-of-nothing?currency=ARS", 404).get("code").asText())
                 .isEqualTo("UNKNOWN_METRIC_PANEL");
     }
 

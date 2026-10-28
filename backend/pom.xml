@@ -384,6 +384,7 @@
 								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
 								<param>com.red_escuela.backend.billing.collections.domain.*</param>
 								<param>com.red_escuela.backend.billing.collections.operation.DailyReminderDigestPlanner</param>
+								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderImpactCalculator</param>
 								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderPlannedEventFactory</param>
 								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier</param>
 								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher</param>
@@ -417,6 +418,7 @@
 								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
 								<param>com.red_escuela.backend.billing.collections.domain.*</param>
 								<param>com.red_escuela.backend.billing.collections.operation.DailyReminderDigestPlannerTest</param>
+								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderImpactCalculatorTest</param>
 								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderPlannedEventFactoryTest</param>
 								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifierTest</param>
 								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcherTest</param>

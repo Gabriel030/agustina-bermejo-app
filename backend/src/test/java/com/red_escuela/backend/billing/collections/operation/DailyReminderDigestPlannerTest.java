@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.collections.operation;
 
+import com.red_escuela.backend.billing.configuration.domain.ReminderNotice;
+import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
+import com.red_escuela.backend.billing.collections.domain.ReminderInvoiceFacts;
 import com.red_escuela.backend.billing.collections.domain.DailyReminderDigest;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
 import com.red_escuela.backend.billing.collections.domain.ReminderDigestLine;
@@ -157,6 +160,7 @@ class DailyReminderDigestPlannerTest {
         assertThat(email.lines().get(0).notices()).extracting("noticeKey").containsExactlyInAnyOrder("after-due", "after-issue");
         assertThat(email.format()).isEqualTo(ReminderMessageFormat.DAILY_DIGEST);
         assertThat(email.leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
+        assertThat(email.priority()).isEqualTo(2);
     }
 
     @Test
@@ -294,7 +298,7 @@ class DailyReminderDigestPlannerTest {
 
         assertThat(both.emailMessages().get(0).priority()).isEqualTo(2);
         assertThat(both.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
-        assertThat(onlyBefore.emailMessages().get(0).priority()).isEqualTo(3);
+        assertThat(onlyBefore.emailMessages().get(0).priority()).isEqualTo(4);
         assertThat(onlyBefore.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.BEFORE_DUE_REMINDER);
     }
 
@@ -520,5 +524,196 @@ class DailyReminderDigestPlannerTest {
         assertThat(theIssueDay.hasNothingToSend()).isTrue();
         assertThat(theNextDay.inAppMessages()).hasSize(1);
         assertThat(theNextDay.emailMessages()).hasSize(1);
+    }
+
+    private static final String WAITS_FOR_PRIOR_DEBT = "NEW_INSTALLMENT_WAITS_FOR_PRIOR_DEBT";
+
+    private static ResolvedReminderSchedule defaultSchedule() {
+        return schedule(ReminderSchedule.initial().notices().toArray(new ReminderNotice[0]));
+    }
+
+    private static ReminderInvoiceFact marchInstallment() {
+        return ReminderInvoiceFacts.installment(1L, "2027-03-01", "2027-03-11");
+    }
+
+    private static ReminderInvoiceFact aprilInstallment() {
+        return ReminderInvoiceFacts.installment(2L, "2027-04-01", "2027-04-11");
+    }
+
+    private static DailyReminderDigest planAprilWithMarchOpen(String date) {
+        return plan(date, sameScheduleFor(defaultSchedule(), 1L, 2L), List.of(marchInstallment(), aprilInstallment()));
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-344")
+    @Tag("D-409")
+    void issuanceWithAPriorDebtBecomesADebtSummaryByInAppAndEmailListingTheOlderInstallmentFirst() {
+        DailyReminderDigest digest = planAprilWithMarchOpen("2027-04-01");
+
+        assertThat(digest.inAppMessages()).hasSize(1);
+        assertThat(digest.emailMessages()).hasSize(1);
+        for (ReminderMessage message : List.of(digest.inAppMessages().get(0), digest.emailMessages().get(0))) {
+            assertThat(message.format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+            assertThat(invoiceIdsOf(message)).containsExactly(1L, 2L);
+            assertThat(highlightedIdsOf(message)).containsExactly(2L);
+            assertThat(message.leadMessageType()).isEqualTo(ReminderMessageType.ISSUANCE_NOTICE);
+            assertThat(message.priority()).isEqualTo(3);
+        }
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-344")
+    void theDebtSummaryEmailCannotBeSwitchedOffByThePreDueOptOut() {
+        ReminderMessage email = planAprilWithMarchOpen("2027-04-01").emailMessages().get(0);
+
+        assertThat(email.emailPrecedesDueDate()).isFalse();
+        assertThat(email.withoutLinesPrecedingTheirDueDate()).containsSame(email);
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-344")
+    void issuanceWithoutPriorDebtStaysAnInAppOwnNoticeWithoutEmail() {
+        DailyReminderDigest digest = plan("2027-04-01", sameScheduleFor(defaultSchedule(), 2L), List.of(aprilInstallment()));
+
+        assertThat(digest.emailMessages()).isEmpty();
+        assertThat(digest.inAppMessages()).hasSize(1);
+        assertThat(digest.inAppMessages().get(0).format()).isEqualTo(ReminderMessageFormat.OWN_NOTICE);
+    }
+
+    @Test
+    @Tag("D-347")
+    void theNewInstallmentOwnNoticesAreSuppressedInBothChannelsWhileTheEarlierOneIsOpen() {
+        DailyReminderDigest afterIssue = planAprilWithMarchOpen("2027-04-06");
+        DailyReminderDigest beforeDueEmail = planAprilWithMarchOpen("2027-04-09");
+        DailyReminderDigest beforeDueInApp = planAprilWithMarchOpen("2027-04-10");
+
+        assertThat(afterIssue.hasNothingToSend()).isTrue();
+        assertThat(afterIssue.suppressed()).containsExactlyInAnyOrder(
+                new SuppressedReminder(2L, "after-issue", ReminderChannel.IN_APP, WAITS_FOR_PRIOR_DEBT),
+                new SuppressedReminder(2L, "after-issue", ReminderChannel.EMAIL, WAITS_FOR_PRIOR_DEBT));
+        assertThat(beforeDueEmail.hasNothingToSend()).isTrue();
+        assertThat(beforeDueEmail.suppressed()).containsExactly(new SuppressedReminder(2L, "before-due", ReminderChannel.EMAIL, WAITS_FOR_PRIOR_DEBT));
+        assertThat(beforeDueInApp.hasNothingToSend()).isTrue();
+        assertThat(beforeDueInApp.suppressed()).containsExactly(new SuppressedReminder(2L, "before-due", ReminderChannel.IN_APP, WAITS_FOR_PRIOR_DEBT));
+    }
+
+    @Test
+    @Tag("D-347")
+    void withTheEarlierInstallmentPaidTheNewOneKeepsItsOwnCadenceOnTheSixthAndTheNinth() {
+        Map<Long, ResolvedReminderSchedule> schedules = sameScheduleFor(defaultSchedule(), 2L);
+        List<ReminderInvoiceFact> onlyApril = List.of(aprilInstallment());
+
+        DailyReminderDigest sixth = plan("2027-04-06", schedules, onlyApril);
+        DailyReminderDigest ninth = plan("2027-04-09", schedules, onlyApril);
+        DailyReminderDigest tenth = plan("2027-04-10", schedules, onlyApril);
+
+        assertThat(sixth.emailMessages()).hasSize(1);
+        assertThat(sixth.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.AFTER_ISSUE_REMINDER);
+        assertThat(ninth.emailMessages()).hasSize(1);
+        assertThat(ninth.emailMessages().get(0).leadMessageType()).isEqualTo(ReminderMessageType.BEFORE_DUE_REMINDER);
+        assertThat(tenth.emailMessages()).isEmpty();
+        assertThat(tenth.inAppMessages()).hasSize(1);
+        assertThat(sixth.suppressed()).isEmpty();
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-346")
+    void anEarlierInstallmentWithAReceiptUnderReviewStillCountsAsUnpaid() {
+        ReminderInvoiceFact marchUnderReview = withReceiptUnderReview(installment(1L, "2027-03-11"));
+        ReminderInvoiceFact april = aprilInstallment();
+        Map<Long, ResolvedReminderSchedule> schedules = sameScheduleFor(defaultSchedule(), 1L, 2L);
+
+        DailyReminderDigest issueDay = plan("2027-04-01", schedules, List.of(marchUnderReview, april));
+        DailyReminderDigest afterIssue = plan("2027-04-06", schedules, List.of(marchUnderReview, april));
+
+        assertThat(issueDay.emailMessages().get(0).format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+        assertThat(issueDay.emailMessages().get(0).lines().get(0).receiptUnderReview()).isTrue();
+        assertThat(afterIssue.hasNothingToSend()).isTrue();
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-344")
+    void anUnpaidLateFeeNoteOfAnEarlierInvoiceCountsAsPriorDebtForTheSummary() {
+        ReminderInvoiceFact note = ReminderInvoiceFacts.lateFeeDebitNote(9L, 1L, "2027-03-20", "2027-03-30");
+
+        DailyReminderDigest digest = plan("2027-04-01", sameScheduleFor(defaultSchedule(), 2L), List.of(note, aprilInstallment()));
+
+        assertThat(digest.emailMessages()).hasSize(1);
+        assertThat(digest.emailMessages().get(0).format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+        assertThat(invoiceIdsOf(digest.emailMessages().get(0))).containsExactly(9L, 2L);
+    }
+
+    @Test
+    @Tag("D-347")
+    void withoutAnIssuanceNoticeInTheScheduleThereIsNoSummary() {
+        ResolvedReminderSchedule withoutIssuance = schedule(bothChannels("after-issue", ReminderMessageType.AFTER_ISSUE_REMINDER, ReminderMilestone.ISSUANCE, 5));
+
+        DailyReminderDigest digest = plan("2027-04-01", sameScheduleFor(withoutIssuance, 1L, 2L), List.of(marchInstallment(), aprilInstallment()));
+
+        assertThat(digest.hasNothingToSend()).isTrue();
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-342")
+    void aSummaryIssuedOnASaturdayGoesInAppThatDayAndByEmailOnTheMonday() {
+        ReminderInvoiceFact may = ReminderInvoiceFacts.installment(3L, "2027-05-01", "2027-05-11");
+        Map<Long, ResolvedReminderSchedule> schedules = sameScheduleFor(defaultSchedule(), 1L, 3L);
+        List<ReminderInvoiceFact> facts = List.of(marchInstallment(), may);
+
+        DailyReminderDigest saturday = plan("2027-05-01", schedules, facts);
+        DailyReminderDigest monday = plan("2027-05-03", schedules, facts);
+
+        assertThat(saturday.inAppMessages().get(0).format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+        assertThat(saturday.emailMessages()).isEmpty();
+        assertThat(monday.inAppMessages()).isEmpty();
+        assertThat(monday.emailMessages()).hasSize(1);
+        assertThat(monday.emailMessages().get(0).format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-410")
+    void theSummaryAbsorbsTheOtherNoticesOfTheSameDayIntoOneMessage() {
+        ResolvedReminderSchedule marchSchedule = schedule(bothChannels("after-due", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 21));
+        Map<Long, ResolvedReminderSchedule> schedules = Map.of(1L, marchSchedule, 2L, defaultSchedule());
+
+        DailyReminderDigest digest = plan("2027-04-01", schedules, List.of(marchInstallment(), aprilInstallment()));
+
+        assertThat(digest.emailMessages()).hasSize(1);
+        ReminderMessage email = digest.emailMessages().get(0);
+        assertThat(email.format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+        assertThat(highlightedIdsOf(email)).containsExactly(1L, 2L);
+        assertThat(email.leadMessageType()).isEqualTo(ReminderMessageType.AFTER_DUE_REMINDER);
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-403")
+    void inTheSeparateMessagesModeTheSummaryStillListsAllTheDebt() {
+        DailyReminderDigest digest = plan("2027-04-01", sameScheduleFor(defaultSchedule(), 1L, 2L), List.of(marchInstallment(), aprilInstallment()),
+                NonBusinessDays.weekendsOnly(), ReminderDigestMode.SEPARATE_MESSAGES, Map.of());
+
+        assertThat(digest.emailMessages()).hasSize(1);
+        assertThat(digest.emailMessages().get(0).format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
+        assertThat(invoiceIdsOf(digest.emailMessages().get(0))).containsExactly(1L, 2L);
+    }
+
+    @Test
+    @Tag("D-347")
+    @Tag("D-391")
+    void thePlannerHasNoMonthlyCapSoTheSummaryComesOutWhateverWasSentBefore() {
+        ReminderInvoiceFact may = ReminderInvoiceFacts.installment(3L, "2027-05-04", "2027-05-14");
+        Map<Long, ResolvedReminderSchedule> schedules = sameScheduleFor(defaultSchedule(), 2L, 3L);
+
+        DailyReminderDigest digest = plan("2027-05-04", schedules, List.of(aprilInstallment(), may));
+
+        assertThat(digest.emailMessages()).hasSize(1);
+        assertThat(digest.emailMessages().get(0).format()).isEqualTo(ReminderMessageFormat.DEBT_SUMMARY);
     }
 }

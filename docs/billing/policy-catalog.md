@@ -74,6 +74,16 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | CashPaymentAmountPolicy | CASH_PAYMENT_AMOUNT_INVALID | D-136, D-097, D-098 |
 
+## Momento CHARGEBACK_REGISTRATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ChargebackReferenceRequiredPolicy | CHARGEBACK_REFERENCE_INVALID | D-206 |
+| 2 | ChargebackDateWithinPaymentLifePolicy | CHARGEBACK_DATE_INVALID | D-206 |
+| 3 | PaymentMoneyNotRefundedPolicy | PAYMENT_ALREADY_REFUNDED | D-262 |
+| 4 | PaymentWithoutPendingRefundPolicy | PAYMENT_HAS_PENDING_REFUND | D-262, D-265 |
+| 5 | ChargebackIsForTheFullAmountPolicy | CHARGEBACK_MUST_BE_FOR_THE_FULL_AMOUNT | D-262 |
+
 ## Momento COHORT_PROMOTION_ACQUISITION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -93,6 +103,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | ReminderEligibleInvoicePolicy | INVOICE_NOT_REMINDABLE | D-354, D-242, D-052, D-149, D-131 |
 | 2 | ReceiptUnderReviewSuppressesReminderPolicy | RECEIPT_UNDER_REVIEW | D-346, D-186 |
 | 3 | PendingCancellationSuppressesReminderPolicy | PENDING_CANCELLATION_REQUEST | D-247, D-354 |
+
+## Momento COLLECTION_REMINDER_PRIOR_DEBT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | NewInstallmentWaitsForPriorDebtPolicy | NEW_INSTALLMENT_WAITS_FOR_PRIOR_DEBT | D-347 |
 
 ## Momento COLLECTION_REMINDER_SCHEDULE
 
@@ -180,10 +196,11 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | DiscountDefinitionCoherencePolicy | INVALID_DISCOUNT_DEFINITION | D-075, D-129, D-171, D-240 |
 | 2 | DiscountAvailabilityPeriodPolicy | INVALID_DISCOUNT_DEFINITION | D-283 |
 | 3 | DiscountScopeMatchesTypePolicy | INVALID_DISCOUNT_DEFINITION | D-240 |
-| 4 | ScholarshipOnlyForMonthlyInstallmentsPolicy | SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS | D-157 |
-| 5 | DiscountTypeAvailableInCatalogPolicy | DISCOUNT_TYPE_NOT_IN_CATALOG | D-287, D-240 |
-| 6 | InstallmentCountOnlyForMonthlyInstallmentsPolicy | INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS | D-075 |
-| 7 | DiscountCurrencyMatchesOfferingPolicy | CURRENCY_MISMATCH | D-097 |
+| 4 | CohortPromotionTermsPolicy | INVALID_DISCOUNT_DEFINITION | D-433, D-432, D-326 |
+| 5 | ScholarshipOnlyForMonthlyInstallmentsPolicy | SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS | D-157 |
+| 6 | DiscountTypeAvailableInCatalogPolicy | DISCOUNT_TYPE_NOT_IN_CATALOG | D-287, D-240 |
+| 7 | InstallmentCountOnlyForMonthlyInstallmentsPolicy | INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS | D-075 |
+| 8 | DiscountCurrencyMatchesOfferingPolicy | CURRENCY_MISMATCH | D-097 |
 
 ## Momento DISCOUNT_DEFINITION_CLOSURE
 
@@ -325,6 +342,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | PaymentAllocationBelongsToLockedAccountPolicy | PAYMENT_ALLOCATION_ACCOUNT_MISMATCH | D-094, D-097 |
 | 2 | PaymentAllocationReversedOnlyOncePolicy | PAYMENT_ALLOCATION_ALREADY_REVERSED | D-094 |
 
+## Momento PAYMENT_APPROVAL_REVOCATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | PaymentMoneyNotRefundedPolicy | PAYMENT_ALREADY_REFUNDED | D-262 |
+| 2 | PaymentWithoutPendingRefundPolicy | PAYMENT_HAS_PENDING_REFUND | D-262, D-265 |
+
 ## Momento PAYMENT_GATEWAY_CAPABILITY
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -411,6 +435,39 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | OutstandingDebtBlocksReenrollmentPolicy | DEBT_IN_PENDING_CANCELLATION_REQUEST, OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT, OVERDUE_INVOICE | D-065, D-142, D-314 |
+
+## Momento REFUND_AVAILABILITY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | RefundWithoutOverdueDebtPolicy | REFUND_BLOCKED_BY_OVERDUE_DEBT | D-264 |
+| 2 | RefundNotGreaterThanAvailablePolicy | INSUFFICIENT_ACCOUNT_CREDIT, REFUND_EXCEEDS_AVAILABLE_AMOUNT | D-159, D-264 |
+
+## Momento REFUND_COMPLETION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | RefundCompletionPolicy | REFUND_COMPLETION_INVALID | D-159 |
+| 2 | RefundSameMethodAsOriginalPolicy | REFUND_METHOD_MISMATCH | D-159, D-209 |
+
+## Momento REFUND_DESTINATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | RefundDestinationRequiredPolicy | REFUND_DESTINATION_REQUIRED | D-267 |
+
+## Momento REFUND_FAILURE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | RefundFailureReasonPolicy | REFUND_FAILURE_REASON_INVALID | D-159 |
+
+## Momento REFUND_REQUEST_FORMAT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | RefundAmountPolicy | REFUND_AMOUNT_INVALID | D-159 |
+| 2 | RefundDestinationFormatPolicy | REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED | D-267 |
 
 ## Momento STUDENT_DISCOUNT_GRANTING
 
@@ -554,6 +611,19 @@ Transiciones válidas: 18 de 78. Pares inválidos: (sin estado) × BANK_TRANSFER
 
 Transiciones válidas: 15 de 104. Pares inválidos: (sin estado) × PAYMENT_HOLD_AUTHORIZED; (sin estado) × PAYMENT_APPROVED; (sin estado) × PAYMENT_REJECTED; (sin estado) × PENDING_PAYMENT_CANCELLED; (sin estado) × PARTIAL_REFUND_REGISTERED; (sin estado) × FULL_REFUND_REGISTERED; (sin estado) × CHARGEBACK_REGISTERED; (sin estado) × CHARGEBACK_REVERSED; (sin estado) × BANK_TRANSFER_APPROVAL_REVOKED; PENDING × CASH_PAYMENT_REGISTERED; PENDING × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; PENDING × PENDING_ONLINE_PAYMENT_CREATED; PENDING × PENDING_BANK_TRANSFER_CREATED; PENDING × PARTIAL_REFUND_REGISTERED; PENDING × FULL_REFUND_REGISTERED; PENDING × CHARGEBACK_REGISTERED; PENDING × CHARGEBACK_REVERSED; PENDING × BANK_TRANSFER_APPROVAL_REVOKED; AUTHORIZED × CASH_PAYMENT_REGISTERED; AUTHORIZED × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; AUTHORIZED × PENDING_ONLINE_PAYMENT_CREATED; AUTHORIZED × PENDING_BANK_TRANSFER_CREATED; AUTHORIZED × PAYMENT_HOLD_AUTHORIZED; AUTHORIZED × PAYMENT_REJECTED; AUTHORIZED × PARTIAL_REFUND_REGISTERED; AUTHORIZED × FULL_REFUND_REGISTERED; AUTHORIZED × CHARGEBACK_REGISTERED; AUTHORIZED × CHARGEBACK_REVERSED; AUTHORIZED × BANK_TRANSFER_APPROVAL_REVOKED; APPROVED × CASH_PAYMENT_REGISTERED; APPROVED × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; APPROVED × PENDING_ONLINE_PAYMENT_CREATED; APPROVED × PENDING_BANK_TRANSFER_CREATED; APPROVED × PAYMENT_HOLD_AUTHORIZED; APPROVED × PAYMENT_APPROVED; APPROVED × PAYMENT_REJECTED; APPROVED × PENDING_PAYMENT_CANCELLED; APPROVED × CHARGEBACK_REVERSED; REJECTED × CASH_PAYMENT_REGISTERED; REJECTED × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; REJECTED × PENDING_ONLINE_PAYMENT_CREATED; REJECTED × PENDING_BANK_TRANSFER_CREATED; REJECTED × PAYMENT_HOLD_AUTHORIZED; REJECTED × PAYMENT_APPROVED; REJECTED × PAYMENT_REJECTED; REJECTED × PENDING_PAYMENT_CANCELLED; REJECTED × PARTIAL_REFUND_REGISTERED; REJECTED × FULL_REFUND_REGISTERED; REJECTED × CHARGEBACK_REGISTERED; REJECTED × CHARGEBACK_REVERSED; REJECTED × BANK_TRANSFER_APPROVAL_REVOKED; REFUNDED × CASH_PAYMENT_REGISTERED; REFUNDED × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; REFUNDED × PENDING_ONLINE_PAYMENT_CREATED; REFUNDED × PENDING_BANK_TRANSFER_CREATED; REFUNDED × PAYMENT_HOLD_AUTHORIZED; REFUNDED × PAYMENT_APPROVED; REFUNDED × PAYMENT_REJECTED; REFUNDED × PENDING_PAYMENT_CANCELLED; REFUNDED × PARTIAL_REFUND_REGISTERED; REFUNDED × FULL_REFUND_REGISTERED; REFUNDED × CHARGEBACK_REGISTERED; REFUNDED × CHARGEBACK_REVERSED; REFUNDED × BANK_TRANSFER_APPROVAL_REVOKED; CHARGED_BACK × CASH_PAYMENT_REGISTERED; CHARGED_BACK × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; CHARGED_BACK × PENDING_ONLINE_PAYMENT_CREATED; CHARGED_BACK × PENDING_BANK_TRANSFER_CREATED; CHARGED_BACK × PAYMENT_HOLD_AUTHORIZED; CHARGED_BACK × PAYMENT_APPROVED; CHARGED_BACK × PAYMENT_REJECTED; CHARGED_BACK × PENDING_PAYMENT_CANCELLED; CHARGED_BACK × PARTIAL_REFUND_REGISTERED; CHARGED_BACK × FULL_REFUND_REGISTERED; CHARGED_BACK × CHARGEBACK_REGISTERED; CHARGED_BACK × BANK_TRANSFER_APPROVAL_REVOKED; CANCELLED × CASH_PAYMENT_REGISTERED; CANCELLED × GATEWAY_PAYMENT_REGISTERED_AS_APPROVED; CANCELLED × PENDING_ONLINE_PAYMENT_CREATED; CANCELLED × PENDING_BANK_TRANSFER_CREATED; CANCELLED × PAYMENT_HOLD_AUTHORIZED; CANCELLED × PAYMENT_APPROVED; CANCELLED × PAYMENT_REJECTED; CANCELLED × PENDING_PAYMENT_CANCELLED; CANCELLED × PARTIAL_REFUND_REGISTERED; CANCELLED × FULL_REFUND_REGISTERED; CANCELLED × CHARGEBACK_REGISTERED; CANCELLED × CHARGEBACK_REVERSED; CANCELLED × BANK_TRANSFER_APPROVAL_REVOKED.
 
+### RefundStatusStateMachine
+
+| Desde \ Evento | REFUND_REQUESTED | REFUND_APPROVED | REFUND_REJECTED | REFUND_COMPLETED | REFUND_FAILED |
+|---|---|---|---|---|---|
+| (sin estado) | REQUESTED | — | — | — | — |
+| REQUESTED | — | APPROVED | REJECTED | — | — |
+| APPROVED | — | — | — | COMPLETED | FAILED |
+| COMPLETED | — | — | — | — | — |
+| FAILED | — | — | — | — | — |
+| REJECTED | — | — | — | — | — |
+
+Transiciones válidas: 5 de 30. Pares inválidos: (sin estado) × REFUND_APPROVED; (sin estado) × REFUND_REJECTED; (sin estado) × REFUND_COMPLETED; (sin estado) × REFUND_FAILED; REQUESTED × REFUND_REQUESTED; REQUESTED × REFUND_COMPLETED; REQUESTED × REFUND_FAILED; APPROVED × REFUND_REQUESTED; APPROVED × REFUND_APPROVED; APPROVED × REFUND_REJECTED; COMPLETED × REFUND_REQUESTED; COMPLETED × REFUND_APPROVED; COMPLETED × REFUND_REJECTED; COMPLETED × REFUND_COMPLETED; COMPLETED × REFUND_FAILED; FAILED × REFUND_REQUESTED; FAILED × REFUND_APPROVED; FAILED × REFUND_REJECTED; FAILED × REFUND_COMPLETED; FAILED × REFUND_FAILED; REJECTED × REFUND_REQUESTED; REJECTED × REFUND_APPROVED; REJECTED × REFUND_REJECTED; REJECTED × REFUND_COMPLETED; REJECTED × REFUND_FAILED.
+
 ### PriceVersionStateMachine
 
 | Desde \ Evento | PROPOSE | PUBLISH_FOR_FUTURE | PUBLISH_FOR_TODAY | APPROVE_FOR_FUTURE | APPROVE_FOR_TODAY | REJECT | WITHDRAW | EXPIRE | REACH_START | CANCEL | SUPERSEDE |
@@ -664,6 +734,13 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: —
 
+## Operación COMPLETE_REFUND
+
+- Validaciones (momentos): REFUND_COMPLETION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: RefundCompletedEvent
+- Post-procesamiento de RefundCompletedEvent: —
+
 ## Operación CREATE_DISCOUNT_DEFINITION
 
 - Validaciones (momentos): DISCOUNT_DEFINITION
@@ -677,6 +754,12 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): —
 - Eventos que publica: LatePaymentSettingsCreatedEvent
 - Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated
+
+## Operación FAIL_REFUND
+
+- Validaciones (momentos): REFUND_FAILURE
+- Pre-procesamiento (en orden): —
+- Eventos que publica: —
 
 ## Operación GRANT_STUDENT_DISCOUNT
 
@@ -716,6 +799,23 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: LateFeeIssuedEvent
 - Post-procesamiento de LateFeeIssuedEvent: LateFeeNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow, LateFeeNotificationListener#notifyStudent
 
+## Operación ISSUE_REFUND
+
+- Validaciones (momentos): REFUND_REQUEST_FORMAT, REFUND_AVAILABILITY, REFUND_DESTINATION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: RefundApprovedEvent
+- Post-procesamiento de RefundApprovedEvent: —
+
+## Operación REGISTER_CHARGEBACK
+
+- Validaciones (momentos): CHARGEBACK_REGISTRATION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: PaymentChargedBackEvent, PaymentAllocationReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentChargedBackEvent: PaymentChargedBackNotificationListener#notifyAdministration
+- Post-procesamiento de PaymentAllocationReversedEvent: LateFeeOnPaymentAllocationReversedListener#reconcileLateFeesOfInvoiceWithReversedPayment
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
 ## Operación REGISTER_GATEWAY_PAYMENT
 
 - Validaciones (momentos): —
@@ -741,6 +841,25 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Validaciones (momentos): —
 - Pre-procesamiento (en orden): —
 - Eventos que publica: —
+
+## Operación REVERSE_CHARGEBACK
+
+- Validaciones (momentos): —
+- Pre-procesamiento (en orden): —
+- Eventos que publica: ChargebackReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de ChargebackReversedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
+## Operación REVOKE_BANK_TRANSFER_APPROVAL
+
+- Validaciones (momentos): PAYMENT_REJECTION, PAYMENT_APPROVAL_REVOCATION
+- Pre-procesamiento (en orden): —
+- Eventos que publica: BankTransferApprovalRevokedEvent, PaymentAllocationReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de BankTransferApprovalRevokedEvent: —
+- Post-procesamiento de PaymentAllocationReversedEvent: LateFeeOnPaymentAllocationReversedListener#reconcileLateFeesOfInvoiceWithReversedPayment
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REVOKE_STUDENT_DISCOUNT
 

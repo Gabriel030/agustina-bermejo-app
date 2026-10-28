@@ -34,13 +34,13 @@ class InvoiceDiscountCandidateTest {
 
     @Test
     void aLegacySourceCandidateStartsOnTheFirstLineWithoutPriorityGrantOrCalculation() {
-        var legacy = InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY, DiscountType.COHORT_PROMOTION, 1L, 1L, "d",
+        var legacy = InvoiceDiscountCandidate.ofLegacySource(DiscountCandidateOrigin.COHORT_ENTRY, DiscountType.COHORT_PROMOTION, 1L, 1L, "d",
                 InvoiceType.MONTHLY_INSTALLMENT, ars("100.00"), ars("10.00"), null, null);
 
         assertThat(legacy.lineNumber()).isEqualTo(1);
         assertThat(legacy.priority()).isNull();
         assertThat(legacy.grantedAt()).isNull();
         assertThat(legacy.calculation()).isNull();
-        assertThat(legacy.origin()).isEqualTo(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+        assertThat(legacy.origin()).isEqualTo(DiscountCandidateOrigin.COHORT_ENTRY);
     }
 }

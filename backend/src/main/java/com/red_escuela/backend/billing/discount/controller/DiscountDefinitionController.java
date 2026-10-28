@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.billing.discount.domain.CohortPromotionStatus;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
@@ -11,6 +12,7 @@ import com.red_escuela.backend.billing.discount.dto.DiscountDefinitionResponse;
 import com.red_escuela.backend.billing.discount.dto.DiscountDefinitionValidationResponse;
 import com.red_escuela.backend.billing.discount.usecase.CloseDiscountDefinitionUseCase;
 import com.red_escuela.backend.billing.discount.usecase.CreateDiscountDefinitionUseCase;
+import com.red_escuela.backend.billing.discount.usecase.FindDiscountDefinitionUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ListDiscountDefinitionsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ValidateDiscountDefinitionUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
@@ -35,13 +37,15 @@ import java.util.List;
 @RequestMapping("/discount-definitions")
 public class DiscountDefinitionController {
     private final ListDiscountDefinitionsUseCase listUseCase;
+    private final FindDiscountDefinitionUseCase findUseCase;
     private final CreateDiscountDefinitionUseCase createUseCase;
     private final ValidateDiscountDefinitionUseCase validateUseCase;
     private final CloseDiscountDefinitionUseCase closeUseCase;
 
-    public DiscountDefinitionController(ListDiscountDefinitionsUseCase listUseCase, CreateDiscountDefinitionUseCase createUseCase,
+    public DiscountDefinitionController(ListDiscountDefinitionsUseCase listUseCase, FindDiscountDefinitionUseCase findUseCase, CreateDiscountDefinitionUseCase createUseCase,
                                         ValidateDiscountDefinitionUseCase validateUseCase, CloseDiscountDefinitionUseCase closeUseCase) {
         this.listUseCase = listUseCase;
+        this.findUseCase = findUseCase;
         this.createUseCase = createUseCase;
         this.validateUseCase = validateUseCase;
         this.closeUseCase = closeUseCase;
@@ -50,8 +54,18 @@ public class DiscountDefinitionController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<DiscountDefinitionCatalogEntryResponse> listDiscountDefinitions(@RequestParam(required = false) DiscountDefinitionType type,
-                                                                                @RequestParam(required = false) DiscountDefinitionStatus status) {
-        return listUseCase.listDiscountDefinitions(type, status).stream().map(DiscountDefinitionCatalogEntryResponse::from).toList();
+                                                                                @RequestParam(required = false) DiscountDefinitionStatus status,
+                                                                                @RequestParam(required = false) CohortPromotionStatus cohortPromotionStatus) {
+        return listUseCase.listDiscountDefinitions(type, status, cohortPromotionStatus).stream().map(DiscountDefinitionCatalogEntryResponse::from).toList();
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "La definición con su disponibilidad, su costo estimado de cupo y, en promociones de cohorte, su estado derivado"),
+            @ApiResponse(responseCode = "404", description = "No existe la definición")})
+    public DiscountDefinitionCatalogEntryResponse findDiscountDefinition(@PathVariable Long id) {
+        return DiscountDefinitionCatalogEntryResponse.from(findUseCase.findDiscountDefinition(id));
     }
 
     @PostMapping

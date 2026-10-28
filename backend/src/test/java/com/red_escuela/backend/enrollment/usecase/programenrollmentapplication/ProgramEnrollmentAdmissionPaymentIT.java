@@ -82,6 +82,8 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
     @Autowired private ProgramEnrollmentService programEnrollmentService;
+    @Autowired private com.red_escuela.backend.billing.operation.BillingOperationPipeline pipeline;
+    @Autowired private com.red_escuela.backend.billing.payment.operation.RevokeBankTransferApprovalOperation revokeOperation;
 
     private BillingInvariantChecker invariants;
 
@@ -190,6 +192,29 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
                             invoiceRepository.findById(invoice.getId()).orElseThrow().findProgramEnrollmentId());
                     assertThat(linkedEnrollmentId).contains(enrollment.getId());
                 });
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-263")
+    @Tag("D-206")
+    void revokingTheAdmissionPaymentKeepsTheEnrollmentAndReopensTheInvoiceWithItsOriginalDueDate() {
+        ProgramEnrollmentApplication application = requestApplication();
+        Invoice invoice = approve(application);
+        payInFull(invoice);
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(isEnrolled(application)).isTrue());
+        LocalDate originalDueDate = invoiceRepository.findById(invoice.getId()).orElseThrow().getDueDate();
+        Long paymentId = jdbc.queryForObject("select payment_id from current_account_entry where entry_type = 'PAYMENT_RECEIVED' and student_current_account_id = ?",
+                Long.class, invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId());
+        Person director = persistPreceptor();
+
+        pipeline.runOperation(revokeOperation, new com.red_escuela.backend.billing.payment.operation.RevokeBankTransferApprovalCommand(paymentId, "Aprobada por error",
+                com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor.ofPerson(director.getId())));
+
+        assertThat(jdbc.queryForObject("select status from payment where id = ?", String.class, paymentId)).isEqualTo("REJECTED");
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoice.getId())).isIn("PENDING", "OVERDUE");
+        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getDueDate()).isEqualTo(originalDueDate);
+        await().pollDelay(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(isEnrolled(application)).isTrue());
         invariants.assertAllBillingInvariantsHold();
     }
 

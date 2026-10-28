@@ -154,6 +154,21 @@ class CollectionReminderApplicabilityIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-354")
+    void aPaidInvoiceIsNotApplicableEvenWhenAnotherInvoiceOfTheSameReminderIsStillOwed() {
+        Invoice paid = installment();
+        Invoice owed = installment();
+        Long reminderId = storedReminderWithMailNoticesOn(paid, owed);
+        BillingTestFixtures.payInvoiceInFull(paid);
+        LocalDate day = LocalDate.of(2027, 3, 9);
+
+        assertThat(applicabilityQuery.isStillApplicable(reminderId, day)).isTrue();
+        assertThat(applicabilityQuery.isStillApplicable(reminderId, day, java.util.Set.of(paid.getId()))).isFalse();
+        assertThat(applicabilityQuery.isStillApplicable(reminderId, day, java.util.Set.of(owed.getId()))).isTrue();
+        assertThat(applicabilityQuery.isStillApplicable(reminderId, day, java.util.Set.of(paid.getId(), owed.getId()))).isTrue();
+    }
+
+    @Test
+    @Tag("D-354")
     void anOverdueInvoiceKeepsTheReminderApplicable() {
         Invoice invoice = installment();
         Long reminderId = storedReminderWithMailNoticesOn(invoice);

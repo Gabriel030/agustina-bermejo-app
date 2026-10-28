@@ -1,11 +1,12 @@
 package com.red_escuela.backend.notification.delivery.service;
 
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
+import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSettings;
+import com.red_escuela.backend.notification.delivery.domain.EmailDispatchWindow;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -48,6 +49,8 @@ class EmailDeliveryDispatchJobTest {
     };
     private NotificationDeliveryRepository repository;
     private EmailDeliveryChannel channel;
+    private EmailDispatchPlanningService planning;
+    private EmailDispatchSettingsSource settings;
     private BusinessDayCalendar calendar;
     private EmailDeliveryDispatchJob job;
 
@@ -56,14 +59,17 @@ class EmailDeliveryDispatchJobTest {
         repository = mock(NotificationDeliveryRepository.class);
         channel = mock(EmailDeliveryChannel.class);
         calendar = mock(BusinessDayCalendar.class);
+        planning = mock(EmailDispatchPlanningService.class);
+        settings = mock(EmailDispatchSettingsSource.class);
+        when(settings.settingsEffectiveOn(any())).thenReturn(new EmailDispatchSettings(EmailDispatchWindow.STANDARD, 250));
         when(calendar.isBusinessDay(TUESDAY)).thenReturn(true);
+        when(calendar.isBusinessDay(TUESDAY.plusDays(1))).thenReturn(true);
         now.set(Instant.parse("2027-03-09T10:00:00Z"));
-        job = new EmailDeliveryDispatchJob(repository, channel, calendar, clock);
+        job = new EmailDeliveryDispatchJob(repository, planning, settings, channel, calendar, clock);
     }
 
     private void idsAreReturnedOnce(Long... ids) {
-        when(repository.findDispatchableIds(any(), any(), any(), any(), Mockito.eq(0L), any())).thenReturn(List.of(ids));
-        when(repository.findDispatchableIds(any(), any(), any(), any(), Mockito.eq(ids[ids.length - 1]), any())).thenReturn(List.of());
+        when(planning.planAndApplyFor(any(), any(), any())).thenReturn(List.of(ids));
     }
 
     @Test
@@ -110,7 +116,7 @@ class EmailDeliveryDispatchJobTest {
         int attempted = job.dispatchDueEmails();
 
         assertThat(attempted).isZero();
-        verify(repository, never()).findDispatchableIds(any(), any(), any(), any(), anyLong(), any());
+        verify(planning, never()).planAndApplyFor(any(), any(), any());
         verify(channel, never()).dispatchDelivery(anyLong());
     }
 

@@ -56,7 +56,8 @@ public final class ReminderDigestAssembler {
 
         List<ReminderMessage> separateMessages(List<ReminderDebtEntry> debt, List<ReminderDueNotice> notices) {
             return notices.stream()
-                    .flatMap(notice -> composeOver(debt, debt.stream().filter(entry -> entry.invoiceId().equals(notice.invoiceId())).toList(), List.of(notice)).stream())
+                    .flatMap(notice -> composeOver(debt, notice.summarizesPriorDebt() ? debt : debt.stream().filter(entry -> entry.invoiceId().equals(notice.invoiceId())).toList(),
+                            List.of(notice)).stream())
                     .toList();
         }
 

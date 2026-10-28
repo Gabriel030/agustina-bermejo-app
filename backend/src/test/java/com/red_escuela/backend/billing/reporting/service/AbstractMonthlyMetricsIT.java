@@ -32,6 +32,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     private final List<Long> seededCourseIds = new ArrayList<>();
     private final List<Long> seededTermIds = new ArrayList<>();
     private final List<Long> seededConfigurationVersionIds = new ArrayList<>();
+    private final List<Long> seededStudentDiscountIds = new ArrayList<>();
 
     protected Long arsAccountId;
     protected Long usdAccountId;
@@ -64,6 +65,8 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
             jdbc.update("delete from invoice_discount where invoice_line_id in (select id from invoice_line where invoice_id in (" + ids + "))");
             jdbc.update("delete from invoice_line where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice where id in (" + ids + ")");
+            seededStudentDiscountIds.forEach(id -> jdbc.update("delete from student_discount where id = ?", id));
+            seededStudentDiscountIds.clear();
             seededProgramEnrollmentIds.forEach(id -> jdbc.update("delete from program_enrollment where id = ?", id));
             seededCourseEnrollmentIds.forEach(id -> jdbc.update("delete from course_enrollment where id = ?", id));
             seededCourseIds.forEach(id -> jdbc.update("delete from course where id = ?", id));
@@ -110,11 +113,27 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
                 Long.class, invoiceId, code, issued, "K" + number, linesTotal, code, discountTotal, code, code, code);
         seededInvoiceIds.add(invoiceId);
         if (discountType != null) {
-            jdbc.update("insert into invoice_discount (invoice_line_id, discount_type, concept, currency, base_amount, base_amount_currency, "
-                            + "discount_amount, discount_amount_currency) values (?, ?, 'Descuento', ?, ?, ?, ?, ?)",
-                    lineId, discountType, code, linesTotal, code, discountTotal, code);
+            jdbc.update("insert into invoice_discount (invoice_line_id, student_discount_id, discount_type, concept, currency, base_amount, base_amount_currency, "
+                            + "discount_amount, discount_amount_currency) values (?, ?, ?, 'Descuento', ?, ?, ?, ?, ?)",
+                    lineId, seedStudentDiscount(accountId, currency), discountType, code, linesTotal, code, discountTotal, code);
         }
         return invoiceId;
+    }
+
+    private Long seedStudentDiscount(Long accountId, Currency currency) {
+        Long studentId = jdbc.queryForObject("select student_id from student_current_account where id = ?", Long.class, accountId);
+        Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
+        Long programId = seedProgram(currency);
+        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentId, programId);
+        seededProgramEnrollmentIds.add(enrollmentId);
+        Long studentDiscountId = jdbc.queryForObject(
+                "insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
+                        + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, ?, 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "
+                        + "cast('{\"type\":\"PROPORTIONAL\",\"fraction\":\"0.5\"}' as jsonb), 1, date '2027-03-01', date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id",
+                Long.class, enrollmentId, studentId, currency.name(), personId);
+        seededStudentDiscountIds.add(studentDiscountId);
+        return studentDiscountId;
     }
 
     protected Long seedLateFee(Long accountId, Long originInvoiceId, Currency currency, int monthOrdinal, LocalDate factDate, LocalDate issued, String amount) {
@@ -132,13 +151,22 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     }
 
     protected Long seedProgramEnrollmentOn(Long invoiceId, Currency currency) {
+        Long programId = seedProgram(currency);
+        enrollInvoiceStudentInProgram(invoiceId, programId);
+        return programId;
+    }
+
+    protected Long seedProgram(Currency currency) {
         Long programId = jdbc.queryForObject("insert into program (name, currency) values ('Carrera filtrada', ?) returning id", Long.class, currency.name());
         seededProgramIds.add(programId);
+        return programId;
+    }
+
+    protected void enrollInvoiceStudentInProgram(Long invoiceId, Long programId) {
         Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
                 Long.class, studentOf(invoiceId), programId);
         seededProgramEnrollmentIds.add(enrollmentId);
         linkInvoiceLines(invoiceId, "program_enrollment_id", enrollmentId);
-        return programId;
     }
 
     protected Long seedCourseEnrollmentOn(Long invoiceId, Currency currency) {

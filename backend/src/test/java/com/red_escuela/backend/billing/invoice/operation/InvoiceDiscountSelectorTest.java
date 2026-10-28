@@ -26,18 +26,18 @@ import static org.mockito.Mockito.when;
 class InvoiceDiscountSelectorTest {
 
     private final InvoiceDiscountCalculator calculator = new InvoiceDiscountCalculator(new InvoiceIssuingOperationConfiguration().invoiceDiscountSelectionPolicySet());
-    private final InvoiceDiscountCandidateStrategy legacyCohortEntry = mock(InvoiceDiscountCandidateStrategy.class);
+    private final InvoiceDiscountCandidateStrategy cohortEntry = mock(InvoiceDiscountCandidateStrategy.class);
     private final InvoiceDiscountCandidateStrategy studentDiscount = mock(InvoiceDiscountCandidateStrategy.class);
     private final InvoiceIssuingContext context = IssuingTestData.context(IssuingTestData.monthly(), Currency.ARS, null, null);
 
     private InvoiceDiscountSelector selector() {
-        when(legacyCohortEntry.origin()).thenReturn(DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+        when(cohortEntry.origin()).thenReturn(DiscountCandidateOrigin.COHORT_ENTRY);
         when(studentDiscount.origin()).thenReturn(DiscountCandidateOrigin.STUDENT_DISCOUNT);
-        return new InvoiceDiscountSelector(List.of(legacyCohortEntry, studentDiscount), calculator);
+        return new InvoiceDiscountSelector(List.of(cohortEntry, studentDiscount), calculator);
     }
 
-    private InvoiceDiscountCandidate legacyCohortEntryCandidate(String discount) {
-        return withOrigin(candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", discount), DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+    private InvoiceDiscountCandidate cohortEntryCandidate(String discount) {
+        return withOrigin(candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", discount), DiscountCandidateOrigin.COHORT_ENTRY);
     }
 
     private InvoiceDiscountCandidate studentScholarshipCandidate(String discount) {
@@ -47,9 +47,9 @@ class InvoiceDiscountSelectorTest {
     @Test
     void aLegacyCohortEntryAndAStudentDiscountNeverStackAndAnEqualSavingGoesToTheOneWithPriorityAndGrantDate() {
         InvoiceDiscountSelector selector = selector();
-        InvoiceDiscountCandidate legacy = legacyCohortEntryCandidate("30.00");
+        InvoiceDiscountCandidate legacy = cohortEntryCandidate("30.00");
         InvoiceDiscountCandidate fromStudentDiscount = studentScholarshipCandidate("30.00");
-        when(legacyCohortEntry.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(legacy));
+        when(cohortEntry.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(legacy));
         when(studentDiscount.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(fromStudentDiscount));
 
         selector.selectDiscountsWithoutLock(context);
@@ -62,10 +62,10 @@ class InvoiceDiscountSelectorTest {
     void theReselectionRequestedByTheContextAsksEveryStrategyForItsCandidatesUnderTheEnrollmentLockAndReplacesTheEarlierSelection() {
         InvoiceDiscountSelector selector = selector();
         InvoiceDiscountCandidate beforeTheLock = studentScholarshipCandidate("50.00");
-        when(legacyCohortEntry.findDiscountCandidatesForInvoice(context)).thenReturn(List.of());
+        when(cohortEntry.findDiscountCandidatesForInvoice(context)).thenReturn(List.of());
         when(studentDiscount.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(beforeTheLock));
         InvoiceDiscountCandidate afterTheLock = studentScholarshipCandidate("20.00");
-        when(legacyCohortEntry.findDiscountCandidatesUnderEnrollmentLock(context)).thenReturn(List.of());
+        when(cohortEntry.findDiscountCandidatesUnderEnrollmentLock(context)).thenReturn(List.of());
         when(studentDiscount.findDiscountCandidatesUnderEnrollmentLock(context)).thenReturn(List.of(afterTheLock));
 
         selector.selectDiscountsWithoutLock(context);
@@ -76,6 +76,6 @@ class InvoiceDiscountSelectorTest {
         assertThat(context.winningDiscounts()).containsExactly(Map.entry(1, afterTheLock));
         assertThat(context.discountCandidates()).containsExactly(afterTheLock);
         verify(studentDiscount).findDiscountCandidatesUnderEnrollmentLock(context);
-        verify(legacyCohortEntry).findDiscountCandidatesUnderEnrollmentLock(context);
+        verify(cohortEntry).findDiscountCandidatesUnderEnrollmentLock(context);
     }
 }

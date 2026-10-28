@@ -11,7 +11,8 @@ import java.util.function.Predicate;
 
 public record LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, PlannedLateFeePeriod period, Long dueDateVersionId,
                                     LatePaymentTerms dueDateTerms, Predicate<LocalDate> frozenOn, Optional<LocalDate> enrollmentEndDate,
-                                    NonNegativeMoney lateFeeAmount, LocalDate issueDate, Optional<Long> settlementAllocationId) {
+                                    NonNegativeMoney lateFeeAmount, LocalDate issueDate, Optional<Long> settlementAllocationId,
+                                    Optional<Long> reinstatedCorrectionId) {
 
     public LateFeeIssuingContext {
         Objects.requireNonNull(origin, "origin");
@@ -24,6 +25,13 @@ public record LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteD
         Objects.requireNonNull(lateFeeAmount, "lateFeeAmount");
         Objects.requireNonNull(issueDate, "issueDate");
         Objects.requireNonNull(settlementAllocationId, "settlementAllocationId");
+        Objects.requireNonNull(reinstatedCorrectionId, "reinstatedCorrectionId");
+    }
+
+    public LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, PlannedLateFeePeriod period, Long dueDateVersionId,
+                                 LatePaymentTerms dueDateTerms, Predicate<LocalDate> frozenOn, Optional<LocalDate> enrollmentEndDate,
+                                 NonNegativeMoney lateFeeAmount, LocalDate issueDate, Optional<Long> settlementAllocationId) {
+        this(origin, draft, period, dueDateVersionId, dueDateTerms, frozenOn, enrollmentEndDate, lateFeeAmount, issueDate, settlementAllocationId, Optional.empty());
     }
 
     public LocalDate debitNoteDueDate() {

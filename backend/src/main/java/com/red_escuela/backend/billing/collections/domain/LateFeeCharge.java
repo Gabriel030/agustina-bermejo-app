@@ -62,6 +62,9 @@ public class LateFeeCharge {
     @Column(name = "settlement_allocation_id", updatable = false)
     private Long settlementAllocationId;
 
+    @Column(name = "reinstates_correction_id", updatable = false)
+    private Long reinstatesCorrectionId;
+
     @Column(name = "fact_date", nullable = false, updatable = false)
     private LocalDate factDate;
 
@@ -82,7 +85,7 @@ public class LateFeeCharge {
     private LocalDateTime createdAt;
 
     private LateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned, Long latePaymentVersionId,
-                          Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
+                          Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId, Optional<Long> reinstatesCorrectionId) {
         this.debitNoteId = Objects.requireNonNull(debitNoteId, "debitNoteId");
         this.originInvoiceId = Objects.requireNonNull(originInvoiceId, "originInvoiceId");
         this.studentCurrentAccountId = Objects.requireNonNull(studentCurrentAccountId, "studentCurrentAccountId");
@@ -91,6 +94,7 @@ public class LateFeeCharge {
         this.chargedDays = planned.chargedDays();
         this.cutoffKind = planned.kind();
         this.settlementAllocationId = settlementAllocationId.orElse(null);
+        this.reinstatesCorrectionId = reinstatesCorrectionId.orElse(null);
         this.factDate = planned.period().lastDay();
         this.latePaymentVersionId = Objects.requireNonNull(latePaymentVersionId, "latePaymentVersionId");
         this.dailyRate = dailyRate;
@@ -104,12 +108,23 @@ public class LateFeeCharge {
 
     public static LateFeeCharge recordLateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned,
                                                     Long latePaymentVersionId, Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
+        return recordLateFeeCharge(debitNoteId, originInvoiceId, studentCurrentAccountId, planned, latePaymentVersionId, dailyRate, baseAmount, settlementAllocationId,
+                Optional.empty());
+    }
+
+    public static LateFeeCharge recordLateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned,
+                                                    Long latePaymentVersionId, Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId,
+                                                    Optional<Long> reinstatesCorrectionId) {
         Objects.requireNonNull(planned, "planned");
         Objects.requireNonNull(settlementAllocationId, "settlementAllocationId");
+        Objects.requireNonNull(reinstatesCorrectionId, "reinstatesCorrectionId");
+        if ((planned.kind() == LateFeeCutoffKind.REINSTATEMENT) != reinstatesCorrectionId.isPresent()) {
+            throw new IllegalArgumentException("Only a reinstatement late fee records the correction it reinstates");
+        }
         if ((planned.kind() == LateFeeCutoffKind.SETTLEMENT) != settlementAllocationId.isPresent()) {
             throw new IllegalArgumentException("Only a settlement late fee records the allocation that cut it");
         }
         return new LateFeeCharge(debitNoteId, originInvoiceId, studentCurrentAccountId, planned, latePaymentVersionId,
-                Objects.requireNonNull(dailyRate, "dailyRate"), Objects.requireNonNull(baseAmount, "baseAmount"), settlementAllocationId);
+                Objects.requireNonNull(dailyRate, "dailyRate"), Objects.requireNonNull(baseAmount, "baseAmount"), settlementAllocationId, reinstatesCorrectionId);
     }
 }

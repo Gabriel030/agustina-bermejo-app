@@ -147,7 +147,7 @@ export function InvoiceLinesBreakdown({ invoice }) {
   );
 }
 
-export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false, showDocumentStatus = false }) {
+export function InvoiceDetail({ invoice, onViewReceipt, onViewPayments, reviewLink = false, showDocumentStatus = false }) {
   const lines = invoice.lines ?? [];
   const showBreakdown = lines.some((line) => line.discount != null) || lines.length > 1;
   const payments = invoice.payments ?? [];
@@ -182,6 +182,11 @@ export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false, show
       {payments.map((payment) => (
         <PaymentBlock key={payment.paymentId} payment={payment} />
       ))}
+      {onViewPayments && payments.length > 0 && (
+        <button type="button" onClick={onViewPayments} className="w-fit text-sm font-semibold text-brand hover:underline">
+          Ver en Pagos del alumno
+        </button>
+      )}
       {creditNotes.map((creditNote) => (
         <CreditNoteBlock key={creditNote.creditNoteId} creditNote={creditNote} />
       ))}

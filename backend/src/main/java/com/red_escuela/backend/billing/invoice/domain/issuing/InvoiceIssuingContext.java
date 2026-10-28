@@ -53,6 +53,10 @@ public final class InvoiceIssuingContext {
         discountReselection.run();
     }
 
+    public void replaceWinningDiscounts(Map<Integer, InvoiceDiscountCandidate> registeredWinnerByLine) {
+        this.winningDiscounts = Collections.unmodifiableMap(new TreeMap<>(registeredWinnerByLine));
+    }
+
     public void recordDiscountSelection(List<InvoiceDiscountCandidate> candidates, Map<Integer, InvoiceDiscountCandidate> winnerByLine) {
         this.discountCandidates = List.copyOf(candidates);
         this.winningDiscounts = Collections.unmodifiableMap(new TreeMap<>(winnerByLine));

@@ -99,9 +99,9 @@ class DiscountCandidateRankingTest {
     @Test
     void anEqualEverythingButTheOriginIsBrokenByTheOriginOrder() {
         var studentDiscount = withOrigin(candidate(DiscountType.COHORT_PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.STUDENT_DISCOUNT);
-        var legacyCohortEntry = withOrigin(candidate(DiscountType.COHORT_PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.LEGACY_COHORT_ENTRY);
+        var cohortEntry = withOrigin(candidate(DiscountType.COHORT_PROMOTION, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "40.00"), DiscountCandidateOrigin.COHORT_ENTRY);
 
-        assertThat(rankOf(studentDiscount, legacyCohortEntry)).containsExactly(legacyCohortEntry, studentDiscount);
+        assertThat(rankOf(studentDiscount, cohortEntry)).containsExactly(cohortEntry, studentDiscount);
     }
 
     @Test
