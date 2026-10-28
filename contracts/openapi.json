@@ -7493,7 +7493,7 @@
           },
           "grantedById" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -7518,7 +7518,7 @@
             "type" : [ "integer", "null" ]
           },
           "reason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "revocationReason" : {
             "type" : [ "string", "null" ]
@@ -7549,7 +7549,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "applicableInvoiceType", "calculation", "fromPeriod", "grantedAt", "grantedById", "id", "priority", "reason", "status", "studentId", "toPeriod", "type" ],
+        "required" : [ "applicableInvoiceType", "calculation", "fromPeriod", "grantedAt", "id", "priority", "status", "studentId", "toPeriod", "type" ],
         "type" : "object"
       },
       "StudentDocumentResponse" : {
@@ -30075,7 +30075,17 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Beneficios perdidos; el total sin paginar viaja en el header X-Total-Count",
+            "headers" : {
+              "X-Total-Count" : {
+                "description" : "Cantidad total de beneficios perdidos que cumplen los filtros, sin paginar",
+                "schema" : {
+                  "format" : "int64",
+                  "type" : "integer"
+                },
+                "style" : "simple"
+              }
+            }
           },
           "400" : {
             "content" : {

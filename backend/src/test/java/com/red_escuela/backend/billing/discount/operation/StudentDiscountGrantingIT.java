@@ -354,7 +354,7 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
     private PreviewOutcome previewThenGrant(Person actor, EnrollmentReference target, StudentDiscountGrantRequest request) {
         authenticateAs(actor);
         boolean byDirector = actor.getId().equals(director.getId());
-        StudentDiscountGrantPreview preview = grantOperation.previewGrant(GrantStudentDiscountCommand.byPerson(target, request, actor.getId(), byDirector));
+        StudentDiscountGrantPreview preview = transactionTemplate.execute(status -> grantOperation.previewGrant(GrantStudentDiscountCommand.byPerson(target, request, actor.getId(), byDirector)));
         try {
             return new PreviewOutcome(preview, List.of(), pipeline.runOperation(grantOperation, GrantStudentDiscountCommand.byPerson(target, request, actor.getId(), byDirector)));
         } catch (RuntimeException rejection) {
@@ -404,10 +404,11 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
     void thePreviewOfTheAdministrativeCreatesNoAuthorizationRequestNorAnyRow() {
         StudentDiscountGrantRequest request = individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), YearMonth.of(2027, 8), YearMonth.of(2027, 8), "Hermano");
         authenticateAs(administrative);
-        List<String> tables = List.of("authorization_request", "authorization_request_status_change", "student_discount", "student_discount_status_change", "events");
+        List<String> tables = List.of("authorization_request", "authorization_request_status_change", "student_discount", "student_discount_status_change", "notification_delivery");
         List<Long> before = tables.stream().map(this::countOf).toList();
 
-        StudentDiscountGrantPreview preview = grantOperation.previewGrant(GrantStudentDiscountCommand.byPerson(enrollment(), request, administrative.getId(), false));
+        StudentDiscountGrantPreview preview = transactionTemplate.execute(status -> grantOperation.previewGrant(
+                GrantStudentDiscountCommand.byPerson(enrollment(), request, administrative.getId(), false)));
 
         assertThat(preview.allowed()).isTrue();
         assertThat(tables.stream().map(this::countOf).toList()).isEqualTo(before);
