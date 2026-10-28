@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyC
 import com.red_escuela.backend.billing.discount.usecase.FindLostCohortPromotionBenefitsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ListActivePromotionsByLegacyContractUseCase;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +36,7 @@ public class PromotionController {
         this.lostBenefitsUseCase = lostBenefitsUseCase;
     }
 
+    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.")
     @PostMapping("/courses/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -42,6 +44,7 @@ public class PromotionController {
         return createUseCase.createForCourse(id, request);
     }
 
+    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.")
     @PostMapping("/programs/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -49,6 +52,7 @@ public class PromotionController {
         return createUseCase.createForProgram(id, request);
     }
 
+    @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions/{id}/closure. Se retira cuando el front use el contrato nuevo.")
     @PostMapping("/promotions/{id}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -56,6 +60,7 @@ public class PromotionController {
         closeUseCase.closePromotion(id);
     }
 
+    @Operation(deprecated = true, description = "Deprecado (D-432): usar GET /discount-definitions?type=COHORT_PROMOTION. Se retira cuando el front use el contrato nuevo.")
     @GetMapping("/promotions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<PromotionResponse> findActive(@RequestParam(defaultValue = "active") String status) {

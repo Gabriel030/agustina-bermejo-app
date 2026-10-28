@@ -51,6 +51,7 @@ function renderPage(route = '/', receipts = [pendingReceipt]) {
       HttpResponse.json([{ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }]),
     ),
     http.get(`${API}/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
+    http.get(`${API}/students/2/payments`, () => HttpResponse.json([])),
   );
   return renderWithProviders(
     <>
@@ -806,6 +807,38 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     toggle.focus();
     await user.keyboard('{Enter}');
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('shows the student payments card below the enrollments and links to it from an installment with payments', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    server.use(
+      http.get(`${API}/students/2/payments`, () =>
+        HttpResponse.json([
+          {
+            id: 502,
+            amount: money('52000.00'),
+            approvedAmount: money('52000.00'),
+            refundedAmount: money('0.00'),
+            status: 'APPROVED',
+            gateway: 'MANUAL',
+            methodType: 'BANK_TRANSFER',
+            paidOn: '2026-03-10',
+            registeredAt: '2026-03-10T10:00:00',
+            receiptNumber: null,
+            chargeback: null,
+            pendingRefunds: { count: 0, amount: money('0.00'), parts: [] },
+            actions: null,
+          },
+        ]),
+      ),
+    );
+    await openAccountOf([paidInvoice, untouchedInvoice], user);
+
+    expect(await screen.findByRole('heading', { name: 'Pagos del alumno' })).toBeInTheDocument();
+    expect(await screen.findByText('Pago #502')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · mar 2026' }));
+    expect(screen.getByRole('button', { name: 'Ver en Pagos del alumno' })).toBeInTheDocument();
   });
 
   it('does not make an installment without payments or receipts expandable', async () => {

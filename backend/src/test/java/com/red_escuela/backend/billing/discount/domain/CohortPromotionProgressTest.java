@@ -83,6 +83,55 @@ class CohortPromotionProgressTest {
     }
 
     @Test
+    @Tag("D-426")
+    void aReissueIsEvaluatedWithTheIssueDateOfTheOriginalInvoiceInsteadOfTheReissueDate() {
+        LocalDate windowEnd = LocalDate.of(2027, 4, 30);
+        CohortPromotionProgress progress = new CohortPromotionProgress(promotion(monthly(3)), windowEnd, usedNumbers(1));
+
+        assertThat(progress.canBeAppliedOn(LocalDate.of(2027, 5, 10))).isFalse();
+        assertThat(progress.withReissuedInvoiceOriginalIssueDate(LocalDate.of(2027, 4, 1)).canBeAppliedOn(LocalDate.of(2027, 5, 10))).isTrue();
+        assertThat(progress.withReissuedInvoiceOriginalIssueDate(windowEnd).canBeAppliedOn(LocalDate.of(2027, 5, 10))).isTrue();
+    }
+
+    @Test
+    @Tag("D-426")
+    void anOriginalInvoiceIssuedAfterTheWindowDoesNotReopenIt() {
+        CohortPromotionProgress progress = new CohortPromotionProgress(promotion(monthly(3)), LocalDate.of(2027, 4, 30), usedNumbers(1))
+                .withReissuedInvoiceOriginalIssueDate(LocalDate.of(2027, 5, 1));
+
+        assertThat(progress.canBeAppliedOn(LocalDate.of(2027, 5, 10))).isFalse();
+    }
+
+    @Test
+    @Tag("D-426")
+    void anOriginalDateLaterThanTheReissueDateNeverMakesTheWindowStricter() {
+        CohortPromotionProgress progress = new CohortPromotionProgress(promotion(monthly(3)), LocalDate.of(2027, 4, 30), usedNumbers(1))
+                .withReissuedInvoiceOriginalIssueDate(LocalDate.of(2027, 6, 1));
+
+        assertThat(progress.canBeAppliedOn(LocalDate.of(2027, 4, 15))).isTrue();
+    }
+
+    @Test
+    @Tag("D-426")
+    void theOriginalDateDoesNotLiftTheLimitOfInstallments() {
+        CohortPromotionProgress progress = new CohortPromotionProgress(promotion(monthly(3)), LocalDate.of(2027, 4, 30), usedNumbers(1, 2, 3))
+                .withReissuedInvoiceOriginalIssueDate(LocalDate.of(2027, 4, 1));
+
+        assertThat(progress.canBeAppliedOn(LocalDate.of(2027, 5, 10))).isFalse();
+    }
+
+    @Test
+    @Tag("D-426")
+    void theWindowIsClosedOnlyTheDayAfterTheAvailableUntilDateAndNeverWithoutOne() {
+        LocalDate windowEnd = LocalDate.of(2027, 4, 30);
+        CohortPromotionProgress bounded = new CohortPromotionProgress(promotion(monthly(3)), windowEnd, List.of());
+
+        assertThat(bounded.isWindowClosedOn(windowEnd)).isFalse();
+        assertThat(bounded.isWindowClosedOn(windowEnd.plusDays(1))).isTrue();
+        assertThat(new CohortPromotionProgress(promotion(monthly(3)), null, List.of()).isWindowClosedOn(windowEnd.plusYears(9))).isFalse();
+    }
+
+    @Test
     void aMonthlyPromotionWithoutInstallmentLimitKeepsNumberingPastAnyCount() {
         Integer[] numbers = IntStream.rangeClosed(1, 40).boxed().toArray(Integer[]::new);
         CohortPromotionProgress progress = new CohortPromotionProgress(promotion(monthly(null)), null, usedNumbers(numbers));
