@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent;
 import com.red_escuela.backend.billing.events.ConfigurationVersionCancelledEvent;
 import com.red_escuela.backend.billing.events.AuthorizationRequestedEvent;
 import com.red_escuela.backend.billing.events.DiscountQuotaExhaustedEvent;
+import com.red_escuela.backend.billing.events.PriceChangeDecidedEvent;
 import com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
@@ -21,6 +22,7 @@ public class BillingOperationNotificationListener {
     static final String AUTHORIZATION_REQUESTED_HANDLER = "BillingOperationNotificationListener.notifyAuthorizationRequested";
     static final String AUTHORIZATION_EXPIRED_HANDLER = "BillingOperationNotificationListener.notifyAuthorizationRequestExpired";
     static final String CONFIGURATION_DECIDED_HANDLER = "BillingOperationNotificationListener.notifyConfigurationChangeDecided";
+    static final String PRICE_DECIDED_HANDLER = "BillingOperationNotificationListener.notifyPriceChangeDecided";
     static final String CONFIGURATION_CANCELLED_HANDLER = "BillingOperationNotificationListener.notifyConfigurationVersionCancelled";
     static final String DISCOUNT_QUOTA_EXHAUSTED_HANDLER = "BillingOperationNotificationListener.notifyDiscountQuotaExhausted";
     private static final String DIRECTOR_ROLE = "DIRECTOR";
@@ -53,9 +55,10 @@ public class BillingOperationNotificationListener {
 
     @ApplicationModuleListener
     public void notifyAuthorizationRequestExpired(AuthorizationRequestExpiredEvent event) {
+        String subject = "CHANGE_PRICE".equals(event.operationType()) ? "Una propuesta de precio" : "Una propuesta de configuración";
         sendOnce(event, AUTHORIZATION_EXPIRED_HANDLER, new BillingOperationNotification(
                 NotificationType.AUTHORIZATION_REQUEST_EXPIRED,
-                "Una propuesta de configuración venció sin que se decidiera. Hay que cargarla de nuevo con una fecha nueva.",
+                subject + " venció sin que se decidiera. Hay que cargarla de nuevo con una fecha nueva.",
                 List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "AuthorizationRequest", event.authorizationRequestId()));
     }
 
@@ -67,6 +70,16 @@ public class BillingOperationNotificationListener {
         sendOnce(event, CONFIGURATION_DECIDED_HANDLER, new BillingOperationNotification(
                 approved ? NotificationType.CONFIGURATION_CHANGE_APPROVED : NotificationType.CONFIGURATION_CHANGE_REJECTED,
                 message, List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "ConfigurationVersion", event.configurationVersionId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyPriceChangeDecided(PriceChangeDecidedEvent event) {
+        boolean approved = "APPROVED".equals(event.decision());
+        String message = approved ? "El director aprobó tu propuesta de precio (" + event.priceDescription() + ") con vigencia desde el " + event.effectiveFrom() + "."
+                : "El director rechazó tu propuesta de precio (" + event.priceDescription() + "): " + event.reason();
+        sendOnce(event, PRICE_DECIDED_HANDLER, new BillingOperationNotification(
+                approved ? NotificationType.PRICE_CHANGE_APPROVED : NotificationType.PRICE_CHANGE_REJECTED,
+                message, List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "PriceVersion", event.priceVersionId()));
     }
 
     @ApplicationModuleListener

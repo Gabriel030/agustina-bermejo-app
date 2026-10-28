@@ -1,11 +1,15 @@
 package com.red_escuela.backend.billing.pricing.service;
 
+import com.red_escuela.backend.billing.configuration.policy.ProposalApprovalCheck;
+import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
+import com.red_escuela.backend.billing.events.PriceChangeDecidedEvent;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.pricing.domain.Price;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersion;
 import com.red_escuela.backend.billing.pricing.exception.PriceChangedConcurrentlyException;
 import com.red_escuela.backend.billing.pricing.exception.PriceNotFoundException;
+import com.red_escuela.backend.billing.pricing.exception.PriceVersionNotFoundException;
 import com.red_escuela.backend.billing.pricing.policy.ChangePriceCommand;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
@@ -29,12 +33,15 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     private final PriceRepository priceRepository;
     private final PriceVersionPolicyEvaluator policyEvaluator;
     private final PriceLocker priceLocker;
+    private final BillingActorResolver actorResolver;
     private final Clock clock;
 
-    public ChangePriceOperation(PriceRepository priceRepository, PriceVersionPolicyEvaluator policyEvaluator, PriceLocker priceLocker, Clock clock) {
+    public ChangePriceOperation(PriceRepository priceRepository, PriceVersionPolicyEvaluator policyEvaluator, PriceLocker priceLocker,
+                                BillingActorResolver actorResolver, Clock clock) {
         this.priceLocker = priceLocker;
         this.priceRepository = priceRepository;
         this.policyEvaluator = policyEvaluator;
+        this.actorResolver = actorResolver;
         this.clock = clock;
     }
 
@@ -50,12 +57,12 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
 
     @Override
     public List<String> validationMoments() {
-        return List.of("PRICE_CHANGE", "PRICE_VERSION");
+        return List.of("PRICE_CHANGE", "PRICE_VERSION", "PRICE_PROPOSAL", "PRICE_PROPOSAL_APPROVAL", "PRICE_PROPOSAL_REJECTION");
     }
 
     @Override
     public List<Class<? extends DomainEvent>> publishedEventTypes() {
-        return List.of();
+        return List.of(PriceChangeDecidedEvent.class);
     }
 
     @Override
@@ -68,17 +75,8 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     @Override
     public PriceVersion processOperation(ChangePriceCommand command) {
         Price price = priceLocker.lockForUpdate(command.priceId());
-        LocalDate today = LocalDate.now(clock);
-        Instant now = Instant.now(clock);
         try {
-            price.makeRoomForVersionStartingOn(command.effectiveFrom(), today, command.publisherPersonId(), now);
-            priceRepository.flush();
-            PriceVersion version = price.publishPriceVersion(command.baseAmount(), command.marketingDiscount(), command.effectiveFrom(), command.changeReason(),
-                    command.publisherPersonId(), false, today, now);
-            priceRepository.flush();
-            log.info("Price version {}: price={}, feeType={}, version={}, effectiveFrom={}, actor={}", version.getStatus(), price.getId(), price.getFeeType(),
-                    version.getId(), version.getEffectiveFrom(), command.publisherPersonId());
-            return version;
+            return command.requestedByDirector() ? publishDirectly(price, command) : approveProposal(price, command);
         } catch (DataIntegrityViolationException | ObjectOptimisticLockingFailureException exception) {
             if (OfferingPriceCatalogService.isConcurrentPriceWrite(exception)) {
                 throw new PriceChangedConcurrentlyException(price.getFeeType(), exception);
@@ -89,6 +87,38 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
 
     @Override
     public List<? extends DomainEvent> domainEventsOf(ChangePriceCommand command, PriceVersion version) {
-        return List.of();
+        if (command.requestedByDirector()) {
+            return List.of();
+        }
+        return List.of(PriceChangeDecidedEvent.approvedFor(version.getId(), version.getPrice().getId(), version.getPrice().getDescription(), version.getEffectiveFrom(),
+                version.getProposedById()));
+    }
+
+    private PriceVersion publishDirectly(Price price, ChangePriceCommand command) {
+        LocalDate today = LocalDate.now(clock);
+        Instant now = Instant.now(clock);
+        price.makeRoomForVersionStartingOn(command.effectiveFrom(), today, command.requestedByPersonId(), now);
+        priceRepository.flush();
+        PriceVersion version = price.publishPriceVersion(command.baseAmount(), command.marketingDiscount(), command.effectiveFrom(), command.changeReason(),
+                command.requestedByPersonId(), false, today, now);
+        priceRepository.flush();
+        log.info("Price version {}: price={}, feeType={}, version={}, effectiveFrom={}, actor={}", version.getStatus(), price.getId(), price.getFeeType(),
+                version.getId(), version.getEffectiveFrom(), command.requestedByPersonId());
+        return version;
+    }
+
+    private PriceVersion approveProposal(Price price, ChangePriceCommand command) {
+        LocalDate today = LocalDate.now(clock);
+        Instant now = Instant.now(clock);
+        PriceVersion proposal = price.findOpenProposalOfRequest(command.authorizationRequestId()).orElseThrow(() -> new PriceVersionNotFoundException(null));
+        policyEvaluator.requireProposalNotExpired(new ProposalApprovalCheck(proposal.getEffectiveFrom(), today, proposal.getProposedAt().atZone(clock.getZone()).toLocalDate()));
+        Long deciderId = actorResolver.currentPersonId();
+        price.makeRoomForVersionStartingOn(proposal.getEffectiveFrom(), today, deciderId, now);
+        priceRepository.flush();
+        price.approveProposedVersion(proposal, deciderId, null, today, now);
+        priceRepository.flush();
+        log.info("Price proposal {}: price={}, feeType={}, version={}, effectiveFrom={}, proposedBy={}, decidedBy={}", proposal.getStatus(), price.getId(),
+                price.getFeeType(), proposal.getId(), proposal.getEffectiveFrom(), proposal.getProposedById(), deciderId);
+        return proposal;
     }
 }

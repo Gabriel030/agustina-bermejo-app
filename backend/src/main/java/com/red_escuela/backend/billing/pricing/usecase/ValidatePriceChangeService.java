@@ -25,8 +25,8 @@ public class ValidatePriceChangeService implements ValidatePriceChangeUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason) {
-        return validator.collectViolations(new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId()));
+        return validator.collectViolations(new ChangePriceCommand(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, actorResolver.currentPersonId(), actorResolver.currentActorIsDirector()));
     }
 }
