@@ -23,7 +23,7 @@ import { ReminderConfirmStep } from './ReminderConfirmStep';
 import { ReminderTimeline } from './ReminderTimeline';
 import { GeneralSettingsForm, SendingOverrides } from './SettingsFields';
 import { VersionHistory } from './VersionHistory';
-import { GROUP_LABELS, OVERRIDE_KEYS, SETTINGS_KEYS, diffSchedules, diffSettingValues, pickEffective } from './reminderSchedule';
+import { GROUP_LABELS, INITIAL_NOTICES, INITIAL_SETTINGS, OVERRIDE_KEYS, SETTINGS_KEYS, diffSchedules, diffSettingValues, pickEffective } from './reminderSchedule';
 
 const GENERAL = 'GENERAL';
 const TABS = ['PROGRAMS', 'MONTHLY_COURSES', GENERAL];
@@ -36,8 +36,10 @@ const EMPTY_SCHEDULE = { notices: [], sendingOverrides: EMPTY_OVERRIDES };
 
 const showSimulatedMails = import.meta.env.DEV || import.meta.env.VITE_SHOW_SIMULATED_MAILS === 'true';
 
-function normalizeSchedule(schedule) {
-  if (!schedule) return EMPTY_SCHEDULE;
+const INITIAL_SCHEDULE = { notices: INITIAL_NOTICES, sendingOverrides: EMPTY_OVERRIDES };
+
+function normalizeSchedule(schedule, fallback = EMPTY_SCHEDULE) {
+  if (!schedule) return fallback;
   return { notices: schedule.notices ?? [], sendingOverrides: { ...EMPTY_OVERRIDES, ...schedule.sendingOverrides } };
 }
 
@@ -142,9 +144,9 @@ export function ReminderSettingsPage() {
   const scope = isGeneral ? null : { group: tab, targetId: exception?.id ?? null };
   const draftKey = isGeneral ? GENERAL : `${tab}:${exception?.id ?? 'group'}`;
 
-  const groupBase = normalizeSchedule(pickEffective(groupVersions.data)?.schedule);
+  const groupBase = normalizeSchedule(pickEffective(groupVersions.data)?.schedule, INITIAL_SCHEDULE);
   const baseSchedule = exception ? (exception.isNew ? EMPTY_SCHEDULE : normalizeSchedule(pickEffective(exceptionVersions.data)?.schedule)) : groupBase;
-  const settingsBase = pickEffective(settingsVersions.data)?.values;
+  const settingsBase = pickEffective(settingsVersions.data)?.values ?? INITIAL_SETTINGS;
   const base = isGeneral ? settingsBase : baseSchedule;
   const draft = drafts[draftKey] ?? base;
 

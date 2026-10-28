@@ -43,6 +43,25 @@ export const OVERRIDE_KEYS = [
 
 export const SETTINGS_KEYS = [...OVERRIDE_KEYS, 'dailyDigestEnabled'];
 
+export const INITIAL_SETTINGS = {
+  suspensionNoticeEnabled: true,
+  postWithdrawalSummaryMonths: 6,
+  emailWindowStart: '09:00',
+  emailWindowEnd: '11:00',
+  dailyEmailCap: 250,
+  contactListDaysOverdue: 14,
+  contactListOverdueInstallments: 2,
+  dailyDigestEnabled: true,
+};
+
+export const INITIAL_NOTICES = [
+  { noticeKey: 'issuance', messageType: 'ISSUANCE_NOTICE', milestone: 'ISSUANCE', offsetDays: 0, channels: ['IN_APP'], repetition: null },
+  { noticeKey: 'after-issue', messageType: 'AFTER_ISSUE_REMINDER', milestone: 'ISSUANCE', offsetDays: 5, channels: ['IN_APP', 'EMAIL'], repetition: null },
+  { noticeKey: 'before-due', messageType: 'BEFORE_DUE_REMINDER', milestone: 'DUE_DATE', offsetDays: -1, channels: ['IN_APP', 'EMAIL'], repetition: null },
+  { noticeKey: 'after-due', messageType: 'AFTER_DUE_REMINDER', milestone: 'DUE_DATE', offsetDays: 10, channels: ['IN_APP', 'EMAIL'], repetition: null },
+  { noticeKey: 'before-suspension', messageType: 'BEFORE_SUSPENSION_REMINDER', milestone: 'SUSPENSION', offsetDays: -1, channels: ['IN_APP', 'EMAIL'], repetition: null },
+];
+
 export function noticeDays(notice) {
   return Math.abs(notice.offsetDays);
 }

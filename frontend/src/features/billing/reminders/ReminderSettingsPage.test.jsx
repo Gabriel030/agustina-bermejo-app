@@ -122,6 +122,24 @@ describe('ReminderSettingsPage', () => {
     expect(screen.queryByText(/cambio sin publicar/)).not.toBeInTheDocument();
   });
 
+  it('shows the initial notices when the group has no effective version yet', async () => {
+    server.use(http.get(`${SCHEDULES}/:group/versions`, () => HttpResponse.json([])));
+    renderPage();
+
+    expect(await screen.findByText('El día de la emisión · App')).toBeInTheDocument();
+    expect(screen.getByText('10 días después del vencimiento · App y Mail')).toBeInTheDocument();
+    expect(screen.queryByText(/cambio sin publicar/)).not.toBeInTheDocument();
+  });
+
+  it('shows the initial sending settings when the general tab has no effective version yet', async () => {
+    server.use(http.get(`${SETTINGS}/versions`, () => HttpResponse.json([])));
+    renderPage('/administrativo/recordatorios-de-pago?tab=GENERAL');
+
+    expect(await screen.findByLabelText('Tope diario de mails')).toHaveValue(250);
+    expect(screen.getByLabelText('Resumen tras una baja (meses)')).toHaveValue(6);
+    expect(screen.queryByText(/cambio sin publicar/)).not.toBeInTheDocument();
+  });
+
   it('walks the two steps and sends a proposal when the user is an administrative', async () => {
     const user = userEvent.setup();
     renderPage();
