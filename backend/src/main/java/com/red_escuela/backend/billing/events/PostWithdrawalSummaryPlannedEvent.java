@@ -30,6 +30,10 @@ public record PostWithdrawalSummaryPlannedEvent(UUID eventId, String correlation
         }
     }
 
-    public record Line(PlannedReminderInvoiceKind invoiceKind, LocalDate dueDate, Money balance) {
+    public record Line(PlannedReminderInvoiceKind invoiceKind, LocalDate dueDate, Money balance, String withdrawnEnrollmentName, LocalDate withdrawalDate) {
+
+        public Line(PlannedReminderInvoiceKind invoiceKind, LocalDate dueDate, Money balance) {
+            this(invoiceKind, dueDate, balance, null, null);
+        }
     }
 }

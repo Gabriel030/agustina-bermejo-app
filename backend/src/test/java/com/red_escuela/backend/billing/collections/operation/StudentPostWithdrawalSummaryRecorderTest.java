@@ -32,13 +32,13 @@ class StudentPostWithdrawalSummaryRecorderTest {
     private final StudentPostWithdrawalSummaryRecorder recorder = new StudentPostWithdrawalSummaryRecorder(store, publisher);
 
     private static WithdrawnEnrollmentDebtLine courseLine(Long courseEnrollmentId, Long invoiceId, boolean fee, Money balance) {
-        return new WithdrawnEnrollmentDebtLine(7L, 70L, null, courseEnrollmentId, JULY_THIRTY_FIRST, invoiceId, fee, LocalDate.of(2027, 7, 10), balance);
+        return new WithdrawnEnrollmentDebtLine(7L, 70L, null, courseEnrollmentId, JULY_THIRTY_FIRST, invoiceId, fee, LocalDate.of(2027, 7, 10), balance, "Curso de Cocina");
     }
 
     @Test
     @Tag("D-338")
     void oneEventPerStudentCarriesEveryWithdrawnEnrollmentGroupedByCurrencyAndEachEnrollmentIsRecorded() {
-        WithdrawnEnrollmentDebtLine programLine = new WithdrawnEnrollmentDebtLine(7L, 70L, 5L, null, JULY_THIRTY_FIRST, 100L, false, LocalDate.of(2027, 7, 10), ars(1000));
+        WithdrawnEnrollmentDebtLine programLine = new WithdrawnEnrollmentDebtLine(7L, 70L, 5L, null, JULY_THIRTY_FIRST, 100L, false, LocalDate.of(2027, 7, 10), ars(1000), "Tecnicatura en Enfermería");
         PostWithdrawalSummaryCandidate candidate = new PostWithdrawalSummaryCandidate(7L, 70L, List.of(programLine, courseLine(9L, 101L, true, usd(20)),
                 courseLine(9L, 102L, false, ars(500))));
 
@@ -61,6 +61,22 @@ class StudentPostWithdrawalSummaryRecorderTest {
 
     @Test
     @Tag("D-338")
+    void eachLineOfTheEventCarriesTheNameAndTheWithdrawalDateOfItsEnrollment() {
+        WithdrawnEnrollmentDebtLine programLine = new WithdrawnEnrollmentDebtLine(7L, 70L, 5L, null, LocalDate.of(2027, 7, 15), 100L, false, LocalDate.of(2027, 7, 10), ars(1000),
+                "Tecnicatura en Enfermería");
+        PostWithdrawalSummaryCandidate candidate = new PostWithdrawalSummaryCandidate(7L, 70L, List.of(programLine, courseLine(9L, 101L, false, ars(500))));
+
+        recorder.recordSummaryOf(candidate, AUGUST_SECOND);
+
+        ArgumentCaptor<PostWithdrawalSummaryPlannedEvent> captor = ArgumentCaptor.forClass(PostWithdrawalSummaryPlannedEvent.class);
+        verify(publisher).publishEvent(captor.capture());
+        List<PostWithdrawalSummaryPlannedEvent.Line> lines = captor.getValue().blocks().get(0).lines();
+        assertThat(lines).extracting(PostWithdrawalSummaryPlannedEvent.Line::withdrawnEnrollmentName).containsExactlyInAnyOrder("Tecnicatura en Enfermería", "Curso de Cocina");
+        assertThat(lines).extracting(PostWithdrawalSummaryPlannedEvent.Line::withdrawalDate).containsExactlyInAnyOrder(LocalDate.of(2027, 7, 15), JULY_THIRTY_FIRST);
+    }
+
+    @Test
+    @Tag("D-338")
     void anInvoiceLinkedToTwoWithdrawnEnrollmentsIsCountedOnce() {
         PostWithdrawalSummaryCandidate candidate = new PostWithdrawalSummaryCandidate(7L, 70L, List.of(courseLine(9L, 100L, false, ars(1000)),
                 courseLine(10L, 100L, false, ars(1000))));
@@ -79,8 +95,8 @@ class StudentPostWithdrawalSummaryRecorderTest {
     @Tag("D-338")
     void theCandidatesOfTheDayAreGroupedPerStudentAndOnlyIncludeEnrollmentsWhoseSummaryIsDue() {
         WithdrawnEnrollmentDebtLine due = courseLine(9L, 100L, false, ars(1000));
-        WithdrawnEnrollmentDebtLine tooOld = new WithdrawnEnrollmentDebtLine(7L, 70L, null, 11L, LocalDate.of(2027, 1, 15), 103L, false, LocalDate.of(2027, 1, 10), ars(300));
-        WithdrawnEnrollmentDebtLine otherStudent = new WithdrawnEnrollmentDebtLine(8L, 80L, null, 12L, JULY_THIRTY_FIRST, 104L, false, LocalDate.of(2027, 7, 10), ars(400));
+        WithdrawnEnrollmentDebtLine tooOld = new WithdrawnEnrollmentDebtLine(7L, 70L, null, 11L, LocalDate.of(2027, 1, 15), 103L, false, LocalDate.of(2027, 1, 10), ars(300), "Curso de Cocina");
+        WithdrawnEnrollmentDebtLine otherStudent = new WithdrawnEnrollmentDebtLine(8L, 80L, null, 12L, JULY_THIRTY_FIRST, 104L, false, LocalDate.of(2027, 7, 10), ars(400), "Curso de Cocina");
 
         List<PostWithdrawalSummaryCandidate> candidates = PostWithdrawalSummaryCandidate.groupDueOn(List.of(due, tooOld, otherStudent), AUGUST_SECOND, 6,
                 NonBusinessDays.weekendsOnly());

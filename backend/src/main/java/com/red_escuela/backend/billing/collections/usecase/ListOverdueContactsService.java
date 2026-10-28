@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.collections.usecase;
 
+import com.red_escuela.backend.billing.collections.domain.ListedOverdueContact;
 import com.red_escuela.backend.billing.collections.domain.OverdueContact;
+import com.red_escuela.backend.billing.collections.domain.OverdueContactFilter;
 import com.red_escuela.backend.billing.collections.dto.OverdueContactPageResponse;
 import com.red_escuela.backend.billing.collections.dto.OverdueContactResponse;
 import com.red_escuela.backend.billing.collections.repository.OverdueContactQuery;
@@ -8,7 +10,6 @@ import com.red_escuela.backend.billing.collections.repository.OverdueContactQuer
 import com.red_escuela.backend.billing.collections.repository.OverdueContactQuery.StudentIdentityRow;
 import com.red_escuela.backend.billing.collections.service.OverdueContactSegment;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,22 +37,23 @@ public class ListOverdueContactsService implements ListOverdueContactsUseCase {
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public OverdueContactPageResponse listOverdueContacts(int page, int size, Currency currency) {
+    public OverdueContactPageResponse listOverdueContacts(int page, int size, OverdueContactFilter filter) {
         int boundedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int boundedPage = Math.max(page, 0);
-        Page<OverdueContact> contacts = segment.findContacts(ApplicationTime.today(), currency, PageRequest.of(boundedPage, boundedSize));
-        List<Long> studentIds = contacts.getContent().stream().map(OverdueContact::studentId).toList();
+        Page<ListedOverdueContact> contacts = segment.findListedContacts(ApplicationTime.today(), filter, PageRequest.of(boundedPage, boundedSize));
+        List<Long> studentIds = contacts.getContent().stream().map(listed -> listed.contact().studentId()).toList();
         Map<Long, StudentIdentityRow> identities = overdueContactQuery.findIdentitiesOf(studentIds).stream()
                 .collect(Collectors.toMap(StudentIdentityRow::studentId, Function.identity()));
         Map<Long, LocalDate> lastReminders = overdueContactQuery.findLastReminderDatesOf(studentIds).stream()
                 .collect(Collectors.toMap(LastReminderRow::studentId, LastReminderRow::lastReminderDate));
         List<OverdueContactResponse> items = contacts.getContent().stream()
-                .map(contact -> toResponse(contact, identities.get(contact.studentId()), lastReminders.get(contact.studentId()))).toList();
+                .map(listed -> toResponse(listed, identities.get(listed.contact().studentId()), lastReminders.get(listed.contact().studentId()))).toList();
         return new OverdueContactPageResponse(items, boundedPage, boundedSize, contacts.getTotalElements());
     }
 
-    private OverdueContactResponse toResponse(OverdueContact contact, StudentIdentityRow identity, LocalDate lastReminderDate) {
+    private OverdueContactResponse toResponse(ListedOverdueContact listed, StudentIdentityRow identity, LocalDate lastReminderDate) {
+        OverdueContact contact = listed.contact();
         return new OverdueContactResponse(contact.studentId(), identity.lastName() + ", " + identity.name(), identity.dni(), contact.oldestDaysOverdue(),
-                contact.overdueInstallments(), contact.overdueAmounts(), lastReminderDate);
+                contact.overdueInstallments(), contact.overdueAmounts(), lastReminderDate, listed.newlyListed(), listed.entryReason());
     }
 }

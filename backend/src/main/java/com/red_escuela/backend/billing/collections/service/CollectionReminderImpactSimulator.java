@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -48,14 +49,15 @@ public class CollectionReminderImpactSimulator {
 
     @Transactional(readOnly = true)
     public CollectionReminderImpact simulateImpactOf(CollectionReminderImpactQuery query) {
-        ReminderScheduleProposal proposal = query.proposal();
+        Optional<ReminderScheduleProposal> proposal = query.proposedSchedule();
         LocalDate effectiveFrom = query.effectiveFrom();
-        scheduleTargets.requireValidProposal(proposal);
+        proposal.ifPresentOrElse(scheduleTargets::requireValidProposal,
+                () -> query.proposedGlobalSettings().ifPresent(scheduleTargets::requireValidGlobalSettings));
         LocalDate today = LocalDate.now(clock);
         LocalDate windowStart = effectiveFrom.isAfter(today) ? effectiveFrom : today.plusDays(1);
         LocalDate windowEnd = windowStart.plusDays(SIMULATED_DAYS);
         ReminderDigestMode currentMode = modeOf(configurationReader.collectionReminderSettingsEffectiveOn(windowStart));
-        ReminderDigestMode proposedMode = proposal.proposedGlobalSettings().map(CollectionReminderImpactSimulator::modeOf).orElse(currentMode);
+        ReminderDigestMode proposedMode = query.proposedGlobalSettings().map(CollectionReminderImpactSimulator::modeOf).orElse(currentMode);
         NonBusinessDays nonBusinessDays = nonBusinessDaysBetween(windowStart.minusDays(CALENDAR_MARGIN_DAYS), windowEnd.plusDays(CALENDAR_MARGIN_DAYS));
         Map<ReminderScheduleTarget, ResolvedReminderSchedule> currentCache = new HashMap<>();
         Map<ReminderScheduleTarget, ResolvedReminderSchedule> proposedCache = new HashMap<>();
@@ -73,8 +75,12 @@ public class CollectionReminderImpactSimulator {
             for (StudentReminderContext context : factsLoader.loadContextsOf(page, today)) {
                 students.add(context.facts());
                 currentSchedules.putAll(factsLoader.resolveSchedulesOf(context, windowStart, currentCache));
-                context.scheduleTargetsByInvoiceId().forEach((invoiceId, target) -> proposedSchedules.put(invoiceId,
-                        proposedCache.computeIfAbsent(target, key -> configurationReader.reminderScheduleWithProposal(key, windowStart, proposal))));
+                if (proposal.isPresent()) {
+                    context.scheduleTargetsByInvoiceId().forEach((invoiceId, target) -> proposedSchedules.put(invoiceId,
+                            proposedCache.computeIfAbsent(target, key -> configurationReader.reminderScheduleWithProposal(key, windowStart, proposal.get()))));
+                } else {
+                    proposedSchedules.putAll(currentSchedules);
+                }
             }
             changed += CollectionReminderImpactCalculator.countStudentsWithChangedSchedule(students, currentSchedules, proposedSchedules, currentMode, proposedMode,
                     windowStart, windowEnd, nonBusinessDays);

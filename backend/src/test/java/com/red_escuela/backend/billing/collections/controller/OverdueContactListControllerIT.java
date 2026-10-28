@@ -131,4 +131,115 @@ class OverdueContactListControllerIT extends AbstractOverdueContactIT {
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(100));
     }
+
+    private Student studentByAge() {
+        Student student = newStudent();
+        installmentDueOn(newCourseEnrollment(student), MARCH_ELEVENTH);
+        return student;
+    }
+
+    private Student studentByInstallments() {
+        Student student = newStudent();
+        installmentDueOn(newCourseEnrollment(student), LocalDate.of(2027, 3, 20));
+        installmentDueOn(newCourseEnrollment(student), LocalDate.of(2027, 3, 20));
+        return student;
+    }
+
+    private Student studentByBoth() {
+        Student student = newStudent();
+        installmentDueOn(newCourseEnrollment(student), MARCH_ELEVENTH);
+        installmentDueOn(newCourseEnrollment(student), MARCH_ELEVENTH);
+        return student;
+    }
+
+    private String list(String query) {
+        return PATH + "?size=100" + query;
+    }
+
+    @Test
+    void eachRowSaysWhichPartOfTheCriteriaPutTheStudentInAndWhetherItIsNewToTheList() throws Exception {
+        Student byAge = studentByAge();
+        Student byInstallments = studentByInstallments();
+        Student byBoth = studentByBoth();
+        today(MARCH_TWENTY_FIFTH);
+
+        mockMvc.perform(get(list("")).header("Authorization", tokenWithRole("ADMINISTRATIVO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(itemOf(byAge, "entryReason")).value(contains("DAYS_OVERDUE")))
+                .andExpect(jsonPath(itemOf(byAge, "newlyListed")).value(contains(true)))
+                .andExpect(jsonPath(itemOf(byInstallments, "entryReason")).value(contains("OVERDUE_INSTALLMENTS")))
+                .andExpect(jsonPath(itemOf(byInstallments, "newlyListed")).value(contains(false)))
+                .andExpect(jsonPath(itemOf(byBoth, "entryReason")).value(contains("DAYS_AND_INSTALLMENTS")))
+                .andExpect(jsonPath(itemOf(byBoth, "newlyListed")).value(contains(false)));
+    }
+
+    @Test
+    void aStudentIsNotNewOnTheDayAfterEnteringTheList() throws Exception {
+        Student byAge = studentByAge();
+        today(LocalDate.of(2027, 3, 26));
+
+        mockMvc.perform(get(list("")).header("Authorization", tokenWithRole("DIRECTOR")))
+                .andExpect(jsonPath(itemOf(byAge, "newlyListed")).value(contains(false)));
+    }
+
+    @Test
+    void theServerFiltersByMinimumDaysAndMinimumInstallments() throws Exception {
+        Student byAge = studentByAge();
+        Student byInstallments = studentByInstallments();
+        Student byBoth = studentByBoth();
+        today(MARCH_TWENTY_FIFTH);
+        String token = tokenWithRole("DIRECTOR");
+
+        mockMvc.perform(get(list("&minDaysOverdue=14")).header("Authorization", token))
+                .andExpect(jsonPath(itemOf(byAge, "studentId")).isNotEmpty())
+                .andExpect(jsonPath(itemOf(byBoth, "studentId")).isNotEmpty())
+                .andExpect(jsonPath(itemOf(byInstallments, "studentId")).isEmpty());
+        mockMvc.perform(get(list("&minOverdueInstallments=2")).header("Authorization", token))
+                .andExpect(jsonPath(itemOf(byInstallments, "studentId")).isNotEmpty())
+                .andExpect(jsonPath(itemOf(byBoth, "studentId")).isNotEmpty())
+                .andExpect(jsonPath(itemOf(byAge, "studentId")).isEmpty());
+        mockMvc.perform(get(list("&minDaysOverdue=15")).header("Authorization", token))
+                .andExpect(jsonPath(itemOf(byAge, "studentId")).isEmpty())
+                .andExpect(jsonPath(itemOf(byBoth, "studentId")).isEmpty());
+    }
+
+    @Test
+    void theServerFiltersByEntryReasonAndByNewlyListed() throws Exception {
+        Student byAge = studentByAge();
+        Student byInstallments = studentByInstallments();
+        Student byBoth = studentByBoth();
+        today(MARCH_TWENTY_FIFTH);
+        String token = tokenWithRole("DIRECTOR");
+
+        mockMvc.perform(get(list("&entryReason=OVERDUE_INSTALLMENTS")).header("Authorization", token))
+                .andExpect(jsonPath(itemOf(byInstallments, "studentId")).isNotEmpty())
+                .andExpect(jsonPath(itemOf(byAge, "studentId")).isEmpty())
+                .andExpect(jsonPath(itemOf(byBoth, "studentId")).isEmpty());
+        mockMvc.perform(get(list("&onlyNewlyListed=true")).header("Authorization", token))
+                .andExpect(jsonPath(itemOf(byAge, "studentId")).isNotEmpty())
+                .andExpect(jsonPath(itemOf(byInstallments, "studentId")).isEmpty())
+                .andExpect(jsonPath(itemOf(byBoth, "studentId")).isEmpty());
+        mockMvc.perform(get(list("&entryReason=NOT_A_REASON")).header("Authorization", token)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void theTotalCountsOnlyTheRowsThatPassTheFilters() throws Exception {
+        studentByAge();
+        studentByInstallments();
+        studentByBoth();
+        today(MARCH_TWENTY_FIFTH);
+        String token = tokenWithRole("DIRECTOR");
+
+        long unfiltered = totalOf(token, "");
+        long onlyByInstallments = totalOf(token, "&entryReason=OVERDUE_INSTALLMENTS");
+
+        org.assertj.core.api.Assertions.assertThat(unfiltered - onlyByInstallments).isGreaterThanOrEqualTo(2);
+        mockMvc.perform(get(PATH + "?size=1&entryReason=OVERDUE_INSTALLMENTS").header("Authorization", token))
+                .andExpect(jsonPath("$.totalElements").value(onlyByInstallments));
+    }
+
+    private long totalOf(String token, String query) throws Exception {
+        String json = mockMvc.perform(get(list(query)).header("Authorization", token)).andReturn().getResponse().getContentAsString();
+        return ((Number) com.jayway.jsonpath.JsonPath.read(json, "$.totalElements")).longValue();
+    }
 }

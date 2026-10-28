@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.academicstructure.api.TeachingTargetLookup;
+import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedule;
@@ -43,6 +44,10 @@ public class ReminderScheduleTargets {
         policyEvaluator.requireReminderScheduleChangeNotToFollowGroup(new ReminderScheduleChangeCheck(proposal.schedule()));
         policyEvaluator.requireCoherentCollectionReminderSchedule(new ReminderScheduleCheck(proposal.schedule(), topic.isReminderScheduleException()));
         proposal.proposedGlobalSettings().ifPresent(policyEvaluator::requireCoherentCollectionReminderSettings);
+    }
+
+    public void requireValidGlobalSettings(CollectionReminderSettings settings) {
+        policyEvaluator.requireCoherentCollectionReminderSettings(settings);
     }
 
     public ConfigurationValues requestedValuesOf(TeachingGroup group, ReminderSchedule schedule) {
