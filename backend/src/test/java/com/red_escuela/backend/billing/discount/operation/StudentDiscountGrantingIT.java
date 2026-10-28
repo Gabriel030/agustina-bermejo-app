@@ -8,7 +8,11 @@ import com.red_escuela.backend.billing.authorization.usecase.ApproveAuthorizatio
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantPreview;
+import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
@@ -98,6 +102,10 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
     private GrantStudentDiscountOperation grantOperation;
     @Autowired
     private RevokeStudentDiscountOperation revokeOperation;
+    @Autowired
+    private CreateDiscountDefinitionOperation createDefinitionOperation;
+    @Autowired
+    private CloseDiscountDefinitionOperation closeDefinitionOperation;
     @Autowired
     private StudentDiscountRepository repository;
     @Autowired
@@ -338,6 +346,120 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
 
     private long discountsOfLearner() {
         return jdbc.queryForObject("select count(*) from student_discount where student_id = ?", Long.class, learner.studentId());
+    }
+
+    private record PreviewOutcome(StudentDiscountGrantPreview preview, List<String> rejectionCodes, BillingOperationOutcome<StudentDiscount> outcome) {
+    }
+
+    private PreviewOutcome previewThenGrant(Person actor, EnrollmentReference target, StudentDiscountGrantRequest request) {
+        authenticateAs(actor);
+        boolean byDirector = actor.getId().equals(director.getId());
+        StudentDiscountGrantPreview preview = transactionTemplate.execute(status -> grantOperation.previewGrant(GrantStudentDiscountCommand.byPerson(target, request, actor.getId(), byDirector)));
+        try {
+            return new PreviewOutcome(preview, List.of(), pipeline.runOperation(grantOperation, GrantStudentDiscountCommand.byPerson(target, request, actor.getId(), byDirector)));
+        } catch (RuntimeException rejection) {
+            assertThat(rejection).isInstanceOf(ReportsPolicyViolations.class);
+            return new PreviewOutcome(preview, ((ReportsPolicyViolations) rejection).violations().stream().map(violation -> violation.code()).toList(), null);
+        }
+    }
+
+    private List<String> codesOf(StudentDiscountGrantPreview preview) {
+        return preview.violations().stream().map(violation -> violation.code()).toList();
+    }
+
+    private long countOf(String table) {
+        return jdbc.queryForObject("select count(*) from " + table, Long.class);
+    }
+
+    private StudentDiscountGrantRequest withDefinition(StudentDiscountGrantRequest request, Long definitionId) {
+        return new StudentDiscountGrantRequest(request.discountType(), definitionId, request.calculation(), request.invoiceType(), request.fromPeriod(), request.toPeriod(), request.reason());
+    }
+
+    @Test
+    void anAllowedPreviewIsFollowedByARealGrantTheDirectorPublishesAndTheAdministrativeProposes() {
+        PreviewOutcome byDirector = previewThenGrant(director, enrollment(), scholarship("50", YearMonth.of(2027, 4), YearMonth.of(2027, 6)));
+        PreviewOutcome byAdministrative = previewThenGrant(administrative, enrollment(), individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), YearMonth.of(2027, 8), YearMonth.of(2027, 8), "Hermano"));
+
+        assertThat(byDirector.preview().allowed()).isTrue();
+        assertThat(byDirector.outcome()).isInstanceOf(BillingOperationOutcome.Processed.class);
+        assertThat(byAdministrative.preview().allowed()).isTrue();
+        assertThat(byAdministrative.preview().requiresDirectorApproval()).isTrue();
+        assertThat(byAdministrative.outcome()).isInstanceOf(BillingOperationOutcome.AwaitingAuthorization.class);
+    }
+
+    @Test
+    void aRejectedPreviewIsFollowedByARealRejectionWithTheSameViolationCodes() {
+        grantAsDirector(scholarship("50", YearMonth.of(2027, 4), YearMonth.of(2027, 6)));
+
+        PreviewOutcome overlapping = previewThenGrant(director, enrollment(), scholarship("30", YearMonth.of(2027, 5), YearMonth.of(2027, 8)));
+        PreviewOutcome early = previewThenGrant(director, enrollment(), scholarship("30", YearMonth.of(2027, 2), YearMonth.of(2027, 8)));
+
+        assertThat(overlapping.preview().allowed()).isFalse();
+        assertThat(overlapping.rejectionCodes()).isNotEmpty().isEqualTo(codesOf(overlapping.preview()));
+        assertThat(early.preview().allowed()).isFalse();
+        assertThat(early.rejectionCodes()).isNotEmpty().isEqualTo(codesOf(early.preview()));
+    }
+
+    @Test
+    void thePreviewOfTheAdministrativeCreatesNoAuthorizationRequestNorAnyRow() {
+        StudentDiscountGrantRequest request = individual(InvoiceType.MONTHLY_INSTALLMENT, percent("10"), YearMonth.of(2027, 8), YearMonth.of(2027, 8), "Hermano");
+        authenticateAs(administrative);
+        List<String> tables = List.of("authorization_request", "authorization_request_status_change", "student_discount", "student_discount_status_change", "notification_delivery");
+        List<Long> before = tables.stream().map(this::countOf).toList();
+
+        StudentDiscountGrantPreview preview = transactionTemplate.execute(status -> grantOperation.previewGrant(
+                GrantStudentDiscountCommand.byPerson(enrollment(), request, administrative.getId(), false)));
+
+        assertThat(preview.allowed()).isTrue();
+        assertThat(tables.stream().map(this::countOf).toList()).isEqualTo(before);
+        proposeGrant(request);
+        assertThat(countOf("authorization_request")).isGreaterThan(before.get(0));
+    }
+
+    @Test
+    void aScholarshipOverARealAnnualUpfrontSelectionIsRejectedByThePreviewAndByTheGrant() {
+        jdbc.update("update payment_plan_option set cadence = 'ANNUAL_UPFRONT' where id = (select payment_plan_option_id from payment_plan_selection where id = ?)", learner.selectionId());
+
+        PreviewOutcome outcome = previewThenGrant(director, enrollment(), scholarship("50", YearMonth.of(2027, 4), YearMonth.of(2027, 6)));
+
+        assertThat(outcome.preview().annualUpfrontCoversRange()).isTrue();
+        assertThat(codesOf(outcome.preview())).contains("SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT");
+        assertThat(outcome.rejectionCodes()).isEqualTo(codesOf(outcome.preview()));
+    }
+
+    @Test
+    void thePreviewAndTheGrantAgreeOnACourseEnrollmentWithTheTermEndAsDefaultEnd() {
+        Long courseEnrollmentId = newCourseEnrollment();
+        EnrollmentReference course = EnrollmentReference.ofCourse(courseEnrollmentId);
+
+        PreviewOutcome allowed = previewThenGrant(director, course, scholarship("50", YearMonth.of(2027, 4), null));
+        PreviewOutcome rejected = previewThenGrant(director, course, scholarship("20", YearMonth.of(2027, 6), YearMonth.of(2027, 7)));
+
+        assertThat(allowed.preview().allowed()).isTrue();
+        assertThat(allowed.preview().toPeriod()).isEqualTo(YearMonth.of(2027, 9));
+        assertThat(allowed.preview().coveredPeriods()).isEqualTo(6);
+        assertThat(((BillingOperationOutcome.Processed<StudentDiscount>) allowed.outcome()).result().getToPeriod()).isEqualTo(YearMonth.of(2027, 9));
+        assertThat(rejected.preview().allowed()).isFalse();
+        assertThat(rejected.rejectionCodes()).isNotEmpty().isEqualTo(codesOf(rejected.preview()));
+        deleteDiscountsOfCourse(courseEnrollmentId);
+    }
+
+    @Test
+    void aClosedDefinitionAndANonScholarshipDefinitionAreRejectedByThePreviewAndByTheGrant() {
+        authenticateAs(director);
+        DiscountDefinition annual = ((BillingOperationOutcome.Processed<DiscountDefinition>) pipeline.runOperation(createDefinitionOperation,
+                CreateDiscountDefinitionCommand.byPerson(DiscountDraftBuilder.annualUpfront().named("Pago anual para paridad").withPercent("15").build(), director.getId(), true))).result();
+        DiscountDefinition scholarshipDefinition = ((BillingOperationOutcome.Processed<DiscountDefinition>) pipeline.runOperation(createDefinitionOperation,
+                CreateDiscountDefinitionCommand.byPerson(DiscountDraftBuilder.scholarship().named("Beca para paridad").withPercent("15").build(), director.getId(), true))).result();
+        pipeline.runOperation(closeDefinitionOperation, new CloseDiscountDefinitionCommand(scholarshipDefinition.getId(), "Fin de campaña", director.getId(), true));
+
+        PreviewOutcome notScholarship = previewThenGrant(director, enrollment(), withDefinition(scholarship("50", YearMonth.of(2027, 4), YearMonth.of(2027, 6)), annual.getId()));
+        PreviewOutcome closed = previewThenGrant(director, enrollment(), withDefinition(scholarship("50", YearMonth.of(2027, 4), YearMonth.of(2027, 6)), scholarshipDefinition.getId()));
+
+        assertThat(codesOf(notScholarship.preview())).containsExactly("INVALID_STUDENT_DISCOUNT");
+        assertThat(notScholarship.rejectionCodes()).isEqualTo(codesOf(notScholarship.preview()));
+        assertThat(codesOf(closed.preview())).containsExactly("DISCOUNT_DEFINITION_CLOSED");
+        assertThat(closed.rejectionCodes()).isEqualTo(codesOf(closed.preview()));
     }
 
     @Test
