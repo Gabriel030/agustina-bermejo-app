@@ -7,7 +7,7 @@ import { StatCard } from '@/components/StatCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { ModalMotivo } from '@/components/director/ModalMotivo';
+import { ModalMotivo } from '@/components/ModalMotivo';
 import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
 import { useEgreso, useAprobarEgreso, useRechazarEgreso } from '@/features/graduation/hooks/useGraduation';
 import { useProgresoStaff } from '@/features/enrollment';

@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { RefundsSection } from '@/features/billing';
+import { RefundsSection, StudentDiscountsSection } from '@/features/billing';
 import {
   useInscripcionesACarrera,
+  useInscripcionesACurso,
   useEstadoMatriculaDeInscripcion,
   useHabilitacionesDeMatricula,
   useOtorgarHabilitacion,
@@ -18,9 +21,9 @@ import {
 const ESTADO_MATRICULA = {
   NOT_ISSUED: { label: 'Todavía no emitida', tone: 'neutral' },
   PENDING: { label: 'Pendiente de pago', tone: 'warning' },
-  IN_REVIEW: { label: 'Comprobante en revisión', tone: 'info' },
+  IN_REVIEW: { label: 'Comprobante en revisión', tone: 'accent' },
   PAID: { label: 'Paga', tone: 'success' },
-  EXEMPTED: { label: 'Habilitado sin pagar', tone: 'info' },
+  EXEMPTED: { label: 'Habilitado sin pagar', tone: 'accent' },
 };
 
 const MIN_MOTIVO = 10;
@@ -172,20 +175,92 @@ function MatriculaDeInscripcion({ inscripcion }) {
   );
 }
 
-function EnrollmentFees({ studentId }) {
-  const { data: inscripciones, isLoading } = useInscripcionesACarrera(studentId);
+const ACTIVE_PROGRAM_STATUSES = ['ENROLLED', 'PAUSED'];
+const ENROLLMENT_STATUS_LABELS = {
+  PAUSED: 'pausada',
+  WITHDRAWN: 'baja',
+  COMPLETED: 'finalizada',
+  GRADUATED: 'egresada',
+};
 
-  if (isLoading) {
-    return <Skeleton rows={3} />;
-  }
-  const activas = (inscripciones ?? []).filter((i) => i.status === 'ENROLLED' || i.status === 'PAUSED');
-  if (!activas.length) {
-    return <GlassCard className="p-6"><EmptyState title="Sin inscripciones activas" description="El alumno no tiene una carrera activa." /></GlassCard>;
-  }
-  return activas.map((inscripcion) => <MatriculaDeInscripcion key={inscripcion.id} inscripcion={inscripcion} />);
+function buildEnrollmentOptions(programs, courses) {
+  const programOptions = (programs ?? []).map((enrollment) => ({
+    key: `program-${enrollment.id}`,
+    kind: 'program',
+    id: enrollment.id,
+    name: enrollment.programName ?? `Carrera ${enrollment.programId}`,
+    typeLabel: 'carrera',
+    status: enrollment.status,
+    active: ACTIVE_PROGRAM_STATUSES.includes(enrollment.status),
+    raw: enrollment,
+  }));
+  const courseOptions = (courses ?? []).map((enrollment) => ({
+    key: `course-${enrollment.id}`,
+    kind: 'course',
+    id: enrollment.id,
+    name: enrollment.courseName ?? `Curso ${enrollment.courseId}`,
+    typeLabel: 'curso',
+    status: enrollment.status,
+    active: !['WITHDRAWN', 'COMPLETED'].includes(enrollment.status),
+    raw: enrollment,
+  }));
+  return [...programOptions, ...courseOptions].sort((a, b) => Number(b.active) - Number(a.active));
 }
 
-export function FinancieroTab({ studentId, puedeHabilitar = false }) {
+function optionLabel(option) {
+  const suffix = option.active ? '' : ENROLLMENT_STATUS_LABELS[option.status] ? ` (${ENROLLMENT_STATUS_LABELS[option.status]})` : '';
+  return `${option.name} · ${option.typeLabel}${suffix}`;
+}
+
+function EnrollmentSelector({ options, value, onChange }) {
+  if (options.length === 1) {
+    return (
+      <p className="text-[13px] text-ink-soft">
+        Inscripción: <span className="font-semibold text-ink">{optionLabel(options[0])}</span>
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Label htmlFor="financial-enrollment" className="text-[13px] font-semibold">Inscripción</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id="financial-enrollment" className="h-10 min-w-64">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.key} value={option.key}>{optionLabel(option)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function EnrollmentFinance({ studentId, roleBase }) {
+  const programs = useInscripcionesACarrera(studentId);
+  const courses = useInscripcionesACurso(studentId);
+  const [selectedKey, setSelectedKey] = useState(null);
+  const options = useMemo(() => buildEnrollmentOptions(programs.data, courses.data), [programs.data, courses.data]);
+
+  if (programs.isLoading || courses.isLoading) {
+    return <Skeleton rows={3} />;
+  }
+  if (!options.length) {
+    return <GlassCard className="p-6"><EmptyState title="Sin inscripciones" description="El alumno todavía no tiene una carrera ni un curso." /></GlassCard>;
+  }
+  const selected = options.find((option) => option.key === selectedKey) ?? options[0];
+
+  return (
+    <>
+      <EnrollmentSelector options={options} value={selected.key} onChange={setSelectedKey} />
+      {selected.kind === 'program' && selected.active && <MatriculaDeInscripcion inscripcion={selected.raw} />}
+      <StudentDiscountsSection key={selected.key} studentId={studentId} enrollment={{ kind: selected.kind, id: selected.id }} roleBase={roleBase} />
+    </>
+  );
+}
+
+export function FinancieroTab({ studentId, puedeHabilitar = false, roleBase }) {
   if (!puedeHabilitar) {
     return (
       <div className="flex min-h-[200px] items-center justify-center text-[13px] text-ink-faint">
@@ -195,7 +270,7 @@ export function FinancieroTab({ studentId, puedeHabilitar = false }) {
   }
   return (
     <div className="flex flex-col gap-6">
-      <EnrollmentFees studentId={studentId} />
+      <EnrollmentFinance studentId={studentId} roleBase={roleBase} />
       <RefundsSection studentId={studentId} />
     </div>
   );

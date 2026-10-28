@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronRight, Search } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
-import { AdmissionInvoicePendingCard } from '@/features/billing';
+import { AdmissionInvoicePendingCard, MyDiscountsTab } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 import { formatDate } from '@/lib/billing';
 
@@ -29,6 +30,8 @@ const ENROLLMENT_STATUS_LABELS = {
 export function AlumnoPagos() {
   const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'descuentos' ? 'descuentos' : 'cuotas';
 
   const { data: cursos, isLoading: cargandoCursos } = useMisCursos();
   const { data: carreras, isLoading: cargandoCarreras } = useMisMatriculaciones();
@@ -73,80 +76,91 @@ export function AlumnoPagos() {
 
   return (
     <PageContainer>
-      <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-        <input
-          type="text"
-          placeholder="Buscar curso o carrera…"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-brand"
-        />
-      </div>
+      <Tabs value={tab} onValueChange={(next) => setSearchParams(next === 'cuotas' ? {} : { tab: next }, { replace: true })} className="gap-4">
+        <TabsList variant="segmented" className="w-full sm:w-fit">
+          <TabsTrigger value="cuotas" className="flex-1">Cuotas</TabsTrigger>
+          <TabsTrigger value="descuentos" className="flex-1">Mis descuentos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="cuotas" className="flex flex-col gap-6">
+        <div className="relative">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
+          <input
+            type="text"
+            placeholder="Buscar curso o carrera…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-brand"
+          />
+        </div>
 
-      <AdmissionInvoicePendingCard />
+        <AdmissionInvoicePendingCard />
 
-      <GlassCard className="overflow-hidden p-0">
-        {cargando && (
-          <div className="flex flex-col divide-y divide-border">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-4">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-6 w-20 rounded-full" />
-              </div>
-            ))}
-          </div>
-        )}
+        <GlassCard className="overflow-hidden p-0">
+          {cargando && (
+            <div className="flex flex-col divide-y divide-border">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+              ))}
+            </div>
+          )}
 
-        {!cargando && enrollments.length === 0 && (
-          <p className="px-5 py-10 text-center text-sm text-ink-faint">
-            {busqueda ? 'No hay resultados para esa búsqueda.' : 'No tenés inscripciones activas.'}
-          </p>
-        )}
+          {!cargando && enrollments.length === 0 && (
+            <p className="px-5 py-10 text-center text-sm text-ink-faint">
+              {busqueda ? 'No hay resultados para esa búsqueda.' : 'No tenés inscripciones activas.'}
+            </p>
+          )}
 
-        {!cargando && enrollments.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-5">Nombre</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Estado de inscripción</TableHead>
-                <TableHead>Inscripto desde</TableHead>
-                <TableHead>Estado de cuenta</TableHead>
-                <TableHead className="pr-5" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {enrollments.map((e) => {
-                const standingInfo = e.standing
-                  ? (STANDING_CONFIG[e.standing] ?? { label: e.standing, tone: 'neutral' })
-                  : null;
-                return (
-                  <TableRow key={e.key} onClick={() => navigate(`/alumno/pagos/${e.type}/${e.id}`)} className="cursor-pointer">
-                    <TableCell className="pl-5 font-semibold text-ink">{e.name}</TableCell>
-                    <TableCell className="text-ink-faint">{e.typeLabel}</TableCell>
-                    <TableCell>
-                      <StatusPill tone="neutral">{ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}</StatusPill>
-                    </TableCell>
-                    <TableCell className="text-ink-faint">{formatDate(e.enrollmentDate) || '-'}</TableCell>
-                    <TableCell>
-                      {standingInfo ? (
-                        <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>
-                      ) : (
-                        <span className="text-ink-faint">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="pr-5">
-                      <ChevronRight size={16} className="text-ink-faint" />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </GlassCard>
+          {!cargando && enrollments.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-5">Nombre</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Estado de inscripción</TableHead>
+                  <TableHead>Inscripto desde</TableHead>
+                  <TableHead>Estado de cuenta</TableHead>
+                  <TableHead className="pr-5" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {enrollments.map((e) => {
+                  const standingInfo = e.standing
+                    ? (STANDING_CONFIG[e.standing] ?? { label: e.standing, tone: 'neutral' })
+                    : null;
+                  return (
+                    <TableRow key={e.key} onClick={() => navigate(`/alumno/pagos/${e.type}/${e.id}`)} className="cursor-pointer">
+                      <TableCell className="pl-5 font-semibold text-ink">{e.name}</TableCell>
+                      <TableCell className="text-ink-faint">{e.typeLabel}</TableCell>
+                      <TableCell>
+                        <StatusPill tone="neutral">{ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}</StatusPill>
+                      </TableCell>
+                      <TableCell className="text-ink-faint">{formatDate(e.enrollmentDate) || '-'}</TableCell>
+                      <TableCell>
+                        {standingInfo ? (
+                          <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>
+                        ) : (
+                          <span className="text-ink-faint">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="pr-5">
+                        <ChevronRight size={16} className="text-ink-faint" />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </GlassCard>
+        </TabsContent>
+        <TabsContent value="descuentos">
+          <MyDiscountsTab />
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
-import { ModalMotivo } from '@/components/director/ModalMotivo';
+import { ModalMotivo } from '@/components/ModalMotivo';
 import { useSubjects, useApproveSubject, useRejectSubject } from '@/features/academic-structure/hooks/useSubjects';
 
 const GRADE_MODE_LABELS = {
