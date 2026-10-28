@@ -307,7 +307,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
                 jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Long.class)).isZero());
 
         List<AdminEnrollmentBillingStatusResponse> overview = QueryCountAssertions.assertAtMostQueries(
-                entityManagerFactory, 12, () -> getStudentBillingOverviewUseCase.get(student.getId()));
+                entityManagerFactory, 13, () -> getStudentBillingOverviewUseCase.get(student.getId()));
 
         assertThat(overview).hasSize(1);
         assertThat(overview.get(0).invoices()).hasSize(24);

@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.payment.domain.RefundEligibility;
 import com.red_escuela.backend.billing.payment.domain.RefundPlanOutcome;
 import com.red_escuela.backend.billing.payment.domain.RefundablePayment;
 import com.red_escuela.backend.billing.payment.domain.RefundablePaymentView;
+import com.red_escuela.backend.billing.payment.domain.StudentCreditBalance;
 import com.red_escuela.backend.billing.payment.policy.RefundAvailabilityCheck;
 import com.red_escuela.backend.billing.payment.policy.RefundRequestCheck;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
@@ -83,6 +84,18 @@ public class RefundPreviewService {
         return accountService.findStudentCurrentAccount(studentId, currency)
                 .map(this::describeEligibilityOfAccount)
                 .orElseGet(() -> RefundEligibility.withoutAccount(currency, NO_ACCOUNT_CREDIT));
+    }
+
+    public StudentCreditBalance describeCreditBalanceOfExistingStudent(Long studentId, Currency currency) {
+        students.requireExistingStudent(studentId);
+        return describeCreditBalanceOf(studentId, currency);
+    }
+
+    public StudentCreditBalance describeCreditBalanceOf(Long studentId, Currency currency) {
+        return accountService.findStudentCurrentAccount(studentId, currency).map(account -> {
+            RefundAvailabilityCheck probe = recorder.availabilityCheckFor(account, Money.of(SMALLEST_REFUNDABLE_AMOUNT, currency), null, LocalDate.now(clock));
+            return new StudentCreditBalance(currency, probe.unallocatedCredit(), probe.pendingRefundAmount(), probe.availableCredit());
+        }).orElseGet(() -> StudentCreditBalance.empty(currency));
     }
 
     private RefundEligibility describeEligibilityOfAccount(StudentCurrentAccount account) {

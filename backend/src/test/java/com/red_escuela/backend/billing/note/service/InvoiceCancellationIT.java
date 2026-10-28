@@ -149,6 +149,36 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
     }
 
     @Test
+    @Tag("D-199")
+    @Tag("D-286")
+    void thePreviewShowsTheConsumedDiscountTheRealCancellationReturnsAndWritesNothing() throws Exception {
+        Long studentId = newStudentId();
+        Long accountId = newAccountId(studentId, Currency.ARS);
+        Long invoiceId = issueDiscountedAnnualInvoice(studentId, accountId);
+        Long studentDiscountId = jdbc.queryForObject("select distinct d.student_discount_id from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ?",
+                Long.class, invoiceId);
+        jdbc.update("update student_discount set status = 'EXHAUSTED', applicable_invoice_type = 'MONTHLY_INSTALLMENT', installments_total = 3 where id = ?", studentDiscountId);
+        Staff director = newStaff("DIRECTOR");
+
+        String body = mockMvc.perform(post("/invoices/" + invoiceId + "/cancellations/preview").header("Authorization", "Bearer " + director.token())
+                .contentType(APPLICATION_JSON).content(cancellationBody("BILLING_ERROR", "Error"))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode released = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("discountConsumptionReleased");
+
+        assertThat(released).hasSize(1);
+        assertThat(released.get(0).get("studentDiscountId").asLong()).isEqualTo(studentDiscountId);
+        assertThat(released.get(0).get("reactivatesDiscount").asBoolean()).isTrue();
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, studentDiscountId)).isEqualTo("EXHAUSTED");
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ? and d.consumption_released_at is not null",
+                Long.class, invoiceId)).isZero();
+
+        requestCancellation(invoiceId, director, cancellationBody("BILLING_ERROR", "Error"), 201);
+
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, studentDiscountId)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ? and d.consumption_released_at is not null",
+                Long.class, invoiceId)).isPositive();
+    }
+
+    @Test
     @Tag("B2-40")
     @Tag("D-036")
     void partialCreditNoteOnDiscountedInvoiceTakesTheInvoiceLockWithoutFailing() throws Exception {
