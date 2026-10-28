@@ -32,6 +32,21 @@ public class InvoiceAllocationQueryService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<Invoice> listOpenInvoicesOfAccountForAllocationPreview(Long studentCurrentAccountId) {
+        return invoiceRepository.findOpenIssuedInvoicesByAccountOrderedForAllocation(studentCurrentAccountId);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> findInvoiceIdsAwaitingAuthorization(Collection<Long> invoiceIds) {
+        return invoiceIds.isEmpty() ? Set.of() : Set.copyOf(invoiceRepository.findInvoiceIdsWithPendingAuthorizationRequest(invoiceIds));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Invoice> findInvoicesForPreview(Collection<Long> invoiceIds) {
+        return invoiceRepository.findByIdIn(invoiceIds);
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public List<Invoice> findInvoicesByIds(Collection<Long> invoiceIds) {
         return invoiceRepository.findByIdIn(invoiceIds);

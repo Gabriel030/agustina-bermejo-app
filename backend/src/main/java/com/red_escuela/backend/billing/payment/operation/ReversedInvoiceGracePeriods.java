@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-class ReversedInvoiceGracePeriods {
+public class ReversedInvoiceGracePeriods {
     private static final Logger log = LoggerFactory.getLogger(ReversedInvoiceGracePeriods.class);
 
     private final BillingConfigurationReader configurationReader;
@@ -22,7 +22,7 @@ class ReversedInvoiceGracePeriods {
         this.invoiceQueries = invoiceQueries;
     }
 
-    int gracePeriodDaysOf(Long invoiceId) {
+    public int gracePeriodDaysOf(Long invoiceId) {
         Invoice invoice = invoiceQueries.findInvoicesByIds(List.of(invoiceId)).get(0);
         return configurationReader.findLatePaymentSettingsEffectiveOn(invoice.getDueDate()).or(configurationReader::findFirstLatePaymentSettings)
                 .map(LatePaymentTerms::gracePeriodDays)

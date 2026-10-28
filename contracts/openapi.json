@@ -4239,6 +4239,9 @@
       },
       "InvoiceImpactResponse" : {
         "properties" : {
+          "creditReversed" : {
+            "$ref" : "#/components/schemas/Money"
+          },
           "invoiceId" : {
             "format" : "int64",
             "type" : "integer"
@@ -4256,7 +4259,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "invoiceId", "outstandingAfter", "outstandingBefore", "paymentStatusAfter", "paymentStatusBefore" ],
+        "required" : [ "creditReversed", "invoiceId", "outstandingAfter", "outstandingBefore", "paymentStatusAfter", "paymentStatusBefore" ],
         "type" : "object"
       },
       "InvoiceLineDiscountResponse" : {
@@ -4452,12 +4455,23 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "firstDay" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "invoiceId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "lastDay" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "settledByAccountCredit" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "amount", "days", "invoiceId" ],
+        "required" : [ "amount", "days", "firstDay", "invoiceId", "lastDay", "settledByAccountCredit" ],
         "type" : "object"
       },
       "LateFeeToAnnulResponse" : {
@@ -5177,7 +5191,12 @@
           "calculated" : {
             "type" : "boolean"
           },
+          "lateFeeAccrualIncluded" : {
+            "description" : "Siempre falso: la lista de recargos no incluye devengamientos de mora posteriores.",
+            "type" : "boolean"
+          },
           "lateFeeReinstatements" : {
+            "description" : "Solo reposiciones de días de recargo anulados por el pago; no incluye la mora que se devengue después de la operación.",
             "items" : {
               "$ref" : "#/components/schemas/LateFeeReinstatementResponse"
             },
@@ -5196,7 +5215,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "calculated", "lateFeeReinstatements", "reopenedInvoices", "settledInvoices" ],
+        "required" : [ "calculated", "lateFeeAccrualIncluded", "lateFeeReinstatements", "reopenedInvoices", "settledInvoices" ],
         "type" : "object"
       },
       "PaymentReversalPreviewResponse" : {

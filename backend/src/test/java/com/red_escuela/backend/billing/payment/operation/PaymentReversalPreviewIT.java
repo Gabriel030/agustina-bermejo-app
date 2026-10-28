@@ -125,7 +125,7 @@ class PaymentReversalPreviewIT extends AbstractRefundIT {
         assertThat(preview.get("paymentStatus").asText()).isEqualTo("APPROVED");
         assertThat(decimalOf(preview.get("creditToReverse"))).isEqualByComparingTo("80000.00");
         assertThat(preview.get("invoiceIdsFundedByPayment")).extracting(JsonNode::asLong).containsExactly(march);
-        assertThat(preview.get("effects").get("calculated").asBoolean()).isFalse();
+        assertThat(preview.get("effects").get("calculated").asBoolean()).isTrue();
         assertThat(stateFingerprint(debtor)).isEqualTo(before);
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PAID");
         assertThat(jdbc.queryForObject("select status from payment where id = ?", String.class, paymentId)).isEqualTo("APPROVED");

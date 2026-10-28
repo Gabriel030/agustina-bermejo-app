@@ -6,10 +6,13 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LateFeeChargeCorrectionRepository extends Repository<LateFeeChargeCorrection, Long> {
 
     LateFeeChargeCorrection save(LateFeeChargeCorrection correction);
+
+    Optional<LateFeeChargeCorrection> findById(Long id);
 
     @Query("select k from LateFeeChargeCorrection k, LateFeeCharge c where c.id = k.lateFeeChargeId and c.originInvoiceId = :originInvoiceId "
             + "and k.cause <> com.red_escuela.backend.billing.collections.domain.LateFeeCorrectionCause.BACKDATED_WITHDRAWAL "
