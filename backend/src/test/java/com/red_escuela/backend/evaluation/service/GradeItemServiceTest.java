@@ -15,7 +15,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.identity.entity.Person;
@@ -31,7 +31,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
@@ -400,7 +400,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.FINAL_EXAM);
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.enrollment.entity.FinalGradeType.FINAL_EXAM);
     }
 
     @Test
@@ -460,7 +460,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(7.5)));
-        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.PROMOTION);
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.enrollment.entity.FinalGradeType.PROMOTION);
     }
 
     @Test
@@ -562,7 +562,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(7.0)));
-        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.FINAL_EXAM);
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.enrollment.entity.FinalGradeType.FINAL_EXAM);
     }
 
     @Test

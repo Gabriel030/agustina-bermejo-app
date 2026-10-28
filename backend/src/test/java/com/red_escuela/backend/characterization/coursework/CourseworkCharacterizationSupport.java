@@ -3,7 +3,7 @@ package com.red_escuela.backend.characterization.coursework;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;

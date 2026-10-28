@@ -28,7 +28,7 @@ import com.red_escuela.backend.evaluation.exception.EvaluationDateOnHolidayExcep
 import com.red_escuela.backend.evaluation.exception.EvaluationDateOutsideTermException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
 import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;

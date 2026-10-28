@@ -96,7 +96,7 @@ public class SectionSnapshotLoader {
     private StudentSnapshot toSnapshot(Long enrollmentId,
                                        com.red_escuela.backend.identity.entity.Student student,
                                        com.red_escuela.backend.enrollment.entity.EnrollmentStatus status,
-                                       com.red_escuela.backend.evaluation.entity.FinalGradeType finalGradeType,
+                                       com.red_escuela.backend.enrollment.entity.FinalGradeType finalGradeType,
                                        Map<Long, List<GradeItem>> grades,
                                        Map<Long, long[]> attendance) {
         List<GradeItem> items = grades.getOrDefault(enrollmentId, List.of());

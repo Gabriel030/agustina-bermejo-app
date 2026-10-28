@@ -1,4 +1,4 @@
-COUNT billing 21
+COUNT billing 19
 COUNT enrollment 42
 Module 'notification' depends on non-exposed type com.red_escuela.backend.attendance.entity.Attendance within module 'attendance'! | Method <com.red_escuela.backend.notification.AttendanceChangeRequestMessage.of(com.red_escuela.backend.attendance.entity.AttendanceChangeRequest, java.lang.String)> calls method <com.red_escuela.backend.attendance.entity.Attendance.getClassDate()> in (AttendanceChangeRequestMessage.java)
 Module 'notification' depends on non-exposed type com.red_escuela.backend.attendance.entity.Attendance within module 'attendance'! | Method <com.red_escuela.backend.notification.AttendanceChangeRequestMessage.of(com.red_escuela.backend.attendance.entity.AttendanceChangeRequest, java.lang.String)> calls method <com.red_escuela.backend.attendance.entity.Attendance.getCourseSubjectSectionEnrollment()> in (AttendanceChangeRequestMessage.java)

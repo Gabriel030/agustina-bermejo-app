@@ -1,6 +1,6 @@
-package com.red_escuela.backend.academicstructure.dto;
+package com.red_escuela.backend.identity.dto;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 
 public record InstitutionResponse(Long id, String name) {
 

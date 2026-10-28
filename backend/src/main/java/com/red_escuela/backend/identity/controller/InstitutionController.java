@@ -1,7 +1,7 @@
-package com.red_escuela.backend.academicstructure.controller;
+package com.red_escuela.backend.identity.controller;
 
-import com.red_escuela.backend.academicstructure.dto.InstitutionResponse;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.dto.InstitutionResponse;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
