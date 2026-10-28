@@ -10,6 +10,27 @@ const DISCOUNT_LABELS = {
   MARKETING: 'Marketing',
 };
 
+const CHANNEL_LABELS = { EMAIL: 'Mail', IN_APP: 'En la app' };
+
+const NOTICE_LABELS = {
+  ISSUANCE_NOTICE: 'Aviso de emisión',
+  AFTER_ISSUE_REMINDER: 'A los 5 días de emitida',
+  BEFORE_DUE_REMINDER: 'Día antes del vencimiento',
+  AFTER_DUE_REMINDER: 'A los 10 días de vencida',
+  BEFORE_SUSPENSION_REMINDER: 'Día antes de la suspensión',
+  DEBT_SUMMARY: 'Resumen de deuda',
+  POST_WITHDRAWAL_SUMMARY: 'Resumen posterior a la baja',
+  OTHER: 'Otros avisos',
+};
+
+const SUPPRESSION_LABELS = {
+  OPTED_OUT: 'Prefirió no recibirlo',
+  NO_VERIFIED_EMAIL: 'Sin mail verificado',
+  UNSPECIFIED: 'Sin motivo registrado',
+};
+
+const DEFERRAL_LABELS = { DAILY_CAP_REACHED: 'Tope diario de mails', UNSPECIFIED: 'Sin motivo registrado' };
+
 const AGE_BUCKET_LABELS = {
   FROM_1_TO_30: '1 a 30 días',
   FROM_31_TO_60: '31 a 60 días',
@@ -68,6 +89,38 @@ export const FINANCIAL_PANELS = [
           describe(metric, 'collected', 'Cobrado en el mes'),
         ],
         goal: withGoal(metric, 'left'),
+      };
+    },
+  },
+  {
+    id: 'collection-reminders',
+    basePath: '/notification-metrics',
+    tab: 'COLLECTIONS',
+    title: 'Avisos de cobranza',
+    subtitle: 'Avisos por estado y % de alumnos que pagó dentro de las 72 h',
+    info: 'Se cuenta por aviso, en el mes de su fecha de envío. El porcentaje cuenta cada alumno una vez por mes: pagó o no dentro de las 72 horas del primer mail que se le envió ese mes.',
+    unavailableText: 'Disponible cuando estén los avisos',
+    build(metric) {
+      const series = [
+        describe(metric, 'sent', 'Enviados', { color: COLORS[2], stack: 'reminders' }),
+        describe(metric, 'suppressed', 'Suprimidos', { color: COLORS[5], stack: 'reminders' }),
+        describe(metric, 'deferred', 'Diferidos', { color: COLORS[3], stack: 'reminders' }),
+        describe(metric, 'failed', 'Fallidos', { color: COLORS[4], stack: 'reminders' }),
+        describe(metric, 'paidWithin72HoursPercent', 'Pagó dentro de 72 h', { color: COLORS[0], type: 'line', axis: 'right' }),
+      ];
+      return {
+        rows: buildRows(metric),
+        series,
+        tableSeries: [
+          ...series,
+          ...typed(metric, 'sentByChannel.', CHANNEL_LABELS),
+          ...typed(metric, 'sentByNotice.', NOTICE_LABELS),
+          ...typed(metric, 'suppressedByReason.', SUPPRESSION_LABELS),
+          ...typed(metric, 'deferredByReason.', DEFERRAL_LABELS),
+          describe(metric, 'studentsNotified', 'Alumnos avisados por mail'),
+          describe(metric, 'studentsPaidWithin72Hours', 'Alumnos con pago dentro de 72 h'),
+        ],
+        goal: withGoal(metric, 'right'),
       };
     },
   },
