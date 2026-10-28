@@ -3699,6 +3699,60 @@
         "required" : [ "carriesDiscount", "otherLiveEnrollmentFeeInSameLectiveYear", "reissueWouldLoseDiscount" ],
         "type" : "object"
       },
+      "EnrollmentPaymentStandingResponse" : {
+        "properties" : {
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "suspendedSince" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "enrollmentId", "status", "studentId", "suspendedSince" ],
+        "type" : "object"
+      },
+      "EnrollmentPaymentStatusChangeResponse" : {
+        "properties" : {
+          "actorPersonId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "actorProcess" : {
+            "type" : "string"
+          },
+          "businessDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "event" : {
+            "type" : "string"
+          },
+          "fromStatus" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "toStatus" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "actorPersonId", "actorProcess", "businessDate", "event", "fromStatus", "occurredAt", "reason", "toStatus" ],
+        "type" : "object"
+      },
       "EnrollmentPaymentStatusResponse" : {
         "properties" : {
           "enrollmentId" : {
@@ -13476,6 +13530,147 @@
           }
         },
         "tags" : [ "payment-plan-selection-controller" ]
+      }
+    },
+    "/course-enrollments/{id}/payment-standing" : {
+      "get" : {
+        "operationId" : "EnrollmentPaymentStanding_getCourseEnrollmentStanding",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EnrollmentPaymentStandingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "ENROLLMENT_PAYMENT_STANDING_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "enrollment-payment-standing-controller" ]
+      }
+    },
+    "/course-enrollments/{id}/payment-standing/history" : {
+      "get" : {
+        "operationId" : "EnrollmentPaymentStanding_listCourseEnrollmentStandingHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EnrollmentPaymentStatusChangeResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "ENROLLMENT_PAYMENT_STANDING_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "enrollment-payment-standing-controller" ]
       }
     },
     "/course-enrollments/{id}/progress" : {
@@ -26280,6 +26475,147 @@
           }
         },
         "tags" : [ "payment-plan-selection-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/payment-standing" : {
+      "get" : {
+        "operationId" : "EnrollmentPaymentStanding_getProgramEnrollmentStanding",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EnrollmentPaymentStandingResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "ENROLLMENT_PAYMENT_STANDING_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "enrollment-payment-standing-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/payment-standing/history" : {
+      "get" : {
+        "operationId" : "EnrollmentPaymentStanding_listProgramEnrollmentStandingHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EnrollmentPaymentStatusChangeResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "ENROLLMENT_PAYMENT_STANDING_NOT_FOUND"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "enrollment-payment-standing-controller" ]
       }
     },
     "/program-enrollments/{id}/progress" : {
