@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.discount;
 
 import com.red_escuela.backend.billing.discount.policy.CohortPromotionAcquisitionCheck;
 import com.red_escuela.backend.billing.discount.policy.OneCohortPromotionPerEnrollmentPolicy;
+import com.red_escuela.backend.billing.discount.policy.CohortPromotionTermsPolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountAvailabilityPeriodPolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountClosureCheck;
 import com.red_escuela.backend.billing.discount.policy.DiscountClosureReasonRequiredPolicy;
@@ -42,6 +43,7 @@ public class DiscountPolicySetsConfiguration {
                 new DiscountDefinitionCoherencePolicy(),
                 new DiscountAvailabilityPeriodPolicy(),
                 new DiscountScopeMatchesTypePolicy(),
+                new CohortPromotionTermsPolicy(),
                 new ScholarshipOnlyForMonthlyInstallmentsPolicy(),
                 new DiscountTypeAvailableInCatalogPolicy(),
                 new InstallmentCountOnlyForMonthlyInstallmentsPolicy(),

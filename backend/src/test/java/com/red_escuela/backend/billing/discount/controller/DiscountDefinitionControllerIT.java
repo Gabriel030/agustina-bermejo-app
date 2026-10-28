@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.shared.domain.Money;
@@ -14,6 +15,7 @@ import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
@@ -132,6 +134,8 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         body.put("availableFrom", TODAY.minusDays(30).toString());
         body.put("priority", 1);
         body.put("programId", programId);
+        body.put("enrollmentWindowFrom", TODAY.minusDays(30).toString());
+        body.put("enrollmentWindowTo", TODAY.plusDays(30).toString());
         return body;
     }
 
@@ -543,6 +547,175 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from authorization_request", Long.class)).isEqualTo(requestsBefore);
     }
 
+    private Map<String, Object> fullCohortPromotion(String name, Long programId, Long cohortId) {
+        Map<String, Object> body = cohortPromotion(name, programId);
+        body.put("programCohortId", cohortId);
+        body.put("quota", 2);
+        body.put("priority", 3);
+        body.put("installmentsTotal", 4);
+        body.put("availableUntil", TODAY.plusDays(60).toString());
+        body.put("enrollmentWindowFrom", TODAY.plusDays(10).toString());
+        body.put("enrollmentWindowTo", TODAY.plusDays(20).toString());
+        body.put("capPerInvoice", money("4000.00", "ARS"));
+        return body;
+    }
+
+    private String promotionStatusOn(LocalDate date, String name) throws Exception {
+        MutableClock.INSTANCE.setDate(date);
+        return entryNamed(catalog("?type=COHORT_PROMOTION"), name).get("cohortPromotionStatus").asText();
+    }
+
+    private List<String> namesOf(JsonNode catalog) {
+        return StreamSupport.stream(catalog.spliterator(), false).map(entry -> entry.get("name").asText()).toList();
+    }
+
+    @Test
+    @Tag("D-431")
+    @Tag("D-432")
+    void theAdministrativeProposesAFullCohortPromotionWith202AndTheDirectorPublishesItWith201() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Long cohortId = factory.newCohort(factory.newTemplate(offering, 2031), CohortIntake.FIRST, LocalDate.of(2031, 3, 1), Percentage.ofPoints(BigDecimal.ZERO));
+        Map<String, Object> body = fullCohortPromotion("promoción completa", offering.programId(), cohortId);
+        long before = countDefinitions();
+
+        postAs(administrativeToken, body).andExpect(status().isAccepted()).andExpect(jsonPath("$.authorizationRequestId").isNumber());
+
+        assertThat(countDefinitions()).isEqualTo(before);
+        JsonNode created = createdAsDirector(body);
+        assertThat(created.get("discountType").asText()).isEqualTo("COHORT_PROMOTION");
+        assertThat(created.get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(created.get("directPublication").asBoolean()).isTrue();
+        assertThat(created.get("quota").asInt()).isEqualTo(2);
+        assertThat(created.get("priority").asInt()).isEqualTo(3);
+        assertThat(created.get("programId").asLong()).isEqualTo(offering.programId());
+        assertThat(created.get("programCohortId").asLong()).isEqualTo(cohortId);
+        assertThat(created.get("installmentsTotal").asInt()).isEqualTo(4);
+        assertThat(created.get("enrollmentWindowFrom").asText()).isEqualTo(TODAY.plusDays(10).toString());
+        assertThat(created.get("enrollmentWindowTo").asText()).isEqualTo(TODAY.plusDays(20).toString());
+        assertThat(created.get("availableUntil").asText()).isEqualTo(TODAY.plusDays(60).toString());
+        assertThat(created.get("capPerInvoice").get("amount").asText()).isEqualTo("4000.00");
+    }
+
+    @Test
+    @Tag("D-432")
+    void aCohortPromotionWithoutTheWholeEnrollmentWindowAnswers400ForBothRolesAndOpensNoRequest() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Map<String, Object> withoutEnd = cohortPromotion("sin fin de ventana", offering.programId());
+        withoutEnd.put("enrollmentWindowTo", null);
+        Map<String, Object> withoutWindow = cohortPromotion("sin ventana", offering.programId());
+        withoutWindow.remove("enrollmentWindowFrom");
+        withoutWindow.remove("enrollmentWindowTo");
+        long requestsBefore = jdbc.queryForObject("select count(*) from authorization_request", Long.class);
+
+        for (Map<String, Object> body : List.of(withoutEnd, withoutWindow)) {
+            postAs(directorToken, body).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DISCOUNT_DEFINITION"));
+            postAs(administrativeToken, body).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DISCOUNT_DEFINITION"));
+            send("POST", "/validation", directorToken, body).andExpect(status().isOk()).andExpect(jsonPath("$.violations", hasSize(1)));
+        }
+
+        assertThat(jdbc.queryForObject("select count(*) from authorization_request", Long.class)).isEqualTo(requestsBefore);
+        assertThat(catalogHas("sin fin de ventana")).isFalse();
+        assertThat(catalogHas("sin ventana")).isFalse();
+    }
+
+    @ParameterizedTest
+    @Tag("D-432")
+    @CsvSource({"EXAM_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "ANNUAL_UPFRONT"})
+    void aCohortPromotionOnAChargeOutsideInstallmentEnrollmentAndRetakenSubjectAnswers400(String invoiceType) throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Map<String, Object> body = cohortPromotion("cargo no admitido " + invoiceType, offering.programId());
+        body.put("applicableInvoiceType", invoiceType);
+        body.put("installmentsTotal", null);
+
+        postAs(directorToken, body).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DISCOUNT_DEFINITION"));
+        postAs(administrativeToken, body).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DISCOUNT_DEFINITION"));
+
+        assertThat(catalogHas("cargo no admitido " + invoiceType)).isFalse();
+    }
+
+    @ParameterizedTest
+    @Tag("D-432")
+    @CsvSource({"MONTHLY_INSTALLMENT,3", "ENROLLMENT_FEE,", "RETAKEN_SUBJECT_FEE,"})
+    void aCohortPromotionOnInstallmentEnrollmentOrRetakenSubjectIsPublished(String invoiceType, Integer installments) throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Map<String, Object> body = cohortPromotion("cargo admitido " + invoiceType, offering.programId());
+        body.put("applicableInvoiceType", invoiceType);
+        body.put("installmentsTotal", installments);
+
+        assertThat(createdAsDirector(body).get("applicableInvoiceType").asText()).isEqualTo(invoiceType);
+    }
+
+    @Test
+    @Tag("D-431")
+    void theAdministrativeProposesTheClosureOfAPromotionWith202AndTheDirectorClosesItWith201() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Long proposedId = createdAsDirector(cohortPromotion("cierre propuesto de promoción", offering.programId())).get("id").asLong();
+        Long directId = createdAsDirector(cohortPromotion("cierre directo de promoción", offering.programId())).get("id").asLong();
+
+        send("POST", "/" + proposedId + "/closure", administrativeToken, Map.of("reason", "Cambio de campaña")).andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.authorizationRequestId").isNumber());
+        send("POST", "/" + directId + "/closure", directorToken, Map.of("reason", "Cambio de campaña")).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CLOSED"));
+
+        assertThat(promotionStatusOn(TODAY, "cierre propuesto de promoción")).isEqualTo("OPEN");
+        assertThat(promotionStatusOn(TODAY, "cierre directo de promoción")).isEqualTo("CLOSED");
+    }
+
+    @Test
+    @Tag("D-432")
+    @Tag("D-283")
+    void theServerDerivesThePromotionStatusFromItsOwnDateAcrossTheWholeLifeOfThePromotion() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        createdAsDirector(fullCohortPromotion("ciclo de vida", offering.programId(), null));
+        Map<String, Object> noQuota = fullCohortPromotion("ciclo sin cupo", offering.programId(), null);
+        noQuota.remove("quota");
+        createdAsDirector(noQuota);
+        createdAsDirector(annualUpfront("no es promoción"));
+
+        assertThat(promotionStatusOn(TODAY.plusDays(9), "ciclo de vida")).isEqualTo("UPCOMING");
+        assertThat(promotionStatusOn(TODAY.plusDays(10), "ciclo de vida")).isEqualTo("OPEN");
+        assertThat(promotionStatusOn(TODAY.plusDays(20), "ciclo de vida")).isEqualTo("OPEN");
+        assertThat(promotionStatusOn(TODAY.plusDays(21), "ciclo de vida")).isEqualTo("ENROLLMENT_CLOSED");
+        assertThat(promotionStatusOn(TODAY.plusDays(60), "ciclo de vida")).isEqualTo("ENROLLMENT_CLOSED");
+        assertThat(promotionStatusOn(TODAY.plusDays(61), "ciclo de vida")).isEqualTo("FINISHED");
+        assertThat(promotionStatusOn(TODAY.plusDays(61), "ciclo sin cupo")).isEqualTo("FINISHED");
+        MutableClock.INSTANCE.setDate(TODAY);
+        assertThat(entryNamed(catalog(""), "no es promoción").get("cohortPromotionStatus").isNull()).isTrue();
+    }
+
+    @Test
+    @Tag("D-432")
+    void theCatalogFiltersByTheDerivedPromotionStatusAndTheDetailReportsTheSameStatus() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Long openId = createdAsDirector(cohortPromotion("filtro abierta", offering.programId())).get("id").asLong();
+        Map<String, Object> upcoming = cohortPromotion("filtro próxima", offering.programId());
+        upcoming.put("enrollmentWindowFrom", TODAY.plusDays(5).toString());
+        createdAsDirector(upcoming);
+        Map<String, Object> enrollmentClosed = cohortPromotion("filtro inscripción cerrada", offering.programId());
+        enrollmentClosed.put("enrollmentWindowTo", TODAY.minusDays(1).toString());
+        createdAsDirector(enrollmentClosed);
+        Long closedId = createdAsDirector(cohortPromotion("filtro cerrada", offering.programId())).get("id").asLong();
+        send("POST", "/" + closedId + "/closure", directorToken, Map.of("reason", "ya no se usa")).andExpect(status().isCreated());
+
+        assertThat(namesOf(catalog("?cohortPromotionStatus=OPEN"))).contains("filtro abierta").doesNotContain("filtro próxima", "filtro inscripción cerrada", "filtro cerrada");
+        assertThat(namesOf(catalog("?cohortPromotionStatus=UPCOMING"))).contains("filtro próxima").doesNotContain("filtro abierta", "filtro cerrada");
+        assertThat(namesOf(catalog("?cohortPromotionStatus=ENROLLMENT_CLOSED"))).contains("filtro inscripción cerrada").doesNotContain("filtro abierta");
+        assertThat(namesOf(catalog("?type=COHORT_PROMOTION&cohortPromotionStatus=CLOSED"))).contains("filtro cerrada").doesNotContain("filtro abierta");
+        assertThat(namesOf(catalog("?type=ANNUAL_UPFRONT&cohortPromotionStatus=OPEN"))).isEmpty();
+        assertThat(namesOf(catalog("?cohortPromotionStatus=QUOTA_FULL"))).doesNotContain("filtro abierta");
+        assertThat(namesOf(catalog("?type=COHORT_PROMOTION"))).contains("filtro abierta", "filtro próxima", "filtro inscripción cerrada", "filtro cerrada");
+        JsonNode detail = readBody(send("GET", "/" + openId, administrativeToken, null).andExpect(status().isOk()));
+        assertThat(detail.get("id").asLong()).isEqualTo(openId);
+        assertThat(detail.get("cohortPromotionStatus").asText()).isEqualTo("OPEN");
+        assertThat(readBody(send("GET", "/" + closedId, directorToken, null).andExpect(status().isOk())).get("cohortPromotionStatus").asText()).isEqualTo("CLOSED");
+    }
+
+    @Test
+    @Tag("D-432")
+    void anUnknownPromotionStatusFilterAnswers400AndAnUnknownDefinitionAnswers404() throws Exception {
+        send("GET", "?cohortPromotionStatus=SOON", directorToken, null).andExpect(status().isBadRequest());
+        send("GET", "/" + Long.MAX_VALUE, directorToken, null).andExpect(status().isNotFound());
+    }
+
     @ParameterizedTest
     @Tag("D-110")
     @CsvSource({"PRECEPTOR", "DOCENTE", "ALUMNO"})
@@ -550,6 +723,8 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         String token = tokenWithRole(roleName);
 
         send("GET", "", token, null).andExpect(status().isForbidden());
+        send("GET", "?cohortPromotionStatus=OPEN", token, null).andExpect(status().isForbidden());
+        send("GET", "/1", token, null).andExpect(status().isForbidden());
         send("POST", "", token, annualUpfront("no autorizado")).andExpect(status().isForbidden());
         send("POST", "/validation", token, annualUpfront("no autorizado")).andExpect(status().isForbidden());
         send("POST", "/1/closure", token, Map.of("reason", "no autorizado")).andExpect(status().isForbidden());
@@ -559,13 +734,18 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
     @Tag("D-110")
     void anUnauthenticatedCallerCannotTouchTheCatalog() throws Exception {
         send("GET", "", null, null).andExpect(status().isForbidden());
+        send("GET", "/1", null, null).andExpect(status().isForbidden());
         send("POST", "", null, annualUpfront("anónimo")).andExpect(status().isForbidden());
     }
 
     @Test
     @Tag("D-110")
     void bothAdministrativeAndDirectorReadTheCatalog() throws Exception {
+        Long id = createdAsDirector(annualUpfront("lectura de ambos roles")).get("id").asLong();
+
         send("GET", "", administrativeToken, null).andExpect(status().isOk());
         send("GET", "", directorToken, null).andExpect(status().isOk());
+        send("GET", "/" + id, administrativeToken, null).andExpect(status().isOk());
+        send("GET", "/" + id, directorToken, null).andExpect(status().isOk());
     }
 }
