@@ -165,6 +165,7 @@ public class DemoBillingSeeder implements ApplicationRunner {
         reminderJob.run(LocalDate.now(clock));
         scenarios.seed(studentsOf(behaviors, Behavior.NEVER_PAYS), studentsOf(behaviors, Behavior.STOPS_PAYING_IN_JULY),
                 studentsOf(behaviors, Behavior.PAYS_ON_TIME, Behavior.PAYS_ON_TIME_B, Behavior.PAYS_ON_TIME_C), director.getId(), administrative.getId());
+        reminderJob.run(LocalDate.now(clock));
         log.info("Seed demo de facturacion listo en {} ms", System.currentTimeMillis() - startedAt);
     }
 

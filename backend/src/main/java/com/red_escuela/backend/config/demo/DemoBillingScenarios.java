@@ -1,5 +1,19 @@
 package com.red_escuela.backend.config.demo;
 
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
+import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
+import com.red_escuela.backend.billing.discount.operation.AcquireCohortPromotionCommand;
+import com.red_escuela.backend.billing.discount.operation.CreateDiscountDefinitionCommand;
+import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountCommand;
+import com.red_escuela.backend.billing.invoice.domain.DiscountType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
@@ -37,6 +51,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 
@@ -53,9 +68,12 @@ public class DemoBillingScenarios {
     private final BillingOperations operations;
     private final BillingOperationPipeline pipeline;
     private final CashPaymentPreviewService cashPreview;
+    private final ProgramEnrollmentService programEnrollmentService;
 
     public DemoBillingScenarios(JdbcTemplate jdbc, DemoClock clock, TransactionTemplate transactions, BillingOperations operations,
-                                BillingOperationPipeline pipeline, CashPaymentPreviewService cashPreview) {
+                                BillingOperationPipeline pipeline, CashPaymentPreviewService cashPreview,
+                                ProgramEnrollmentService programEnrollmentService) {
+        this.programEnrollmentService = programEnrollmentService;
         this.jdbc = jdbc;
         this.clock = clock;
         this.transactions = transactions;
@@ -118,6 +136,35 @@ public class DemoBillingScenarios {
             run(BillingOperationType.ISSUE_CREDIT_NOTE, new IssueCreditNoteCommand(invoiceId, CreditNoteReason.BILLING_ERROR,
                     "Importe cargado de mas en la cuota", List.of(new CreditNoteLineAmount(1, Money.of(new BigDecimal("10000"), Currency.ARS))),
                     CreditNoteDestination.DEBT_OFFSET, administrativeId, false, null));
+        });
+
+        attemptAs("beca del 50% otorgada a un alumno", String.valueOf(directorId), "DIRECTOR", () -> {
+            run(BillingOperationType.CREATE_DISCOUNT_DEFINITION, CreateDiscountDefinitionCommand.byPerson(new DiscountDefinitionDraft("Beca de excelencia academica 50%",
+                    DiscountDefinitionType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.50"))),
+                    null, LocalDate.of(2026, 1, 1), null, 10, null, null, null, null, null, null, null), directorId, true));
+            Long definitionId = jdbc.queryForObject("select max(id) from discount_definition", Long.class);
+            Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, current.get(6));
+            run(BillingOperationType.GRANT_STUDENT_DISCOUNT, GrantStudentDiscountCommand.byPerson(EnrollmentReference.ofProgram(enrollmentId),
+                    new StudentDiscountGrantRequest(DiscountType.SCHOLARSHIP, definitionId, null, InvoiceType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 11),
+                            YearMonth.of(2027, 3), "Beca por rendimiento academico"), directorId, true));
+        });
+        attemptAs("promocion de cohorte con cupo parcialmente usado", String.valueOf(directorId), "DIRECTOR", () -> {
+            Map<String, Object> target = jdbc.queryForMap("select program_id, program_cohort_id from program_enrollment where program_cohort_id is not null order by id limit 1");
+            Long programId = (Long) target.get("program_id");
+            Long cohortId = (Long) target.get("program_cohort_id");
+            run(BillingOperationType.CREATE_DISCOUNT_DEFINITION, CreateDiscountDefinitionCommand.byPerson(new DiscountDefinitionDraft("Matricula bonificada 20% - inscripcion temprana",
+                    DiscountDefinitionType.COHORT_PROMOTION, InvoiceType.ENROLLMENT_FEE, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.20"))),
+                    1, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 5, null, programId, cohortId, null, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 12, 31), 10),
+                    directorId, true));
+            List<Long> enrollmentIds = jdbc.queryForList("select id from program_enrollment where program_cohort_id = ? order by id limit 2", Long.class, cohortId);
+            for (Long enrollmentId : enrollmentIds) {
+                run(BillingOperationType.ACQUIRE_COHORT_PROMOTION, new AcquireCohortPromotionCommand(EnrollmentReference.ofProgram(enrollmentId),
+                        new OfferingReference(programId, null), cohortId, LocalDate.of(2026, 2, 15), directorId));
+            }
+        });
+        attemptAs("alumno dado de baja con deuda", String.valueOf(administrativeId), "ADMINISTRATIVO", () -> {
+            Long enrollmentId = jdbc.queryForObject("select id from program_enrollment where student_id = ? order by id limit 1", Long.class, neverPay.get(3));
+            programEnrollmentService.withdraw(enrollmentId, EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.now(clock).minusDays(3), administrativeId));
         });
 
         attemptAs("contracargo con reversion", String.valueOf(directorId), "DIRECTOR", () -> {
