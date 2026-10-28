@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.billing.collections.operation.CollectionReminderPlanningJob;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -89,6 +90,8 @@ public class DemoBillingSeeder implements ApplicationRunner {
     private final TransactionTemplate transactions;
     private final CashPaymentPreviewService cashPreview;
     private final boolean skipBilling;
+    private final DemoBillingScenarios scenarios;
+    private final CollectionReminderPlanningJob reminderJob;
 
     public DemoBillingSeeder(JdbcTemplate jdbc, DemoClock clock, PersonRepository personRepository, ProgramRepository programRepository,
                              TermRepository termRepository, ConfigurationVersionRepository configurationVersionRepository,
@@ -97,7 +100,10 @@ public class DemoBillingSeeder implements ApplicationRunner {
                              ProgramEnrollmentRepository programEnrollmentRepository, MonthlyInstallmentIssuanceJob issuanceJob,
                              InvoiceOverdueSweepService overdueSweep, BillingOperations operations, BillingOperationPipeline pipeline,
                              TransactionTemplate transactions, CashPaymentPreviewService cashPreview,
-                             @Value("${demo.skip-billing:false}") boolean skipBilling) {
+                             @Value("${demo.skip-billing:false}") boolean skipBilling, DemoBillingScenarios scenarios,
+                             CollectionReminderPlanningJob reminderJob) {
+        this.reminderJob = reminderJob;
+        this.scenarios = scenarios;
         this.skipBilling = skipBilling;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -132,16 +138,17 @@ public class DemoBillingSeeder implements ApplicationRunner {
         }
         long startedAt = System.currentTimeMillis();
         LocalDate today = clock.getZone() == null ? LocalDate.now() : LocalDate.now(clock);
+        Person director = personRepository.findByUsername("director.demo").orElseThrow();
+        Person administrative = personRepository.findByUsername("administrativo.demo").orElseThrow();
+        Map<Long, Behavior> behaviors;
         try {
-            Person director = personRepository.findByUsername("director.demo").orElseThrow();
-            Person administrative = personRepository.findByUsername("administrativo.demo").orElseThrow();
             StatusChangeActor actor = new StatusChangeActor(administrative.getId(), null);
             clock.travelTo(LocalDate.of(2026, 1, 5));
             List<ProgramEnrollment> billed = transactions.execute(status -> {
                 publishLatePaymentTerms(director);
                 return configureBillingAndSelectPlans(director);
             });
-            Map<Long, Behavior> behaviors = assignBehaviors(billed);
+            behaviors = assignBehaviors(billed);
             for (YearMonth month = FIRST_MONTH; !month.isAfter(YearMonth.from(today)); month = month.plusMonths(1)) {
                 clock.travelTo(month.atDay(2));
                 issuanceJob.run(month);
@@ -149,12 +156,21 @@ public class DemoBillingSeeder implements ApplicationRunner {
                 payOnTime(month, behaviors, actor);
                 clock.travelTo(month.atDay(Math.min(20, month.lengthOfMonth())));
                 overdueSweep.run(LocalDate.now(clock));
+                reminderJob.run(LocalDate.now(clock));
             }
         } finally {
             clock.backToPresent();
         }
         overdueSweep.run(LocalDate.now(clock));
+        reminderJob.run(LocalDate.now(clock));
+        scenarios.seed(studentsOf(behaviors, Behavior.NEVER_PAYS), studentsOf(behaviors, Behavior.STOPS_PAYING_IN_JULY),
+                studentsOf(behaviors, Behavior.PAYS_ON_TIME, Behavior.PAYS_ON_TIME_B, Behavior.PAYS_ON_TIME_C), director.getId(), administrative.getId());
         log.info("Seed demo de facturacion listo en {} ms", System.currentTimeMillis() - startedAt);
+    }
+
+    private List<Long> studentsOf(Map<Long, Behavior> behaviors, Behavior... wanted) {
+        List<Behavior> accepted = List.of(wanted);
+        return behaviors.entrySet().stream().filter(e -> accepted.contains(e.getValue())).map(Map.Entry::getKey).toList();
     }
 
     private void publishLatePaymentTerms(Person director) {
@@ -242,7 +258,7 @@ public class DemoBillingSeeder implements ApplicationRunner {
     }
 
     private Map<Long, Behavior> assignBehaviors(List<ProgramEnrollment> billed) {
-        Map<Long, Behavior> behaviors = new java.util.HashMap<>();
+        Map<Long, Behavior> behaviors = new java.util.LinkedHashMap<>();
         Behavior[] values = Behavior.values();
         for (int i = 0; i < billed.size(); i++) {
             behaviors.put(billed.get(i).getStudent().getId(), values[i % values.length]);
