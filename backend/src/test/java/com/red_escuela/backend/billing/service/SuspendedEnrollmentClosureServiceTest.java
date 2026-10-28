@@ -8,7 +8,9 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
-import com.red_escuela.backend.billing.collections.service.EnrollmentPaymentStandingService;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
+import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -94,7 +96,7 @@ class SuspendedEnrollmentClosureServiceTest {
         logs.start();
         closureLogger.addAppender(logs);
         return new SuspendedEnrollmentClosureService(enrollments, templates, mock(TermRepository.class), invoices, enrollmentService, clock,
-                mock(PlatformTransactionManager.class), cycleFactory, mock(EnrollmentPaymentStandingService.class));
+                mock(PlatformTransactionManager.class), cycleFactory, eventPublisher);
     }
 
     @AfterEach
@@ -102,6 +104,8 @@ class SuspendedEnrollmentClosureServiceTest {
         closureLogger.detachAppender(logs);
         logs.stop();
     }
+
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
 
     @Test
     void theLastDayOfTheCycleDoesNotCloseTheSuspendedEnrollment() {
@@ -114,6 +118,7 @@ class SuspendedEnrollmentClosureServiceTest {
         assertThat(enrollment.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         verifyNoInteractions(port);
         verifyNoInteractions(invoices);
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -131,6 +136,7 @@ class SuspendedEnrollmentClosureServiceTest {
         assertThat(enrollment.getWithdrawalEffectiveDate()).isEqualTo(LocalDate.of(2028, 1, 1));
         verify(port).registerWithdrawalForBilling(nonpaymentOn(LocalDate.of(2028, 1, 1)));
         assertThat(paymentStatusWhenNotified).containsExactly(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        verify(eventPublisher).publishEvent(new EnrollmentClosedWhileSuspendedEvent(EnrollmentKind.PROGRAM, enrollment.getId(), LocalDate.of(2028, 1, 1)));
         verifyNoInteractions(invoices);
     }
 

@@ -18,11 +18,11 @@ public record EnrollmentSuspensionRule(int minimumOverdueInstallments, int minim
         return new EnrollmentSuspensionRule(Math.max(1, terms.suspensionAfterInvoiceCount()), Math.max(0, terms.suspensionAfterDays()));
     }
 
-    public boolean suspends(EnrollmentDebtFacts facts) {
-        if (!facts.isMonthClose() || facts.overdueMonthlyInstallments() < minimumOverdueInstallments) {
+    public boolean suspends(MonthCloseFacts closeFacts) {
+        if (closeFacts.overdueInstallmentsAtCutoff() < minimumOverdueInstallments) {
             return false;
         }
         return minimumDaysOverdue == 0
-                || ChronoUnit.DAYS.between(facts.oldestOverdueInstallmentDueDate(), facts.monthCloseCutoff()) >= minimumDaysOverdue;
+                || ChronoUnit.DAYS.between(closeFacts.oldestOverdueInstallmentDueDate(), closeFacts.cutoff()) >= minimumDaysOverdue;
     }
 }

@@ -41,6 +41,8 @@ class EnrollmentPaymentStandingMigrationTest {
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("151").load().migrate();
 
             assertThat(jdbc.queryForObject("select count(*) from enrollment_payment_standing", Long.class)).isEqualTo(4);
+            assertThat(jdbc.queryForObject("select count(*) from enrollment_payment_standing where last_closed_month = (date_trunc('month', current_date) - interval '1 month')::date",
+                    Long.class)).isEqualTo(4);
             assertThat(jdbc.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, suspendedProgram)).isEqualTo("SUSPENDED");
             assertThat(jdbc.queryForObject("select suspended_since::text from enrollment_payment_standing where program_enrollment_id = ?", String.class, suspendedProgram))
                     .isEqualTo("2027-04-01");

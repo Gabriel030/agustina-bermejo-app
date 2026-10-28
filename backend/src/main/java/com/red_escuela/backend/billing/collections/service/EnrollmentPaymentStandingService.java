@@ -6,11 +6,11 @@ import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentEvent
 import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentStanding;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentStandingEvaluator;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRule;
+import com.red_escuela.backend.billing.collections.domain.MonthCloseFacts;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFactsQuery;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
-import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,40 +29,43 @@ public class EnrollmentPaymentStandingService {
 
     private static final Logger log = LoggerFactory.getLogger(EnrollmentPaymentStandingService.class);
     private static final StatusChangeActor STANDING_ACTOR = StatusChangeActor.ofProcess(STANDING_PROCESS);
-    private static final EnrollmentSuspensionRule NEVER_SUSPENDS_OUTSIDE_MONTH_CLOSE = new EnrollmentSuspensionRule(1, 0);
+    private static final EnrollmentSuspensionRule UNUSED_OUTSIDE_MONTH_CLOSE = new EnrollmentSuspensionRule(1, 0);
 
     private final EnrollmentPaymentStandingRepository standingRepository;
     private final EnrollmentDebtFactsQuery factsQuery;
-    private final EntityManager entityManager;
+    private final EnrollmentMonthCloseFactsLoader closeFactsLoader;
 
     public EnrollmentPaymentStandingService(EnrollmentPaymentStandingRepository standingRepository, EnrollmentDebtFactsQuery factsQuery,
-                                            EntityManager entityManager) {
-        this.entityManager = entityManager;
+                                            EnrollmentMonthCloseFactsLoader closeFactsLoader) {
         this.standingRepository = standingRepository;
         this.factsQuery = factsQuery;
+        this.closeFactsLoader = closeFactsLoader;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void evaluateEnrollmentStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, EnrollmentSuspensionRule rule) {
+    public void evaluateEnrollmentStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, EnrollmentSuspensionRule ruleAtCutoff) {
         EnrollmentPaymentStanding standing = lockStandingOf(kind, enrollmentId).orElseGet(() -> openStandingOf(kind, enrollmentId, businessDate));
-        applyEvaluation(standing, businessDate, monthCloseCutoffOf(businessDate), rule);
+        YearMonth closedMonth = YearMonth.from(businessDate).minusMonths(1);
+        MonthCloseFacts closeFacts = null;
+        if (standing.isMonthCloseDue(closedMonth)) {
+            if (factsQuery.isEnrollmentActive(kind, enrollmentId)) {
+                closeFacts = closeFactsLoader.loadFactsAtCutoff(kind, enrollmentId, closedMonth.atEndOfMonth());
+            }
+            standing.markMonthCloseEvaluated(closedMonth);
+        }
+        applyEvaluation(standing, businessDate, closeFacts, ruleAtCutoff);
         standingRepository.save(standing);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void reevaluateExistingStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate) {
-        try {
-            entityManager.flush();
-            lockStandingOf(kind, enrollmentId).ifPresent(standing -> {
-                applyEvaluation(standing, businessDate, null, NEVER_SUSPENDS_OUTSIDE_MONTH_CLOSE);
-                standingRepository.save(standing);
-            });
-        } catch (RuntimeException failure) {
-            log.warn("No se pudo reevaluar el estado de cobranza: tipo={}, inscripcion={}", kind, enrollmentId, failure);
-        }
+        lockStandingOf(kind, enrollmentId).ifPresent(standing -> {
+            applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
+            standingRepository.save(standing);
+        });
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordTermClosedWhileSuspended(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate) {
         Optional<EnrollmentPaymentStanding> standing = lockStandingOf(kind, enrollmentId);
         if (standing.isEmpty() || standing.get().getStatus() != EnrollmentPaymentStatus.SUSPENDED) {
@@ -74,9 +78,9 @@ public class EnrollmentPaymentStandingService {
         log.info("Estado de cobranza: inscripcion dada de baja por mora, tipo={}, inscripcion={}", kind, enrollmentId);
     }
 
-    private void applyEvaluation(EnrollmentPaymentStanding standing, LocalDate businessDate, LocalDate monthCloseCutoff, EnrollmentSuspensionRule rule) {
-        EnrollmentDebtFacts facts = factsQuery.findFactsOf(standing.kind(), standing.enrollmentId(), monthCloseCutoff);
-        List<EnrollmentPaymentEvent> events = EnrollmentPaymentStandingEvaluator.evaluateStanding(standing.getStatus(), facts, rule);
+    private void applyEvaluation(EnrollmentPaymentStanding standing, LocalDate businessDate, MonthCloseFacts closeFacts, EnrollmentSuspensionRule rule) {
+        EnrollmentDebtFacts facts = factsQuery.findLiveFactsOf(standing.kind(), standing.enrollmentId());
+        List<EnrollmentPaymentEvent> events = EnrollmentPaymentStandingEvaluator.evaluateStanding(standing.getStatus(), facts, closeFacts, rule);
         for (EnrollmentPaymentEvent event : events) {
             EnrollmentPaymentStatus before = standing.getStatus();
             standing.applyEvent(event, businessDate, STANDING_ACTOR);
@@ -94,9 +98,5 @@ public class EnrollmentPaymentStandingService {
         Long studentId = factsQuery.findStudentIdOf(kind, enrollmentId)
                 .orElseThrow(() -> new IllegalStateException("The enrollment has no student: " + kind + " " + enrollmentId));
         return EnrollmentPaymentStanding.open(kind, enrollmentId, studentId, businessDate, STANDING_ACTOR);
-    }
-
-    private static LocalDate monthCloseCutoffOf(LocalDate businessDate) {
-        return businessDate.getDayOfMonth() == 1 ? businessDate.minusDays(1) : null;
     }
 }

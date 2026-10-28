@@ -6,6 +6,7 @@ create table enrollment_payment_standing (
     student_id bigint not null,
     status varchar(30) not null,
     suspended_since date,
+    last_closed_month date not null,
     primary key (id),
     constraint fk_enrollment_payment_standing_program foreign key (program_enrollment_id) references program_enrollment (id),
     constraint fk_enrollment_payment_standing_course foreign key (course_enrollment_id) references course_enrollment (id),
@@ -42,17 +43,17 @@ create index ix_enrollment_payment_status_change_standing on enrollment_payment_
 create trigger trg_enrollment_payment_status_change_append_only before update or delete on enrollment_payment_status_change
     for each row execute function forbid_append_only_row_change();
 
-insert into enrollment_payment_standing (program_enrollment_id, student_id, status, suspended_since)
+insert into enrollment_payment_standing (program_enrollment_id, student_id, status, suspended_since, last_closed_month)
 select e.id, e.student_id, e.payment_status,
-       case when e.payment_status = 'SUSPENDED' then date_trunc('month', coalesce(e.payment_status_updated_at, now()))::date end
-from program_enrollment e
-where e.student_id is not null;
+       case when e.payment_status = 'SUSPENDED' then date_trunc('month', coalesce(e.payment_status_updated_at, now()))::date end,
+       (date_trunc('month', current_date) - interval '1 month')::date
+from program_enrollment e;
 
-insert into enrollment_payment_standing (course_enrollment_id, student_id, status, suspended_since)
+insert into enrollment_payment_standing (course_enrollment_id, student_id, status, suspended_since, last_closed_month)
 select e.id, e.student_id, e.payment_status,
-       case when e.payment_status = 'SUSPENDED' then date_trunc('month', coalesce(e.payment_status_updated_at, now()))::date end
-from course_enrollment e
-where e.student_id is not null;
+       case when e.payment_status = 'SUSPENDED' then date_trunc('month', coalesce(e.payment_status_updated_at, now()))::date end,
+       (date_trunc('month', current_date) - interval '1 month')::date
+from course_enrollment e;
 
 insert into enrollment_payment_status_change (standing_id, event, from_status, to_status, reason, actor_process, business_date, occurred_at)
 select s.id, 'MIGRATED', null, s.status, 'Estado de cobranza copiado de la inscripción', 'MIGRATION',

@@ -56,6 +56,9 @@ public class EnrollmentPaymentStanding {
     @Column(name = "suspended_since")
     private LocalDate suspendedSinceDate;
 
+    @Column(name = "last_closed_month", nullable = false)
+    private LocalDate lastClosedMonthDate;
+
     @OneToMany(mappedBy = "standing", cascade = CascadeType.ALL, orphanRemoval = false)
     @OrderBy("id ASC")
     @Getter(AccessLevel.NONE)
@@ -74,6 +77,7 @@ public class EnrollmentPaymentStanding {
 
     public static EnrollmentPaymentStanding open(EnrollmentKind kind, Long enrollmentId, Long studentId, LocalDate businessDate, StatusChangeActor actor) {
         EnrollmentPaymentStanding standing = new EnrollmentPaymentStanding(kind, enrollmentId, studentId);
+        standing.lastClosedMonthDate = YearMonth.from(businessDate).minusMonths(1).atDay(1);
         standing.applyEvent(EnrollmentPaymentEvent.STANDING_OPENED, businessDate, actor);
         return standing;
     }
@@ -86,6 +90,20 @@ public class EnrollmentPaymentStanding {
         this.status = nextStatus;
         this.suspendedSinceDate = nextStatus == EnrollmentPaymentStatus.SUSPENDED ? YearMonth.from(businessDate).atDay(1) : null;
         statusChanges.add(new EnrollmentPaymentStatusChange(this, previousStatus, nextStatus, event.name(), event.reason(), actor, businessDate));
+    }
+
+    public YearMonth lastClosedMonth() {
+        return YearMonth.from(lastClosedMonthDate);
+    }
+
+    public boolean isMonthCloseDue(YearMonth closedMonth) {
+        return lastClosedMonth().isBefore(closedMonth);
+    }
+
+    public void markMonthCloseEvaluated(YearMonth closedMonth) {
+        if (isMonthCloseDue(closedMonth)) {
+            this.lastClosedMonthDate = closedMonth.atDay(1);
+        }
     }
 
     public EnrollmentKind kind() {

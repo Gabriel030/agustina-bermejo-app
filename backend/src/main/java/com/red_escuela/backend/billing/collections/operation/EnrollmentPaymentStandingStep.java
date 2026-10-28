@@ -5,11 +5,13 @@ import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRu
 import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFactsQuery;
 import com.red_escuela.backend.billing.collections.service.EnrollmentPaymentStandingService;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 @Component
 public class EnrollmentPaymentStandingStep {
@@ -20,22 +22,28 @@ public class EnrollmentPaymentStandingStep {
 
     private final EnrollmentDebtFactsQuery factsQuery;
     private final EnrollmentPaymentStandingService standingService;
+    private final BillingConfigurationReader configurationReader;
 
-    public EnrollmentPaymentStandingStep(EnrollmentDebtFactsQuery factsQuery, EnrollmentPaymentStandingService standingService) {
+    public EnrollmentPaymentStandingStep(EnrollmentDebtFactsQuery factsQuery, EnrollmentPaymentStandingService standingService,
+                                         BillingConfigurationReader configurationReader) {
         this.factsQuery = factsQuery;
         this.standingService = standingService;
+        this.configurationReader = configurationReader;
     }
 
-    public Result evaluateActiveEnrollments(LocalDate businessDate, LatePaymentTerms terms) {
-        EnrollmentSuspensionRule rule = EnrollmentSuspensionRule.from(terms);
+    public Result evaluateEnrollments(LocalDate businessDate, LatePaymentTerms termsOfTheDay) {
+        LocalDate cutoff = YearMonth.from(businessDate).minusMonths(1).atEndOfMonth();
+        EnrollmentSuspensionRule ruleAtCutoff = configurationReader.findLatePaymentSettingsEffectiveOn(cutoff)
+                .map(EnrollmentSuspensionRule::from)
+                .orElseGet(() -> EnrollmentSuspensionRule.from(termsOfTheDay));
         int candidates = 0;
         int processed = 0;
         int failed = 0;
         for (EnrollmentKind kind : EnrollmentKind.values()) {
-            for (Long enrollmentId : factsQuery.findActiveEnrollmentIds(kind)) {
+            for (Long enrollmentId : factsQuery.findStepCandidateEnrollmentIds(kind)) {
                 candidates++;
                 try {
-                    standingService.evaluateEnrollmentStanding(kind, enrollmentId, businessDate, rule);
+                    standingService.evaluateEnrollmentStanding(kind, enrollmentId, businessDate, ruleAtCutoff);
                     processed++;
                 } catch (RuntimeException failure) {
                     failed++;
@@ -43,7 +51,7 @@ public class EnrollmentPaymentStandingStep {
                 }
             }
         }
-        log.info("Estado de cobranza evaluado: fecha={}, candidatas={}, procesadas={}, fallidas={}", businessDate, candidates, processed, failed);
+        log.info("Estado de cobranza evaluado: fecha={}, corte={}, candidatas={}, procesadas={}, fallidas={}", businessDate, cutoff, candidates, processed, failed);
         return new Result(candidates, processed, failed);
     }
 }

@@ -154,7 +154,7 @@ public class EnrollmentBillingComplianceSweepService {
 
     private void evaluateEnrollmentPaymentStanding(LocalDate today, LatePaymentTerms terms) {
         try {
-            standingStep.evaluateActiveEnrollments(today, terms);
+            standingStep.evaluateEnrollments(today, terms);
         } catch (RuntimeException e) {
             log.error("Falló el estado de cobranza nuevo de la fecha {}", today, e);
         }
