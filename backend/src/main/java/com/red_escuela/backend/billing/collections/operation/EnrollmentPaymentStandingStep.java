@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRule;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRuleTimeline;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFactsQuery;
 import com.red_escuela.backend.billing.collections.service.EnrollmentPaymentStandingService;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class EnrollmentPaymentStandingStep {
@@ -42,15 +45,16 @@ public class EnrollmentPaymentStandingStep {
     }
 
     public Result evaluateEnrollmentsWithIds(EnrollmentKind kind, List<Long> enrollmentIds, LocalDate businessDate, LatePaymentTerms termsOfTheDay) {
-        LocalDate cutoff = YearMonth.from(businessDate).minusMonths(1).atEndOfMonth();
-        EnrollmentSuspensionRule ruleAtCutoff = configurationReader.findLatePaymentSettingsEffectiveOn(cutoff)
+        Map<LocalDate, EnrollmentSuspensionRule> rulesByCutoff = new HashMap<>();
+        EnrollmentSuspensionRuleTimeline ruleTimeline = cutoffDay -> rulesByCutoff.computeIfAbsent(cutoffDay, day -> configurationReader.findLatePaymentSettingsEffectiveOn(day)
                 .map(EnrollmentSuspensionRule::from)
-                .orElseGet(() -> EnrollmentSuspensionRule.from(termsOfTheDay));
+                .orElseGet(() -> EnrollmentSuspensionRule.from(termsOfTheDay)));
+        LocalDate cutoff = YearMonth.from(businessDate).minusMonths(1).atEndOfMonth();
         int processed = 0;
         int failed = 0;
         for (Long enrollmentId : enrollmentIds) {
             try {
-                standingService.evaluateEnrollmentStanding(kind, enrollmentId, businessDate, ruleAtCutoff);
+                standingService.evaluateEnrollmentStanding(kind, enrollmentId, businessDate, ruleTimeline);
                 processed++;
             } catch (RuntimeException failure) {
                 failed++;

@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentEvent
 import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentStanding;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentStandingEvaluator;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRule;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRuleTimeline;
 import com.red_escuela.backend.billing.collections.domain.MonthCloseFacts;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFactsQuery;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
@@ -43,23 +44,36 @@ public class EnrollmentPaymentStandingService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void evaluateEnrollmentStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, EnrollmentSuspensionRule ruleAtCutoff) {
+    public void evaluateEnrollmentStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, EnrollmentSuspensionRuleTimeline rules) {
         EnrollmentPaymentStanding standing = lockStandingOf(kind, enrollmentId).orElseGet(() -> openStandingOf(kind, enrollmentId, businessDate));
-        YearMonth closedMonth = YearMonth.from(businessDate).minusMonths(1);
-        MonthCloseFacts closeFacts = null;
-        if (standing.isMonthCloseDue(closedMonth)) {
-            if (factsQuery.isEnrollmentActive(kind, enrollmentId)) {
-                closeFacts = closeFactsLoader.loadFactsAtCutoff(kind, enrollmentId, closedMonth.atEndOfMonth());
-            }
-            standing.markMonthCloseEvaluated(closedMonth);
+        if (standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED && factsQuery.isEnrollmentWithdrawnForNonpayment(kind, enrollmentId)) {
+            closeSuspendedStanding(standing, businessDate);
+            return;
         }
-        applyEvaluation(standing, businessDate, closeFacts, ruleAtCutoff);
+        YearMonth lastClosedMonth = YearMonth.from(businessDate).minusMonths(1);
+        if (!standing.isMonthCloseDue(lastClosedMonth)) {
+            applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
+        } else if (!factsQuery.isEnrollmentActive(kind, enrollmentId)) {
+            standing.markMonthCloseEvaluated(lastClosedMonth);
+            applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
+        } else {
+            for (YearMonth month = standing.lastClosedMonth().plusMonths(1); !month.isAfter(lastClosedMonth); month = month.plusMonths(1)) {
+                LocalDate cutoff = month.atEndOfMonth();
+                MonthCloseFacts closeFacts = closeFactsLoader.loadFactsAtCutoff(kind, enrollmentId, cutoff);
+                standing.markMonthCloseEvaluated(month);
+                applyEvaluation(standing, businessDate, closeFacts, rules.ruleAtCutoff(cutoff));
+            }
+        }
         standingRepository.save(standing);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void reevaluateExistingStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate) {
         lockStandingOf(kind, enrollmentId).ifPresent(standing -> {
+            if (standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED && factsQuery.isEnrollmentWithdrawnForNonpayment(kind, enrollmentId)) {
+                closeSuspendedStanding(standing, businessDate);
+                return;
+            }
             applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
             standingRepository.save(standing);
         });
@@ -73,9 +87,13 @@ public class EnrollmentPaymentStandingService {
                     kind, enrollmentId, standing.map(s -> s.getStatus().name()).orElse("sin estado"));
             return;
         }
-        standing.get().applyEvent(EnrollmentPaymentEvent.TERM_CLOSED_WHILE_SUSPENDED, businessDate, StatusChangeActor.ofProcess(LEGACY_TERM_CLOSURE_PROCESS));
-        standingRepository.save(standing.get());
-        log.info("Estado de cobranza: inscripcion dada de baja por mora, tipo={}, inscripcion={}", kind, enrollmentId);
+        closeSuspendedStanding(standing.get(), businessDate);
+    }
+
+    private void closeSuspendedStanding(EnrollmentPaymentStanding standing, LocalDate businessDate) {
+        standing.applyEvent(EnrollmentPaymentEvent.TERM_CLOSED_WHILE_SUSPENDED, businessDate, StatusChangeActor.ofProcess(LEGACY_TERM_CLOSURE_PROCESS));
+        standingRepository.save(standing);
+        log.info("Estado de cobranza: inscripcion dada de baja por mora, tipo={}, inscripcion={}", standing.kind(), standing.enrollmentId());
     }
 
     private void applyEvaluation(EnrollmentPaymentStanding standing, LocalDate businessDate, MonthCloseFacts closeFacts, EnrollmentSuspensionRule rule) {

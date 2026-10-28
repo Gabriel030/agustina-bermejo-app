@@ -44,6 +44,10 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     private static final int POLICY_YEAR = 2031;
     private static final int GRACE_YEAR = 2032;
     private static final int GRACE_SUSPENSION_YEAR = 2033;
+    private static final int TWO_LOST_MONTHS_YEAR = 2034;
+    private static final int THREE_LOST_MONTHS_YEAR = 2035;
+    private static final int NONPAYMENT_NET_YEAR = 2036;
+    private static final int NONPAYMENT_PAYMENT_YEAR = 2037;
     private static final EnrollmentSuspensionRule END_OF_MONTH = new EnrollmentSuspensionRule(1, 0);
 
     @Autowired
@@ -73,7 +77,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     }
 
     private void evaluate(LocalDate businessDate, EnrollmentSuspensionRule rule) {
-        standingService.evaluateEnrollmentStanding(EnrollmentKind.COURSE, enrollment.getId(), businessDate, rule);
+        standingService.evaluateEnrollmentStanding(EnrollmentKind.COURSE, enrollment.getId(), businessDate, cutoff -> rule);
     }
 
     private EnrollmentPaymentStatus statusOf(Long enrollmentId) {
@@ -339,10 +343,10 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         other = courseEnrollmentRepository.save(other);
         overdueInstallmentDueOn(d(YEAR, 5, 10));
         evaluate(d(YEAR, 5, 20));
-        standingService.evaluateEnrollmentStanding(EnrollmentKind.COURSE, other.getId(), d(YEAR, 5, 20), END_OF_MONTH);
+        standingService.evaluateEnrollmentStanding(EnrollmentKind.COURSE, other.getId(), d(YEAR, 5, 20), cutoff -> END_OF_MONTH);
 
         evaluate(d(YEAR, 6, 1));
-        standingService.evaluateEnrollmentStanding(EnrollmentKind.COURSE, other.getId(), d(YEAR, 6, 1), END_OF_MONTH);
+        standingService.evaluateEnrollmentStanding(EnrollmentKind.COURSE, other.getId(), d(YEAR, 6, 1), cutoff -> END_OF_MONTH);
 
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         assertThat(statusOf(other.getId())).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
@@ -395,6 +399,99 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         assertThat(standingQuery.listStatusChangesOfCourseEnrollment(enrollment.getId()).getLast().actorProcess())
                 .isEqualTo(EnrollmentPaymentStandingService.LEGACY_TERM_CLOSURE_PROCESS);
         assertTheHistoryChainIsConsistent(enrollment.getId());
+    }
+
+    @Test
+    @Tag("D-473")
+    @Tag("D-306")
+    void twoMonthsLostByAnOutageAreEvaluatedOneByOneEachWithTheFactsOfItsCutoff() {
+        arrange(TWO_LOST_MONTHS_YEAR);
+        publishPolicy(0, 0, 1, d(TWO_LOST_MONTHS_YEAR, 1, 1));
+        Invoice installment = overdueInstallmentDueOn(d(TWO_LOST_MONTHS_YEAR, 5, 10));
+        MutableClock.INSTANCE.setDate(d(TWO_LOST_MONTHS_YEAR, 5, 20));
+        runStepFor(d(TWO_LOST_MONTHS_YEAR, 5, 20));
+        receiveMoney(installment, "100000.00", d(TWO_LOST_MONTHS_YEAR, 7, 2));
+        allocateOn(installment, d(TWO_LOST_MONTHS_YEAR, 7, 2));
+
+        MutableClock.INSTANCE.setDate(d(TWO_LOST_MONTHS_YEAR, 7, 3));
+        runStepFor(d(TWO_LOST_MONTHS_YEAR, 7, 3));
+
+        assertThat(eventsOf(enrollment.getId())).containsExactly("STANDING_OPENED", "OVERDUE_DEBT_DETECTED", "OVERDUE_DEBT_CLEARED",
+                "OVERDUE_DEBT_DETECTED", "MONTH_CLOSED_WITH_UNPAID_INSTALLMENT", "ACCOUNT_SETTLED", "OVERDUE_DEBT_DETECTED", "MONTH_CLOSED_WITH_UNPAID_INSTALLMENT", "ACCOUNT_SETTLED");
+        assertThat(lastClosedMonthOf(enrollment.getId())).isEqualTo(d(TWO_LOST_MONTHS_YEAR, 6, 1).toString());
+        assertTheHistoryChainIsConsistent(enrollment.getId());
+        int changes = eventsOf(enrollment.getId()).size();
+        runStepFor(d(TWO_LOST_MONTHS_YEAR, 7, 4));
+        assertThat(eventsOf(enrollment.getId())).hasSize(changes);
+    }
+
+    @Test
+    @Tag("D-473")
+    @Tag("D-306")
+    void threeMonthsLostByAnOutageUseThePolicyOfEachCutoffAndStopAtTheLastClosedMonth() {
+        arrange(THREE_LOST_MONTHS_YEAR);
+        publishPolicy(0, 0, 1, d(THREE_LOST_MONTHS_YEAR, 1, 1));
+        publishPolicy(0, 0, 5, d(THREE_LOST_MONTHS_YEAR, 6, 1));
+        Invoice installment = overdueInstallmentDueOn(d(THREE_LOST_MONTHS_YEAR, 5, 10));
+        MutableClock.INSTANCE.setDate(d(THREE_LOST_MONTHS_YEAR, 5, 20));
+        runStepFor(d(THREE_LOST_MONTHS_YEAR, 5, 20));
+        receiveMoney(installment, "100000.00", d(THREE_LOST_MONTHS_YEAR, 7, 20));
+        allocateOn(installment, d(THREE_LOST_MONTHS_YEAR, 7, 20));
+
+        MutableClock.INSTANCE.setDate(d(THREE_LOST_MONTHS_YEAR, 8, 3));
+        runStepFor(d(THREE_LOST_MONTHS_YEAR, 8, 3));
+
+        assertThat(eventsOf(enrollment.getId()).stream().filter("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT"::equals).count()).isEqualTo(1);
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
+        assertThat(lastClosedMonthOf(enrollment.getId())).isEqualTo(d(THREE_LOST_MONTHS_YEAR, 7, 1).toString());
+        assertTheHistoryChainIsConsistent(enrollment.getId());
+        int changes = eventsOf(enrollment.getId()).size();
+        runStepFor(d(THREE_LOST_MONTHS_YEAR, 8, 4));
+        assertThat(eventsOf(enrollment.getId())).hasSize(changes);
+    }
+
+    @Test
+    @Tag("D-185")
+    @Tag("D-306")
+    void theNightlyStepClosesTheSuspendedStandingOfAnEnrollmentWithdrawnForNonpaymentWhenTheClosureEventWasLost() {
+        arrange(NONPAYMENT_NET_YEAR);
+        overdueInstallmentDueOn(d(NONPAYMENT_NET_YEAR, 5, 10));
+        evaluate(d(NONPAYMENT_NET_YEAR, 5, 20));
+        evaluate(d(NONPAYMENT_NET_YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', payment_status = 'WITHDRAWN_FOR_NONPAYMENT' where id = ?", enrollment.getId());
+
+        runStepFor(d(NONPAYMENT_NET_YEAR, 6, 3));
+
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        assertThat(eventsOf(enrollment.getId()).getLast()).isEqualTo("TERM_CLOSED_WHILE_SUSPENDED");
+        assertTheHistoryChainIsConsistent(enrollment.getId());
+        int changes = eventsOf(enrollment.getId()).size();
+        runStepFor(d(NONPAYMENT_NET_YEAR, 6, 4));
+        assertThat(eventsOf(enrollment.getId())).hasSize(changes);
+    }
+
+    @Test
+    @Tag("D-185")
+    @Tag("D-306")
+    void payingTheDebtOfAnEnrollmentWithdrawnForNonpaymentNeverLiftsTheSuspensionWhenTheClosureEventWasLost() {
+        arrange(NONPAYMENT_PAYMENT_YEAR);
+        Invoice installment = overdueInstallmentDueOn(d(NONPAYMENT_PAYMENT_YEAR, 5, 10));
+        evaluate(d(NONPAYMENT_PAYMENT_YEAR, 5, 20));
+        evaluate(d(NONPAYMENT_PAYMENT_YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', payment_status = 'WITHDRAWN_FOR_NONPAYMENT' where id = ?", enrollment.getId());
+
+        receiveMoney(installment, "100000.00", d(NONPAYMENT_PAYMENT_YEAR, 6, 2));
+        allocateOn(installment, d(NONPAYMENT_PAYMENT_YEAR, 6, 2));
+
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        assertThat(eventsOf(enrollment.getId())).doesNotContain("ACCOUNT_SETTLED");
+        assertTheHistoryChainIsConsistent(enrollment.getId());
+    }
+
+    private String lastClosedMonthOf(Long enrollmentId) {
+        return jdbc.queryForObject("select last_closed_month::text from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollmentId);
     }
 
     @Test
