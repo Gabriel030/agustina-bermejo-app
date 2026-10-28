@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.invoice.service;
 
-import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.shared.domain.AccountLockingPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,12 +19,12 @@ public class SubjectLockSequence {
     private static final String LOCK_COURSE_ENROLLMENT = "select id from course_enrollment where id = ? for update";
 
     private final JdbcTemplate jdbcTemplate;
-    private final StudentCurrentAccountService accountService;
+    private final AccountLockingPort accountLockingPort;
     private final InvoiceLockingService invoiceLockingService;
 
-    public SubjectLockSequence(JdbcTemplate jdbcTemplate, StudentCurrentAccountService accountService, InvoiceLockingService invoiceLockingService) {
+    public SubjectLockSequence(JdbcTemplate jdbcTemplate, AccountLockingPort accountLockingPort, InvoiceLockingService invoiceLockingService) {
         this.jdbcTemplate = jdbcTemplate;
-        this.accountService = accountService;
+        this.accountLockingPort = accountLockingPort;
         this.invoiceLockingService = invoiceLockingService;
     }
 
@@ -43,7 +43,7 @@ public class SubjectLockSequence {
         if (targets.courseEnrollmentId() != null) {
             jdbcTemplate.queryForList(LOCK_COURSE_ENROLLMENT, Long.class, targets.courseEnrollmentId());
         }
-        accountService.lockStudentCurrentAccount(targets.accountId());
+        accountLockingPort.lockAccountById(targets.accountId());
     }
 
     private record LockTargets(Long accountId, Long programEnrollmentId, Long courseEnrollmentId) {

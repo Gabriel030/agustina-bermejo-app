@@ -63,6 +63,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -394,8 +395,10 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch enrollmentHeld = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
+        AtomicLong holderTransactionId = new AtomicLong();
         Future<?> holder = executor.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             jdbcTemplate.queryForList("select id from course_enrollment where id = ? for update", Long.class, enrollment.getId());
+            holderTransactionId.set(jdbcTemplate.queryForObject("select txid_current() % 4294967296", Long.class));
             enrollmentHeld.countDown();
             try {
                 release.await();
@@ -407,15 +410,20 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         Future<?> transition = executor.submit(() -> detectOn(invoice, LocalDate.of(2060, 3, 18)));
 
         try {
-            Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> jdbcTemplate.queryForObject("select count(*) from pg_locks where not granted", Integer.class) > 0);
+            Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> jdbcTemplate.queryForObject(
+                    "select count(*) from pg_locks where not granted and locktype = 'transactionid' and transactionid::text = ?",
+                    Integer.class, String.valueOf(holderTransactionId.get())) > 0);
             assertThatCode(() -> jdbcTemplate.queryForList("select id from student_current_account where id = ? for update nowait", Long.class, accountId)).doesNotThrowAnyException();
             assertThatCode(() -> jdbcTemplate.queryForList("select id from invoice where id = ? for update nowait", Long.class, invoice.getId())).doesNotThrowAnyException();
         } finally {
             release.countDown();
         }
-        holder.get(30, TimeUnit.SECONDS);
-        transition.get(30, TimeUnit.SECONDS);
-        executor.shutdown();
+        try {
+            holder.get(30, TimeUnit.SECONDS);
+            transition.get(30, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdown();
+        }
         assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
     }
 
