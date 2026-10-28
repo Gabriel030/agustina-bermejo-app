@@ -7,7 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
-import { AdmissionInvoicePendingCard } from '@/features/billing';
+import { AdmissionInvoicePendingCard, CreditBalanceCard } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 import { formatDate } from '@/lib/billing';
 
@@ -85,6 +85,8 @@ export function AlumnoPagos() {
       </div>
 
       <AdmissionInvoicePendingCard />
+
+      <CreditBalanceCard />
 
       <GlassCard className="overflow-hidden p-0">
         {cargando && (

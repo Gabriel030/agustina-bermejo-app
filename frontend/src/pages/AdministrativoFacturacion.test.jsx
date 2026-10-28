@@ -45,6 +45,15 @@ const pendingReceipt = {
   productName: 'Profesorado de Educación Inicial',
 };
 
+function creditBalance(available = '0.00') {
+  return {
+    currency: 'ARS',
+    unallocatedCredit: money(available),
+    reservedByPendingRefunds: money('0.00'),
+    availableCredit: money(available),
+  };
+}
+
 function renderPage(route = '/', receipts = [pendingReceipt]) {
   server.use(
     http.get(`${API}/students`, () =>
@@ -52,6 +61,9 @@ function renderPage(route = '/', receipts = [pendingReceipt]) {
     ),
     http.get(`${API}/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
     http.get(`${API}/students/2/payments`, () => HttpResponse.json([])),
+    http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' })),
+    http.get(`${API}/students/2/credit-notes`, () => HttpResponse.json([])),
+    http.get(`${API}/students/2/credit-balance`, () => HttpResponse.json(creditBalance())),
   );
   return renderWithProviders(
     <>
@@ -461,7 +473,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     await fillAmountAndReview(user, dialog);
 
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByPlaceholderText('Buscar alumno por nombre o DNI…')).toBeInTheDocument();
+    expect(await screen.findByPlaceholderText('Buscar alumno por nombre o DNI…')).toBeInTheDocument();
   });
 
   it('warns to check the account when the key was already used with other data, and refreshes the preview', async () => {
@@ -766,7 +778,7 @@ describe('AdministrativoFacturacion — pestañas', () => {
   });
 
   it('opens the receipts tab when the url carries ?tab=comprobantes', async () => {
-    renderPage('/?tab=comprobantes');
+    renderPage('/?alumno=2&tab=comprobantes');
 
     expect(await screen.findByText('Martina Acosta')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Comprobantes/ })).toHaveAttribute('aria-selected', 'true');
@@ -793,7 +805,7 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     renderPage();
     await openAccountOf([paidInvoice, untouchedInvoice], user);
 
-    const toggle = screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · mar 2026' });
+    const toggle = screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · mar 2026' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await user.click(toggle);
 
@@ -837,16 +849,18 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
 
     expect(await screen.findByRole('heading', { name: 'Pagos del alumno' })).toBeInTheDocument();
     expect(await screen.findByText('Pago #502')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · mar 2026' }));
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · mar 2026' }));
     expect(screen.getByRole('button', { name: 'Ver en Pagos del alumno' })).toBeInTheDocument();
   });
 
-  it('does not make an installment without payments or receipts expandable', async () => {
+  it('lets expand an installment without payments or receipts to reach its actions', async () => {
     const user = userEvent.setup();
     renderPage();
     await openAccountOf([paidInvoice, untouchedInvoice], user);
 
-    expect(screen.queryByRole('button', { name: 'Ver pagos de Cuota mensual · may 2026' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · may 2026' }));
+
+    expect(screen.getByRole('button', { name: 'Cancelar cuota' })).toBeEnabled();
   });
 
   it('tells how much of a multi-installment payment was applied to this installment', async () => {
@@ -854,7 +868,7 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     renderPage();
     await openAccountOf([paidInvoice, sharedPaymentInvoice], user);
 
-    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · jul 2026' }));
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · jul 2026' }));
 
     expect(screen.getByText(/Aplicado a esta cuota \$ 12\.000,00 de un pago de \$ 30\.000,00/)).toBeInTheDocument();
     expect(screen.getByText('Transferencia bancaria')).toBeInTheDocument();
@@ -866,9 +880,9 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     await openAccountOf([paidInvoice, reviewInvoice], user);
 
     expect(screen.getByText('En revisión')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · jun 2026' }));
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · jun 2026' }));
 
-    expect(screen.getByRole('link', { name: 'Revisar en Comprobantes' })).toHaveAttribute('href', '/?tab=comprobantes');
+    expect(screen.getByRole('link', { name: 'Revisar en Comprobantes' })).toHaveAttribute('href', '/?alumno=2&tab=comprobantes');
   });
 
   it('opens the receipt file from the installment detail without collapsing the row', async () => {
@@ -883,7 +897,7 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     const user = userEvent.setup();
     renderPage();
     await openAccountOf([paidInvoice], user);
-    const toggle = screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · mar 2026' });
+    const toggle = screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · mar 2026' });
     await user.click(toggle);
 
     await user.click(screen.getByRole('button', { name: 'Ver comprobante' }));
@@ -897,7 +911,7 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     const writeText = vi.spyOn(navigator.clipboard, 'writeText');
     renderPage();
     await openAccountOf([paidInvoice], user);
-    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · mar 2026' }));
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cuota mensual · mar 2026' }));
 
     await user.click(screen.getByRole('button', { name: 'Copiar referencia' }));
 
