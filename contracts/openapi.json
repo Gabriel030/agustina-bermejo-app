@@ -1585,6 +1585,36 @@
         "required" : [ "studentsWithChangedSchedule" ],
         "type" : "object"
       },
+      "CollectionReminderMetricResponse" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "goal" : {
+            "$ref" : "#/components/schemas/ReminderGoalResponse"
+          },
+          "months" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "panel" : {
+            "type" : "string"
+          },
+          "partial" : {
+            "type" : "boolean"
+          },
+          "series" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReminderSeriesResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "available", "goal", "months", "panel", "partial", "series" ],
+        "type" : "object"
+      },
       "CollectionReminderSettingsValues" : {
         "properties" : {
           "contactListDaysOverdue" : {
@@ -6811,6 +6841,28 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "ReminderGoalResponse" : {
+        "properties" : {
+          "comparator" : {
+            "type" : "string"
+          },
+          "evaluation" : {
+            "items" : {
+              "enum" : [ "MET", "BELOW", "NO_DATA" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "indicator" : {
+            "type" : "string"
+          },
+          "thresholdPercent" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "comparator", "evaluation", "indicator", "thresholdPercent" ],
+        "type" : "object"
+      },
       "ReminderNoticeDto" : {
         "properties" : {
           "channels" : {
@@ -6967,6 +7019,25 @@
           }
         },
         "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
+        "type" : "object"
+      },
+      "ReminderSeriesResponse" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "unit" : {
+            "enum" : [ "COUNT", "PERCENT" ],
+            "type" : "string"
+          },
+          "values" : {
+            "items" : {
+              "type" : "number"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "key", "unit", "values" ],
         "type" : "object"
       },
       "RemoveReminderScheduleExceptionRequest" : {
@@ -24026,6 +24097,81 @@
           }
         },
         "tags" : [ "me-teaching-section-controller" ]
+      }
+    },
+    "/notification-metrics/collection-reminders" : {
+      "get" : {
+        "operationId" : "CollectionReminderMetrics_getCollectionReminders",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CollectionReminderMetricResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-metrics-controller" ]
       }
     },
     "/payment-config" : {

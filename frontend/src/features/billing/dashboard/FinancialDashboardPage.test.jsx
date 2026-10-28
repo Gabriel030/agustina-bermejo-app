@@ -101,7 +101,30 @@ function emptyMetric(panel, url) {
   return { panel, available: true, partial: false, months: monthsOf(url), series: [] };
 }
 
-function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], discounts, firstMonth = '2020-01' } = {}) {
+function remindersMetric(url, withGoal) {
+  const months = monthsOf(url);
+  const count = (last, previous) => ({ unit: 'COUNT', values: filled(months, last, previous, 0) });
+  return {
+    panel: 'collection-reminders',
+    available: true,
+    partial: false,
+    months,
+    series: [
+      { key: 'sent', ...count(620, 300) },
+      { key: 'suppressed', ...count(40, 10) },
+      { key: 'deferred', ...count(30, 0) },
+      { key: 'failed', ...count(5, 0) },
+      { key: 'sentByChannel.EMAIL', ...count(500, 250) },
+      { key: 'sentByChannel.IN_APP', ...count(120, 50) },
+      { key: 'suppressedByReason.OPTED_OUT', ...count(40, 10) },
+      { key: 'deferredByReason.DAILY_CAP_REACHED', ...count(30, 0) },
+      { key: 'paidWithin72HoursPercent', unit: 'PERCENT', values: filled(months, 30, 20) },
+    ],
+    ...(withGoal && { goal: { indicator: 'REMINDER_PAYMENT_WITHIN_72H', comparator: 'AT_LEAST', thresholdPercent: 70, evaluation: months.map((_, index) => (index === months.length - 1 ? 'BELOW' : 'NO_DATA')) } }),
+  };
+}
+
+function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], reminderGoal = false, requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], discounts, firstMonth = '2020-01' } = {}) {
   server.use(
     http.get(`${API}/financial-dashboard`, () =>
       dashboardStatus !== 200 ? new HttpResponse(null, { status: dashboardStatus }) : HttpResponse.json({
@@ -121,6 +144,11 @@ function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, 
         ? new HttpResponse(null, { status: debtorsStatus })
         : HttpResponse.json([{ studentId: 7, fullName: 'Ana Pérez', dni: '30111222', enrollmentName: 'Tecnicatura', totalDebt: money('150000.00'), debtAgeDays: 20 }]);
     }),
+    http.get(`${API}/notification-metrics/collection-reminders`, ({ request }) => {
+      requests.push(new URL(request.url));
+      if (failing.includes('collection-reminders')) return new HttpResponse(null, { status: 500 });
+      return HttpResponse.json(remindersMetric(request.url, reminderGoal));
+    }),
     http.get(`${API}/billing/metrics/first-month`, () => HttpResponse.json({ month: firstMonth })),
     http.get(`${API}/billing/metrics/:panel`, ({ request, params }) => {
       requests.push(new URL(request.url));
@@ -139,6 +167,32 @@ async function openIssuingTab() {
 }
 
 describe('FinancialDashboardPage', () => {
+  it('e05 shows the reminders panel with its chart, the goal line and every breakdown in the table view', async () => {
+    const requests = [];
+    install({ requests, reminderGoal: true, onTime: { goal: false } });
+    const { container } = renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    const title = await screen.findByText('Avisos de cobranza', { selector: 'h3' });
+    expect(title).toBeInTheDocument();
+    await waitFor(() => expect(requests.some((url) => url.pathname === '/notification-metrics/collection-reminders')).toBe(true));
+    await waitFor(() => expect(container.textContent).toContain('Meta 70 %'));
+
+    const card = title.closest('[class*="p-5"]') ?? title.closest('section') ?? title.parentElement.parentElement;
+    await userEvent.click(within(card).getByRole('button', { name: /Ver como tabla/ }));
+    const table = await within(card).findByRole('table');
+    for (const label of ['Enviados', 'Suprimidos', 'Diferidos', 'Fallidos', 'Mail', 'En la app', 'Prefirió no recibirlo', 'Tope diario de mails', 'Pagó dentro de 72 h']) {
+      expect(within(table).getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('e05 keeps the other panels when the reminders panel fails', async () => {
+    install({ failing: ['collection-reminders'] });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    expect(await screen.findByText('Pago a término', { selector: 'h3' })).toBeInTheDocument();
+    expect(await screen.findAllByRole('button', { name: /Reintentar/ })).not.toHaveLength(0);
+  });
+
   it('d2-04 marks the month as below the goal on the card, the chart badge and draws the goal line', async () => {
     install();
     const { container } = renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
