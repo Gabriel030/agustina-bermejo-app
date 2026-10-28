@@ -8,6 +8,8 @@ import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { RequestRefundPage } from '@/features/billing/refunds/RequestRefundPage';
 import { AuthorizationInboxPage } from '@/features/billing/authorization/AuthorizationInboxPage';
 import { AuthorizationRequestDetailPage } from '@/features/billing/authorization/AuthorizationRequestDetailPage';
+import { CreateCreditNotePage } from '@/features/billing/credit-notes/CreateCreditNotePage';
+import { MyCreditNotesPage } from '@/features/billing/credit-notes/MyCreditNotesPage';
 import { FinancialDashboardPage } from '@/features/billing/dashboard/FinancialDashboardPage';
 import { DiscountsPage } from '@/features/billing/discounts/DiscountsPage';
 import { DiscountDefinitionFormPage } from '@/features/billing/discounts/DiscountDefinitionFormPage';
@@ -20,12 +22,14 @@ export const routes = {
   role: [
     { roles: ['alumno'], path: 'pagos', element: <AlumnoPagos /> },
     { roles: ['alumno'], path: 'pagos/estado', element: <AlumnoPagoEstado /> },
+    { roles: ['alumno'], path: 'pagos/notas-de-credito', element: <MyCreditNotesPage /> },
     { roles: ['alumno'], path: 'pagos/curso/:enrollmentId', element: <AlumnoPagoDetalle /> },
     { roles: ['alumno'], path: 'pagos/carrera/:enrollmentId', element: <AlumnoPagoDetalle /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/seleccion', element: <AlumnoPagarSeleccion /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <AlumnoPagarTransferencia /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <AlumnoPagarOnline /> },
     { roles: ['administrativo', 'director'], path: 'facturacion', element: <AdministrativoFacturacion /> },
+    { roles: ['administrativo', 'director'], path: 'facturacion/cuotas/:invoiceId/nota-de-credito', element: <CreateCreditNotePage /> },
     { roles: ['administrativo', 'director'], path: 'alumnos/:id/reembolsos/nuevo', element: <RequestRefundPage /> },
     { roles: ['administrativo', 'director'], path: 'alumnos/:id/descuentos/nuevo', element: <GrantDiscountPage /> },
     { roles: ['administrativo', 'director'], path: 'descuentos', element: <DiscountsPage /> },

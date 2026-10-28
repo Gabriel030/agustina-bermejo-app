@@ -112,4 +112,22 @@ describe('AlumnoPagos', () => {
     await user.click(screen.getByRole('tab', { name: 'Cuotas' }));
     expect(await screen.findByPlaceholderText('Buscar curso o carrera…')).toBeInTheDocument();
   });
+
+  it('muestra el saldo a favor con el enlace a las notas de crédito cuando hay crédito disponible', async () => {
+    server.use(
+      http.get(`${API}/me/credit-balance`, () =>
+        HttpResponse.json({
+          currency: 'ARS',
+          unallocatedCredit: { amount: '6000.00', currency: 'ARS' },
+          reservedByPendingRefunds: { amount: '0.00', currency: 'ARS' },
+          availableCredit: { amount: '6000.00', currency: 'ARS' },
+        }),
+      ),
+    );
+    renderPagos();
+
+    expect(await screen.findByText('Saldo a favor')).toBeInTheDocument();
+    expect(screen.getByText('$ 6.000,00')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver mis notas de crédito' })).toBeInTheDocument();
+  });
 });

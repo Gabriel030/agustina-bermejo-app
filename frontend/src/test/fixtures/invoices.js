@@ -23,6 +23,7 @@ export function invoiceFixture({
   invoiceType = 'MONTHLY_INSTALLMENT',
   documentStatus = 'ISSUED',
   paymentStatus = 'PENDING',
+  creditable = null,
   ...overrides
 } = {}) {
   const totalValue = parseFloat(total);
@@ -53,12 +54,56 @@ export function invoiceFixture({
         description: 'Cuota',
         amount: money(linesTotal),
         discount,
+        creditableAmount: money(creditable ?? linesTotal),
       },
     ],
     issuingReason: 'MONTHLY_RUN',
     discardedReason: null,
     paymentDate: null,
     paymentMethod: null,
+    pendingAuthorizations: [],
+    ...overrides,
+  };
+}
+
+export function creditNoteFixture(overrides = {}) {
+  return {
+    id: 1,
+    creditNoteNumber: 'NC-0000098',
+    invoiceId: 61,
+    invoiceNumber: 'F-00000061',
+    reason: 'BILLING_ERROR',
+    justification: 'Se cobró de más el seguro escolar.',
+    offsetAmount: money('0.00'),
+    freeCreditAmount: money('6000.00'),
+    totalAmount: money('6000.00'),
+    issueDate: '2026-09-02',
+    factDate: '2026-09-02',
+    authorizationRequestId: 12,
+    lines: [{ invoiceLineNumber: 1, amount: money('6000.00'), offsetPart: money('0.00'), freePart: money('6000.00') }],
+    requestedByName: 'Marcela Ibarra',
+    authorizedByName: 'Rodolfo Fernández',
+    authorizedAt: '2026-09-02T12:00:00Z',
+    ...overrides,
+  };
+}
+
+export function creditBalanceFixture(available = '0.00') {
+  return {
+    currency: 'ARS',
+    unallocatedCredit: money(available),
+    reservedByPendingRefunds: money('0.00'),
+    availableCredit: money(available),
+  };
+}
+
+export function pendingAuthorizationFixture(overrides = {}) {
+  return {
+    id: 90,
+    type: 'CANCEL_INVOICE',
+    requestedByPersonId: 10,
+    requestedByName: 'Marcela Ibarra',
+    requestedAt: '2026-10-25T12:00:00Z',
     ...overrides,
   };
 }

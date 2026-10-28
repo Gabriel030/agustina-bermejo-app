@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageContainer } from '@/components/PageContainer';
@@ -16,7 +16,6 @@ import {
   FEE_TYPE_LABELS,
   formatDate,
   formatPeriod,
-  hasInvoiceDetail,
   invoiceDisplayStatus,
   invoiceStatusInfo,
   invoiceTitle,
@@ -25,12 +24,19 @@ import {
 import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
 import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
 import { STUDENT_PAYMENTS_ANCHOR, StudentPaymentsCard } from '@/features/billing/payment-reversals/StudentPaymentsCard';
+import { CancelInvoiceDialog } from '@/features/billing/credit-notes/CancelInvoiceDialog';
+import { InvoiceActions } from '@/features/billing/credit-notes/InvoiceActions';
+import { PendingAuthorizationBanner } from '@/features/billing/credit-notes/PendingAuthorizationBanner';
+import { StudentCreditNotesSection } from '@/features/billing/credit-notes/StudentCreditNotesSection';
+import { pendingAuthorizationOf } from '@/features/billing/credit-notes/creditNotes';
+import { useStudentCreditBalance } from '@/features/billing/hooks/useCreditNotes';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
-import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
+import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
-import { formatMoney } from '@/lib/utils';
+import { formatMoney, moneyValue } from '@/lib/utils';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
+import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import {
   useAdminBillingOverview,
   useComprobantesAdmin,
@@ -84,7 +90,7 @@ function scrollToStudentPayments() {
   document.getElementById(STUDENT_PAYMENTS_ANCHOR)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function InvoicesTable({ invoices }) {
+function InvoicesTable({ invoices, billing }) {
   const { isExpanded, toggle } = useExpandedRows();
 
   return (
@@ -102,15 +108,12 @@ function InvoicesTable({ invoices }) {
       <TableBody>
         {invoices.map((inv) => {
           const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(inv));
-          const expandable = hasInvoiceDetail(inv);
-          const open = expandable && isExpanded(inv.id);
+          const open = isExpanded(inv.id);
+          const awaitingAuthorization = pendingAuthorizationOf(inv) != null;
           const concept = invoiceTitle(inv);
           return (
             <Fragment key={inv.id}>
-              <TableRow
-                className={expandable ? 'cursor-pointer' : undefined}
-                onClick={expandable ? () => toggle(inv.id) : undefined}
-              >
+              <TableRow className="cursor-pointer" onClick={() => toggle(inv.id)}>
                 <TableCell className="font-medium">{concept}</TableCell>
                 <TableCell className="text-ink-faint">{formatDate(inv.dueDate)}</TableCell>
                 <TableCell>
@@ -120,26 +123,48 @@ function InvoicesTable({ invoices }) {
                   <InvoiceAmountCell invoice={inv} />
                 </TableCell>
                 <TableCell>
-                  <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusPill tone={statusInfo.tone}>
+                      {inv.paymentStatus === 'CANCELLED' && inv.invoiceType === 'LATE_FEE' ? 'Recargo anulado' : statusInfo.label}
+                    </StatusPill>
+                    {awaitingAuthorization && (
+                      <StatusPill tone="warning" dot>
+                        Autorización pendiente
+                      </StatusPill>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  {expandable && (
-                    <button
-                      type="button"
-                      aria-expanded={open}
-                      aria-controls={`invoice-detail-${inv.id}`}
-                      aria-label={`Ver pagos de ${concept}`}
-                      className="rounded-lg p-1 text-ink-faint"
-                    >
-                      {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    aria-controls={`invoice-detail-${inv.id}`}
+                    aria-label={`Ver detalle de ${concept}`}
+                    className="rounded-lg p-1 text-ink-faint"
+                  >
+                    {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
                 </TableCell>
               </TableRow>
               {open && (
                 <TableRow id={`invoice-detail-${inv.id}`} className="hover:bg-transparent">
                   <TableCell colSpan={6} className="bg-neutral-bg/40 px-4">
-                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} onViewPayments={scrollToStudentPayments} reviewLink showDocumentStatus />
+                    <InvoiceDetail
+                      invoice={inv}
+                      onViewReceipt={openReceiptFile}
+                      onViewPayments={scrollToStudentPayments}
+                      reviewLink
+                      showDocumentStatus
+                      actions={
+                        <InvoiceActions
+                          invoice={inv}
+                          invoices={billing.invoices}
+                          studentId={billing.studentId}
+                          studentName={billing.studentName}
+                          onCancel={billing.onCancel}
+                        />
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               )}
@@ -151,7 +176,7 @@ function InvoicesTable({ invoices }) {
   );
 }
 
-function EnrollmentCard({ enrollment, defaultExpanded = false }) {
+function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const standingInfo = BILLING_STANDING_CONFIG[enrollment.paymentStatus] ?? {
@@ -188,7 +213,7 @@ function EnrollmentCard({ enrollment, defaultExpanded = false }) {
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-sm text-ink-faint">Sin cuotas generadas todavía.</p>
           ) : (
-            <InvoicesTable invoices={invoices} />
+            <InvoicesTable invoices={invoices} billing={billing} />
           )}
 
         </div>
@@ -218,8 +243,16 @@ function outstandingDebtOf(overview) {
 function TabFacturacion() {
   const [searchInput, setSearchInput] = useState('');
   const searchDebounced = useDebounce(searchInput, 300);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const studentId = searchParams.get('alumno');
+  const [pickedStudent, setPickedStudent] = useState(null);
   const [showCashPayment, setShowCashPayment] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
+
+  const { data: legajo, isError: legajoFailed } = useLegajoAlumno(studentId);
+  const selectedStudent = legajo ?? (pickedStudent && String(pickedStudent.id) === studentId ? pickedStudent : null);
 
   const { data: alumnos, isLoading: loadingAlumnos } = useAlumnos({ search: searchDebounced });
   const {
@@ -228,17 +261,43 @@ function TabFacturacion() {
     isFetching: fetchingOverview,
     isError: overviewFailed,
     refetch: refetchOverview,
-  } = useAdminBillingOverview(selectedStudent?.id);
+  } = useAdminBillingOverview(studentId);
+  const { data: creditBalance } = useStudentCreditBalance(studentId);
   const debtIsCurrent = !fetchingOverview && !overviewFailed;
 
   const allInvoices = (overview ?? []).flatMap((enrollment) => enrollment.invoices ?? []);
   const showResults = searchDebounced.length >= 2;
   const debt = debtIsCurrent ? outstandingDebtOf(overview) : null;
+  const availableCredit = creditBalance?.availableCredit;
+  const studentName = selectedStudent ? `${selectedStudent.apellido}, ${selectedStudent.nombre}` : undefined;
+  const requestedCancelId = location.state?.cancelInvoiceId;
+
+  useEffect(() => {
+    if (!requestedCancelId || !overview) return;
+    const target = overview.flatMap((enrollment) => enrollment.invoices ?? []).find((invoice) => invoice.id === requestedCancelId);
+    if (target) setCancelTarget(target);
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [requestedCancelId, overview, location.pathname, location.search, navigate]);
+
+  function selectStudent(id) {
+    const next = new URLSearchParams(searchParams);
+    if (id) next.set('alumno', String(id));
+    else next.delete('alumno');
+    setSearchParams(next);
+  }
 
   function handleSelect(alumno) {
-    setSelectedStudent(alumno);
+    setPickedStudent(alumno);
+    selectStudent(alumno.id);
     setSearchInput('');
   }
+
+  const billing = {
+    invoices: allInvoices,
+    studentId,
+    studentName,
+    onCancel: (invoice) => setCancelTarget(invoice),
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -252,6 +311,12 @@ function TabFacturacion() {
               <p className="text-sm text-ink-faint">DNI {selectedStudent.dni}</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              {availableCredit && moneyValue(availableCredit) > 0 && (
+                <div className="sm:text-right">
+                  <p className="text-xs text-ink-faint">Saldo a favor</p>
+                  <p className="text-lg font-semibold tabular-nums text-success">{formatMonto(availableCredit)}</p>
+                </div>
+              )}
               {debt && (
                 <div className="sm:text-right">
                   <p className="text-xs text-ink-faint">Deuda</p>
@@ -263,13 +328,15 @@ function TabFacturacion() {
                   <CreditCard size={14} className="mr-1.5" />
                   Cobrar en efectivo
                 </Button>
-                <Button variant="outline" className="w-full sm:w-auto" onClick={() => setSelectedStudent(null)}>
+                <Button variant="outline" className="w-full sm:w-auto" onClick={() => selectStudent(null)}>
                   Cambiar alumno
                 </Button>
               </div>
             </div>
           </div>
         </GlassCard>
+      ) : studentId && !legajoFailed ? (
+        <Skeleton className="h-20 w-full rounded-2xl" />
       ) : (
         <GlassCard className="p-4">
           <div className="relative">
@@ -308,7 +375,7 @@ function TabFacturacion() {
         </GlassCard>
       )}
 
-      {selectedStudent && overviewFailed && (
+      {studentId && overviewFailed && (
         <div role="alert" className="flex flex-col gap-2 rounded-xl bg-danger-bg px-4 py-3 text-sm text-danger sm:flex-row sm:items-center sm:justify-between">
           <span>No pudimos actualizar la deuda del alumno. Hasta recargarla no se puede cobrar.</span>
           <Button variant="outline" onClick={() => refetchOverview()}>
@@ -325,13 +392,14 @@ function TabFacturacion() {
           onClose={() => setShowCashPayment(false)}
           onStudentGone={() => {
             setShowCashPayment(false);
-            setSelectedStudent(null);
+            selectStudent(null);
           }}
         />
       )}
 
-      {selectedStudent && (
+      {studentId && (
         <>
+          <PendingAuthorizationBanner invoices={allInvoices} studentName={studentName} />
           {loadingOverview && (
             <div className="flex flex-col gap-3">
               <Skeleton className="h-16 w-full rounded-2xl" />
@@ -349,11 +417,17 @@ function TabFacturacion() {
               <EnrollmentCard
                 key={`${enrollment.enrollmentType}-${enrollment.enrollmentId}`}
                 enrollment={enrollment}
+                billing={billing}
                 defaultExpanded={overview.length === 1}
               />
             ))}
-          <StudentPaymentsCard studentId={selectedStudent.id} invoices={allInvoices} />
+          <StudentCreditNotesSection studentId={studentId} invoices={allInvoices} />
+          <StudentPaymentsCard studentId={studentId} invoices={allInvoices} />
         </>
+      )}
+
+      {cancelTarget && (
+        <CancelInvoiceDialog key={cancelTarget.id} invoice={cancelTarget} studentId={studentId} onClose={() => setCancelTarget(null)} />
       )}
     </div>
   );
@@ -522,7 +596,11 @@ export function AdministrativoFacturacion() {
   const pendingCount = pendingReceipts?.length ?? 0;
 
   function handleTabChange(value) {
-    setSearchParams(value === TAB_ACCOUNT ? {} : { tab: value });
+    const next = new URLSearchParams();
+    const student = searchParams.get('alumno');
+    if (student) next.set('alumno', student);
+    if (value !== TAB_ACCOUNT) next.set('tab', value);
+    setSearchParams(next);
   }
 
   return (

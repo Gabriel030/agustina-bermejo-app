@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
-import { AdmissionInvoicePendingCard, MyDiscountsTab } from '@/features/billing';
+import { AdmissionInvoicePendingCard, CreditBalanceCard, MyDiscountsTab } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 import { formatDate } from '@/lib/billing';
 
@@ -94,6 +94,8 @@ export function AlumnoPagos() {
         </div>
 
         <AdmissionInvoicePendingCard />
+
+        <CreditBalanceCard />
 
         <GlassCard className="overflow-hidden p-0">
           {cargando && (
