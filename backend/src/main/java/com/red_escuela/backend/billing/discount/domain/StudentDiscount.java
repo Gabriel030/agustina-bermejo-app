@@ -183,6 +183,27 @@ public class StudentDiscount {
         return discount;
     }
 
+    public static StudentDiscount reserveAnnualUpfrontDiscount(AnnualUpfrontReservation reservation, Instant now) {
+        StudentDiscount discount = new StudentDiscount();
+        discount.programEnrollmentId = reservation.programEnrollmentId();
+        discount.studentId = reservation.studentId();
+        discount.currency = reservation.currency();
+        discount.discountDefinitionId = reservation.definition().getId();
+        discount.discountType = DiscountType.ANNUAL_UPFRONT;
+        discount.applicableInvoiceType = InvoiceType.ANNUAL_UPFRONT;
+        discount.origin = StudentDiscountOrigin.ANNUAL_UPFRONT_REQUEST;
+        discount.calculation = reservation.definition().getCalculation();
+        discount.capPerInvoice = reservation.definition().getCapPerInvoice();
+        discount.priority = reservation.definition().getPriority();
+        discount.fromPeriod = reservation.range().from();
+        discount.toPeriod = reservation.range().to();
+        discount.grantedAt = now;
+        discount.grantedById = reservation.requestedByPersonId();
+        discount.reason = reservation.reason();
+        discount.moveTo(StudentDiscountEvent.DISCOUNT_GRANTED, StatusChangeActor.ofPerson(reservation.requestedByPersonId()), now, reservation.reason());
+        return discount;
+    }
+
     public static StudentDiscount registerCohortEntryDiscount(CohortEntryRegistration registration, Instant now) {
         StudentDiscount discount = new StudentDiscount();
         discount.programEnrollmentId = registration.enrollment().kind() == EnrollmentKind.PROGRAM ? registration.enrollment().id() : null;
