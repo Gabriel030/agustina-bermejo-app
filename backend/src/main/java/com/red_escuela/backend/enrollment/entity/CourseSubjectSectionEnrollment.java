@@ -13,7 +13,6 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
 
 @Getter
 @Setter

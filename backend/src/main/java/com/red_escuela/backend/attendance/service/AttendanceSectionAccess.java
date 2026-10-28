@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundExc
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import org.springframework.stereotype.Service;
 
 @Service
