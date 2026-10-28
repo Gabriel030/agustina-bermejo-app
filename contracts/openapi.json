@@ -534,6 +534,39 @@
         "required" : [ "audienceLabel", "body", "category", "createdAt", "createdBy", "expiresAt", "id", "scheduledFor", "sectionId", "sectionType", "sentAt", "status", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
+      "AnnualUpfrontQuoteResponse" : {
+        "properties" : {
+          "eligible" : {
+            "type" : "boolean"
+          },
+          "existingRequestInvoiceId" : {
+            "description" : "Factura del pedido ya existente cuando el motivo es que ya hay un pedido",
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lectiveYear" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quote" : {
+            "$ref" : "#/components/schemas/Quote",
+            "description" : "Presupuesto; solo viene si se puede pedir el año"
+          },
+          "reasonCode" : {
+            "description" : "Código del primer motivo por el que no se puede pedir el año; null si se puede",
+            "type" : "string"
+          },
+          "reasonMessage" : {
+            "type" : "string"
+          },
+          "requestDeadline" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "eligible" ],
+        "type" : "object"
+      },
       "AppliedStudentDiscountInstallmentResponse" : {
         "properties" : {
           "installmentNumber" : {
@@ -3245,6 +3278,29 @@
           }
         },
         "required" : [ "decidedAt", "decisionNotes", "id", "justification", "programEnrollmentId", "programName", "requestedAt", "status", "studentName", "subjectId", "subjectName", "type" ],
+        "type" : "object"
+      },
+      "Discount" : {
+        "properties" : {
+          "calculation" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "definitionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "totalSaving" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "calculation", "definitionId", "name", "totalSaving" ],
         "type" : "object"
       },
       "DiscountConsumptionResponse" : {
@@ -6485,6 +6541,51 @@
           "type" : "object"
         } ],
         "required" : [ "rate" ]
+      },
+      "Quote" : {
+        "properties" : {
+          "discount" : {
+            "$ref" : "#/components/schemas/Discount",
+            "description" : "null si no hay promoción anual vigente"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/QuoteLine"
+            },
+            "type" : "array"
+          },
+          "paymentDeadline" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "total" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "lines", "paymentDeadline", "total" ],
+        "type" : "object"
+      },
+      "QuoteLine" : {
+        "properties" : {
+          "baseAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "discountAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "finalAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "lineNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "period" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "baseAmount", "discountAmount", "finalAmount", "lineNumber", "period" ],
+        "type" : "object"
       },
       "ReceiptInvoiceSummary" : {
         "properties" : {
@@ -22486,6 +22587,75 @@
         "tags" : [ "me-enrollment-controller" ]
       }
     },
+    "/me/program-enrollments/{id}/annual-upfront/quote" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontQuote_quoteForCurrentStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontQuoteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-quote-controller" ]
+      }
+    },
     "/me/program-enrollments/{id}/certificates/approved-subjects" : {
       "get" : {
         "operationId" : "MeCertificate_approvedSubjectsCertificate",
@@ -25876,6 +26046,75 @@
           }
         },
         "tags" : [ "program-enrollment-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/annual-upfront/quote" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontQuote_quoteForStaff",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontQuoteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-quote-controller" ]
       }
     },
     "/program-enrollments/{id}/attendance-summary" : {
