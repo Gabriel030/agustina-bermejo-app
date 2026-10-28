@@ -171,6 +171,19 @@ class PromotionControllerIT extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @Tag("D-433")
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"EXAM_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE"})
+    void aLegacyPromotionOnAChargeOutsideInstallmentEnrollmentAndRetakenSubjectAnswers400(String feeType) throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 80000, 50000);
+        Map<String, Object> benefit = Map.of("feeType", feeType, "value", Map.of("type", "PROPORTIONAL", "ratePercent", new BigDecimal("10")));
+        String body = objectMapper.writeValueAsString(Map.of("description", "Promo cargo " + feeType, "eligibilityValidFrom", "2031-03-01", "eligibilityValidTo", "2031-04-30",
+                "benefits", List.of(benefit)));
+
+        mockMvc.perform(post("/programs/{id}/promotions", offering.programId()).header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DISCOUNT_DEFINITION"));
+    }
+
     @Test
     @Tag("D-283")
     @Tag("D-074")

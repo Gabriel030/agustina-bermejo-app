@@ -24,6 +24,7 @@ import {
 } from '@/lib/billing';
 import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
 import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
+import { STUDENT_PAYMENTS_ANCHOR, StudentPaymentsCard } from '@/features/billing/payment-reversals/StudentPaymentsCard';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
 import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
@@ -77,6 +78,10 @@ async function openReceiptFile(receiptId) {
     preview?.close();
     toast.error('No pudimos abrir el comprobante. Probá de nuevo.');
   }
+}
+
+function scrollToStudentPayments() {
+  document.getElementById(STUDENT_PAYMENTS_ANCHOR)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function InvoicesTable({ invoices }) {
@@ -134,7 +139,7 @@ function InvoicesTable({ invoices }) {
               {open && (
                 <TableRow id={`invoice-detail-${inv.id}`} className="hover:bg-transparent">
                   <TableCell colSpan={6} className="bg-neutral-bg/40 px-4">
-                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink showDocumentStatus />
+                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} onViewPayments={scrollToStudentPayments} reviewLink showDocumentStatus />
                   </TableCell>
                 </TableRow>
               )}
@@ -226,6 +231,7 @@ function TabFacturacion() {
   } = useAdminBillingOverview(selectedStudent?.id);
   const debtIsCurrent = !fetchingOverview && !overviewFailed;
 
+  const allInvoices = (overview ?? []).flatMap((enrollment) => enrollment.invoices ?? []);
   const showResults = searchDebounced.length >= 2;
   const debt = debtIsCurrent ? outstandingDebtOf(overview) : null;
 
@@ -346,6 +352,7 @@ function TabFacturacion() {
                 defaultExpanded={overview.length === 1}
               />
             ))}
+          <StudentPaymentsCard studentId={selectedStudent.id} invoices={allInvoices} />
         </>
       )}
     </div>
