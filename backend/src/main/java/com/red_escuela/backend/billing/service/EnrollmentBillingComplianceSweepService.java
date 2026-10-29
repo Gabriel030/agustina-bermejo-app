@@ -16,13 +16,13 @@ import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.red_escuela.backend.billing.collections.domain.EnrollmentComplianceSweepReport;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,6 +34,7 @@ import java.util.Optional;
 @Service
 public class EnrollmentBillingComplianceSweepService {
     private static final Logger log = LoggerFactory.getLogger(EnrollmentBillingComplianceSweepService.class);
+    public static final String NO_LATE_PAYMENT_POLICY = "NO_LATE_PAYMENT_POLICY";
     private static final int PAGE_SIZE = 200;
     private static final String JOB_NAME = "EnrollmentBillingComplianceSweepService";
 
@@ -64,12 +65,6 @@ public class EnrollmentBillingComplianceSweepService {
         this.clock = clock;
     }
 
-    @Scheduled(cron = "0 1 3 * * *", zone = "${app.timezone}")
-    @SchedulerLock(name = "EnrollmentBillingComplianceSweepService", lockAtMostFor = "PT30M")
-    public void run() {
-        run(LocalDate.now(clock));
-    }
-
     public void run(LocalDate today) {
         try {
             checkCompliance(today);
@@ -86,18 +81,34 @@ public class EnrollmentBillingComplianceSweepService {
         }
     }
 
+    public Optional<String> findNotApplicableCode(LocalDate today) {
+        return configurationReader.findLatePaymentSettingsEffectiveOn(today).isEmpty() ? Optional.of(NO_LATE_PAYMENT_POLICY) : Optional.empty();
+    }
+
     private void checkCompliance(LocalDate today) {
-        Optional<LatePaymentTerms> policy = configurationReader.findLatePaymentSettingsEffectiveOn(today);
-        if (policy.isEmpty()) {
+        if (findNotApplicableCode(today).isPresent()) {
             log.warn("Barrido de cumplimiento de facturación omitido: no hay política de cobranzas vigente al {}", today);
             return;
         }
         log.info("Barrido de cumplimiento de facturación iniciado: fecha={}", today);
         long start = System.currentTimeMillis();
+        EnrollmentComplianceSweepReport outcome = sweepEnrollmentCompliance(today);
+        long durationMs = System.currentTimeMillis() - start;
+        log.info("Barrido de cumplimiento de facturación finalizado: candidatas={}, procesadas={}, fallidas={}, duracion={}ms",
+                outcome.candidates(), outcome.processed(), outcome.failed(), durationMs);
+        BatchExecutionStatus status = outcome.failed() == 0 ? BatchExecutionStatus.SUCCESS
+                : (outcome.processed() > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
+        List<Map<String, Object>> errors = outcome.failures().stream()
+                .map(item -> errorOf(item.kind() == EnrollmentKind.COURSE ? "CourseEnrollment" : "ProgramEnrollment", item.enrollmentId(), item.message()))
+                .toList();
+        batchExecutionLogRepository.save(new BatchExecutionLog(
+                JOB_NAME, LocalDateTime.now(clock), outcome.candidates(), outcome.processed(), outcome.failed(), durationMs, status, serialize(errors)));
+    }
+
+    public EnrollmentComplianceSweepReport sweepEnrollmentCompliance(LocalDate today) {
+        LatePaymentTerms policy = configurationReader.findLatePaymentSettingsEffectiveOn(today).orElseThrow();
+        List<EnrollmentComplianceSweepReport.EnrollmentComplianceFailure> failures = new ArrayList<>();
         int candidates = 0;
-        int processed = 0;
-        int failed = 0;
-        List<Map<String, Object>> errors = new ArrayList<>();
 
         Long lastCourseEnrollmentId = 0L;
         while (true) {
@@ -109,12 +120,10 @@ public class EnrollmentBillingComplianceSweepService {
             candidates += batch.size();
             for (CourseEnrollment enrollment : batch) {
                 try {
-                    rowProcessor.processCourseEnrollment(enrollment.getId(), policy.get(), today);
-                    processed++;
+                    rowProcessor.processCourseEnrollment(enrollment.getId(), policy, today);
                 } catch (Exception e) {
-                    failed++;
                     log.error("Falló el cumplimiento de facturación de la inscripción a curso id={}", enrollment.getId(), e);
-                    errors.add(errorOf("CourseEnrollment", enrollment.getId(), e));
+                    failures.add(new EnrollmentComplianceSweepReport.EnrollmentComplianceFailure(EnrollmentKind.COURSE, enrollment.getId(), e.getMessage()));
                 }
             }
             lastCourseEnrollmentId = batch.get(batch.size() - 1).getId();
@@ -131,25 +140,17 @@ public class EnrollmentBillingComplianceSweepService {
             candidates += batch.size();
             for (ProgramEnrollment enrollment : batch) {
                 try {
-                    rowProcessor.processProgramEnrollment(enrollment.getId(), policy.get(), today);
-                    processed++;
+                    rowProcessor.processProgramEnrollment(enrollment.getId(), policy, today);
                 } catch (Exception e) {
-                    failed++;
                     log.error("Falló el cumplimiento de facturación de la inscripción a carrera id={}", enrollment.getId(), e);
-                    errors.add(errorOf("ProgramEnrollment", enrollment.getId(), e));
+                    failures.add(new EnrollmentComplianceSweepReport.EnrollmentComplianceFailure(EnrollmentKind.PROGRAM, enrollment.getId(), e.getMessage()));
                 }
             }
             lastProgramEnrollmentId = batch.get(batch.size() - 1).getId();
         }
 
-        evaluateEnrollmentPaymentStanding(today, policy.get());
-        long durationMs = System.currentTimeMillis() - start;
-        log.info("Barrido de cumplimiento de facturación finalizado: candidatas={}, procesadas={}, fallidas={}, duracion={}ms",
-                candidates, processed, failed, durationMs);
-        BatchExecutionStatus status = failed == 0 ? BatchExecutionStatus.SUCCESS
-                : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
-        batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(clock), candidates, processed, failed, durationMs, status, serialize(errors)));
+        evaluateEnrollmentPaymentStanding(today, policy);
+        return new EnrollmentComplianceSweepReport(candidates, failures);
     }
 
     private void evaluateEnrollmentPaymentStanding(LocalDate today, LatePaymentTerms terms) {
@@ -160,11 +161,11 @@ public class EnrollmentBillingComplianceSweepService {
         }
     }
 
-    private Map<String, Object> errorOf(String enrollmentType, Long id, Exception e) {
+    private Map<String, Object> errorOf(String enrollmentType, Long id, String message) {
         Map<String, Object> error = new LinkedHashMap<>();
         error.put("enrollmentType", enrollmentType);
         error.put("enrollmentId", id);
-        error.put("message", e.getMessage());
+        error.put("message", message);
         return error;
     }
 

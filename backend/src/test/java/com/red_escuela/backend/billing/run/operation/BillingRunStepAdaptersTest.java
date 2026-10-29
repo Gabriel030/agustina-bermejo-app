@@ -82,6 +82,6 @@ class BillingRunStepAdaptersTest {
     @Test
     @Tag("D-447")
     void theGatewayStepDeclaresItselfNotApplicableWhileThePaymentGatewayIsOff() {
-        assertThat(new GatewaySyncBillingRunStep().findNotApplicableCode()).contains("GATEWAY_DISABLED");
+        assertThat(new GatewaySyncBillingRunStep().findNotApplicableCode(DAY)).contains("GATEWAY_DISABLED");
     }
 }

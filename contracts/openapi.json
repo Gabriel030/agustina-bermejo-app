@@ -1287,7 +1287,7 @@
             "type" : "integer"
           },
           "subjectType" : {
-            "enum" : [ "INVOICE", "LATE_FEE_CHARGE" ],
+            "enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT" ],
             "type" : "string"
           }
         },
@@ -1332,7 +1332,7 @@
             "type" : "string"
           },
           "step" : {
-            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION" ],
+            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ],
             "type" : "string"
           }
         },
@@ -12783,7 +12783,7 @@
           "name" : "step",
           "required" : true,
           "schema" : {
-            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION" ],
+            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ],
             "type" : "string"
           }
         } ],
