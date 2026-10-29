@@ -2,6 +2,12 @@
 
 Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw test -Dtest=PolicyCatalogTest -Dpolicy-catalog.write=true` y commitear.
 
+## Momento ACCOUNT_INCONSISTENCY_SCOPE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | InconsistencyStaysLocalPolicy | GLOBAL_ACCOUNT_INCONSISTENCY | D-356 |
+
 ## Momento ANNUAL_UPFRONT_REQUEST
 
 | Orden | Policy | Códigos de violación | Decisiones |

@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.billing.collections.operation.HeldSubjectFinder;
 import com.red_escuela.backend.billing.run.domain.BillingRunItemRecord;
 import com.red_escuela.backend.billing.run.domain.BillingRunStep;
 import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class AccountCreditAllocationBillingRunStep extends AbstractBillingRunStep {
@@ -33,13 +35,15 @@ public class AccountCreditAllocationBillingRunStep extends AbstractBillingRunSte
     private final BillingOperationPipeline pipeline;
     private final AccountCreditAllocationOperation operation;
     private final BillingConfigurationReader configurationReader;
+    private final HeldAccountLookup heldAccounts;
 
     public AccountCreditAllocationBillingRunStep(StudentCurrentAccountRepository accountRepository, BillingOperationPipeline pipeline,
-                                                 AccountCreditAllocationOperation operation, BillingConfigurationReader configurationReader) {
+                                                 AccountCreditAllocationOperation operation, BillingConfigurationReader configurationReader, HeldAccountLookup heldAccounts) {
         this.accountRepository = accountRepository;
         this.pipeline = pipeline;
         this.operation = operation;
         this.configurationReader = configurationReader;
+        this.heldAccounts = heldAccounts;
     }
 
     @Override
@@ -57,13 +61,23 @@ public class AccountCreditAllocationBillingRunStep extends AbstractBillingRunSte
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
         List<BillingRunItemRecord> failures = new ArrayList<>();
         int candidates = 0;
+        Set<Long> held = heldAccounts.findHeldAccountIds(businessDate);
         List<Long> page = accountRepository.findIdsWithUnallocatedCreditAfter(0L, PageRequest.of(0, PAGE_SIZE));
         while (!page.isEmpty()) {
             candidates += page.size();
-            page.forEach(accountId -> allocateCreditOfAccount(accountId, businessDate, failures));
+            page.forEach(accountId -> allocateCreditUnlessHeld(accountId, businessDate, held, failures));
             page = accountRepository.findIdsWithUnallocatedCreditAfter(page.get(page.size() - 1), PageRequest.of(0, PAGE_SIZE));
         }
         return BillingRunStepOutcome.ofCandidates(candidates, failures);
+    }
+
+    private void allocateCreditUnlessHeld(Long accountId, LocalDate businessDate, Set<Long> held, List<BillingRunItemRecord> failures) {
+        if (held.contains(accountId)) {
+            failures.add(BillingRunItemRecord.skippedSubject(BillingRunSubjectType.CURRENT_ACCOUNT, accountId, HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE,
+                    HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE));
+            return;
+        }
+        allocateCreditOfAccount(accountId, businessDate, failures);
     }
 
     private void allocateCreditOfAccount(Long accountId, LocalDate businessDate, List<BillingRunItemRecord> failures) {

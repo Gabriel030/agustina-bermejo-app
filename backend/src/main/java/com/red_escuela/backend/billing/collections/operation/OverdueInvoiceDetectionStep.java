@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class OverdueInvoiceDetectionStep {
@@ -28,6 +29,10 @@ public class OverdueInvoiceDetectionStep {
     }
 
     public OverdueDetectionResult detectOverdueInvoices(LocalDate today) {
+        return detectOverdueInvoices(today, HeldSubjectFinder.NONE);
+    }
+
+    public OverdueDetectionResult detectOverdueInvoices(LocalDate today, HeldSubjectFinder heldInvoices) {
         int candidates = 0;
         int marked = 0;
         int skipped = 0;
@@ -40,7 +45,17 @@ public class OverdueInvoiceDetectionStep {
                 break;
             }
             candidates += batch.size();
+            Set<Long> held = heldInvoices.findHeldAmong(batch);
             for (Long invoiceId : batch) {
+                if (held.contains(invoiceId)) {
+                    skipped++;
+                    Map<String, Object> heldInvoice = new LinkedHashMap<>();
+                    heldInvoice.put("invoiceId", invoiceId);
+                    heldInvoice.put("decisionCode", HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE);
+                    heldInvoice.put("message", HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+                    errors.add(heldInvoice);
+                    continue;
+                }
                 try {
                     OverdueTransitionOutcome outcome = transitionService.markAsOverdueWhenPastDueDate(invoiceId, today);
                     if (outcome == OverdueTransitionOutcome.MARKED_AS_OVERDUE) {
