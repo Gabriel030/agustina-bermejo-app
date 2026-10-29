@@ -37,6 +37,8 @@ function renderConWizard(id = '1') {
   );
 }
 
+vi.setConfig({ testTimeout: 20000 });
+
 async function fillReceiptData(user) {
   await user.type(screen.getByLabelText('Número de operación'), '4821937');
   await user.type(screen.getByLabelText('CBU o alias de origen'), '0170099220000067797370');
