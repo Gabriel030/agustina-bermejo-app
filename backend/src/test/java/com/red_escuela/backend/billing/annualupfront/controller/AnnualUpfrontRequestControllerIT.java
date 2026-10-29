@@ -183,7 +183,9 @@ class AnnualUpfrontRequestControllerIT extends AbstractStudentDiscountIssuingIT 
 
     @Test
     void requestingWithoutAnIdempotencyKeyIsRejectedAndCreatesNothing() throws Exception {
-        String body = request(true, "v1", null, studentToken(), 400).getResponse().getContentAsString();
+        String token = studentToken();
+        request(true, "v1", null, token, 400);
+        String body = request(true, "v1", " ", token, 400).getResponse().getContentAsString();
 
         assertThat(body).contains("IDEMPOTENCY_KEY_INVALID");
         assertThat(count("select count(*) from annual_upfront_request")).isZero();

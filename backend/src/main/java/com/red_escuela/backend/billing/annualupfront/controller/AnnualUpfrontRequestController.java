@@ -23,7 +23,7 @@ public class AnnualUpfrontRequestController {
     @PostMapping("/me/program-enrollments/{id}/annual-upfront-requests")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ALUMNO')")
-    public AnnualUpfrontRequestResponse requestAnnualUpfront(@PathVariable Long id, @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+    public AnnualUpfrontRequestResponse requestAnnualUpfront(@PathVariable Long id, @RequestHeader(value = "Idempotency-Key") String idempotencyKey,
                                                              @RequestBody RequestAnnualUpfrontBody body) {
         return AnnualUpfrontRequestResponse.from(requestUseCase.requestAnnualUpfrontForCurrentStudent(id, body.termsAccepted(), body.termsVersion(), idempotencyKey));
     }

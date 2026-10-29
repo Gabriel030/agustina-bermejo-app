@@ -287,13 +287,22 @@ class DiscountDefinitionPoliciesTest {
     }
 
     @Test
-    void scopeWindowAndQuotaAreOnlyForCohortPromotions() {
-        assertThat(codesOf(violationsOf(DiscountDraftBuilder.annualUpfront().forProgram(1L).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+    void scopeWindowAndQuotaAreOnlyForCohortPromotionsAndAnnualUpfront() {
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.scholarship().forProgram(1L).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.scholarship().forCourse(1L).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.scholarship().forCohort(1L).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.scholarship().withQuota(5).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.scholarship().withEnrollmentWindow(LocalDate.of(2031, 3, 1), null).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.scholarship().withEnrollmentWindow(null, LocalDate.of(2031, 3, 1)).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+    }
+
+    @Test
+    void anAnnualUpfrontPromotionMayNarrowToAProgramWithAWindowAndAQuotaButNeverToACourseOrACohort() {
+        assertThat(violationsOf(DiscountDraftBuilder.annualUpfront().forProgram(1L).build())).isEmpty();
+        assertThat(violationsOf(DiscountDraftBuilder.annualUpfront().withQuota(5).build())).isEmpty();
+        assertThat(violationsOf(DiscountDraftBuilder.annualUpfront().withEnrollmentWindow(LocalDate.of(2031, 3, 1), null).build())).isEmpty();
         assertThat(codesOf(violationsOf(DiscountDraftBuilder.annualUpfront().forCourse(1L).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
         assertThat(codesOf(violationsOf(DiscountDraftBuilder.annualUpfront().forCohort(1L).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
-        assertThat(codesOf(violationsOf(DiscountDraftBuilder.annualUpfront().withQuota(5).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
-        assertThat(codesOf(violationsOf(DiscountDraftBuilder.annualUpfront().withEnrollmentWindow(LocalDate.of(2031, 3, 1), null).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
-        assertThat(codesOf(violationsOf(DiscountDraftBuilder.annualUpfront().withEnrollmentWindow(null, LocalDate.of(2031, 3, 1)).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
     }
 
     @Test
