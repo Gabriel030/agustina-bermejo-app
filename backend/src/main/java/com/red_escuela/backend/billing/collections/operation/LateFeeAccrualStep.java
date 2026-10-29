@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class LateFeeAccrualStep {
@@ -49,10 +48,10 @@ public class LateFeeAccrualStep {
                 break;
             }
             candidates += batch.size();
-            Set<Long> held = heldInvoices.findHeldAmong(batch);
+            Map<Long, String> held = heldInvoices.findHoldCodesAmong(batch);
             for (Long originId : batch) {
-                if (held.contains(originId)) {
-                    errors.add(heldInvoiceError(originId));
+                if (held.containsKey(originId)) {
+                    errors.add(heldInvoiceError(originId, held.get(originId)));
                     continue;
                 }
                 try {
@@ -76,10 +75,10 @@ public class LateFeeAccrualStep {
                 break;
             }
             settlementCandidates += batch.size();
-            Set<Long> held = heldInvoices.findHeldAmong(batch);
+            Map<Long, String> held = heldInvoices.findHoldCodesAmong(batch);
             for (Long originId : batch) {
-                if (held.contains(originId)) {
-                    errors.add(heldInvoiceError(originId));
+                if (held.containsKey(originId)) {
+                    errors.add(heldInvoiceError(originId, held.get(originId)));
                     continue;
                 }
                 try {
@@ -98,11 +97,11 @@ public class LateFeeAccrualStep {
         return new LateFeeAccrualResult(candidates, issued + recovered, failed, errors, recovered, settlementCandidates);
     }
 
-    private static Map<String, Object> heldInvoiceError(Long invoiceId) {
+    private static Map<String, Object> heldInvoiceError(Long invoiceId, String holdCode) {
         Map<String, Object> heldInvoice = new LinkedHashMap<>();
         heldInvoice.put("invoiceId", invoiceId);
-        heldInvoice.put("decisionCode", HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE);
-        heldInvoice.put("message", HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+        heldInvoice.put("decisionCode", holdCode);
+        heldInvoice.put("message", HeldSubjectFinder.messageOf(holdCode));
         return heldInvoice;
     }
 }

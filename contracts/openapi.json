@@ -1297,6 +1297,27 @@
         "required" : [ "effectiveFrom", "endDay", "id", "startDay" ],
         "type" : "object"
       },
+      "BillingRunAlertResponse" : {
+        "properties" : {
+          "businessDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "nightlyRunId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "type" : {
+            "type" : "string",
+            "x-extensible-enum" : [ "NIGHTLY_RUN_FAILED", "NIGHTLY_RUN_COMPLETED_WITH_ERRORS", "NIGHTLY_RUN_MISSED" ]
+          }
+        },
+        "required" : [ "businessDate", "message", "nightlyRunId", "type" ],
+        "type" : "object"
+      },
       "BillingRunItemResponse" : {
         "properties" : {
           "decisionCode" : {
@@ -5246,6 +5267,18 @@
           }
         },
         "required" : [ "enrollmentId", "examBoard", "id", "score", "status" ],
+        "type" : "object"
+      },
+      "NightlyBillingExecutionResponse" : {
+        "properties" : {
+          "run" : {
+            "$ref" : "#/components/schemas/NightlyBillingRunResponse"
+          },
+          "started" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "run", "started" ],
         "type" : "object"
       },
       "NightlyBillingRunResponse" : {
@@ -12703,6 +12736,86 @@
         "tags" : [ "billing-period-controller" ]
       }
     },
+    "/billing-run-alerts" : {
+      "get" : {
+        "operationId" : "BillingRunAlert_list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/BillingRunAlertResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-run-alert-controller" ]
+      }
+    },
     "/billing-runs" : {
       "get" : {
         "operationId" : "BillingRun_list",
@@ -12732,6 +12845,66 @@
                     "$ref" : "#/components/schemas/NightlyBillingRunResponse"
                   },
                   "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-run-controller" ]
+      }
+    },
+    "/billing-runs/executions" : {
+      "post" : {
+        "operationId" : "BillingRun_executeTodaysNightlyRun",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NightlyBillingExecutionResponse"
                 }
               }
             },

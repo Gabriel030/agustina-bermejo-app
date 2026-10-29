@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.run.service;
 
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import com.red_escuela.backend.billing.events.NightlyBillingRunCompletedWithErrorsEvent;
 import com.red_escuela.backend.billing.events.NightlyBillingRunFailedEvent;
 import com.red_escuela.backend.billing.run.domain.BillingRunItemRecord;
 import com.red_escuela.backend.billing.run.domain.BillingRunStatus;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
@@ -62,6 +64,8 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
     private LateFeeAccrualStep lateFeeAccrualStep;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private ProcessedEffectGuard effectGuard;
 
     private final ApplicationEventPublisher publisher = Mockito.mock(ApplicationEventPublisher.class);
 
@@ -100,7 +104,7 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
     }
 
     private NightlyBillingRunner runnerWith(AbstractBillingRunStep... steps) {
-        return new NightlyBillingRunner(new BillingRunStepSequence(List.of(steps)), recorder, stepSequencePolicySet, publisher);
+        return new NightlyBillingRunner(new BillingRunStepSequence(List.of(steps)), recorder, stepSequencePolicySet, new BillingRunAlertPublisher(publisher, effectGuard));
     }
 
     private int countOf(String table, String where, Object... args) {
@@ -198,6 +202,22 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
         assertThat(items).extracting(BillingRunItemResponse::subjectId, BillingRunItemResponse::errorCode, BillingRunItemResponse::decisionCode)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(77L, "SUBJECT_PROCESSING_FAILED", null), org.assertj.core.groups.Tuple.tuple(78L, null, "NO_LATE_PAYMENT_TERMS"));
         assertThat(queryUseCase.listBillingRunItems(id, BillingRunStep.LATE_FEE_ACCRUAL)).isEmpty();
+        ArgumentCaptor<Object> published = ArgumentCaptor.forClass(Object.class);
+        Mockito.verify(publisher).publishEvent(published.capture());
+        assertThat(published.getValue()).isInstanceOfSatisfying(NightlyBillingRunCompletedWithErrorsEvent.class, event -> {
+            assertThat(event.businessDate()).isEqualTo(day);
+            assertThat(event.nightlyBillingRunId()).isEqualTo(id);
+        });
+    }
+
+    @Test
+    @Tag("D-459")
+    void aCleanNightRaisesNoAlertEvent() {
+        BillingRunStepOutcome clean = new BillingRunStepOutcome(10, 10, 0, 0, List.of());
+
+        runnerWith(stepReturning(BillingRunStep.OVERDUE_DETECTION, clean)).runNightlyBillingSteps(LocalDate.of(2031, 10, 13), NightlyBillingTrigger.SCHEDULED).orElseThrow();
+
+        Mockito.verifyNoInteractions(publisher);
     }
 
     @Test

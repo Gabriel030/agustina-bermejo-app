@@ -36,7 +36,7 @@ class HeldSubjectRetentionTest {
 
     private static HeldSubjectFinder holding(Long... ids) {
         Set<Long> held = Set.of(ids);
-        return candidates -> candidates.stream().filter(held::contains).collect(java.util.stream.Collectors.toSet());
+        return candidates -> candidates.stream().filter(held::contains).collect(java.util.stream.Collectors.toMap(id -> id, id -> HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE));
     }
 
     private static Map<String, Object> heldEntry(String key, long id) {
@@ -118,6 +118,24 @@ class HeldSubjectRetentionTest {
 
     @Test
     void theNoneFinderHoldsNothing() {
-        assertThat(HeldSubjectFinder.NONE.findHeldAmong(List.of(1L, 2L))).isEmpty();
+        assertThat(HeldSubjectFinder.NONE.findHoldCodesAmong(List.of(1L, 2L))).isEmpty();
+    }
+
+    @Test
+    void theMessageDependsOnTheHoldCode() {
+        assertThat(HeldSubjectFinder.messageOf(HeldSubjectFinder.PREVIOUS_STEP_FAILED_CODE)).isEqualTo(HeldSubjectFinder.PREVIOUS_STEP_FAILED_MESSAGE);
+        assertThat(HeldSubjectFinder.messageOf(HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE)).isEqualTo(HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+    }
+
+    @Test
+    void overdueDetectionReportsThePreviousStepFailureCodeOfAHeldInvoice() {
+        when(pendingInvoices.findPendingInvoiceIdsDueBefore(NIGHT, 0L, 200)).thenReturn(List.of(10L));
+        when(pendingInvoices.findPendingInvoiceIdsDueBefore(NIGHT, 10L, 200)).thenReturn(List.of());
+        HeldSubjectFinder failedBefore = ids -> Map.of(10L, HeldSubjectFinder.PREVIOUS_STEP_FAILED_CODE);
+
+        OverdueDetectionResult result = new OverdueInvoiceDetectionStep(pendingInvoices, transitions).detectOverdueInvoices(NIGHT, failedBefore);
+
+        assertThat(result.errors()).singleElement().isEqualTo(Map.of("invoiceId", 10L, "decisionCode", "PREVIOUS_STEP_FAILED", "message",
+                HeldSubjectFinder.PREVIOUS_STEP_FAILED_MESSAGE));
     }
 }

@@ -2,6 +2,8 @@ package com.red_escuela.backend.billing.run;
 
 import com.red_escuela.backend.billing.run.policy.InconsistencyStaysLocalContext;
 import com.red_escuela.backend.billing.run.policy.InconsistencyStaysLocalPolicy;
+import com.red_escuela.backend.billing.run.policy.NightlyBillingCompletedTodayContext;
+import com.red_escuela.backend.billing.run.policy.NightlyBillingCompletedTodayPolicy;
 import com.red_escuela.backend.billing.run.policy.PreviousStepAllowsNextPolicy;
 import com.red_escuela.backend.billing.run.policy.PreviousStepContext;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -21,5 +23,10 @@ public class BillingRunPolicySetsConfiguration {
     @Bean
     public PolicySet<InconsistencyStaysLocalContext> accountInconsistencyScopePolicySet() {
         return PolicySet.named("ACCOUNT_INCONSISTENCY_SCOPE", List.of(new InconsistencyStaysLocalPolicy()));
+    }
+
+    @Bean
+    public PolicySet<NightlyBillingCompletedTodayContext> nightlyBillingCompletedTodayPolicySet() {
+        return PolicySet.named("NIGHTLY_BILLING_COMPLETED_TODAY", List.of(new NightlyBillingCompletedTodayPolicy()));
     }
 }

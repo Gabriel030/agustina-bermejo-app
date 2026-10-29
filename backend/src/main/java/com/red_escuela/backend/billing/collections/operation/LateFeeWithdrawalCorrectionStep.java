@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class LateFeeWithdrawalCorrectionStep {
@@ -41,13 +40,13 @@ public class LateFeeWithdrawalCorrectionStep {
                 break;
             }
             candidates += batch.size();
-            Set<Long> held = heldCharges.findHeldAmong(batch);
+            Map<Long, String> held = heldCharges.findHoldCodesAmong(batch);
             for (Long chargeId : batch) {
-                if (held.contains(chargeId)) {
+                if (held.containsKey(chargeId)) {
                     Map<String, Object> heldCharge = new LinkedHashMap<>();
                     heldCharge.put("lateFeeChargeId", chargeId);
-                    heldCharge.put("decisionCode", HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE);
-                    heldCharge.put("message", HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+                    heldCharge.put("decisionCode", held.get(chargeId));
+                    heldCharge.put("message", HeldSubjectFinder.messageOf(held.get(chargeId)));
                     errors.add(heldCharge);
                     continue;
                 }

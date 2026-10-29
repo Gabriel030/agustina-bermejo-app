@@ -352,6 +352,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 6 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
 | 7 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
 
+## Momento NIGHTLY_BILLING_COMPLETED_TODAY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | NightlyBillingCompletedTodayPolicy | NIGHTLY_BILLING_NOT_COMPLETED | D-055, D-459 |
+
 ## Momento NIGHTLY_BILLING_STEP_SEQUENCE
 
 | Orden | Policy | Códigos de violación | Decisiones |
