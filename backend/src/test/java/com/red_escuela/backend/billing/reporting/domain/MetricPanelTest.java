@@ -20,6 +20,7 @@ class MetricPanelTest {
         assertThat(MetricPanel.fromPath("on-time-payment")).isEqualTo(MetricPanel.ON_TIME_PAYMENT);
         assertThat(MetricPanel.fromPath("collections-stock")).isEqualTo(MetricPanel.COLLECTIONS_STOCK);
         assertThat(MetricPanel.fromPath("payment-standing-changes")).isEqualTo(MetricPanel.PAYMENT_STANDING_CHANGES);
+        assertThat(MetricPanel.fromPath("nightly-health")).isEqualTo(MetricPanel.NIGHTLY_HEALTH);
     }
 
     @Test

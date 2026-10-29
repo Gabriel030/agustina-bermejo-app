@@ -50,7 +50,7 @@ class MonthlyBillingMetricsIT extends AbstractMonthlyMetricsIT {
     @Tag("D-097")
     void everyPanelAsksForTheCurrencyWhenAccountsExistInMoreThanOne() throws Exception {
         for (String panel : new String[]{"issued-invoices", "discounts", "overdue-detected", "late-fees", "on-time-payment", "receipts", "collections-stock",
-                "payment-standing-changes"}) {
+                "payment-standing-changes", "nightly-health"}) {
             assertThat(errorOf(directorToken, "/billing/metrics/" + panel + "?from=2020-03&to=2020-03", 400).get("code").asText())
                     .isEqualTo("CURRENCY_REQUIRED");
         }
