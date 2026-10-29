@@ -11,7 +11,8 @@ public enum MetricPanel {
     LATE_FEES("late-fees"),
     ON_TIME_PAYMENT("on-time-payment"),
     RECEIPTS("receipts"),
-    COLLECTIONS_STOCK("collections-stock");
+    COLLECTIONS_STOCK("collections-stock"),
+    PAYMENT_STANDING_CHANGES("payment-standing-changes");
 
     private final String path;
 
