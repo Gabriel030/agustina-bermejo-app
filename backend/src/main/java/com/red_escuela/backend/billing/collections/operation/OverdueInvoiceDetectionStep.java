@@ -17,6 +17,7 @@ import java.util.Map;
 public class OverdueInvoiceDetectionStep {
     private static final Logger log = LoggerFactory.getLogger(OverdueInvoiceDetectionStep.class);
     private static final int PAGE_SIZE = 200;
+    public static final String SKIPPED_WITHOUT_LATE_PAYMENT_TERMS_CODE = "NO_LATE_PAYMENT_TERMS";
 
     private final PendingInvoiceQueryService pendingInvoiceQueryService;
     private final OverdueInvoiceTransitionService transitionService;
@@ -48,6 +49,7 @@ public class OverdueInvoiceDetectionStep {
                         skipped++;
                         Map<String, Object> skippedInvoice = new LinkedHashMap<>();
                         skippedInvoice.put("invoiceId", invoiceId);
+                        skippedInvoice.put("decisionCode", SKIPPED_WITHOUT_LATE_PAYMENT_TERMS_CODE);
                         skippedInvoice.put("message", "Sin versión de mora aplicable: no se evaluó su vencimiento");
                         errors.add(skippedInvoice);
                     }

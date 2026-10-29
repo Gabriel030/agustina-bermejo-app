@@ -13,7 +13,7 @@ const API = 'http://localhost:8080';
 const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'] }));
 
 vi.mock('@/context/AuthContext', () => ({
-  useAuth: () => ({ usuario: { nombre: 'Ana', apellido: 'Pérez', roles: auth.roles }, roles: auth.roles }),
+  useAuth: () => ({ usuario: { id: 9, nombre: 'Ana', apellido: 'Pérez', roles: auth.roles }, roles: auth.roles }),
 }));
 
 function isoOf(date) {
@@ -917,5 +917,63 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
 
     expect(writeText).toHaveBeenCalledWith('LOTE-4412');
     expect(await screen.findByText('Referencia copiada')).toBeInTheDocument();
+  });
+});
+
+describe('AdministrativoFacturacion — carga de comprobante por el alumno', () => {
+  beforeEach(() => {
+    auth.roles = ['ADMINISTRATIVO'];
+  });
+
+  const debtInvoice = invoiceFixture({ id: 61, period: '2026-03', dueDate: '2026-03-10', total: '52800.00', paymentStatus: 'OVERDUE' });
+
+  it('offers an outline upload button beside the single gradient cash button', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openAccountOf([debtInvoice], user);
+
+    const upload = await screen.findByRole('button', { name: 'Cargar comprobante' });
+    await vi.waitFor(() => expect(upload).toBeEnabled());
+    expect(upload.className).toContain('bg-background');
+    expect(upload.className).not.toContain('from-brand');
+    expect(screen.getByRole('button', { name: /Cobrar en efectivo/ }).className).toContain('from-brand');
+  });
+
+  it('disables the upload button with an explanation when the student has no pending installments', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openAccountOf([invoiceFixture({ id: 61, period: '2026-03', paymentStatus: 'PAID', paid: '48000.00' })], user);
+
+    const upload = await screen.findByRole('button', { name: 'Cargar comprobante' });
+
+    expect(upload).toBeDisabled();
+    await user.hover(upload.parentElement);
+    expect((await screen.findAllByText('No tiene cuotas pendientes.')).length).toBeGreaterThan(0);
+  });
+
+  it('hides both collection buttons from roles that cannot collect', async () => {
+    auth.roles = ['PRECEPTOR'];
+    const user = userEvent.setup();
+    renderPage();
+    await openAccountOf([debtInvoice], user);
+
+    expect(screen.queryByRole('button', { name: 'Cargar comprobante' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cobrar en efectivo/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cambiar alumno' })).toBeInTheDocument();
+  });
+
+  it('shows where each receipt came from in the review queue', async () => {
+    const user = userEvent.setup();
+    renderPage('/', [
+      { ...pendingReceipt, id: 1, uploadedBy: { personId: 40, name: 'Lucía Gómez', role: 'ALUMNO', internal: false } },
+      { ...pendingReceipt, id: 2, studentName: 'Tomás Peralta', uploadedBy: { personId: 8, name: 'Marcos Ledesma', role: 'ADMINISTRATIVO', internal: true } },
+      { ...pendingReceipt, id: 3, studentName: 'Julia Ríos', uploadedBy: { personId: 9, name: 'Ana Pérez', role: 'ADMINISTRATIVO', internal: true } },
+    ]);
+    await user.click(await screen.findByRole('tab', { name: /Comprobantes/ }));
+
+    expect(await screen.findByText('Subido por el alumno')).toBeInTheDocument();
+    expect(screen.getByText('Carga interna · Marcos Ledesma')).toBeInTheDocument();
+    expect(screen.getByText('Carga interna · vos')).toBeInTheDocument();
+    expect(screen.getAllByText(/Lo cargaste vos/)).toHaveLength(1);
   });
 });
