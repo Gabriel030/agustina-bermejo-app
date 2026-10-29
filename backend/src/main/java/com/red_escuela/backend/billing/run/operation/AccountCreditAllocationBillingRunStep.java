@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 @Component
 public class AccountCreditAllocationBillingRunStep extends AbstractBillingRunStep {
@@ -61,7 +61,7 @@ public class AccountCreditAllocationBillingRunStep extends AbstractBillingRunSte
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
         List<BillingRunItemRecord> failures = new ArrayList<>();
         int candidates = 0;
-        Set<Long> held = heldAccounts.findHeldAccountIds(businessDate);
+        Map<Long, String> held = heldAccounts.findHeldAccountCodes(businessDate);
         List<Long> page = accountRepository.findIdsWithUnallocatedCreditAfter(0L, PageRequest.of(0, PAGE_SIZE));
         while (!page.isEmpty()) {
             candidates += page.size();
@@ -71,10 +71,10 @@ public class AccountCreditAllocationBillingRunStep extends AbstractBillingRunSte
         return BillingRunStepOutcome.ofCandidates(candidates, failures);
     }
 
-    private void allocateCreditUnlessHeld(Long accountId, LocalDate businessDate, Set<Long> held, List<BillingRunItemRecord> failures) {
-        if (held.contains(accountId)) {
-            failures.add(BillingRunItemRecord.skippedSubject(BillingRunSubjectType.CURRENT_ACCOUNT, accountId, HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE,
-                    HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE));
+    private void allocateCreditUnlessHeld(Long accountId, LocalDate businessDate, Map<Long, String> held, List<BillingRunItemRecord> failures) {
+        if (held.containsKey(accountId)) {
+            failures.add(BillingRunItemRecord.skippedSubject(BillingRunSubjectType.CURRENT_ACCOUNT, accountId, held.get(accountId),
+                    HeldSubjectFinder.messageOf(held.get(accountId))));
             return;
         }
         allocateCreditOfAccount(accountId, businessDate, failures);

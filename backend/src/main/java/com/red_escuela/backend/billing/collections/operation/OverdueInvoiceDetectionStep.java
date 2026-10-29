@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class OverdueInvoiceDetectionStep {
@@ -45,14 +44,14 @@ public class OverdueInvoiceDetectionStep {
                 break;
             }
             candidates += batch.size();
-            Set<Long> held = heldInvoices.findHeldAmong(batch);
+            Map<Long, String> held = heldInvoices.findHoldCodesAmong(batch);
             for (Long invoiceId : batch) {
-                if (held.contains(invoiceId)) {
+                if (held.containsKey(invoiceId)) {
                     skipped++;
                     Map<String, Object> heldInvoice = new LinkedHashMap<>();
                     heldInvoice.put("invoiceId", invoiceId);
-                    heldInvoice.put("decisionCode", HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE);
-                    heldInvoice.put("message", HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+                    heldInvoice.put("decisionCode", held.get(invoiceId));
+                    heldInvoice.put("message", HeldSubjectFinder.messageOf(held.get(invoiceId)));
                     errors.add(heldInvoice);
                     continue;
                 }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.billing.run.domain.NightlyBillingSchedule;
 import com.red_escuela.backend.billing.run.domain.NightlyBillingTrigger;
 import com.red_escuela.backend.billing.run.service.NightlyBillingRunner;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -11,7 +12,7 @@ import java.time.LocalDate;
 
 @Component
 public class NightlyBillingJob {
-    public static final String CRON = "0 0 3 * * *";
+    public static final String CRON = NightlyBillingSchedule.NIGHTLY_CRON;
 
     private final NightlyBillingRunner runner;
     private final Clock clock;

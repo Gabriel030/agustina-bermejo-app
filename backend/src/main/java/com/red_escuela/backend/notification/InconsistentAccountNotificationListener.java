@@ -27,6 +27,6 @@ public class InconsistentAccountNotificationListener {
                 NotificationType.INCONSISTENT_ACCOUNT_DETECTED,
                 "La cuenta corriente " + event.accountId() + " no cierra (" + event.findingCode() + ": " + event.detail() + "). Quedó fuera de los procesos de la noche del "
                         + event.businessDate() + " hasta que se revise; no se corrige sola.",
-                List.of(NotificationTopic.DIRECTOR_APPROVALS), "StudentCurrentAccount", event.accountId())));
+                List.of(NotificationTopic.BILLING_RUN_SUPERVISION), "StudentCurrentAccount", event.accountId())));
     }
 }
