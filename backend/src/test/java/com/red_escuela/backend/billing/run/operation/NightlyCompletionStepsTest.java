@@ -14,7 +14,7 @@ import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClo
 import com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentComplianceSweepReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
-import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService;
+import com.red_escuela.backend.billing.collections.operation.EnrollmentComplianceSweepPort;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 class NightlyCompletionStepsTest {
     private static final LocalDate NIGHT = LocalDate.of(2031, 10, 7);
 
-    private final EnrollmentBillingComplianceSweepService complianceSweep = mock(EnrollmentBillingComplianceSweepService.class);
+    private final EnrollmentComplianceSweepPort complianceSweep = mock(EnrollmentComplianceSweepPort.class);
     private final EnrollmentBillingComplianceBillingRunStep complianceStep = new EnrollmentBillingComplianceBillingRunStep(complianceSweep);
     private final BillingConfigurationReader configurationReader = mock(BillingConfigurationReader.class);
 
@@ -56,7 +56,7 @@ class NightlyCompletionStepsTest {
 
     @Test
     void withoutALatePaymentPolicyTheComplianceIsNotApplicable() {
-        when(complianceSweep.findNotApplicableCode(NIGHT)).thenReturn(Optional.of(EnrollmentBillingComplianceSweepService.NO_LATE_PAYMENT_POLICY));
+        when(complianceSweep.findNotApplicableCode(NIGHT)).thenReturn(Optional.of("NO_LATE_PAYMENT_POLICY"));
         when(complianceSweep.findNotApplicableCode(NIGHT.plusDays(1))).thenReturn(Optional.empty());
 
         assertThat(complianceStep.findNotApplicableCode(NIGHT)).contains("NO_LATE_PAYMENT_POLICY");

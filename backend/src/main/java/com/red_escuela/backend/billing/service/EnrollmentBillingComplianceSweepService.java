@@ -4,6 +4,7 @@ import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.operation.CollectionsDailySnapshotStep;
+import com.red_escuela.backend.billing.collections.operation.EnrollmentComplianceSweepPort;
 import com.red_escuela.backend.billing.collections.operation.EnrollmentPaymentStandingStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
@@ -32,7 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class EnrollmentBillingComplianceSweepService {
+public class EnrollmentBillingComplianceSweepService implements EnrollmentComplianceSweepPort {
     private static final Logger log = LoggerFactory.getLogger(EnrollmentBillingComplianceSweepService.class);
     public static final String NO_LATE_PAYMENT_POLICY = "NO_LATE_PAYMENT_POLICY";
     private static final int PAGE_SIZE = 200;
@@ -81,6 +82,7 @@ public class EnrollmentBillingComplianceSweepService {
         }
     }
 
+    @Override
     public Optional<String> findNotApplicableCode(LocalDate today) {
         return configurationReader.findLatePaymentSettingsEffectiveOn(today).isEmpty() ? Optional.of(NO_LATE_PAYMENT_POLICY) : Optional.empty();
     }
@@ -105,6 +107,7 @@ public class EnrollmentBillingComplianceSweepService {
                 JOB_NAME, LocalDateTime.now(clock), outcome.candidates(), outcome.processed(), outcome.failed(), durationMs, status, serialize(errors)));
     }
 
+    @Override
     public EnrollmentComplianceSweepReport sweepEnrollmentCompliance(LocalDate today) {
         LatePaymentTerms policy = configurationReader.findLatePaymentSettingsEffectiveOn(today).orElseThrow();
         List<EnrollmentComplianceSweepReport.EnrollmentComplianceFailure> failures = new ArrayList<>();

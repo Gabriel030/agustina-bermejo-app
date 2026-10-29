@@ -2,11 +2,11 @@ package com.red_escuela.backend.billing.run.operation;
 
 import com.red_escuela.backend.billing.collections.domain.EnrollmentComplianceSweepReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
+import com.red_escuela.backend.billing.collections.operation.EnrollmentComplianceSweepPort;
 import com.red_escuela.backend.billing.run.domain.BillingRunItemRecord;
 import com.red_escuela.backend.billing.run.domain.BillingRunStep;
 import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
 import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
-import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -14,9 +14,9 @@ import java.util.Optional;
 
 @Component
 public class EnrollmentBillingComplianceBillingRunStep extends AbstractBillingRunStep {
-    private final EnrollmentBillingComplianceSweepService complianceSweep;
+    private final EnrollmentComplianceSweepPort complianceSweep;
 
-    public EnrollmentBillingComplianceBillingRunStep(EnrollmentBillingComplianceSweepService complianceSweep) {
+    public EnrollmentBillingComplianceBillingRunStep(EnrollmentComplianceSweepPort complianceSweep) {
         this.complianceSweep = complianceSweep;
     }
 
