@@ -13,6 +13,9 @@ public interface AnnualUpfrontRequestRepository extends JpaRepository<AnnualUpfr
 
     Optional<AnnualUpfrontRequest> findByInvoiceId(Long invoiceId);
 
+    @Query("select r.invoiceId from AnnualUpfrontRequest r where r.id = :id")
+    Optional<Long> findInvoiceIdById(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from AnnualUpfrontRequest r where r.id = :id")
     Optional<AnnualUpfrontRequest> findByIdForUpdate(@Param("id") Long id);

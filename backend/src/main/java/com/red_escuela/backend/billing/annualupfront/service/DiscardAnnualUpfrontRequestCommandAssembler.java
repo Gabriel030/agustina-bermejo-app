@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.annualupfront.service;
 
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontRequest;
+import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontEnrollmentNotFoundException;
 import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontRequestNotFoundException;
 import com.red_escuela.backend.billing.annualupfront.repository.AnnualUpfrontRequestRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
@@ -21,7 +22,11 @@ public class DiscardAnnualUpfrontRequestCommandAssembler {
 
     public DiscardAnnualUpfrontRequestCommand assembleCommandOfCurrentStudent(Long requestId) {
         AnnualUpfrontRequest request = requestRepository.findById(requestId).orElseThrow(() -> new AnnualUpfrontRequestNotFoundException(requestId));
-        quoteService.requireEnrollmentOfCurrentStudent(request.getProgramEnrollmentId());
+        try {
+            quoteService.requireEnrollmentOfCurrentStudent(request.getProgramEnrollmentId());
+        } catch (AnnualUpfrontEnrollmentNotFoundException notTheStudentsEnrollment) {
+            throw new AnnualUpfrontRequestNotFoundException(requestId);
+        }
         return new DiscardAnnualUpfrontRequestCommand(requestId, request.getProgramEnrollmentId(), StatusChangeActor.ofPerson(actorResolver.currentPersonId()));
     }
 }

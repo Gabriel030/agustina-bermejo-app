@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.discount.domain.LiveInvoiceDiscount;
 import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountOrigin;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
@@ -58,7 +59,7 @@ public class AnnualUpfrontDiscountReservationService {
         List<StudentDiscount> discounts = studentDiscountIds.stream().map(id -> studentDiscountRepository.findByIdForUpdate(id).orElseThrow()).toList();
         appliedRepository.markConsumptionReleased(live.stream().map(LiveInvoiceDiscount::invoiceDiscountId).toList(), LocalDateTime.now(clock));
         Instant now = Instant.now(clock);
-        discounts.stream().filter(discount -> discount.getOrigin() == StudentDiscountOrigin.ANNUAL_UPFRONT_REQUEST).forEach(discount -> {
+        discounts.stream().filter(discount -> discount.getOrigin() == StudentDiscountOrigin.ANNUAL_UPFRONT_REQUEST && discount.getStatus() == StudentDiscountStatus.ACTIVE).forEach(discount -> {
             discount.revokeStudentDiscount(DISCARD_REASON, discount.getFromPeriod(), actor, now);
             studentDiscountRepository.save(discount);
         });
