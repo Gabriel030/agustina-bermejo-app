@@ -85,4 +85,11 @@ public class AnnualUpfrontRequest {
         request.acceptedTermsText = registration.terms().text();
         return request;
     }
+
+    public void discardCancelledByStudent(LocalDateTime decidedAt) {
+        Objects.requireNonNull(decidedAt, "decidedAt");
+        this.status = AnnualUpfrontRequestStateMachine.requireTargetFor(status, AnnualUpfrontRequestEvent.CANCELLED_BY_STUDENT);
+        this.discardReason = AnnualUpfrontDiscardReason.CANCELLED_BY_STUDENT;
+        this.decidedAt = decidedAt;
+    }
 }

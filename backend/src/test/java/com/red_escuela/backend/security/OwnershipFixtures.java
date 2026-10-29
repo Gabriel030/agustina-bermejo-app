@@ -46,6 +46,7 @@ final class OwnershipFixtures {
     private Long programEnrollmentId;
     private Long sectionEnrollmentId;
     private Long sectionId;
+    private Long annualUpfrontRequestId;
 
     OwnershipFixtures(TransactionTemplate transactions, EntityManager entityManager, RoleRepository roleRepository,
                       JwtService jwtService) {
@@ -60,6 +61,7 @@ final class OwnershipFixtures {
             case PROGRAM_ENROLLMENT -> programEnrollmentId;
             case SECTION_ENROLLMENT -> sectionEnrollmentId;
             case SECTION_INSTRUCTOR -> sectionId;
+            case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
         };
     }
 
@@ -143,6 +145,7 @@ final class OwnershipFixtures {
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
         entityManager.flush();
+        annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
 
         ownerStudentToken = jwtService.generateAccessToken(ownerPerson);
         strangerStudentToken = jwtService.generateAccessToken(strangerPerson);
@@ -151,6 +154,29 @@ final class OwnershipFixtures {
         programEnrollmentId = programEnrollment.getId();
         sectionEnrollmentId = enrollment.getId();
         sectionId = section.getId();
+    }
+
+    private Long persistAnnualUpfrontRequestAwaitingPayment(Student student, Person person, ProgramEnrollment programEnrollment, Term term) {
+        Long accountId = ((Number) entityManager.createNativeQuery("""
+                insert into student_current_account (student_id, currency, balance_amount, balance_amount_currency, balance_side,
+                    unallocated_credit_amount, unallocated_credit_amount_currency, opened_at)
+                values (:studentId, 'ARS', 0, 'ARS', 'ZERO', 0, 'ARS', now()) returning id
+                """).setParameter("studentId", student.getId()).getSingleResult()).longValue();
+        Long invoiceId = ((Number) entityManager.createNativeQuery("""
+                insert into invoice (student_current_account_id, currency, document_type, invoice_type, issuing_reason, document_status, payment_deadline,
+                    lines_total, lines_total_currency, discounts_total, discounts_total_currency, total, total_currency, paid_amount, paid_amount_currency,
+                    credited_amount, credited_amount_currency, outstanding_amount, outstanding_amount_currency, created_at, updated_at)
+                values (:accountId, 'ARS', 'INVOICE', 'ANNUAL_UPFRONT', 'ANNUAL_UPFRONT_PAYMENT', 'AWAITING_PAYMENT', now() + interval '2 days',
+                    100, 'ARS', 0, 'ARS', 100, 'ARS', 0, 'ARS', 0, 'ARS', 100, 'ARS', now(), now())
+                returning id
+                """).setParameter("accountId", accountId).getSingleResult()).longValue();
+        return ((Number) entityManager.createNativeQuery("""
+                insert into annual_upfront_request (program_enrollment_id, lective_year_term_id, invoice_id, status, requested_by_person_id, requested_at,
+                    accepted_terms_version, accepted_terms_text, accepted_at, accepted_by_person_id)
+                values (:programEnrollmentId, :termId, :invoiceId, 'AWAITING_PAYMENT', :personId, now(), 'v1', 'Términos de prueba', now(), :personId)
+                returning id
+                """).setParameter("programEnrollmentId", programEnrollment.getId()).setParameter("termId", term.getId()).setParameter("invoiceId", invoiceId)
+                .setParameter("personId", person.getId()).getSingleResult()).longValue();
     }
 
     private Person persistPerson(String username, String dni, String roleName) {
