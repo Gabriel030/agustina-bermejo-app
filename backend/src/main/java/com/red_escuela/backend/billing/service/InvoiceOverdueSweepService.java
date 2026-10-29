@@ -11,10 +11,8 @@ import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetec
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -44,12 +42,6 @@ public class InvoiceOverdueSweepService {
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.objectMapper = objectMapper;
         this.clock = clock;
-    }
-
-    @Scheduled(cron = "0 0 3 * * *", zone = "${app.timezone}")
-    @SchedulerLock(name = "InvoiceOverdueSweepService", lockAtMostFor = "PT30M")
-    public void run() {
-        run(LocalDate.now(clock));
     }
 
     public void run(LocalDate today) {
