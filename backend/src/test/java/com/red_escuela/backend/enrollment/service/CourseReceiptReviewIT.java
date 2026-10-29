@@ -41,12 +41,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -59,6 +57,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.newIdempotencyKey;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.signedInAs;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.transferReceiptOf;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -84,6 +85,7 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
     @Autowired private TransactionTemplate transactionTemplate;
     @Autowired private EntityManager entityManager;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private LegacyCourseRequestSeeder legacySeeder;
 
     private Person persistPerson(String dni) {
         Address address = new Address();
@@ -140,26 +142,22 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
         });
     }
 
-    private MultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
-    }
-
     private CourseEnrollmentApplication request(Student student, Course course) {
         MutableClock.INSTANCE.setDate(UPLOAD_DAY);
-        return applicationService.requestWithPayment(student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
+        return applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
     }
 
     private record NewFlowRequest(CourseEnrollmentApplication application, Long receiptId, Long invoiceId) {
     }
 
+    private CourseEnrollmentApplication requestLegacy(Student student, Course course) {
+        MutableClock.INSTANCE.setDate(UPLOAD_DAY);
+        return legacySeeder.requestWithLegacyReceipt(student.getId(), course.getId());
+    }
+
     private NewFlowRequest requestWithTheNewFlowReceipt(Student student, Course course, String declaredAmount) {
         CourseEnrollmentApplication application = request(student, course);
-        jdbc.update("update bank_transfer_receipt set status = 'REJECTED' where id = ?", application.getPaymentReceipt().getId());
-        SubmitBankTransferReceiptCommand command = new SubmitBankTransferReceiptCommand(student.getId(), java.util.List.of(application.getInvoiceId()), ars(declaredAmount),
-                UPLOAD_DAY, "OP-" + System.nanoTime(), "0170099220000067797370", "Ana Pérez", "Banco Nación", "sha-" + System.nanoTime(),
-                studentId -> "students/" + studentId + "/comprobantes_" + System.nanoTime() + ".pdf", "b26-" + System.nanoTime(), StatusChangeActor.ofPerson(student.getPerson().getId()));
-        BankTransferReceiptSubmissionResult result = ((BillingOperationOutcome.Processed<BankTransferReceiptSubmissionResult>) pipeline.runOperation(submitOperation, command)).result();
-        return new NewFlowRequest(application, result.receiptId(), application.getInvoiceId());
+        return new NewFlowRequest(application, application.getPaymentReceipt().getId(), application.getInvoiceId());
     }
 
     private String invoiceStatus(Long invoiceId) {
@@ -250,7 +248,7 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
         CourseEnrollmentApplication second = request(student, course);
 
         assertThat(second.getInvoiceId()).isNotEqualTo(first.getInvoiceId());
-        assertThat(invoiceStatus(second.getInvoiceId())).isEqualTo("PENDING");
+        assertThat(invoiceStatus(second.getInvoiceId())).isEqualTo("PAYMENT_UNDER_REVIEW");
         assertThat(applicationCancelled(second.getId())).isFalse();
         assertThat(applicationCancelled(first.getId())).isTrue();
     }
@@ -309,7 +307,7 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
     @Tag("B26")
     void approvedForTheFullAmountOfTheRequestOwnReceiptEnrollsTheStudent() {
         Student student = persistStudent();
-        CourseEnrollmentApplication application = request(student, persistPricedCourse());
+        CourseEnrollmentApplication application = requestLegacy(student, persistPricedCourse());
 
         approveReceipt.approve(application.getPaymentReceipt().getId(), persistStaff(), PaymentVerification.none());
 
@@ -394,7 +392,7 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Student student = persistStudent();
         Course course = persistPricedCourse();
-        CourseEnrollmentApplication first = request(student, course);
+        CourseEnrollmentApplication first = requestLegacy(student, course);
 
         rejectReceipt.reject(first.getPaymentReceipt().getId(), "Comprobante ilegible", persistStaff());
 

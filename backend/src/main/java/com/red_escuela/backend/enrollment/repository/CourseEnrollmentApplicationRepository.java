@@ -2,12 +2,19 @@ package com.red_escuela.backend.enrollment.repository;
 
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import java.util.List;
 import java.util.Optional;
 
 public interface CourseEnrollmentApplicationRepository extends JpaRepository<CourseEnrollmentApplication, Long> {
+
+    @Modifying(flushAutomatically = true)
+    @Query("update CourseEnrollmentApplication a set a.paymentReceipt = (select r from BankTransferReceipt r where r.id = :receiptId) where a.id = :applicationId")
+    int linkPaymentReceipt(@Param("applicationId") Long applicationId, @Param("receiptId") Long receiptId);
 
     Optional<CourseEnrollmentApplication> findByPaymentReceiptId(Long paymentReceiptId);
 

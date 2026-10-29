@@ -2,11 +2,9 @@ package com.red_escuela.backend.billing.payment.controller;
 
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionRequest;
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionResponse;
-import com.red_escuela.backend.billing.payment.exception.BankTransferDetailsRequiredException;
 import com.red_escuela.backend.billing.payment.usecase.SubmitBankTransferReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.shared.domain.Currency;
-import com.red_escuela.backend.shared.domain.Money;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -57,7 +55,7 @@ public class BankTransferReceiptSubmissionController {
                                                                   @RequestParam(name = "holderName", required = false) String holderName,
                                                                   @RequestParam(name = "bankName", required = false) String bankName) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        BankTransferReceiptSubmissionRequest request = new BankTransferReceiptSubmissionRequest(file, invoiceIds, moneyOf(declaredAmount, currency), transferDate,
+        BankTransferReceiptSubmissionRequest request = BankTransferReceiptSubmissionRequest.fromForm(file, invoiceIds, declaredAmount, currency, transferDate,
                 operationNumber, originAccount, holderName, bankName);
         return BankTransferReceiptSubmissionResponse.from(submitBankTransferReceiptUseCase.submitReceiptOfOwnAccount(studentId, request, idempotencyKey));
     }
@@ -80,18 +78,8 @@ public class BankTransferReceiptSubmissionController {
                                                                                @RequestParam(name = "originAccount", required = false) String originAccount,
                                                                                @RequestParam(name = "holderName", required = false) String holderName,
                                                                                @RequestParam(name = "bankName", required = false) String bankName) {
-        BankTransferReceiptSubmissionRequest request = new BankTransferReceiptSubmissionRequest(file, invoiceIds, moneyOf(declaredAmount, currency), transferDate,
+        BankTransferReceiptSubmissionRequest request = BankTransferReceiptSubmissionRequest.fromForm(file, invoiceIds, declaredAmount, currency, transferDate,
                 operationNumber, originAccount, holderName, bankName);
         return BankTransferReceiptSubmissionResponse.from(submitBankTransferReceiptUseCase.submitReceiptOnBehalfOfStudent(studentId, request, idempotencyKey));
-    }
-
-    private static Money moneyOf(BigDecimal declaredAmount, Currency currency) {
-        if (declaredAmount == null) {
-            return null;
-        }
-        if (currency == null) {
-            throw BankTransferDetailsRequiredException.currencyRequired();
-        }
-        return Money.of(declaredAmount, currency);
     }
 }

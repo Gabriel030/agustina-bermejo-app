@@ -21400,13 +21400,82 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "invoiceIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "declaredAmount",
+          "required" : false,
+          "schema" : {
+            "type" : "number"
+          }
+        }, {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "transferDate",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "operationNumber",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "originAccount",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "holderName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "bankName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
               "schema" : {
                 "properties" : {
-                  "comprobante" : {
+                  "file" : {
                     "format" : "binary",
                     "type" : "string"
                   }
@@ -21435,7 +21504,7 @@
                 }
               }
             },
-            "description" : "Bad Request"
+            "description" : "BANK_TRANSFER_DETAILS_REQUIRED con la violación del campo cuando el curso es de pago, IDEMPOTENCY_KEY_INVALID, RECEIPT_INVOICE_CURRENCY_MISMATCH, RECEIPT_INVOICE_NOT_PAYABLE"
           },
           "401" : {
             "description" : "Unauthorized"
@@ -21461,7 +21530,7 @@
                 }
               }
             },
-            "description" : "Conflict"
+            "description" : "POSSIBLE_DUPLICATE_BANK_TRANSFER, RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST, INVOICE_ALREADY_UNDER_REVIEW, LEGACY_RECEIPT_PENDING_ON_INVOICE, IDEMPOTENCY_KEY_CONFLICT"
           },
           "429" : {
             "description" : "Too Many Requests"

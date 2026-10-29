@@ -38,16 +38,20 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import com.red_escuela.backend.billing.payment.exception.ReceiptMustCoverOldestInvoicesFirstException;
 
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.newIdempotencyKey;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.signedInAs;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.transferReceiptOf;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
@@ -65,6 +69,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private PreviewCashPaymentUseCase previewCashPaymentUseCase;
     @Autowired private RegisterCashPaymentUseCase registerCashPaymentUseCase;
     @Autowired private EntityManager entityManager;
+    @Autowired private LegacyCourseRequestSeeder legacySeeder;
 
     private Person persistPerson(String dni) {
         Address address = new Address();
@@ -125,12 +130,8 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
                 .dueOn(LocalDate.now().minusDays(20)).withBaseAmount(ars(10000)).inState(InvoicePaymentStatus.OVERDUE).build();
     }
 
-    private MultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
-    }
-
     private CourseEnrollmentApplication request(Student student, Course course) {
-        return applicationService.requestWithPayment(student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
+        return applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
     }
 
     private void awaitEnrollments(Student student, int expected) {
@@ -145,14 +146,14 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Course course = persistPricedCourse();
         persistOverdueInstallment(student);
         Person admin = persistAdministrative();
-        CourseEnrollmentApplication application = request(student, course);
+        CourseEnrollmentApplication application = legacySeeder.requestWithLegacyReceipt(student.getId(), course.getId());
         Long invoiceId = application.getInvoiceId();
 
         var first = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
 
         assertThat(first.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
-        var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), receiptFile());
+        var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
         approvePaymentReceiptUseCase.approve(second.getId(), admin, PaymentVerification.none());
 
         awaitEnrollments(student, 1);
@@ -161,12 +162,42 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-153")
+    void requestingACourseWithAnOlderOverdueInstallmentNotIncludedIsRejectedAndLeavesNothingBehind() {
+        Student student = persistStudent();
+        Course course = persistPricedCourse();
+        persistOverdueInstallment(student);
+
+        assertThatThrownBy(() -> request(student, course)).isInstanceOf(ReceiptMustCoverOldestInvoicesFirstException.class);
+
+        assertThat(applicationRepository.findByStudentIdOrderByIdDesc(student.getId())).isEmpty();
+    }
+
+    @Test
+    @Tag("D-153")
+    @Tag("D-260")
+    void aReceiptIncludingTheOlderOverdueInstallmentPaysBothAndEnrollsTheStudentOnApproval() {
+        Student student = persistStudent();
+        Course course = persistPricedCourse();
+        Invoice overdue = persistOverdueInstallment(student);
+        Person admin = persistAdministrative();
+        CourseEnrollmentApplication application = applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null),
+                transferReceiptOf(25000, List.of(overdue.getId())), newIdempotencyKey());
+
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
+
+        awaitEnrollments(student, 1);
+        assertThat(invoiceRepository.findById(overdue.getId()).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
+        assertThat(invoiceRepository.findById(application.getInvoiceId()).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
+    }
+
+    @Test
     @Tag("D-235")
-    void payingTheCourseAdmissionInvoiceEnrollsTheStudent() {
+    void payingALegacyCourseAdmissionInvoiceEnrollsTheStudent() {
         Student student = persistStudent();
         Course course = persistPricedCourse();
         Person admin = persistAdministrative();
-        CourseEnrollmentApplication application = request(student, course);
+        CourseEnrollmentApplication application = legacySeeder.requestWithLegacyReceipt(student.getId(), course.getId());
         Long invoiceId = application.getInvoiceId();
 
         BillingTestFixtures.registerApprovedBankTransferPayment(invoiceId, admin.getId());
@@ -176,12 +207,39 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-235")
-    void payingTheCourseAdmissionInvoiceAtTheCounterWithCashEnrollsTheStudent() {
+    void payingALegacyCourseAdmissionInvoiceWithoutReceiptAtTheCounterWithCashEnrollsTheStudent() {
+        Student student = persistStudent();
+        Course course = persistPricedCourse();
+        Person admin = persistAdministrative();
+        CourseEnrollmentApplication application = legacySeeder.requestWithoutReceipt(student.getId(), course.getId());
+        Long invoiceId = application.getInvoiceId();
+
+        registerCashOfInvoice(student, admin, invoiceId);
+
+        awaitEnrollments(student, 1);
+        assertThat(invoiceRepository.findById(invoiceId).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
+        assertThat(applicationRepository.findByStudentIdOrderByIdDesc(student.getId()).get(0).getCourseEnrollment()).isNotNull();
+    }
+
+    @Test
+    @Tag("D-261")
+    @Tag("D-235")
+    void cashSkipsTheAdmissionInvoiceUnderReviewAndTheStudentIsEnrolledOnlyWhenTheReceiptIsApproved() {
         Student student = persistStudent();
         Course course = persistPricedCourse();
         Person admin = persistAdministrative();
         CourseEnrollmentApplication application = request(student, course);
         Long invoiceId = application.getInvoiceId();
+
+        registerCashOfInvoice(student, admin, invoiceId);
+
+        assertThat(invoiceRepository.findById(invoiceId).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
+        assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
+        awaitEnrollments(student, 1);
+    }
+
+    private void registerCashOfInvoice(Student student, Person admin, Long invoiceId) {
         Money amount = invoiceRepository.findById(invoiceId).orElseThrow().getAmounts().outstandingAmount().value();
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(admin.getId().toString(), null, "ROLE_ADMINISTRATIVO"));
         try {
@@ -191,10 +249,6 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         } finally {
             SecurityContextHolder.clearContext();
         }
-
-        awaitEnrollments(student, 1);
-        assertThat(invoiceRepository.findById(invoiceId).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
-        assertThat(applicationRepository.findByStudentIdOrderByIdDesc(student.getId()).get(0).getCourseEnrollment()).isNotNull();
     }
 
     @Test
