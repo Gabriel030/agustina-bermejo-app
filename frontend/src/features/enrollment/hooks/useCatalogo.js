@@ -72,13 +72,12 @@ export function useSolicitarCarrera() {
 export function useInscribirmeCurso() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, comprobante }) => {
-      const formData = new FormData();
-      formData.append('courseId', courseId);
-      formData.append('comprobante', comprobante);
-      return apiFetch('/me/course-enrollments', { method: 'POST', body: formData });
+    mutationFn: ({ body, idempotencyKey }) =>
+      apiFetch('/me/course-enrollments', { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] }),
   });
 }
 

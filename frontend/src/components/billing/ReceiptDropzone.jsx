@@ -1,4 +1,4 @@
-import { FileCheck2, Plus, X } from 'lucide-react';
+import { FileCheck2, FileX2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -17,8 +17,17 @@ export function ReceiptDropzone({ file, error, errorId, onSelect, onRemove }) {
   return (
     <div className="flex flex-col gap-2">
       {file ? (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-neutral-bg/40 px-4 py-3">
-          <FileCheck2 className="size-5 shrink-0 text-success" aria-hidden="true" />
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-xl border px-4 py-3',
+            error ? 'border-danger bg-danger-bg' : 'border-border bg-neutral-bg/40',
+          )}
+        >
+          {error ? (
+            <FileX2 className="size-5 shrink-0 text-danger" aria-hidden="true" />
+          ) : (
+            <FileCheck2 className="size-5 shrink-0 text-success" aria-hidden="true" />
+          )}
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-sm font-semibold text-ink">{file.name}</span>
             <span className="text-xs text-ink-faint">{formatFileSize(file.size)}</span>

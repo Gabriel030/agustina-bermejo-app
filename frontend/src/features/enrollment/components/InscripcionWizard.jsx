@@ -1,9 +1,9 @@
-import { useReducer, useState } from 'react';
+import { useReducer, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, Clock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,11 @@ import {
   useAgregarDocumentoSolicitudCarrera,
 } from '@/features/enrollment/hooks/useCatalogo';
 import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
-import { formatMoney, cn } from '@/lib/utils';
+import { BankTransferReceiptFields } from '@/components/billing/BankTransferReceiptFields';
+import { useReceiptFields } from '@/components/billing/useReceiptFields';
+import { buildCourseEnrollmentBody, receiptFormErrors, receiptSubmissionFailure, todayIsoDate } from '@/lib/bankTransferReceipt';
+import { formatDate } from '@/lib/billing';
+import { formatMoney, moneyValue, cn } from '@/lib/utils';
 
 // Tipos de documento requeridos para carrera (Épica 7 Fase 3, UX del wizard) —
 // los cursos no piden documentación (ver TabMisSolicitudes.jsx). El input de
@@ -125,7 +129,6 @@ function estadoInicial({ tipo }) {
     paso: pasosDe(tipo)[0].key,
     cohortId: null,
     documentos: {},
-    comprobante: null,
     visitados: [pasosDe(tipo)[0].key],
     enviando: false,
     error: null,
@@ -148,8 +151,6 @@ function reducer(state, action) {
       return { ...state, documentos: { ...state.documentos, [action.tipo]: action.file } };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso, error: null, visitados: marcarVisitado(state, action.paso) };
-    case 'ELEGIR_COMPROBANTE':
-      return { ...state, comprobante: action.file, error: null };
     case 'ENVIANDO':
       return { ...state, enviando: true, error: null };
     case 'ERROR':
@@ -177,7 +178,20 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   } = useForm({ resolver: zodResolver(datosSchema), mode: 'onTouched', defaultValues: datosIniciales(usuario) });
   const datos = watch();
   const [modalConfirmarAbierto, setModalConfirmarAbierto] = useState(false);
+  const [erroresDeComprobante, setErroresDeComprobante] = useState({});
+  const claveIdempotencia = useRef(null);
   const pasos = pasosDe(tipo);
+  const cuotaDelCurso = tipo === 'curso' ? pricing?.cuotaMensual : null;
+  const titularInicial = usuario ? `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() : '';
+  const comprobante = useReceiptFields({
+    initialAmount: moneyValue(cuotaDelCurso),
+    defaultHolderName: titularInicial,
+    onEdit: () => {
+      claveIdempotencia.current = null;
+      setErroresDeComprobante({});
+    },
+  });
+  const hoy = todayIsoDate();
 
   const solicitarCarrera = useSolicitarCarrera();
   const inscribirmeCurso = useInscribirmeCurso();
@@ -208,14 +222,41 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
     return [...camposDatosFaltantes(), ...documentosFaltantes()];
   }
 
-  function faltantesDeSolicitud() {
-    const faltantes = faltantesDeDocumentacion();
-    if (tipo === 'curso' && !state.comprobante) faltantes.push('el comprobante de pago');
+  function erroresLocalesDeComprobante() {
+    return receiptFormErrors({
+      file: comprobante.file,
+      operationNumber: comprobante.operationNumber,
+      originAccount: comprobante.originAccount,
+      holderName: comprobante.holderName,
+      amount: comprobante.amount,
+      firstInvoiceOutstanding: moneyValue(cuotaDelCurso),
+    });
+  }
+
+  function faltantesDeComprobante() {
+    const errores = erroresLocalesDeComprobante();
+    const etiquetas = {
+      file: 'el comprobante de pago',
+      operationNumber: 'el número de operación',
+      originAccount: 'el CBU o alias de origen',
+      holderName: 'el titular de la cuenta',
+      amount: 'un monto que cubra la cuota',
+    };
+    const faltantes = Object.keys(etiquetas).filter((campo) => errores[campo]).map((campo) => etiquetas[campo]);
+    if (comprobante.fileError && !errores.file) faltantes.push('un comprobante válido');
+    if (!cuotaDelCurso?.currency) faltantes.push('el precio del curso');
     return faltantes;
   }
 
-  async function confirmarSolicitud() {
+  function faltantesDeSolicitud() {
+    const faltantes = faltantesDeDocumentacion();
+    if (tipo === 'curso') faltantes.push(...faltantesDeComprobante());
+    return faltantes;
+  }
+
+  async function enviarSolicitud() {
     setModalConfirmarAbierto(false);
+    claveIdempotencia.current ??= globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     dispatch({ type: 'ENVIANDO' });
     try {
       const valores = getValues();
@@ -240,7 +281,20 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
       const resultado =
         tipo === 'carrera'
           ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId })
-          : await inscribirmeCurso.mutateAsync({ courseId: target.id, comprobante: state.comprobante });
+          : await inscribirmeCurso.mutateAsync({
+              body: buildCourseEnrollmentBody({
+                courseId: target.id,
+                file: comprobante.file,
+                amount: comprobante.amount,
+                currency: cuotaDelCurso.currency,
+                operationNumber: comprobante.operationNumber,
+                originAccount: comprobante.originAccount,
+                holderName: comprobante.holderName,
+                bankName: comprobante.bankName,
+                transferDate: hoy,
+              }),
+              idempotencyKey: claveIdempotencia.current,
+            });
 
       if (tipo === 'carrera') {
         for (const doc of DOCUMENTOS_CARRERA) {
@@ -250,9 +304,17 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
       dispatch({ type: 'EXITO' });
     } catch (err) {
+      const fallo = tipo === 'curso' && !MENSAJES_ERROR_INSCRIPCION[err.code] ? receiptSubmissionFailure(err) : null;
+      if (fallo) setErroresDeComprobante(fallo.fieldErrors);
       dispatch({
         type: 'ERROR',
-        message: MENSAJES_ERROR_INSCRIPCION[err.code] ?? 'No pudimos completar la inscripción. Probá de nuevo.',
+        message:
+          MENSAJES_ERROR_INSCRIPCION[err.code] ??
+          (fallo?.duplicate
+            ? 'Ya tenemos registrada esa transferencia. Si ya la enviaste, no hace falta repetirla: revisá Mis solicitudes.'
+            : fallo?.message) ??
+          (fallo && Object.keys(fallo.fieldErrors).length > 0 ? 'Revisá los datos del comprobante.' : null) ??
+          'No pudimos completar la inscripción. Probá de nuevo.',
       });
     }
   }
@@ -519,30 +581,18 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
           {state.error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{state.error}</div>}
 
-          <label
-            className={cn(
-              'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed px-4 py-8 text-center transition-colors hover:bg-neutral-bg',
-              state.comprobante ? 'border-success bg-success-bg' : 'border-border',
-            )}
-          >
-            <span className="text-[13px] font-semibold text-ink">
-              {state.comprobante ? state.comprobante.name : 'Subir comprobante de pago'}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-heading text-sm font-bold text-ink">Datos del comprobante</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-bg px-3 py-1 text-xs font-semibold text-ink-soft">
+              <Clock className="size-3.5" aria-hidden="true" />
+              Transferencia de hoy, {formatDate(hoy)}
             </span>
-            {state.comprobante ? (
-              <span className="flex items-center gap-1 text-xs font-semibold text-success">
-                <CircleCheck className="h-3.5 w-3.5" /> Cargado correctamente
-              </span>
-            ) : (
-              <span className="text-xs text-ink-faint">PDF, JPG o PNG</span>
-            )}
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => { setTocado(true); dispatch({ type: 'ELEGIR_COMPROBANTE', file: e.target.files?.[0] }); }}
-            />
-          </label>
+          </div>
+          <BankTransferReceiptFields
+            fields={comprobante}
+            errors={{ ...erroresDeComprobante, ...(comprobante.fileError ? { file: comprobante.fileError } : {}) }}
+          />
+          <p className="text-xs text-ink-faint">Si transferiste otro día, avisale a Secretaría.</p>
 
           <MotivoDeshabilitado id="motivo-solicitud" faltantes={faltantesDeSolicitud()} visible={tocado || isDirty} />
           <div className="flex justify-between gap-3">
@@ -550,13 +600,13 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               ← Volver
             </Button>
             <Button
-              onClick={() => setModalConfirmarAbierto(true)}
+              onClick={enviarSolicitud}
               disabled={faltantesDeSolicitud().length > 0}
               aria-describedby="motivo-solicitud"
               loading={state.enviando}
               variant="gradient"
             >
-              Confirmar solicitud
+              Enviar comprobante
             </Button>
           </div>
         </GlassCard>
@@ -568,24 +618,14 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <div className="font-heading text-base font-bold text-ink">Confirmar solicitud</div>
           </DialogHeader>
           <div className="text-[13px] text-ink-soft">
-            {tipo === 'carrera' ? (
-              <>
-                Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
-                recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
-              </>
-            ) : (
-              <>
-                Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong> por{' '}
-                <strong className="text-ink">{formatMoney(montoAPagar) || 'el monto informado'}</strong>. Una vez enviada, no vas a poder
-                modificarla hasta que la revisen.
-              </>
-            )}
+            Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
+            recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalConfirmarAbierto(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button onClick={confirmarSolicitud} variant="gradient">
+            <Button onClick={enviarSolicitud} variant="gradient">
               Sí, confirmar
             </Button>
           </DialogFooter>

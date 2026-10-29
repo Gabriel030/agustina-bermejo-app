@@ -2,16 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Clock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { InvoiceCoverageList } from '@/components/billing/InvoiceCoverageList';
-import { ReceiptDropzone } from '@/components/billing/ReceiptDropzone';
+import { BankTransferReceiptFields } from '@/components/billing/BankTransferReceiptFields';
+import { useReceiptFields } from '@/components/billing/useReceiptFields';
 import { useSubmitBankTransferReceipt } from '@/hooks/useBilling';
-import { formatDate, formatMoney, receiptFileError } from '@/lib/billing';
+import { formatDate, formatMoney } from '@/lib/billing';
 import {
   buildReceiptSubmission,
-  formatAmountInput,
-  parseAmountInput,
   receiptFormErrors,
   receiptOutcomeLines,
   receiptSubmissionFailure,
@@ -24,32 +21,6 @@ const TONE_DOT = { success: 'bg-success', warning: 'bg-warning', neutral: 'bg-ne
 
 function newIdempotencyKey() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function TextField({ id, label, value, onChange, onBlur, error, placeholder, inputMode, autoComplete = 'off' }) {
-  const errorId = `${id}-error`;
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        inputMode={inputMode}
-        autoComplete={autoComplete}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
-        className="h-10"
-      />
-      {error && (
-        <span id={errorId} role="alert" className="text-xs text-danger">
-          {error}
-        </span>
-      )}
-    </div>
-  );
 }
 
 export function BankTransferReceiptForm({
@@ -67,39 +38,40 @@ export function BankTransferReceiptForm({
   const today = todayIsoDate();
 
   const [count, setCount] = useState(Math.min(Math.max(initialCount, 1), invoices.length));
-  const [amountText, setAmountText] = useState(() =>
-    formatAmountInput(selectedTotal(invoices, Math.min(Math.max(initialCount, 1), invoices.length))),
-  );
-  const [amountTouched, setAmountTouched] = useState(false);
-  const [file, setFile] = useState(null);
-  const [fileError, setFileError] = useState(null);
-  const [operationNumber, setOperationNumber] = useState('');
-  const [originAccount, setOriginAccount] = useState('');
-  const [holderName, setHolderName] = useState(defaultHolderName);
-  const [bankName, setBankName] = useState('');
-  const [showBank, setShowBank] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [serverErrors, setServerErrors] = useState({});
   const [formMessage, setFormMessage] = useState(null);
   const [duplicate, setDuplicate] = useState(false);
   const [focusRequest, setFocusRequest] = useState(0);
 
+  function resetOutcome() {
+    idempotencyKey.current = null;
+    setDuplicate(false);
+    setFormMessage(null);
+    setServerErrors({});
+  }
+
+  const fields = useReceiptFields({
+    initialAmount: selectedTotal(invoices, Math.min(Math.max(initialCount, 1), invoices.length)),
+    defaultHolderName,
+    onEdit: resetOutcome,
+  });
+
   const effectiveCount = Math.min(count, invoices.length);
-  const amount = parseAmountInput(amountText);
+  const amount = fields.amount;
   const total = selectedTotal(invoices, effectiveCount);
 
-  const localErrors = showErrors
-    ? receiptFormErrors({
-        file,
-        operationNumber,
-        originAccount,
-        holderName,
-        amount,
-        firstInvoiceOutstanding: moneyValue(invoices[0].outstanding),
-      })
-    : {};
+  const validationInput = {
+    file: fields.file,
+    operationNumber: fields.operationNumber,
+    originAccount: fields.originAccount,
+    holderName: fields.holderName,
+    amount,
+    firstInvoiceOutstanding: moneyValue(invoices[0].outstanding),
+  };
+  const localErrors = showErrors ? receiptFormErrors(validationInput) : {};
   const errors = { ...serverErrors, ...localErrors };
-  if (fileError) errors.file = fileError;
+  if (fields.fileError) errors.file = fields.fileError;
 
   useEffect(() => {
     if (focusRequest === 0) return;
@@ -110,64 +82,30 @@ export function BankTransferReceiptForm({
     }
   }, [focusRequest]);
 
-  function resetOutcome() {
-    idempotencyKey.current = null;
-    setDuplicate(false);
-    setFormMessage(null);
-    setServerErrors({});
-  }
-
   function pickCount(next) {
     resetOutcome();
     setCount(next);
-    if (!amountTouched) setAmountText(formatAmountInput(selectedTotal(invoices, next)));
-  }
-
-  function handleSelectFile(selected) {
-    resetOutcome();
-    const problem = receiptFileError(selected);
-    setFileError(problem);
-    setFile(problem ? null : selected);
-  }
-
-  function handleRemoveFile() {
-    resetOutcome();
-    setFile(null);
-    setFileError(null);
-  }
-
-  function field(setter) {
-    return (value) => {
-      resetOutcome();
-      setter(value);
-    };
+    fields.suggestAmount(selectedTotal(invoices, next));
   }
 
   function handleSubmit(event) {
     event.preventDefault();
-    const found = receiptFormErrors({
-      file,
-      operationNumber,
-      originAccount,
-      holderName,
-      amount,
-      firstInvoiceOutstanding: moneyValue(invoices[0].outstanding),
-    });
-    if (Object.keys(found).length > 0 || fileError) {
+    const found = receiptFormErrors(validationInput);
+    if (Object.keys(found).length > 0 || fields.fileError) {
       setShowErrors(true);
       setFocusRequest((value) => value + 1);
       return;
     }
     idempotencyKey.current ??= newIdempotencyKey();
     const submission = buildReceiptSubmission({
-      file,
+      file: fields.file,
       invoiceIds: invoices.slice(0, effectiveCount).map((invoice) => invoice.id),
       amount,
       currency,
-      operationNumber,
-      originAccount,
-      holderName,
-      bankName,
+      operationNumber: fields.operationNumber,
+      originAccount: fields.originAccount,
+      holderName: fields.holderName,
+      bankName: fields.bankName,
       transferDate: today,
     });
     mutate(
@@ -204,72 +142,7 @@ export function BankTransferReceiptForm({
 
       <GlassCard className="flex flex-col gap-4 p-5">
         <h2 className="font-heading text-base font-bold text-ink">Datos del comprobante</h2>
-        <ReceiptDropzone
-          file={file}
-          error={errors.file}
-          errorId="receipt-file-error"
-          onSelect={handleSelectFile}
-          onRemove={handleRemoveFile}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
-            id="receipt-operation-number"
-            label="Número de operación"
-            value={operationNumber}
-            onChange={field(setOperationNumber)}
-            error={errors.operationNumber}
-            placeholder="Ej. 4821937"
-            inputMode="numeric"
-          />
-          <TextField
-            id="receipt-amount"
-            label="Monto transferido"
-            value={amountText}
-            onChange={(value) => {
-              resetOutcome();
-              setAmountTouched(true);
-              setAmountText(value);
-            }}
-            onBlur={() => {
-              if (Number.isFinite(amount) && amount > 0) setAmountText(formatAmountInput(amount));
-            }}
-            error={errors.amount}
-            placeholder="0,00"
-            inputMode="decimal"
-          />
-          <TextField
-            id="receipt-origin-account"
-            label="CBU o alias de origen"
-            value={originAccount}
-            onChange={field(setOriginAccount)}
-            error={errors.originAccount}
-            placeholder="CBU de 22 números o alias"
-          />
-          <TextField
-            id="receipt-holder-name"
-            label="Titular de la cuenta de origen"
-            value={holderName}
-            onChange={field(setHolderName)}
-            error={errors.holderName}
-            placeholder="Nombre completo"
-            autoComplete="name"
-          />
-          <div className="sm:col-span-2">
-            {showBank ? (
-              <TextField
-                id="receipt-bank-name"
-                label="Banco de origen (opcional)"
-                value={bankName}
-                onChange={field(setBankName)}
-                placeholder="Ej. Banco Nación"
-              />
-            ) : (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowBank(true)}>
-                + Agregar banco (opcional)
-              </Button>
-            )}
-          </div>
-        </div>
+        <BankTransferReceiptFields fields={fields} errors={errors} />
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-bold text-ink">Qué va a pasar</h3>

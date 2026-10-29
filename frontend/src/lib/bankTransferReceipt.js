@@ -161,6 +161,20 @@ export function buildReceiptSubmission({ file, invoiceIds, amount, currency, ope
   return { path: `/me/bank-transfer-receipts?${params.toString()}`, body };
 }
 
+export function buildCourseEnrollmentBody({ courseId, file, amount, currency, operationNumber, originAccount, holderName, bankName, transferDate }) {
+  const body = new FormData();
+  body.append('courseId', String(courseId));
+  body.append('file', file);
+  body.append('declaredAmount', amount.toFixed(2));
+  body.append('currency', currency);
+  body.append('transferDate', transferDate);
+  body.append('operationNumber', operationNumber.trim());
+  body.append('originAccount', originAccount.trim());
+  body.append('holderName', holderName.trim());
+  if (bankName?.trim()) body.append('bankName', bankName.trim());
+  return body;
+}
+
 const FIELD_BY_VIOLATION = {
   BANK_TRANSFER_AMOUNT_INVALID: 'amount',
   BANK_TRANSFER_OPERATION_NUMBER_REQUIRED: 'operationNumber',

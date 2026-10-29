@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
@@ -235,6 +235,8 @@ describe('AlumnoPagarTransferencia', () => {
     expect(await screen.findByText('El archivo pesa más de 5 MB. Subí uno más liviano.')).toBeInTheDocument();
     expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('bank-transfer-receipts') && !String(url).endsWith('/me/bank-transfer-receipts'))).toBe(false);
 
+    expect(screen.getByText('grande.pdf')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Quitar grande.pdf' }));
     await user.upload(screen.getByLabelText('Comprobante de transferencia'), pdf('bueno.pdf'));
     expect(screen.queryByText('El archivo pesa más de 5 MB. Subí uno más liviano.')).not.toBeInTheDocument();
     expect(screen.getByText('bueno.pdf')).toBeInTheDocument();
@@ -252,7 +254,10 @@ describe('AlumnoPagarTransferencia', () => {
     await user.upload(screen.getByLabelText('Comprobante de transferencia'), new File(['hola'], 'notas.txt', { type: 'text/plain' }));
 
     expect(await screen.findByText('El comprobante tiene que ser un PDF, JPG o PNG.')).toBeInTheDocument();
+    expect(screen.getByText('notas.txt')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Quitar notas.txt' }));
     expect(screen.queryByText('notas.txt')).not.toBeInTheDocument();
+    expect(screen.queryByText('El comprobante tiene que ser un PDF, JPG o PNG.')).not.toBeInTheDocument();
   });
 
   it('showsAFieldErrorForEachMissingDetailAndSendsNothing', async () => {
@@ -721,5 +726,25 @@ describe('AlumnoPagarTransferencia', () => {
       expect(await screen.findByText(/todavía no alcanza a cubrir la matrícula de ingreso completa/)).toBeInTheDocument();
       expect(screen.queryByText(/inscripto/)).not.toBeInTheDocument();
     });
+  });
+
+  it('describesEachTrackedInstallmentRowWithItsOwnStatusNote', async () => {
+    renderTransfer({ receipts: [receiptOf()] });
+
+    const row = (await screen.findByText('Tus cuotas')).closest('div').querySelector('li');
+    const noteId = row.getAttribute('aria-describedby');
+    expect(noteId).toBe('tracking-note-61');
+    expect(document.getElementById(noteId)).toHaveTextContent('Incluida en tu comprobante en revisión');
+  });
+
+  it('scrollsTheStepperIntoViewWhenTheStudentMovesToAnotherStep', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const user = userEvent.setup();
+    renderTransfer();
+    await user.click(await screen.findByRole('button', { name: 'Ya transferí — subir comprobante' }));
+
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    delete Element.prototype.scrollIntoView;
   });
 });

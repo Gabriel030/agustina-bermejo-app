@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { ChevronLeft, Copy, Check, Clock, CheckCircle, XCircle } from 'lucide-react';
@@ -162,6 +162,12 @@ const TRACKING_PILL = {
   pending: { tone: 'neutral', label: 'Pendiente' },
 };
 
+const TRACKING_NOTE = {
+  review: 'Incluida en tu comprobante en revisión',
+  paid: 'Acreditada con tu comprobante',
+  pending: 'Sigue pendiente de pago',
+};
+
 const TONE_CLASS = { warning: 'text-warning', success: 'text-success', danger: 'text-danger', neutral: 'text-ink-faint' };
 
 function trackingKey(receipt) {
@@ -243,9 +249,19 @@ function PasoEstado({ invoiceId, onResend }) {
               <ul className="flex flex-col gap-1.5">
                 {rows.map((row) => {
                   const pill = TRACKING_PILL[row.status];
+                  const noteId = `tracking-note-${row.id}`;
                   return (
-                    <li key={row.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3">
-                      <span className="min-w-0 truncate text-sm font-semibold text-ink">{row.title}</span>
+                    <li
+                      key={row.id}
+                      aria-describedby={noteId}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3"
+                    >
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate text-sm font-semibold text-ink">{row.title}</span>
+                        <span id={noteId} className="text-xs text-ink-faint">
+                          {TRACKING_NOTE[row.status]}
+                        </span>
+                      </span>
                       <span className="flex shrink-0 items-center gap-3">
                         <span className="text-sm font-semibold tabular-nums text-ink">{formatMoney(row.outstanding)}</span>
                         <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
@@ -301,6 +317,14 @@ export function AlumnoPagarTransferencia() {
   const [pasosVisitados, setPasosVisitados] = useState(['datos']);
   const pasoActual = chosenStep ?? (hasReceiptToFollow ? 'estado' : 'datos');
   const visitedSteps = hasReceiptToFollow ? PASOS.map((step) => step.key) : pasosVisitados;
+  const stepperRef = useRef(null);
+  const previousStep = useRef(pasoActual);
+
+  useEffect(() => {
+    if (previousStep.current === pasoActual) return;
+    previousStep.current = pasoActual;
+    stepperRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+  }, [pasoActual]);
 
   function irAPaso(paso) {
     setChosenStep(paso);
@@ -324,12 +348,14 @@ export function AlumnoPagarTransferencia() {
 
       {breakdown && <InvoiceSummary breakdown={breakdown} />}
 
-      <Stepper
-        pasos={PASOS}
-        pasoActual={pasoActual}
-        pasosVisitados={visitedSteps}
-        onStepClick={pasoActual === 'estado' ? undefined : irAPaso}
-      />
+      <div ref={stepperRef} className="scroll-mt-4">
+        <Stepper
+          pasos={PASOS}
+          pasoActual={pasoActual}
+          pasosVisitados={visitedSteps}
+          onStepClick={pasoActual === 'estado' ? undefined : irAPaso}
+        />
+      </div>
 
       {isLoading && <Skeleton className="h-48" />}
 
