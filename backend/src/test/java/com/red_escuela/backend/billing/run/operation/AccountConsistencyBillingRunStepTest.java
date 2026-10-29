@@ -89,6 +89,46 @@ class AccountConsistencyBillingRunStepTest {
     }
 
     @Test
+    void theScopePolicyNeedsBothFiveAccountsAndHalfOfTheBookToBeGlobal() {
+        InconsistencyStaysLocalPolicy policy = new InconsistencyStaysLocalPolicy();
+
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(5, 5)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(6, 5)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(100, 50)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(100, 49)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(1000, 4)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(4, 4)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(1, 0)).allowed()).isTrue();
+        assertThat(InconsistencyStaysLocalPolicy.MINIMUM_INCONSISTENT_ACCOUNTS_TO_BE_GLOBAL).isEqualTo(5);
+        assertThat(policy.ruleName()).isEqualTo("InconsistencyStaysLocalPolicy");
+    }
+
+    @Test
+    void theContextCountsTheInconsistentAccountsOfTheScan() {
+        AccountConsistencyScan scan = new AccountConsistencyScan(9, List.of(balanceFinding(1L), balanceFinding(2L)));
+
+        InconsistencyStaysLocalContext context = InconsistencyStaysLocalContext.of(scan);
+
+        assertThat(context.totalAccounts()).isEqualTo(9);
+        assertThat(context.inconsistentAccounts()).isEqualTo(2);
+    }
+
+    @Test
+    void theAlerterPublishesOneEventPerFindingWithItsAccountDateAndCode() {
+        org.springframework.context.ApplicationEventPublisher publisher = mock(org.springframework.context.ApplicationEventPublisher.class);
+        org.mockito.ArgumentCaptor<Object> published = org.mockito.ArgumentCaptor.forClass(Object.class);
+
+        new InconsistentAccountAlerter(publisher).alertDirectorOfInconsistentAccounts(List.of(balanceFinding(7L), balanceFinding(8L)), NIGHT);
+
+        verify(publisher, org.mockito.Mockito.times(2)).publishEvent(published.capture());
+        assertThat(published.getAllValues()).extracting(event -> ((com.red_escuela.backend.billing.events.InconsistentAccountDetectedEvent) event).accountId()).containsExactly(7L, 8L);
+        assertThat(published.getAllValues()).allSatisfy(event -> {
+            assertThat(((com.red_escuela.backend.billing.events.InconsistentAccountDetectedEvent) event).businessDate()).isEqualTo(NIGHT);
+            assertThat(((com.red_escuela.backend.billing.events.InconsistentAccountDetectedEvent) event).findingCode()).isEqualTo("INCONSISTENT_ACCOUNT");
+        });
+    }
+
+    @Test
     void theScopePolicyTreatsFourInconsistentAccountsAsLocalAndFiveOfTenAsGlobal() {
         InconsistencyStaysLocalPolicy policy = new InconsistencyStaysLocalPolicy();
 
