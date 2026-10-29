@@ -860,6 +860,12 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: LatePaymentSettingsCreatedEvent
 - Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated
 
+## Operación DISCARD_ANNUAL_UPFRONT_REQUEST
+
+- Validaciones (momentos): —
+- Pre-procesamiento (en orden): —
+- Eventos que publica: —
+
 ## Operación FAIL_REFUND
 
 - Validaciones (momentos): REFUND_FAILURE

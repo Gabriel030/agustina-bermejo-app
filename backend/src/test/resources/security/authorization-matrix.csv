@@ -386,3 +386,4 @@ GET,/billing-runs/{nightlyRunId}/steps/{step}/items,DENY,DENY,DENY,DENY,ALLOW,AL
 GET,/me/program-enrollments/{id}/annual-upfront/quote,DENY,OWNER,DENY,DENY,DENY,DENY,program-enrollment,
 GET,/program-enrollments/{id}/annual-upfront/quote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 POST,/me/program-enrollments/{id}/annual-upfront-requests,DENY,OWNER,DENY,DENY,DENY,DENY,program-enrollment,"{""termsAccepted"":true,""termsVersion"":""v1""}"
+POST,/me/annual-upfront-requests/{id}/discard,DENY,OWNER,DENY,DENY,DENY,DENY,annual-upfront-request,
