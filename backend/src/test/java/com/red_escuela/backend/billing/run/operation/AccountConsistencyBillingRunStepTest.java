@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 @Tag("D-356")
 @Tag("D-459")
+@Tag("D-489")
 class AccountConsistencyBillingRunStepTest {
     private static final LocalDate NIGHT = LocalDate.of(2031, 10, 7);
 
@@ -89,15 +90,16 @@ class AccountConsistencyBillingRunStepTest {
     }
 
     @Test
-    void theScopePolicyNeedsBothFiveAccountsAndHalfOfTheBookToBeGlobal() {
+    void theScopePolicyNeedsBothFiveAccountsAndAFifthOfTheBookToBeGlobal() {
         InconsistencyStaysLocalPolicy policy = new InconsistencyStaysLocalPolicy();
 
-        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(5, 5)).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(6, 5)).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(100, 50)).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(100, 49)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(1000, 4)).allowed()).isTrue();
         assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(4, 4)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(25, 5)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(26, 5)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(100, 30)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(100, 19)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(1000, 4)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(5, 5)).allowed()).isFalse();
         assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(1, 0)).allowed()).isTrue();
         assertThat(InconsistencyStaysLocalPolicy.MINIMUM_INCONSISTENT_ACCOUNTS_TO_BE_GLOBAL).isEqualTo(5);
         assertThat(policy.ruleName()).isEqualTo("InconsistencyStaysLocalPolicy");
@@ -133,7 +135,7 @@ class AccountConsistencyBillingRunStepTest {
         InconsistencyStaysLocalPolicy policy = new InconsistencyStaysLocalPolicy();
 
         assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(4, 4)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(11, 5)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(26, 5)).allowed()).isTrue();
         assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(10, 5)).allowed()).isFalse();
         assertThat(policy.evaluateRule(new InconsistencyStaysLocalContext(10, 5)).code()).isEqualTo("GLOBAL_ACCOUNT_INCONSISTENCY");
     }
