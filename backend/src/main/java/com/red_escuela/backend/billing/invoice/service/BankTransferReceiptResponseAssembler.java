@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.invoice.service;
 
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
+import com.red_escuela.backend.billing.invoice.dto.ReceiptUploader;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.dto.ReceiptInvoiceSummary;
@@ -10,6 +11,8 @@ import com.red_escuela.backend.billing.operation.ReceiptInvoiceIdsLookup;
 import com.red_escuela.backend.billing.operation.ReceiptReviewFacts;
 import com.red_escuela.backend.billing.operation.ReceiptReviewFactsLookup;
 import com.red_escuela.backend.billing.operation.ReceiptSelectedInvoice;
+import com.red_escuela.backend.identity.api.PersonRoleNamesLookup;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +30,11 @@ public class BankTransferReceiptResponseAssembler {
     private final InvoiceRepository invoiceRepository;
     private final ReceiptInvoiceIdsLookup receiptInvoiceIds;
     private final ReceiptReviewFactsLookup receiptReviewFacts;
+    private final PersonRoleNamesLookup personRoles;
 
     public BankTransferReceiptResponseAssembler(InvoiceViewLoader invoiceViewLoader, InvoiceRepository invoiceRepository, ReceiptInvoiceIdsLookup receiptInvoiceIds,
-                                                ReceiptReviewFactsLookup receiptReviewFacts) {
+                                                ReceiptReviewFactsLookup receiptReviewFacts, PersonRoleNamesLookup personRoles) {
+        this.personRoles = personRoles;
         this.invoiceViewLoader = invoiceViewLoader;
         this.invoiceRepository = invoiceRepository;
         this.receiptInvoiceIds = receiptInvoiceIds;
@@ -38,7 +43,7 @@ public class BankTransferReceiptResponseAssembler {
 
     @Transactional(readOnly = true)
     public BankTransferReceiptResponse assembleBankTransferReceiptResponse(BankTransferReceipt receipt) {
-        return assemble(receipt, invoiceIdsByPaymentId(List.of(receipt)), null);
+        return assemble(receipt, invoiceIdsByPaymentId(List.of(receipt)), null, null);
     }
 
     @Transactional(readOnly = true)
@@ -48,7 +53,7 @@ public class BankTransferReceiptResponseAssembler {
         Map<Long, List<ReceiptSelectedInvoice>> selectionsByPaymentId = receiptInvoiceIds.findSelectedInvoicesByPaymentId(paymentIdsOf(receipts));
         Map<Long, Invoice> invoicesById = invoicesById(receipts, selectionsByPaymentId);
         return receipts.stream().map(receipt -> assemble(receipt, invoiceIdsByPaymentId,
-                ownDetail(reviewDetail(receipt, factsByReceiptId.get(receipt.getId()), selectionsByPaymentId, invoicesById))).withoutReviewAlertState()).toList();
+                ownDetail(reviewDetail(receipt, factsByReceiptId.get(receipt.getId()), selectionsByPaymentId, invoicesById)), null).withoutReviewAlertState()).toList();
     }
 
     private ReceiptReviewDetail ownDetail(ReceiptReviewDetail full) {
@@ -66,8 +71,10 @@ public class BankTransferReceiptResponseAssembler {
         Map<Long, ReceiptReviewFacts> factsByReceiptId = receiptReviewFacts.findFactsByReceiptId(receipts.stream().map(BankTransferReceipt::getId).toList());
         Map<Long, List<ReceiptSelectedInvoice>> selectionsByPaymentId = receiptInvoiceIds.findSelectedInvoicesByPaymentId(paymentIdsOf(receipts));
         Map<Long, Invoice> invoicesById = invoicesById(receipts, selectionsByPaymentId);
+        Map<Long, List<String>> uploaderRolesByPersonId = personRoles.findRoleNamesByPersonId(receipts.stream().map(BankTransferReceipt::getUploadedBy)
+                .filter(Objects::nonNull).map(Person::getId).distinct().toList());
         return receipts.stream().map(receipt -> assemble(receipt, invoiceIdsByPaymentId,
-                reviewDetail(receipt, factsByReceiptId.get(receipt.getId()), selectionsByPaymentId, invoicesById))).toList();
+                reviewDetail(receipt, factsByReceiptId.get(receipt.getId()), selectionsByPaymentId, invoicesById), uploaderRolesByPersonId)).toList();
     }
 
     private ReceiptReviewDetail reviewDetail(BankTransferReceipt receipt, ReceiptReviewFacts facts, Map<Long, List<ReceiptSelectedInvoice>> selectionsByPaymentId,
@@ -108,12 +115,16 @@ public class BankTransferReceiptResponseAssembler {
         return receiptInvoiceIds.findInvoiceIdsByPaymentId(paymentIdsOf(receipts));
     }
 
-    private BankTransferReceiptResponse assemble(BankTransferReceipt receipt, Map<Long, List<Long>> invoiceIdsByPaymentId, ReceiptReviewDetail detail) {
+    private BankTransferReceiptResponse assemble(BankTransferReceipt receipt, Map<Long, List<Long>> invoiceIdsByPaymentId, ReceiptReviewDetail detail,
+                                                  Map<Long, List<String>> uploaderRolesByPersonId) {
         Invoice invoice = receipt.getInvoice();
         String productName = invoice.findCourseEnrollmentId().flatMap(invoiceViewLoader::findCourseEnrollment).map(e -> e.getCourse().getName())
                 .or(() -> invoice.findProgramEnrollmentId().flatMap(invoiceViewLoader::findProgramEnrollment).map(e -> e.getProgram().getName()))
                 .orElse(null);
         List<Long> invoiceIds = receipt.getPaymentId() == null ? List.of(invoice.getId()) : invoiceIdsByPaymentId.getOrDefault(receipt.getPaymentId(), List.of(invoice.getId()));
-        return BankTransferReceiptResponse.from(receipt, invoiceRepository.findOwnerPersonByInvoiceId(invoice.getId()).orElse(null), productName, invoiceIds, detail);
+        Person payer = invoiceRepository.findOwnerPersonByInvoiceId(invoice.getId()).orElse(null);
+        ReceiptUploader uploader = uploaderRolesByPersonId == null || receipt.getUploadedBy() == null ? null
+                : ReceiptUploader.of(receipt.getUploadedBy(), payer, uploaderRolesByPersonId.getOrDefault(receipt.getUploadedBy().getId(), List.of()));
+        return BankTransferReceiptResponse.from(receipt, payer, productName, invoiceIds, detail, uploader);
     }
 }

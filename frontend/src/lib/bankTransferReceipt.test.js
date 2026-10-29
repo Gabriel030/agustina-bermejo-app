@@ -6,6 +6,9 @@ import {
   latestReceiptCovering,
   orderedPayableInvoices,
   parseAmountInput,
+  isUnconfirmedSubmission,
+  receiptOutcomeLines,
+  receiptResultRows,
   receiptFormErrors,
   receiptSubmissionFailure,
   todayIsoDate,
@@ -157,5 +160,73 @@ describe('latestReceiptCovering', () => {
 describe('todayIsoDate', () => {
   it('formatsTheLocalDateWithPadding', () => {
     expect(todayIsoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
+  });
+});
+
+describe('buildReceiptSubmission endpoint', () => {
+  const base = {
+    file: new File(['x'], 'c.pdf'),
+    invoiceIds: [61, 62],
+    amount: 200000,
+    currency: 'ARS',
+    operationNumber: ' 4821937 ',
+    originAccount: 'valentina.suarez.mp',
+    holderName: 'Valentina Suárez',
+    bankName: '',
+    transferDate: '2026-10-28',
+  };
+
+  it('targets the own account endpoint when no student is given', () => {
+    expect(buildReceiptSubmission(base).path).toMatch(/^\/me\/bank-transfer-receipts\?/);
+  });
+
+  it('targets the on behalf of endpoint when a student is given', () => {
+    const { path } = buildReceiptSubmission({ ...base, studentId: 2 });
+    expect(path).toMatch(/^\/students\/2\/bank-transfer-receipts\?/);
+    expect(new URL(`http://x${path}`).searchParams.get('operationNumber')).toBe('4821937');
+  });
+});
+
+describe('isUnconfirmedSubmission', () => {
+  it('treats network failures and server errors as unconfirmed but not client errors', () => {
+    expect(isUnconfirmedSubmission(new TypeError('Failed to fetch'))).toBe(true);
+    expect(isUnconfirmedSubmission({ status: 503 })).toBe(true);
+    expect(isUnconfirmedSubmission({ status: 409 })).toBe(false);
+    expect(isUnconfirmedSubmission({ status: 400 })).toBe(false);
+  });
+});
+
+describe('receiptOutcomeLines for staff', () => {
+  const invoices = [
+    { id: 1, title: 'Cuota sep', outstanding: money('100000.00'), paymentStatus: 'OVERDUE' },
+    { id: 2, title: 'Cuota nov', outstanding: money('100000.00'), paymentStatus: 'PENDING' },
+  ];
+
+  it('speaks about the student, the protected installment and the pending state of the receipt', () => {
+    const texts = receiptOutcomeLines({ invoices, count: 2, amount: 250000, currency: 'ARS', audience: 'staff' }).map((line) => line.text);
+    expect(texts.some((text) => text.includes('Se transfirieron') && text.includes('saldo a favor del alumno'))).toBe(true);
+    expect(texts).toContain('Cargado a tiempo: Cuota nov no genera recargo mientras se revisa.');
+    expect(texts).toContain('El comprobante queda pendiente en la pestaña Comprobantes. No se aprueba solo.');
+  });
+
+  it('keeps the student wording by default', () => {
+    const texts = receiptOutcomeLines({ invoices, count: 2, amount: 200000, currency: 'ARS' }).map((line) => line.text);
+    expect(texts).toContain('Te avisamos cuando la revisen. Suele tardar 1 o 2 días hábiles.');
+  });
+});
+
+describe('receiptResultRows', () => {
+  const invoices = [
+    { id: 1, title: 'sep', dueDate: '2026-09-10', outstanding: money('100000.00'), paymentStatus: 'OVERDUE' },
+    { id: 2, title: 'oct', dueDate: '2026-10-10', outstanding: money('100000.00'), paymentStatus: 'OVERDUE' },
+    { id: 3, title: 'nov', dueDate: '2026-11-10', outstanding: money('100000.00'), paymentStatus: 'PENDING' },
+  ];
+
+  it('protects only covered installments that were not overdue', () => {
+    expect(receiptResultRows(invoices, 300000).map((row) => row.outcome)).toEqual(['overdue', 'overdue', 'protected']);
+  });
+
+  it('leaves the installments the amount does not reach as uncovered', () => {
+    expect(receiptResultRows(invoices, 150000).map((row) => row.outcome)).toEqual(['overdue', 'uncovered', 'uncovered']);
   });
 });

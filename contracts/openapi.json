@@ -1199,9 +1199,12 @@
           "uploadedAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "uploadedBy" : {
+            "$ref" : "#/components/schemas/ReceiptUploader"
           }
         },
-        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentName", "transferDate", "uploadedAt" ],
+        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentName", "transferDate", "uploadedAt", "uploadedBy" ],
         "type" : "object"
       },
       "BankTransferReceiptSubmissionResponse" : {
@@ -1292,6 +1295,82 @@
           }
         },
         "required" : [ "effectiveFrom", "endDay", "id", "startDay" ],
+        "type" : "object"
+      },
+      "BillingRunItemResponse" : {
+        "properties" : {
+          "decisionCode" : {
+            "type" : "string"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "SKIPPED", "FAILED" ],
+            "type" : "string"
+          },
+          "subjectId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectType" : {
+            "enum" : [ "INVOICE", "LATE_FEE_CHARGE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "decisionCode", "errorCode", "id", "message", "status", "subjectId", "subjectType" ],
+        "type" : "object"
+      },
+      "BillingRunStepResponse" : {
+        "properties" : {
+          "candidates" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "notApplicableCode" : {
+            "type" : "string"
+          },
+          "processed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skipped" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "startedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED", "NOT_APPLICABLE" ],
+            "type" : "string"
+          },
+          "step" : {
+            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "candidates", "failed", "finishedAt", "id", "notApplicableCode", "processed", "skipped", "startedAt", "status", "step" ],
         "type" : "object"
       },
       "BlockResponse" : {
@@ -5149,6 +5228,54 @@
         "required" : [ "enrollmentId", "examBoard", "id", "score", "status" ],
         "type" : "object"
       },
+      "NightlyBillingRunResponse" : {
+        "properties" : {
+          "businessDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "durationSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "failedSteps" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "startedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED" ],
+            "type" : "string"
+          },
+          "steps" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BillingRunStepResponse"
+            },
+            "type" : "array"
+          },
+          "stepsWithErrors" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "trigger" : {
+            "enum" : [ "SCHEDULED", "MANUAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "businessDate", "durationSeconds", "failedSteps", "finishedAt", "id", "startedAt", "status", "steps", "stepsWithErrors", "trigger" ],
+        "type" : "object"
+      },
       "Nominal" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/MonetaryAdjustment"
@@ -6638,6 +6765,25 @@
           }
         },
         "required" : [ "feeType", "invoiceId", "outstandingAtSubmission", "period", "totalAmount" ],
+        "type" : "object"
+      },
+      "ReceiptUploader" : {
+        "properties" : {
+          "internal" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "role" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "internal", "name", "personId", "role" ],
         "type" : "object"
       },
       "RefreshRequest" : {
@@ -12535,6 +12681,235 @@
           }
         },
         "tags" : [ "billing-period-controller" ]
+      }
+    },
+    "/billing-runs" : {
+      "get" : {
+        "operationId" : "BillingRun_list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NightlyBillingRunResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-run-controller" ]
+      }
+    },
+    "/billing-runs/{nightlyRunId}" : {
+      "get" : {
+        "operationId" : "BillingRun_find",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "nightlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NightlyBillingRunResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-run-controller" ]
+      }
+    },
+    "/billing-runs/{nightlyRunId}/steps/{step}/items" : {
+      "get" : {
+        "operationId" : "BillingRun_listItems",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "nightlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "step",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/BillingRunItemResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-run-controller" ]
       }
     },
     "/billing/configuration-alerts" : {
