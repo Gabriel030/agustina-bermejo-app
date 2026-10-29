@@ -1290,8 +1290,8 @@
             "type" : "integer"
           },
           "subjectType" : {
-            "enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT" ],
-            "type" : "string"
+            "type" : "string",
+            "x-extensible-enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT" ]
           }
         },
         "required" : [ "decisionCode", "errorCode", "id", "message", "status", "subjectId", "subjectType" ],
@@ -1335,8 +1335,8 @@
             "type" : "string"
           },
           "step" : {
-            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ],
-            "type" : "string"
+            "type" : "string",
+            "x-extensible-enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ]
           }
         },
         "required" : [ "candidates", "failed", "finishedAt", "id", "notApplicableCode", "processed", "skipped", "startedAt", "status", "step" ],
