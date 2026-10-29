@@ -12,9 +12,11 @@ import java.time.LocalDate;
 @Component
 public class LateFeeWithdrawalCorrectionBillingRunStep extends AbstractBillingRunStep {
     private final LateFeeWithdrawalCorrectionStep correctionStep;
+    private final HeldAccountLookup heldAccounts;
 
-    public LateFeeWithdrawalCorrectionBillingRunStep(LateFeeWithdrawalCorrectionStep correctionStep) {
+    public LateFeeWithdrawalCorrectionBillingRunStep(LateFeeWithdrawalCorrectionStep correctionStep, HeldAccountLookup heldAccounts) {
         this.correctionStep = correctionStep;
+        this.heldAccounts = heldAccounts;
     }
 
     @Override
@@ -24,7 +26,7 @@ public class LateFeeWithdrawalCorrectionBillingRunStep extends AbstractBillingRu
 
     @Override
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
-        LateFeeCorrectionSweepResult result = correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(businessDate);
+        LateFeeCorrectionSweepResult result = correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(businessDate, heldAccounts.heldLateFeeChargesOf(businessDate));
         return BillingRunStepOutcome.ofCandidates(result.candidates(),
                 translateReportedErrors(result.errors(), "lateFeeChargeId", BillingRunSubjectType.LATE_FEE_CHARGE));
     }

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class LateFeeAccrualStep {
@@ -29,6 +30,10 @@ public class LateFeeAccrualStep {
     }
 
     public LateFeeAccrualResult accrueLateFees(LocalDate today) {
+        return accrueLateFees(today, HeldSubjectFinder.NONE);
+    }
+
+    public LateFeeAccrualResult accrueLateFees(LocalDate today, HeldSubjectFinder heldInvoices) {
         int candidates = 0;
         int issued = 0;
         int failed = 0;
@@ -44,7 +49,12 @@ public class LateFeeAccrualStep {
                 break;
             }
             candidates += batch.size();
+            Set<Long> held = heldInvoices.findHeldAmong(batch);
             for (Long originId : batch) {
+                if (held.contains(originId)) {
+                    errors.add(heldInvoiceError(originId));
+                    continue;
+                }
                 try {
                     issued += accrualService.reconcileLateFeesOfInvoice(originId, today, timeline);
                 } catch (Exception e) {
@@ -66,7 +76,12 @@ public class LateFeeAccrualStep {
                 break;
             }
             settlementCandidates += batch.size();
+            Set<Long> held = heldInvoices.findHeldAmong(batch);
             for (Long originId : batch) {
+                if (held.contains(originId)) {
+                    errors.add(heldInvoiceError(originId));
+                    continue;
+                }
                 try {
                     recovered += accrualService.reconcileLateFeesOfSettledInvoice(originId, today, timeline);
                 } catch (Exception e) {
@@ -81,5 +96,13 @@ public class LateFeeAccrualStep {
             lastId = batch.get(batch.size() - 1);
         }
         return new LateFeeAccrualResult(candidates, issued + recovered, failed, errors, recovered, settlementCandidates);
+    }
+
+    private static Map<String, Object> heldInvoiceError(Long invoiceId) {
+        Map<String, Object> heldInvoice = new LinkedHashMap<>();
+        heldInvoice.put("invoiceId", invoiceId);
+        heldInvoice.put("decisionCode", HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE);
+        heldInvoice.put("message", HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+        return heldInvoice;
     }
 }

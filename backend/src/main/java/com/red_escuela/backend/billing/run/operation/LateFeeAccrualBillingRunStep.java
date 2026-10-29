@@ -12,9 +12,11 @@ import java.time.LocalDate;
 @Component
 public class LateFeeAccrualBillingRunStep extends AbstractBillingRunStep {
     private final LateFeeAccrualStep accrualStep;
+    private final HeldAccountLookup heldAccounts;
 
-    public LateFeeAccrualBillingRunStep(LateFeeAccrualStep accrualStep) {
+    public LateFeeAccrualBillingRunStep(LateFeeAccrualStep accrualStep, HeldAccountLookup heldAccounts) {
         this.accrualStep = accrualStep;
+        this.heldAccounts = heldAccounts;
     }
 
     @Override
@@ -24,7 +26,7 @@ public class LateFeeAccrualBillingRunStep extends AbstractBillingRunStep {
 
     @Override
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
-        LateFeeAccrualResult result = accrualStep.accrueLateFees(businessDate);
+        LateFeeAccrualResult result = accrualStep.accrueLateFees(businessDate, heldAccounts.heldInvoicesOf(businessDate));
         return BillingRunStepOutcome.ofCandidates(result.candidates() + result.settlementCandidates(),
                 translateReportedErrors(result.errors(), "invoiceId", BillingRunSubjectType.INVOICE));
     }
