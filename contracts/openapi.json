@@ -1367,7 +1367,7 @@
           },
           "step" : {
             "type" : "string",
-            "x-extensible-enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ]
+            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ]
           }
         },
         "required" : [ "candidates", "failed", "finishedAt", "id", "notApplicableCode", "processed", "skipped", "startedAt", "status", "step" ],
@@ -12868,7 +12868,7 @@
           "name" : "step",
           "required" : true,
           "schema" : {
-            "enum" : [ "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ],
+            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION" ],
             "type" : "string"
           }
         } ],

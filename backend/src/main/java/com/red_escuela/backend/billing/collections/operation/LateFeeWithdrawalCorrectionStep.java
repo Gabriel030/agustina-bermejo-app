@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class LateFeeWithdrawalCorrectionStep {
@@ -24,6 +25,10 @@ public class LateFeeWithdrawalCorrectionStep {
     }
 
     public LateFeeCorrectionSweepResult correctLateFeesChargedAfterTheEnrollmentEnd(LocalDate today) {
+        return correctLateFeesChargedAfterTheEnrollmentEnd(today, HeldSubjectFinder.NONE);
+    }
+
+    public LateFeeCorrectionSweepResult correctLateFeesChargedAfterTheEnrollmentEnd(LocalDate today, HeldSubjectFinder heldCharges) {
         int candidates = 0;
         int corrected = 0;
         int deferred = 0;
@@ -36,7 +41,16 @@ public class LateFeeWithdrawalCorrectionStep {
                 break;
             }
             candidates += batch.size();
+            Set<Long> held = heldCharges.findHeldAmong(batch);
             for (Long chargeId : batch) {
+                if (held.contains(chargeId)) {
+                    Map<String, Object> heldCharge = new LinkedHashMap<>();
+                    heldCharge.put("lateFeeChargeId", chargeId);
+                    heldCharge.put("decisionCode", HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE);
+                    heldCharge.put("message", HeldSubjectFinder.INCONSISTENT_ACCOUNT_MESSAGE);
+                    errors.add(heldCharge);
+                    continue;
+                }
                 try {
                     LateFeeCorrectionOutcome outcome = correctionService.correctLateFeeCharge(chargeId, today);
                     if (outcome == LateFeeCorrectionOutcome.CORRECTED) {

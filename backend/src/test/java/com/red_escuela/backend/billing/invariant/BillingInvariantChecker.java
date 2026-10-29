@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invariant;
 
+import com.red_escuela.backend.billing.run.domain.AccountConsistencyCheck;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
@@ -115,14 +116,7 @@ public final class BillingInvariantChecker {
     }
 
     public List<String> aChargeKeyIsHeldByAtMostOneLiveLine() {
-        return violations("I-05 charge key held by more than one live invoice line", """
-                select 'charge key ' || l.charge_key
-                from invoice_line l join invoice i on i.id = l.invoice_id
-                where l.charge_key_released_at is null and i.document_status <> 'DISCARDED'
-                  and (i.payment_status is null or i.payment_status <> 'CANCELLED')
-                group by l.charge_key
-                having count(*) > 1
-                """);
+        return violationsOf(AccountConsistencyCheck.CHARGE_KEY_HELD_BY_MORE_THAN_ONE_LIVE_LINE);
     }
 
     public List<String> noNegativeAmountIsPersistedInTheV2Tables() {
@@ -156,14 +150,7 @@ public final class BillingInvariantChecker {
     }
 
     public List<String> paymentStatusIsConsistentWithAmounts() {
-        return violations("I-08 payment status inconsistent with the amounts", """
-                select 'invoice ' || i.id || ' ' || i.payment_status
-                from invoice i
-                where @INVOICES@ and ((i.payment_status in ('PENDING', 'PAYMENT_UNDER_REVIEW', 'OVERDUE') and not (i.paid_amount = 0 and i.outstanding_amount > 0))
-                   or (i.payment_status = 'PAID' and i.outstanding_amount <> 0)
-                   or (i.payment_status = 'CANCELLED' and not (i.paid_amount = 0 and i.outstanding_amount = 0 and i.credited_amount = i.total))
-                   or (i.payment_status is null and (i.paid_amount <> 0 or i.credited_amount <> 0)))
-                """, baselineInvoiceId, baselineAccountId, baselineEntryId);
+        return violationsOf(AccountConsistencyCheck.PAYMENT_STATUS_DIFFERS_FROM_AMOUNTS, baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
     public List<String> thereIsNoWaivedNorPartiallyPaidStatus() {
@@ -255,13 +242,7 @@ public final class BillingInvariantChecker {
     }
 
     public List<String> accountBalanceEqualsCreditsMinusDebits() {
-        return violations("I-01 account balance differs from credits minus debits", """
-                select 'account ' || a.id
-                from student_current_account a
-                where @ACCOUNTS@ and (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
-                    <> coalesce((select sum(case e.direction when 'CREDIT' then e.amount else -e.amount end)
-                                 from current_account_entry e where e.student_current_account_id = a.id), 0)
-                """, baselineAccountId, baselineEntryId);
+        return violationsOf(AccountConsistencyCheck.BALANCE_DIFFERS_FROM_ENTRIES, baselineAccountId, baselineEntryId);
     }
 
     public List<String> runningBalancesFollowTheEntrySequence() {
@@ -293,13 +274,7 @@ public final class BillingInvariantChecker {
                     <> a.unallocated_credit_amount - coalesce((select sum(i.outstanding_amount) from invoice i
                         where i.student_current_account_id = a.id and i.document_status = 'ISSUED'), 0)
                 """, baselineAccountId, baselineEntryId));
-        found.addAll(violations("I-19 issued invoice without exactly one debit (or a zero total invoice with one)", """
-                select 'invoice ' || i.id
-                from invoice i
-                where @INVOICES@ and i.document_status = 'ISSUED'
-                  and exists (select 1 from student_current_account a where a.id = i.student_current_account_id and a.last_entry_sequence > 0)
-                  and (select count(*) from current_account_entry e where e.invoice_id = i.id) <> (case when i.total > 0 then 1 else 0 end)
-                """, baselineInvoiceId, baselineAccountId, baselineEntryId));
+        found.addAll(violationsOf(AccountConsistencyCheck.ISSUED_INVOICE_WITHOUT_ITS_DEBIT, baselineInvoiceId, baselineAccountId, baselineEntryId));
         return found;
     }
 
@@ -677,6 +652,11 @@ public final class BillingInvariantChecker {
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }
+    }
+
+    private List<String> violationsOf(AccountConsistencyCheck check, Object... args) {
+        String resolved = check.sql().replace("@INVOICES@", INVOICE_IS_NEW_OR_ITS_ACCOUNT_HAS_NEW_ENTRIES).replace("@ACCOUNTS@", ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES);
+        return jdbc.query(resolved, (rs, rowNum) -> check.invariant() + ": " + rs.getString(2), args);
     }
 
     private List<String> violations(String invariant, String sql, Object... args) {

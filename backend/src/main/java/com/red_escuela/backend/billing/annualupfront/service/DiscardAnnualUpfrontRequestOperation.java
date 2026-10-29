@@ -72,7 +72,7 @@ public class DiscardAnnualUpfrontRequestOperation implements BillingOperation<Di
         BillingEnrollmentFacts facts = quoteService.requireEnrollmentOfCurrentStudent(command.programEnrollmentId());
         enrollmentLock.lockDiscountsOf(EnrollmentReference.ofProgram(command.programEnrollmentId()));
         accountService.findOrOpenAndLockStudentCurrentAccount(facts.studentId(), facts.currency());
-        Long invoiceId = requestRepository.findById(command.requestId()).orElseThrow(() -> new AnnualUpfrontRequestNotFoundException(command.requestId())).getInvoiceId();
+        Long invoiceId = requestRepository.findInvoiceIdById(command.requestId()).orElseThrow(() -> new AnnualUpfrontRequestNotFoundException(command.requestId()));
         Invoice invoice = invoices.lockInvoiceAwaitingPayment(invoiceId);
         AnnualUpfrontRequest request = requestRepository.findByIdForUpdate(command.requestId()).orElseThrow(() -> new AnnualUpfrontRequestNotFoundException(command.requestId()));
         request.discardCancelledByStudent(LocalDateTime.now(clock));

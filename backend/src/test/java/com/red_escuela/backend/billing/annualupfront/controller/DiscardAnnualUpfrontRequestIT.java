@@ -56,6 +56,20 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
     }
 
     @Test
+    void discardingStillWorksWhenTheStaffAlreadyRevokedTheReservedDiscount() throws Exception {
+        publishAnnualPromotion();
+        JsonNode requested = objectMapper.readTree(request(true, "v1", 201).getResponse().getContentAsString());
+        jdbc.update("update student_discount set status = 'REVOKED', revoked_at = now(), revoked_by_id = ?, revocation_reason = 'Revocación del personal', revoked_from_period = from_period "
+                + "where origin = 'ANNUAL_UPFRONT_REQUEST' and program_enrollment_id = ?", director.getId(), learner.programEnrollmentId());
+
+        discard(requested.get("id").asLong(), studentToken(), 200);
+
+        assertThat(count("select count(*) from invoice where id = " + requested.get("invoiceId").asLong() + " and document_status = 'DISCARDED'")).isEqualTo(1);
+        assertThat(count("select count(*) from invoice_discount where invoice_line_id in (select id from invoice_line where invoice_id = " + requested.get("invoiceId").asLong()
+                + ") and consumption_released_at is null")).isZero();
+    }
+
+    @Test
     void discardingARequestWhoseReceiptIsUnderReviewIsAConflictAndChangesNothing() throws Exception {
         Long requestId = objectMapper.readTree(request(true, "v1", 201).getResponse().getContentAsString()).get("id").asLong();
         jdbc.update("update annual_upfront_request set status = 'PAYMENT_UNDER_REVIEW' where id = ?", requestId);
@@ -71,7 +85,10 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
         Long requestId = objectMapper.readTree(request(true, "v1", 201).getResponse().getContentAsString()).get("id").asLong();
         String otherStudentToken = studentTokenOf(newCohortLearner());
 
-        discard(requestId, otherStudentToken, 404);
+        String foreignMessage = discard(requestId, otherStudentToken, 404).getResponse().getContentAsString();
+        String unknownMessage = discard(987654322L, otherStudentToken, 404).getResponse().getContentAsString();
+
+        assertThat(foreignMessage.replace(String.valueOf(requestId), "ID")).isEqualTo(unknownMessage.replace("987654322", "ID"));
 
         assertThat(count("select count(*) from annual_upfront_request where id = " + requestId + " and status = 'AWAITING_PAYMENT'")).isEqualTo(1);
     }
