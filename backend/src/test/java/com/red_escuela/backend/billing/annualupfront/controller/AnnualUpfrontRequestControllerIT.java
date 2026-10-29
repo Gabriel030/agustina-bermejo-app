@@ -1,12 +1,17 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
+import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -119,6 +124,45 @@ class AnnualUpfrontRequestControllerIT extends AbstractAnnualUpfrontRequestIT {
         }
         assertThat(count("select count(*) from invoice where invoice_type = 'ANNUAL_UPFRONT'")).isEqualTo(invoicesBefore + 1);
         assertThat(count("select count(*) from annual_upfront_request")).isEqualTo(1);
+    }
+
+    @Test
+    @Tag("D-298")
+    @Tag("D-240")
+    @Tag("D-295")
+    void twoStudentsRequestingAtOnceForAPromotionWithOnePlaceLeaveOneReservedDiscountAndTheOtherAtFullPrice() throws Exception {
+        DiscountDefinition promotion = publishAnnualPromotion(DiscountDraftBuilder.annualUpfront().withPercent("10").availableFrom(LocalDate.of(2027, 1, 1))
+                .forProgram(offering.programId()).withEnrollmentWindow(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31)).withQuota(1));
+        IssuingScenarioFactory.Learner other = newCohortLearner();
+        List<IssuingScenarioFactory.Learner> learners = List.of(learner, other);
+        List<String> tokens = learners.stream().map(this::studentTokenOf).toList();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        List<BigDecimal> totals = new ArrayList<>();
+        try {
+            List<Future<String>> outcomes = new ArrayList<>();
+            for (int index = 0; index < 2; index++) {
+                IssuingScenarioFactory.Learner requester = learners.get(index);
+                String token = tokens.get(index);
+                String key = "annual-quota-" + index;
+                outcomes.add(executor.submit(() -> {
+                    start.await();
+                    MvcResult result = mockMvc.perform(post("/me/program-enrollments/" + requester.programEnrollmentId() + "/annual-upfront-requests").header("Authorization", "Bearer " + token)
+                            .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content("{\"termsAccepted\":true,\"termsVersion\":\"v1\"}")).andReturn();
+                    assertThat(result.getResponse().getStatus()).isEqualTo(201);
+                    return result.getResponse().getContentAsString();
+                }));
+            }
+            start.countDown();
+            for (Future<String> outcome : outcomes) {
+                totals.add(new BigDecimal(objectMapper.readTree(outcome.get(60, TimeUnit.SECONDS)).get("total").get("amount").asText()));
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+        assertThat(totals).usingElementComparator(BigDecimal::compareTo).containsExactlyInAnyOrder(new BigDecimal("720000.00"), new BigDecimal("800000.00"));
+        assertThat(count("select count(*) from student_discount where origin = 'ANNUAL_UPFRONT_REQUEST' and status = 'ACTIVE' and discount_definition_id = " + promotion.getId())).isEqualTo(1);
+        assertThat(count("select count(*) from annual_upfront_request where status = 'AWAITING_PAYMENT'")).isEqualTo(2);
     }
 
     @Test

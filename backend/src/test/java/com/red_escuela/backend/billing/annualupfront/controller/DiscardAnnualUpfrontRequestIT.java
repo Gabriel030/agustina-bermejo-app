@@ -1,12 +1,16 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -103,6 +107,28 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
         discard(requestId, token, 409);
 
         assertThat(count("select count(*) from annual_upfront_request where id = " + requestId + " and status = 'DISCARDED' and discard_reason = 'CANCELLED_BY_STUDENT'")).isEqualTo(1);
+    }
+
+    @Test
+    @Tag("D-298")
+    @Tag("D-286")
+    void discardingTheRequestThatHeldTheOnlyPlaceLetsTheNextRequestTakeThePromotion() throws Exception {
+        DiscountDefinition promotion = publishAnnualPromotion(DiscountDraftBuilder.annualUpfront().withPercent("10").availableFrom(LocalDate.of(2027, 1, 1)).withQuota(1));
+        IssuingScenarioFactory.Learner waiting = newCohortLearner();
+        IssuingScenarioFactory.Learner next = newCohortLearner();
+        String waitingToken = studentTokenOf(waiting);
+        String nextToken = studentTokenOf(next);
+        Long holderId = requestOf(learner, studentToken()).get("id").asLong();
+
+        JsonNode withoutPlace = requestOf(waiting, waitingToken);
+        discard(holderId, studentToken(), 200);
+        JsonNode withPlace = requestOf(next, nextToken);
+
+        assertThat(new BigDecimal(withoutPlace.get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
+        assertThat(new BigDecimal(withPlace.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
+        assertThat(count("select count(*) from student_discount where discount_definition_id = " + promotion.getId() + " and status = 'ACTIVE' and program_enrollment_id = " + next.programEnrollmentId()))
+                .isEqualTo(1);
+        assertThat(count("select count(*) from student_discount where discount_definition_id = " + promotion.getId() + " and status = 'ACTIVE'")).isEqualTo(1);
     }
 
     @Test
