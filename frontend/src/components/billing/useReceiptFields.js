@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { receiptFileError } from '@/lib/billing';
 import { formatAmountInput, parseAmountInput } from '@/lib/bankTransferReceipt';
 
-export function useReceiptFields({ initialAmount, defaultHolderName = '', onEdit }) {
-  const [file, setFile] = useState(null);
+export function useReceiptFields({ initialAmount, defaultHolderName = '', draft = null, onEdit }) {
+  const [file, setFile] = useState(draft?.file ?? null);
   const [fileError, setFileError] = useState(null);
-  const [operationNumber, setOperationNumber] = useState('');
-  const [originAccount, setOriginAccount] = useState('');
-  const [holderName, setHolderName] = useState(defaultHolderName);
-  const [bankName, setBankName] = useState('');
-  const [showBank, setShowBank] = useState(false);
-  const [amountText, setAmountText] = useState(() => formatAmountInput(initialAmount));
-  const [amountTouched, setAmountTouched] = useState(false);
+  const [operationNumber, setOperationNumber] = useState(draft?.operationNumber ?? '');
+  const [originAccount, setOriginAccount] = useState(draft?.originAccount ?? '');
+  const [holderName, setHolderName] = useState(draft?.holderName ?? defaultHolderName);
+  const [bankName, setBankName] = useState(draft?.bankName ?? '');
+  const [showBank, setShowBank] = useState(draft?.showBank ?? false);
+  const [amountText, setAmountText] = useState(() => draft?.amountText ?? formatAmountInput(initialAmount));
+  const [amountTouched, setAmountTouched] = useState(draft?.amountTouched ?? false);
 
   function edited(setter) {
     return (value) => {
@@ -57,6 +57,7 @@ export function useReceiptFields({ initialAmount, defaultHolderName = '', onEdit
     bankName,
     showBank,
     amountText,
+    amountTouched,
     amount,
     selectFile,
     removeFile,

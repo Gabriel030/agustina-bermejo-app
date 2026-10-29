@@ -26,7 +26,7 @@ public class RepositoryPersonRoleNamesLookup implements PersonRoleNamesLookup {
         if (personIds.isEmpty()) {
             return Map.of();
         }
-        return personRepository.findAllById(personIds).stream()
+        return personRepository.findAllWithRolesByIdIn(personIds).stream()
                 .collect(Collectors.toMap(Person::getId, person -> person.getRoles().stream().map(role -> role.getName()).sorted().toList(), (first, second) -> first));
     }
 }

@@ -84,7 +84,8 @@ export function coverageOf(invoices, amount) {
   });
 }
 
-export function receiptOutcomeLines({ invoices, count, amount, currency }) {
+export function receiptOutcomeLines({ invoices, count, amount, currency, audience = 'student' }) {
+  const staff = audience === 'staff';
   const selected = invoices.slice(0, count);
   const coverage = coverageOf(selected, amount);
   const total = selectedTotal(invoices, count);
@@ -94,7 +95,11 @@ export function receiptOutcomeLines({ invoices, count, amount, currency }) {
   if (!(amount > 0) || coveredRows.length === 0) {
     lines.push({
       tone: 'warning',
-      text: selected.length === 1 ? 'El monto no alcanza a cubrir la cuota. Subí el monto.' : 'El monto no alcanza a cubrir la primera cuota. Subí el monto.',
+      text: staff
+        ? 'El monto no alcanza a cubrir la primera cuota. Corregí el monto.'
+        : selected.length === 1
+          ? 'El monto no alcanza a cubrir la cuota. Subí el monto.'
+          : 'El monto no alcanza a cubrir la primera cuota. Subí el monto.',
     });
   } else if (coveredRows.length < selected.length) {
     lines.push({
@@ -112,28 +117,55 @@ export function receiptOutcomeLines({ invoices, count, amount, currency }) {
   if (Number.isFinite(excess) && excess > 0.004) {
     lines.push({
       tone: 'warning',
-      text: `Transferiste ${formatMoney({ amount: excess.toFixed(2), currency })} de más. Queda a tu favor y se aplica a tu próxima cuota.`,
+      text: staff
+        ? `Se transfirieron ${formatMoney({ amount: excess.toFixed(2), currency })} de más. Quedan como saldo a favor del alumno.`
+        : `Transferiste ${formatMoney({ amount: excess.toFixed(2), currency })} de más. Queda a tu favor y se aplica a tu próxima cuota.`,
     });
   }
 
   const protectedRow = coveredRows.find((invoice) => invoice.paymentStatus === 'PENDING');
   if (protectedRow) {
-    lines.push({ tone: 'success', text: `Subido a tiempo: ${protectedRow.title} no genera recargo mientras se revisa.` });
+    lines.push({
+      tone: 'success',
+      text: `${staff ? 'Cargado' : 'Subido'} a tiempo: ${protectedRow.title} no genera recargo mientras se revisa.`,
+    });
   }
   if (coveredRows.some((invoice) => invoice.paymentStatus === 'OVERDUE')) {
-    lines.push({ tone: 'neutral', text: 'Las cuotas ya vencidas siguen vencidas hasta que se apruebe.' });
+    lines.push({
+      tone: 'neutral',
+      text: staff
+        ? 'Las cuotas ya vencidas siguen vencidas y con recargo hasta que se apruebe.'
+        : 'Las cuotas ya vencidas siguen vencidas hasta que se apruebe.',
+    });
   }
-  lines.push({ tone: 'neutral', text: 'Te avisamos cuando la revisen. Suele tardar 1 o 2 días hábiles.' });
+  lines.push({
+    tone: 'neutral',
+    text: staff
+      ? 'El comprobante queda pendiente en la pestaña Comprobantes. No se aprueba solo.'
+      : 'Te avisamos cuando la revisen. Suele tardar 1 o 2 días hábiles.',
+  });
   return lines;
 }
 
-export function receiptFormErrors({ file, operationNumber, originAccount, holderName, amount, firstInvoiceOutstanding }) {
+export function receiptResultRows(invoices, amount) {
+  const coverage = coverageOf(invoices, amount);
+  return invoices.map((invoice, index) => {
+    let outcome = 'uncovered';
+    if (coverage[index].state === 'covered') outcome = invoice.paymentStatus === 'PENDING' ? 'protected' : 'overdue';
+    return { id: invoice.id, title: invoice.title, dueDate: invoice.dueDate, outcome };
+  });
+}
+
+export function receiptFormErrors({ file, operationNumber, originAccount, holderName, amount, firstInvoiceOutstanding, audience = 'student' }) {
+  const staff = audience === 'staff';
   const errors = {};
-  if (!file) errors.file = 'Subí el comprobante para poder enviarlo.';
+  if (!file) errors.file = staff ? 'Subí el comprobante para poder cargarlo.' : 'Subí el comprobante para poder enviarlo.';
   if (!operationNumber.trim()) errors.operationNumber = 'Ingresá el número de operación que figura en el comprobante.';
   const origin = originAccount.trim();
   if (!origin) {
-    errors.originAccount = 'Ingresá el CBU o alias de la cuenta desde la que transferiste.';
+    errors.originAccount = staff
+      ? 'Ingresá el CBU o alias de la cuenta de origen.'
+      : 'Ingresá el CBU o alias de la cuenta desde la que transferiste.';
   } else if (!CBU_PATTERN.test(origin) && !ALIAS_PATTERN.test(origin)) {
     errors.originAccount = 'Revisá el CBU (22 números) o el alias (6 a 20 caracteres).';
   }
@@ -146,7 +178,7 @@ export function receiptFormErrors({ file, operationNumber, originAccount, holder
   return errors;
 }
 
-export function buildReceiptSubmission({ file, invoiceIds, amount, currency, operationNumber, originAccount, holderName, bankName, transferDate }) {
+export function buildReceiptSubmission({ file, invoiceIds, amount, currency, operationNumber, originAccount, holderName, bankName, transferDate, studentId }) {
   const params = new URLSearchParams();
   invoiceIds.forEach((id) => params.append('invoiceIds', String(id)));
   params.set('declaredAmount', amount.toFixed(2));
@@ -158,7 +190,8 @@ export function buildReceiptSubmission({ file, invoiceIds, amount, currency, ope
   if (bankName?.trim()) params.set('bankName', bankName.trim());
   const body = new FormData();
   body.append('file', file);
-  return { path: `/me/bank-transfer-receipts?${params.toString()}`, body };
+  const base = studentId == null ? '/me/bank-transfer-receipts' : `/students/${studentId}/bank-transfer-receipts`;
+  return { path: `${base}?${params.toString()}`, body };
 }
 
 export function buildCourseEnrollmentBody({ courseId, file, amount, currency, operationNumber, originAccount, holderName, bankName, transferDate }) {
@@ -225,6 +258,10 @@ export function receiptSubmissionFailure(error) {
   }
   const message = generalMessages[0] ?? (Object.keys(fieldErrors).length ? null : 'No pudimos enviar el comprobante. Probá de nuevo.');
   return { duplicate: false, fieldErrors, message };
+}
+
+export function isUnconfirmedSubmission(error) {
+  return error?.status == null || error.status >= 500;
 }
 
 export function receiptCoversInvoice(receipt, invoiceId) {

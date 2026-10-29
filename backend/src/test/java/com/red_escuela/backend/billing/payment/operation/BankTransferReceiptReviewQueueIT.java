@@ -242,6 +242,67 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         assertThat(entry.get("invoices").get(0).get("invoiceId").asLong()).isEqualTo(invoice);
     }
 
+    @ParameterizedTest
+    @CsvSource({"ADMINISTRATIVO", "DIRECTOR"})
+    @Tag("D-464")
+    @Tag("D-270")
+    void queueEntryUploadedByStaffShowsTheUploaderRoleAndNameAsInternalLoad(String role) throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor debtor = debtor();
+        Long invoice = invoiceOf(debtor, "80000.00", LATER_DUE);
+        com.red_escuela.backend.identity.entity.Person staff = newStaffPerson();
+        String staffToken = tokenOf(staff, role);
+        MvcResult uploaded = mockMvc.perform(staffSubmission(debtor, staffToken, List.of(invoice), "80000.00").request()).andExpect(status().isCreated()).andReturn();
+
+        JsonNode uploader = queueEntryOf(bodyOf(uploaded).get("receiptId").asLong(), staffToken).get("uploadedBy");
+
+        assertThat(uploader.get("personId").asLong()).isEqualTo(staff.getId());
+        assertThat(uploader.get("name").asText()).isEqualTo(staff.getName() + " " + staff.getLastname());
+        assertThat(uploader.get("role").asText()).isEqualTo(role);
+        assertThat(uploader.get("internal").asBoolean()).isTrue();
+    }
+
+    @Test
+    @Tag("D-464")
+    void queueEntryUploadedByTheStudentIsNotAnInternalLoad() throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor debtor = debtor();
+        Long invoice = invoiceOf(debtor, "80000.00", LATER_DUE);
+        MvcResult uploaded = mockMvc.perform(ownSubmission(debtor, List.of(invoice), "80000.00").request()).andExpect(status().isCreated()).andReturn();
+
+        JsonNode uploader = queueEntryOf(bodyOf(uploaded).get("receiptId").asLong(), staffToken("ADMINISTRATIVO")).get("uploadedBy");
+
+        assertThat(uploader.get("personId").asLong()).isEqualTo(personOf(debtor).getId());
+        assertThat(uploader.get("role").asText()).isEqualTo("ALUMNO");
+        assertThat(uploader.get("internal").asBoolean()).isFalse();
+    }
+
+    @Test
+    @Tag("D-464")
+    void aLegacyQueueEntryWithoutUploaderShowsNoUploadedBy() throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor debtor = debtor();
+        Long invoice = invoiceOf(debtor, "80000.00", LATER_DUE);
+        Long receiptId = legacyUpload.upload(invoice, debtor.studentId(),
+                new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 sin autor".getBytes())).getId();
+        jdbc.update("update bank_transfer_receipt set uploaded_by_id = null where id = ?", receiptId);
+
+        assertThat(queueEntryOf(receiptId, staffToken("DIRECTOR")).get("uploadedBy").isNull()).isTrue();
+    }
+
+    @Test
+    @Tag("D-464")
+    void theStudentsOwnListNeverExposesWhoUploaded() throws Exception {
+        clockAt(MONDAY, 10);
+        Debtor debtor = debtor();
+        Long invoice = invoiceOf(debtor, "80000.00", LATER_DUE);
+        MvcResult uploaded = mockMvc.perform(staffSubmission(debtor, staffToken("ADMINISTRATIVO"), List.of(invoice), "80000.00").request()).andExpect(status().isCreated()).andReturn();
+
+        JsonNode entry = ownEntryOf(bodyOf(uploaded).get("receiptId").asLong(), studentTokenOf(debtor));
+
+        assertThat(entry.get("uploadedBy").isNull()).isTrue();
+    }
+
     private JsonNode ownEntryOf(Long receiptId, String token) throws Exception {
         MvcResult result = mockMvc.perform(get("/me/bank-transfer-receipts").header("Authorization", "Bearer " + token)).andExpect(status().isOk()).andReturn();
         return StreamSupport.stream(bodyOf(result).spliterator(), false).filter(node -> node.get("id").asLong() == receiptId).findFirst().orElseThrow();

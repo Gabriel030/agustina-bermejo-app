@@ -13,6 +13,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|administrativo,director|descuentos/nuevo|DiscountDefinitionFormPage",
   "role|administrativo,director|descuentos/promociones/nueva|DiscountDefinitionFormPage",
   "role|administrativo,director|descuentos|DiscountsPage",
+  "role|administrativo,director|facturacion/alumnos/:studentId/cargar-comprobante|AdministrativoCargarComprobante",
   "role|administrativo,director|facturacion/cuotas/:invoiceId/nota-de-credito|CreateCreditNotePage",
   "role|administrativo,director|facturacion|AdministrativoFacturacion",
   "role|administrativo,director|financiero|FinancialDashboardPage",

@@ -17,6 +17,27 @@ import {
 } from '@/lib/bankTransferReceipt';
 import { cn, moneyValue } from '@/lib/utils';
 
+const COPY = {
+  student: {
+    coverageTitle: 'Cuotas que cubrís',
+    dateHint: 'Si transferiste otro día, avisale a Secretaría.',
+    holderHint: null,
+    submit: 'Enviar comprobante',
+    duplicateTitle: 'Ya tenemos registrada esa transferencia',
+    duplicateText: 'Mismo número de operación, fecha y monto. Si ya la enviaste, no hace falta repetirla.',
+    duplicateView: 'Ver mi comprobante',
+  },
+  staff: {
+    coverageTitle: 'Cuotas que cubre',
+    dateHint: 'La fecha de la transferencia es la de hoy, igual que en la app del alumno.',
+    holderHint: 'El titular viene con el nombre del alumno; cambialo si transfirió otra persona.',
+    submit: 'Revisar y confirmar',
+    duplicateTitle: 'Esa transferencia ya está registrada',
+    duplicateText: 'Mismo número de operación, fecha y monto. No hace falta cargarla de nuevo.',
+    duplicateView: 'Ver en Comprobantes',
+  },
+};
+
 const TONE_DOT = { success: 'bg-success', warning: 'bg-warning', neutral: 'bg-neutral-ink' };
 
 function newIdempotencyKey() {
@@ -28,20 +49,28 @@ export function BankTransferReceiptForm({
   underReview = [],
   initialCount = 1,
   defaultHolderName = '',
+  audience = 'student',
+  draft = null,
+  initialDuplicate = false,
   onSubmitted,
+  onReview,
+  onCancel,
   onViewReceipt,
 }) {
+  const staff = audience === 'staff';
+  const copy = COPY[audience];
   const formRef = useRef(null);
   const idempotencyKey = useRef(null);
   const { mutate, isPending } = useSubmitBankTransferReceipt();
   const currency = invoices[0].outstanding.currency;
   const today = todayIsoDate();
 
-  const [count, setCount] = useState(Math.min(Math.max(initialCount, 1), invoices.length));
+  const startCount = draft?.count ?? Math.min(Math.max(initialCount, 1), invoices.length);
+  const [count, setCount] = useState(startCount);
   const [showErrors, setShowErrors] = useState(false);
   const [serverErrors, setServerErrors] = useState({});
   const [formMessage, setFormMessage] = useState(null);
-  const [duplicate, setDuplicate] = useState(false);
+  const [duplicate, setDuplicate] = useState(initialDuplicate);
   const [focusRequest, setFocusRequest] = useState(0);
 
   function resetOutcome() {
@@ -52,8 +81,9 @@ export function BankTransferReceiptForm({
   }
 
   const fields = useReceiptFields({
-    initialAmount: selectedTotal(invoices, Math.min(Math.max(initialCount, 1), invoices.length)),
+    initialAmount: selectedTotal(invoices, startCount),
     defaultHolderName,
+    draft,
     onEdit: resetOutcome,
   });
 
@@ -68,6 +98,7 @@ export function BankTransferReceiptForm({
     holderName: fields.holderName,
     amount,
     firstInvoiceOutstanding: moneyValue(invoices[0].outstanding),
+    audience,
   };
   const localErrors = showErrors ? receiptFormErrors(validationInput) : {};
   const errors = { ...serverErrors, ...localErrors };
@@ -94,6 +125,24 @@ export function BankTransferReceiptForm({
     if (Object.keys(found).length > 0 || fields.fileError) {
       setShowErrors(true);
       setFocusRequest((value) => value + 1);
+      return;
+    }
+    if (staff) {
+      onReview({
+        file: fields.file,
+        count: effectiveCount,
+        invoiceIds: invoices.slice(0, effectiveCount).map((invoice) => invoice.id),
+        amount,
+        amountText: fields.amountText,
+        amountTouched: fields.amountTouched,
+        currency,
+        operationNumber: fields.operationNumber.trim(),
+        originAccount: fields.originAccount.trim(),
+        holderName: fields.holderName.trim(),
+        bankName: fields.bankName,
+        showBank: fields.showBank,
+        transferDate: today,
+      });
       return;
     }
     idempotencyKey.current ??= newIdempotencyKey();
@@ -123,26 +172,33 @@ export function BankTransferReceiptForm({
     );
   }
 
-  const outcome = receiptOutcomeLines({ invoices, count: effectiveCount, amount, currency });
+  const outcome = receiptOutcomeLines({ invoices, count: effectiveCount, amount, currency, audience });
   const summaryLabel = effectiveCount === 1 ? '1 cuota' : `${effectiveCount} cuotas`;
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <GlassCard className="flex flex-col gap-4 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-heading text-base font-bold text-ink">Cuotas que cubrís</h2>
+          <h2 className="font-heading text-base font-bold text-ink">{copy.coverageTitle}</h2>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-bg px-3 py-1 text-xs font-semibold text-ink-soft">
             <Clock className="size-3.5" aria-hidden="true" />
             Transferencia de hoy, {formatDate(today)}
           </span>
         </div>
-        <InvoiceCoverageList invoices={invoices} underReview={underReview} count={effectiveCount} amount={amount} onPick={pickCount} />
-        <p className="text-xs text-ink-faint">Si transferiste otro día, avisale a Secretaría.</p>
+        <InvoiceCoverageList
+          invoices={invoices}
+          underReview={underReview}
+          count={effectiveCount}
+          amount={amount}
+          onPick={pickCount}
+          audience={audience}
+        />
+        <p className="text-xs text-ink-faint">{copy.dateHint}</p>
       </GlassCard>
 
       <GlassCard className="flex flex-col gap-4 p-5">
         <h2 className="font-heading text-base font-bold text-ink">Datos del comprobante</h2>
-        <BankTransferReceiptFields fields={fields} errors={errors} />
+        <BankTransferReceiptFields fields={fields} errors={errors} holderHint={copy.holderHint} />
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-bold text-ink">Qué va a pasar</h3>
@@ -161,15 +217,13 @@ export function BankTransferReceiptForm({
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 size-5 shrink-0 text-danger" aria-hidden="true" />
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-bold text-ink">Ya tenemos registrada esa transferencia</span>
-                <span className="text-sm text-ink-soft">
-                  Mismo número de operación, fecha y monto. Si ya la enviaste, no hace falta repetirla.
-                </span>
+                <span className="text-sm font-bold text-ink">{copy.duplicateTitle}</span>
+                <span className="text-sm text-ink-soft">{copy.duplicateText}</span>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" size="sm" onClick={onViewReceipt}>
-                Ver mi comprobante
+                {copy.duplicateView}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={() => setDuplicate(false)}>
                 Revisar los datos
@@ -194,8 +248,13 @@ export function BankTransferReceiptForm({
             {summaryLabel} · total elegido {formatMoney({ amount: total.toFixed(2), currency })}
           </span>
         </div>
+        {staff && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+        )}
         <Button type="submit" variant="gradient" loading={isPending}>
-          {isPending ? 'Enviando…' : 'Enviar comprobante'}
+          {isPending ? 'Enviando…' : copy.submit}
         </Button>
       </GlassCard>
     </form>

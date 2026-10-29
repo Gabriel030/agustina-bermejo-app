@@ -29,7 +29,7 @@ function TextField({ id, label, value, onChange, onBlur, error, placeholder, inp
   );
 }
 
-export function BankTransferReceiptFields({ fields, errors }) {
+export function BankTransferReceiptFields({ fields, errors, holderHint = null }) {
   return (
     <>
       <ReceiptDropzone
@@ -76,6 +76,7 @@ export function BankTransferReceiptFields({ fields, errors }) {
           placeholder="Nombre completo"
           autoComplete="name"
         />
+        {holderHint && <p className="text-xs text-ink-faint sm:col-span-2">{holderHint}</p>}
         <div className="sm:col-span-2">
           {fields.showBank ? (
             <TextField
