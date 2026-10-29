@@ -567,6 +567,89 @@
         "required" : [ "eligible" ],
         "type" : "object"
       },
+      "AnnualUpfrontRequestDetailResponse" : {
+        "properties" : {
+          "acceptedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "acceptedTermsVersion" : {
+            "type" : "string"
+          },
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "discardReason" : {
+            "type" : "string"
+          },
+          "discount" : {
+            "$ref" : "#/components/schemas/Discount",
+            "description" : "null si el pedido no lleva promoción"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lectiveYear" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Line"
+            },
+            "type" : "array"
+          },
+          "paymentDeadline" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "paymentUnderReview" : {
+            "type" : "boolean"
+          },
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "total" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "acceptedAt", "acceptedTermsVersion", "id", "invoiceId", "lines", "paymentDeadline", "paymentUnderReview", "programEnrollmentId", "status", "total" ],
+        "type" : "object"
+      },
+      "AnnualUpfrontRequestPageResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AnnualUpfrontRequestDetailResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "page", "size", "totalElements" ],
+        "type" : "object"
+      },
       "AnnualUpfrontRequestResponse" : {
         "properties" : {
           "acceptedAt" : {
@@ -4798,6 +4881,28 @@
           }
         },
         "required" : [ "dailyLateFeeRatePercent", "effectiveFrom", "gracePeriodDays", "id", "suspensionAfterDays", "suspensionAfterInvoiceCount" ],
+        "type" : "object"
+      },
+      "Line" : {
+        "properties" : {
+          "baseAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "discountAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "finalAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "lineNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "period" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "baseAmount", "discountAmount", "finalAmount", "lineNumber", "period" ],
         "type" : "object"
       },
       "LoginRequest" : {
@@ -9898,6 +10003,170 @@
           }
         },
         "tags" : [ "announcement-controller" ]
+      }
+    },
+    "/annual-upfront-requests" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontRequestView_searchRequestsForStaff",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "AWAITING_PAYMENT", "PAYMENT_UNDER_REVIEW", "CONFIRMED", "DISCARDED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "lectiveYear",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontRequestPageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-view-controller" ]
+      }
+    },
+    "/annual-upfront-requests/{id}" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontRequestView_viewRequestForStaff",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontRequestDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-view-controller" ]
       }
     },
     "/attendance/change-requests" : {
@@ -20832,6 +21101,138 @@
         "tags" : [ "me-announcement-controller" ]
       }
     },
+    "/me/annual-upfront-requests" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontRequestView_listRequestsOfCurrentStudent",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AnnualUpfrontRequestDetailResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-view-controller" ]
+      }
+    },
+    "/me/annual-upfront-requests/{id}" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontRequestView_viewRequestOfCurrentStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontRequestDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-view-controller" ]
+      }
+    },
     "/me/annual-upfront-requests/{id}/discard" : {
       "post" : {
         "operationId" : "AnnualUpfrontRequest_discardAnnualUpfrontRequest",
@@ -23164,6 +23565,76 @@
       }
     },
     "/me/program-enrollments/{id}/annual-upfront-requests" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontRequestView_listRequestsOfEnrollmentOfCurrentStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AnnualUpfrontRequestDetailResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-view-controller" ]
+      },
       "post" : {
         "operationId" : "AnnualUpfrontRequest_requestAnnualUpfront",
         "parameters" : [ {
@@ -26708,6 +27179,78 @@
           }
         },
         "tags" : [ "program-enrollment-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/annual-upfront-requests" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontRequestView_listRequestsOfEnrollmentForStaff",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AnnualUpfrontRequestDetailResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-view-controller" ]
       }
     },
     "/program-enrollments/{id}/annual-upfront/quote" : {
