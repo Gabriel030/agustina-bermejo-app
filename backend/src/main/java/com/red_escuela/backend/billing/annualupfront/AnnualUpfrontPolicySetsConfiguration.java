@@ -7,6 +7,10 @@ import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontMonthsS
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontPriceAvailablePolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontRequestCheck;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontRequestWindowPolicy;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontIdempotencyKey;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontIdempotencyKeyPolicy;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontTermsAcceptance;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontTermsAcceptedPolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.OnlyOneAnnualUpfrontRequestPolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.ScholarshipHolderCannotChooseAnnualUpfrontPolicy;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -31,5 +35,15 @@ public class AnnualUpfrontPolicySetsConfiguration {
                 new AnnualUpfrontLineCountSupportedPolicy(),
                 new AnnualUpfrontPriceAvailablePolicy());
         return PolicySet.named("ANNUAL_UPFRONT_REQUEST", ordered);
+    }
+
+    @Bean
+    public PolicySet<AnnualUpfrontIdempotencyKey> annualUpfrontIdempotencyKeyPolicies() {
+        return PolicySet.named("ANNUAL_UPFRONT_IDEMPOTENCY_KEY", List.of(new AnnualUpfrontIdempotencyKeyPolicy()));
+    }
+
+    @Bean
+    public PolicySet<AnnualUpfrontTermsAcceptance> annualUpfrontTermsPolicies() {
+        return PolicySet.named("ANNUAL_UPFRONT_TERMS", List.of(new AnnualUpfrontTermsAcceptedPolicy()));
     }
 }

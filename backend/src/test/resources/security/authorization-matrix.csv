@@ -382,4 +382,4 @@ POST,/year-billing-templates/{id}/cohorts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 PATCH,/year-billing-templates/{id}/configuration,DENY,DENY,DENY,DENY,DENY,ALLOW,,
 GET,/me/program-enrollments/{id}/annual-upfront/quote,DENY,OWNER,DENY,DENY,DENY,DENY,program-enrollment,
 GET,/program-enrollments/{id}/annual-upfront/quote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
-POST,/me/program-enrollments/{id}/annual-upfront-requests,DENY,OWNER,DENY,DENY,DENY,DENY,program-enrollment,{"termsAccepted":true}
+POST,/me/program-enrollments/{id}/annual-upfront-requests,DENY,OWNER,DENY,DENY,DENY,DENY,program-enrollment,"{""termsAccepted"":true,""termsVersion"":""v1""}"

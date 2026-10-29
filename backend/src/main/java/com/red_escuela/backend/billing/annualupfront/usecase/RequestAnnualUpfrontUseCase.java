@@ -4,5 +4,5 @@ import com.red_escuela.backend.billing.annualupfront.service.RegisteredAnnualUpf
 
 public interface RequestAnnualUpfrontUseCase {
 
-    RegisteredAnnualUpfrontRequest requestAnnualUpfrontForCurrentStudent(Long programEnrollmentId, String acceptedTermsVersion);
+    RegisteredAnnualUpfrontRequest requestAnnualUpfrontForCurrentStudent(Long programEnrollmentId, boolean termsAccepted, String termsVersion, String idempotencyKey);
 }

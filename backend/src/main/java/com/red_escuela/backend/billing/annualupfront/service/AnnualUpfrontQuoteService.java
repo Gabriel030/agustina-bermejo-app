@@ -96,11 +96,16 @@ public class AnnualUpfrontQuoteService {
 
     @Transactional
     public AnnualUpfrontRequestPreparation prepareRequestForCurrentStudent(Long programEnrollmentId) {
+        return prepareRequest(programEnrollmentId, requireEnrollmentOfCurrentStudent(programEnrollmentId));
+    }
+
+    @Transactional(readOnly = true)
+    public BillingEnrollmentFacts requireEnrollmentOfCurrentStudent(Long programEnrollmentId) {
         BillingEnrollmentFacts facts = findFactsOrThrow(programEnrollmentId);
         if (!facts.studentId().equals(currentStudentService.resolveCurrentStudent().getId())) {
             throw new AnnualUpfrontEnrollmentNotFoundException(programEnrollmentId);
         }
-        return prepareRequest(programEnrollmentId, facts);
+        return facts;
     }
 
     private AnnualUpfrontEligibility quoteFor(Long programEnrollmentId, BillingEnrollmentFacts facts) {

@@ -31,16 +31,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
-@Tag("D-044")
 @Tag("D-131")
 @Tag("D-236")
-@Tag("D-298")
+@Tag("D-136")
 @Tag("D-441")
 @Tag("D-445")
 class AnnualUpfrontRequestControllerIT extends AbstractStudentDiscountIssuingIT {
@@ -74,6 +80,7 @@ class AnnualUpfrontRequestControllerIT extends AbstractStudentDiscountIssuingIT 
     @AfterEach
     void removeAnnualUpfrontRequests() {
         jdbc.update("delete from annual_upfront_request");
+        jdbc.update("delete from idempotency_record where operation_type = 'REQUEST_ANNUAL_UPFRONT'");
         jdbc.execute("alter table discount_definition_status_change disable trigger trg_discount_definition_status_change_append_only");
         jdbc.execute("alter table student_discount_status_change disable trigger trg_student_discount_status_change_append_only");
         try {
@@ -100,9 +107,13 @@ class AnnualUpfrontRequestControllerIT extends AbstractStudentDiscountIssuingIT 
     }
 
     private MvcResult request(boolean accepted, String version, int expectedStatus) throws Exception {
-        return mockMvc.perform(post("/me/program-enrollments/" + learner.programEnrollmentId() + "/annual-upfront-requests").header("Authorization", "Bearer " + studentToken())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"termsAccepted\":" + accepted + ",\"termsVersion\":\"" + version + "\"}"))
-                .andExpect(status().is(expectedStatus)).andReturn();
+        return request(accepted, version, UUID.randomUUID().toString(), studentToken(), expectedStatus);
+    }
+
+    private MvcResult request(boolean accepted, String version, String idempotencyKey, String token, int expectedStatus) throws Exception {
+        MockHttpServletRequestBuilder builder = post("/me/program-enrollments/" + learner.programEnrollmentId() + "/annual-upfront-requests").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"termsAccepted\":" + accepted + ",\"termsVersion\":\"" + version + "\"}");
+        return mockMvc.perform(idempotencyKey == null ? builder : builder.header("Idempotency-Key", idempotencyKey)).andExpect(status().is(expectedStatus)).andReturn();
     }
 
     private void publishAnnualPromotion() {
@@ -154,6 +165,57 @@ class AnnualUpfrontRequestControllerIT extends AbstractStudentDiscountIssuingIT 
         String body = request(true, "v1", 409).getResponse().getContentAsString();
 
         assertThat(body).contains("ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED");
+        assertThat(count("select count(*) from annual_upfront_request")).isEqualTo(1);
+    }
+
+    @Test
+    void repeatingTheSameIdempotencyKeyReplaysTheFirstResponseAndCreatesOneInvoice() throws Exception {
+        String token = studentToken();
+        long invoicesBefore = count("select count(*) from invoice where invoice_type = 'ANNUAL_UPFRONT'");
+
+        String first = request(true, "v1", "annual-key-1", token, 201).getResponse().getContentAsString();
+        String replay = request(true, "v1", "annual-key-1", token, 201).getResponse().getContentAsString();
+
+        assertThat(objectMapper.readTree(replay)).isEqualTo(objectMapper.readTree(first));
+        assertThat(count("select count(*) from annual_upfront_request")).isEqualTo(1);
+        assertThat(count("select count(*) from invoice where invoice_type = 'ANNUAL_UPFRONT'")).isEqualTo(invoicesBefore + 1);
+    }
+
+    @Test
+    void requestingWithoutAnIdempotencyKeyIsRejectedAndCreatesNothing() throws Exception {
+        String body = request(true, "v1", null, studentToken(), 400).getResponse().getContentAsString();
+
+        assertThat(body).contains("IDEMPOTENCY_KEY_INVALID");
+        assertThat(count("select count(*) from annual_upfront_request")).isZero();
+    }
+
+    @Test
+    void twoSimultaneousRequestsLeaveOneInvoiceAndTheLoserGetsTheAlreadyRequestedConflict() throws Exception {
+        String token = studentToken();
+        long invoicesBefore = count("select count(*) from invoice where invoice_type = 'ANNUAL_UPFRONT'");
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<Integer>> outcomes = new ArrayList<>();
+            for (int index = 0; index < 2; index++) {
+                String key = "annual-concurrent-" + index;
+                outcomes.add(executor.submit(() -> {
+                    start.await();
+                    return mockMvc.perform(post("/me/program-enrollments/" + learner.programEnrollmentId() + "/annual-upfront-requests").header("Authorization", "Bearer " + token)
+                            .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content("{\"termsAccepted\":true,\"termsVersion\":\"v1\"}"))
+                            .andReturn().getResponse().getStatus();
+                }));
+            }
+            start.countDown();
+            List<Integer> statuses = new ArrayList<>();
+            for (Future<Integer> outcome : outcomes) {
+                statuses.add(outcome.get(60, TimeUnit.SECONDS));
+            }
+            assertThat(statuses).containsExactlyInAnyOrder(201, 409);
+        } finally {
+            executor.shutdownNow();
+        }
+        assertThat(count("select count(*) from invoice where invoice_type = 'ANNUAL_UPFRONT'")).isEqualTo(invoicesBefore + 1);
         assertThat(count("select count(*) from annual_upfront_request")).isEqualTo(1);
     }
 
