@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MetricsAccessAndPerformanceIT extends AbstractMonthlyMetricsIT {
 
     private static final List<String> PANELS = List.of("issued-invoices", "discounts", "overdue-detected", "late-fees", "on-time-payment", "receipts", "collections-stock",
-            "payment-standing-changes");
+            "payment-standing-changes", "nightly-health");
 
     @Autowired
     private MeterRegistry meterRegistry;

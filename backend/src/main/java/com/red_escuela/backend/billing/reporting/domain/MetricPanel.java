@@ -12,7 +12,8 @@ public enum MetricPanel {
     ON_TIME_PAYMENT("on-time-payment"),
     RECEIPTS("receipts"),
     COLLECTIONS_STOCK("collections-stock"),
-    PAYMENT_STANDING_CHANGES("payment-standing-changes");
+    PAYMENT_STANDING_CHANGES("payment-standing-changes"),
+    NIGHTLY_HEALTH("nightly-health");
 
     private final String path;
 
