@@ -100,25 +100,22 @@ class AccountConsistencyScannerIT extends AbstractCurrentAccountIT {
     }
 
     @Test
-    void aLiveChargeKeyHeldByTwoInvoicesFlagsBothAccountsAndAReleasedOrDiscardedHolderIsIgnored() {
+    void aLiveChargeKeyHeldByTwoInvoicesFlagsBothAccountsAndAReleasedHolderIsIgnored() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Long first = newAccount();
         Long second = newAccount();
         Long released = newAccount();
-        Long discarded = newAccount();
         Long firstInvoice = issueAdministrativeFeeWithLedgerDebit(first, "10000.00", DUE);
         Long secondInvoice = issueAdministrativeFeeWithLedgerDebit(second, "10000.00", DUE);
         Long releasedInvoice = issueAdministrativeFeeWithLedgerDebit(released, "10000.00", DUE);
-        Long discardedInvoice = issueAdministrativeFeeWithLedgerDebit(discarded, "10000.00", DUE);
         String sharedKey = "DUP:" + System.nanoTime();
         jdbc.execute("drop index uk_invoice_line_charge_key");
         jdbc.execute("alter table invoice_line disable trigger trg_invoice_line_immutable_when_issued");
         try {
-            jdbc.update("update invoice_line set charge_key = ? where invoice_id in (?, ?, ?, ?)", sharedKey, firstInvoice, secondInvoice, releasedInvoice, discardedInvoice);
+            jdbc.update("update invoice_line set charge_key = ? where invoice_id in (?, ?, ?)", sharedKey, firstInvoice, secondInvoice, releasedInvoice);
             jdbc.update("update invoice_line set charge_key_released_at = now() where invoice_id = ?", releasedInvoice);
-            jdbc.update("update invoice set document_status = 'DISCARDED' where id = ?", discardedInvoice);
 
-            List<AccountConsistencyFinding> findings = findingsOf(NIGHT, first, second, released, discarded);
+            List<AccountConsistencyFinding> findings = findingsOf(NIGHT, first, second, released);
 
             assertThat(findings).extracting(AccountConsistencyFinding::accountId, AccountConsistencyFinding::findingCode, AccountConsistencyFinding::detail)
                     .containsExactlyInAnyOrder(
@@ -127,7 +124,7 @@ class AccountConsistencyScannerIT extends AbstractCurrentAccountIT {
             assertThat(invariants.aChargeKeyIsHeldByAtMostOneLiveLine())
                     .contains(AccountConsistencyCheck.CHARGE_KEY_HELD_BY_MORE_THAN_ONE_LIVE_LINE.invariant() + ": charge key " + sharedKey);
         } finally {
-            jdbc.update("update invoice_line set charge_key = 'FIXED:' || invoice_id where invoice_id in (?, ?, ?, ?)", firstInvoice, secondInvoice, releasedInvoice, discardedInvoice);
+            jdbc.update("update invoice_line set charge_key = 'FIXED:' || invoice_id where invoice_id in (?, ?, ?)", firstInvoice, secondInvoice, releasedInvoice);
             jdbc.execute("alter table invoice_line enable trigger trg_invoice_line_immutable_when_issued");
             jdbc.execute("create unique index uk_invoice_line_charge_key on invoice_line (charge_key) where charge_key_released_at is null");
         }

@@ -38,6 +38,34 @@ class AccountConsistencyNightIT extends AbstractCurrentAccountIT {
     @Autowired
     private ApplicationEvents events;
 
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfigurationChangeUseCase proposeConfiguration;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader configurationReader;
+
+    @Autowired
+    private com.red_escuela.backend.identity.repository.RoleRepository roleRepository;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+
+    @org.junit.jupiter.api.AfterEach
+    void forgetTheAuthentication() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
+
+    @org.junit.jupiter.api.BeforeEach
+    void turnOnTheAutomaticCreditAllocation() {
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2027, 6, 1));
+        if (configurationReader.findAllocationSettingsEffectiveOn(LocalDate.of(2027, 6, 1)).isEmpty()) {
+            Long directorId = newStaffPerson().getId();
+            inTransaction(() -> entityManager.find(com.red_escuela.backend.identity.entity.Person.class, directorId).getRoles().add(roleRepository.findByName("DIRECTOR").orElseThrow()));
+            org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                    new org.springframework.security.authentication.TestingAuthenticationToken(directorId.toString(), null, "ROLE_DIRECTOR"));
+            proposeConfiguration.proposeChange(com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic.ofGlobal(com.red_escuela.backend.billing.configuration.domain.ConfigurationScope.ALLOCATION),
+                    new com.red_escuela.backend.billing.configuration.domain.AllocationSettings(true), LocalDate.of(2027, 6, 1), "motivo");
+        }
+    }
+
     private record Student(Long accountId, Long invoiceId) {
     }
 
@@ -90,6 +118,7 @@ class AccountConsistencyNightIT extends AbstractCurrentAccountIT {
         Student healthy = studentWithAnInvoiceAndItsPaymentWaiting();
         jdbc.update("update student_current_account set balance_amount = 35000, balance_side = 'OWES' where id = ?", broken.accountId());
 
+        try {
         NightlyBillingRunResponse night = runTheNight(LocalDate.of(2027, 6, 2));
 
         assertThat(night.status()).isNotEqualTo(NightlyBillingRunStatus.FAILED);
@@ -116,6 +145,8 @@ class AccountConsistencyNightIT extends AbstractCurrentAccountIT {
         assertThat(statusOf(healthy.invoiceId())).isEqualTo("PAID");
         assertThat(unallocatedCreditOf(healthy.accountId())).isEqualTo("0.00");
 
-        jdbc.update("update student_current_account set balance_amount = 0, balance_side = 'ZERO' where id = ?", broken.accountId());
+        } finally {
+            jdbc.update("update student_current_account set balance_amount = 0, balance_side = 'ZERO' where id = ?", broken.accountId());
+        }
     }
 }
