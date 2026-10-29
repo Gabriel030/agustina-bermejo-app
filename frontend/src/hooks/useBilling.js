@@ -39,8 +39,16 @@ export function usePriceBreakdown(invoiceId) {
   });
 }
 
-export function useSubmitBankTransferReceipt() {
+export function useSubmitBankTransferReceipt({ studentId } = {}) {
   const queryClient = useQueryClient();
+  const invalidateOwner = () => {
+    if (studentId == null) {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['students', String(studentId), 'billing-overview'] });
+    queryClient.invalidateQueries({ queryKey: ['admin', 'bank-transfer-receipts'] });
+  };
   return useMutation({
     mutationFn: ({ submission, idempotencyKey }) =>
       apiFetch(submission.path, {
@@ -48,11 +56,9 @@ export function useSubmitBankTransferReceipt() {
         body: submission.body,
         headers: { 'Idempotency-Key': idempotencyKey },
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['me'] });
-    },
+    onSuccess: invalidateOwner,
     onError: (error) => {
-      if (error?.status === 409) queryClient.invalidateQueries({ queryKey: ['me'] });
+      if (error?.status === 409) invalidateOwner();
     },
   });
 }

@@ -5,6 +5,7 @@ import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
 import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
 import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
+import { AdministrativoCargarComprobante } from '@/pages/AdministrativoCargarComprobante';
 import { RequestRefundPage } from '@/features/billing/refunds/RequestRefundPage';
 import { AuthorizationInboxPage } from '@/features/billing/authorization/AuthorizationInboxPage';
 import { AuthorizationRequestDetailPage } from '@/features/billing/authorization/AuthorizationRequestDetailPage';
@@ -32,6 +33,7 @@ export const routes = {
     { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <AlumnoPagarTransferencia /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <AlumnoPagarOnline /> },
     { roles: ['administrativo', 'director'], path: 'facturacion', element: <AdministrativoFacturacion /> },
+    { roles: ['administrativo', 'director'], path: 'facturacion/alumnos/:studentId/cargar-comprobante', element: <AdministrativoCargarComprobante /> },
     { roles: ['administrativo', 'director'], path: 'facturacion/cuotas/:invoiceId/nota-de-credito', element: <CreateCreditNotePage /> },
     { roles: ['administrativo', 'director'], path: 'alumnos/:id/reembolsos/nuevo', element: <RequestRefundPage /> },
     { roles: ['administrativo', 'director'], path: 'alumnos/:id/descuentos/nuevo', element: <GrantDiscountPage /> },
