@@ -16,13 +16,14 @@ function rowPill(invoice, selected, state, insufficient) {
   return <StatusPill tone="neutral">Por vencer</StatusPill>;
 }
 
-export function InvoiceCoverageList({ invoices, underReview = [], count, amount, onPick }) {
+export function InvoiceCoverageList({ invoices, underReview = [], count, amount, onPick, audience = 'student' }) {
+  const staff = audience === 'staff';
   const coverage = coverageOf(invoices.slice(0, count), amount);
   const insufficient = amount < selectedTotal(invoices, count);
 
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col gap-1.5" aria-label="Cuotas que cubrís">
+      <ul className="flex flex-col gap-1.5" aria-label={staff ? 'Cuotas que cubre' : 'Cuotas que cubrís'}>
         {invoices.map((invoice, index) => {
           const selected = index < count;
           const entry = selected ? coverage[index] : null;
@@ -86,7 +87,7 @@ export function InvoiceCoverageList({ invoices, underReview = [], count, amount,
       {invoices.length > 1 && (
         <p className="flex items-start gap-2 text-xs text-ink-faint">
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          Se pagan en orden, de la más vieja a la más nueva. Tocá hasta qué cuota cubrís.
+          Se pagan en orden, de la más vieja a la más nueva. {staff ? 'Tocá hasta qué cuota cubre el comprobante.' : 'Tocá hasta qué cuota cubrís.'}
         </p>
       )}
     </div>

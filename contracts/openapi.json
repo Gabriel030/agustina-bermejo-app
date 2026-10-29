@@ -1168,9 +1168,12 @@
           "uploadedAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "uploadedBy" : {
+            "$ref" : "#/components/schemas/ReceiptUploader"
           }
         },
-        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentName", "transferDate", "uploadedAt" ],
+        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentName", "transferDate", "uploadedAt", "uploadedBy" ],
         "type" : "object"
       },
       "BankTransferReceiptSubmissionResponse" : {
@@ -6731,6 +6734,25 @@
           }
         },
         "required" : [ "feeType", "invoiceId", "outstandingAtSubmission", "period", "totalAmount" ],
+        "type" : "object"
+      },
+      "ReceiptUploader" : {
+        "properties" : {
+          "internal" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "role" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "internal", "name", "personId", "role" ],
         "type" : "object"
       },
       "RefreshRequest" : {
