@@ -6,7 +6,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | InconsistencyStaysLocalPolicy | GLOBAL_ACCOUNT_INCONSISTENCY | D-356 |
+| 1 | InconsistencyStaysLocalPolicy | GLOBAL_ACCOUNT_INCONSISTENCY | D-356, D-489 |
 
 ## Momento ANNUAL_UPFRONT_IDEMPOTENCY_KEY
 
