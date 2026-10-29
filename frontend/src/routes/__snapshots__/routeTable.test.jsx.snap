@@ -9,6 +9,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "public|-|/verificar-email|VerificacionEmail",
   "role|administrativo,director|alumnos/:id/descuentos/nuevo|GrantDiscountPage",
   "role|administrativo,director|alumnos/:id/reembolsos/nuevo|RequestRefundPage",
+  "role|administrativo,director|corridas-de-facturacion|BillingRunsPage",
   "role|administrativo,director|descuentos/:id|DiscountDefinitionDetailPage",
   "role|administrativo,director|descuentos/nuevo|DiscountDefinitionFormPage",
   "role|administrativo,director|descuentos/promociones/nueva|DiscountDefinitionFormPage",
