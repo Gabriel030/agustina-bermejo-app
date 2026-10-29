@@ -21,6 +21,11 @@ public final class DiscountScopeMatchesTypePolicy implements Policy<DiscountDefi
         if (draft.discountType() == DiscountDefinitionType.COHORT_PROMOTION) {
             return evaluateCohortPromotionScope(check);
         }
+        if (draft.discountType() == DiscountDefinitionType.ANNUAL_UPFRONT) {
+            return draft.courseId() != null || draft.programCohortId() != null
+                    ? PolicyVerdict.deny(ruleName(), CODE, "La promoción de pago anual puede acotarse a una carrera, a una ventana y a un cupo, no a un curso ni a una cohorte.")
+                    : PolicyVerdict.allow(ruleName());
+        }
         boolean carriesScope = draft.hasOfferingScope() || draft.programCohortId() != null || draft.enrollmentWindowFrom() != null
                 || draft.enrollmentWindowTo() != null || draft.quota() != null;
         return carriesScope ? PolicyVerdict.deny(ruleName(), CODE, "El alcance, la ventana de inscripción y el cupo solo aplican a las promociones de cohorte o marketing.")

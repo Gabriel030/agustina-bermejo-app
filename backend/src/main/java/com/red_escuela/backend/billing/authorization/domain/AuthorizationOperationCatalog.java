@@ -15,7 +15,7 @@ public final class AuthorizationOperationCatalog {
     public static AuthorizationOperationFamily familyOf(BillingOperationType type) {
         return switch (type) {
             case ISSUE_REFUND, COMPLETE_REFUND, FAIL_REFUND -> AuthorizationOperationFamily.REFUNDS;
-            case ISSUE_INVOICE, ISSUE_CREDIT_NOTE, ISSUE_LATE_FEE_DEBIT_NOTE, ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE, CANCEL_INVOICE, CANCEL_INVOICES_AFTER_WITHDRAWAL ->
+            case REQUEST_ANNUAL_UPFRONT, ISSUE_INVOICE, ISSUE_CREDIT_NOTE, ISSUE_LATE_FEE_DEBIT_NOTE, ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE, CANCEL_INVOICE, CANCEL_INVOICES_AFTER_WITHDRAWAL ->
                     AuthorizationOperationFamily.INVOICES_AND_NOTES;
             case ALLOCATE_ACCOUNT_CREDIT, REGISTER_PAYMENT, REGISTER_GATEWAY_PAYMENT, APPROVE_BANK_TRANSFER_RECEIPT_PAYMENT, SUBMIT_BANK_TRANSFER_RECEIPT,
                  APPROVE_PENDING_BANK_TRANSFER_PAYMENT, REJECT_PENDING_BANK_TRANSFER_PAYMENT, REVOKE_BANK_TRANSFER_APPROVAL, REGISTER_CHARGEBACK, REVERSE_CHARGEBACK ->
@@ -57,6 +57,7 @@ public final class AuthorizationOperationCatalog {
             case FAIL_REFUND -> "Reembolso fallido";
             case CHANGE_PRICE -> "Cambio de precio";
             case CANCEL_PRICE_VERSION -> "Cancelación de una versión de precio";
+            case REQUEST_ANNUAL_UPFRONT -> "Pedido de pago anual";
         };
     }
 

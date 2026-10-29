@@ -2,6 +2,12 @@
 
 Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw test -Dtest=PolicyCatalogTest -Dpolicy-catalog.write=true` y commitear.
 
+## Momento ANNUAL_UPFRONT_IDEMPOTENCY_KEY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontIdempotencyKeyPolicy | IDEMPOTENCY_KEY_INVALID | D-136 |
+
 ## Momento ANNUAL_UPFRONT_REQUEST
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -20,6 +26,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | AnnualUpfrontSettingsCoherencePolicy | INVALID_ANNUAL_UPFRONT_SETTINGS | D-155, D-156 |
+
+## Momento ANNUAL_UPFRONT_TERMS
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontTermsAcceptedPolicy | ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED | D-236 |
 
 ## Momento BANK_TRANSFER_RECEIPT_DETAILS
 
@@ -557,6 +569,18 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 ## Máquinas de estado
 
+### AnnualUpfrontRequestStateMachine
+
+| Desde \ Evento | REQUESTED | PAYMENT_INITIATED | PAYMENT_APPROVED | PAYMENT_REJECTED | DEADLINE_PASSED | WITHDRAWN | CANCELLED_BY_STUDENT |
+|---|---|---|---|---|---|---|---|
+| (sin estado) | AWAITING_PAYMENT | — | — | — | — | — | — |
+| AWAITING_PAYMENT | — | PAYMENT_UNDER_REVIEW | — | — | DISCARDED | DISCARDED | DISCARDED |
+| PAYMENT_UNDER_REVIEW | — | — | CONFIRMED | DISCARDED | — | — | — |
+| CONFIRMED | — | — | — | — | — | — | — |
+| DISCARDED | — | — | — | — | — | — | — |
+
+Transiciones válidas: 7 de 35. Pares inválidos: (sin estado) × PAYMENT_INITIATED; (sin estado) × PAYMENT_APPROVED; (sin estado) × PAYMENT_REJECTED; (sin estado) × DEADLINE_PASSED; (sin estado) × WITHDRAWN; (sin estado) × CANCELLED_BY_STUDENT; AWAITING_PAYMENT × REQUESTED; AWAITING_PAYMENT × PAYMENT_APPROVED; AWAITING_PAYMENT × PAYMENT_REJECTED; PAYMENT_UNDER_REVIEW × REQUESTED; PAYMENT_UNDER_REVIEW × PAYMENT_INITIATED; PAYMENT_UNDER_REVIEW × DEADLINE_PASSED; PAYMENT_UNDER_REVIEW × WITHDRAWN; PAYMENT_UNDER_REVIEW × CANCELLED_BY_STUDENT; CONFIRMED × REQUESTED; CONFIRMED × PAYMENT_INITIATED; CONFIRMED × PAYMENT_APPROVED; CONFIRMED × PAYMENT_REJECTED; CONFIRMED × DEADLINE_PASSED; CONFIRMED × WITHDRAWN; CONFIRMED × CANCELLED_BY_STUDENT; DISCARDED × REQUESTED; DISCARDED × PAYMENT_INITIATED; DISCARDED × PAYMENT_APPROVED; DISCARDED × PAYMENT_REJECTED; DISCARDED × DEADLINE_PASSED; DISCARDED × WITHDRAWN; DISCARDED × CANCELLED_BY_STUDENT.
+
 ### AuthorizationRequestStateMachine
 
 | Desde \ Evento | OPEN | APPROVE | REJECT | WITHDRAW | EXPIRE |
@@ -915,6 +939,12 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 - Validaciones (momentos): —
 - Pre-procesamiento (en orden): —
+- Eventos que publica: —
+
+## Operación REQUEST_ANNUAL_UPFRONT
+
+- Validaciones (momentos): ANNUAL_UPFRONT_IDEMPOTENCY_KEY, ANNUAL_UPFRONT_TERMS, ANNUAL_UPFRONT_REQUEST
+- Pre-procesamiento (en orden): IdempotencyKeyHandler
 - Eventos que publica: —
 
 ## Operación REVERSE_CHARGEBACK

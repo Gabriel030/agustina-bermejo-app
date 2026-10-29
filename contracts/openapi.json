@@ -567,6 +567,37 @@
         "required" : [ "eligible" ],
         "type" : "object"
       },
+      "AnnualUpfrontRequestResponse" : {
+        "properties" : {
+          "acceptedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "acceptedTermsVersion" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paymentDeadline" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "total" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "acceptedAt", "acceptedTermsVersion", "id", "invoiceId", "paymentDeadline", "status", "total" ],
+        "type" : "object"
+      },
       "AppliedStudentDiscountInstallmentResponse" : {
         "properties" : {
           "installmentNumber" : {
@@ -7366,6 +7397,18 @@
         "required" : [ "changeReason", "effectiveFrom" ],
         "type" : "object"
       },
+      "RequestAnnualUpfrontBody" : {
+        "properties" : {
+          "termsAccepted" : {
+            "type" : "boolean"
+          },
+          "termsVersion" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "termsAccepted", "termsVersion" ],
+        "type" : "object"
+      },
       "RequestRefundRequest" : {
         "properties" : {
           "amount" : {
@@ -10974,7 +11017,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "CREATE_LATE_PAYMENT_SETTINGS", "ISSUE_INVOICE", "CHANGE_BILLING_CONFIGURATION", "CANCEL_CONFIGURATION_VERSION", "ALLOCATE_ACCOUNT_CREDIT", "ISSUE_CREDIT_NOTE", "ISSUE_LATE_FEE_DEBIT_NOTE", "ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE", "CANCEL_INVOICE", "CANCEL_INVOICES_AFTER_WITHDRAWAL", "REGISTER_PAYMENT", "CREATE_DISCOUNT_DEFINITION", "CLOSE_DISCOUNT_DEFINITION", "GRANT_STUDENT_DISCOUNT", "REVOKE_STUDENT_DISCOUNT", "ACQUIRE_COHORT_PROMOTION", "REGISTER_GATEWAY_PAYMENT", "APPROVE_BANK_TRANSFER_RECEIPT_PAYMENT", "SUBMIT_BANK_TRANSFER_RECEIPT", "APPROVE_PENDING_BANK_TRANSFER_PAYMENT", "REJECT_PENDING_BANK_TRANSFER_PAYMENT", "REVOKE_BANK_TRANSFER_APPROVAL", "REGISTER_CHARGEBACK", "REVERSE_CHARGEBACK", "ISSUE_REFUND", "COMPLETE_REFUND", "FAIL_REFUND", "CHANGE_PRICE", "CANCEL_PRICE_VERSION" ],
+              "enum" : [ "CREATE_LATE_PAYMENT_SETTINGS", "ISSUE_INVOICE", "CHANGE_BILLING_CONFIGURATION", "CANCEL_CONFIGURATION_VERSION", "ALLOCATE_ACCOUNT_CREDIT", "ISSUE_CREDIT_NOTE", "ISSUE_LATE_FEE_DEBIT_NOTE", "ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE", "CANCEL_INVOICE", "CANCEL_INVOICES_AFTER_WITHDRAWAL", "REGISTER_PAYMENT", "CREATE_DISCOUNT_DEFINITION", "CLOSE_DISCOUNT_DEFINITION", "GRANT_STUDENT_DISCOUNT", "REVOKE_STUDENT_DISCOUNT", "ACQUIRE_COHORT_PROMOTION", "REGISTER_GATEWAY_PAYMENT", "APPROVE_BANK_TRANSFER_RECEIPT_PAYMENT", "SUBMIT_BANK_TRANSFER_RECEIPT", "APPROVE_PENDING_BANK_TRANSFER_PAYMENT", "REJECT_PENDING_BANK_TRANSFER_PAYMENT", "REVOKE_BANK_TRANSFER_APPROVAL", "REGISTER_CHARGEBACK", "REVERSE_CHARGEBACK", "ISSUE_REFUND", "COMPLETE_REFUND", "FAIL_REFUND", "CHANGE_PRICE", "CANCEL_PRICE_VERSION", "REQUEST_ANNUAL_UPFRONT" ],
               "type" : "string"
             },
             "type" : "array",
@@ -23029,6 +23072,92 @@
           }
         },
         "tags" : [ "me-enrollment-controller" ]
+      }
+    },
+    "/me/program-enrollments/{id}/annual-upfront-requests" : {
+      "post" : {
+        "operationId" : "AnnualUpfrontRequest_requestAnnualUpfront",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestAnnualUpfrontBody"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontRequestResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "annual-upfront-request-controller" ]
       }
     },
     "/me/program-enrollments/{id}/annual-upfront/quote" : {

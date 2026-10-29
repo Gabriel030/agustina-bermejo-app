@@ -94,7 +94,25 @@ public class AnnualUpfrontQuoteService {
         return enrollmentLookup.findProgramEnrollmentFacts(programEnrollmentId).orElseThrow(() -> new AnnualUpfrontEnrollmentNotFoundException(programEnrollmentId));
     }
 
+    @Transactional
+    public AnnualUpfrontRequestPreparation prepareRequestForCurrentStudent(Long programEnrollmentId) {
+        return prepareRequest(programEnrollmentId, requireEnrollmentOfCurrentStudent(programEnrollmentId));
+    }
+
+    @Transactional(readOnly = true)
+    public BillingEnrollmentFacts requireEnrollmentOfCurrentStudent(Long programEnrollmentId) {
+        BillingEnrollmentFacts facts = findFactsOrThrow(programEnrollmentId);
+        if (!facts.studentId().equals(currentStudentService.resolveCurrentStudent().getId())) {
+            throw new AnnualUpfrontEnrollmentNotFoundException(programEnrollmentId);
+        }
+        return facts;
+    }
+
     private AnnualUpfrontEligibility quoteFor(Long programEnrollmentId, BillingEnrollmentFacts facts) {
+        return prepareRequest(programEnrollmentId, facts).eligibility();
+    }
+
+    private AnnualUpfrontRequestPreparation prepareRequest(Long programEnrollmentId, BillingEnrollmentFacts facts) {
         LocalDate today = LocalDate.now(clock);
         Optional<YearCycle> cycle = cycleReader.findCycleToQuote(facts.programId(), facts.billingTemplateId(), today);
         List<YearMonth> periods = cycle.map(AnnualUpfrontQuoteService::periodsOf).orElse(List.of());
@@ -109,18 +127,21 @@ public class AnnualUpfrontQuoteService {
         PolicyEvaluationResult result = eligibilityPolicies.evaluateRulesUntilFirstViolation(check);
         if (!result.allowed()) {
             PolicyViolation violation = result.violations().get(0);
-            return AnnualUpfrontEligibility.notEligible(violation, check.openRequestInvoiceId(), lectiveYear, check.requestDeadline());
+            return AnnualUpfrontRequestPreparation.rejected(facts, AnnualUpfrontEligibility.notEligible(violation, check.openRequestInvoiceId(), lectiveYear, check.requestDeadline()));
         }
         LocalDateTime paymentDeadline = LocalDateTime.now(clock).plusHours(settings.orElseThrow().paymentDeadlineHours());
-        return AnnualUpfrontEligibility.eligible(lectiveYear, check.requestDeadline(), buildQuote(facts, today, periods, price.orElseThrow(), paymentDeadline));
+        PriceVersionResolution resolvedPrice = price.orElseThrow();
+        Map<Integer, InvoiceDiscountCandidate> winners = selectWinners(facts, today, periods, resolvedPrice);
+        AnnualUpfrontQuote quote = AnnualUpfrontQuoteCalculator.calculateQuote(periods, resolvedPrice.finalAmount(), winners, paymentDeadline);
+        return AnnualUpfrontRequestPreparation.accepted(facts, AnnualUpfrontEligibility.eligible(lectiveYear, check.requestDeadline(), quote), cycle.orElseThrow().template().termId(),
+                periods, resolvedPrice, winners);
     }
 
-    private AnnualUpfrontQuote buildQuote(BillingEnrollmentFacts facts, LocalDate today, List<YearMonth> periods, PriceVersionResolution price, LocalDateTime paymentDeadline) {
+    private Map<Integer, InvoiceDiscountCandidate> selectWinners(BillingEnrollmentFacts facts, LocalDate today, List<YearMonth> periods, PriceVersionResolution price) {
         NonNegativeMoney pricePerMonth = price.finalAmount();
         List<InvoiceDiscountCandidate> candidates = candidateFinder.findCandidatesForLines(facts.programId(), facts.currency(), today,
                 IntStream.range(0, periods.size()).mapToObj(index -> pricePerMonth).toList());
-        Map<Integer, InvoiceDiscountCandidate> winners = discountSelector.selectWinningPromotionForEveryLine(candidates);
-        return AnnualUpfrontQuoteCalculator.calculateQuote(periods, pricePerMonth, winners, paymentDeadline);
+        return discountSelector.selectWinningPromotionForEveryLine(candidates);
     }
 
     private boolean hasOverdueDebt(Long studentId, LocalDate today) {
