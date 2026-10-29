@@ -17,21 +17,24 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Tag("D-451")
 class BillingRunStepAdaptersTest {
     private static final LocalDate DAY = LocalDate.of(2031, 10, 7);
+    private final HeldAccountLookup heldAccounts = mock(HeldAccountLookup.class);
 
     @Test
     void theOverdueStepSeparatesSkippedFromFailedInvoicesAndCountsTheRestAsProcessed() {
         OverdueInvoiceDetectionStep legacy = mock(OverdueInvoiceDetectionStep.class);
-        when(legacy.detectOverdueInvoices(DAY)).thenReturn(new OverdueDetectionResult(10, 6, 1, 1, List.of(
+        when(legacy.detectOverdueInvoices(eq(DAY), any())).thenReturn(new OverdueDetectionResult(10, 6, 1, 1, List.of(
                 Map.of("invoiceId", 5L, "message", "Sin versión de mora", "decisionCode", OverdueInvoiceDetectionStep.SKIPPED_WITHOUT_LATE_PAYMENT_TERMS_CODE),
                 Map.of("invoiceId", 6L, "message", "boom"))));
 
-        BillingRunStepOutcome outcome = new OverdueDetectionBillingRunStep(legacy).runStepForBusinessDate(DAY);
+        BillingRunStepOutcome outcome = new OverdueDetectionBillingRunStep(legacy, heldAccounts).runStepForBusinessDate(DAY);
 
         assertThat(outcome.candidates()).isEqualTo(10);
         assertThat(outcome.processed()).isEqualTo(8);
@@ -55,9 +58,9 @@ class BillingRunStepAdaptersTest {
     @Test
     void theLateFeeStepCountsBothTheOverdueAndTheRecentlySettledCandidates() {
         LateFeeAccrualStep legacy = mock(LateFeeAccrualStep.class);
-        when(legacy.accrueLateFees(DAY)).thenReturn(new LateFeeAccrualResult(7, 4, 1, List.of(Map.of("invoiceId", 3L, "message", "x")), 1, 5));
+        when(legacy.accrueLateFees(eq(DAY), any())).thenReturn(new LateFeeAccrualResult(7, 4, 1, List.of(Map.of("invoiceId", 3L, "message", "x")), 1, 5));
 
-        BillingRunStepOutcome outcome = new LateFeeAccrualBillingRunStep(legacy).runStepForBusinessDate(DAY);
+        BillingRunStepOutcome outcome = new LateFeeAccrualBillingRunStep(legacy, heldAccounts).runStepForBusinessDate(DAY);
 
         assertThat(outcome.candidates()).isEqualTo(12);
         assertThat(outcome.processed()).isEqualTo(11);
@@ -68,9 +71,9 @@ class BillingRunStepAdaptersTest {
     @Test
     void theCorrectionStepReportsItsFailuresAgainstTheLateFeeCharge() {
         LateFeeWithdrawalCorrectionStep legacy = mock(LateFeeWithdrawalCorrectionStep.class);
-        when(legacy.correctLateFeesChargedAfterTheEnrollmentEnd(DAY)).thenReturn(new LateFeeCorrectionSweepResult(4, 1, 2, 1, List.of(Map.of("lateFeeChargeId", 40L, "message", "y"))));
+        when(legacy.correctLateFeesChargedAfterTheEnrollmentEnd(eq(DAY), any())).thenReturn(new LateFeeCorrectionSweepResult(4, 1, 2, 1, List.of(Map.of("lateFeeChargeId", 40L, "message", "y"))));
 
-        BillingRunStepOutcome outcome = new LateFeeWithdrawalCorrectionBillingRunStep(legacy).runStepForBusinessDate(DAY);
+        BillingRunStepOutcome outcome = new LateFeeWithdrawalCorrectionBillingRunStep(legacy, heldAccounts).runStepForBusinessDate(DAY);
 
         assertThat(outcome.processed()).isEqualTo(3);
         assertThat(outcome.items()).singleElement().satisfies(item -> {

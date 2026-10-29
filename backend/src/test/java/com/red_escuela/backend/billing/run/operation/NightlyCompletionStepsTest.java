@@ -37,6 +37,7 @@ class NightlyCompletionStepsTest {
     private final EnrollmentComplianceSweepPort complianceSweep = mock(EnrollmentComplianceSweepPort.class);
     private final EnrollmentBillingComplianceBillingRunStep complianceStep = new EnrollmentBillingComplianceBillingRunStep(complianceSweep);
     private final BillingConfigurationReader configurationReader = mock(BillingConfigurationReader.class);
+    private final HeldAccountLookup heldAccounts = mock(HeldAccountLookup.class);
 
     @Test
     void aFailingEnrollmentBecomesAFailedItemOfItsKindAndTheRestCountsAsProcessed() {
@@ -93,7 +94,7 @@ class NightlyCompletionStepsTest {
     @Test
     void theCreditAllocationIsNotApplicableUnlessTheAutoApplySettingIsOn() {
         AccountCreditAllocationBillingRunStep step = new AccountCreditAllocationBillingRunStep(mock(StudentCurrentAccountRepository.class), mock(BillingOperationPipeline.class),
-                mock(AccountCreditAllocationOperation.class), configurationReader);
+                mock(AccountCreditAllocationOperation.class), configurationReader, heldAccounts);
         when(configurationReader.findAllocationSettingsEffectiveOn(NIGHT)).thenReturn(Optional.of(new AllocationSettings(false)));
         when(configurationReader.findAllocationSettingsEffectiveOn(NIGHT.plusDays(1))).thenReturn(Optional.empty());
         when(configurationReader.findAllocationSettingsEffectiveOn(NIGHT.plusDays(2))).thenReturn(Optional.of(new AllocationSettings(true)));
@@ -113,7 +114,7 @@ class NightlyCompletionStepsTest {
         when(accounts.findIdsWithUnallocatedCreditAfter(eq(2L), any(Pageable.class))).thenReturn(List.of());
         when(pipeline.runOperation(any(), any())).thenThrow(new IllegalStateException("lock timeout")).thenReturn((BillingOperationOutcome) new BillingOperationOutcome.Processed<>("done"));
 
-        BillingRunStepOutcome outcome = new AccountCreditAllocationBillingRunStep(accounts, pipeline, operation, configurationReader).runStepForBusinessDate(NIGHT);
+        BillingRunStepOutcome outcome = new AccountCreditAllocationBillingRunStep(accounts, pipeline, operation, configurationReader, heldAccounts).runStepForBusinessDate(NIGHT);
 
         assertThat(outcome.candidates()).isEqualTo(2);
         assertThat(outcome.failed()).isEqualTo(1);

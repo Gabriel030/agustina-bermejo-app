@@ -12,9 +12,11 @@ import java.time.LocalDate;
 @Component
 public class OverdueDetectionBillingRunStep extends AbstractBillingRunStep {
     private final OverdueInvoiceDetectionStep detectionStep;
+    private final HeldAccountLookup heldAccounts;
 
-    public OverdueDetectionBillingRunStep(OverdueInvoiceDetectionStep detectionStep) {
+    public OverdueDetectionBillingRunStep(OverdueInvoiceDetectionStep detectionStep, HeldAccountLookup heldAccounts) {
         this.detectionStep = detectionStep;
+        this.heldAccounts = heldAccounts;
     }
 
     @Override
@@ -24,7 +26,7 @@ public class OverdueDetectionBillingRunStep extends AbstractBillingRunStep {
 
     @Override
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
-        OverdueDetectionResult result = detectionStep.detectOverdueInvoices(businessDate);
+        OverdueDetectionResult result = detectionStep.detectOverdueInvoices(businessDate, heldAccounts.heldInvoicesOf(businessDate));
         return BillingRunStepOutcome.ofCandidates(result.candidates(), translateReportedErrors(result.errors(), "invoiceId", BillingRunSubjectType.INVOICE));
     }
 }

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.run.domain;
 
 public enum BillingRunStep {
+    ACCOUNT_CONSISTENCY,
     GATEWAY_SYNC,
     OVERDUE_DETECTION,
     LATE_FEE_ACCRUAL,
