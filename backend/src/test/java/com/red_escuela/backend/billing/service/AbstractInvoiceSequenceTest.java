@@ -90,6 +90,13 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
         return LocalDate.of(year, month, day);
     }
 
+    @Autowired
+    private com.red_escuela.backend.billing.run.operation.TermEndWithdrawalBillingRunStep termEndWithdrawalStep;
+
+    protected void closeFinishedTermsOfSuspendedEnrollments() {
+        termEndWithdrawalStep.runStepForBusinessDate(LocalDate.now(MutableClock.INSTANCE));
+    }
+
     protected void today(LocalDate date) {
         MutableClock.INSTANCE.setDate(date);
     }

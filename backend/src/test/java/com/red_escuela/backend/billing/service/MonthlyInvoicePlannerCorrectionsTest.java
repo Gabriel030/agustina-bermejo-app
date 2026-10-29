@@ -186,6 +186,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
         today(date(2027, 1, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);

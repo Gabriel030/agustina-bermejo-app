@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
+import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -32,7 +33,9 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Optional;
 
 @Service
@@ -70,17 +73,32 @@ public class SuspendedEnrollmentClosureService {
     }
 
     public int closeFinishedCycles() {
+        return closeFinishedCyclesReportingFailures().closed();
+    }
+
+    public SuspendedEnrollmentClosureReport closeFinishedCyclesReportingFailures() {
+        List<Long> candidateIds = programEnrollmentRepository.findIdsByPaymentStatusAndStatusIn(EnrollmentPaymentStatus.SUSPENDED, ACTIVE);
         int closed = 0;
-        for (Long id : programEnrollmentRepository.findIdsByPaymentStatusAndStatusIn(EnrollmentPaymentStatus.SUSPENDED, ACTIVE)) {
+        List<SuspendedEnrollmentClosureReport.EnrollmentClosureFailure> failures = new ArrayList<>();
+        for (Long id : candidateIds) {
             try {
                 if (Boolean.TRUE.equals(requiresNew.execute(status -> closeIfCycleEnded(id)))) {
                     closed++;
                 }
             } catch (RuntimeException e) {
                 logClosureFailure(id, e);
+                failures.add(closureFailureOf(id, e));
             }
         }
-        return closed;
+        return new SuspendedEnrollmentClosureReport(candidateIds.size(), closed, failures);
+    }
+
+    private SuspendedEnrollmentClosureReport.EnrollmentClosureFailure closureFailureOf(Long enrollmentId, RuntimeException failure) {
+        if (failure instanceof ReportsPolicyViolations rejection) {
+            String codes = rejection.violations().stream().map(PolicyViolation::code).collect(Collectors.joining(","));
+            return new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(enrollmentId, true, "WITHDRAWAL_REJECTED_BY_RULE", codes);
+        }
+        return new SuspendedEnrollmentClosureReport.EnrollmentClosureFailure(enrollmentId, false, "SUBJECT_PROCESSING_FAILED", failure.getMessage());
     }
 
     private void logClosureFailure(Long enrollmentId, RuntimeException failure) {

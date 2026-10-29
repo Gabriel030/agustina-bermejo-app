@@ -379,10 +379,12 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         today(date(2027, 7, 20));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment).getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
 
         today(date(2027, 8, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
@@ -409,10 +411,12 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         today(date(2027, 8, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment).getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
 
         today(date(2028, 1, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment).getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
     }
 

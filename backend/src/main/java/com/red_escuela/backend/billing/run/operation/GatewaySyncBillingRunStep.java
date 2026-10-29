@@ -18,7 +18,7 @@ public class GatewaySyncBillingRunStep extends AbstractBillingRunStep {
     }
 
     @Override
-    public Optional<String> findNotApplicableCode() {
+    public Optional<String> findNotApplicableCode(LocalDate businessDate) {
         return Optional.of(GATEWAY_DISABLED);
     }
 

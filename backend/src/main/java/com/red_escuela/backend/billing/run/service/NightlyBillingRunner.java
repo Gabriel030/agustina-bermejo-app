@@ -75,7 +75,7 @@ public class NightlyBillingRunner {
     }
 
     private BillingRunStatus runOneStep(Long nightlyRunId, AbstractBillingRunStep step, LocalDate businessDate) {
-        return step.findNotApplicableCode()
+        return step.findNotApplicableCode(businessDate)
                 .map(code -> recorder.declareStepNotApplicable(nightlyRunId, step.step(), code))
                 .orElseGet(() -> runApplicableStep(nightlyRunId, step, businessDate));
     }

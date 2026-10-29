@@ -24,7 +24,7 @@ public abstract class AbstractBillingRunStep {
 
     protected abstract BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate);
 
-    public Optional<String> findNotApplicableCode() {
+    public Optional<String> findNotApplicableCode(LocalDate businessDate) {
         return Optional.empty();
     }
 
