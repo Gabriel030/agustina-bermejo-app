@@ -47,7 +47,7 @@ public class MissedBillingRunDetector {
     private void alertForUncompletedRun(NightlyBillingRun run, LocalDate businessDate) {
         NightlyBillingRunStatus status = run.getStatus();
         switch (status) {
-            case FAILED -> alertPublisher.publishRunFailedAlert(run.getId(), businessDate, findFailedStepName(run.getId()), "La corrida nocturna terminó en estado FAILED");
+            case FAILED -> alertPublisher.publishRunFailedAlert(run.getId(), businessDate, findFailedStepName(run.getId()));
             case RUNNING -> log.warn("Proceso nocturno del {} todavía en ejecución a la hora del vigía", businessDate);
             case COMPLETED, COMPLETED_WITH_ERRORS -> { }
         }

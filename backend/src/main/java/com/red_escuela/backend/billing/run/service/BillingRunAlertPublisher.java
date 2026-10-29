@@ -26,8 +26,8 @@ public class BillingRunAlertPublisher {
     }
 
     @Transactional
-    public void publishRunFailedAlert(Long nightlyRunId, LocalDate businessDate, String failedStep, String failureMessage) {
-        publishOnce(NightlyBillingRunFailedEvent.failedAt(nightlyRunId, businessDate, failedStep, failureMessage), FAILED_ALERT);
+    public void publishRunFailedAlert(Long nightlyRunId, LocalDate businessDate, String failedStep) {
+        publishOnce(NightlyBillingRunFailedEvent.failedAt(nightlyRunId, businessDate, failedStep), FAILED_ALERT);
     }
 
     @Transactional

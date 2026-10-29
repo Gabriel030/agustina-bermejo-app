@@ -42,7 +42,7 @@ public class HeldAccountLookup {
                 join nightly_billing_run night on night.id = step_run.nightly_billing_run_id
                 join late_fee_charge c on c.id = item.subject_id
                 where night.business_date = :businessDate and step_run.step <> :consistencyStep and item.status = 'FAILED' and item.subject_type = :chargeType
-            ) held order by held.priority desc
+            ) held
             """;
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -55,7 +55,7 @@ public class HeldAccountLookup {
     public Map<Long, String> findHeldAccountCodes(LocalDate businessDate) {
         Map<Long, String> codesByAccount = new LinkedHashMap<>();
         jdbc.query(HELD_ACCOUNTS_OF_THE_NIGHT, parametersOf(businessDate), rs -> {
-            codesByAccount.put(rs.getLong(1), rs.getString(2));
+            codesByAccount.merge(rs.getLong(1), rs.getString(2), HeldAccountLookup::strongerHoldOf);
         });
         return codesByAccount;
     }
@@ -75,9 +75,14 @@ public class HeldAccountLookup {
         String sql = "select s.id, held.code from " + table + " s join (" + HELD_ACCOUNTS_OF_THE_NIGHT + ") held on held.account_id = s.student_current_account_id where s.id in (:ids)";
         Map<Long, String> codesBySubject = new LinkedHashMap<>();
         jdbc.query(sql, parametersOf(businessDate).addValue("ids", subjectIds), rs -> {
-            codesBySubject.put(rs.getLong(1), rs.getString(2));
+            codesBySubject.merge(rs.getLong(1), rs.getString(2), HeldAccountLookup::strongerHoldOf);
         });
         return codesBySubject;
+    }
+
+    static String strongerHoldOf(String first, String second) {
+        return HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE.equals(first) || HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE.equals(second)
+                ? HeldSubjectFinder.INCONSISTENT_ACCOUNT_CODE : first;
     }
 
     private static MapSqlParameterSource parametersOf(LocalDate businessDate) {

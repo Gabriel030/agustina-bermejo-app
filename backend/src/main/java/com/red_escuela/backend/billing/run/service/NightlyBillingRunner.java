@@ -82,6 +82,14 @@ public class NightlyBillingRunner {
                 .orElseGet(() -> runApplicableStep(nightlyRunId, step, businessDate));
     }
 
+    private void publishFailedAlertWithoutBreakingTheNight(Long nightlyRunId, LocalDate businessDate, AbstractBillingRunStep step) {
+        try {
+            alertPublisher.publishRunFailedAlert(nightlyRunId, businessDate, step.step().name());
+        } catch (RuntimeException alertFailure) {
+            log.error("No se pudo publicar la alerta de paso fallido: corrida={}, paso={}", nightlyRunId, step.step(), alertFailure);
+        }
+    }
+
     private BillingRunStatus runApplicableStep(Long nightlyRunId, AbstractBillingRunStep step, LocalDate businessDate) {
         Long stepRunId = recorder.openStepRun(nightlyRunId, step.step());
         try {
@@ -90,7 +98,7 @@ public class NightlyBillingRunner {
         } catch (RuntimeException e) {
             log.error("Paso nocturno {} falló entero: fecha={}", step.step(), businessDate, e);
             BillingRunStatus failedStatus = recorder.abortStepRun(stepRunId);
-            alertPublisher.publishRunFailedAlert(nightlyRunId, businessDate, step.step().name(), e.getMessage());
+            publishFailedAlertWithoutBreakingTheNight(nightlyRunId, businessDate, step);
             return failedStatus;
         }
     }

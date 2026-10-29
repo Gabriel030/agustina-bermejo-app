@@ -254,6 +254,19 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-459")
+    void theNightStillClosesAsFailedWhenTheAlertCannotBePublished() {
+        LocalDate day = LocalDate.of(2031, 10, 14);
+        Mockito.doThrow(new IllegalStateException("registry down")).when(publisher).publishEvent(Mockito.any(Object.class));
+
+        Long id = runnerWith(stepFailingEntirely(BillingRunStep.OVERDUE_DETECTION, new ArrayList<>())).runNightlyBillingSteps(day, NightlyBillingTrigger.SCHEDULED).orElseThrow();
+
+        NightlyBillingRunResponse run = queryUseCase.findNightlyBillingRun(id);
+        assertThat(run.status()).isEqualTo(NightlyBillingRunStatus.FAILED);
+        assertThat(run.finishedAt()).isNotNull();
+    }
+
+    @Test
     void theNightsAreListedNewestFirstInsideTheRequestedRange() {
         runner.runNightlyBillingSteps(LocalDate.of(2032, 1, 10), NightlyBillingTrigger.SCHEDULED);
         runner.runNightlyBillingSteps(LocalDate.of(2032, 1, 11), NightlyBillingTrigger.SCHEDULED);
