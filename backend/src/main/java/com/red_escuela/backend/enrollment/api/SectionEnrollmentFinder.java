@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Transactional(readOnly = true)
@@ -43,6 +44,14 @@ public class SectionEnrollmentFinder {
     public CourseSubjectSectionEnrollment findCourseEnrollment(Long id) {
         return courseEnrollmentRepository.findById(id)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
+    }
+
+    public Optional<SubjectSectionEnrollment> findProgramEnrollmentIfPresent(Long id) {
+        return programEnrollmentRepository.findById(id);
+    }
+
+    public Optional<CourseSubjectSectionEnrollment> findCourseEnrollmentIfPresent(Long id) {
+        return courseEnrollmentRepository.findById(id);
     }
 
     public SubjectSectionEnrollment requireProgramEnrollmentOf(Long id, Long studentId) {

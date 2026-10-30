@@ -1,10 +1,8 @@
 package com.red_escuela.backend.identity.service;
 
-import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.identity.api.BasePersonCreator;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,29 +10,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PersonFactory {
     private final PersonRepository personRepository;
-    private final AddressRepository addressRepository;
+    private final BasePersonCreator basePersonCreator;
 
-    public PersonFactory(PersonRepository personRepository, AddressRepository addressRepository) {
+    public PersonFactory(PersonRepository personRepository, BasePersonCreator basePersonCreator) {
         this.personRepository = personRepository;
-        this.addressRepository = addressRepository;
+        this.basePersonCreator = basePersonCreator;
     }
 
     @Transactional
     public Person createBasePerson(String firstName, String lastName, String email) {
-        Address address = new Address();
-        addressRepository.save(address);
-
-        Person person = new Person();
-        person.setName(firstName);
-        person.setLastname(lastName);
-        person.setEmail(email);
-        person.setAddress(address);
-        person.setAuthProvider(AuthProvider.LOCAL);
-        person.setPassword(null);
-        person.setUsername(null);
-        person.setStatus(StatusType.ACTIVE);
-
-        return personRepository.save(person);
+        return basePersonCreator.createBasePerson(firstName, lastName, email);
     }
 
     @Transactional
