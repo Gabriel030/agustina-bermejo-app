@@ -40,6 +40,14 @@ public class SectionFinder {
                 section.getTerm().getId(), section.getCapacity(), section.getName());
     }
 
+    public SubjectSection findProgramSectionEntity(Long id) {
+        return programSectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
+    public CourseSubjectSection findCourseSectionEntity(Long id) {
+        return courseSectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
     public boolean exists(SectionKind kind, Long id) {
         return switch (kind) {
             case PROGRAM -> programSectionRepository.existsById(id);

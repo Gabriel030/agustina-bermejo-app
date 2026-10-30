@@ -1,7 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.repository.CourseRepository;
+import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
+import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
@@ -57,8 +58,8 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
         EnrollmentWithdrawalDateResolver resolver = new EnrollmentWithdrawalDateResolver(clock);
         programService = new ProgramEnrollmentService(programRepository, null, null, null, null, null, null, null, null,
                 resolver, port, clock);
-        CourseRepository courses = mock(CourseRepository.class);
-        courseService = new CourseEnrollmentService(courseRepository, null, courses, null, null, mock(CourseSubjectSectionEnrollmentRepository.class), null, null,
+        CourseCatalogFinder courses = mock(CourseCatalogFinder.class);
+        courseService = new CourseEnrollmentService(courseRepository, null, courses, mock(SectionFinder.class), mock(CourseSubjectSectionEnrollmentRepository.class), null, null,
                 resolver, port, clock);
         Student student = new Student();
         student.setId(STUDENT_ID);
