@@ -44,6 +44,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.Clock;
+import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
+import com.red_escuela.backend.testsupport.MonthlyInvoiceRunTestDriver;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -59,8 +62,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     private static final AtomicLong DNI = new AtomicLong(700_000_000L + java.util.concurrent.ThreadLocalRandom.current().nextLong(0, 90_000_000L));
 
+    protected MonthlyInvoiceRunTestDriver job;
+
     @Autowired
-    protected MonthlyInstallmentIssuanceJob job;
+    void setMonthlyInvoiceRunTestDriver(MonthlyInvoiceRunExecutor executor, JdbcTemplate jdbc, Clock clock) {
+        this.job = new MonthlyInvoiceRunTestDriver(executor, jdbc, clock);
+    }
     @Autowired
     protected InvoiceRepository invoiceRepository;
     @Autowired

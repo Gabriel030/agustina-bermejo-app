@@ -53,15 +53,19 @@ public class PlannedInvoiceIssuingService {
         log.info("Plan de cargos de curso: inscripcion={}, mes={}, cargos={}, decisiones={}", plan.enrollmentId(), plan.month(), plan.charges().size(), plan.describe());
         int issued = 0;
         for (PlannedInvoice charge : plan.charges()) {
-            var request = InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(enrollment, selection, charge, InvoiceIssuingReason.COURSE_MONTHLY_RUN);
-            InvoiceIssuingResult result = invoiceIssuingService.issueInvoiceInNewTransaction(request);
-            if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
-                throw new ChargeRejectedException(rejected.evaluationResult());
-            }
-            if (result instanceof InvoiceIssuingResult.InvoiceIssued) {
+            if (issuePlannedCourseInvoice(enrollment, selection, charge) instanceof InvoiceIssuingResult.InvoiceIssued) {
                 issued++;
             }
         }
         return issued;
+    }
+
+    public InvoiceIssuingResult issuePlannedCourseInvoice(CourseEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge) {
+        var request = InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(enrollment, selection, charge, InvoiceIssuingReason.COURSE_MONTHLY_RUN);
+        InvoiceIssuingResult result = invoiceIssuingService.issueInvoiceInNewTransaction(request);
+        if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
+            throw new ChargeRejectedException(rejected.evaluationResult());
+        }
+        return result;
     }
 }

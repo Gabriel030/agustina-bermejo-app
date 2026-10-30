@@ -3,7 +3,7 @@ package com.red_escuela.backend.testsupport;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
-import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
+import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import org.springframework.test.context.bean.override.mockito.MockReset;
@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @MockitoSpyBean(types = {
-        MonthlyInstallmentIssuanceJob.class,
+        MonthlyInvoiceIssuanceJob.class,
         ProgramEnrollmentService.class,
         CurrentAccountAllocationService.class,
         PendingInvoiceQueryService.class,
