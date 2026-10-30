@@ -1,0 +1,30 @@
+{
+  "PUT /me": {
+    "source": "app-request",
+    "reason": "the app sends null for country, floor, postalCode and state and omits sexo and telefono; the contract declares them required non-nullable strings (OpenAPI nullable gap in Q13a); baselining silences the response check of this operation too"
+  },
+  "GET /programs/{id}/pricing": {
+    "source": "default-handlers",
+    "reason": "Money.amount: the contract declares number, the mock sends a decimal string; decide the wire format in Q13a (customizer) before fixing the mock"
+  },
+  "GET /programs/{id}/cohorts": {
+    "source": "default-handlers",
+    "reason": "mock omits admissionStart and admissionEnd, required by the contract (enrollment module)"
+  },
+  "GET /courses/{id}/pricing": {
+    "source": "default-handlers",
+    "reason": "Money.amount: the contract declares number, the mock sends a decimal string; decide the wire format in Q13a (customizer) before fixing the mock"
+  },
+  "POST /me/program-enrollment-applications": {
+    "source": "default-handlers",
+    "reason": "mock returns a partial application: nine required fields missing (enrollment module)"
+  },
+  "POST /me/course-enrollments": {
+    "source": "default-handlers",
+    "reason": "mock returns a partial enrollment: six required fields missing (enrollment module)"
+  },
+  "GET /payment-config": {
+    "source": "default-handlers",
+    "reason": "mock sends null for bankAlias, bankCbu, accountHolder and qrImageUrl, the contract declares them non-nullable strings (OpenAPI nullable gap in Q13a)"
+  }
+}

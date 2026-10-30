@@ -13,6 +13,8 @@ import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
+import com.red_escuela.backend.billing.run.operation.CollectionReminderPlanningBillingRunStep;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Duration;
@@ -29,7 +31,7 @@ import static org.awaitility.Awaitility.await;
 class ReminderRecoveryTimelineIT extends AbstractReminderTimelineIT {
 
     @Autowired
-    private CollectionReminderPlanningJob planningJob;
+    private CollectionReminderPlanningBillingRunStep planningStep;
 
     private Student student;
     private CourseEnrollment enrollment;
@@ -57,8 +59,9 @@ class ReminderRecoveryTimelineIT extends AbstractReminderTimelineIT {
 
     private void runJobOn(LocalDate day) {
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(day, LocalTime.of(5, 0)));
-        CollectionReminderPlanningResult result = planningJob.run(day);
-        assertThat(result.errors()).as("planning errors on " + day).isEmpty();
+        BillingRunStepOutcome outcome = planningStep.runStepForBusinessDate(day);
+        assertThat(outcome.items()).as("planning errors on " + day).isEmpty();
+        assertThat(outcome.failed()).as("planning failures on " + day).isZero();
         Long expected = jdbc.queryForObject("select coalesce(sum(jsonb_array_length(in_app_messages) + jsonb_array_length(email_messages)), 0) from collection_reminder "
                 + "where business_date = ? and student_id = ?", Long.class, day, student.getId());
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(jdbc.queryForObject("select count(*) from notification_delivery "
@@ -180,7 +183,7 @@ class ReminderRecoveryTimelineIT extends AbstractReminderTimelineIT {
         runJobOn(march(23));
 
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(march(23), LocalTime.of(5, 30)));
-        planningJob.run(march(23));
+        planningStep.runStepForBusinessDate(march(23));
 
         assertThat(rowsOf(march(23))).isEqualTo(1);
         assertThat(emailMessageCountOf(march(23))).isEqualTo(1);

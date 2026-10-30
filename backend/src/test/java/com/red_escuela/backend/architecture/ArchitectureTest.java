@@ -562,9 +562,8 @@ class ArchitectureTest {
     void collectionsStepsHaveNoCronOfTheirOwn() {
         noMethods()
                 .that().areDeclaredInClassesThat().resideInAPackage("..billing.collections..")
-                .and().areDeclaredInClassesThat().doNotHaveFullyQualifiedName("com.red_escuela.backend.billing.collections.operation.CollectionReminderPlanningJob")
                 .should().beAnnotatedWith(Scheduled.class)
-                .because("the nightly pipeline calls each collections step from the existing sweeps (V2-11a orchestrates them); the only exception is the provisional 05:00 reminder planning job that V2-11a removes")
+                .because("the nightly pipeline calls each collections step; no collections class has a cron of its own")
                 .check(MAIN_CLASSES);
     }
 

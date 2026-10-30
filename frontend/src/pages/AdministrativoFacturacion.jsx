@@ -647,6 +647,7 @@ const TAB_RECEIPTS = 'comprobantes';
 const TAB_CONTACT = 'para-contactar';
 
 export function AdministrativoFacturacion() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
   const tab = [TAB_RECEIPTS, TAB_CONTACT].includes(requestedTab) ? requestedTab : TAB_ACCOUNT;
@@ -665,7 +666,14 @@ export function AdministrativoFacturacion() {
   }
 
   return (
-    <PageContainer title="Facturación">
+    <PageContainer
+      title="Facturación"
+      action={
+        <Button variant="outline" onClick={() => navigate(`${accountBase}/corridas-de-facturacion`)}>
+          Corridas
+        </Button>
+      }
+    >
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList variant="segmented">
           <TabsTrigger value={TAB_ACCOUNT}>Estado de cuenta</TabsTrigger>

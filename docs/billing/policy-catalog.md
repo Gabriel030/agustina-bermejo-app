@@ -408,7 +408,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | AnnualUpfrontAvailableForProgramPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE | D-131, D-191 |
+| 1 | AnnualUpfrontOfProgramMustUseRequestEndpointPolicy | ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT | D-131, D-444 |
 
 ## Momento PAYMENT_REGISTRATION
 

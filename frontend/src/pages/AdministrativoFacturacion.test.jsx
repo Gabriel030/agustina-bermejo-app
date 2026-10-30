@@ -125,6 +125,12 @@ afterEach(() => {
 });
 
 describe('AdministrativoFacturacion — comprobantes', () => {
+  it('offers the billing runs screen from the page header', async () => {
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Corridas' })).toBeInTheDocument();
+  });
+
   it('shows the program next to the receipt', async () => {
     const user = userEvent.setup();
     renderPage();

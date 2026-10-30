@@ -4,16 +4,16 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "ANNUAL_UPFRONT_NOT_AVAILABLE", decisions = {"D-131", "D-191"})
-public final class AnnualUpfrontAvailableForProgramPolicy implements Policy<PaymentPlanChoice> {
+@PolicyRule(violationCodes = "ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT", decisions = {"D-131", "D-444"})
+public final class AnnualUpfrontOfProgramMustUseRequestEndpointPolicy implements Policy<PaymentPlanChoice> {
     public String ruleName() {
-        return "AnnualUpfrontAvailableForProgramPolicy";
+        return "AnnualUpfrontOfProgramMustUseRequestEndpointPolicy";
     }
 
     public PolicyVerdict evaluateRule(PaymentPlanChoice choice) {
         boolean unavailable = choice.annualUpfront() && choice.forProgram();
         return unavailable
-                ? PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_NOT_AVAILABLE", "El pago anual de carrera no está disponible")
+                ? PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT", "El pago anual de una carrera se pide desde el pedido del pago anual")
                 : PolicyVerdict.allow(ruleName());
     }
 }

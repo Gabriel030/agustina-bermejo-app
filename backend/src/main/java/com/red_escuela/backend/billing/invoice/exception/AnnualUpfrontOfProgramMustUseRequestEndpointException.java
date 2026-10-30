@@ -6,11 +6,11 @@ import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 
 import java.util.List;
 
-public class AnnualUpfrontNotAvailableException extends ConflictException implements ReportsPolicyViolations {
+public class AnnualUpfrontOfProgramMustUseRequestEndpointException extends ConflictException implements ReportsPolicyViolations {
     private final List<PolicyViolation> violations;
 
-    public AnnualUpfrontNotAvailableException(List<PolicyViolation> violations) {
-        super("El pago anual de carrera no está disponible.");
+    public AnnualUpfrontOfProgramMustUseRequestEndpointException(List<PolicyViolation> violations) {
+        super("El pago anual de una carrera se pide desde el pedido del pago anual.");
         this.violations = List.copyOf(violations);
     }
 
