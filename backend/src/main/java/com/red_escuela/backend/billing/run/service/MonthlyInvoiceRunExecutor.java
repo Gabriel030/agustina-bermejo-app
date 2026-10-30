@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunStatus;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
 import com.red_escuela.backend.billing.run.domain.NightlyBillingRun;
 import com.red_escuela.backend.billing.run.policy.NightlyBillingCompletedTodayContext;
@@ -20,10 +21,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,10 +65,20 @@ public class MonthlyInvoiceRunExecutor {
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriod(YearMonth period, LocalDate businessDate, MonthlyInvoiceRunTrigger trigger) {
+        interruptStaleRunningRunsOf(period);
         Optional<PolicyVerdict> nightDenial = nightlyCompletedPolicySet.evaluateAllRules(nightlyContextOf(businessDate)).firstDenial();
         return nightDenial.isPresent()
                 ? Optional.of(recordRunBlockedByNight(period, businessDate, trigger, nightDenial.get().code()))
                 : startRunUnlessPeriodAlreadyHasOne(period, businessDate, trigger);
+    }
+
+    private void interruptStaleRunningRunsOf(YearMonth period) {
+        LocalDateTime limit = LocalDateTime.now(clock).minus(Duration.parse(MonthlyInvoiceRun.MAX_RUNNING_TIME_ISO));
+        for (MonthlyInvoiceRun stale : runRepository.findByPeriodAndStatusAndStartedAtBefore(period.atDay(1), MonthlyInvoiceRunStatus.RUNNING, limit)) {
+            log.error("Corrida mensual colgada marcada como interrumpida: periodo={}, corrida={}, inicio={}", period, stale.getId(), stale.getStartedAt());
+            stale.abortInterruptedRun(LocalDateTime.now(clock));
+            runRepository.saveAndFlush(stale);
+        }
     }
 
     private NightlyBillingCompletedTodayContext nightlyContextOf(LocalDate businessDate) {
@@ -92,10 +106,11 @@ public class MonthlyInvoiceRunExecutor {
     private MonthlyInvoiceRun sweepAndFinish(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate) {
         log.info("Corrida mensual iniciada: periodo={}, corrida={}", period, run.getId());
         Map<MonthlyInvoiceRunItemResult, Integer> counters = new EnumMap<>(MonthlyInvoiceRunItemResult.class);
+        Set<EnrollmentKey> processed = new HashSet<>();
         try {
-            sweepProgramEnrollments(run, period, pricingDate, counters);
-            sweepExpiredAnnualProgramEnrollments(run, period, pricingDate, counters);
-            sweepCourseEnrollments(run, period, pricingDate, counters);
+            sweepProgramEnrollments(run, period, pricingDate, counters, processed);
+            sweepExpiredAnnualProgramEnrollments(run, period, pricingDate, counters, processed);
+            sweepCourseEnrollments(run, period, pricingDate, counters, processed);
         } catch (RuntimeException e) {
             log.error("Corrida mensual abortada: periodo={}", period, e);
             run.abortMonthlyRun("SWEEP_ABORTED", LocalDateTime.now(clock));
@@ -119,25 +134,28 @@ public class MonthlyInvoiceRunExecutor {
         }
     }
 
-    private void sweepProgramEnrollments(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate, Map<MonthlyInvoiceRunItemResult, Integer> counters) {
-        sweep(run, MonthlyInvoiceEnrollmentType.PROGRAM, period, pricingDate, counters, lastId -> candidateFinder.findProgramEnrollmentIdsAfter(period, lastId, false));
+    private void sweepProgramEnrollments(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate, Map<MonthlyInvoiceRunItemResult, Integer> counters, Set<EnrollmentKey> processed) {
+        sweep(run, MonthlyInvoiceEnrollmentType.PROGRAM, period, pricingDate, counters, processed, lastId -> candidateFinder.findProgramEnrollmentIdsAfter(period, lastId, false));
     }
 
-    private void sweepExpiredAnnualProgramEnrollments(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate, Map<MonthlyInvoiceRunItemResult, Integer> counters) {
-        sweep(run, MonthlyInvoiceEnrollmentType.PROGRAM, period, pricingDate, counters,
+    private void sweepExpiredAnnualProgramEnrollments(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate, Map<MonthlyInvoiceRunItemResult, Integer> counters, Set<EnrollmentKey> processed) {
+        sweep(run, MonthlyInvoiceEnrollmentType.PROGRAM, period, pricingDate, counters, processed,
                 lastId -> candidateFinder.findProgramEnrollmentIdsAfter(period, lastId, true));
     }
 
-    private void sweepCourseEnrollments(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate, Map<MonthlyInvoiceRunItemResult, Integer> counters) {
-        sweep(run, MonthlyInvoiceEnrollmentType.COURSE, period, pricingDate, counters, lastId -> candidateFinder.findCourseEnrollmentIdsAfter(period, lastId));
+    private void sweepCourseEnrollments(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate, Map<MonthlyInvoiceRunItemResult, Integer> counters, Set<EnrollmentKey> processed) {
+        sweep(run, MonthlyInvoiceEnrollmentType.COURSE, period, pricingDate, counters, processed, lastId -> candidateFinder.findCourseEnrollmentIdsAfter(period, lastId));
     }
 
     private void sweep(MonthlyInvoiceRun run, MonthlyInvoiceEnrollmentType type, YearMonth period, LocalDate pricingDate,
-                       Map<MonthlyInvoiceRunItemResult, Integer> counters, Function<Long, List<Long>> nextPage) {
+                       Map<MonthlyInvoiceRunItemResult, Integer> counters, Set<EnrollmentKey> processed, Function<Long, List<Long>> nextPage) {
         Long lastId = 0L;
         List<Long> page = nextPage.apply(lastId);
         while (!page.isEmpty()) {
             for (Long enrollmentId : page) {
+                if (!processed.add(new EnrollmentKey(type, enrollmentId))) {
+                    continue;
+                }
                 MonthlyInvoiceRunItem item = itemProcessor.issueAndRecordItem(run.getId(), type, enrollmentId, period, pricingDate);
                 counters.merge(item.getResult(), 1, Integer::sum);
                 meterRegistry.counter("monthly_invoice_run_items_total", "result", item.getResult().name()).increment();
@@ -145,5 +163,8 @@ public class MonthlyInvoiceRunExecutor {
             lastId = page.get(page.size() - 1);
             page = nextPage.apply(lastId);
         }
+    }
+
+    private record EnrollmentKey(MonthlyInvoiceEnrollmentType type, Long enrollmentId) {
     }
 }

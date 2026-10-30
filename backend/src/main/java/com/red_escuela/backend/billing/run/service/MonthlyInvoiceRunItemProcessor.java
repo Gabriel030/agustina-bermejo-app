@@ -31,7 +31,27 @@ public class MonthlyInvoiceRunItemProcessor {
 
     public MonthlyInvoiceRunItem issueAndRecordItem(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
         MonthlyInvoiceItemOutcome outcome = issueEnrollmentMonth(type, enrollmentId, period, pricingDate);
-        return itemRepository.save(MonthlyInvoiceRunItem.recordItemOutcome(runId, type, enrollmentId, outcome, LocalDateTime.now(clock)));
+        return persistItemIsolatingFailure(runId, type, enrollmentId, outcome);
+    }
+
+    private MonthlyInvoiceRunItem persistItemIsolatingFailure(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, MonthlyInvoiceItemOutcome outcome) {
+        try {
+            return itemRepository.save(MonthlyInvoiceRunItem.recordItemOutcome(runId, type, enrollmentId, outcome, LocalDateTime.now(clock)));
+        } catch (RuntimeException e) {
+            log.error("Falló el registro del ítem de la corrida mensual: corrida={}, tipo={}, id={}", runId, type, enrollmentId, e);
+            return recordPersistenceFailure(runId, type, enrollmentId, e);
+        }
+    }
+
+    private MonthlyInvoiceRunItem recordPersistenceFailure(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, RuntimeException cause) {
+        MonthlyInvoiceRunItem failed = MonthlyInvoiceRunItem.recordItemOutcome(runId, type, enrollmentId,
+                MonthlyInvoiceItemOutcome.failed(cause.getClass().getSimpleName(), cause.getMessage()), LocalDateTime.now(clock));
+        try {
+            return itemRepository.save(failed);
+        } catch (RuntimeException e) {
+            log.error("Tampoco se pudo registrar el ítem fallido: corrida={}, tipo={}, id={}", runId, type, enrollmentId, e);
+            return failed;
+        }
     }
 
     private MonthlyInvoiceItemOutcome issueEnrollmentMonth(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {

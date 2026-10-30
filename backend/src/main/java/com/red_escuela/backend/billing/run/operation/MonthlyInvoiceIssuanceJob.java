@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
 import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -23,7 +24,7 @@ public class MonthlyInvoiceIssuanceJob {
     }
 
     @Scheduled(cron = CRON, zone = "${app.timezone}")
-    @SchedulerLock(name = "MonthlyInvoiceIssuanceJob", lockAtMostFor = "PT2H")
+    @SchedulerLock(name = "MonthlyInvoiceIssuanceJob", lockAtMostFor = MonthlyInvoiceRun.MAX_RUNNING_TIME_ISO)
     public void run() {
         run(LocalDate.now(clock));
     }

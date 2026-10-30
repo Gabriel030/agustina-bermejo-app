@@ -21,6 +21,8 @@ import java.util.Objects;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MonthlyInvoiceRun {
+    public static final String MAX_RUNNING_TIME_ISO = "PT2H";
+    public static final String INTERRUPTED_FAILURE_CODE = "INTERRUPTED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -84,6 +86,10 @@ public class MonthlyInvoiceRun {
     public void abortMonthlyRun(String failureCode, LocalDateTime finishedAt) {
         finishMonthlyRun(MonthlyInvoiceRunEvent.RUN_ABORTED, finishedAt);
         this.failureCode = Objects.requireNonNull(failureCode, "failureCode");
+    }
+
+    public void abortInterruptedRun(LocalDateTime finishedAt) {
+        abortMonthlyRun(INTERRUPTED_FAILURE_CODE, finishedAt);
     }
 
     private static MonthlyInvoiceRun base(LocalDate period, LocalDate businessDate, MonthlyInvoiceRunTrigger trigger, LocalDateTime startedAt) {

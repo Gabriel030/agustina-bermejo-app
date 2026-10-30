@@ -27,6 +27,9 @@ import static org.awaitility.Awaitility.await;
 @SlowTest(reason = "Simulates month-by-month billing of whole lective years for several intake scenarios")
 class InvoiceSequenceTest extends AbstractInvoiceSequenceScenarioTest {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob issuanceJob;
+
     @Test
     void marchIntakeWithOneEnrollmentFeeTracksTwoLectiveYearsMonthByMonth() {
         Career career = newCareer();
@@ -180,9 +183,11 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceScenarioTest {
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 10));
 
         today(date(2026, 2, 6));
-        job.run();
+        job.completeTheNightOf(date(2026, 2, 6));
+        issuanceJob.run(date(2026, 2, 6));
         today(date(2026, 3, 6));
-        job.run();
+        job.completeTheNightOf(date(2026, 3, 6));
+        issuanceJob.run(date(2026, 3, 6));
         assertThat(sequence(enrollment)).isEmpty();
 
         job.run(YearMonth.of(2026, 3));
