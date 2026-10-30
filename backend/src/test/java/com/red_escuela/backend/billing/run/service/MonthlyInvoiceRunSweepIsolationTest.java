@@ -118,6 +118,20 @@ class MonthlyInvoiceRunSweepIsolationTest {
 
     @Test
     @Tag("D-160")
+    void anItemExhaustedAtItsFirstFailureAlsoLeavesTheRunCompletedWithFailures() {
+        when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(1L));
+        when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(1L), anyBoolean())).thenReturn(List.of());
+        when(itemProcessor.issueAndRecordItem(any(), any(), anyLong(), any(), any())).thenReturn(MonthlyInvoiceRunItem.recordItemOutcome(1L,
+                MonthlyInvoiceEnrollmentType.PROGRAM, 1L, MonthlyInvoiceItemOutcome.failed("Boom", "boom"), LocalDateTime.of(2026, 4, 1, 7, 0),
+                FailedInvoiceRetrySchedule.withoutRetries()));
+
+        MonthlyInvoiceRun run = executor.runMonthlyInvoicesOfPeriod(APRIL, FIRST, MonthlyInvoiceRunTrigger.SCHEDULED).orElseThrow();
+
+        assertThat(run.getStatus()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED_WITH_FAILURES);
+    }
+
+    @Test
+    @Tag("D-160")
     void aFailedEnrollmentDoesNotStopTheFollowingOnesAndTheRunFinishesWithFailures() {
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(1L, 2L, 3L));
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(3L), anyBoolean())).thenReturn(List.of());
