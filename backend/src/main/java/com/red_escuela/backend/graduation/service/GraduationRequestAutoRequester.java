@@ -1,25 +1,23 @@
 package com.red_escuela.backend.graduation.service;
 
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
-import com.red_escuela.backend.graduation.usecase.graduationrequest.RequestGraduationUseCase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GraduationRequestAutoRequester {
 
-    private final ProgramEnrollmentService programEnrollmentService;
+    private final GraduationEligibilityChecker graduationEligibilityChecker;
     private final GraduationRequestRepository graduationRequestRepository;
-    private final RequestGraduationUseCase requestGraduationUseCase;
+    private final GraduationRequestRegistrar graduationRequestRegistrar;
 
-    public GraduationRequestAutoRequester(ProgramEnrollmentService programEnrollmentService,
+    public GraduationRequestAutoRequester(GraduationEligibilityChecker graduationEligibilityChecker,
                                            GraduationRequestRepository graduationRequestRepository,
-                                           RequestGraduationUseCase requestGraduationUseCase) {
-        this.programEnrollmentService = programEnrollmentService;
+                                           GraduationRequestRegistrar graduationRequestRegistrar) {
+        this.graduationEligibilityChecker = graduationEligibilityChecker;
         this.graduationRequestRepository = graduationRequestRepository;
-        this.requestGraduationUseCase = requestGraduationUseCase;
+        this.graduationRequestRegistrar = graduationRequestRegistrar;
     }
 
     @Transactional
@@ -27,9 +25,9 @@ public class GraduationRequestAutoRequester {
         if (graduationRequestRepository.existsByProgramEnrollmentIdAndStatusNot(programEnrollmentId, GraduationRequestStatus.REJECTED)) {
             return;
         }
-        if (!programEnrollmentService.calculateProgress(programEnrollmentId).elegibleParaCompletar()) {
+        if (!graduationEligibilityChecker.isEligibleToGraduate(programEnrollmentId)) {
             return;
         }
-        requestGraduationUseCase.request(programEnrollmentId);
+        graduationRequestRegistrar.registerRequest(programEnrollmentId);
     }
 }

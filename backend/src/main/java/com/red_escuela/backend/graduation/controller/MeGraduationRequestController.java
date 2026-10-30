@@ -1,11 +1,9 @@
 package com.red_escuela.backend.graduation.controller;
 
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.graduation.dto.GraduationRequestResponse;
 import com.red_escuela.backend.graduation.usecase.graduationrequest.RequestGraduationUseCase;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyProgramEnrollmentOwnerUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,14 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeGraduationRequestController {
 
     private final CurrentStudentService currentStudentService;
-    private final ProgramEnrollmentService programEnrollmentService;
+    private final VerifyProgramEnrollmentOwnerUseCase verifyProgramEnrollmentOwnerUseCase;
     private final RequestGraduationUseCase requestGraduationUseCase;
 
     public MeGraduationRequestController(
-            CurrentStudentService currentStudentService, ProgramEnrollmentService programEnrollmentService,
+            CurrentStudentService currentStudentService, VerifyProgramEnrollmentOwnerUseCase verifyProgramEnrollmentOwnerUseCase,
             RequestGraduationUseCase requestGraduationUseCase) {
         this.currentStudentService = currentStudentService;
-        this.programEnrollmentService = programEnrollmentService;
+        this.verifyProgramEnrollmentOwnerUseCase = verifyProgramEnrollmentOwnerUseCase;
         this.requestGraduationUseCase = requestGraduationUseCase;
     }
 
@@ -34,10 +32,7 @@ public class MeGraduationRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     public GraduationRequestResponse request(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.get(id);
-        if (!enrollment.getStudent().getId().equals(student.getId())) {
-            throw new ProgramEnrollmentNotFoundException(id);
-        }
+        verifyProgramEnrollmentOwnerUseCase.verify(id, student.getId());
         return GraduationRequestResponse.from(requestGraduationUseCase.request(id));
     }
 }
