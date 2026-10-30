@@ -95,7 +95,6 @@ com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCo
 com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
-com.red_escuela.backend.config.LocalSeedRunner.run(org.springframework.boot.ApplicationArguments) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.EnrollmentLifecycleQueryService.findCourseEnrollmentEndDate(java.lang.Long) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.EnrollmentLifecycleQueryService.findProgramEnrollmentEndDate(java.lang.Long) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.OnlineOnlyEnrollmentLookupService.findOnlineOnlyCourseEnrollmentIds(java.util.Collection) declares @Transactional

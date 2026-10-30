@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.exception;
+package com.red_escuela.backend.evaluation.exception;
 
 import com.red_escuela.backend.shared.exception.BadRequestException;
 

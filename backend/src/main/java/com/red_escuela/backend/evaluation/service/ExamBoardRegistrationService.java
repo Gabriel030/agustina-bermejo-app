@@ -21,7 +21,7 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowC
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.evaluation.exception.StudentNotRegularException;
 import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;

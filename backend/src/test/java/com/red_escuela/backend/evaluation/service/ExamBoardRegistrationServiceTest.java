@@ -27,7 +27,7 @@ import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInAnotherEx
 import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInExamBoardException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
-import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.evaluation.exception.StudentNotRegularException;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;

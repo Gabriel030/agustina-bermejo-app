@@ -6,7 +6,6 @@
 |* `c.r.b.c.ActuatorSecurityConfig`
 * `c.r.b.c.AsyncEventListenerConfiguration`
 * `c.r.b.c.JwtAuthenticationFilter`
-* `c.r.b.c.LocalSeedRunner`
 * `c.r.b.c.MetricsConfig`
 * `c.r.b.c.OpenApiConfig`
 * `c.r.b.c.OpenApiSecurityConfig`
