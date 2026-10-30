@@ -18,6 +18,8 @@ function refund(overrides) {
     amount: { amount: '30000.00', currency: 'ARS' },
     destinationAccount: '0170000000000123',
     destinationHolder: 'Florencia Ledesma',
+    approvedOn: '2026-10-01',
+    authorizationRequestId: 90,
     requestedOn: '2026-10-01',
     completedOn: null,
     completionReference: null,
@@ -207,7 +209,7 @@ describe('RefundsSection', () => {
     ['INSUFFICIENT_ACCOUNT_CREDIT', 409, /no tiene saldo a favor suficiente/],
   ])('keeps the dialog open and explains the %s error', async (code, status, message) => {
     mockRefunds([refund({ id: 2, paymentId: 56, requestedOn: '2020-01-01' })]);
-    server.use(http.post(`${API}/refunds/2/completion`, () => HttpResponse.json({ code }, { status })));
+    server.use(http.post(`${API}/refunds/2/completion`, () => HttpResponse.json({ code, violations: [] }, { status })));
     const user = userEvent.setup();
     renderWithProviders(<RefundsSection studentId={7} />);
     await expandFirstRequest(user);
@@ -229,7 +231,7 @@ describe('RefundsSection', () => {
           loads += 1;
           return HttpResponse.json([refund({ id: 2, paymentId: 56, requestedOn: '2020-01-01' })]);
         }),
-        http.post(`${API}/refunds/2/completion`, () => HttpResponse.json({ code }, { status: 409 })),
+        http.post(`${API}/refunds/2/completion`, () => HttpResponse.json({ code, violations: [] }, { status: 409 })),
       );
       const user = userEvent.setup();
       renderWithProviders(<RefundsSection studentId={7} />);
@@ -271,7 +273,7 @@ describe('RefundsSection', () => {
 
   it('shows the server error when the failure reason is rejected', async () => {
     mockRefunds([refund({ id: 2, paymentId: 56 })]);
-    server.use(http.post(`${API}/refunds/2/failure`, () => HttpResponse.json({ code: 'REFUND_FAILURE_REASON_INVALID' }, { status: 400 })));
+    server.use(http.post(`${API}/refunds/2/failure`, () => HttpResponse.json({ code: 'REFUND_FAILURE_REASON_INVALID', violations: [] }, { status: 400 })));
     const user = userEvent.setup();
     renderWithProviders(<RefundsSection studentId={7} />);
     await expandFirstRequest(user);

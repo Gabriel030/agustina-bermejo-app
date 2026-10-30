@@ -57,8 +57,8 @@ function mockEnvironment({ preview = previewResponse(), onPreview, grant, onGran
   mockOffers();
   server.use(
     http.get(`${API}/students/9`, () => HttpResponse.json({ id: 9, nombre: 'Valentina', apellido: 'Suárez' })),
-    http.get(`${API}/program-enrollments/4`, () => HttpResponse.json({ id: 4, programName: 'Enfermería', status: 'ENROLLED' })),
-    http.get(`${API}/course-enrollments/11`, () => HttpResponse.json({ id: 11, courseName: 'Primeros Auxilios', status: 'ENROLLED' })),
+    http.get(`${API}/program-enrollments/4`, () => HttpResponse.json({ id: 4, programId: 2, programName: 'Enfermería', status: 'ENROLLED', studentId: 9, enrollmentDate: '2026-03-01T00:00:00', completionDate: '2027-12-15T00:00:00' })),
+    http.get(`${API}/course-enrollments/11`, () => HttpResponse.json({ id: 11, courseId: 3, courseName: 'Primeros Auxilios', status: 'ENROLLED', studentId: 9, enrollmentDate: '2026-03-01T00:00:00', completionDate: '2026-12-15T00:00:00' })),
     http.get(`${API}/discount-definitions`, () => HttpResponse.json(CATALOG)),
     http.post(`${API}/program-enrollments/4/student-discounts/preview`, async ({ request }) => {
       onPreview?.(await request.json());
