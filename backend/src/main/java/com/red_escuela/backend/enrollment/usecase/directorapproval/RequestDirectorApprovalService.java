@@ -1,16 +1,15 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
 import java.time.Clock;
-import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestAlreadyActiveException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.service.ProgramPlanSubjectGuard;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
@@ -27,20 +26,20 @@ public class RequestDirectorApprovalService implements RequestDirectorApprovalUs
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final SubjectRepository subjectRepository;
-    private final ProgramSubjectRepository programSubjectRepository;
+    private final ProgramPlanSubjectGuard programPlanSubjectGuard;
     private final CurrentPersonService currentPersonService;
     private final Clock clock;
 
     public RequestDirectorApprovalService(DirectorApprovalRequestRepository directorApprovalRequestRepository,
                                            ProgramEnrollmentRepository programEnrollmentRepository,
                                            SubjectRepository subjectRepository,
-                                           ProgramSubjectRepository programSubjectRepository,
+                                           ProgramPlanSubjectGuard programPlanSubjectGuard,
                                            CurrentPersonService currentPersonService,
                                            Clock clock) {
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectRepository = subjectRepository;
-        this.programSubjectRepository = programSubjectRepository;
+        this.programPlanSubjectGuard = programPlanSubjectGuard;
         this.currentPersonService = currentPersonService;
         this.clock = clock;
     }
@@ -74,9 +73,6 @@ public class RequestDirectorApprovalService implements RequestDirectorApprovalUs
     }
 
     private void requireSubjectInProgramPlan(ProgramEnrollment programEnrollment, Subject subject) {
-        Long programId = programEnrollment.getProgram().getId();
-        if (programSubjectRepository.findByProgramIdAndSubjectId(programId, subject.getId()).isEmpty()) {
-            throw new SubjectNotInProgramPlanException(subject.getId(), programId);
-        }
+        programPlanSubjectGuard.requireSubjectInPlan(programEnrollment.getProgram().getId(), subject.getId());
     }
 }

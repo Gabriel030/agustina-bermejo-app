@@ -1,3 +1,2 @@
 COUNT billing 21
 COUNT enrollment 45
-Module 'graduation' depends on non-exposed type com.red_escuela.backend.academicstructure.entity.ProgramSubject within module 'academicstructure'! | Method <com.red_escuela.backend.graduation.service.CertificateService.issueApprovedSubjectsCertificate(java.lang.Long)> calls method <com.red_escuela.backend.academicstructure.entity.ProgramSubject.getSubject()> in (CertificateService.java)
