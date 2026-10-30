@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
@@ -16,14 +17,14 @@ public record AnnouncementResponse(
         String body,
         AnnouncementCategory category,
         boolean urgent,
-        LocalDate expiresAt,
+        @Schema(nullable = true) LocalDate expiresAt,
         String audienceLabel,
         AnnouncementStatus status,
-        LocalDateTime scheduledFor,
-        LocalDateTime sentAt,
+        @Schema(nullable = true) LocalDateTime scheduledFor,
+        @Schema(nullable = true) LocalDateTime sentAt,
         String createdBy,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        @Schema(nullable = true) LocalDateTime updatedAt) {
 
     public static AnnouncementResponse from(Announcement announcement) {
         return new AnnouncementResponse(
