@@ -4,5 +4,6 @@ public enum MonthlyInvoiceRunItemResult {
     ISSUED,
     NOT_APPLICABLE,
     ALREADY_ISSUED,
-    FAILED
+    FAILED,
+    RETRIES_EXHAUSTED
 }

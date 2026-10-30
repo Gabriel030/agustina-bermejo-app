@@ -249,7 +249,7 @@ describe('Nota de crédito — paso 2 (confirmar)', () => {
     ['CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT', /La nota supera lo que se puede acreditar/],
     ['CREDIT_NOTE_DISTRIBUTION_MISMATCH', /La cuota cambió mientras armabas la nota/],
   ])('on %s shows the conflict with a reload action that restarts the amounts', async (code, message) => {
-    mockServer({ issue: () => HttpResponse.json({ code }, { status: 409 }) });
+    mockServer({ issue: () => HttpResponse.json({ code, violations: [] }, { status: 409 }) });
     const user = userEvent.setup();
     renderPage();
     await screen.findByRole('button', { name: 'Revisar la nota' });
@@ -265,7 +265,7 @@ describe('Nota de crédito — paso 2 (confirmar)', () => {
   });
 
   it('links to Comprobantes when the installment has a receipt in review', async () => {
-    mockServer({ issue: () => HttpResponse.json({ code: 'PENDING_BANK_TRANSFER_ON_INVOICE' }, { status: 409 }) });
+    mockServer({ issue: () => HttpResponse.json({ code: 'PENDING_BANK_TRANSFER_ON_INVOICE', violations: [] }, { status: 409 }) });
     const user = userEvent.setup();
     renderPage();
     await screen.findByRole('button', { name: 'Revisar la nota' });

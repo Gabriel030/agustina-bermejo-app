@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.authorization.service.ExpireAuthorization
 import com.red_escuela.backend.billing.configuration.service.ActivateDueConfigurationVersionsJob;
 import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService;
 import com.red_escuela.backend.billing.service.InvoiceOverdueSweepService;
+import com.red_escuela.backend.billing.run.operation.FailedInvoiceRetryJob;
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.event.EventPublicationResubmissionJob;
@@ -30,6 +31,7 @@ final class TestSuiteRules {
             InvoiceOverdueSweepService.class,
             EnrollmentBillingComplianceSweepService.class,
             MonthlyInvoiceIssuanceJob.class,
+            FailedInvoiceRetryJob.class,
             ExpireAuthorizationRequestsJob.class,
             ActivateDueConfigurationVersionsJob.class,
             EventPublicationResubmissionJob.class);
