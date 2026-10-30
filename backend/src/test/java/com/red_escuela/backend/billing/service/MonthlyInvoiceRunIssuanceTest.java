@@ -245,8 +245,6 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
     }
 
     private void setPaymentStatus(Fixture fixture, EnrollmentPaymentStatus standing) {
-        transactionTemplate.executeWithoutResult(tx ->
-                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).setPaymentStatus(standing));
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, fixture.enrollment().getId(), standing);
     }
 

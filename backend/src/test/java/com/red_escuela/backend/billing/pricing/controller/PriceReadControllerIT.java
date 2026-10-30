@@ -143,7 +143,6 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(entityManager.find(Program.class, programId));
         enrollment.setStatus(status);
-        enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), payment);

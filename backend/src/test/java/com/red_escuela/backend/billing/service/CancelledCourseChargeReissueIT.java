@@ -99,7 +99,6 @@ class CancelledCourseChargeReissueIT extends AbstractIntegrationTest {
             enrollment.setCourse(course);
             enrollment.setStatus(EnrollmentStatus.ENROLLED);
             enrollment.setEnrollmentDate(LocalDateTime.now());
-            enrollment.setPaymentStatus(EnrollmentPaymentStatus.UP_TO_DATE);
             entityManager.persist(enrollment);
             PaymentPlanSelection selection = new PaymentPlanSelection();
             selection.setCourseEnrollment(enrollment);

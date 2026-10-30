@@ -82,8 +82,6 @@ class SuspendedEnrollmentClosureServiceTest {
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(enrolledAt);
-        enrollment.setPaymentStatus(EnrollmentPaymentStatus.SUSPENDED);
-        enrollment.setPaymentStatusUpdatedAt(LocalDateTime.of(2027, 4, 12, 10, 0));
         when(standingRepository.findSuspendedProgramEnrollmentIds()).thenReturn(List.of(ENROLLMENT_ID));
         when(enrollments.findAllById(List.of(ENROLLMENT_ID))).thenReturn(List.of(enrollment));
         when(standingQuery.findStandingOfProgramEnrollment(ENROLLMENT_ID)).thenReturn(Optional.of(new EnrollmentPaymentStandingView(ENROLLMENT_ID, 41L,
@@ -125,7 +123,6 @@ class SuspendedEnrollmentClosureServiceTest {
 
         assertThat(closed).isZero();
         assertThat(enrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
-        assertThat(enrollment.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         verifyNoInteractions(port);
         verifyNoInteractions(invoices);
         verifyNoInteractions(eventPublisher);
@@ -134,18 +131,14 @@ class SuspendedEnrollmentClosureServiceTest {
     @Test
     void theDayAfterTheCycleClosesItNotifiesBillingWithTheNonpaymentCauseAndTouchesNoInvoice() {
         ProgramEnrollment enrollment = suspendedEnrollment(LocalDateTime.of(2027, 3, 1, 10, 0));
-        List<EnrollmentPaymentStatus> paymentStatusWhenNotified = new ArrayList<>();
-        doAnswer(invocation -> paymentStatusWhenNotified.add(enrollment.getPaymentStatus())).when(port).registerWithdrawalForBilling(any());
 
         int closed = serviceAt(LocalDateTime.of(2028, 1, 1, 0, 30)).closeFinishedCycles();
 
         assertThat(closed).isEqualTo(1);
         assertThat(enrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
-        assertThat(enrollment.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         assertThat(enrollment.getWithdrawnByPersonId()).isNull();
         assertThat(enrollment.getWithdrawalEffectiveDate()).isEqualTo(LocalDate.of(2028, 1, 1));
         verify(port).registerWithdrawalForBilling(nonpaymentOn(LocalDate.of(2028, 1, 1)));
-        assertThat(paymentStatusWhenNotified).containsExactly(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         verify(eventPublisher).publishEvent(ArgumentMatchers.<Object>argThat(published -> published instanceof EnrollmentClosedWhileSuspendedEvent event
                 && event.eventId() != null && event.kind() == EnrollmentKind.PROGRAM && event.enrollmentId().equals(enrollment.getId())
                 && event.businessDate().equals(LocalDate.of(2028, 1, 1))));

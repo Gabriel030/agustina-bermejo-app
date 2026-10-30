@@ -517,13 +517,36 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     @Test
     @Tag("D-185")
     @Tag("D-306")
+    void aVoluntaryWithdrawalRegisteredByAPersonIsNotTreatedAsAWithdrawalForNonpaymentButASystemWithdrawalIs() {
+        arrange(NONPAYMENT_NET_YEAR);
+        overdueInstallmentDueOn(d(NONPAYMENT_NET_YEAR, 5, 10));
+        evaluate(d(NONPAYMENT_NET_YEAR, 5, 20));
+        evaluate(d(NONPAYMENT_NET_YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        Long personId = jdbc.queryForObject("select min(id) from person", Long.class);
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawn_by_person_id = ? where id = ?", personId, enrollment.getId());
+
+        runStepFor(d(NONPAYMENT_NET_YEAR, 6, 3));
+
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+
+        jdbc.update("update course_enrollment set withdrawn_by_person_id = null where id = ?", enrollment.getId());
+
+        runStepFor(d(NONPAYMENT_NET_YEAR, 6, 4));
+
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+    }
+
+    @Test
+    @Tag("D-185")
+    @Tag("D-306")
     void theNightlyStepClosesTheSuspendedStandingOfAnEnrollmentWithdrawnForNonpaymentWhenTheClosureEventWasLost() {
         arrange(NONPAYMENT_NET_YEAR);
         overdueInstallmentDueOn(d(NONPAYMENT_NET_YEAR, 5, 10));
         evaluate(d(NONPAYMENT_NET_YEAR, 5, 20));
         evaluate(d(NONPAYMENT_NET_YEAR, 6, 1));
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
-        jdbc.update("update course_enrollment set status = 'WITHDRAWN', payment_status = 'WITHDRAWN_FOR_NONPAYMENT' where id = ?", enrollment.getId());
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN' where id = ?", enrollment.getId());
 
         runStepFor(d(NONPAYMENT_NET_YEAR, 6, 3));
 
@@ -544,7 +567,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         evaluate(d(NONPAYMENT_PAYMENT_YEAR, 5, 20));
         evaluate(d(NONPAYMENT_PAYMENT_YEAR, 6, 1));
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
-        jdbc.update("update course_enrollment set status = 'WITHDRAWN', payment_status = 'WITHDRAWN_FOR_NONPAYMENT' where id = ?", enrollment.getId());
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN' where id = ?", enrollment.getId());
 
         receiveMoney(installment, "100000.00", d(NONPAYMENT_PAYMENT_YEAR, 6, 2));
         allocateOn(installment, d(NONPAYMENT_PAYMENT_YEAR, 6, 2));

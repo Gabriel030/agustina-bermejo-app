@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -147,9 +148,9 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
-        enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
+        PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
 
         Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(3)).dueOn(LocalDate.now().minusMonths(3)).withBaseAmount(ars(5000)).build();
         BillingTestFixtures.markInvoiceAsOverdue(invoice);

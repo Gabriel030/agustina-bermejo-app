@@ -353,8 +353,8 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Long enrollmentId = programEnrollmentRepository.findIdByAdmissionApplicationId(application.getId()).orElseThrow();
 
         assertThatThrownBy(() -> jdbc.update("""
-                insert into program_enrollment (student_id, program_id, status, payment_status, admission_application_id, version)
-                select student_id, program_id, 'PAUSED', payment_status, admission_application_id, 0 from program_enrollment where id = ?
+                insert into program_enrollment (student_id, program_id, status, admission_application_id, version)
+                select student_id, program_id, 'PAUSED', admission_application_id, 0 from program_enrollment where id = ?
                 """, enrollmentId)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
