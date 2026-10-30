@@ -1,11 +1,9 @@
 package com.red_escuela.backend.graduation.controller;
 
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.graduation.service.CertificateService;
+import com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyProgramEnrollmentOwnerUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -20,14 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeCertificateController {
 
     private final CurrentStudentService currentStudentService;
-    private final ProgramEnrollmentService programEnrollmentService;
+    private final VerifyProgramEnrollmentOwnerUseCase verifyProgramEnrollmentOwnerUseCase;
     private final CertificateService certificateService;
 
     public MeCertificateController(
-            CurrentStudentService currentStudentService, ProgramEnrollmentService programEnrollmentService,
+            CurrentStudentService currentStudentService, VerifyProgramEnrollmentOwnerUseCase verifyProgramEnrollmentOwnerUseCase,
             CertificateService certificateService) {
         this.currentStudentService = currentStudentService;
-        this.programEnrollmentService = programEnrollmentService;
+        this.verifyProgramEnrollmentOwnerUseCase = verifyProgramEnrollmentOwnerUseCase;
         this.certificateService = certificateService;
     }
 
@@ -45,10 +43,7 @@ public class MeCertificateController {
 
     private void requireOwner(Long programEnrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.get(programEnrollmentId);
-        if (!enrollment.getStudent().getId().equals(student.getId())) {
-            throw new ProgramEnrollmentNotFoundException(programEnrollmentId);
-        }
+        verifyProgramEnrollmentOwnerUseCase.verify(programEnrollmentId, student.getId());
     }
 
     private ResponseEntity<byte[]> pdfResponse(byte[] pdf, String filename) {

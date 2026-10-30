@@ -4,10 +4,8 @@ import com.red_escuela.backend.attendance.dto.AttendanceResponse;
 import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
 import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
 import com.red_escuela.backend.attendance.entity.Attendance;
-import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
-import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.shared.storage.UnsupportedFileTypeException;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.GetAttendanceUseCase;
@@ -17,7 +15,7 @@ import com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendancePro
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import com.red_escuela.backend.evaluation.service.GradeItemService;
-import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +32,7 @@ import java.util.List;
 @RequestMapping("/me")
 public class MeAcademicRecordController {
     private final CurrentStudentService currentStudentService;
-    private final SubjectSectionEnrollmentService subjectSectionEnrollmentService;
+    private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase;
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final GetAttendanceUseCase getAttendanceUseCase;
@@ -44,7 +42,7 @@ public class MeAcademicRecordController {
 
     public MeAcademicRecordController(
             CurrentStudentService currentStudentService,
-            SubjectSectionEnrollmentService subjectSectionEnrollmentService,
+            SectionEnrollmentFinder sectionEnrollmentFinder,
             ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             GetAttendanceUseCase getAttendanceUseCase,
@@ -52,7 +50,7 @@ public class MeAcademicRecordController {
             GradeItemService gradeItemService,
             FileStorageService fileStorageService) {
         this.currentStudentService = currentStudentService;
-        this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
+        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.listProgramEnrollmentAttendanceUseCase = listProgramEnrollmentAttendanceUseCase;
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.getAttendanceUseCase = getAttendanceUseCase;
@@ -97,10 +95,7 @@ public class MeAcademicRecordController {
 
     private void requireOwner(Long enrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.get(enrollmentId);
-        if (!enrollment.getStudent().getId().equals(student.getId())) {
-            throw new SectionEnrollmentNotFoundException(enrollmentId);
-        }
+        sectionEnrollmentFinder.requireProgramEnrollmentOf(enrollmentId, student.getId());
     }
 
     private void requireAttendanceOwner(Attendance attendance, Student student) {

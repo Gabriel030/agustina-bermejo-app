@@ -11,9 +11,8 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.graduation.repository.CertificateIssuanceRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -32,29 +31,29 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 
 @Service
 public class CertificateService {
 
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final ProgramEnrollmentService programEnrollmentService;
+    private final ProgramEnrollmentFinder programEnrollmentFinder;
+    private final ProgramProgressReader programProgressReader;
     private final InvoiceQueryService invoiceQueryService;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
-    public CertificateService(ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
+    public CertificateService(ProgramEnrollmentFinder programEnrollmentFinder, ProgramProgressReader programProgressReader,
             InvoiceQueryService invoiceQueryService, CertificateIssuanceRepository certificateIssuanceRepository,
             CurrentPersonService currentPersonService,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
-        this.programEnrollmentRepository = programEnrollmentRepository;
-        this.programEnrollmentService = programEnrollmentService;
+        this.programEnrollmentFinder = programEnrollmentFinder;
+        this.programProgressReader = programProgressReader;
         this.invoiceQueryService = invoiceQueryService;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
         this.currentPersonService = currentPersonService;
@@ -69,7 +68,7 @@ public class CertificateService {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
         Student student = enrollment.getStudent();
-        boolean cursandoAlgo = programEnrollmentService.hasActiveEnrollment(programEnrollmentId);
+        boolean cursandoAlgo = programProgressReader.hasActiveEnrollment(programEnrollmentId);
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
@@ -91,7 +90,7 @@ public class CertificateService {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         Person person = enrollment.getStudent().getPerson();
-        List<ProgramSubjectView> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
+        List<ProgramSubjectView> aprobadas = programProgressReader.listApprovedSubjects(programEnrollmentId);
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
@@ -162,7 +161,6 @@ public class CertificateService {
     }
 
     private ProgramEnrollment findOrThrow(Long id) {
-        return programEnrollmentRepository.findById(id)
-                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
+        return programEnrollmentFinder.find(id);
     }
 }
