@@ -34,4 +34,7 @@ public interface MonthlyInvoiceSimulationLineRepository extends JpaRepository<Mo
 
     @Query(value = "select course_id from course_enrollment where id = :id", nativeQuery = true)
     Long findCourseIdOfCourseEnrollment(@Param("id") Long id);
+
+    @Query(value = "select cast(pg_advisory_xact_lock(:key) as text)", nativeQuery = true)
+    String lockSimulationsOfPeriodAndBusinessDate(@Param("key") long key);
 }

@@ -5382,7 +5382,7 @@
           },
           "result" : {
             "type" : "string",
-            "x-extensible-enum" : [ "ISSUED", "NOT_APPLICABLE", "ALREADY_ISSUED", "FAILED" ]
+            "x-extensible-enum" : [ "ISSUED", "NOT_APPLICABLE", "ALREADY_ISSUED", "FAILED", "RETRIES_EXHAUSTED" ]
           },
           "total" : {
             "$ref" : "#/components/schemas/Money"

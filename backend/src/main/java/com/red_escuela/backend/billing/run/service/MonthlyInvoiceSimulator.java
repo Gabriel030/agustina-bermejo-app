@@ -23,6 +23,8 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -44,11 +46,13 @@ public class MonthlyInvoiceSimulator {
     private final MonthlyInvoiceSimulationAlertRepository alertRepository;
     private final MonthlyInvoiceCandidateFinder candidateFinder;
     private final MonthlyInstallmentRowProcessor rowProcessor;
+    private final TransactionTemplate transaction;
     private final Clock clock;
 
     public MonthlyInvoiceSimulator(MonthlyInvoiceRunRepository runRepository, MonthlyInvoiceSimulationLineRepository lineRepository,
                                    MonthlyInvoiceSimulationAlertRepository alertRepository, MonthlyInvoiceCandidateFinder candidateFinder,
-                                   MonthlyInstallmentRowProcessor rowProcessor, Clock clock) {
+                                   MonthlyInstallmentRowProcessor rowProcessor, PlatformTransactionManager transactionManager, Clock clock) {
+        this.transaction = new TransactionTemplate(transactionManager);
         this.runRepository = runRepository;
         this.lineRepository = lineRepository;
         this.alertRepository = alertRepository;
@@ -58,18 +62,17 @@ public class MonthlyInvoiceSimulator {
     }
 
     public MonthlyInvoiceRun simulateMonthlyInvoices(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
+        return transaction.execute(status -> replaceSimulation(period, businessDate, pricingDate, trigger));
+    }
+
+    private MonthlyInvoiceRun replaceSimulation(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
+        lineRepository.lockSimulationsOfPeriodAndBusinessDate(period.atDay(1).toEpochDay() * 100000L + businessDate.toEpochDay());
         runRepository.deleteSimulationsOfPeriodAndBusinessDate(period.atDay(1), businessDate);
         MonthlyInvoiceRun run = runRepository.saveAndFlush(MonthlyInvoiceRun.startSimulationRun(period.atDay(1), businessDate, pricingDate, trigger, LocalDateTime.now(clock)));
         log.info("Simulacion mensual iniciada: periodo={}, corrida={}, fechaDePrecio={}", period, run.getId(), pricingDate);
         SimulationTally tally = new SimulationTally();
-        try {
-            candidateFinder.forEachMonthlyCandidate(period, (type, enrollmentId) -> simulateEnrollment(run.getId(), type, enrollmentId, period, pricingDate, tally));
-            alertRepository.saveAll(tally.alertsOf(run.getId(), previousInstallmentTotalsOf(period)));
-        } catch (RuntimeException e) {
-            log.error("Simulacion mensual abortada: periodo={}", period, e);
-            run.abortMonthlyRun("SWEEP_ABORTED", LocalDateTime.now(clock));
-            return runRepository.save(run);
-        }
+        candidateFinder.forEachMonthlyCandidate(period, (type, enrollmentId) -> simulateEnrollment(run.getId(), type, enrollmentId, period, pricingDate, tally));
+        alertRepository.saveAll(tally.alertsOf(run.getId(), previousInstallmentTotalsOf(period)));
         run.finishMonthlyRun(MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN, LocalDateTime.now(clock));
         log.info("Simulacion mensual finalizada: periodo={}, corrida={}, emitiria={}, noCorresponde={}, yaEmitidas={}, fallarian={}", period, run.getId(),
                 tally.count(MonthlyInvoiceRunItemResult.ISSUED), tally.count(MonthlyInvoiceRunItemResult.NOT_APPLICABLE),

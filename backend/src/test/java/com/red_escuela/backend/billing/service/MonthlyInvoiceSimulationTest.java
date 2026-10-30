@@ -40,6 +40,8 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private MonthlyInvoiceSimulator simulator;
     @Autowired
+    private com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceSimulationUseCase simulationUseCase;
+    @Autowired
     private MonthlyInvoiceRunExecutor executor;
     @Autowired
     private MonthlyInvoiceRunRepository runRepository;
@@ -162,5 +164,45 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
                     assertThat(alert.getOfferingId()).isEqualTo(line.getOfferingId());
                     assertThat(alert.getAlertType()).isIn(MonthlyInvoiceSimulationAlertType.PRICE_MISSING, MonthlyInvoiceSimulationAlertType.EMISSION_ERROR);
                 });
+    }
+
+    @Test
+    @Tag("D-161")
+    void aManualSimulationAfterAMidMonthPriceIncreaseUsesTheFirstDayPriceOfThePeriodLikeTheRealRun() {
+        Career career = newCareer();
+        Year year = newYear(career, 2026, 10, 1, 2, null);
+        Long cohort = newCohort(year, CohortIntake.FIRST, date(2026, 3, 1));
+        today(date(2026, 3, 25));
+        Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, APRIL, date(2026, 3, 10));
+        newPrice(career, com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT, 99999, date(2026, 4, 2));
+        today(date(2026, 4, 3));
+
+        var response = simulationUseCase.simulateMonthlyInvoicesOfPeriodAsOfToday(APRIL);
+
+        assertThat(response.pricingDate()).isEqualTo(date(2026, 4, 1));
+        var simulated = response.lines().stream().filter(line -> line.enrollmentId().equals(enrollment)).findFirst().orElseThrow();
+        jdbcTemplate.update("insert into nightly_billing_run (business_date, status, trigger, started_at, finished_at) values (?, 'COMPLETED', 'SCHEDULED', ?, ?) on conflict (business_date) do nothing",
+                date(2026, 4, 1), LocalDateTime.of(2026, 4, 1, 3, 0), LocalDateTime.of(2026, 4, 1, 3, 30));
+        MonthlyInvoiceRun real = executor.runMonthlyInvoicesOfPeriod(APRIL, date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED).orElseThrow();
+        MonthlyInvoiceRunItem item = itemRepository.findByMonthlyInvoiceRunIdOrderByIdAsc(real.getId()).stream()
+                .filter(candidate -> candidate.getEnrollmentId().equals(enrollment)).findFirst().orElseThrow();
+        String idList = item.getInvoiceIds().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+        assertThat(jdbcTemplate.queryForObject("select sum(total) from invoice where id in (" + idList + ")", java.math.BigDecimal.class))
+                .isEqualByComparingTo(simulated.total().value().amount());
+    }
+
+    @Test
+    void twoConcurrentSimulationsOfTheSameDayLeaveExactlyOneAndNeitherFails() throws Exception {
+        enrollmentOfAprilCohort();
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var first = pool.submit(() -> simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED));
+            var second = pool.submit(() -> simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.MANUAL));
+            first.get();
+            second.get();
+        } finally {
+            pool.shutdown();
+        }
+        assertThat(runRepository.findByPeriodOrderByIdAsc(APRIL.atDay(1))).hasSize(1);
     }
 }

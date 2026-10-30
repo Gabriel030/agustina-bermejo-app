@@ -25,7 +25,7 @@ public class MonthlyInvoiceRunQueryService implements MonthlyInvoiceRunQueryUseC
 
     @Override
     public List<MonthlyInvoiceRunItemResponse> listMonthlyInvoiceRunItems(Long monthlyRunId, MonthlyInvoiceRunItemResult result) {
-        runRepository.findById(monthlyRunId).orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
+        runRepository.findById(monthlyRunId).filter(run -> run.getMode() == com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode.REAL).orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
         List<MonthlyInvoiceRunItem> items = Optional.ofNullable(result)
                 .map(wanted -> itemRepository.findByMonthlyInvoiceRunIdAndResultOrderByIdAsc(monthlyRunId, wanted))
                 .orElseGet(() -> itemRepository.findByMonthlyInvoiceRunIdOrderByIdAsc(monthlyRunId));
