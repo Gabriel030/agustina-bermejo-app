@@ -4997,6 +4997,19 @@
         "required" : [ "cutOffAt", "discountDefinitionId", "feeType", "lostBenefitCount", "promotionDescription", "promotionRedemptionId", "remaining", "scopeCount", "studentId", "studentName", "used" ],
         "type" : "object"
       },
+      "ManualMonthlyInvoiceIssuanceRequest" : {
+        "properties" : {
+          "period" : {
+            "type" : "string"
+          },
+          "simulationRunId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "period", "simulationRunId" ],
+        "type" : "object"
+      },
       "MarketingDiscountRequest" : {
         "properties" : {
           "fixedAmount" : {
@@ -26131,6 +26144,76 @@
           }
         },
         "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
+    "/monthly-invoice-runs/manual-issuances" : {
+      "post" : {
+        "operationId" : "ManualMonthlyInvoiceIssuance_issueMonthlyInvoicesManually",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ManualMonthlyInvoiceIssuanceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MonthlyInvoiceRunResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "manual-monthly-invoice-issuance-controller" ]
       }
     },
     "/monthly-invoice-runs/simulations" : {
