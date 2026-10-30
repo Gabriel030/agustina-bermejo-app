@@ -99,7 +99,7 @@ class SuspendedEnrollmentClosureServiceTest {
         when(template.termYear()).thenReturn(2027);
         YearCycle cycle = YearCycle.of(template, YearBillingTerms.initial(0), 2027);
         when(cycleFactory.cyclesOf(any(), anyInt())).thenReturn(List.of(cycle));
-        ProgramEnrollmentService enrollmentService = new ProgramEnrollmentService(enrollments, null, null, null, null, null, null, null, null,
+        ProgramEnrollmentService enrollmentService = new ProgramEnrollmentService(enrollments, null, null, null, null, null, null, null, null, null,
                 new EnrollmentWithdrawalDateResolver(clock), port, clock);
         logs.start();
         closureLogger.addAppender(logs);

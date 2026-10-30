@@ -4,11 +4,8 @@ import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
 import java.math.BigDecimal;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.identity.exception.StudentNotActiveException;
-import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
+import com.red_escuela.backend.identity.api.StudentFinder;
 
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.ElectiveGroupProgressResponse;
@@ -27,7 +24,6 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
@@ -53,7 +49,8 @@ import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnr
 @Service
 public class ProgramEnrollmentService {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final StudentRepository studentRepository;
+    private final StudentFinder studentFinder;
+    private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final AcademicReferenceFinder academicReferenceFinder;
     private final ProgramCurriculumFinder programCurriculumFinder;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
@@ -66,7 +63,8 @@ public class ProgramEnrollmentService {
     private final Clock clock;
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
-            StudentRepository studentRepository,
+            StudentFinder studentFinder,
+            StudentEnrollmentEligibility studentEnrollmentEligibility,
             AcademicReferenceFinder academicReferenceFinder,
             ProgramCurriculumFinder programCurriculumFinder,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -78,7 +76,8 @@ public class ProgramEnrollmentService {
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.studentRepository = studentRepository;
+        this.studentFinder = studentFinder;
+        this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.academicReferenceFinder = academicReferenceFinder;
         this.programCurriculumFinder = programCurriculumFinder;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
@@ -111,10 +110,9 @@ public class ProgramEnrollmentService {
 
     private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow,
                                                boolean validateEligibility, ProgramEnrollmentApplication admissionApplication) {
-        Student student = studentRepository.findByIdForUpdate(studentId)
-                .orElseThrow(() -> new StudentNotFoundException(studentId));
+        Student student = studentFinder.requireByIdForUpdate(studentId);
         if (validateEligibility) {
-            validateStudentEligible(student);
+            studentEnrollmentEligibility.requireConfirmedAndActive(student);
         }
 
         Program program = academicReferenceFinder.findProgram(request.programId());
@@ -310,20 +308,11 @@ public class ProgramEnrollmentService {
     }
 
     public void validateStudentCanEnrollInProgram(Student student, Program program) {
-        validateStudentEligible(student);
+        studentEnrollmentEligibility.requireConfirmedAndActive(student);
         boolean alreadyEnrolled = !programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED)).isEmpty();
         if (alreadyEnrolled) {
             throw new AlreadyEnrolledInProgramException(student.getId(), program.getId());
-        }
-    }
-
-    private void validateStudentEligible(Student student) {
-        if (student.getOnboardingStatus() != StudentOnboardingStatus.CONFIRMADO) {
-            throw new StudentNotConfirmedException(student.getId());
-        }
-        if (student.getPerson().getStatus() != StatusType.ACTIVE) {
-            throw new StudentNotActiveException(student.getId());
         }
     }
 
