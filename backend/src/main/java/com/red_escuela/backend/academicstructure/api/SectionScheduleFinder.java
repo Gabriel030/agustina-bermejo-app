@@ -1,24 +1,21 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
-import com.red_escuela.backend.academicstructure.dto.SectionSlotView;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
-import com.red_escuela.backend.academicstructure.api.SectionScheduleQueries;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
+@Component
 @Transactional(readOnly = true)
-public class RepositorySectionScheduleQueries implements SectionScheduleQueries {
+public class SectionScheduleFinder {
 
     private final SectionScheduleSlotRepository slotRepository;
 
-    public RepositorySectionScheduleQueries(SectionScheduleSlotRepository slotRepository) {
+    public SectionScheduleFinder(SectionScheduleSlotRepository slotRepository) {
         this.slotRepository = slotRepository;
     }
 
-    @Override
     public List<SectionSlotView> findProgramSectionSlots(Long programSectionId) {
         return slotRepository.findBySubjectSectionId(programSectionId).stream()
                 .map(slot -> new SectionSlotView(

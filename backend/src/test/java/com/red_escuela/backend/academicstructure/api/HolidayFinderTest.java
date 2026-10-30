@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.junit.jupiter.api.Test;
@@ -13,12 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RepositoryHolidayQueriesTest {
+class HolidayFinderTest {
 
     @Mock
     private HolidayRepository holidayRepository;
     @InjectMocks
-    private RepositoryHolidayQueries queries;
+    private HolidayFinder queries;
 
     @Test
     void isHolidayDelegatesToTheDateLookup() {

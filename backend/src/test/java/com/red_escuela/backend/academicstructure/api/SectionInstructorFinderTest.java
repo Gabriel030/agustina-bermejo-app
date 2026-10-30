@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -19,12 +19,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RepositorySectionInstructorQueriesTest {
+class SectionInstructorFinderTest {
 
     @Mock
     private SubjectSectionInstructorRepository programInstructorRepository;
     @InjectMocks
-    private RepositorySectionInstructorQueries queries;
+    private SectionInstructorFinder queries;
 
     @Test
     void batchGroupsBySectionId() {

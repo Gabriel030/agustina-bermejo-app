@@ -1,11 +1,5 @@
 com.red_escuela.backend.academicstructure.api.BusinessDayCalendar is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.HolidayQueries is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.InstructorQueries is an api interface not named *Port
 com.red_escuela.backend.academicstructure.api.OfferingCurrencyLookup is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.SectionInstructorQueries is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.SectionQueries is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.SectionScheduleQueries is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.SectionTeachingQueries is an api interface not named *Port
 com.red_escuela.backend.academicstructure.api.TeachingTargetLookup is an api interface not named *Port
 com.red_escuela.backend.academicstructure.api.TermScheduleChangeValidator is an api interface not named *Port
 com.red_escuela.backend.academicstructure.api.package-info is an api interface not named *Port

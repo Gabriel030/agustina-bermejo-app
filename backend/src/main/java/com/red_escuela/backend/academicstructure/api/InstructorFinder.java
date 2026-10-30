@@ -1,22 +1,20 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
-import com.red_escuela.backend.academicstructure.api.InstructorQueries;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Component
 @Transactional(readOnly = true)
-public class RepositoryInstructorQueries implements InstructorQueries {
+public class InstructorFinder {
 
     private final InstructorRepository instructorRepository;
 
-    public RepositoryInstructorQueries(InstructorRepository instructorRepository) {
+    public InstructorFinder(InstructorRepository instructorRepository) {
         this.instructorRepository = instructorRepository;
     }
 
-    @Override
     public void requireExists(Long instructorId) {
         if (!instructorRepository.existsById(instructorId)) {
             throw new InstructorNotFoundException(instructorId);

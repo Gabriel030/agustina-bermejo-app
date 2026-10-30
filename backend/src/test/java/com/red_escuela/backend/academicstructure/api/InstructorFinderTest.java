@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RepositoryInstructorQueriesTest {
+class InstructorFinderTest {
 
     @Mock
     private InstructorRepository instructorRepository;
     @InjectMocks
-    private RepositoryInstructorQueries queries;
+    private InstructorFinder queries;
 
     @Test
     void requireExistsThrowsWhenMissing() {

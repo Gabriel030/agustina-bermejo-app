@@ -1,34 +1,30 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
-import com.red_escuela.backend.academicstructure.dto.CourseSectionView;
-import com.red_escuela.backend.academicstructure.dto.ProgramSectionView;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
-import com.red_escuela.backend.academicstructure.api.SectionQueries;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Service
+@Component
 @Transactional(readOnly = true)
-public class RepositorySectionQueries implements SectionQueries {
+public class SectionFinder {
 
     private final SubjectSectionRepository programSectionRepository;
     private final CourseSubjectSectionRepository courseSectionRepository;
 
-    public RepositorySectionQueries(SubjectSectionRepository programSectionRepository,
+    public SectionFinder(SubjectSectionRepository programSectionRepository,
                                     CourseSubjectSectionRepository courseSectionRepository) {
         this.programSectionRepository = programSectionRepository;
         this.courseSectionRepository = courseSectionRepository;
     }
 
-    @Override
     public ProgramSectionView findProgramSection(Long id) {
         SubjectSection section = programSectionRepository.findById(id)
                 .orElseThrow(() -> new SectionNotFoundException(id));
@@ -36,7 +32,6 @@ public class RepositorySectionQueries implements SectionQueries {
                 section.getCapacity(), section.getName());
     }
 
-    @Override
     public CourseSectionView findCourseSection(Long id) {
         CourseSubjectSection section = courseSectionRepository.findById(id)
                 .orElseThrow(() -> new SectionNotFoundException(id));
@@ -45,7 +40,6 @@ public class RepositorySectionQueries implements SectionQueries {
                 section.getTerm().getId(), section.getCapacity(), section.getName());
     }
 
-    @Override
     public boolean exists(SectionKind kind, Long id) {
         return switch (kind) {
             case PROGRAM -> programSectionRepository.existsById(id);
@@ -53,26 +47,22 @@ public class RepositorySectionQueries implements SectionQueries {
         };
     }
 
-    @Override
     public void requireExists(SectionKind kind, Long id) {
         if (!exists(kind, id)) {
             throw new SectionNotFoundException(id);
         }
     }
 
-    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockProgramSection(Long id) {
         programSectionRepository.findByIdForUpdate(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
-    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockCourseSection(Long id) {
         courseSectionRepository.findByIdForUpdate(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
-    @Override
     public Optional<Long> findEvaluationSchemeId(SectionKind kind, Long id) {
         return switch (kind) {
             case PROGRAM -> {
@@ -92,7 +82,6 @@ public class RepositorySectionQueries implements SectionQueries {
         }
     }
 
-    @Override
     public boolean isEvaluationSchemeAssigned(Long schemeId) {
         return programSectionRepository.existsByEvaluationSchemeId(schemeId)
                 || courseSectionRepository.existsByEvaluationSchemeId(schemeId);
