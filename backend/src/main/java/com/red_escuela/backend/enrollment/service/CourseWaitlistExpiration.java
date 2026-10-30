@@ -3,7 +3,6 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.notification.CourseWaitlistExpiredEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +27,7 @@ public class CourseWaitlistExpiration {
             enrollment.setStatus(EnrollmentStatus.WAITLIST_EXPIRED);
             courseEnrollmentRepository.save(enrollment);
             courseEnrollmentService.cancelModuleEnrollments(enrollment);
-            eventPublisher.publishEvent(new CourseWaitlistExpiredEvent(enrollment));
+            eventPublisher.publishEvent(EnrollmentNotificationEvents.waitlistExpiredOf(enrollment));
         }
     }
 }
