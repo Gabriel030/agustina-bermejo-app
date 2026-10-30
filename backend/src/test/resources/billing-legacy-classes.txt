@@ -118,7 +118,6 @@ com.red_escuela.backend.billing.service.BillingConfigurationAlertService
 com.red_escuela.backend.billing.service.BillingPlanningConfiguration
 com.red_escuela.backend.billing.service.ChargesOnReactivationListener
 com.red_escuela.backend.billing.service.CourseInvoicePlanningContextLoader
-com.red_escuela.backend.billing.service.EnrollmentBillingComplianceRowProcessor
 com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService
 com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService
 com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent

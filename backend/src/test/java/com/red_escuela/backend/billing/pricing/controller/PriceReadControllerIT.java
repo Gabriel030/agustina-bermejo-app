@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.pricing.controller;
 
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -145,6 +146,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
+        PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), payment);
         PaymentPlanSelection selection = new PaymentPlanSelection();
         selection.setProgramEnrollment(enrollment);
         selection.setPaymentPlanOption(planOptions.computeIfAbsent(cadence, this::planOption));

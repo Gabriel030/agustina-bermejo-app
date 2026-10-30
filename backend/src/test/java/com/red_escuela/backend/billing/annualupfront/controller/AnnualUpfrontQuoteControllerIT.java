@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
@@ -338,11 +340,11 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
     void aSuspendedWithdrawnPausedOrCompletedEnrollmentIsNotEligible() throws Exception {
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
 
-        jdbc.update("update program_enrollment set payment_status = 'SUSPENDED' where id = ?", learner.programEnrollmentId());
+        PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.SUSPENDED);
         assertThat(studentQuote().get("reasonCode").asText()).isEqualTo("ENROLLMENT_NOT_ACTIVE");
-        jdbc.update("update program_enrollment set payment_status = 'WITHDRAWN_FOR_NONPAYMENT' where id = ?", learner.programEnrollmentId());
+        PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         assertThat(studentQuote().get("reasonCode").asText()).isEqualTo("ENROLLMENT_NOT_ACTIVE");
-        jdbc.update("update program_enrollment set payment_status = 'UP_TO_DATE' where id = ?", learner.programEnrollmentId());
+        PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.UP_TO_DATE);
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
         for (String status : List.of("PAUSED", "COMPLETED", "WITHDRAWN")) {
             jdbc.update("update program_enrollment set status = ? where id = ?", status, learner.programEnrollmentId());

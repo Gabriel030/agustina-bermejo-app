@@ -1,6 +1,5 @@
 package com.red_escuela.backend.enrollment.repository;
 
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.Pageable;
@@ -31,13 +30,6 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     List<ProgramEnrollment> findByStatusInAndIdGreaterThanOrderByIdAsc(List<ProgramEnrollmentStatus> statuses, Long lastId, Pageable pageable);
 
-    List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusAndPaymentStatus(
-            Long studentId, Long programId, ProgramEnrollmentStatus status, EnrollmentPaymentStatus paymentStatus);
-
-    @Query("select e.id from ProgramEnrollment e where e.paymentStatus = :standing and e.status in :statuses order by e.id")
-    List<Long> findIdsByPaymentStatusAndStatusIn(@Param("standing") EnrollmentPaymentStatus standing,
-                                                   @Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
-
     @Query("select e.id from ProgramEnrollment e where e.program.id = :programId and e.status in :statuses order by e.id")
     List<Long> findIdsByProgramIdAndStatusIn(@Param("programId") Long programId, @Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
 
@@ -48,13 +40,7 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     @Query("select e from ProgramEnrollment e where e.id = :id")
     java.util.Optional<ProgramEnrollment> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("""
-            select count(e) > 0 from ProgramEnrollment e
-            where e.id = :id and e.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED
-              and e.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED,
-                                          com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
-            """)
-    boolean isEnrolledAndNotSuspendedForNonPayment(@Param("id") Long id);
+    boolean existsByIdAndStatus(Long id, ProgramEnrollmentStatus status);
 
     interface BillingTemplateRef {
         Long getProgramId();
@@ -72,7 +58,7 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
             """)
     java.util.Optional<BillingTemplateRef> findBillingTemplateRef(@Param("id") Long id);
 
-    @Query("select e.id as enrollmentId, e.program.id as targetId, e.paymentStatus as paymentStatus from ProgramEnrollment e where e.id in :ids")
+    @Query("select e.id as enrollmentId, e.program.id as targetId from ProgramEnrollment e where e.id in :ids")
     List<EnrollmentReminderTargetRow> findReminderTargetRows(@Param("ids") Collection<Long> ids);
 
     @Query("select e.id as enrollmentId, e.program.name as name from ProgramEnrollment e where e.id in :ids")

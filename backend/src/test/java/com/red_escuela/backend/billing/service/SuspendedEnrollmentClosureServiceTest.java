@@ -11,6 +11,9 @@ import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import org.springframework.context.ApplicationEventPublisher;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
+import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -65,6 +68,8 @@ class SuspendedEnrollmentClosureServiceTest {
     private final ProgramEnrollmentRepository enrollments = mock(ProgramEnrollmentRepository.class);
     private final InvoiceRepository invoices = mock(InvoiceRepository.class);
     private final EnrollmentWithdrawalBillingPort port = mock(EnrollmentWithdrawalBillingPort.class);
+    private final EnrollmentPaymentStandingRepository standingRepository = mock(EnrollmentPaymentStandingRepository.class);
+    private final EnrollmentPaymentStandingQuery standingQuery = mock(EnrollmentPaymentStandingQuery.class);
 
     private ProgramEnrollment suspendedEnrollment(LocalDateTime enrolledAt) {
         Student student = new Student();
@@ -79,7 +84,10 @@ class SuspendedEnrollmentClosureServiceTest {
         enrollment.setEnrollmentDate(enrolledAt);
         enrollment.setPaymentStatus(EnrollmentPaymentStatus.SUSPENDED);
         enrollment.setPaymentStatusUpdatedAt(LocalDateTime.of(2027, 4, 12, 10, 0));
-        when(enrollments.findIdsByPaymentStatusAndStatusIn(any(), any())).thenReturn(List.of(ENROLLMENT_ID));
+        when(standingRepository.findSuspendedProgramEnrollmentIds()).thenReturn(List.of(ENROLLMENT_ID));
+        when(enrollments.findAllById(List.of(ENROLLMENT_ID))).thenReturn(List.of(enrollment));
+        when(standingQuery.findStandingOfProgramEnrollment(ENROLLMENT_ID)).thenReturn(Optional.of(new EnrollmentPaymentStandingView(ENROLLMENT_ID, 41L,
+                EnrollmentPaymentStatus.SUSPENDED, LocalDate.of(2027, 4, 1), LocalDateTime.of(2027, 4, 12, 10, 0))));
         when(enrollments.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         return enrollment;
     }
@@ -98,7 +106,7 @@ class SuspendedEnrollmentClosureServiceTest {
         logs.start();
         closureLogger.addAppender(logs);
         return new SuspendedEnrollmentClosureService(enrollments, templates, mock(TermRepository.class), invoices, enrollmentService, clock,
-                mock(PlatformTransactionManager.class), cycleFactory, eventPublisher);
+                mock(PlatformTransactionManager.class), cycleFactory, eventPublisher, standingRepository, standingQuery);
     }
 
     @AfterEach

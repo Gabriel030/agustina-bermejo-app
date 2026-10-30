@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
@@ -44,11 +44,15 @@ public class InvoicePlanningContextLoader {
     private final YearCycleFactory cycleFactory;
     private final BillingConfigurationReader configurationReader;
 
+    private final EnrollmentPaymentStandingQuery standingQuery;
+
     public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository,
                                        InvoiceRepository invoiceRepository, PaymentPlanSelectionRepository selectionRepository,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
-                                       YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader) {
+                                       YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader,
+                                       EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.cycleFactory = cycleFactory;
         this.configurationReader = configurationReader;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -67,8 +71,8 @@ public class InvoicePlanningContextLoader {
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(detached.getId()));
         Long enrollmentId = enrollment.getId();
         boolean active = enrollment.getStatus() == ProgramEnrollmentStatus.ENROLLED || enrollment.getStatus() == ProgramEnrollmentStatus.PAUSED;
-        boolean suspended = enrollment.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED
-                || enrollment.getPaymentStatus() == EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT;
+        boolean suspended = standingQuery.findStandingOfProgramEnrollment(enrollment.getId())
+                .map(standing -> standing.status().stopsBilling()).orElse(false);
         boolean paused = enrollment.getStatus() == ProgramEnrollmentStatus.PAUSED;
         boolean completed = false;
         boolean onlyFinals = false;

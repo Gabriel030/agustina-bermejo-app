@@ -27,6 +27,6 @@ public class GetOwnCourseEnrollmentBillingStatusService implements GetOwnCourseE
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, enrollmentId);
         }
-        return MeEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.byCourseEnrollment(enrollmentId));
+        return MeEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfCourseEnrollmentOrNull(enrollmentId), invoiceDetailLoader.byCourseEnrollment(enrollmentId));
     }
 }

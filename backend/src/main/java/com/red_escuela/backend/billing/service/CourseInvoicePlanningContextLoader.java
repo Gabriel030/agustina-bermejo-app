@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -28,9 +28,12 @@ public class CourseInvoicePlanningContextLoader {
     private final PaymentPlanSelectionRepository selectionRepository;
     private final InvoiceRepository invoiceRepository;
     private final BillingConfigurationReader configurationReader;
+    private final EnrollmentPaymentStandingQuery standingQuery;
 
     public CourseInvoicePlanningContextLoader(CourseEnrollmentRepository courseEnrollmentRepository, PaymentPlanSelectionRepository selectionRepository,
-                                     InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader) {
+                                     InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader,
+                                     EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.selectionRepository = selectionRepository;
         this.invoiceRepository = invoiceRepository;
@@ -50,8 +53,8 @@ public class CourseInvoicePlanningContextLoader {
                 .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT && !i.getPrimaryLine().getChargeKeyReleased()).toList();
         Set<YearMonth> periods = recurring.stream().map(Invoice::getPeriod).collect(Collectors.toSet());
         long inTerm = recurring.stream().filter(i -> course.getTerm().contains(i.getPeriod())).count();
-        boolean suspended = enrollment.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED
-                || enrollment.getPaymentStatus() == EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT;
+        boolean suspended = standingQuery.findStandingOfCourseEnrollment(enrollment.getId())
+                .map(standing -> standing.status().stopsBilling()).orElse(false);
         CourseInvoicePlanningFacts facts = new CourseInvoicePlanningFacts(enrollmentId, month, today, enrollment.getStatus() == EnrollmentStatus.ENROLLED, suspended,
                 selection != null, cadence, selection == null ? null : selection.getEffectiveFrom(), selection == null ? null : selection.getScopeMonths(),
                 course.getTerm()::contains, course.getDurationMonths(), periods, inTerm, configurationReader.courseTermsEffectiveOn(course.getId(), today).monthlyInstallmentDueDays());
