@@ -1,11 +1,12 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.academicstructure.entity.Term;
 
 import java.time.LocalDateTime;
 
 public record TermResponse(
-        Long id, Integer year, String description, String type, String status,
+        Long id, Integer year, @Schema(nullable = true) String description, String type, String status,
         LocalDateTime startDate, LocalDateTime endDate,
         LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd, boolean enrollmentOpen) {
     public static TermResponse from(Term term) {

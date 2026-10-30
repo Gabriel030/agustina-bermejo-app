@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.authorization.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationOperationCatalog;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationOperationFamily;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
@@ -11,8 +12,8 @@ import java.time.LocalDate;
 import java.util.Map;
 
 public record AuthorizationRequestListItemResponse(Long id, String operationType, String operationLabel, String family, String familyLabel, String status,
-                                                   String resumeOutcome, String summary, String studentName, Money amount, AuthorizationRequestPersonResponse requestedBy,
-                                                   Instant requestedAt, LocalDate expiresOn, String requiredRole, Instant decidedAt) {
+                                                   @Schema(nullable = true) String resumeOutcome, String summary, String studentName, Money amount, AuthorizationRequestPersonResponse requestedBy,
+                                                   Instant requestedAt, @Schema(nullable = true) LocalDate expiresOn, String requiredRole, @Schema(nullable = true) Instant decidedAt) {
 
     public static AuthorizationRequestListItemResponse from(InboxEntry entry, Map<Long, String> personNames) {
         AuthorizationRequest request = entry.request();

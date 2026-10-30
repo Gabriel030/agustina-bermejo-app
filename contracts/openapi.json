@@ -19,7 +19,7 @@
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "decidedByName" : {
             "type" : "string"
@@ -36,7 +36,7 @@
             "type" : "string"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -97,25 +97,25 @@
       "AddressResponse" : {
         "properties" : {
           "city" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "country" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "floor" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "number" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "postalCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "state" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "street" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "city", "country", "floor", "number", "postalCode", "state", "street" ],
@@ -494,7 +494,7 @@
           },
           "expiresAt" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -502,7 +502,7 @@
           },
           "scheduledFor" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "sectionId" : {
             "format" : "int64",
@@ -514,7 +514,7 @@
           },
           "sentAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "enum" : [ "SCHEDULED", "SENT" ],
@@ -525,7 +525,7 @@
           },
           "updatedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "urgent" : {
             "type" : "boolean"
@@ -578,7 +578,7 @@
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "discardReason" : {
             "type" : "string"
@@ -1092,11 +1092,11 @@
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "expiresOn" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "family" : {
             "type" : "string"
@@ -1125,7 +1125,7 @@
             "type" : "string"
           },
           "resumeOutcome" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -1193,7 +1193,7 @@
             "type" : "string"
           },
           "resumeOutcome" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -1254,10 +1254,10 @@
             "type" : "string"
           },
           "rejectionCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reviewAlertSent" : {
             "type" : "boolean"
@@ -3256,7 +3256,7 @@
         "properties" : {
           "authorizationRequestId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "authorizedAt" : {
             "format" : "date-time",
@@ -3451,10 +3451,10 @@
         "properties" : {
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "decisionNotes" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -3846,7 +3846,7 @@
       "ElectiveGroupResponse" : {
         "properties" : {
           "description" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -3916,7 +3916,7 @@
           },
           "revokedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "revokedByName" : {
             "type" : "string"
@@ -4034,7 +4034,7 @@
             "type" : "string"
           },
           "reason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "toStatus" : {
             "type" : "string"
@@ -4114,7 +4114,7 @@
             "type" : "string"
           },
           "promotionMinGrade" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
         "required" : [ "aggregationMethod", "examCountExpected", "finalWeight", "hasFinal", "id", "inUse", "minApprovalGrade", "minRegularGrade", "name", "notes", "promotionMinGrade" ],
@@ -4173,7 +4173,7 @@
       "ExamBoardResponse" : {
         "properties" : {
           "classroom" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "courseSubjectId" : {
             "format" : "int64",
@@ -4192,11 +4192,11 @@
           },
           "registrationEnd" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "registrationStart" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -4399,7 +4399,7 @@
         "properties" : {
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -4413,7 +4413,7 @@
             "type" : "string"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "requestedAt" : {
             "format" : "date-time",
@@ -4679,7 +4679,8 @@
             "type" : "string"
           },
           "discount" : {
-            "$ref" : "#/components/schemas/InvoiceLineDiscountResponse"
+            "$ref" : "#/components/schemas/InvoiceLineDiscountResponse",
+            "type" : "null"
           },
           "feeType" : {
             "type" : "string"
@@ -4713,7 +4714,7 @@
             "type" : "string"
           },
           "discardedReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "discountsTotalAmount" : {
             "$ref" : "#/components/schemas/Money"
@@ -5256,7 +5257,8 @@
         }, {
           "properties" : {
             "amount" : {
-              "type" : "number"
+              "pattern" : "^-?\\d+(\\.\\d+)?$",
+              "type" : "string"
             },
             "currency" : {
               "enum" : [ "ARS", "USD" ],
@@ -5724,19 +5726,19 @@
       "PaymentGatewayConfigResponse" : {
         "properties" : {
           "accountHolder" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "bankAlias" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "bankCbu" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "mpEnabled" : {
             "type" : "boolean"
           },
           "qrImageUrl" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "accountHolder", "bankAlias", "bankCbu", "mpEnabled", "qrImageUrl" ],
@@ -5993,10 +5995,10 @@
             "type" : "string"
           },
           "city" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "country" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "dni" : {
             "type" : "string"
@@ -6009,7 +6011,7 @@
             "type" : "string"
           },
           "floor" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "hasAvatar" : {
             "type" : "boolean"
@@ -6025,10 +6027,10 @@
             "type" : "string"
           },
           "number" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "postalCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "roles" : {
             "items" : {
@@ -6040,10 +6042,10 @@
             "type" : "string"
           },
           "state" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "street" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "telefono" : {
             "type" : "string"
@@ -6596,11 +6598,12 @@
       "ProgramEnrollmentApplicationResponse" : {
         "properties" : {
           "admissionInvoice" : {
-            "$ref" : "#/components/schemas/AdmissionInvoiceSummary"
+            "$ref" : "#/components/schemas/AdmissionInvoiceSummary",
+            "type" : "null"
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -6622,7 +6625,7 @@
             "type" : "string"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "requestedAt" : {
             "format" : "date-time",
@@ -7252,14 +7255,14 @@
           },
           "authorizationRequestId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "completedOn" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "completionReference" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "destinationAccount" : {
             "type" : "string"
@@ -7268,7 +7271,7 @@
             "type" : "string"
           },
           "failureReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -7286,7 +7289,7 @@
             "type" : "integer"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "requestedOn" : {
             "format" : "date",
@@ -7963,7 +7966,7 @@
             "type" : "number"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reviewedAt" : {
             "format" : "date-time",
@@ -8701,7 +8704,7 @@
             "type" : "string"
           },
           "description" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "gradeMode" : {
             "type" : "string"
@@ -8718,7 +8721,7 @@
             "type" : "string"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -8729,7 +8732,7 @@
           },
           "weeklyHoursLab" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "code", "description", "gradeMode", "id", "maxFinalExamAttempts", "name", "rejectionReason", "status", "weeklyHours", "weeklyHoursLab" ],
@@ -8799,7 +8802,7 @@
       "TermResponse" : {
         "properties" : {
           "description" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "endDate" : {
             "format" : "date-time",

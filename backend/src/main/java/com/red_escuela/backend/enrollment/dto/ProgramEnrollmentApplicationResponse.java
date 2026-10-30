@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.api.AdmissionReceiptSummary;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 
@@ -18,9 +19,9 @@ public record ProgramEnrollmentApplicationResponse(
         Long programCohortId,
         String status,
         LocalDateTime requestedAt,
-        LocalDateTime decidedAt,
-        String rejectionReason,
-        AdmissionInvoiceSummary admissionInvoice,
+        @Schema(nullable = true) LocalDateTime decidedAt,
+        @Schema(nullable = true) String rejectionReason,
+        @Schema(nullable = true) AdmissionInvoiceSummary admissionInvoice,
         Long programEnrollmentId) {
 
     public record AdmissionInvoiceSummary(Long id, Money total, LocalDate dueDate, String paymentStatus, String receiptStatus,
