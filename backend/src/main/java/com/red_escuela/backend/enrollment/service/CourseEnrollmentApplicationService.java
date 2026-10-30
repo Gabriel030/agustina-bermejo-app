@@ -73,7 +73,7 @@ public class CourseEnrollmentApplicationService {
         }
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
-        courseEnrollmentService.validateCanEnroll(student, course);
+        courseEnrollmentService.validateCanEnroll(student, course.getId());
         if (courseEnrollmentApplicationRepository.existsByStudentIdAndCourseIdAndPaymentReceiptStatus(
                 studentId, course.getId(), BankTransferReceiptStatus.PENDING_REVIEW)) {
             throw new PendingCourseEnrollmentApplicationException(studentId, course.getId());
