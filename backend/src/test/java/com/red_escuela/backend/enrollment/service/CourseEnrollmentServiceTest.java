@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -195,10 +196,13 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment primeroRecargado = courseEnrollmentRepository.findById(primero.getId()).orElseThrow();
         assertThat(primeroRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
 
-        List<Notification> notificaciones = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(
-                segundo.getStudent().getPerson().getId());
-        assertThat(notificaciones).hasSize(1);
-        assertThat(notificaciones.get(0).getType()).isEqualTo(NotificationType.COURSE_WAITLIST_EXPIRED);
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notificaciones = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(
+                    segundo.getStudent().getPerson().getId());
+            assertThat(notificaciones).hasSize(1);
+            assertThat(notificaciones.get(0).getType()).isEqualTo(NotificationType.COURSE_WAITLIST_EXPIRED);
+        });
     }
 
     @Test

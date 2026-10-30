@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -360,9 +361,12 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         SectionEvaluationConfig submitted = submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
         assertThat(submitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(director.getId());
-        assertThat(notifications).extracting(Notification::getType)
-                .contains(NotificationType.SECTION_EVAL_CONFIG_PROPOSED);
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(director.getId());
+            assertThat(notifications).extracting(Notification::getType)
+                    .contains(NotificationType.SECTION_EVAL_CONFIG_PROPOSED);
+        });
     }
 
     @Test
@@ -389,9 +393,12 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         assertThat(approved.getStatus()).isEqualTo(SectionEvaluationConfigStatus.APPROVED);
         List<ExamBoard> examBoards = examBoardRepository.findBySubjectIdAndStatus(subject.getId(), com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
         assertThat(examBoards).hasSize(2);
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(leadInstructor.getPerson().getId());
-        assertThat(notifications).extracting(Notification::getType)
-                .contains(NotificationType.SECTION_EVAL_CONFIG_APPROVED);
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(leadInstructor.getPerson().getId());
+            assertThat(notifications).extracting(Notification::getType)
+                    .contains(NotificationType.SECTION_EVAL_CONFIG_APPROVED);
+        });
     }
 
     @Test

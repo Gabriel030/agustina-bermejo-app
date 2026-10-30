@@ -6,6 +6,7 @@ import com.red_escuela.backend.enrollment.events.DirectorApprovalRequestRejected
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionGrantedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -24,12 +27,17 @@ class EnrollmentEventsNotificationListenerTest {
 
     private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
     private final EntityManager entityManager = mock(EntityManager.class);
-    private final EnrollmentEventsNotificationListener listener = new EnrollmentEventsNotificationListener(publisher, entityManager);
+    private final ProcessedEffectGuard effectGuard = mock(ProcessedEffectGuard.class);
+    private final EnrollmentEventsNotificationListener listener = new EnrollmentEventsNotificationListener(effectGuard, publisher, entityManager);
     private final Person student = personWithId(10L);
     private final Person requester = personWithId(20L);
 
     @BeforeEach
     void stubPersonReferences() {
+        when(effectGuard.runEffectOnce(any(), anyString(), any())).thenAnswer(invocation -> {
+            invocation.<Runnable>getArgument(2).run();
+            return true;
+        });
         when(entityManager.getReference(eq(Person.class), eq(10L))).thenReturn(student);
         when(entityManager.getReference(eq(Person.class), eq(20L))).thenReturn(requester);
     }
