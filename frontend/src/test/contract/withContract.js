@@ -32,17 +32,18 @@ export async function findContractDeviation(request, response) {
   return violations.length > 0 ? { key, violations } : null;
 }
 
-export function withContract(handler, { apiBase }) {
+export function withContract(handler, { apiBase, baseline: activeBaseline = baseline }) {
   const path = handler.info?.path;
   if (handler[WRAPPED] || typeof path !== 'string' || !path.startsWith(apiBase)) {
     return handler;
   }
   const original = handler.resolver;
   handler.resolver = async (info) => {
+    const requestCopy = info.request.clone();
     const response = await original(info);
     if (response instanceof Response) {
-      const deviation = await findContractDeviation(info.request, response);
-      if (deviation && !(deviation.key in baseline)) {
+      const deviation = await findContractDeviation(requestCopy, response);
+      if (deviation && !(deviation.key in activeBaseline)) {
         recorded.push(deviation);
       }
     }
