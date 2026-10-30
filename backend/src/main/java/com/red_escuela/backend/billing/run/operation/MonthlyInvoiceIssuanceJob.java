@@ -13,7 +13,6 @@ import java.time.LocalDate;
 @Component
 public class MonthlyInvoiceIssuanceJob {
     public static final String CRON = "0 0 4 1 * *";
-    private static final int ISSUANCE_DAY = 1;
 
     private final MonthlyInvoiceRunExecutor executor;
     private final Clock clock;
@@ -30,8 +29,6 @@ public class MonthlyInvoiceIssuanceJob {
     }
 
     public void run(LocalDate businessDate) {
-        if (businessDate.getDayOfMonth() == ISSUANCE_DAY) {
-            executor.runMonthlyInvoicesOfBusinessDate(businessDate, MonthlyInvoiceRunTrigger.SCHEDULED);
-        }
+        executor.runMonthlyInvoicesOnIssuanceDay(businessDate, MonthlyInvoiceRunTrigger.SCHEDULED);
     }
 }

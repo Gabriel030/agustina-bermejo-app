@@ -8,6 +8,8 @@ import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunStatus;
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
+import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest {
 
     @Autowired
-    private MonthlyInvoiceIssuanceJob issuanceJob;
+    private MonthlyInvoiceRunExecutor executor;
     @Autowired
     private MonthlyInvoiceRunRepository runRepository;
     @Autowired
@@ -58,7 +60,7 @@ class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest 
         Long enrollment = enrollmentStartingIn(date(2026, 4, 1));
         job.completeTheNightOf(date(2026, 4, 1));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         MonthlyInvoiceRun run = onlyRunOf(YearMonth.of(2026, 4));
         assertThat(run.getStatus()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
@@ -77,7 +79,7 @@ class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest 
         jdbcTemplate.update("delete from nightly_billing_run where business_date = ?", date(2026, 4, 1));
         int invoicesBefore = sequence(enrollment).size();
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         MonthlyInvoiceRun run = onlyRunOf(YearMonth.of(2026, 4));
         assertThat(run.getStatus()).isEqualTo(MonthlyInvoiceRunStatus.FAILED);
@@ -92,9 +94,9 @@ class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest 
         Long enrollment = enrollmentStartingIn(date(2026, 4, 1));
         job.completeTheNightOf(date(2026, 4, 1));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
         int invoicesAfterFirst = sequence(enrollment).size();
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThat(runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1))).hasSize(1);
         assertThat(sequence(enrollment)).hasSize(invoicesAfterFirst);
@@ -106,7 +108,7 @@ class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest 
         Long enrollment = enrollmentStartingIn(date(2026, 4, 2));
         job.completeTheNightOf(date(2026, 4, 2));
 
-        issuanceJob.run(date(2026, 4, 2));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 2), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThat(runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1))).isEmpty();
         assertThat(sequence(enrollment)).isEmpty();
@@ -129,7 +131,7 @@ class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest 
         setStanding(enrollment, EnrollmentPaymentStatus.SUSPENDED);
         job.completeTheNightOf(date(2026, 4, 1));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         MonthlyInvoiceRun run = onlyRunOf(YearMonth.of(2026, 4));
         MonthlyInvoiceRunItem item = itemRepository.findByMonthlyInvoiceRunIdOrderByIdAsc(run.getId()).stream()
@@ -144,7 +146,7 @@ class MonthlyInvoiceRunRegistryTest extends AbstractInvoiceSequenceScenarioTest 
         enrollmentStartingIn(date(2027, 2, 1));
         job.completeTheNightOf(date(2027, 2, 1));
 
-        issuanceJob.run(date(2027, 2, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2027, 2, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThat(onlyRunOf(YearMonth.of(2027, 2)).getPeriod()).isEqualTo(date(2027, 2, 1));
     }

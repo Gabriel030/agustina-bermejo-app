@@ -28,7 +28,7 @@ import static org.awaitility.Awaitility.await;
 class InvoiceSequenceTest extends AbstractInvoiceSequenceScenarioTest {
 
     @org.springframework.beans.factory.annotation.Autowired
-    private com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob issuanceJob;
+    private com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor executor;
 
     @Test
     void marchIntakeWithOneEnrollmentFeeTracksTwoLectiveYearsMonthByMonth() {
@@ -184,10 +184,10 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceScenarioTest {
 
         today(date(2026, 2, 6));
         job.completeTheNightOf(date(2026, 2, 6));
-        issuanceJob.run(date(2026, 2, 6));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 2, 6), com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger.SCHEDULED);
         today(date(2026, 3, 6));
         job.completeTheNightOf(date(2026, 3, 6));
-        issuanceJob.run(date(2026, 3, 6));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 3, 6), com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger.SCHEDULED);
         assertThat(sequence(enrollment)).isEmpty();
 
         job.run(YearMonth.of(2026, 3));

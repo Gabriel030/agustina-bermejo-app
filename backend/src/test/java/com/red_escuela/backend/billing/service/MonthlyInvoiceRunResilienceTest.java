@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunStatus;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
-import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
 import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,8 +33,6 @@ class MonthlyInvoiceRunResilienceTest extends AbstractInvoiceSequenceScenarioTes
 
     @Autowired
     private MonthlyInvoiceRunExecutor executor;
-    @Autowired
-    private MonthlyInvoiceIssuanceJob issuanceJob;
     @Autowired
     private MonthlyInvoiceRunRepository runRepository;
     @Autowired
@@ -70,7 +67,7 @@ class MonthlyInvoiceRunResilienceTest extends AbstractInvoiceSequenceScenarioTes
         Long enrollment = enrollmentStartingOnAprilFirst();
         insertRunningRunStartedAt(LocalDateTime.now(clock).minusHours(3));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         List<MonthlyInvoiceRun> runs = runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1));
         assertThat(runs).hasSize(2);
@@ -87,7 +84,7 @@ class MonthlyInvoiceRunResilienceTest extends AbstractInvoiceSequenceScenarioTes
         Long enrollment = enrollmentStartingOnAprilFirst();
         insertRunningRunStartedAt(LocalDateTime.now(clock).minusHours(1));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         List<MonthlyInvoiceRun> runs = runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1));
         assertThat(runs).hasSize(1);
@@ -101,7 +98,7 @@ class MonthlyInvoiceRunResilienceTest extends AbstractInvoiceSequenceScenarioTes
         Long enrollment = enrollmentStartingOnAprilFirst();
         insertRunningRunStartedAt(LocalDateTime.now(clock).minus(Duration.ofHours(2)).plusSeconds(30));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThat(runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1))).hasSize(1);
         assertThat(sequence(enrollment)).isEmpty();
@@ -113,7 +110,7 @@ class MonthlyInvoiceRunResilienceTest extends AbstractInvoiceSequenceScenarioTes
         Long enrollment = enrollmentStartingOnAprilFirst();
         insertRunningRunStartedAt(LocalDateTime.now(clock).minus(Duration.ofHours(2)).minusSeconds(30));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThat(runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1))).hasSize(2);
         assertThat(sequence(enrollment)).isNotEmpty();
@@ -150,12 +147,12 @@ class MonthlyInvoiceRunResilienceTest extends AbstractInvoiceSequenceScenarioTes
     @Tag("D-160")
     void aRunInterruptedAfterIssuingInvoicesIsReplacedWithoutDuplicatingThem() {
         Long enrollment = enrollmentStartingOnAprilFirst();
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
         int issuedByTheFirstRun = sequence(enrollment).size();
         jdbcTemplate.update("update monthly_invoice_run set status = 'RUNNING', finished_at = null, failure_code = null, started_at = ? where period = ?",
                 LocalDateTime.now(clock).minusHours(3), date(2026, 4, 1));
 
-        issuanceJob.run(date(2026, 4, 1));
+        executor.runMonthlyInvoicesOnIssuanceDay(date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         List<MonthlyInvoiceRun> runs = runRepository.findByPeriodOrderByIdAsc(date(2026, 4, 1));
         assertThat(runs).extracting(MonthlyInvoiceRun::getStatus).containsExactly(MonthlyInvoiceRunStatus.FAILED, MonthlyInvoiceRunStatus.COMPLETED);

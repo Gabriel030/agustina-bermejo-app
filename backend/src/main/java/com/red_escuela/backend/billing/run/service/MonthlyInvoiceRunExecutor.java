@@ -37,6 +37,8 @@ import java.util.function.Function;
 public class MonthlyInvoiceRunExecutor {
     private static final Logger log = LoggerFactory.getLogger(MonthlyInvoiceRunExecutor.class);
 
+    private static final int ISSUANCE_DAY = 1;
+
     private final MonthlyInvoiceRunRepository runRepository;
     private final NightlyBillingRunRepository nightlyRunRepository;
     private final MonthlyInvoiceCandidateFinder candidateFinder;
@@ -58,6 +60,10 @@ public class MonthlyInvoiceRunExecutor {
         this.nightlyCompletedPolicySet = nightlyBillingCompletedTodayPolicySet;
         this.meterRegistry = meterRegistry;
         this.clock = clock;
+    }
+
+    public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOnIssuanceDay(LocalDate businessDate, MonthlyInvoiceRunTrigger trigger) {
+        return businessDate.getDayOfMonth() == ISSUANCE_DAY ? runMonthlyInvoicesOfBusinessDate(businessDate, trigger) : Optional.empty();
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfBusinessDate(LocalDate businessDate, MonthlyInvoiceRunTrigger trigger) {
