@@ -200,6 +200,9 @@ public final class ModulePatternRules {
         return new ArchCondition<>("be named *Port and have an implementation in another module") {
             @Override
             public void check(JavaClass javaClass, ConditionEvents events) {
+                if (javaClass.getSimpleName().equals("package-info")) {
+                    return;
+                }
                 if (!javaClass.getSimpleName().endsWith("Port")) {
                     events.add(SimpleConditionEvent.violated(javaClass, javaClass.getName() + " is an api interface not named *Port"));
                     return;

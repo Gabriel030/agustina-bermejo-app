@@ -1,17 +1,14 @@
 package com.red_escuela.backend.announcement.service.audience;
 
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.announcement.entity.SectionType;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
-import com.red_escuela.backend.evaluation.entity.GradeItem;
-import com.red_escuela.backend.evaluation.entity.GradeItemType;
-import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
+import com.red_escuela.backend.evaluation.api.EnrollmentGradeScores;
+import com.red_escuela.backend.evaluation.api.EnrollmentGradeScoresFinder;
+import com.red_escuela.backend.evaluation.api.SectionEvaluationSchemeFinder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,20 +20,17 @@ import java.util.Map;
 public class SectionSnapshotLoader {
 
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
-    private final SubjectSectionRepository subjectSectionRepository;
-    private final CourseSubjectSectionRepository courseSubjectSectionRepository;
-    private final GradeItemRepository gradeItemRepository;
+    private final EnrollmentGradeScoresFinder gradeScoresFinder;
+    private final SectionEvaluationSchemeFinder evaluationSchemeFinder;
     private final AttendanceRepository attendanceRepository;
 
     public SectionSnapshotLoader(SectionEnrollmentFinder sectionEnrollmentFinder,
-                                 SubjectSectionRepository subjectSectionRepository,
-                                 CourseSubjectSectionRepository courseSubjectSectionRepository,
-                                 GradeItemRepository gradeItemRepository,
+                                 EnrollmentGradeScoresFinder gradeScoresFinder,
+                                 SectionEvaluationSchemeFinder evaluationSchemeFinder,
                                  AttendanceRepository attendanceRepository) {
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
-        this.subjectSectionRepository = subjectSectionRepository;
-        this.courseSubjectSectionRepository = courseSubjectSectionRepository;
-        this.gradeItemRepository = gradeItemRepository;
+        this.gradeScoresFinder = gradeScoresFinder;
+        this.evaluationSchemeFinder = evaluationSchemeFinder;
         this.attendanceRepository = attendanceRepository;
     }
 
@@ -48,9 +42,7 @@ public class SectionSnapshotLoader {
         List<SubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersOfProgramSection(sectionId);
         List<Long> ids = enrollments.stream().map(SubjectSectionEnrollment::getId).toList();
 
-        Map<Long, List<GradeItem>> grades = gradesByEnrollment(
-                ids.isEmpty() ? List.of() : gradeItemRepository.findByProgramSubjectSectionEnrollmentIdIn(ids),
-                item -> item.getProgramSubjectSectionEnrollment().getId());
+        Map<Long, EnrollmentGradeScores> grades = gradeScoresFinder.findScoresByProgramEnrollment(ids);
         Map<Long, long[]> attendance = attendanceByEnrollment(
                 ids.isEmpty() ? List.of() : attendanceRepository.countsByProgramEnrollment(ids, AttendanceStatus.ABSENT));
 
@@ -60,18 +52,14 @@ public class SectionSnapshotLoader {
                     enrollment.getFinalGradeType(), grades, attendance));
         }
 
-        EvaluationScheme scheme = subjectSectionRepository.findById(sectionId)
-                .map(section -> section.getEvaluationScheme()).orElse(null);
-        return new SectionSnapshot(students, scheme);
+        return new SectionSnapshot(students, evaluationSchemeFinder.findProgramSectionScheme(sectionId).orElse(null));
     }
 
     private SectionSnapshot loadCourse(Long sectionId) {
         List<CourseSubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersOfCourseSection(sectionId);
         List<Long> ids = enrollments.stream().map(CourseSubjectSectionEnrollment::getId).toList();
 
-        Map<Long, List<GradeItem>> grades = gradesByEnrollment(
-                ids.isEmpty() ? List.of() : gradeItemRepository.findByCourseSubjectSectionEnrollmentIdIn(ids),
-                item -> item.getCourseSubjectSectionEnrollment().getId());
+        Map<Long, EnrollmentGradeScores> grades = gradeScoresFinder.findScoresByCourseEnrollment(ids);
         Map<Long, long[]> attendance = attendanceByEnrollment(
                 ids.isEmpty() ? List.of() : attendanceRepository.countsByCourseEnrollment(ids, AttendanceStatus.ABSENT));
 
@@ -81,47 +69,26 @@ public class SectionSnapshotLoader {
                     enrollment.getFinalGradeType(), grades, attendance));
         }
 
-        EvaluationScheme scheme = courseSubjectSectionRepository.findById(sectionId)
-                .map(section -> section.getEvaluationScheme()).orElse(null);
-        return new SectionSnapshot(students, scheme);
+        return new SectionSnapshot(students, evaluationSchemeFinder.findCourseSectionScheme(sectionId).orElse(null));
     }
 
     private StudentSnapshot toSnapshot(Long enrollmentId,
                                        com.red_escuela.backend.identity.entity.Student student,
                                        com.red_escuela.backend.enrollment.entity.EnrollmentStatus status,
                                        com.red_escuela.backend.enrollment.entity.FinalGradeType finalGradeType,
-                                       Map<Long, List<GradeItem>> grades,
+                                       Map<Long, EnrollmentGradeScores> grades,
                                        Map<Long, long[]> attendance) {
-        List<GradeItem> items = grades.getOrDefault(enrollmentId, List.of());
+        EnrollmentGradeScores scores = grades.getOrDefault(enrollmentId, EnrollmentGradeScores.empty());
         long[] counts = attendance.getOrDefault(enrollmentId, new long[]{0L, 0L});
         return new StudentSnapshot(
                 student,
                 status,
                 finalGradeType,
-                scoresOf(items, GradeItemType.EXAM),
-                scoresOf(items, GradeItemType.TP),
-                scoresOf(items, GradeItemType.FINAL),
+                scores.examScores(),
+                scores.tpScores(),
+                scores.finalScores(),
                 counts[1],
                 counts[0]);
-    }
-
-    private Map<Integer, Double> scoresOf(List<GradeItem> items, GradeItemType type) {
-        Map<Integer, Double> scores = new HashMap<>();
-        for (GradeItem item : items) {
-            if (item.getType() == type && item.getSequenceNumber() != null && item.getScore() != null) {
-                scores.put(item.getSequenceNumber(), item.getScore().value().doubleValue());
-            }
-        }
-        return scores;
-    }
-
-    private Map<Long, List<GradeItem>> gradesByEnrollment(List<GradeItem> items,
-                                                          java.util.function.Function<GradeItem, Long> keyOf) {
-        Map<Long, List<GradeItem>> byEnrollment = new HashMap<>();
-        for (GradeItem item : items) {
-            byEnrollment.computeIfAbsent(keyOf.apply(item), k -> new ArrayList<>()).add(item);
-        }
-        return byEnrollment;
     }
 
     private Map<Long, long[]> attendanceByEnrollment(List<Object[]> rows) {
