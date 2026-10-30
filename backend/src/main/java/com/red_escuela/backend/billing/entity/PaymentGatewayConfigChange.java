@@ -47,4 +47,10 @@ public class PaymentGatewayConfigChange {
 
     @Column(name = "account_holder_after", length = 100)
     private String accountHolderAfter;
+
+    @Column(name = "qr_image_path_before", length = 500)
+    private String qrImagePathBefore;
+
+    @Column(name = "qr_image_path_after", length = 500)
+    private String qrImagePathAfter;
 }

@@ -40,6 +40,8 @@ public class UpdatePaymentGatewayConfigService implements UpdatePaymentGatewayCo
         change.setBankAliasBefore(config.getBankAlias());
         change.setBankCbuBefore(config.getBankCbu());
         change.setAccountHolderBefore(config.getAccountHolder());
+        change.setQrImagePathBefore(config.getQrImagePath());
+        change.setQrImagePathAfter(config.getQrImagePath());
 
         if (request.bankAlias() != null) {
             config.setBankAlias(request.bankAlias());

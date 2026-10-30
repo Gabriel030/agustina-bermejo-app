@@ -23,7 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.mock.web.MockMultipartFile;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,6 +129,47 @@ class PaymentGatewayConfigDirectorOnlyMockMvcTest extends AbstractIntegrationTes
         assertThat(latest.getBankCbuAfter()).isEqualTo("2222222222222222222222");
         assertThat(latest.getAccountHolderBefore()).isEqualTo("Titular Uno");
         assertThat(latest.getAccountHolderAfter()).isEqualTo("Titular Dos");
+        assertThat(latest.getChangedBy().getUsername()).startsWith("config.mockmvc.director.");
+        assertThat(latest.getChangedAt()).isEqualTo(configRepository.findFirstByOrderByIdAsc().orElseThrow().getUpdatedAt());
+    }
+
+    private void postQr(String token, int expectedStatus) throws Exception {
+        MockMultipartFile qr = new MockMultipartFile("qr", "qr.png", "image/png", new byte[] {1, 2, 3});
+        mockMvc.perform(multipart("/payment-config/qr").file(qr).header("Authorization", token))
+                .andExpect(status().is(expectedStatus));
+    }
+
+    @Test
+    void directorCanUploadQr() throws Exception {
+        postQr(bearerOf("DIRECTOR"), 200);
+
+        assertThat(configRepository.findFirstByOrderByIdAsc().orElseThrow().getQrImagePath()).isNotNull();
+    }
+
+    @Test
+    void nonDirectorRolesCannotUploadQr() throws Exception {
+        postQr(bearerOf("ADMINISTRATIVO"), 403);
+        postQr(bearerOf("DOCENTE"), 403);
+        postQr(bearerOf("PRECEPTOR"), 403);
+        postQr(bearerOf("ALUMNO"), 403);
+
+        assertThat(changeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void qrUploadRecordsWhoWhenAndPreviousAndNewPath() throws Exception {
+        String token = bearerOf("DIRECTOR");
+        postQr(token, 200);
+        String firstPath = configRepository.findFirstByOrderByIdAsc().orElseThrow().getQrImagePath();
+        postQr(token, 200);
+        String secondPath = configRepository.findFirstByOrderByIdAsc().orElseThrow().getQrImagePath();
+
+        List<PaymentGatewayConfigChange> changes = changeRepository.findAllByOrderByChangedAtDescIdDesc();
+        assertThat(changes).hasSize(2);
+        PaymentGatewayConfigChange latest = changes.get(0);
+        assertThat(latest.getQrImagePathBefore()).isEqualTo(firstPath);
+        assertThat(latest.getQrImagePathAfter()).isEqualTo(secondPath);
+        assertThat(latest.getQrImagePathBefore()).isNotEqualTo(latest.getQrImagePathAfter());
         assertThat(latest.getChangedBy().getUsername()).startsWith("config.mockmvc.director.");
         assertThat(latest.getChangedAt()).isEqualTo(configRepository.findFirstByOrderByIdAsc().orElseThrow().getUpdatedAt());
     }

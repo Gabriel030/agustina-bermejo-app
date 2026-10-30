@@ -58,7 +58,7 @@ public class PaymentGatewayConfigController {
     }
 
     @PostMapping("/qr")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentGatewayConfigResponse uploadQr(@RequestPart MultipartFile qr) {
         return uploadQrImageUseCase.upload(qr, currentPersonService.resolveCurrentPerson());
     }

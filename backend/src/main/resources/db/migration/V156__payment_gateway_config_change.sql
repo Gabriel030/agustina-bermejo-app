@@ -10,6 +10,8 @@ create table payment_gateway_config_change (
     bank_cbu_after varchar(22),
     account_holder_before varchar(100),
     account_holder_after varchar(100),
+    qr_image_path_before varchar(500),
+    qr_image_path_after varchar(500),
     primary key (id)
 );
 
