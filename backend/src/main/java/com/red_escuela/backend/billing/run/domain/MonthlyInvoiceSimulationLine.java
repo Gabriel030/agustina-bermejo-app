@@ -16,6 +16,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 @Entity
@@ -58,6 +59,9 @@ public class MonthlyInvoiceSimulationLine {
     @Column(name = "charge_count", nullable = false, updatable = false)
     private int chargeCount;
 
+    @Column(name = "due_date", updatable = false)
+    private LocalDate dueDate;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "value.amount", column = @Column(name = "total_amount", updatable = false)),
@@ -76,6 +80,7 @@ public class MonthlyInvoiceSimulationLine {
         line.message = outcome.message();
         line.chargeCount = outcome.chargeCount();
         line.total = outcome.total();
+        line.dueDate = outcome.dueDate();
         return line;
     }
 }

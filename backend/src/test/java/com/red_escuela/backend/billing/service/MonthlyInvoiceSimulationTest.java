@@ -138,6 +138,50 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
         assertThat(executor.runMonthlyInvoicesOfPeriod(APRIL, date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED)).isPresent();
     }
 
+    private Long enrollmentWithFiveDueDays() {
+        Career career = newCareer();
+        Year year = newYear(career, 2026, 10, 1, 2, null);
+        configureYear(year, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeDueDays(template, 5));
+        Long cohort = newCohort(year, CohortIntake.FIRST, date(2026, 3, 1));
+        today(date(2026, 3, 25));
+        return newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, APRIL, date(2026, 3, 10));
+    }
+
+    @Test
+    @Tag("D-511")
+    void aSimulationOfTheTwentiethForTheNextPeriodShowsTheFirstDayPlusTheDueDaysAsTheDueDateOfEachLine() {
+        Long enrollment = enrollmentWithFiveDueDays();
+
+        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 20), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+
+        assertThat(lineOf(simulation, enrollment).getDueDate()).isEqualTo(date(2026, 4, 6));
+        assertThat(new com.red_escuela.backend.billing.run.dto.MonthlyInvoiceSimulationLineResponse(null, null, null, null, null, null, null, null, 0, null, lineOf(simulation, enrollment).getDueDate()).dueDate())
+                .isEqualTo(date(2026, 4, 6));
+    }
+
+    @Test
+    @Tag("D-511")
+    void aSimulationOfTheManualIssuanceDayShowsTodayPlusTheDueDaysAsTheDueDateOfEachLine() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 4, 10));
+
+        MonthlyInvoiceSimulationLine line = lineOf(simulator.simulateMonthlyInvoices(APRIL, date(2026, 4, 10), date(2026, 4, 1), date(2026, 4, 10), MonthlyInvoiceRunTrigger.MANUAL), enrollment);
+
+        assertThat(line.getDueDate()).isEqualTo(date(2026, 4, 15));
+        assertThat(com.red_escuela.backend.billing.run.dto.MonthlyInvoiceSimulationLineResponse.of(line).dueDate()).isEqualTo(date(2026, 4, 15));
+    }
+
+    @Test
+    @Tag("D-511")
+    void aLineWithoutAnyChargeToIssueHasNoDueDate() {
+        Long enrollment = enrollmentOfAprilCohort();
+
+        MonthlyInvoiceSimulationLine line = lineOf(simulator.simulateMonthlyInvoices(YearMonth.of(2027, 4), date(2026, 3, 25), date(2027, 4, 1), date(2027, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED), enrollment);
+
+        assertThat(line.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.NOT_APPLICABLE);
+        assertThat(line.getDueDate()).isNull();
+    }
+
     @Test
     void aYearWithoutTermConfiguredIsShownAsNotIssuedOutOfTheTotalAndRaisesAnAlert() {
         Long enrollment = enrollmentOfAprilCohort();
