@@ -1,12 +1,11 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.util.List;
 
-public record SectionEvaluationConfigReminderEvent(SectionEvaluationConfig config, Person instructor, int daysToEnrollmentStart)
+public record SectionEvaluationConfigReminderNotification(Long configId, String subjectName, String sectionName, Person instructor, int daysToEnrollmentStart)
         implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
@@ -16,8 +15,7 @@ public record SectionEvaluationConfigReminderEvent(SectionEvaluationConfig confi
     @Override
     public String message() {
         return "Faltan " + daysToEnrollmentStart + " días para que abra la inscripción a materias y la configuración de "
-                + config.getSubjectSection().getSubject().getName() + " · " + config.getSubjectSection().getName()
-                + " todavía no está aprobada.";
+                + subjectName + " · " + sectionName + " todavía no está aprobada.";
     }
 
     @Override
@@ -32,6 +30,6 @@ public record SectionEvaluationConfigReminderEvent(SectionEvaluationConfig confi
 
     @Override
     public Long relatedEntityId() {
-        return config.getId();
+        return configId;
     }
 }

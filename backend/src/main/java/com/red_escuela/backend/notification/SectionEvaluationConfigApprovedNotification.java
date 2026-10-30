@@ -1,12 +1,12 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.util.List;
 
-public record SectionEvaluationConfigApprovedEvent(SectionEvaluationConfig config, Person instructor) implements DomainNotificationEvent {
+public record SectionEvaluationConfigApprovedNotification(Long configId, String subjectName, String sectionName, Person instructor)
+        implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.SECTION_EVAL_CONFIG_APPROVED;
@@ -14,8 +14,7 @@ public record SectionEvaluationConfigApprovedEvent(SectionEvaluationConfig confi
 
     @Override
     public String message() {
-        return "Tu configuración de evaluación fue aprobada: "
-                + config.getSubjectSection().getSubject().getName() + " · " + config.getSubjectSection().getName();
+        return "Tu configuración de evaluación fue aprobada: " + subjectName + " · " + sectionName;
     }
 
     @Override
@@ -30,6 +29,6 @@ public record SectionEvaluationConfigApprovedEvent(SectionEvaluationConfig confi
 
     @Override
     public Long relatedEntityId() {
-        return config.getId();
+        return configId;
     }
 }

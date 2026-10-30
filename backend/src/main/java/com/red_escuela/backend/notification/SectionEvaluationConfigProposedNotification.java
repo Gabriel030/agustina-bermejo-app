@@ -1,11 +1,10 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 
 import java.util.List;
 
-public record SectionEvaluationConfigProposedEvent(SectionEvaluationConfig config) implements DomainNotificationEvent {
+public record SectionEvaluationConfigProposedNotification(Long configId, String subjectName, String sectionName) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.SECTION_EVAL_CONFIG_PROPOSED;
@@ -13,8 +12,7 @@ public record SectionEvaluationConfigProposedEvent(SectionEvaluationConfig confi
 
     @Override
     public String message() {
-        return "Nueva propuesta de configuración de evaluación pendiente de aprobación: "
-                + config.getSubjectSection().getSubject().getName() + " · " + config.getSubjectSection().getName();
+        return "Nueva propuesta de configuración de evaluación pendiente de aprobación: " + subjectName + " · " + sectionName;
     }
 
     @Override
@@ -29,6 +27,6 @@ public record SectionEvaluationConfigProposedEvent(SectionEvaluationConfig confi
 
     @Override
     public Long relatedEntityId() {
-        return config.getId();
+        return configId;
     }
 }
