@@ -5,9 +5,7 @@ import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
@@ -17,20 +15,16 @@ import java.util.Optional;
 public class AttendanceRiskCalculator {
 
     private final AttendanceRepository attendanceRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final SectionEnrollmentFinder sectionEnrollmentFinder;
 
     public AttendanceRiskCalculator(AttendanceRepository attendanceRepository,
-                                     SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-                                     CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
+                                     SectionEnrollmentFinder sectionEnrollmentFinder) {
         this.attendanceRepository = attendanceRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
     }
 
     public AttendanceRiskResponse calculateForProgramEnrollment(Long enrollmentId) {
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         Percentage maxAbsenceRate = enrollment.getSubjectSection().getMaxAbsenceRate();
         if (maxAbsenceRate == null) {
             return evaluate(null, 0, 0);
@@ -42,8 +36,7 @@ public class AttendanceRiskCalculator {
     }
 
     public AttendanceRiskResponse calculateForCourseEnrollment(Long enrollmentId) {
-        CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         Percentage maxAbsenceRate = enrollment.getCourseSubjectSection().getMaxAbsenceRate();
         if (maxAbsenceRate == null) {
             return evaluate(null, 0, 0);

@@ -78,6 +78,14 @@ public class SectionEnrollmentFinder {
         return courseEnrollmentRepository.findByCourseSubjectSectionIdAndStatusIn(sectionId, ACTIVE_STATUSES);
     }
 
+    public List<SubjectSectionEnrollment> findActiveWithStudentInProgramSection(Long sectionId) {
+        return programEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, ACTIVE_STATUSES);
+    }
+
+    public List<CourseSubjectSectionEnrollment> findActiveWithStudentInCourseSection(Long sectionId) {
+        return courseEnrollmentRepository.findWithStudentBySectionIdAndStatusIn(sectionId, ACTIVE_STATUSES);
+    }
+
     public List<SubjectSectionEnrollment> findMembersOfProgramSection(Long sectionId) {
         return programEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, MEMBER_STATUSES);
     }
