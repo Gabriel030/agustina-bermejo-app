@@ -232,7 +232,7 @@ public final class ArchitectureRules {
                 .that().resideInAPackage(subdomain + ".usecase..")
                 .should().onlyDependOnClassesThat().resideInAnyPackage(
                         subdomain + ".repository..", subdomain + ".policy..", subdomain + ".domain..", subdomain + ".service..",
-                        subdomain + ".dto..", subdomain + ".usecase..", ROOT + ".shared..", ROOT + ".billing.operation..",
+                        subdomain + ".dto..", subdomain + ".usecase..", subdomain + ".events..", ROOT + ".shared..", ROOT + ".billing.operation..",
                         "java..", "org.springframework..", "jakarta.transaction..", "org.slf4j..")
                 .allowEmptyShould(true)
                 .because("a use case orchestrates ports, repositories and policies of its own subdomain");
