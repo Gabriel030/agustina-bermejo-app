@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.domain.CreditNoteAuthorshipTrace;
 import com.red_escuela.backend.shared.domain.Money;
@@ -10,7 +11,7 @@ import java.util.List;
 
 public record CreditNoteResponse(Long id, String creditNoteNumber, Long invoiceId, String invoiceNumber, String reason, String justification,
                                  Money offsetAmount, Money freeCreditAmount, Money totalAmount, LocalDate issueDate, LocalDate factDate,
-                                 Long authorizationRequestId, List<CreditNoteLineResponse> lines, String requestedByName, String authorizedByName, Instant authorizedAt) {
+                                 @Schema(nullable = true) Long authorizationRequestId, List<CreditNoteLineResponse> lines, String requestedByName, String authorizedByName, Instant authorizedAt) {
 
     public static CreditNoteResponse from(CreditNote note) {
         return from(note, CreditNoteAuthorshipTrace.unknown());

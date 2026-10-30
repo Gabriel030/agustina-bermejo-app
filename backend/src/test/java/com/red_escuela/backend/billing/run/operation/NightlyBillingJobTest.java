@@ -69,9 +69,11 @@ class NightlyBillingJobTest {
         noMethods().that().areDeclaredInClassesThat().resideInAPackage("..billing.run..")
                 .and().areDeclaredInClassesThat().doNotHaveFullyQualifiedName(NightlyBillingJob.class.getName())
                 .and().areDeclaredInClassesThat().doNotHaveFullyQualifiedName(MissedBillingRunAlertJob.class.getName())
+                .and().areDeclaredInClassesThat().doNotHaveFullyQualifiedName(MonthlyInvoiceIssuanceJob.class.getName())
                 .should().beAnnotatedWith(Scheduled.class).check(MAIN_CLASSES);
         assertThat(NightlyBillingJob.class.getMethods()).filteredOn(method -> method.isAnnotationPresent(Scheduled.class)).hasSize(1);
         assertThat(MissedBillingRunAlertJob.class.getMethods()).filteredOn(method -> method.isAnnotationPresent(Scheduled.class)).hasSize(1);
+        assertThat(MonthlyInvoiceIssuanceJob.class.getMethods()).filteredOn(method -> method.isAnnotationPresent(Scheduled.class)).hasSize(1);
     }
 
     @Test
