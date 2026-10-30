@@ -12,19 +12,17 @@ import com.red_escuela.backend.enrollment.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
-import com.red_escuela.backend.academicstructure.api.ElectiveGroupRequirementView;
-import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
+import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
+import com.red_escuela.backend.enrollment.api.ProgramProgressView;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
@@ -43,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
 
@@ -52,7 +51,7 @@ public class ProgramEnrollmentService {
     private final StudentFinder studentFinder;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final AcademicReferenceFinder academicReferenceFinder;
-    private final ProgramCurriculumFinder programCurriculumFinder;
+    private final ProgramProgressReader programProgressReader;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
@@ -66,7 +65,7 @@ public class ProgramEnrollmentService {
             StudentFinder studentFinder,
             StudentEnrollmentEligibility studentEnrollmentEligibility,
             AcademicReferenceFinder academicReferenceFinder,
-            ProgramCurriculumFinder programCurriculumFinder,
+            ProgramProgressReader programProgressReader,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
@@ -79,7 +78,7 @@ public class ProgramEnrollmentService {
         this.studentFinder = studentFinder;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.academicReferenceFinder = academicReferenceFinder;
-        this.programCurriculumFinder = programCurriculumFinder;
+        this.programProgressReader = programProgressReader;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
@@ -174,77 +173,20 @@ public class ProgramEnrollmentService {
     }
 
     public ProgramProgressResponse calculateProgress(Long id) {
-        ProgramEnrollment enrollment = findOrThrow(id);
-        Program program = enrollment.getProgram();
-
-        List<ProgramSubjectView> entradas = programCurriculumFinder.findProgramSubjects(program.getId());
-        List<ProgramSubjectView> aprobadas = listApprovedSubjects(id);
-
-        List<String> obligatoriasPendientes = entradas.stream()
-                .filter(entrada -> !entrada.isElective() && !aprobadas.contains(entrada))
-                .map(entrada -> entrada.subjectName())
+        ProgramProgressView progress = programProgressReader.calculateProgress(id);
+        List<ElectiveGroupProgressResponse> electiveGroups = progress.electiveGroups().stream()
+                .map(group -> new ElectiveGroupProgressResponse(
+                        group.electiveGroupId(), group.electiveGroupName(),
+                        group.approvedCount(), group.minRequired(), group.maxAllowed(), group.fulfilled()))
                 .toList();
-
-        int creditosAcumulados = aprobadas.stream().mapToInt(ProgramSubjectView::credits).sum();
-        int creditosRequeridos = program.getTotalCreditsRequired();
-
-        List<ElectiveGroupRequirementView> grupos = programCurriculumFinder.findElectiveGroupRequirements(program.getId());
-        List<ElectiveGroupProgressResponse> gruposElectivos = grupos.stream()
-                .map(grupo -> {
-                    long cantidadAprobada = aprobadas.stream()
-                            .filter(entrada -> entrada.isElective()
-                                    && entrada.electiveGroupId().equals(grupo.electiveGroupId()))
-                            .count();
-                    boolean cumplido = cantidadAprobada >= grupo.minRequired();
-                    return new ElectiveGroupProgressResponse(
-                            grupo.electiveGroupId(), grupo.name(),
-                            (int) cantidadAprobada, grupo.minRequired(), grupo.maxAllowed(), cumplido);
-                })
-                .toList();
-
-        boolean studyPlanLoaded = !entradas.isEmpty();
-        boolean elegibleParaCompletar = studyPlanLoaded
-                && obligatoriasPendientes.isEmpty()
-                && creditosAcumulados >= creditosRequeridos
-                && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
-
-        List<Grade> finalGrades = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
-                .map(SubjectSectionEnrollment::getFinalScore)
-                .filter(java.util.Objects::nonNull)
-                .toList();
-        BigDecimal promedioGeneral = Grade.average(finalGrades).map(Grade::value).orElse(null);
-
         return new ProgramProgressResponse(
-                enrollment.getId(), creditosAcumulados, creditosRequeridos,
-                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, hasActiveEnrollment(id), promedioGeneral);
+                progress.programEnrollmentId(), progress.accumulatedCredits(), progress.requiredCredits(),
+                progress.pendingMandatorySubjects(), electiveGroups, progress.eligibleToComplete(),
+                progress.regular(), Optional.ofNullable(progress.overallAverage()).map(Grade::value).orElse(null));
     }
 
     public boolean hasOnlyFinalExamsLeft(Long id) {
-        ProgramEnrollment enrollment = findOrThrow(id);
-        Program program = enrollment.getProgram();
-        List<ProgramSubjectView> entries = programCurriculumFinder.findProgramSubjects(program.getId());
-        if (entries.isEmpty()
-                || subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
-                        id, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))) {
-            return false;
-        }
-        List<ProgramSubjectView> coursed = entries.stream().filter(entry -> isCoursed(id, entry)).toList();
-        boolean mandatoryPending = entries.stream().anyMatch(entry -> !entry.isElective() && !coursed.contains(entry));
-        int coursedCredits = coursed.stream().mapToInt(ProgramSubjectView::credits).sum();
-        boolean electiveGroupsMet = programCurriculumFinder.findElectiveGroupRequirements(program.getId()).stream()
-                .allMatch(group -> coursed.stream()
-                        .filter(entry -> entry.isElective()
-                                && entry.electiveGroupId().equals(group.electiveGroupId()))
-                        .count() >= group.minRequired());
-        return !coursed.isEmpty() && program.getTotalCreditsRequired() > 0
-                && !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
-    }
-
-    private boolean isCoursed(Long programEnrollmentId, ProgramSubjectView entry) {
-        return !subjectSectionEnrollmentRepository
-                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                        programEnrollmentId, entry.subjectId(), List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR))
-                .isEmpty();
+        return programProgressReader.hasOnlyFinalExamsLeft(id);
     }
 
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
@@ -260,24 +202,11 @@ public class ProgramEnrollmentService {
     }
 
     public boolean hasActiveEnrollment(Long programEnrollmentId) {
-        return subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
-                programEnrollmentId,
-                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
+        return programProgressReader.hasActiveEnrollment(programEnrollmentId);
     }
 
     public List<ProgramSubjectView> listApprovedSubjects(Long programEnrollmentId) {
-        ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        List<ProgramSubjectView> entradas = programCurriculumFinder.findProgramSubjects(enrollment.getProgram().getId());
-        return entradas.stream()
-                .filter(entrada -> isApproved(programEnrollmentId, entrada))
-                .toList();
-    }
-
-    private boolean isApproved(Long programEnrollmentId, ProgramSubjectView entrada) {
-        return !subjectSectionEnrollmentRepository
-                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                        programEnrollmentId, entrada.subjectId(), List.of(EnrollmentStatus.APPROVED))
-                .isEmpty();
+        return programProgressReader.listApprovedSubjects(programEnrollmentId);
     }
 
     public void validateAdmissionWindow(ProgramCohort cohort) {
