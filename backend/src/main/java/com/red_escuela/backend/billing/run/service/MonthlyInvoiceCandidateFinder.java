@@ -7,7 +7,13 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
+
 import java.time.YearMonth;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.List;
 
 @Component
@@ -44,5 +50,21 @@ public class MonthlyInvoiceCandidateFinder {
 
     public List<Long> findCourseEnrollmentIdsAfter(YearMonth period, Long lastId) {
         return selectionRepository.findCourseEnrollmentIdsWithActivePlan(PaymentPlanCadence.MONTHLY, EnrollmentStatus.ENROLLED, period, lastId, PageRequest.of(0, PAGE_SIZE));
+    }
+
+    public void forEachMonthlyCandidate(YearMonth period, BiConsumer<MonthlyInvoiceEnrollmentType, Long> consumer) {
+        Set<String> visited = new HashSet<>();
+        forEachPage(MonthlyInvoiceEnrollmentType.PROGRAM, visited, consumer, lastId -> findProgramEnrollmentIdsAfter(period, lastId, false));
+        forEachPage(MonthlyInvoiceEnrollmentType.PROGRAM, visited, consumer, lastId -> findProgramEnrollmentIdsAfter(period, lastId, true));
+        forEachPage(MonthlyInvoiceEnrollmentType.COURSE, visited, consumer, lastId -> findCourseEnrollmentIdsAfter(period, lastId));
+    }
+
+    private void forEachPage(MonthlyInvoiceEnrollmentType type, Set<String> visited, BiConsumer<MonthlyInvoiceEnrollmentType, Long> consumer,
+                             Function<Long, List<Long>> nextPage) {
+        List<Long> page = nextPage.apply(0L);
+        while (!page.isEmpty()) {
+            page.stream().filter(id -> visited.add(type + ":" + id)).forEach(id -> consumer.accept(type, id));
+            page = nextPage.apply(page.get(page.size() - 1));
+        }
     }
 }
