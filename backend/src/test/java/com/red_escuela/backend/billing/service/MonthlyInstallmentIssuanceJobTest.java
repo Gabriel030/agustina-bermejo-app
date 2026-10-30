@@ -345,7 +345,6 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-131")
-    @Tag("D-191")
     void anEnrollmentWithAnActiveAnnualUpfrontPlanIsNotIssuedAnythingByTheJob() {
         Fixture fixture = setUpProgramEnrollment("94100031", PaymentPlanCadence.ANNUAL_UPFRONT, 10, CohortIntake.FIRST, YearMonth.of(2026, 1));
 

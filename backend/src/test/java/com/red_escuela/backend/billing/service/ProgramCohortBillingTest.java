@@ -332,6 +332,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-444")
     void annualUpfrontOfAProgramIsRejectedAndNothingIsIssued() {
         Person director = persistPersonBase("DIR37" + System.nanoTime());
         authenticateAsPerson(director);
@@ -353,7 +354,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 12)))
-                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException.class);
+                .isInstanceOfSatisfying(com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontOfProgramMustUseRequestEndpointException.class, e -> assertThat(e.violations())
+                        .extracting(violation -> violation.code()).containsExactly("ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT"));
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }
 

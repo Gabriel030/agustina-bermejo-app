@@ -53,7 +53,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Tag("D-408")
 @Tag("D-130")
 @Tag("D-158")
-@Tag("D-191")
 class CoursePaymentPlanScholarshipIT extends AbstractIntegrationTest {
     private static final LocalDate TODAY = LocalDate.of(2027, 3, 10);
 
