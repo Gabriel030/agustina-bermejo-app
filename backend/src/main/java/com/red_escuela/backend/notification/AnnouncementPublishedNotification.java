@@ -1,17 +1,11 @@
-package com.red_escuela.backend.announcement;
+package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.notification.DomainNotificationEvent;
-import com.red_escuela.backend.notification.NotificationRecipient;
-import com.red_escuela.backend.notification.PersonRecipient;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.util.List;
 
-public record AnnouncementPublishedEvent(Announcement announcement, String sectionName, List<Person> students)
-        implements DomainNotificationEvent {
-
+public record AnnouncementPublishedNotification(Long announcementId, String sectionName, List<Person> students) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.ANNOUNCEMENT_PUBLISHED;
@@ -34,6 +28,6 @@ public record AnnouncementPublishedEvent(Announcement announcement, String secti
 
     @Override
     public Long relatedEntityId() {
-        return announcement.getId();
+        return announcementId;
     }
 }

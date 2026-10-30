@@ -40,6 +40,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -106,6 +107,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
         Announcement announcement = createAnnouncement.create(aCommand(fixture.section.getId(), null));
         entityManager.flush();
 
+        awaitNotificationsFor(announcement.getId(), 3);
         List<Notification> notifications = notificationsFor(announcement.getId());
         assertThat(notifications).hasSize(3);
         assertThat(notifications).allMatch(n -> n.getType() == NotificationType.ANNOUNCEMENT_PUBLISHED);
@@ -121,6 +123,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
         Announcement announcement = createAnnouncement.create(aCommand(fixture.section.getId(), null));
         entityManager.flush();
 
+        awaitNotificationsFor(announcement.getId(), 1);
         Notification notification = notificationsFor(announcement.getId()).getFirst();
         assertThat(notification.getMessage()).doesNotContain(announcement.getBody());
         assertThat(notification.getMessage()).contains(fixture.subject.getName());
@@ -134,12 +137,11 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
         authenticateAs(fixture.instructor.getPerson());
         Announcement announcement = createAnnouncement.create(aCommand(fixture.section.getId(), null));
         entityManager.flush();
-        assertThat(notificationsFor(announcement.getId())).hasSize(2);
+        awaitNotificationsFor(announcement.getId(), 2);
 
         deleteAnnouncement.delete(announcement.getId());
-        entityManager.flush();
 
-        assertThat(notificationsFor(announcement.getId())).isEmpty();
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsFor(announcement.getId())).isEmpty());
     }
 
     @Test
@@ -376,6 +378,11 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
                 "Cambio de aula del jueves",
                 "La clase del jueves se dicta en el Aula 204, no en la 112.",
                 AnnouncementCategory.SCHEDULING, false, expiresAt, scheduledFor, audienceSpec);
+    }
+
+    private void awaitNotificationsFor(Long announcementId, int expected) {
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsFor(announcementId)).hasSize(expected));
     }
 
     private List<Notification> notificationsFor(Long announcementId) {

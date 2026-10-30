@@ -1,5 +1,7 @@
 package com.red_escuela.backend.notification;
 
+import com.red_escuela.backend.announcement.events.AnnouncementPublishedEvent;
+import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.attendance.events.AttendanceChangeRequestApprovedEvent;
 import com.red_escuela.backend.billing.events.PaymentReceiptApprovedEvent;
 import com.red_escuela.backend.billing.events.SuspensionLiftedEvent;
@@ -15,6 +17,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.event.CorrelationIds;
 import com.red_escuela.backend.shared.event.DomainEvent;
+import com.red_escuela.backend.testsupport.SlowTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.function.LongFunction;
 
 import static com.red_escuela.backend.testsupport.AsyncNotifications.awaitAsserted;
@@ -39,6 +43,7 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest
 @ActiveProfiles("test")
 @Tag("D-183")
+@SlowTest(reason = "Waits for asynchronous listeners and redelivery of failed publications across many event kinds, each scenario polling for seconds")
 class DomainEventNotificationListenersAsyncIT extends AbstractIntegrationTest {
 
     private static final Instant FIRST_OCCURRENCE = Instant.parse("2027-03-01T10:00:00Z");
@@ -80,7 +85,7 @@ class DomainEventNotificationListenersAsyncIT extends AbstractIntegrationTest {
     }
 
     private String eventPattern(Long personId) {
-        return ":" + personId + "[,}]";
+        return "(:|\\[)" + personId + "[,}\\]]";
     }
 
     private long incompletePublicationsOf(Long personId) {
@@ -220,5 +225,35 @@ class DomainEventNotificationListenersAsyncIT extends AbstractIntegrationTest {
                 personId -> new EnrollmentFeeExemptionGrantedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 6L, personId),
                 personId -> new EnrollmentFeeExemptionGrantedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 6L, personId),
                 NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED);
+    }
+
+    @Test
+    void aFailureNotifyingAPublishedAnnouncementDoesNotRollBackTheOperationAndIsRedelivered() {
+        assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
+                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 11L, "Algebra", List.of(personId)),
+                NotificationType.ANNOUNCEMENT_PUBLISHED);
+    }
+
+    @Test
+    void aFailureNotifyingAnUpdatedAnnouncementDoesNotRollBackTheOperationAndIsRedelivered() {
+        assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
+                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 12L, "Algebra", List.of(personId)),
+                NotificationType.ANNOUNCEMENT_UPDATED);
+    }
+
+    @Test
+    void twoAnnouncementUpdatesWithTheSameValuesNotifyTwiceAndARedeliveryOfOneNotifiesOnce() {
+        assertTwoOccurrencesNotifyTwiceAndARedeliveryOfOneNotifiesOnce(
+                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 13L, "Algebra", List.of(personId)),
+                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 13L, "Algebra", List.of(personId)),
+                NotificationType.ANNOUNCEMENT_UPDATED);
+    }
+
+    @Test
+    void twoAnnouncementPublicationsWithTheSameValuesNotifyTwiceAndARedeliveryOfOneNotifiesOnce() {
+        assertTwoOccurrencesNotifyTwiceAndARedeliveryOfOneNotifiesOnce(
+                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 14L, "Algebra", List.of(personId)),
+                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 14L, "Algebra", List.of(personId)),
+                NotificationType.ANNOUNCEMENT_PUBLISHED);
     }
 }

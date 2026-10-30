@@ -103,6 +103,8 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
     # La campanita recibió un puntero, no una copia: el mensaje NO trae el cuerpo
     Given path '/me/notifications'
     And header Authorization = 'Bearer ' + alumno.accessToken
+    * configure retry = { count: 30, interval: 500 }
+    And retry until responseStatus == 200 && response.filter(function(x){ return x.type == 'ANNOUNCEMENT_PUBLISHED' }).length > 0
     When method get
     Then status 200
     * def puntero = response.filter(function(x){ return x.type == 'ANNOUNCEMENT_PUBLISHED' })[0]
