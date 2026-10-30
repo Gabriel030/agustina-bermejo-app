@@ -6,7 +6,6 @@ import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConf
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -45,8 +44,8 @@ public class RejectSectionEvaluationConfigService implements RejectSectionEvalua
         config.setReviewedAt(ApplicationTime.now());
         SectionEvaluationConfig saved = configRepository.save(config);
 
-        Person leadInstructorPerson = instructorAccess.leadInstructorPerson(config.getSubjectSection());
-        eventPublisher.publishEvent(SectionEvaluationConfigRejectedEvent.rejectedFor(saved, leadInstructorPerson));
+        Long leadInstructorPersonId = instructorAccess.leadInstructorPersonId(command.sectionId());
+        eventPublisher.publishEvent(SectionEvaluationConfigRejectedEvent.rejectedFor(saved, leadInstructorPersonId));
         return saved;
     }
 }
