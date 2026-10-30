@@ -6,7 +6,7 @@ import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionAlread
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionNotFoundException;
 import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.EnrollmentFeeExemptionRevokedEvent;
+import com.red_escuela.backend.enrollment.service.EnrollmentNotificationEvents;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +45,6 @@ public class RevokeEnrollmentFeeExemptionService implements RevokeEnrollmentFeeE
             throw new EnrollmentFeeExemptionAlreadyRevokedException(exemptionId);
         }
         log.info("Habilitación de matrícula revocada: habilitacion={}, inscripcion={}", exemptionId, exemption.getProgramEnrollment().getId());
-        eventPublisher.publishEvent(new EnrollmentFeeExemptionRevokedEvent(exemption));
+        eventPublisher.publishEvent(EnrollmentNotificationEvents.exemptionRevocationOf(exemption));
     }
 }
