@@ -1,13 +1,10 @@
 package com.red_escuela.backend.attendance.usecase.attendance;
 
-import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.exception.ClassOnHolidayException;
 
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceSectionAccess;
@@ -29,39 +26,32 @@ import java.util.Map;
 public class LoadCourseSectionAttendanceService implements LoadCourseSectionAttendanceUseCase {
 
     private final AttendanceRepository attendanceRepository;
-    private final CourseSubjectSectionRepository courseSubjectSectionRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final AttendanceSectionAccess sectionAccess;
     private final ClassSessionUpserter classSessionUpserter;
-    private final HolidayRepository holidayRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public LoadCourseSectionAttendanceService(AttendanceRepository attendanceRepository,
-                                               CourseSubjectSectionRepository courseSubjectSectionRepository,
                                                CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
                                                AttendanceSectionAccess sectionAccess,
                                                ClassSessionUpserter classSessionUpserter,
-                                               HolidayRepository holidayRepository,
                                                ApplicationEventPublisher eventPublisher) {
         this.attendanceRepository = attendanceRepository;
-        this.courseSubjectSectionRepository = courseSubjectSectionRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.sectionAccess = sectionAccess;
         this.classSessionUpserter = classSessionUpserter;
-        this.holidayRepository = holidayRepository;
         this.eventPublisher = eventPublisher;
     }
 
     @Override
     @Transactional
     public List<Attendance> load(LoadCourseSectionAttendanceCommand command) {
-        CourseSubjectSection section = courseSubjectSectionRepository.findById(command.sectionId())
-                .orElseThrow(() -> new SectionNotFoundException(command.sectionId()));
+        CourseSubjectSection section = sectionAccess.findCourseSection(command.sectionId());
         sectionAccess.requireOwnCourseSection(command.sectionId(), command.instructorId());
         Instructor instructor = sectionAccess.resolveInstructor(command.instructorId());
 
         var request = command.request();
-        if (holidayRepository.existsByDate(request.classDate())) {
+        if (sectionAccess.isHoliday(request.classDate())) {
             throw new ClassOnHolidayException(request.classDate());
         }
         Map<Long, AttendanceStatus> statusByEnrollment = new LinkedHashMap<>();
