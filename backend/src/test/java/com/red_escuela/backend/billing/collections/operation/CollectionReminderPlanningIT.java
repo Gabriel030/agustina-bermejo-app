@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -332,7 +334,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
 
         planOn(LocalDate.of(2027, 3, 12), student);
         planOn(LocalDate.of(2027, 3, 15), student);
-        jdbc.update("update course_enrollment set payment_status = 'SUSPENDED' where id = ?", enrollment.getId());
+        PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, enrollment.getId(), EnrollmentPaymentStatus.SUSPENDED);
         CollectionReminderPlanningResult afterSuspension = planOn(LocalDate.of(2027, 3, 18), student);
 
         assertThat(eventsOf(student)).hasSize(2);
@@ -499,7 +501,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
         Course course = newCourse();
         CourseEnrollment courseEnrollment = enrollInCourse(student, course);
         ProgramEnrollment programEnrollment = enrollInProgram(student);
-        jdbc.update("update program_enrollment set payment_status = 'SUSPENDED' where id = ?", programEnrollment.getId());
+        PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, programEnrollment.getId(), EnrollmentPaymentStatus.SUSPENDED);
 
         EnrollmentReminderTarget courseTarget = targetLookup.findCourseEnrollmentTargets(List.of(courseEnrollment.getId())).get(courseEnrollment.getId());
         EnrollmentReminderTarget programTarget = targetLookup.findProgramEnrollmentTargets(List.of(programEnrollment.getId())).get(programEnrollment.getId());

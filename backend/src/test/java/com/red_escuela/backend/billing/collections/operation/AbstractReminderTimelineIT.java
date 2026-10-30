@@ -29,7 +29,6 @@ import com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfi
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceRowProcessor;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -85,7 +84,7 @@ abstract class AbstractReminderTimelineIT extends AbstractIntegrationTest {
     @Autowired
     private OverdueInvoiceTransitionService overdueTransition;
     @Autowired
-    private EnrollmentBillingComplianceRowProcessor complianceProcessor;
+    private EnrollmentPaymentStandingStep standingStep;
     @Autowired
     private BillingConfigurationReader configurationReader;
     @Autowired
@@ -145,7 +144,7 @@ abstract class AbstractReminderTimelineIT extends AbstractIntegrationTest {
     }
 
     protected ReminderTimelineHarness newHarness() {
-        return new ReminderTimelineHarness(jdbc, planningStep, overdueTransition, complianceProcessor, configurationReader, dispatchJob);
+        return new ReminderTimelineHarness(jdbc, planningStep, overdueTransition, standingStep, configurationReader, dispatchJob);
     }
 
     protected Person newPerson(String prefix, String role, boolean emailVerified) {

@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -61,6 +63,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
 
     private static final YearMonth MARCH = YearMonth.of(2026, 3);
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Autowired
     private MonthlyInstallmentIssuanceJob job;
@@ -236,6 +241,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     private void setPaymentStatus(Fixture fixture, EnrollmentPaymentStatus standing) {
         transactionTemplate.executeWithoutResult(tx ->
                 entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).setPaymentStatus(standing));
+        PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, fixture.enrollment().getId(), standing);
     }
 
     private List<Invoice> invoicesOf(Fixture fixture, FeeType feeType) {

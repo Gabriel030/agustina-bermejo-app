@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.collections.service.OverdueInvoiceTransit
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
-import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceRowProcessor;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.notification.delivery.service.EmailDeliveryDispatchJob;
 import com.red_escuela.backend.shared.time.MutableClock;
@@ -29,7 +29,7 @@ final class ReminderTimelineHarness {
     private final JdbcTemplate jdbc;
     private final CollectionReminderPlanningStep planningStep;
     private final OverdueInvoiceTransitionService overdueTransition;
-    private final EnrollmentBillingComplianceRowProcessor complianceProcessor;
+    private final EnrollmentPaymentStandingStep standingStep;
     private final BillingConfigurationReader configurationReader;
     private final EmailDeliveryDispatchJob dispatchJob;
     private final BillingInvariantChecker invariants;
@@ -41,11 +41,11 @@ final class ReminderTimelineHarness {
     };
 
     ReminderTimelineHarness(JdbcTemplate jdbc, CollectionReminderPlanningStep planningStep, OverdueInvoiceTransitionService overdueTransition,
-                            EnrollmentBillingComplianceRowProcessor complianceProcessor, BillingConfigurationReader configurationReader, EmailDeliveryDispatchJob dispatchJob) {
+                            EnrollmentPaymentStandingStep standingStep, BillingConfigurationReader configurationReader, EmailDeliveryDispatchJob dispatchJob) {
         this.jdbc = jdbc;
         this.planningStep = planningStep;
         this.overdueTransition = overdueTransition;
-        this.complianceProcessor = complianceProcessor;
+        this.standingStep = standingStep;
         this.configurationReader = configurationReader;
         this.dispatchJob = dispatchJob;
         this.invariants = BillingInvariantChecker.startingNow(jdbc);
@@ -128,10 +128,10 @@ final class ReminderTimelineHarness {
         if (policy.isEmpty()) {
             return;
         }
-        jdbc.queryForList("select id from course_enrollment where status = 'ENROLLED' and student_id in (" + idList(studentIds) + ") order by id", Long.class)
-                .forEach(id -> complianceProcessor.processCourseEnrollment(id, policy.get(), day));
-        jdbc.queryForList("select id from program_enrollment where status = 'ENROLLED' and student_id in (" + idList(studentIds) + ") order by id", Long.class)
-                .forEach(id -> complianceProcessor.processProgramEnrollment(id, policy.get(), day));
+        List<Long> courseIds = jdbc.queryForList("select id from course_enrollment where status = 'ENROLLED' and student_id in (" + idList(studentIds) + ") order by id", Long.class);
+        List<Long> programIds = jdbc.queryForList("select id from program_enrollment where status = 'ENROLLED' and student_id in (" + idList(studentIds) + ") order by id", Long.class);
+        assertThat(standingStep.evaluateEnrollmentsWithIds(EnrollmentKind.COURSE, courseIds, day, policy.get()).failed()).isZero();
+        assertThat(standingStep.evaluateEnrollmentsWithIds(EnrollmentKind.PROGRAM, programIds, day, policy.get()).failed()).isZero();
     }
 
     private void planAndAwaitDelivery(LocalDate day) {
