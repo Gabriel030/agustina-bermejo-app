@@ -2,29 +2,20 @@ package com.red_escuela.backend.enrollment.service;
 import java.time.Clock;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
-import com.red_escuela.backend.identity.service.PersonFactory;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
-import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
-import com.red_escuela.backend.identity.entity.Institution;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.entity.Role;
+import com.red_escuela.backend.identity.api.ConfirmedProspect;
+import com.red_escuela.backend.identity.api.NewProspect;
+import com.red_escuela.backend.identity.api.ProspectDraft;
+import com.red_escuela.backend.identity.api.StudentFinder;
+import com.red_escuela.backend.identity.api.StudentOnboarding;
+import com.red_escuela.backend.identity.api.StudentOnboardingSummary;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
-import com.red_escuela.backend.identity.exception.InstitutionNotFoundException;
-import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
-import com.red_escuela.backend.identity.exception.RoleNotFoundException;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
-import com.red_escuela.backend.identity.repository.InstitutionRepository;
-import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
-import com.red_escuela.backend.identity.repository.StudentRepository;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -38,33 +29,24 @@ import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 
 @Service
 public class ProspectService {
-    private static final String ROLE_ALUMNO = "ALUMNO";
-
-    private final StudentRepository studentRepository;
+    private final StudentFinder studentFinder;
+    private final StudentOnboarding studentOnboarding;
     private final StudentDocumentRepository studentDocumentRepository;
-    private final InstitutionRepository institutionRepository;
-    private final RoleRepository roleRepository;
-    private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
     private final TransactionBoundFileCleanup transactionBoundFileCleanup;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
     private final Clock clock;
 
-    public ProspectService(StudentRepository studentRepository,
+    public ProspectService(StudentFinder studentFinder, StudentOnboarding studentOnboarding,
             StudentDocumentRepository studentDocumentRepository,
-            InstitutionRepository institutionRepository,
-            RoleRepository roleRepository,
-            PersonFactory personFactory,
             FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
             RequestPasswordResetUseCase requestPasswordResetUseCase,
             SendEmailVerificationUseCase sendEmailVerificationUseCase,
             Clock clock) {
-        this.studentRepository = studentRepository;
+        this.studentFinder = studentFinder;
+        this.studentOnboarding = studentOnboarding;
         this.studentDocumentRepository = studentDocumentRepository;
-        this.institutionRepository = institutionRepository;
-        this.roleRepository = roleRepository;
-        this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
         this.transactionBoundFileCleanup = transactionBoundFileCleanup;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
@@ -73,52 +55,23 @@ public class ProspectService {
     }
 
     @Transactional
-    public Student createProspect(CreateProspectRequest request) {
-        Institution institution = institutionRepository.findById(request.institutionId())
-                .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
-
-        Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
-        person.setPhoneNumber(request.telefono());
-
-        Student student = new Student();
-        student.setPerson(person);
-        student.setInstitution(institution);
-        student.setOnboardingStatus(StudentOnboardingStatus.PROSPECTO);
-
-        Student saved = studentRepository.save(student);
+    public StudentOnboardingSummary createProspect(CreateProspectRequest request) {
+        StudentOnboardingSummary prospect = studentOnboarding.registerProspect(new NewProspect(
+                request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId()));
 
         boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
                 instanceof AnonymousAuthenticationToken;
         if (isAnonymous) {
-            sendEmailVerificationUseCase.sendVerification(saved.getId());
+            sendEmailVerificationUseCase.sendVerification(prospect.studentId());
         }
 
-        return saved;
+        return prospect;
     }
 
-    @Transactional
     public void saveDraft(Long studentId, SaveProspectDraftRequest request) {
-        Student student = findStudentOrThrow(studentId);
-        Person person = student.getPerson();
-
-        if (request.dni() != null) {
-            person.changeDocument(request.documentType(), request.dni());
-        }
-
-        Address address = person.getAddress();
-        if (request.street() != null) address.setStreet(request.street());
-        if (request.number() != null) address.setNumber(request.number());
-        if (request.floor() != null) address.setFloor(request.floor());
-        if (request.city() != null) address.setCity(request.city());
-        if (request.state() != null) address.setState(request.state());
-        if (request.postalCode() != null) address.setPostalCode(request.postalCode());
-        if (request.country() != null) address.setCountry(request.country());
-
-        try {
-            studentRepository.saveAndFlush(student);
-        } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
-        }
+        studentOnboarding.saveProspectDraft(studentId, new ProspectDraft(
+                request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
+                request.city(), request.state(), request.postalCode(), request.country()));
     }
 
     public void sendVerification(Long studentId) {
@@ -153,44 +106,17 @@ public class ProspectService {
     }
 
     @Transactional
-    public Student confirm(Long studentId, ConfirmProspectRequest request) {
-        Student student = findStudentOrThrow(studentId);
-        if (student.getOnboardingStatus() != StudentOnboardingStatus.PROSPECTO) {
-            throw new ProspectAlreadyConfirmedException(studentId);
-        }
+    public StudentOnboardingSummary confirm(Long studentId, ConfirmProspectRequest request) {
+        StudentOnboardingSummary confirmed = studentOnboarding.confirmProspect(studentId, new ConfirmedProspect(
+                request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
+                request.city(), request.state(), request.postalCode(), request.country()));
 
-        Person person = student.getPerson();
-        person.changeDocument(request.documentType(), request.dni());
-        person.setUsername(person.getDni());
+        requestPasswordResetUseCase.requestReset(confirmed.email());
 
-        var address = person.getAddress();
-        address.setStreet(request.street());
-        address.setNumber(request.number());
-        address.setFloor(request.floor());
-        address.setCity(request.city());
-        address.setState(request.state());
-        address.setPostalCode(request.postalCode());
-        address.setCountry(request.country());
-
-        Role alumno = roleRepository.findByName(ROLE_ALUMNO)
-                .orElseThrow(() -> new RoleNotFoundException(ROLE_ALUMNO));
-        person.getRoles().add(alumno);
-
-        student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
-
-        try {
-            studentRepository.saveAndFlush(student);
-        } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
-        }
-
-        requestPasswordResetUseCase.requestReset(person.emailValue());
-
-        return student;
+        return confirmed;
     }
 
     private Student findStudentOrThrow(Long studentId) {
-        return studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException(studentId));
+        return studentFinder.requireById(studentId);
     }
 }
