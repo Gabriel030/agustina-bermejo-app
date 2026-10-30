@@ -61,17 +61,17 @@ public class MonthlyInvoiceSimulator {
         this.clock = clock;
     }
 
-    public MonthlyInvoiceRun simulateMonthlyInvoices(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
-        return transaction.execute(status -> replaceSimulation(period, businessDate, pricingDate, trigger));
+    public MonthlyInvoiceRun simulateMonthlyInvoices(YearMonth period, LocalDate businessDate, LocalDate pricingDate, LocalDate issueDate, MonthlyInvoiceRunTrigger trigger) {
+        return transaction.execute(status -> replaceSimulation(period, businessDate, pricingDate, issueDate, trigger));
     }
 
-    private MonthlyInvoiceRun replaceSimulation(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
+    private MonthlyInvoiceRun replaceSimulation(YearMonth period, LocalDate businessDate, LocalDate pricingDate, LocalDate issueDate, MonthlyInvoiceRunTrigger trigger) {
         lineRepository.lockSimulationsOfPeriodAndBusinessDate(period.atDay(1).toEpochDay() * 100000L + businessDate.toEpochDay());
         runRepository.deleteSimulationsOfPeriodAndBusinessDate(period.atDay(1), businessDate);
         MonthlyInvoiceRun run = runRepository.saveAndFlush(MonthlyInvoiceRun.startSimulationRun(period.atDay(1), businessDate, pricingDate, trigger, LocalDateTime.now(clock)));
         log.info("Simulacion mensual iniciada: periodo={}, corrida={}, fechaDePrecio={}", period, run.getId(), pricingDate);
         SimulationTally tally = new SimulationTally();
-        candidateFinder.forEachMonthlyCandidate(period, (type, enrollmentId) -> simulateEnrollment(run.getId(), type, enrollmentId, period, pricingDate, tally));
+        candidateFinder.forEachMonthlyCandidate(period, (type, enrollmentId) -> simulateEnrollment(run.getId(), type, enrollmentId, period, pricingDate, issueDate, tally));
         alertRepository.saveAll(tally.alertsOf(run.getId(), previousInstallmentTotalsOf(period)));
         run.finishMonthlyRun(MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN, LocalDateTime.now(clock));
         log.info("Simulacion mensual finalizada: periodo={}, corrida={}, emitiria={}, noCorresponde={}, yaEmitidas={}, fallarian={}", period, run.getId(),
@@ -80,17 +80,17 @@ public class MonthlyInvoiceSimulator {
         return runRepository.save(run);
     }
 
-    private void simulateEnrollment(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate, SimulationTally tally) {
-        MonthlyInvoiceSimulationOutcome outcome = simulateOutcomeOf(type, enrollmentId, period, pricingDate);
+    private void simulateEnrollment(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate, LocalDate issueDate, SimulationTally tally) {
+        MonthlyInvoiceSimulationOutcome outcome = simulateOutcomeOf(type, enrollmentId, period, pricingDate, issueDate);
         lineRepository.save(MonthlyInvoiceSimulationLine.recordSimulatedOutcome(runId, type, enrollmentId, outcome));
         tally.record(type, outcome);
     }
 
-    private MonthlyInvoiceSimulationOutcome simulateOutcomeOf(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
+    private MonthlyInvoiceSimulationOutcome simulateOutcomeOf(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate, LocalDate issueDate) {
         try {
             MonthlyIssuancePreview preview = switch (type) {
-                case PROGRAM -> rowProcessor.previewProgramEnrollmentIssuance(enrollmentId, period, pricingDate);
-                case COURSE -> rowProcessor.previewCourseEnrollmentIssuance(enrollmentId, period, pricingDate);
+                case PROGRAM -> rowProcessor.previewProgramEnrollmentIssuance(enrollmentId, period, pricingDate, issueDate);
+                case COURSE -> rowProcessor.previewCourseEnrollmentIssuance(enrollmentId, period, pricingDate, issueDate);
             };
             return outcomeOf(preview).withOfferingId(offeringIdOf(type, enrollmentId));
         } catch (RuntimeException e) {

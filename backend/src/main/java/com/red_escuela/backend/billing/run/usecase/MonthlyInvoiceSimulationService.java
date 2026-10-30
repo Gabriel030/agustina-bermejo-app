@@ -32,7 +32,7 @@ public class MonthlyInvoiceSimulationService implements MonthlyInvoiceSimulation
     @Override
     public MonthlyInvoiceSimulationResponse simulateMonthlyInvoicesOfPeriodAsOfToday(YearMonth period) {
         LocalDate today = LocalDate.now(clock);
-        MonthlyInvoiceRun run = simulator.simulateMonthlyInvoices(period, today, period.atDay(1), MonthlyInvoiceRunTrigger.MANUAL);
+        MonthlyInvoiceRun run = simulator.simulateMonthlyInvoices(period, today, period.atDay(1), today, MonthlyInvoiceRunTrigger.MANUAL);
         return MonthlyInvoiceSimulationResponse.of(run,
                 lineRepository.findByMonthlyInvoiceRunIdOrderByIdAsc(run.getId()).stream().map(MonthlyInvoiceSimulationLineResponse::of).toList(),
                 alertRepository.findByMonthlyInvoiceRunIdOrderByIdAsc(run.getId()).stream().map(MonthlyInvoiceSimulationAlertResponse::of).toList());

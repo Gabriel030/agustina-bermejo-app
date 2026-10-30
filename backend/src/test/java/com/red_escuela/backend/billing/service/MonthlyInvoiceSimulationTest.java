@@ -97,7 +97,7 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
         Map<String, String> before = fingerprintOfEveryTableOutsideTheRunRegistry();
         long invoicesBefore = jdbcTemplate.queryForObject("select count(*) from invoice", Long.class);
 
-        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThat(fingerprintOfEveryTableOutsideTheRunRegistry()).isEqualTo(before);
         assertThat(jdbcTemplate.queryForObject("select count(*) from invoice", Long.class)).isEqualTo(invoicesBefore);
@@ -125,8 +125,8 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
     void anotherSimulationOfTheSameDayReplacesTheFirstAndNeverBlocksTheRealRunOfThePeriod() {
         enrollmentOfAprilCohort();
 
-        MonthlyInvoiceRun first = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
-        MonthlyInvoiceRun second = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.MANUAL);
+        MonthlyInvoiceRun first = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+        MonthlyInvoiceRun second = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.MANUAL);
 
         List<MonthlyInvoiceRun> runs = runRepository.findByPeriodOrderByIdAsc(APRIL.atDay(1));
         assertThat(runs).extracting(MonthlyInvoiceRun::getId).containsExactly(second.getId());
@@ -142,7 +142,7 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
     void aYearWithoutTermConfiguredIsShownAsNotIssuedOutOfTheTotalAndRaisesAnAlert() {
         Long enrollment = enrollmentOfAprilCohort();
 
-        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(YearMonth.of(2027, 4), date(2026, 3, 25), date(2027, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(YearMonth.of(2027, 4), date(2026, 3, 25), date(2027, 4, 1), date(2027, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         MonthlyInvoiceSimulationLine line = lineOf(simulation, enrollment);
         assertThat(line.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.NOT_APPLICABLE);
@@ -157,7 +157,7 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
     void aMissingPriceIsShownAsAFailureWithTheCareerAndRaisesAnAlert() {
         Long enrollment = enrollmentOfAprilCohort();
 
-        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2019, 6, 1), MonthlyInvoiceRunTrigger.MANUAL);
+        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2019, 6, 1), date(2019, 6, 1), MonthlyInvoiceRunTrigger.MANUAL);
 
         MonthlyInvoiceSimulationLine line = lineOf(simulation, enrollment);
         assertThat(line.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.FAILED);
@@ -199,8 +199,8 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
         enrollmentOfAprilCohort();
         var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
         try {
-            var first = pool.submit(() -> simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED));
-            var second = pool.submit(() -> simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.MANUAL));
+            var first = pool.submit(() -> simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED));
+            var second = pool.submit(() -> simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.MANUAL));
             first.get();
             second.get();
         } finally {
@@ -212,7 +212,7 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
     @Test
     void aSimulationIsInvisibleToTheRealRunQueries() {
         enrollmentOfAprilCohort();
-        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
 
         assertThatThrownBy(() -> queryUseCase.findMonthlyInvoiceRun(simulation.getId()))
                 .isInstanceOf(com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunNotFoundException.class);

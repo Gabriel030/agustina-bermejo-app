@@ -31,6 +31,6 @@ public class MonthlyInvoiceSimulationJob {
 
     public void run(LocalDate businessDate) {
         YearMonth nextPeriod = YearMonth.from(businessDate).plusMonths(1);
-        simulator.simulateMonthlyInvoices(nextPeriod, businessDate, nextPeriod.atDay(1), MonthlyInvoiceRunTrigger.SCHEDULED);
+        simulator.simulateMonthlyInvoices(nextPeriod, businessDate, nextPeriod.atDay(1), nextPeriod.atDay(1), MonthlyInvoiceRunTrigger.SCHEDULED);
     }
 }
