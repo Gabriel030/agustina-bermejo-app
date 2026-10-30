@@ -15,7 +15,7 @@ import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.notification.SuspensionLiftedEvent;
+import com.red_escuela.backend.billing.events.SuspensionLiftedEvent;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.LoggerFactory;
@@ -125,9 +125,9 @@ public class EnrollmentPaymentStandingService {
 
     private void publishSuspensionLifted(EnrollmentPaymentStanding standing, YearMonth suspendedSince, YearMonth suspendedUntil) {
         if (standing.kind() == EnrollmentKind.PROGRAM) {
-            programEnrollmentRepository.findById(standing.enrollmentId()).ifPresent(enrollment -> eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, suspendedUntil)));
+            programEnrollmentRepository.findById(standing.enrollmentId()).ifPresent(enrollment -> eventPublisher.publishEvent(SuspensionLiftedEvent.liftedForProgram(enrollment, suspendedSince, suspendedUntil)));
         } else {
-            courseEnrollmentRepository.findById(standing.enrollmentId()).ifPresent(enrollment -> eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, suspendedUntil)));
+            courseEnrollmentRepository.findById(standing.enrollmentId()).ifPresent(enrollment -> eventPublisher.publishEvent(SuspensionLiftedEvent.liftedForCourse(enrollment, suspendedSince, suspendedUntil)));
         }
         EnrollmentSuspensionLiftedEvent.EnrollmentType type = standing.kind() == EnrollmentKind.PROGRAM
                 ? EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM : EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE;

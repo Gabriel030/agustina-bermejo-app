@@ -1,5 +1,4 @@
 COUNT academicstructure 81
-COUNT enrollment 200
+COUNT enrollment 170
 COUNT evaluation 7
 COUNT identity 10
-COUNT notification 4

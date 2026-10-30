@@ -104,9 +104,8 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("OVERDUE");
         assertThat(dueDateOfInvoice(march)).isEqualTo(MARCH_DUE);
         assertThat(rejectedEvents()).singleElement().satisfies(event -> {
-            assertThat(event.receipt().getId()).isEqualTo(submitted.receiptId());
-            assertThat(event.receipt().getUploadedAt().toLocalDate()).isEqualTo(TODAY);
-            assertThat(event.receipt().getRejectionReason()).isEqualTo("No encontramos la transferencia");
+            assertThat(event.invoiceId()).isEqualTo(march);
+            assertThat(event.rejectionReason()).isEqualTo("No encontramos la transferencia");
         });
         assertThat(creditEntriesOf(debtor)).isZero();
         invariants.assertAllBillingInvariantsHold();
@@ -195,7 +194,7 @@ class VerifiedTransferApprovalIT extends AbstractPendingTransferBridgeIT {
         assertThat(creditEntriesOf(debtor)).isZero();
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("OVERDUE");
         assertThat(dueDateOfInvoice(march)).isEqualTo(MARCH_DUE);
-        assertThat(rejectedEvents()).singleElement().satisfies(event -> assertThat(event.receipt().getId()).isEqualTo(submitted.receiptId()));
+        assertThat(rejectedEvents()).singleElement().satisfies(event -> assertThat(event.invoiceId()).isEqualTo(march));
         assertThat(approvedEvents()).isEmpty();
         invariants.assertAllBillingInvariantsHold();
     }

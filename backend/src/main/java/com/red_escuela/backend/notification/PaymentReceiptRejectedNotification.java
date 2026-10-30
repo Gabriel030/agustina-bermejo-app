@@ -1,13 +1,13 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public record PaymentReceiptRejectedEvent(BankTransferReceipt receipt, Person payer) implements DomainNotificationEvent {
+public record PaymentReceiptRejectedNotification(Long invoiceId, YearMonth invoicePeriod, String rejectionReason, Person payer) implements DomainNotificationEvent {
     private static final DateTimeFormatter PERIOD_FORMAT = DateTimeFormatter.ofPattern("MM/yyyy");
 
     @Override
@@ -17,8 +17,8 @@ public record PaymentReceiptRejectedEvent(BankTransferReceipt receipt, Person pa
 
     @Override
     public String message() {
-        return "Rechazamos el comprobante que subiste para el pago de " + receipt.getInvoice().getPeriod().format(PERIOD_FORMAT)
-                + ": " + receipt.getRejectionReason() + ". Podés subir uno nuevo desde Mis pagos.";
+        return "Rechazamos el comprobante que subiste para el pago de " + invoicePeriod.format(PERIOD_FORMAT)
+                + ": " + rejectionReason + ". Podés subir uno nuevo desde Mis pagos.";
     }
 
     @Override
@@ -33,6 +33,6 @@ public record PaymentReceiptRejectedEvent(BankTransferReceipt receipt, Person pa
 
     @Override
     public Long relatedEntityId() {
-        return receipt.getInvoice().getId();
+        return invoiceId;
     }
 }

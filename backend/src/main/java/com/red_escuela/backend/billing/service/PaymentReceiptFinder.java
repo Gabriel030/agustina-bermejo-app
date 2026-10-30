@@ -9,8 +9,8 @@ import com.red_escuela.backend.billing.operation.PendingBankTransferReviewPort;
 import com.red_escuela.backend.billing.operation.PendingTransferApprovalAssessment;
 import com.red_escuela.backend.billing.operation.PendingTransferApprovalOutcome;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.notification.PaymentReceiptApprovedEvent;
-import com.red_escuela.backend.notification.PaymentReceiptRejectedEvent;
+import com.red_escuela.backend.billing.events.PaymentReceiptApprovedEvent;
+import com.red_escuela.backend.billing.events.PaymentReceiptRejectedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -66,11 +66,11 @@ public class PaymentReceiptFinder {
     }
 
     public void publishApproved(BankTransferReceipt receipt) {
-        eventPublisher.publishEvent(new PaymentReceiptApprovedEvent(receipt, payerOf(receipt)));
+        eventPublisher.publishEvent(PaymentReceiptApprovedEvent.approvedFor(receipt, payerOf(receipt)));
     }
 
     public void publishRejected(BankTransferReceipt receipt) {
-        eventPublisher.publishEvent(new PaymentReceiptRejectedEvent(receipt, payerOf(receipt)));
+        eventPublisher.publishEvent(PaymentReceiptRejectedEvent.rejectedFor(receipt, payerOf(receipt)));
     }
 
     public void linkApprovedPayment(BankTransferReceipt receipt, Long paymentId) {
