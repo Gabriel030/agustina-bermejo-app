@@ -1,5 +1,5 @@
 COUNT billing 8
-COUNT enrollment 33
+COUNT enrollment 16
 Module 'announcement' depends on module 'notification' via com.red_escuela.backend.announcement.AnnouncementPublishedEvent -> com.red_escuela.backend.notification.DomainNotificationEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *, graduation :: *.
 Module 'announcement' depends on module 'notification' via com.red_escuela.backend.announcement.AnnouncementPublishedEvent -> com.red_escuela.backend.notification.NotificationRecipient. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *, graduation :: *.
 Module 'announcement' depends on module 'notification' via com.red_escuela.backend.announcement.AnnouncementPublishedEvent -> com.red_escuela.backend.notification.PersonRecipient. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *, graduation :: *.
