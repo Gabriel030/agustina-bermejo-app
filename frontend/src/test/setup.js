@@ -2,6 +2,8 @@ import '@testing-library/jest-dom/vitest';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { server } from './mocks/server';
+import { warmUpContract } from './contract/validateAgainstContract';
+import { formatContractDeviations, takeContractDeviations } from './contract/withContract';
 
 // El localStorage de jsdom en este entorno queda como un objeto sin sus
 // métodos (Storage sin prototype) — se reemplaza por un polyfill en memoria
@@ -55,10 +57,17 @@ globalThis.ResizeObserver =
 
 // MSW intercepta a nivel de red (fetch real) — nunca se mockea apiFetch ni los
 // hooks directamente, ver docs/context/testing.md.
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => {
+  warmUpContract();
+  server.listen({ onUnhandledRequest: 'error' });
+});
 afterEach(() => {
   cleanup();
   server.resetHandlers();
   localStorage.clear();
+  const deviations = takeContractDeviations();
+  if (deviations.length > 0) {
+    throw new Error(`Mocks deviate from contracts/openapi.json:\n${formatContractDeviations(deviations)}`);
+  }
 });
 afterAll(() => server.close());

@@ -164,7 +164,6 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-039")
-    @Tag("D-191")
     void sixMonthCourseOffersOneInstallmentOrSixInstallmentsAccordingToChosenPlan() {
         Person director = persistPersonBase("DIR4" + System.nanoTime());
 
@@ -299,7 +298,6 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-039")
-    @Tag("D-191")
     void runningTheSameMonthTwiceOverAnUpfrontBlockDoesNotDuplicate() {
         Person director = persistPersonBase("DIR41" + System.nanoTime());
         Course course = persistCourse(6, BigDecimal.valueOf(15000), director);

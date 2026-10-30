@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import java.time.Clock;
-import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException;
+import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontOfProgramMustUseRequestEndpointException;
 import com.red_escuela.backend.billing.invoice.policy.PaymentPlanChoice;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -36,7 +36,7 @@ public class PaymentPlanSelectionGuard {
 
     public void requireAnnualUpfrontAvailableForProgram(PaymentPlanOption option) {
         annualUpfrontPolicies.evaluateRulesUntilFirstViolation(new PaymentPlanChoice(option.getCadence() == PaymentPlanCadence.ANNUAL_UPFRONT, true))
-                .throwIfDenied(AnnualUpfrontNotAvailableException::new);
+                .throwIfDenied(AnnualUpfrontOfProgramMustUseRequestEndpointException::new);
     }
 
     public void validateUpfrontWindow(PaymentPlanOption option) {
