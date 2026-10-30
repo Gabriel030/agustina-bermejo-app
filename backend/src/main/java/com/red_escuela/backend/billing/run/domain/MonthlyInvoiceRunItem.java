@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 @Table(name = "monthly_invoice_run_item")
@@ -65,19 +66,46 @@ public class MonthlyInvoiceRunItem {
     private List<Long> invoiceIds;
 
     public static MonthlyInvoiceRunItem recordItemOutcome(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, MonthlyInvoiceItemOutcome outcome,
-                                                          LocalDateTime recordedAt) {
+                                                          LocalDateTime recordedAt, FailedInvoiceRetrySchedule schedule) {
+        Objects.requireNonNull(schedule, "schedule");
         boolean failed = outcome.result() == MonthlyInvoiceRunItemResult.FAILED;
+        Optional<Duration> wait = failed ? schedule.waitAfterFailedExecution(1) : Optional.empty();
         MonthlyInvoiceRunItem item = new MonthlyInvoiceRunItem();
         item.monthlyInvoiceRunId = Objects.requireNonNull(runId, "runId");
         item.enrollmentType = Objects.requireNonNull(type, "type");
         item.enrollmentId = Objects.requireNonNull(enrollmentId, "enrollmentId");
-        item.result = outcome.result();
+        item.result = failed && wait.isEmpty() ? MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED : outcome.result();
         item.decisionCode = outcome.decisionCode();
         item.errorCode = outcome.errorCode();
         item.message = outcome.message();
         item.invoiceIds = outcome.invoiceIds();
         item.attempts = failed ? 1 : 0;
-        item.nextRetryAt = failed ? recordedAt.plus(FIRST_RETRY_WAIT) : null;
+        item.nextRetryAt = wait.map(recordedAt::plus).orElse(null);
         return item;
+    }
+
+    public boolean isDueForRetryAt(LocalDateTime now) {
+        return result == MonthlyInvoiceRunItemResult.FAILED && nextRetryAt != null && !nextRetryAt.isAfter(now);
+    }
+
+    public void recordRetryOutcome(MonthlyInvoiceItemOutcome outcome, FailedInvoiceRetrySchedule schedule, LocalDateTime attemptedAt) {
+        attempts++;
+        Optional<Duration> wait = outcome.result() == MonthlyInvoiceRunItemResult.FAILED ? schedule.waitAfterFailedExecution(attempts) : Optional.empty();
+        this.result = MonthlyInvoiceRunItemStateMachine.resolveNextResult(result, eventOf(outcome.result(), wait.isPresent()));
+        this.decisionCode = outcome.decisionCode();
+        this.errorCode = outcome.errorCode();
+        this.message = outcome.message();
+        this.invoiceIds = outcome.invoiceIds();
+        this.nextRetryAt = wait.map(attemptedAt::plus).orElse(null);
+    }
+
+    private static MonthlyInvoiceRunItemEvent eventOf(MonthlyInvoiceRunItemResult retryResult, boolean waitsForAnotherRetry) {
+        return switch (retryResult) {
+            case ISSUED -> MonthlyInvoiceRunItemEvent.RETRY_ISSUED;
+            case ALREADY_ISSUED -> MonthlyInvoiceRunItemEvent.RETRY_ALREADY_ISSUED;
+            case NOT_APPLICABLE -> MonthlyInvoiceRunItemEvent.RETRY_NOT_APPLICABLE;
+            case FAILED -> waitsForAnotherRetry ? MonthlyInvoiceRunItemEvent.RETRY_FAILED_WITH_WAIT : MonthlyInvoiceRunItemEvent.RETRY_FAILED_WITHOUT_WAIT;
+            case RETRIES_EXHAUSTED -> throw new IllegalArgumentException("A retry cannot end exhausted by itself");
+        };
     }
 }
