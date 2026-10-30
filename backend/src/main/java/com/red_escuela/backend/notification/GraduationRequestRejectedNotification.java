@@ -1,20 +1,19 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 
 import java.util.List;
 
-public record GraduationRequestApprovedEvent(GraduationRequest request, Person student) implements DomainNotificationEvent {
+public record GraduationRequestRejectedNotification(Long requestId, Person student, String rejectionReason) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
-        return NotificationType.GRADUATION_REQUEST_APPROVED;
+        return NotificationType.GRADUATION_REQUEST_REJECTED;
     }
 
     @Override
     public String message() {
-        return "Tu trámite de egreso fue aprobado: " + request.getProgramEnrollment().getProgram().getName();
+        return "Tu trámite de egreso fue rechazado: " + rejectionReason;
     }
 
     @Override
@@ -29,6 +28,6 @@ public record GraduationRequestApprovedEvent(GraduationRequest request, Person s
 
     @Override
     public Long relatedEntityId() {
-        return request.getId();
+        return requestId;
     }
 }

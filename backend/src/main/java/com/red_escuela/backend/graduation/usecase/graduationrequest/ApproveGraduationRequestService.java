@@ -11,7 +11,7 @@ import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMet
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
 import com.red_escuela.backend.graduation.service.GraduationRequestFinder;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.GraduationRequestApprovedEvent;
+import com.red_escuela.backend.graduation.events.GraduationRequestApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +67,7 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
         graduationRequestRepository.save(request);
         programEnrollmentRepository.save(programEnrollment);
 
-        eventPublisher.publishEvent(new GraduationRequestApprovedEvent(request, programEnrollment.getStudent().getPerson()));
+        eventPublisher.publishEvent(GraduationRequestApprovedEvent.approvedFor(request));
         return request;
     }
 }
