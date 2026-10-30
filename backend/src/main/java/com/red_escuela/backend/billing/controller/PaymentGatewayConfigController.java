@@ -52,7 +52,7 @@ public class PaymentGatewayConfigController {
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentGatewayConfigResponse updateConfig(@RequestBody UpdatePaymentGatewayConfigRequest request) {
         return updateConfigUseCase.update(request, currentPersonService.resolveCurrentPerson());
     }
