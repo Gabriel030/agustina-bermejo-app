@@ -12,7 +12,7 @@ import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
 import com.red_escuela.backend.announcement.service.audience.StudentSnapshot;
 import com.red_escuela.backend.announcement.service.audience.TpGradeResolver;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
+import com.red_escuela.backend.evaluation.api.EvaluationSchemeSummary;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.Test;
@@ -135,11 +135,7 @@ class AudienceResolverTest {
     }
 
     private SectionSnapshot section() {
-        EvaluationScheme scheme = new EvaluationScheme();
-        scheme.setExamCountExpected(3);
-        scheme.setTpCountExpected(3);
-        scheme.setHasFinal(true);
-        scheme.setMinApprovalGrade(com.red_escuela.backend.shared.domain.Grade.of(java.math.BigDecimal.valueOf(MIN_APPROVAL)));
+        EvaluationSchemeSummary scheme = new EvaluationSchemeSummary(3, 3, true, MIN_APPROVAL);
         return new SectionSnapshot(List.of(), scheme);
     }
 
