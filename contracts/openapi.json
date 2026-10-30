@@ -5167,6 +5167,52 @@
           "type" : "object"
         } ]
       },
+      "MonthlyInvoiceRunItemResponse" : {
+        "properties" : {
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "decisionCode" : {
+            "type" : "string"
+          },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enrollmentType" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "invoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "nextRetryAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "result" : {
+            "enum" : [ "ISSUED", "NOT_APPLICABLE", "ALREADY_ISSUED", "FAILED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "attempts", "decisionCode", "enrollmentId", "enrollmentType", "errorCode", "id", "invoiceIds", "message", "nextRetryAt", "result" ],
+        "type" : "object"
+      },
       "MonthlyMetricResponse" : {
         "properties" : {
           "available" : {
@@ -25307,6 +25353,86 @@
           }
         },
         "tags" : [ "me-teaching-section-controller" ]
+      }
+    },
+    "/monthly-invoice-runs/{monthlyRunId}/items" : {
+      "get" : {
+        "operationId" : "MonthlyInvoiceRun_listItems",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "monthlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "result",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ISSUED", "NOT_APPLICABLE", "ALREADY_ISSUED", "FAILED" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/MonthlyInvoiceRunItemResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
       }
     },
     "/notification-metrics/collection-reminders" : {

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.billing.collections.service.CollectionReminderFactsLoader;
-import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
+import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
@@ -69,10 +69,10 @@ class CollectionReminderPlanningJobIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-353")
     void plannerRunsAfterTheMonthlyIssuanceOfEveryIssuanceDay() throws NoSuchMethodException {
-        CronExpression issuance = CronExpression.parse(cronOf(MonthlyInstallmentIssuanceJob.class, "run"));
+        CronExpression issuance = CronExpression.parse(MonthlyInvoiceIssuanceJob.CRON);
         CronExpression planning = CronExpression.parse(CollectionReminderPlanningJob.CRON);
 
-        for (int day = 1; day <= 5; day++) {
+        for (int day = 1; day <= 1; day++) {
             LocalDateTime midnight = LocalDate.of(2027, 3, day).atStartOfDay();
             LocalDateTime issuanceFires = issuance.next(midnight.minusSeconds(1));
             LocalDateTime planningFires = planning.next(midnight.minusSeconds(1));

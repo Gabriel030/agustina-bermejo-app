@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.authorization.service.ExpireAuthorization
 import com.red_escuela.backend.billing.configuration.service.ActivateDueConfigurationVersionsJob;
 import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService;
 import com.red_escuela.backend.billing.service.InvoiceOverdueSweepService;
-import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
+import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.event.EventPublicationResubmissionJob;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -29,7 +29,7 @@ final class TestSuiteRules {
     private static final Set<Class<?>> GLOBAL_PROCESSES = Set.of(
             InvoiceOverdueSweepService.class,
             EnrollmentBillingComplianceSweepService.class,
-            MonthlyInstallmentIssuanceJob.class,
+            MonthlyInvoiceIssuanceJob.class,
             ExpireAuthorizationRequestsJob.class,
             ActivateDueConfigurationVersionsJob.class,
             EventPublicationResubmissionJob.class);

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.config;
 
 import com.red_escuela.backend.testsupport.SharedSpyBeans;
-import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
+import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.shared.time.ClockConfig;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Test;
@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -45,7 +46,7 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
     private Clock clock;
 
     @Autowired
-    private MonthlyInstallmentIssuanceJob monthlyJob;
+    private MonthlyInvoiceIssuanceJob monthlyJob;
 
     @Test
     void theLoadedContextAppliesTheConfiguredZoneWithoutGoingThroughMain() {
@@ -121,17 +122,17 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
 
     @Test
     void monthlyJobUsesTheClockNotTheJvmZone() {
-        doNothing().when(monthlyJob).run(any(YearMonth.class));
+        doNothing().when(monthlyJob).run(any(LocalDate.class));
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try {
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T02:30:00Z"));
             monthlyJob.run();
-            verify(monthlyJob, never()).run(any(YearMonth.class));
+            verify(monthlyJob).run(LocalDate.of(2027, 2, 28));
 
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T07:00:00Z"));
             monthlyJob.run();
-            verify(monthlyJob).run(YearMonth.of(2027, 3));
+            verify(monthlyJob).run(LocalDate.of(2027, 3, 1));
         } finally {
             TimeZone.setDefault(previous);
         }

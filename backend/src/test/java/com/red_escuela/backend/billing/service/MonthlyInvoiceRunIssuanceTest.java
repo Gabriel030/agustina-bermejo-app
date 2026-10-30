@@ -48,6 +48,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
+import com.red_escuela.backend.testsupport.MonthlyInvoiceRunTestDriver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -58,12 +60,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
+class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
 
     private static final YearMonth MARCH = YearMonth.of(2026, 3);
 
+    private MonthlyInvoiceRunTestDriver job;
+
     @Autowired
-    private MonthlyInstallmentIssuanceJob job;
+    void setMonthlyInvoiceRunTestDriver(MonthlyInvoiceRunExecutor executor, org.springframework.jdbc.core.JdbcTemplate jdbc, java.time.Clock clock) {
+        this.job = new MonthlyInvoiceRunTestDriver(executor, jdbc, clock);
+    }
 
     @Autowired
     private InvoiceRepository invoiceRepository;
