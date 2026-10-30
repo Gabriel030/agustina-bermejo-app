@@ -14,6 +14,7 @@ import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.api.ElectiveGroupRequirementView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
@@ -34,12 +35,10 @@ import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;
@@ -55,7 +54,7 @@ import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnr
 public class ProgramEnrollmentService {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final StudentRepository studentRepository;
-    private final ProgramRepository programRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
     private final ProgramCurriculumFinder programCurriculumFinder;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramCohortRepository programCohortRepository;
@@ -68,7 +67,7 @@ public class ProgramEnrollmentService {
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
             StudentRepository studentRepository,
-            ProgramRepository programRepository,
+            AcademicReferenceFinder academicReferenceFinder,
             ProgramCurriculumFinder programCurriculumFinder,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramCohortRepository programCohortRepository,
@@ -80,7 +79,7 @@ public class ProgramEnrollmentService {
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
-        this.programRepository = programRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
         this.programCurriculumFinder = programCurriculumFinder;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programCohortRepository = programCohortRepository;
@@ -118,8 +117,7 @@ public class ProgramEnrollmentService {
             validateStudentEligible(student);
         }
 
-        Program program = programRepository.findById(request.programId())
-                .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
+        Program program = academicReferenceFinder.findProgram(request.programId());
 
         ProgramCohort cohort = null;
         if (request.cohortId() != null) {

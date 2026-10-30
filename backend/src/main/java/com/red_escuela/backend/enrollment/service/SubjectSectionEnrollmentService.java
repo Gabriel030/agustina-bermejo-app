@@ -8,8 +8,6 @@ import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -17,7 +15,10 @@ import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepo
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
+import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
+import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSectionView;
+import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowFinder;
 import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowView;
@@ -37,8 +38,6 @@ import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanExcep
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramSubjectPrerequisiteRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,8 +54,7 @@ public class SubjectSectionEnrollmentService {
     private final SectionFinder sectionFinder;
     private final TermEnrollmentWindowFinder termEnrollmentWindowFinder;
     private final AcademicReferenceFinder academicReferenceFinder;
-    private final ProgramSubjectRepository programSubjectRepository;
-    private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
+    private final ProgramCurriculumFinder programCurriculumFinder;
     private final InvoiceRepository invoiceRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
@@ -67,8 +65,7 @@ public class SubjectSectionEnrollmentService {
             SectionFinder sectionFinder,
             TermEnrollmentWindowFinder termEnrollmentWindowFinder,
             AcademicReferenceFinder academicReferenceFinder,
-            ProgramSubjectRepository programSubjectRepository,
-            ProgramSubjectPrerequisiteRepository prerequisiteRepository,
+            ProgramCurriculumFinder programCurriculumFinder,
             InvoiceRepository invoiceRepository,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
@@ -79,8 +76,7 @@ public class SubjectSectionEnrollmentService {
         this.sectionFinder = sectionFinder;
         this.termEnrollmentWindowFinder = termEnrollmentWindowFinder;
         this.academicReferenceFinder = academicReferenceFinder;
-        this.programSubjectRepository = programSubjectRepository;
-        this.prerequisiteRepository = prerequisiteRepository;
+        this.programCurriculumFinder = programCurriculumFinder;
         this.invoiceRepository = invoiceRepository;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.clock = clock;
@@ -218,15 +214,15 @@ public class SubjectSectionEnrollmentService {
     }
 
     public Integer resolveCurricularYear(SubjectSectionEnrollment enrollment) {
-        return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularYear).orElse(null);
+        return resolveProgramSubject(enrollment).map(ProgramSubjectView::curricularYear).orElse(null);
     }
 
     public CurricularTerm resolveCurricularTerm(SubjectSectionEnrollment enrollment) {
-        return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularTerm).orElse(null);
+        return resolveProgramSubject(enrollment).map(ProgramSubjectView::curricularTerm).orElse(null);
     }
 
-    private Optional<ProgramSubject> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
-        return programSubjectRepository.findByProgramIdAndSubjectId(
+    private Optional<ProgramSubjectView> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
+        return programCurriculumFinder.findProgramSubject(
                 enrollment.getProgramEnrollment().getProgram().getId(),
                 enrollment.subjectId());
     }
@@ -256,8 +252,8 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId) {
-        ProgramSubject programSubject = programSubjectRepository
-                .findByProgramIdAndSubjectId(programEnrollment.getProgram().getId(), subjectId)
+        ProgramSubjectView programSubject = programCurriculumFinder
+                .findProgramSubject(programEnrollment.getProgram().getId(), subjectId)
                 .orElseThrow(() -> new SubjectNotInProgramPlanException(
                         subjectId, programEnrollment.getProgram().getId()));
         if (directorApprovalRequestRepository.hasApproved(
@@ -265,19 +261,19 @@ public class SubjectSectionEnrollmentService {
             return;
         }
 
-        for (ProgramSubjectPrerequisite prereq : prerequisiteRepository.findByProgramSubjectId(programSubject.getId())) {
-            List<EnrollmentStatus> estadosQueSirven = prereq.getRequirementType() == RequirementType.APPROVED
+        for (PrerequisiteView prereq : programCurriculumFinder.findPrerequisites(programSubject.id())) {
+            List<EnrollmentStatus> estadosQueSirven = prereq.requirementType() == RequirementType.APPROVED
                     ? List.of(EnrollmentStatus.APPROVED)
                     : List.of(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
 
             boolean cumplida = !subjectSectionEnrollmentRepository
                     .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                            programEnrollment.getId(), prereq.getPrerequisiteProgramSubject().getSubject().getId(),
+                            programEnrollment.getId(), prereq.prerequisiteSubjectId(),
                             estadosQueSirven)
                     .isEmpty();
             if (!cumplida) {
                 throw new PrerequisiteNotMetException(
-                        "No se cumple la correlatividad: " + prereq.getPrerequisiteProgramSubject().getSubject().getName());
+                        "No se cumple la correlatividad: " + prereq.prerequisiteSubjectName());
             }
         }
     }

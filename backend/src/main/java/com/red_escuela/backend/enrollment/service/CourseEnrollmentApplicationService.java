@@ -4,6 +4,7 @@ import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
+import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -11,12 +12,10 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
-import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,7 @@ import jakarta.persistence.EntityManager;
 @Service
 public class CourseEnrollmentApplicationService {
     private final StudentRepository studentRepository;
-    private final CourseRepository courseRepository;
+    private final CourseCatalogFinder courseCatalogFinder;
     private final CourseEnrollmentService courseEnrollmentService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
     private final InvoiceIssuingService invoiceIssuingService;
@@ -46,13 +45,13 @@ public class CourseEnrollmentApplicationService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
-    public CourseEnrollmentApplicationService(StudentRepository studentRepository, CourseRepository courseRepository,
+    public CourseEnrollmentApplicationService(StudentRepository studentRepository, CourseCatalogFinder courseCatalogFinder,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
             InvoiceIssuingService invoiceIssuingService, SubmitCourseAdmissionReceiptUseCase submitCourseAdmissionReceiptUseCase, EntityManager entityManager,
             ObjectMapper objectMapper, Clock clock) {
         this.studentRepository = studentRepository;
-        this.courseRepository = courseRepository;
+        this.courseCatalogFinder = courseCatalogFinder;
         this.courseEnrollmentService = courseEnrollmentService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
         this.invoiceIssuingService = invoiceIssuingService;
@@ -71,8 +70,7 @@ public class CourseEnrollmentApplicationService {
         if (dni == null || dni.isBlank()) {
             throw new DniRequiredException(student.getPerson().getId());
         }
-        Course course = courseRepository.findById(request.courseId())
-                .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
+        Course course = courseCatalogFinder.findCourseEntity(request.courseId());
         courseEnrollmentService.validateCanEnroll(student, course.getId());
         if (courseEnrollmentApplicationRepository.existsByStudentIdAndCourseIdAndPaymentReceiptStatus(
                 studentId, course.getId(), BankTransferReceiptStatus.PENDING_REVIEW)) {
