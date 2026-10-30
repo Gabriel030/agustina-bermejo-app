@@ -1,5 +1,5 @@
 COUNT billing 2
-COUNT enrollment 67
+COUNT enrollment 35
 Module 'evaluation' depends on module 'graduation' via com.red_escuela.backend.evaluation.service.GradeItemService -> com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *.
 Module 'evaluation' depends on non-exposed type com.red_escuela.backend.attendance.dto.AttendanceRiskResponse within module 'attendance'! | Method <com.red_escuela.backend.evaluation.service.ExamBoardRegistrationService.registerCourseEnrollment(java.lang.Long, java.lang.Long)> calls method <com.red_escuela.backend.attendance.dto.AttendanceRiskResponse.libre()> in (ExamBoardRegistrationService.java)
 Module 'evaluation' depends on non-exposed type com.red_escuela.backend.attendance.dto.AttendanceRiskResponse within module 'attendance'! | Method <com.red_escuela.backend.evaluation.service.ExamBoardRegistrationService.registerProgramEnrollment(java.lang.Long, java.lang.Long)> calls method <com.red_escuela.backend.attendance.dto.AttendanceRiskResponse.libre()> in (ExamBoardRegistrationService.java)

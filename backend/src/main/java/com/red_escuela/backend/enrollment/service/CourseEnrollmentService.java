@@ -6,19 +6,15 @@ import com.red_escuela.backend.academicstructure.api.CourseRegistrationView;
 import com.red_escuela.backend.academicstructure.api.CourseSectionView;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.identity.exception.StudentNotActiveException;
-import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
-import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.service.PersonRoleGranter;
+import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
+import com.red_escuela.backend.identity.api.StudentFinder;
+import com.red_escuela.backend.identity.api.StudentRoleGranter;
 
 import com.red_escuela.backend.enrollment.dto.CourseProgressResponse;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
 import com.red_escuela.backend.enrollment.exception.AmbiguousSectionException;
@@ -43,31 +39,34 @@ import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 @Service
 public class CourseEnrollmentService {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final StudentRepository studentRepository;
+    private final StudentFinder studentFinder;
+    private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final CourseCatalogFinder courseCatalogFinder;
     private final SectionFinder sectionFinder;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
-    private final PersonRoleGranter personRoleGranter;
+    private final StudentRoleGranter studentRoleGranter;
     private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final Clock clock;
 
     public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
-            StudentRepository studentRepository,
+            StudentFinder studentFinder,
+            StudentEnrollmentEligibility studentEnrollmentEligibility,
             CourseCatalogFinder courseCatalogFinder,
             SectionFinder sectionFinder,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            PersonRoleGranter personRoleGranter, EnrollmentDebtGuard enrollmentDebtGuard,
+            StudentRoleGranter studentRoleGranter, EnrollmentDebtGuard enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.studentRepository = studentRepository;
+        this.studentFinder = studentFinder;
+        this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.courseCatalogFinder = courseCatalogFinder;
         this.sectionFinder = sectionFinder;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
-        this.personRoleGranter = personRoleGranter;
+        this.studentRoleGranter = studentRoleGranter;
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -77,14 +76,13 @@ public class CourseEnrollmentService {
     @Transactional
     public CourseEnrollment enrollSelfService(Long studentId, CreateCourseEnrollmentRequest request) {
         CourseEnrollment enrollment = enroll(studentId, request);
-        personRoleGranter.grantStudentRoleIfMissing(enrollment.getStudent().getPerson());
+        studentRoleGranter.grantStudentRoleIfMissing(enrollment.getStudent().getPerson());
         return enrollment;
     }
 
     @Transactional
     public CourseEnrollment enroll(Long studentId, CreateCourseEnrollmentRequest request) {
-        Student student = studentRepository.findByIdForUpdate(studentId)
-                .orElseThrow(() -> new StudentNotFoundException(studentId));
+        Student student = studentFinder.requireByIdForUpdate(studentId);
         enrollmentDebtGuard.verifyNoOutstandingDebt(studentId);
         CourseRegistrationView registration = validateCanEnroll(student, request.courseId());
         LocalDateTime now = LocalDateTime.now(clock);
@@ -110,7 +108,7 @@ public class CourseEnrollmentService {
     }
 
     CourseRegistrationView validateCanEnroll(Student student, Long courseId) {
-        validateStudentEligible(student);
+        studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
         CourseRegistrationView registration = courseCatalogFinder.findRegistration(courseId, LocalDateTime.now(clock));
         if (registration.windowInverted()) {
@@ -277,15 +275,6 @@ public class CourseEnrollmentService {
                 .toList();
 
         return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty());
-    }
-
-    private void validateStudentEligible(Student student) {
-        if (student.getOnboardingStatus() != StudentOnboardingStatus.CONFIRMADO) {
-            throw new StudentNotConfirmedException(student.getId());
-        }
-        if (student.getPerson().getStatus() != StatusType.ACTIVE) {
-            throw new StudentNotActiveException(student.getId());
-        }
     }
 
     private CourseEnrollment findOrThrow(Long id) {

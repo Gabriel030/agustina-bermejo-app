@@ -1,4 +1,4 @@
 COUNT academicstructure 2
 COUNT attendance 2
 COUNT billing 65
-COUNT identity 70
+COUNT identity 38

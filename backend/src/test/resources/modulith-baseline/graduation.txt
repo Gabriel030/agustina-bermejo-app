@@ -1,2 +1,2 @@
 COUNT billing 21
-COUNT enrollment 45
+COUNT enrollment 44
