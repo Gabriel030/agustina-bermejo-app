@@ -1,34 +1,33 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 
 import java.util.List;
 
-public record AttendanceChangeRequestRejectedEvent(AttendanceChangeRequest request, Person requestedBy) implements DomainNotificationEvent {
+public record GraduationRequestApprovedNotification(Long requestId, Person student, String programName) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
-        return NotificationType.ATTENDANCE_CHANGE_REQUEST_REJECTED;
+        return NotificationType.GRADUATION_REQUEST_APPROVED;
     }
 
     @Override
     public String message() {
-        return AttendanceChangeRequestMessage.of(request, "rechazada");
+        return "Tu trámite de egreso fue aprobado: " + programName;
     }
 
     @Override
     public List<NotificationRecipient> recipients() {
-        return List.of(new PersonRecipient(requestedBy));
+        return List.of(new PersonRecipient(student));
     }
 
     @Override
     public String relatedEntityType() {
-        return "AttendanceChangeRequest";
+        return "GraduationRequest";
     }
 
     @Override
     public Long relatedEntityId() {
-        return request.getId();
+        return requestId;
     }
 }

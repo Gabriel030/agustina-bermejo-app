@@ -1,20 +1,20 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 
+import java.time.LocalDate;
 import java.util.List;
 
-public record AttendanceChangeRequestApprovedEvent(AttendanceChangeRequest request, Person requestedBy) implements DomainNotificationEvent {
+public record AttendanceChangeRequestRejectedNotification(Long requestId, Person requestedBy, String studentFullName, LocalDate classDate, String previousStatusLabel, String requestedStatusLabel) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
-        return NotificationType.ATTENDANCE_CHANGE_REQUEST_APPROVED;
+        return NotificationType.ATTENDANCE_CHANGE_REQUEST_REJECTED;
     }
 
     @Override
     public String message() {
-        return AttendanceChangeRequestMessage.of(request, "aprobada");
+        return AttendanceChangeRequestMessage.of(studentFullName, classDate, previousStatusLabel, requestedStatusLabel, "rechazada");
     }
 
     @Override
@@ -29,6 +29,6 @@ public record AttendanceChangeRequestApprovedEvent(AttendanceChangeRequest reque
 
     @Override
     public Long relatedEntityId() {
-        return request.getId();
+        return requestId;
     }
 }

@@ -5,7 +5,7 @@ import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepository;
 import com.red_escuela.backend.attendance.service.AttendanceChangeRequestFinder;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.AttendanceChangeRequestRejectedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,7 +41,7 @@ public class RejectAttendanceChangeRequestService implements RejectAttendanceCha
         request.setApprovedAt(ApplicationTime.now());
         AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
 
-        eventPublisher.publishEvent(new AttendanceChangeRequestRejectedEvent(saved, saved.getRequestedBy().getPerson()));
+        eventPublisher.publishEvent(AttendanceChangeRequestRejectedEvent.rejectedFor(saved));
         return saved;
     }
 }

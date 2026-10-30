@@ -7,7 +7,7 @@ import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStat
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
 import com.red_escuela.backend.graduation.service.GraduationRequestFinder;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.GraduationRequestRejectedEvent;
+import com.red_escuela.backend.graduation.events.GraduationRequestRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +49,7 @@ public class RejectGraduationRequestService implements RejectGraduationRequestUs
         request.setRejectionReason(command.motivo());
         GraduationRequest saved = graduationRequestRepository.save(request);
 
-        eventPublisher.publishEvent(new GraduationRequestRejectedEvent(saved, saved.getProgramEnrollment().getStudent().getPerson()));
+        eventPublisher.publishEvent(GraduationRequestRejectedEvent.rejectedFor(saved));
         return saved;
     }
 }
