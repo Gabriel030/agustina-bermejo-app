@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.adapter;
 
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.academicstructure.usecase.SectionKind;
