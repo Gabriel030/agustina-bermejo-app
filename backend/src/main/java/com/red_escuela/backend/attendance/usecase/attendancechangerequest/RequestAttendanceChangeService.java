@@ -8,9 +8,7 @@ import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepo
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.attendance.service.AttendanceSectionAccess;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,17 +17,14 @@ public class RequestAttendanceChangeService implements RequestAttendanceChangeUs
 
     private final AttendanceChangeRequestRepository attendanceChangeRequestRepository;
     private final AttendanceRepository attendanceRepository;
-    private final SubjectSectionInstructorRepository subjectSectionInstructorRepository;
-    private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
+    private final AttendanceSectionAccess sectionAccess;
 
     public RequestAttendanceChangeService(AttendanceChangeRequestRepository attendanceChangeRequestRepository,
                                            AttendanceRepository attendanceRepository,
-                                           SubjectSectionInstructorRepository subjectSectionInstructorRepository,
-                                           CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository) {
+                                           AttendanceSectionAccess sectionAccess) {
         this.attendanceChangeRequestRepository = attendanceChangeRequestRepository;
         this.attendanceRepository = attendanceRepository;
-        this.subjectSectionInstructorRepository = subjectSectionInstructorRepository;
-        this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
+        this.sectionAccess = sectionAccess;
     }
 
     @Override
@@ -39,12 +34,10 @@ public class RequestAttendanceChangeService implements RequestAttendanceChangeUs
                 .orElseThrow(() -> new AttendanceNotFoundException(command.attendanceId()));
         Long sectionId = resolveSectionId(attendance);
         Long requestedById = command.requestedBy().getId();
-        boolean esProgramSection = attendance.getProgramSubjectSectionEnrollment() != null;
-        boolean esPropia = esProgramSection
-                ? subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, requestedById)
-                : courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, requestedById);
-        if (!esPropia) {
-            throw new NotOwnSectionException(requestedById, sectionId);
+        if (attendance.getProgramSubjectSectionEnrollment() != null) {
+            sectionAccess.requireOwnProgramSection(sectionId, requestedById);
+        } else {
+            sectionAccess.requireOwnCourseSection(sectionId, requestedById);
         }
 
         command.body().requestedStatus().requireRecordableByInstructor();
