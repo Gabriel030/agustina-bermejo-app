@@ -164,7 +164,7 @@ describe('AuthorizationRequestDetailPage as director', () => {
     server.use(
       http.post(`${API}/authorization-requests/11/approve`, () => {
         setCurrent(detail({ status: 'REJECTED', decidedAt: '2026-10-24T09:00:00Z' }, { decidedBy: { id: 2, name: 'Otra Directora', roles: [] } }));
-        return HttpResponse.json({ code: 'ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION' }, { status: 409 });
+        return HttpResponse.json({ code: 'ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION', violations: [] }, { status: 409 });
       }),
     );
     const user = userEvent.setup();
@@ -190,7 +190,7 @@ describe('AuthorizationRequestDetailPage as director', () => {
             { decidedBy: { id: 1, name: 'Director', roles: [] }, effectLines: [] },
           ),
         );
-        return HttpResponse.json({ code: 'REFUND_EXCEEDS_AVAILABLE_AMOUNT' }, { status: 409 });
+        return HttpResponse.json({ code: 'REFUND_EXCEEDS_AVAILABLE_AMOUNT', violations: [] }, { status: 409 });
       }),
     );
     const user = userEvent.setup();
