@@ -47,7 +47,7 @@ public class EnrollmentDebtFactsQuery {
         return new EnrollmentDebtFacts(counts[0], counts[1], counts[2], counts[3]);
     }
 
-    public List<InstallmentDueDate> findMonthlyInstallmentsUnpaidAtCutoff(EnrollmentKind kind, Long enrollmentId, LocalDate cutoff) {
+    public List<InstallmentDueDate> findMonthlyInstallmentsUnpaidAndUnprotectedAtCutoff(EnrollmentKind kind, Long enrollmentId, LocalDate cutoff) {
         List<InstallmentDueDate> installments = new ArrayList<>();
         jdbc.query("""
                 select distinct i.id, i.due_date
@@ -63,6 +63,18 @@ public class EnrollmentDebtFactsQuery {
                                   from payment_allocation a where a.invoice_id = i.id
                                     and (case when a.reverses_allocation_id is null then a.effective_date else a.allocated_on end) <= :cutoff), 0)
                       - coalesce((select sum(n.offset_amount) from credit_note n where n.invoice_id = i.id and n.issue_date <= :cutoff), 0) > 0
+                  and not exists (select 1
+                                  from payment_checkout_item item
+                                  join payment p on p.id = item.payment_id
+                                  where item.invoice_id = i.id
+                                    and item.marked_under_review
+                                    and p.method_type = 'BANK_TRANSFER'
+                                    and cast(p.registered_at as date) <= i.due_date
+                                    and cast(p.registered_at as date) <= :cutoff
+                                    and not exists (select 1 from payment_status_change change
+                                                    where change.payment_id = p.id
+                                                      and change.to_status <> 'PENDING'
+                                                      and cast(change.occurred_at as date) <= :cutoff))
                 order by i.due_date, i.id
                 """.formatted(enrollmentColumn(kind)),
                 new MapSqlParameterSource("enrollmentId", enrollmentId).addValue("cutoff", Date.valueOf(cutoff)),
