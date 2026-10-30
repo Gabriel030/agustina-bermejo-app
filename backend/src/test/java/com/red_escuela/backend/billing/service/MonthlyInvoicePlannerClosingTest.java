@@ -388,7 +388,9 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
-        assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() ->
+                assertThat(jdbcTemplate.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollment))
+                        .isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT.name()));
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).isNotEmpty()
                 .noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.CANCELLED)
                 .anyMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE);
@@ -421,8 +423,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     private void suspend(Long enrollment, LocalDateTime on) {
-        setStanding(enrollment, EnrollmentPaymentStatus.SUSPENDED);
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollment).setPaymentStatusUpdatedAt(on));
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbcTemplate, enrollment, EnrollmentPaymentStatus.SUSPENDED, on.toLocalDate(), on);
     }
 
     @Test

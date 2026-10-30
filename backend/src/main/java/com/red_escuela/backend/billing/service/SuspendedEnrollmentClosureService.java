@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
@@ -130,10 +129,8 @@ public class SuspendedEnrollmentClosureService {
         if (cycle.isEmpty() || !cycleOrTermEnded(enrollment, cycle.get(), suspendedOn, today)) {
             return false;
         }
-        enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         programEnrollmentService.withdrawForNonpayment(enrollmentId);
         eventPublisher.publishEvent(EnrollmentClosedWhileSuspendedEvent.closedOn(EnrollmentKind.PROGRAM, enrollmentId, today));
-        enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());
         return true;

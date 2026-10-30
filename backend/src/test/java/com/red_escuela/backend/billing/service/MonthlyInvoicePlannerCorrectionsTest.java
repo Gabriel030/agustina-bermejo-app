@@ -177,8 +177,6 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         runEveryMonth(JAN_2026, YearMonth.of(2026, 4), () -> {
         });
         setStanding(enrollment, EnrollmentPaymentStatus.SUSPENDED);
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollment)
-                .setPaymentStatusUpdatedAt(LocalDateTime.of(2026, 4, 20, 10, 0)));
         List<String> frozen = sequence(enrollment);
 
         runEveryMonth(YearMonth.of(2026, 5), YearMonth.of(2026, 12), () -> assertThat(sequence(enrollment)).isEqualTo(frozen));
@@ -190,7 +188,9 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
-        assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() ->
+                assertThat(jdbcTemplate.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollment))
+                        .isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT.name()));
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PAID);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y26);

@@ -266,7 +266,6 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
             enrollment.setCourse(course);
             enrollment.setStatus(EnrollmentStatus.ENROLLED);
             enrollment.setEnrollmentDate(LocalDateTime.of(2027, 2, 1, 10, 0));
-            enrollment.setPaymentStatus(EnrollmentPaymentStatus.UP_TO_DATE);
             entityManager.persist(enrollment);
             courseStudentId = student.getId();
             return enrollment.getId();

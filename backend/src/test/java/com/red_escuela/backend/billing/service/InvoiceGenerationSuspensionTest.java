@@ -49,6 +49,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Autowired
     private BillingTestTrigger invoiceGenerationService;
 
     @Autowired
@@ -122,8 +125,9 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
-        enrollment.setPaymentStatus(paymentStatus);
-        return programEnrollmentRepository.save(enrollment);
+        ProgramEnrollment saved = programEnrollmentRepository.save(enrollment);
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, saved.getId(), paymentStatus);
+        return saved;
     }
 
     private CourseEnrollment persistCourseEnrollment(String dni, EnrollmentStatus status, EnrollmentPaymentStatus paymentStatus) {
@@ -144,8 +148,9 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setCourse(course);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
-        enrollment.setPaymentStatus(paymentStatus);
-        return courseEnrollmentRepository.save(enrollment);
+        CourseEnrollment saved = courseEnrollmentRepository.save(enrollment);
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, saved.getId(), paymentStatus);
+        return saved;
     }
 
     @Test
@@ -200,8 +205,8 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         selection.setCreatedBy(director);
         paymentPlanSelectionRepository.save(selection);
 
-        enrollment.setPaymentStatus(EnrollmentPaymentStatus.UP_TO_DATE);
         courseEnrollmentRepository.save(enrollment);
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, enrollment.getId(), EnrollmentPaymentStatus.UP_TO_DATE);
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 

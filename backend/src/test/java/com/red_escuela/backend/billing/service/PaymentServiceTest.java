@@ -230,8 +230,6 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
     private CourseEnrollment persistCourseEnrollmentWithStanding(Student student, EnrollmentPaymentStatus standing) {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        enrollment.setPaymentStatus(standing);
-        enrollment.setPaymentStatusUpdatedAt(LocalDateTime.now().minusMonths(1));
         CourseEnrollment saved = courseEnrollmentRepository.save(enrollment);
         PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, saved.getId(), standing);
         return saved;

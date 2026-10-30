@@ -137,7 +137,6 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         enrollment.setStudent(student());
         enrollment.setProgram(ofProgram);
         enrollment.setStatus(status);
-        enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), payment);
@@ -157,7 +156,6 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         enrollment.setStudent(student());
         enrollment.setCourse(ofCourse);
         enrollment.setStatus(status);
-        enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
         PaymentStandingSeed.seedCourseEnrollmentStanding(entityManager, enrollment.getId(), payment);

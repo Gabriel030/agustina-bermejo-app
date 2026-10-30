@@ -13,7 +13,6 @@ import org.springframework.data.domain.DomainEvents;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -64,13 +63,6 @@ public class ProgramEnrollment implements BillableEnrollment {
 
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false)
-    private EnrollmentPaymentStatus paymentStatus = EnrollmentPaymentStatus.UP_TO_DATE;
-
-    @Column(name = "payment_status_updated_at")
-    private LocalDateTime paymentStatusUpdatedAt;
 
     @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<SubjectSectionEnrollment> sectionEnrollments;

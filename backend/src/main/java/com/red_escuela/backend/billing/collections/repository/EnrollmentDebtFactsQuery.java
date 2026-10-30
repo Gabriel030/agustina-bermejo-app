@@ -93,7 +93,7 @@ public class EnrollmentDebtFactsQuery {
 
     public boolean isEnrollmentWithdrawnForNonpayment(EnrollmentKind kind, Long enrollmentId) {
         String table = kind == EnrollmentKind.PROGRAM ? "program_enrollment" : "course_enrollment";
-        return jdbc.queryForObject("select count(*) from " + table + " where id = :id and payment_status = 'WITHDRAWN_FOR_NONPAYMENT'",
+        return jdbc.queryForObject("select count(*) from " + table + " where id = :id and status = 'WITHDRAWN' and withdrawn_by_person_id is null",
                 new MapSqlParameterSource("id", enrollmentId), Long.class) > 0;
     }
 
