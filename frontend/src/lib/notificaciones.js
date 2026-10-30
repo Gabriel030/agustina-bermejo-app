@@ -27,6 +27,10 @@ export const TIPO_NOTIFICACION_LABEL = {
   COLLECTION_REMINDER: 'Aviso de cobranza',
   OVERDUE_CONTACT_LIST_UPDATED: 'Alumnos para contactar',
   PAYMENT_RECEIPT_REVIEW_OVERDUE: 'Comprobante sin revisar',
+  INCONSISTENT_ACCOUNT_DETECTED: 'Cuenta con saldo inconsistente',
+  NIGHTLY_RUN_FAILED: 'Falló el proceso nocturno',
+  NIGHTLY_RUN_MISSED: 'No corrió el proceso nocturno',
+  NIGHTLY_RUN_COMPLETED_WITH_ERRORS: 'Proceso nocturno con errores',
 };
 
 export const TONO_NOTIFICACION = {
@@ -58,6 +62,10 @@ export const TONO_NOTIFICACION = {
   COLLECTION_REMINDER: 'warning',
   OVERDUE_CONTACT_LIST_UPDATED: 'warning',
   PAYMENT_RECEIPT_REVIEW_OVERDUE: 'warning',
+  INCONSISTENT_ACCOUNT_DETECTED: 'danger',
+  NIGHTLY_RUN_FAILED: 'danger',
+  NIGHTLY_RUN_MISSED: 'danger',
+  NIGHTLY_RUN_COMPLETED_WITH_ERRORS: 'warning',
 };
 
 export function tiempoRelativo(fechaIso) {

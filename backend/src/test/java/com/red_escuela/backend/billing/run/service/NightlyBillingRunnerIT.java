@@ -125,7 +125,7 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
         assertThat(run.status()).isEqualTo(NightlyBillingRunStatus.COMPLETED);
         assertThat(run.steps()).extracting(step -> step.step()).containsExactly(BillingRunStep.ACCOUNT_CONSISTENCY, BillingRunStep.GATEWAY_SYNC, BillingRunStep.OVERDUE_DETECTION, BillingRunStep.LATE_FEE_ACCRUAL,
                 BillingRunStep.LATE_FEE_WITHDRAWAL_CORRECTION, BillingRunStep.COLLECTIONS_SNAPSHOT, BillingRunStep.ENROLLMENT_BILLING_COMPLIANCE, BillingRunStep.TERM_END_WITHDRAWAL,
-                BillingRunStep.ACCOUNT_CREDIT_ALLOCATION);
+                BillingRunStep.ACCOUNT_CREDIT_ALLOCATION, BillingRunStep.COLLECTION_REMINDER_PLANNING);
         assertThat(run.steps().get(1).status()).isEqualTo(BillingRunStatus.NOT_APPLICABLE);
         assertThat(run.steps().get(1).notApplicableCode()).isEqualTo("GATEWAY_DISABLED");
         assertThat(run.failedSteps()).isZero();
@@ -168,7 +168,7 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
 
         assertThat(winners).isEqualTo(1);
         assertThat(countOf("nightly_billing_run", "business_date = ?", day)).isEqualTo(1);
-        assertThat(countOf("billing_run", "nightly_billing_run_id in (select id from nightly_billing_run where business_date = ?)", day)).isEqualTo(9);
+        assertThat(countOf("billing_run", "nightly_billing_run_id in (select id from nightly_billing_run where business_date = ?)", day)).isEqualTo(10);
     }
 
     @Test
@@ -275,6 +275,6 @@ class NightlyBillingRunnerIT extends AbstractIntegrationTest {
         List<NightlyBillingRunResponse> january = queryUseCase.listNightlyBillingRuns(LocalDate.of(2032, 1, 1), LocalDate.of(2032, 1, 31));
 
         assertThat(january).extracting(NightlyBillingRunResponse::businessDate).containsExactly(LocalDate.of(2032, 1, 11), LocalDate.of(2032, 1, 10));
-        assertThat(january.get(0).steps()).hasSize(9);
+        assertThat(january.get(0).steps()).hasSize(10);
     }
 }

@@ -1,7 +1,5 @@
 package com.red_escuela.backend.billing.collections.operation;
 
-import com.red_escuela.backend.billing.collections.domain.MissedReminderRecovery;
-import com.red_escuela.backend.billing.collections.repository.CollectionReminderRunStore;
 import com.red_escuela.backend.billing.collections.service.OverdueContactSegment;
 import com.red_escuela.backend.billing.collections.service.OverdueContactSegment.ContactListCounts;
 import com.red_escuela.backend.billing.events.OverdueContactListUpdatedEvent;
@@ -10,14 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.time.Clock;
 import java.time.LocalDate;
-import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -64,23 +58,5 @@ class OverdueContactListPublicationStepTest {
 
         assertThat(rerun.eventId()).isEqualTo(first.eventId());
         assertThat(nextDay.eventId()).isNotEqualTo(first.eventId());
-    }
-
-    @Test
-    void thePlanningJobPublishesTheContactListAfterPlanningAndSurvivesItsFailure() {
-        CollectionReminderPlanningStep planningStep = mock(CollectionReminderPlanningStep.class);
-        OverdueContactListPublicationStep contactListStep = mock(OverdueContactListPublicationStep.class);
-        CollectionReminderPlanningResult planned = new CollectionReminderPlanningResult(1, 1, 0, 0, 0, new ArrayList<>());
-        MissedReminderDaysFinder missedDaysFinder = mock(MissedReminderDaysFinder.class);
-        when(missedDaysFinder.findRecoveryBefore(MARCH_25)).thenReturn(MissedReminderRecovery.none());
-        when(planningStep.planCollectionReminders(MARCH_25, MissedReminderRecovery.none())).thenReturn(planned);
-        doThrow(new IllegalStateException("boom")).when(contactListStep).publishContactListOf(eq(MARCH_25));
-        CollectionReminderPlanningJob job = new CollectionReminderPlanningJob(planningStep, contactListStep, mock(PostWithdrawalSummaryPlanningStep.class), missedDaysFinder,
-                mock(CollectionReminderRunStore.class), Clock.systemUTC());
-
-        CollectionReminderPlanningResult result = job.run(MARCH_25);
-
-        assertThat(result).isSameAs(planned);
-        verify(contactListStep).publishContactListOf(MARCH_25);
     }
 }

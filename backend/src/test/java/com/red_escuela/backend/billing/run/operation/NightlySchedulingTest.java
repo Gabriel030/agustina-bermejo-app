@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.billing.collections.service.CollectionReminderFactsLoader;
 import com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService;
 import com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService;
 import org.junit.jupiter.api.Tag;
@@ -36,6 +37,21 @@ class NightlySchedulingTest {
 
         steps.forEach(step -> assertThat(Arrays.stream(step.getDeclaredMethods()).map(Method::getName).filter(name -> name.equals("run"))).isEmpty());
         assertThat(scheduledCronsOf(NightlyBillingJob.class)).containsExactly(NightlyBillingJob.CRON);
+    }
+
+    @Test
+    @Tag("D-436")
+    void theReminderPlanningReferenceTimeIsTheMomentTheNightStarts() {
+        LocalDateTime nightStart = CronExpression.parse(NightlyBillingJob.CRON).next(LocalDateTime.of(2031, 10, 7, 0, 0));
+
+        assertThat(CollectionReminderFactsLoader.PLANNING_RUN_TIME).isEqualTo(nightStart.toLocalTime());
+    }
+
+    @Test
+    @Tag("D-449")
+    void noCollectionsClassKeepsACronOfItsOwn() {
+        assertThat(scheduledCronsOf(CollectionReminderPlanningBillingRunStep.class)).isEmpty();
+        assertThat(scheduledCronsOf(com.red_escuela.backend.billing.collections.operation.CollectionsDailySnapshotStep.class)).isEmpty();
     }
 
     @Test

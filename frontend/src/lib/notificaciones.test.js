@@ -27,6 +27,15 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.PAYMENT_RECEIPT_REVIEW_OVERDUE).toBe('warning');
   });
 
+  it('etiqueta y da tono a las alertas del proceso nocturno y de cuentas inconsistentes', () => {
+    expect(TIPO_NOTIFICACION_LABEL.NIGHTLY_RUN_FAILED).toBe('Falló el proceso nocturno');
+    expect(TIPO_NOTIFICACION_LABEL.NIGHTLY_RUN_MISSED).toBe('No corrió el proceso nocturno');
+    expect(TIPO_NOTIFICACION_LABEL.NIGHTLY_RUN_COMPLETED_WITH_ERRORS).toBe('Proceso nocturno con errores');
+    expect(TIPO_NOTIFICACION_LABEL.INCONSISTENT_ACCOUNT_DETECTED).toBe('Cuenta con saldo inconsistente');
+    expect(TONO_NOTIFICACION.NIGHTLY_RUN_FAILED).toBe('danger');
+    expect(TONO_NOTIFICACION.NIGHTLY_RUN_COMPLETED_WITH_ERRORS).toBe('warning');
+  });
+
   it('todo tipo con etiqueta tiene tono', () => {
     Object.keys(TIPO_NOTIFICACION_LABEL).forEach((tipo) => {
       expect(TONO_NOTIFICACION[tipo], tipo).toBeDefined();
