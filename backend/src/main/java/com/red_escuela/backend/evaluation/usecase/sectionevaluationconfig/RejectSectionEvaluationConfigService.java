@@ -7,7 +7,7 @@ import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepo
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.notification.SectionEvaluationConfigRejectedEvent;
+import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
@@ -46,7 +46,7 @@ public class RejectSectionEvaluationConfigService implements RejectSectionEvalua
         SectionEvaluationConfig saved = configRepository.save(config);
 
         Person leadInstructorPerson = instructorAccess.leadInstructorPerson(config.getSubjectSection());
-        eventPublisher.publishEvent(new SectionEvaluationConfigRejectedEvent(saved, leadInstructorPerson));
+        eventPublisher.publishEvent(SectionEvaluationConfigRejectedEvent.rejectedFor(saved, leadInstructorPerson));
         return saved;
     }
 }

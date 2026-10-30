@@ -5,7 +5,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.notification.SectionEvaluationConfigReminderEvent;
+import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigReminderEvent;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -64,7 +64,7 @@ public class SectionEvaluationConfigReminderJob {
                 Optional<Person> lead = leadInstructorPerson(config);
                 if (lead.isPresent()) {
                     eventPublisher.publishEvent(
-                            new SectionEvaluationConfigReminderEvent(config, lead.get(), (int) daysToEnrollmentStart));
+                            SectionEvaluationConfigReminderEvent.reminderFor(config, lead.get(), (int) daysToEnrollmentStart));
                     sent++;
                 }
             }
