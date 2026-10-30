@@ -929,4 +929,44 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
         assertThat(pendingStandingPublications()).isZero();
     }
+
+    @Test
+    @Tag("D-490")
+    @Tag("D-154")
+    void payingTheOtherInstallmentKeepsTheStudentSuspendedWhileTheLateReceiptOverTheSuspendingInstallmentIsUnderReview() {
+        arrange(YEAR);
+        Invoice other = overdueInstallmentDueOn(d(YEAR, 4, 10));
+        Invoice suspending = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        submitReceipt(suspending, d(YEAR, 5, 12), false);
+        evaluate(d(YEAR, 5, 20));
+        evaluate(d(YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+
+        payInFullAndAwaitEvents(other, d(YEAR, 6, 3), d(YEAR, 6, 3));
+
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, other.getId())).isEqualTo("PAID");
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, suspending.getId())).isEqualTo("OVERDUE");
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        assertThat(eventsOf(enrollment.getId())).doesNotContain("ACCOUNT_SETTLED");
+    }
+
+    @Test
+    @Tag("D-490")
+    @Tag("D-154")
+    void cancellingTheOtherInstallmentKeepsTheStudentSuspendedWhileTheLateReceiptOverTheSuspendingInstallmentIsUnderReview() {
+        arrange(YEAR);
+        Invoice other = overdueInstallmentDueOn(d(YEAR, 4, 10));
+        Invoice suspending = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        submitReceipt(suspending, d(YEAR, 5, 12), false);
+        evaluate(d(YEAR, 5, 20));
+        evaluate(d(YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+
+        cancelInstallment(other, d(YEAR, 6, 3));
+
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, other.getId())).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, suspending.getId())).isEqualTo("OVERDUE");
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        assertThat(eventsOf(enrollment.getId())).doesNotContain("ACCOUNT_SETTLED");
+    }
 }
