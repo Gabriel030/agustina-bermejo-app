@@ -12,6 +12,10 @@ import { RunSupervisionBanner } from './RunSupervisionBanner';
 import { countProblemItems, currentPeriod, formatPeriod } from './monthlyRunLabels';
 
 const API = 'http://localhost:8080';
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({ usuario: { nombre: 'Ana', apellido: 'Pérez', roles: ['ADMINISTRATIVO'] }, roles: ['ADMINISTRATIVO'] }),
+}));
 const PERIOD = currentPeriod();
 
 function run(overrides) {
@@ -81,16 +85,9 @@ describe('MonthlyRunPage', () => {
 
     await screen.findByText('En curso');
     expect(screen.getByRole('button', { name: 'Simular emisión' })).toBeDisabled();
-  });
-
-  it('opens the simulation panel placeholder from the button', async () => {
-    mockRuns([run()]);
-    renderWithProviders(<MonthlyRunPage />);
-    await screen.findByText('Con fallas');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Simular emisión' }));
-
-    expect(screen.getByTestId('simulation-placeholder')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Avance de la corrida' })).toBeInTheDocument();
+    expect(screen.getByTestId('run-progress-processed')).toHaveTextContent('449');
+    expect(screen.queryByTestId('counter-issued')).not.toBeInTheDocument();
   });
 
   it('shows an error state with retry when the run cannot be loaded', async () => {
