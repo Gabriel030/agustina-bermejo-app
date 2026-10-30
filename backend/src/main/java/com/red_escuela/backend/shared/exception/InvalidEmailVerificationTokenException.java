@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.exception;
+package com.red_escuela.backend.shared.exception;
 
 public class InvalidEmailVerificationTokenException extends RuntimeException {
 

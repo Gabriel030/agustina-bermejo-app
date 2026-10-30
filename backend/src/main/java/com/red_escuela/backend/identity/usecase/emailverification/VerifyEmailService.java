@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.usecase.emailverification;
 
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
-import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenException;
+import com.red_escuela.backend.shared.exception.InvalidEmailVerificationTokenException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
