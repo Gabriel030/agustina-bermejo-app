@@ -26,5 +26,978 @@
   "GET /payment-config": {
     "source": "default-handlers",
     "reason": "mock sends null for bankAlias, bankCbu, accountHolder and qrImageUrl, the contract declares them non-nullable strings (OpenAPI nullable gap in Q13a)"
+  },
+  "GET /academic-offering-cycles": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /academic-offering-cycles/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /authorization-requests": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /authorization-requests/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /bank-transfer-receipts": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS/versions": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /billing-configuration/collection-reminder-schedules/{group}/versions": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /billing-runs": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /billing/configuration-alerts": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /billing/metrics/first-month": {
+    "source": "test-handlers",
+    "modules": [
+      "routes"
+    ],
+    "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare"
+  },
+  "GET /billing/metrics/{panel}": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "routes"
+    ],
+    "reason": "mock omits properties the contract marks required; polymorphic (oneOf) schema not matched by the mock"
+  },
+  "GET /classrooms": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /collection-reminders/contact-list": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "GET /course-enrollments/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /course-enrollments/{id}/student-discounts": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
+  },
+  "GET /course-sections/{sectionId}/announcements": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /courses/{id}/subjects": {
+    "source": "test-handlers",
+    "modules": [
+      "enrollment"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /director-approval-requests": {
+    "source": "test-handlers",
+    "modules": [
+      "enrollment"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /director-approval-requests/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "enrollment"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /discount-definitions": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /discount-definitions/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /elective-groups": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /evaluation-schemes": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /exam-boards": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /exam-boards/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /exam-boards/{id}/registrations": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /financial-dashboard": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "GET /financial-dashboard/debtors": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "GET /graduation-requests/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "graduation"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me": {
+    "source": "test-handlers",
+    "modules": [
+      "routes",
+      "test"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/bank-transfer-receipts": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me/course-enrollment-applications": {
+    "source": "test-handlers",
+    "modules": [
+      "enrollment"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/course-enrollments": {
+    "source": "test-handlers",
+    "modules": [
+      "workspace"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/course-enrollments/{id}/invoices": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me/credit-balance": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "GET /me/credit-notes": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me/enrollment-payment-status": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/exam-boards": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me/invoices/{id}/price-breakdown": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required"
+  },
+  "GET /me/notifications": {
+    "source": "test-handlers",
+    "modules": [
+      "notifications"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/program-enrollment-applications": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "enrollment",
+      "pages",
+      "test",
+      "workspace"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me/program-enrollments/{id}/invoices": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /me/section-evaluation-configs": {
+    "source": "test-handlers",
+    "modules": [
+      "workspace"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/section-evaluation-configs/{sectionId}": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /me/student-discounts": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
+  },
+  "GET /me/teaching-sections": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /notification-deliveries/simulated": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "operation not found in the contract (non-backend or planned endpoint)"
+  },
+  "GET /notification-metrics/collection-reminders": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /program-enrollments/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /program-enrollments/{id}/enrollment-fee-exemptions": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /program-enrollments/{id}/enrollment-fee-status": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /program-enrollments/{id}/progress": {
+    "source": "test-handlers",
+    "modules": [
+      "graduation"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /program-enrollments/{id}/student-discounts": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
+  },
+  "GET /program-sections/{id}/attendance/history": {
+    "source": "test-handlers",
+    "modules": [
+      "attendance"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /program-sections/{id}/roster": {
+    "source": "test-handlers",
+    "modules": [
+      "attendance"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /programs/{id}/subjects": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /programs/{id}/year-billing-templates": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /protegido": {
+    "source": "test-handlers",
+    "modules": [
+      "api"
+    ],
+    "reason": "operation not found in the contract (non-backend or planned endpoint)"
+  },
+  "GET /section-evaluation-configs/{sectionId}": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /staff/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /student-discounts": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
+  },
+  "GET /students": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /students/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /students/{id}/billing-overview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "graduation",
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /students/{id}/course-enrollments": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /students/{id}/program-enrollments": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "GET /students/{studentId}/credit-balance": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "GET /students/{studentId}/credit-notes": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "GET /students/{studentId}/payments": {
+    "source": "test-handlers",
+    "modules": [
+      "billing",
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /students/{studentId}/refund-eligibility": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /students/{studentId}/refunds": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /subject-sections/{sectionId}/announcements": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /subject-sections/{sectionId}/audience-segments": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /subjects": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /subjects/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "GET /terms": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "PATCH /year-billing-templates/{id}/configuration": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /academic-offering-cycles": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /academic-offering-cycles/{id}/sections": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /authorization-requests/{id}/approve": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /authorization-requests/{id}/withdraw": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch; status not declared in the contract for this operation"
+  },
+  "POST /bank-transfer-receipts/{id}/approve": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /billing-configuration/collection-reminder-schedules/{group}/validation": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /chargebacks/{chargebackId}/reversal": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /chargebacks/{chargebackId}/reversal/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /director-approval-requests/{id}/reject": {
+    "source": "test-handlers",
+    "modules": [
+      "enrollment"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /discount-definitions": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; polymorphic (oneOf) schema not matched by the mock; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /discount-definitions/validation": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; polymorphic (oneOf) schema not matched by the mock; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /enrollment-fee-exemptions/{id}/revoke": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /graduation-requests/{id}/approve": {
+    "source": "test-handlers",
+    "modules": [
+      "graduation"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /me/avatar": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /me/bank-transfer-receipts": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /me/exam-board-registrations": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /me/notifications/{id}/read": {
+    "source": "test-handlers",
+    "modules": [
+      "notifications"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /payments/{paymentId}/approval-revocation/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /payments/{paymentId}/chargebacks": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required"
+  },
+  "POST /payments/{paymentId}/chargebacks/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /program-enrollments/{id}/student-discounts": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /program-enrollments/{id}/student-discounts/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /program-sections/{id}/attendance": {
+    "source": "test-handlers",
+    "modules": [
+      "attendance"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /program-subjects/{id}/prerequisites": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /programs/{id}/subjects": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /prospects": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /prospects/{id}/confirm": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /prospects/{id}/documents": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /refunds/{refundId}/completion": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /refunds/{refundId}/failure": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /staff": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /students/{studentId}/bank-transfer-receipts": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /students/{studentId}/cash-payments": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; status not declared in the contract for this operation"
+  },
+  "POST /students/{studentId}/cash-payments/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "pages"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up"
+  },
+  "POST /students/{studentId}/refund-requests": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /students/{studentId}/refund-requests/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /subject-sections/{sectionId}/announcements": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /subject-sections/{sectionId}/audience-preview": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /subjects": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "PUT /me/password": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "PUT /me/section-evaluation-configs/{sectionId}": {
+    "source": "test-handlers",
+    "modules": [
+      "announcements"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "PUT /prospects/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "PUT /staff/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "PUT /subjects/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /authorization-requests/{id}/reject": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /billing-configuration/collection-reminder-schedules/{group}/changes": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch; status not declared in the contract for this operation"
+  },
+  "POST /collection-reminders/impact": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /discount-definitions/{id}/closure": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /evaluation-schemes": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /invoices/{invoiceId}/cancellations": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; status not declared in the contract for this operation"
+  },
+  "POST /invoices/{invoiceId}/cancellations/preview": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /invoices/{invoiceId}/credit-notes": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; status not declared in the contract for this operation"
+  },
+  "POST /payments/{paymentId}/approval-revocation": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /program-subjects/{id}/corequisites": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /student-discounts/{id}/revocation": {
+    "source": "test-handlers",
+    "modules": [
+      "billing"
+    ],
+    "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
+  },
+  "POST /year-billing-templates/{id}/cohorts": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "PUT /evaluation-schemes/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "evaluation"
+    ],
+    "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "PUT /programs/{id}": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
+  },
+  "POST /program-enrollments/{id}/enrollment-fee-exemptions": {
+    "source": "test-handlers",
+    "modules": [
+      "identity"
+    ],
+    "reason": "mock omits properties the contract marks required"
+  },
+  "POST /subjects/{id}/reject": {
+    "source": "test-handlers",
+    "modules": [
+      "academic-structure"
+    ],
+    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
   }
 }
