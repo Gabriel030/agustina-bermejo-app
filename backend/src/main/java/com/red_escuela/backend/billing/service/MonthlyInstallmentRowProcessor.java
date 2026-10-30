@@ -139,12 +139,12 @@ public class MonthlyInstallmentRowProcessor {
     private ProgramMonthPlan planProgramMonth(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
-        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, pricingDate);
+        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, pricingDate, LocalDate.now(clock));
         return new ProgramMonthPlan(enrollment, context.selection(), planner.planInvoicesForMonth(context.facts(), InvoicePlanningScope.ALL));
     }
 
     private CourseMonthPlan planCourseMonth(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
-        CourseInvoicePlanningContextLoader.CourseContext context = courseContextLoader.load(enrollmentId, month, pricingDate);
+        CourseInvoicePlanningContextLoader.CourseContext context = courseContextLoader.load(enrollmentId, month, pricingDate, LocalDate.now(clock));
         return new CourseMonthPlan(context, courseMonthlyInvoicePlanner.planInvoicesForMonth(context.facts()));
     }
 

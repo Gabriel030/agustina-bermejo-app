@@ -36,6 +36,13 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.NIGHTLY_RUN_COMPLETED_WITH_ERRORS).toBe('warning');
   });
 
+  it('etiqueta y da tono a las alertas de la emisión mensual', () => {
+    expect(TIPO_NOTIFICACION_LABEL.MONTHLY_INVOICE_RUN_MISSED).toBe('No corrió la emisión mensual');
+    expect(TIPO_NOTIFICACION_LABEL.MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED).toBe('Reintentos de emisión agotados');
+    expect(TONO_NOTIFICACION.MONTHLY_INVOICE_RUN_MISSED).toBe('danger');
+    expect(TONO_NOTIFICACION.MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED).toBe('warning');
+  });
+
   it('todo tipo con etiqueta tiene tono', () => {
     Object.keys(TIPO_NOTIFICACION_LABEL).forEach((tipo) => {
       expect(TONO_NOTIFICACION[tipo], tipo).toBeDefined();

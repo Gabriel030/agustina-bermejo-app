@@ -57,6 +57,7 @@ class NightlySchedulingTest {
     @Test
     void theWatchdogHasItsOwnCronAtSixInTheMorning() {
         assertThat(scheduledCronsOf(MissedBillingRunAlertJob.class)).containsExactly("0 0 6 * * *");
+        assertThat(scheduledCronsOf(MissedMonthlyInvoiceRunAlertJob.class)).containsExactly("0 0 6 * * *");
     }
 
     @Test

@@ -67,6 +67,10 @@ public class InvoicePlanningContextLoader {
     }
 
     public PlanningContext load(ProgramEnrollment detached, YearMonth month, LocalDate today) {
+        return load(detached, month, today, today);
+    }
+
+    public PlanningContext load(ProgramEnrollment detached, YearMonth month, LocalDate today, LocalDate issueDate) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(detached.getId())
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(detached.getId()));
         Long enrollmentId = enrollment.getId();
@@ -111,7 +115,7 @@ public class InvoicePlanningContextLoader {
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
                 coverage, !selections.isEmpty(),
                 cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList, today),
-                entryTemplateId, entrySlot, cursadaStart);
+                entryTemplateId, entrySlot, cursadaStart, issueDate);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
     }
 

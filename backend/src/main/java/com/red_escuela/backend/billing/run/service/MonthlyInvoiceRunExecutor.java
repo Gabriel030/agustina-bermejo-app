@@ -75,11 +75,19 @@ public class MonthlyInvoiceRunExecutor {
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriod(YearMonth period, LocalDate businessDate, MonthlyInvoiceRunTrigger trigger) {
+        return runMonthlyInvoicesOfPeriodPricedAt(period, businessDate, businessDate, trigger);
+    }
+
+    public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriodPricedAt(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
         interruptStaleRunningRunsOf(period);
-        Optional<PolicyVerdict> nightDenial = nightlyCompletedPolicySet.evaluateAllRules(nightlyContextOf(businessDate)).firstDenial();
+        Optional<PolicyVerdict> nightDenial = findNightlyBillingDenialOf(businessDate);
         return nightDenial.isPresent()
                 ? Optional.of(recordRunBlockedByNight(period, businessDate, trigger, nightDenial.get().code()))
-                : startRunUnlessPeriodAlreadyHasOne(period, businessDate, trigger);
+                : startRunUnlessPeriodAlreadyHasOne(period, businessDate, pricingDate, trigger);
+    }
+
+    public Optional<PolicyVerdict> findNightlyBillingDenialOf(LocalDate businessDate) {
+        return nightlyCompletedPolicySet.evaluateAllRules(nightlyContextOf(businessDate)).firstDenial();
     }
 
     private void interruptStaleRunningRunsOf(YearMonth period) {
@@ -103,15 +111,15 @@ public class MonthlyInvoiceRunExecutor {
         return runRepository.save(MonthlyInvoiceRun.recordRunBlockedByNight(period.atDay(1), businessDate, trigger, failureCode, LocalDateTime.now(clock)));
     }
 
-    private Optional<MonthlyInvoiceRun> startRunUnlessPeriodAlreadyHasOne(YearMonth period, LocalDate businessDate, MonthlyInvoiceRunTrigger trigger) {
+    private Optional<MonthlyInvoiceRun> startRunUnlessPeriodAlreadyHasOne(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
         MonthlyInvoiceRun run;
         try {
-            run = runRepository.saveAndFlush(MonthlyInvoiceRun.startRealDirectRun(period.atDay(1), businessDate, trigger, LocalDateTime.now(clock)));
+            run = runRepository.saveAndFlush(MonthlyInvoiceRun.startRealDirectRunPricedAt(period.atDay(1), businessDate, pricingDate, trigger, LocalDateTime.now(clock)));
         } catch (DataIntegrityViolationException e) {
             log.info("Corrida mensual ignorada: el periodo {} ya tiene una corrida real", period);
             return Optional.empty();
         }
-        return Optional.of(sweepAndFinish(run, period, businessDate));
+        return Optional.of(sweepAndFinish(run, period, pricingDate));
     }
 
     private MonthlyInvoiceRun sweepAndFinish(MonthlyInvoiceRun run, YearMonth period, LocalDate pricingDate) {

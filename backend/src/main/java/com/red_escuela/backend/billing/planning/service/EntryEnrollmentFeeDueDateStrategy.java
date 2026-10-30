@@ -18,7 +18,7 @@ public final class EntryEnrollmentFeeDueDateStrategy implements EnrollmentFeeDue
     public LocalDate dueDateOf(EnrollmentFeeSlotPlanningContext context) {
         LocalDate courseStart = context.facts().cursadaStart();
         return courseStart.isBefore(context.facts().today())
-                ? context.facts().today().plusDays(context.terms().lateEnrollmentFeeDueDays())
+                ? context.facts().issueDate().plusDays(context.terms().lateEnrollmentFeeDueDays())
                 : courseStart;
     }
 }

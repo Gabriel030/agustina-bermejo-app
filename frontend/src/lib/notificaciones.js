@@ -31,6 +31,8 @@ export const TIPO_NOTIFICACION_LABEL = {
   NIGHTLY_RUN_FAILED: 'Falló el proceso nocturno',
   NIGHTLY_RUN_MISSED: 'No corrió el proceso nocturno',
   NIGHTLY_RUN_COMPLETED_WITH_ERRORS: 'Proceso nocturno con errores',
+  MONTHLY_INVOICE_RUN_MISSED: 'No corrió la emisión mensual',
+  MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'Reintentos de emisión agotados',
 };
 
 export const TONO_NOTIFICACION = {
@@ -66,6 +68,8 @@ export const TONO_NOTIFICACION = {
   NIGHTLY_RUN_FAILED: 'danger',
   NIGHTLY_RUN_MISSED: 'danger',
   NIGHTLY_RUN_COMPLETED_WITH_ERRORS: 'warning',
+  MONTHLY_INVOICE_RUN_MISSED: 'danger',
+  MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'warning',
 };
 
 export function tiempoRelativo(fechaIso) {

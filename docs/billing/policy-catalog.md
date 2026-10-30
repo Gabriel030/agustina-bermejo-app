@@ -340,6 +340,18 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149, D-239, D-330 |
 
+## Momento MANUAL_ISSUANCE_REQUIRES_SIMULATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ManualIssuanceRequiresSimulationPolicy | MANUAL_ISSUANCE_REQUIRES_SIMULATION | D-055, D-161 |
+
+## Momento MANUAL_ISSUANCE_WITHIN_CURRENT_MONTH
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ManualIssuanceWithinCurrentMonthPolicy | MANUAL_ISSUANCE_OUTSIDE_CURRENT_MONTH | D-055, D-161 |
+
 ## Momento MONTHLY_INSTALLMENT_PLANNING
 
 | Orden | Policy | Códigos de violación | Decisiones |
