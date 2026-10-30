@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.collections.service;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFactsQuery;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -73,5 +74,28 @@ class EnrollmentPaymentStandingOnInvoicePaidListenerTest {
 
         verify(standingService, times(1)).reevaluateExistingStanding(EnrollmentKind.PROGRAM, 8L, BUSINESS_DATE);
         verify(standingService, times(1)).reevaluateExistingStanding(EnrollmentKind.COURSE, 3L, BUSINESS_DATE);
+    }
+
+    @Test
+    @Tag("D-185")
+    void theCancellationHandlerIsAnApplicationModuleListenerAndReevaluatesTheEnrollmentsOfTheCancelledInvoice() throws NoSuchMethodException {
+        Method handler = EnrollmentPaymentStandingOnInvoicePaidListener.class.getMethod("reevaluateStandingOfCancelledInvoice", InvoiceCancelledEvent.class);
+        when(factsQuery.findEnrollmentIdsOfInvoice(EnrollmentKind.PROGRAM, 55L)).thenReturn(List.of(7L));
+        when(factsQuery.findEnrollmentIdsOfInvoice(EnrollmentKind.COURSE, 55L)).thenReturn(List.of());
+
+        listener.reevaluateStandingOfCancelledInvoice(new InvoiceCancelledEvent(55L, BUSINESS_DATE));
+
+        assertThat(handler.isAnnotationPresent(ApplicationModuleListener.class)).isTrue();
+        verify(standingService).reevaluateExistingStanding(EnrollmentKind.PROGRAM, 7L, BUSINESS_DATE);
+    }
+
+    @Test
+    @Tag("D-185")
+    void aFailureReevaluatingACancelledInvoiceIsRethrownSoThePublicationStaysPending() {
+        when(factsQuery.findEnrollmentIdsOfInvoice(EnrollmentKind.PROGRAM, 55L)).thenReturn(List.of(7L));
+        when(factsQuery.findEnrollmentIdsOfInvoice(EnrollmentKind.COURSE, 55L)).thenReturn(List.of());
+        doThrow(new IllegalStateException("database down")).when(standingService).reevaluateExistingStanding(EnrollmentKind.PROGRAM, 7L, BUSINESS_DATE);
+
+        assertThatThrownBy(() -> listener.reevaluateStandingOfCancelledInvoice(new InvoiceCancelledEvent(55L, BUSINESS_DATE))).isInstanceOf(IllegalStateException.class);
     }
 }

@@ -22,10 +22,13 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.shared.time.MutableClock;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
+import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
 import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
 import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
+import com.red_escuela.backend.billing.note.service.CancelInvoiceOperation;
 import com.red_escuela.backend.billing.note.service.IssueCreditNoteOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import org.junit.jupiter.api.AfterEach;
@@ -73,6 +76,8 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     private BillingOperationPipeline pipeline;
     @Autowired
     private IssueCreditNoteOperation creditNoteOperation;
+    @Autowired
+    private CancelInvoiceOperation cancelInvoiceOperation;
     @Autowired
     private IncompleteEventPublications incompleteEventPublications;
     @Autowired
@@ -837,6 +842,88 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
 
         incompleteEventPublications.resubmitIncompletePublications(publication -> publication.getEvent() instanceof InvoicePaidDomainEvent paid && paid.invoiceId().equals(installment.getId()));
+
+        await().atMost(Duration.ofSeconds(25)).until(() -> statusOf(enrollment.getId()) == EnrollmentPaymentStatus.UP_TO_DATE);
+        awaitEventsDrained();
+        assertThat(pendingStandingPublications()).isZero();
+    }
+
+    private void cancelInstallment(Invoice installment, LocalDate on) {
+        MutableClock.INSTANCE.setDate(on);
+        pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.byPerson(installment.getId(), CreditNoteReason.BILLING_ERROR, "Cancelación", person.getId(), true));
+        awaitEventsDrained();
+    }
+
+    @Test
+    @Tag("D-185")
+    void cancellingTheOnlyOverdueInstallmentLiftsTheSuspensionRightAway() {
+        arrange(YEAR);
+        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+        evaluate(d(YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+
+        cancelInstallment(installment, d(YEAR, 6, 3));
+
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, installment.getId())).isEqualTo("CANCELLED");
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
+        assertThat(eventsOf(enrollment.getId())).contains("ACCOUNT_SETTLED");
+        assertTheHistoryChainIsConsistent(enrollment.getId());
+    }
+
+    @Test
+    @Tag("D-185")
+    void cancellingOneOfTwoOverdueInstallmentsKeepsTheEnrollmentSuspended() {
+        arrange(YEAR);
+        Invoice first = overdueInstallmentDueOn(d(YEAR, 4, 10));
+        overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+        evaluate(d(YEAR, 6, 1));
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+
+        cancelInstallment(first, d(YEAR, 6, 3));
+
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+        assertThat(eventsOf(enrollment.getId())).doesNotContain("ACCOUNT_SETTLED");
+    }
+
+    @Test
+    @Tag("D-185")
+    void cancellingAnInstallmentThatWasNotSuspendingAnyoneRecordsNoChange() {
+        arrange(YEAR);
+        Invoice upcoming = pendingInstallmentDueOn(d(YEAR, 7, 10));
+        evaluate(d(YEAR, 5, 20));
+        List<String> before = eventsOf(enrollment.getId());
+
+        cancelInstallment(upcoming, d(YEAR, 6, 3));
+
+        assertThat(eventsOf(enrollment.getId())).isEqualTo(before);
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
+    }
+
+    @Test
+    @Tag("D-185")
+    void aFailedReevaluationAfterACancellationLiftsTheSuspensionWhenThePendingPublicationIsReplayed() {
+        arrange(YEAR);
+        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+        evaluate(d(YEAR, 6, 1));
+        Long standingId = jdbc.queryForObject("select id from enrollment_payment_standing where course_enrollment_id = ?", Long.class, enrollment.getId());
+        jdbc.execute("create or replace function fail_standing_history_for_test() returns trigger language plpgsql as $$ begin raise exception 'forced failure'; end $$");
+        jdbc.execute("create trigger trg_fail_standing_history_for_test before insert on enrollment_payment_status_change for each row "
+                + "when (new.standing_id = " + standingId + ") execute function fail_standing_history_for_test()");
+        try {
+            MutableClock.INSTANCE.setDate(d(YEAR, 6, 3));
+            pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.byPerson(installment.getId(), CreditNoteReason.BILLING_ERROR, "Cancelación", person.getId(), true));
+            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L);
+        } finally {
+            jdbc.execute("drop trigger trg_fail_standing_history_for_test on enrollment_payment_status_change");
+        }
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, installment.getId())).isEqualTo("CANCELLED");
+        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+
+        incompleteEventPublications.resubmitIncompletePublications(publication -> publication.getEvent() instanceof InvoiceCancelledEvent cancelled
+                && cancelled.invoiceId().equals(installment.getId()));
 
         await().atMost(Duration.ofSeconds(25)).until(() -> statusOf(enrollment.getId()) == EnrollmentPaymentStatus.UP_TO_DATE);
         awaitEventsDrained();
