@@ -5,9 +5,8 @@ import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFact
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class EnrollmentPaymentStandingOnInvoicePaidListener {
@@ -21,17 +20,22 @@ public class EnrollmentPaymentStandingOnInvoicePaidListener {
         this.standingService = standingService;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @ApplicationModuleListener
     public void reevaluateStandingOfPaidInvoice(InvoicePaidDomainEvent event) {
+        int failures = 0;
         for (EnrollmentKind kind : EnrollmentKind.values()) {
             for (Long enrollmentId : factsQuery.findEnrollmentIdsOfInvoice(kind, event.invoiceId())) {
                 try {
                     standingService.reevaluateExistingStanding(kind, enrollmentId, event.businessDate());
                 } catch (RuntimeException failure) {
+                    failures++;
                     log.warn("No se pudo reevaluar el estado de cobranza al pagarse una factura: tipo={}, inscripcion={}, factura={}", kind, enrollmentId,
                             event.invoiceId(), failure);
                 }
             }
+        }
+        if (failures > 0) {
+            throw new IllegalStateException("The payment standing of " + failures + " enrollment(s) could not be reevaluated for the paid invoice " + event.invoiceId());
         }
     }
 }
