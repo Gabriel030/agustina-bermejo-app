@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 @Service
 public class CollectionReminderFactsLoader {
 
-    public static final LocalTime PLANNING_RUN_TIME = LocalTime.of(3, 0);
+    public static final LocalTime PLANNING_RUN_TIME = LocalTime.of(5, 0);
 
     private final ReminderFactsQuery factsQuery;
     private final EnrollmentReminderTargetLookup enrollmentTargets;

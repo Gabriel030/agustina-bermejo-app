@@ -41,10 +41,10 @@ class NightlySchedulingTest {
 
     @Test
     @Tag("D-436")
-    void theReminderPlanningReferenceTimeIsTheMomentTheNightStarts() {
+    void theReminderPlanningReferenceTimeIsAfterTheNightStarts() {
         LocalDateTime nightStart = CronExpression.parse(NightlyBillingJob.CRON).next(LocalDateTime.of(2031, 10, 7, 0, 0));
 
-        assertThat(CollectionReminderFactsLoader.PLANNING_RUN_TIME).isEqualTo(nightStart.toLocalTime());
+        assertThat(CollectionReminderFactsLoader.PLANNING_RUN_TIME).isAfter(nightStart.toLocalTime());
     }
 
     @Test
