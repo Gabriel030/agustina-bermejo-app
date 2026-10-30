@@ -3,13 +3,11 @@ package com.red_escuela.backend.announcement.service.audience;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.announcement.entity.SectionType;
-import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
@@ -24,21 +22,18 @@ import java.util.Map;
 @Service
 public class SectionSnapshotLoader {
 
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final SubjectSectionRepository subjectSectionRepository;
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
     private final GradeItemRepository gradeItemRepository;
     private final AttendanceRepository attendanceRepository;
 
-    public SectionSnapshotLoader(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-                                 CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
+    public SectionSnapshotLoader(SectionEnrollmentFinder sectionEnrollmentFinder,
                                  SubjectSectionRepository subjectSectionRepository,
                                  CourseSubjectSectionRepository courseSubjectSectionRepository,
                                  GradeItemRepository gradeItemRepository,
                                  AttendanceRepository attendanceRepository) {
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.subjectSectionRepository = subjectSectionRepository;
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
         this.gradeItemRepository = gradeItemRepository;
@@ -50,8 +45,7 @@ public class SectionSnapshotLoader {
     }
 
     private SectionSnapshot loadProgram(Long sectionId) {
-        List<SubjectSectionEnrollment> enrollments = subjectSectionEnrollmentRepository
-                .findBySubjectSectionIdAndStatusIn(sectionId, SectionMembership.ENROLLED_STATUSES);
+        List<SubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersOfProgramSection(sectionId);
         List<Long> ids = enrollments.stream().map(SubjectSectionEnrollment::getId).toList();
 
         Map<Long, List<GradeItem>> grades = gradesByEnrollment(
@@ -72,8 +66,7 @@ public class SectionSnapshotLoader {
     }
 
     private SectionSnapshot loadCourse(Long sectionId) {
-        List<CourseSubjectSectionEnrollment> enrollments = courseSubjectSectionEnrollmentRepository
-                .findByCourseSubjectSectionIdAndStatusIn(sectionId, SectionMembership.ENROLLED_STATUSES);
+        List<CourseSubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersOfCourseSection(sectionId);
         List<Long> ids = enrollments.stream().map(CourseSubjectSectionEnrollment::getId).toList();
 
         Map<Long, List<GradeItem>> grades = gradesByEnrollment(

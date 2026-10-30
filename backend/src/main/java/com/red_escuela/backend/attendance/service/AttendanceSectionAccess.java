@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.attendance.entity.Attendance;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 
@@ -87,5 +88,12 @@ public class AttendanceSectionAccess {
     public Instructor resolveInstructor(Long instructorId) {
         instructorFinder.requireExists(instructorId);
         return entityManager.getReference(Instructor.class, instructorId);
+    }
+
+    public Long sectionIdOf(Attendance attendance) {
+        if (attendance.getProgramSubjectSectionEnrollment() != null) {
+            return attendance.getProgramSubjectSectionEnrollment().getSubjectSection().getId();
+        }
+        return attendance.getCourseSubjectSectionEnrollment().getCourseSubjectSection().getId();
     }
 }
