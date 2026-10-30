@@ -23,7 +23,6 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowC
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.evaluation.exception.StudentNotRegularException;
-import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
@@ -41,7 +40,7 @@ public class ExamBoardRegistrationService {
     private final ExamBoardRepository examBoardRepository;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final LateExamApprovalChecker lateExamApprovalChecker;
-    private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
@@ -49,7 +48,7 @@ public class ExamBoardRegistrationService {
             ExamBoardRepository examBoardRepository,
             SectionEnrollmentFinder sectionEnrollmentFinder,
             LateExamApprovalChecker lateExamApprovalChecker,
-            AttendanceRiskCalculator attendanceRiskCalculator,
+            AbsenceFreeStatusChecker absenceFreeStatusChecker,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
@@ -57,7 +56,7 @@ public class ExamBoardRegistrationService {
         this.examBoardRepository = examBoardRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.lateExamApprovalChecker = lateExamApprovalChecker;
-        this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.clock = clock;
     }
 
@@ -90,7 +89,7 @@ public class ExamBoardRegistrationService {
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
         }
-        if (attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre()) {
+        if (absenceFreeStatusChecker.isProgramEnrollmentFreeByAbsences(enrollmentId)) {
             throw new StudentFreeByAbsencesException(enrollmentId);
         }
         Long subjectId = enrollment.getSubjectSection().getSubject().getId();
@@ -151,7 +150,7 @@ public class ExamBoardRegistrationService {
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
         }
-        if (attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre()) {
+        if (absenceFreeStatusChecker.isCourseEnrollmentFreeByAbsences(enrollmentId)) {
             throw new StudentFreeByAbsencesException(enrollmentId);
         }
         Long courseSubjectId = enrollment.getCourseSubjectSection().getCourseSubject().getId();

@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.service;
 
-import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import java.util.function.BooleanSupplier;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
@@ -49,7 +48,7 @@ public class GradeItemService {
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
-    private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
 
     public GradeItemService(
@@ -60,7 +59,7 @@ public class GradeItemService {
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
             GraduationRequestAutoRequester graduationRequestAutoRequester,
-            AttendanceRiskCalculator attendanceRiskCalculator,
+            AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -69,7 +68,7 @@ public class GradeItemService {
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.graduationRequestAutoRequester = graduationRequestAutoRequester;
-        this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
     }
 
@@ -120,7 +119,7 @@ public class GradeItemService {
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
         var current = enrollment.statusAssumingRegularWhen(finalCorrection);
         CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
-                current, () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
+                current, () -> absenceFreeStatusChecker.isProgramEnrollmentFreeByAbsences(enrollmentId));
         if (result == null && finalCorrection) {
             result = new CourseworkResult(current, null, null);
         }
@@ -166,7 +165,7 @@ public class GradeItemService {
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
         var current = enrollment.statusAssumingRegularWhen(finalCorrection);
         CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
-                current, () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
+                current, () -> absenceFreeStatusChecker.isCourseEnrollmentFreeByAbsences(enrollmentId));
         if (result == null && finalCorrection) {
             result = new CourseworkResult(current, null, null);
         }
