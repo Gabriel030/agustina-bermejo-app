@@ -67,4 +67,8 @@ public class CourseEnrollment implements BillableEnrollment {
         this.completionDate = completionMoment;
         this.withdrawnByPersonId = registeredByPersonId;
     }
+
+    public Long courseId() {
+        return course.getId();
+    }
 }

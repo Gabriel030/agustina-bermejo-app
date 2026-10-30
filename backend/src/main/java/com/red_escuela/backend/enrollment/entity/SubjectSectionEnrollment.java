@@ -77,4 +77,16 @@ public class SubjectSectionEnrollment {
     public EnrollmentStatus statusAssumingRegularWhen(boolean assumeRegular) {
         return assumeRegular ? EnrollmentStatus.REGULAR : status;
     }
+
+    public Long subjectSectionId() {
+        return subjectSection.getId();
+    }
+
+    public Long subjectId() {
+        return subjectSection.getSubject().getId();
+    }
+
+    public Long termId() {
+        return subjectSection.getTerm().getId();
+    }
 }
