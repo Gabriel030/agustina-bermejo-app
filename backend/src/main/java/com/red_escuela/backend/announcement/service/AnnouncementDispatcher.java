@@ -1,6 +1,5 @@
 package com.red_escuela.backend.announcement.service;
 
-import com.red_escuela.backend.announcement.AnnouncementPublishedEvent;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
@@ -73,8 +72,7 @@ public class AnnouncementDispatcher {
 
         Announcement saved = announcementRepository.save(announcement);
 
-        eventPublisher.publishEvent(new AnnouncementPublishedEvent(
-                saved, sectionNameOf(saved), students.stream().map(Student::getPerson).toList()));
+        eventPublisher.publishEvent(AnnouncementEventFactory.publishedEventOf(saved, sectionNameOf(saved), students));
         return students.size();
     }
 

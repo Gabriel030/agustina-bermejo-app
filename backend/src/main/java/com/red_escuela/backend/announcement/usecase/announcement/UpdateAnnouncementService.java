@@ -1,7 +1,7 @@
 package com.red_escuela.backend.announcement.usecase.announcement;
 
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.announcement.AnnouncementUpdatedEvent;
+import com.red_escuela.backend.announcement.service.AnnouncementEventFactory;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
 import com.red_escuela.backend.announcement.exception.AnnouncementAlreadySentException;
@@ -99,8 +99,7 @@ public class UpdateAnnouncementService implements UpdateAnnouncementUseCase {
 
         log.info("Aviso actualizado: id={}, se renotifica a los mismos {} destinatarios congelados", saved.getId(), students.size());
 
-        eventPublisher.publishEvent(new AnnouncementUpdatedEvent(
-                saved, sectionName, students.stream().map(Student::getPerson).toList()));
+        eventPublisher.publishEvent(AnnouncementEventFactory.updatedEventOf(saved, sectionName, students));
         return saved;
     }
 }
