@@ -1,4 +1,4 @@
-package com.red_escuela.backend.attendance.service;
+package com.red_escuela.backend.attendance.events;
 
 import com.red_escuela.backend.attendance.entity.Attendance;
 
