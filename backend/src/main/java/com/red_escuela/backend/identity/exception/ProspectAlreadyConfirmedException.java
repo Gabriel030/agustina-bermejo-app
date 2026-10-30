@@ -1,4 +1,4 @@
-package com.red_escuela.backend.enrollment.exception;
+package com.red_escuela.backend.identity.exception;
 
 import com.red_escuela.backend.shared.exception.ConflictException;
 
