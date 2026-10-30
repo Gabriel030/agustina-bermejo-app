@@ -7,28 +7,19 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-import java.time.LocalDate;
-
 @Component
 public class MonthlyInvoiceIssuanceJob {
     public static final String CRON = "0 0 4 1 * *";
 
     private final MonthlyInvoiceRunExecutor executor;
-    private final Clock clock;
 
-    public MonthlyInvoiceIssuanceJob(MonthlyInvoiceRunExecutor executor, Clock clock) {
+    public MonthlyInvoiceIssuanceJob(MonthlyInvoiceRunExecutor executor) {
         this.executor = executor;
-        this.clock = clock;
     }
 
     @Scheduled(cron = CRON, zone = "${app.timezone}")
     @SchedulerLock(name = "MonthlyInvoiceIssuanceJob", lockAtMostFor = MonthlyInvoiceRun.MAX_RUNNING_TIME_ISO)
     public void run() {
-        run(LocalDate.now(clock));
-    }
-
-    public void run(LocalDate businessDate) {
-        executor.runMonthlyInvoicesOnIssuanceDay(businessDate, MonthlyInvoiceRunTrigger.SCHEDULED);
+        executor.runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger.SCHEDULED);
     }
 }

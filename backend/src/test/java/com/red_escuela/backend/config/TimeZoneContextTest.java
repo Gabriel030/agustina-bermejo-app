@@ -1,7 +1,8 @@
 package com.red_escuela.backend.config;
 
 import com.red_escuela.backend.testsupport.SharedSpyBeans;
-import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
+import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import com.red_escuela.backend.shared.time.ClockConfig;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Test;
@@ -27,9 +28,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -46,7 +45,10 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
     private Clock clock;
 
     @Autowired
-    private MonthlyInvoiceIssuanceJob monthlyJob;
+    private MonthlyInvoiceRunExecutor monthlyIssuance;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Test
     void theLoadedContextAppliesTheConfiguredZoneWithoutGoingThroughMain() {
@@ -121,20 +123,20 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void monthlyJobUsesTheClockNotTheJvmZone() {
-        doNothing().when(monthlyJob).run(any(LocalDate.class));
+    void monthlyIssuanceUsesTheClockNotTheJvmZone() {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try {
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T02:30:00Z"));
-            monthlyJob.run();
-            verify(monthlyJob).run(LocalDate.of(2027, 2, 28));
+            assertThat(monthlyIssuance.runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger.SCHEDULED)).isEmpty();
 
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T07:00:00Z"));
-            monthlyJob.run();
-            verify(monthlyJob).run(LocalDate.of(2027, 3, 1));
+            assertThat(monthlyIssuance.runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger.SCHEDULED))
+                    .hasValueSatisfying(run -> assertThat(run.getPeriod()).isEqualTo(LocalDate.of(2027, 3, 1)));
         } finally {
             TimeZone.setDefault(previous);
+            jdbcTemplate.update("delete from monthly_invoice_run_item where monthly_invoice_run_id in (select id from monthly_invoice_run where period = ?)", LocalDate.of(2027, 3, 1));
+            jdbcTemplate.update("delete from monthly_invoice_run where period = ?", LocalDate.of(2027, 3, 1));
         }
     }
 }

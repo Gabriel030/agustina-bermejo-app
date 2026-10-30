@@ -62,6 +62,10 @@ public class MonthlyInvoiceRunExecutor {
         this.clock = clock;
     }
 
+    public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger trigger) {
+        return runMonthlyInvoicesOnIssuanceDay(LocalDate.now(clock), trigger);
+    }
+
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOnIssuanceDay(LocalDate businessDate, MonthlyInvoiceRunTrigger trigger) {
         return businessDate.getDayOfMonth() == ISSUANCE_DAY ? runMonthlyInvoicesOfBusinessDate(businessDate, trigger) : Optional.empty();
     }
@@ -94,7 +98,7 @@ public class MonthlyInvoiceRunExecutor {
     }
 
     private MonthlyInvoiceRun recordRunBlockedByNight(YearMonth period, LocalDate businessDate, MonthlyInvoiceRunTrigger trigger, String failureCode) {
-        log.warn("Corrida mensual no iniciada: periodo={}, motivo={}", period, failureCode);
+        log.error("Corrida mensual no iniciada: periodo={}, motivo={}", period, failureCode);
         return runRepository.save(MonthlyInvoiceRun.recordRunBlockedByNight(period.atDay(1), businessDate, trigger, failureCode, LocalDateTime.now(clock)));
     }
 
