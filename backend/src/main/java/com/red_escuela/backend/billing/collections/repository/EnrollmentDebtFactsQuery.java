@@ -57,13 +57,12 @@ public class EnrollmentDebtFactsQuery {
                   and i.document_type = 'INVOICE'
                   and i.invoice_type = 'MONTHLY_INSTALLMENT'
                   and i.document_status = 'ISSUED'
+                  and i.issue_date <= :cutoff
                   and i.due_date < :cutoff
-                  and (i.payment_status in ('PENDING', 'OVERDUE')
-                       or (i.payment_status = 'PAID' and exists (
-                            select 1 from payment_allocation a
-                            where a.invoice_id = i.id and a.reverses_allocation_id is null
-                              and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
-                              and a.effective_date > :cutoff)))
+                  and i.total
+                      - coalesce((select sum(case when a.reverses_allocation_id is null then a.amount else -a.amount end)
+                                  from payment_allocation a where a.invoice_id = i.id and a.effective_date <= :cutoff), 0)
+                      - coalesce((select sum(n.offset_amount) from credit_note n where n.invoice_id = i.id and n.issue_date <= :cutoff), 0) > 0
                 order by i.due_date, i.id
                 """.formatted(enrollmentColumn(kind)),
                 new MapSqlParameterSource("enrollmentId", enrollmentId).addValue("cutoff", Date.valueOf(cutoff)),
@@ -78,12 +77,6 @@ public class EnrollmentDebtFactsQuery {
                 ? "select count(*) from program_enrollment where id = :id and status in ('ENROLLED', 'PAUSED')"
                 : "select count(*) from course_enrollment where id = :id and status = 'ENROLLED'";
         return jdbc.queryForObject(sql, new MapSqlParameterSource("id", enrollmentId), Long.class) > 0;
-    }
-
-    public boolean isEnrollmentWithdrawnForNonpayment(EnrollmentKind kind, Long enrollmentId) {
-        String table = kind == EnrollmentKind.PROGRAM ? "program_enrollment" : "course_enrollment";
-        return jdbc.queryForObject("select count(*) from " + table + " where id = :id and payment_status = 'WITHDRAWN_FOR_NONPAYMENT'",
-                new MapSqlParameterSource("id", enrollmentId), Long.class) > 0;
     }
 
     public Optional<Long> findStudentIdOf(EnrollmentKind kind, Long enrollmentId) {

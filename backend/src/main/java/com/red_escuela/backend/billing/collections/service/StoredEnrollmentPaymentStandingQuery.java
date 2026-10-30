@@ -10,7 +10,10 @@ import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -36,6 +39,26 @@ public class StoredEnrollmentPaymentStandingQuery implements EnrollmentPaymentSt
 
     @Override
     @Transactional(readOnly = true)
+    public Map<Long, EnrollmentPaymentStatus> findStatusesOfProgramEnrollments(Collection<Long> programEnrollmentIds) {
+        Map<Long, EnrollmentPaymentStatus> statuses = new HashMap<>();
+        if (!programEnrollmentIds.isEmpty()) {
+            standingRepository.findAllByProgramEnrollmentIds(programEnrollmentIds).forEach(standing -> statuses.put(standing.getProgramEnrollmentId(), standing.getStatus()));
+        }
+        return statuses;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, EnrollmentPaymentStatus> findStatusesOfCourseEnrollments(Collection<Long> courseEnrollmentIds) {
+        Map<Long, EnrollmentPaymentStatus> statuses = new HashMap<>();
+        if (!courseEnrollmentIds.isEmpty()) {
+            standingRepository.findAllByCourseEnrollmentIds(courseEnrollmentIds).forEach(standing -> statuses.put(standing.getCourseEnrollmentId(), standing.getStatus()));
+        }
+        return statuses;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<EnrollmentPaymentStatusChangeView> listStatusChangesOfProgramEnrollment(Long programEnrollmentId) {
         return standingRepository.findByProgramEnrollment(programEnrollmentId).map(StoredEnrollmentPaymentStandingQuery::changesOf).orElse(List.of());
     }
@@ -47,7 +70,8 @@ public class StoredEnrollmentPaymentStandingQuery implements EnrollmentPaymentSt
     }
 
     private static EnrollmentPaymentStandingView viewOf(EnrollmentPaymentStanding standing) {
-        return new EnrollmentPaymentStandingView(standing.enrollmentId(), standing.getStudentId(), standing.getStatus(), standing.getSuspendedSinceDate());
+        return new EnrollmentPaymentStandingView(standing.enrollmentId(), standing.getStudentId(), standing.getStatus(), standing.getSuspendedSinceDate(),
+                standing.statusChanges().isEmpty() ? null : standing.statusChanges().getLast().getOccurredAt());
     }
 
     private static List<EnrollmentPaymentStatusChangeView> changesOf(EnrollmentPaymentStanding standing) {

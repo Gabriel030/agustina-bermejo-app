@@ -88,7 +88,7 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
               and s.programEnrollment.program.id = :programId
               and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.MONTHLY
               and s.programEnrollment.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED
-              and s.programEnrollment.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+              and not exists (select 1 from EnrollmentPaymentStanding st where st.programEnrollmentId = s.programEnrollment.id and st.status in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT))
               and s.effectiveFrom <= :month
               and (s.effectiveTo is null or s.effectiveTo >= :month)
             """)
@@ -100,7 +100,7 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
               and s.programEnrollment.program.id = :programId
               and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.ANNUAL_UPFRONT
               and s.programEnrollment.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED
-              and s.programEnrollment.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+              and not exists (select 1 from EnrollmentPaymentStanding st where st.programEnrollmentId = s.programEnrollment.id and st.status in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT))
               and s.scopeMonths is not null
               and s.effectiveFrom <= :month
               and (s.effectiveTo is null or s.effectiveTo >= :month)
@@ -113,7 +113,7 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
               and s.courseEnrollment.course.id = :courseId
               and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.MONTHLY
               and s.courseEnrollment.status = com.red_escuela.backend.enrollment.entity.EnrollmentStatus.ENROLLED
-              and s.courseEnrollment.paymentStatus not in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT)
+              and not exists (select 1 from EnrollmentPaymentStanding st where st.courseEnrollmentId = s.courseEnrollment.id and st.status in (com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.SUSPENDED, com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT))
               and s.effectiveFrom <= :month
               and (s.effectiveTo is null or s.effectiveTo >= :month)
             """)

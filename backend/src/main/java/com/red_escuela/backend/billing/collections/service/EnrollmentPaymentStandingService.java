@@ -12,7 +12,12 @@ import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFact
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
+import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import org.slf4j.Logger;
+import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -35,9 +40,17 @@ public class EnrollmentPaymentStandingService {
     private final EnrollmentPaymentStandingRepository standingRepository;
     private final EnrollmentDebtFactsQuery factsQuery;
     private final EnrollmentMonthCloseFactsLoader closeFactsLoader;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
 
     public EnrollmentPaymentStandingService(EnrollmentPaymentStandingRepository standingRepository, EnrollmentDebtFactsQuery factsQuery,
-                                            EnrollmentMonthCloseFactsLoader closeFactsLoader) {
+                                            EnrollmentMonthCloseFactsLoader closeFactsLoader,
+                                            ApplicationEventPublisher eventPublisher, ProgramEnrollmentRepository programEnrollmentRepository,
+                                            CourseEnrollmentRepository courseEnrollmentRepository) {
+        this.eventPublisher = eventPublisher;
+        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.standingRepository = standingRepository;
         this.factsQuery = factsQuery;
         this.closeFactsLoader = closeFactsLoader;
@@ -46,10 +59,6 @@ public class EnrollmentPaymentStandingService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void evaluateEnrollmentStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, EnrollmentSuspensionRuleTimeline rules) {
         EnrollmentPaymentStanding standing = lockStandingOf(kind, enrollmentId).orElseGet(() -> openStandingOf(kind, enrollmentId, businessDate));
-        if (standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED && factsQuery.isEnrollmentWithdrawnForNonpayment(kind, enrollmentId)) {
-            closeSuspendedStanding(standing, businessDate);
-            return;
-        }
         YearMonth lastClosedMonth = YearMonth.from(businessDate).minusMonths(1);
         if (!standing.isMonthCloseDue(lastClosedMonth)) {
             applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
@@ -70,10 +79,6 @@ public class EnrollmentPaymentStandingService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void reevaluateExistingStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate) {
         lockStandingOf(kind, enrollmentId).ifPresent(standing -> {
-            if (standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED && factsQuery.isEnrollmentWithdrawnForNonpayment(kind, enrollmentId)) {
-                closeSuspendedStanding(standing, businessDate);
-                return;
-            }
             applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
             standingRepository.save(standing);
         });
@@ -101,9 +106,24 @@ public class EnrollmentPaymentStandingService {
         List<EnrollmentPaymentEvent> events = EnrollmentPaymentStandingEvaluator.evaluateStanding(standing.getStatus(), facts, closeFacts, rule);
         for (EnrollmentPaymentEvent event : events) {
             EnrollmentPaymentStatus before = standing.getStatus();
+            YearMonth suspendedSince = standing.suspendedSince();
             standing.applyEvent(event, businessDate, STANDING_ACTOR);
+            if (before == EnrollmentPaymentStatus.SUSPENDED && standing.getStatus() == EnrollmentPaymentStatus.UP_TO_DATE) {
+                publishSuspensionLifted(standing, suspendedSince == null ? YearMonth.from(businessDate) : suspendedSince, YearMonth.from(businessDate));
+            }
             log.info("Estado de cobranza: tipo={}, inscripcion={}, evento={}, de={}, a={}", standing.kind(), standing.enrollmentId(), event, before, standing.getStatus());
         }
+    }
+
+    private void publishSuspensionLifted(EnrollmentPaymentStanding standing, YearMonth suspendedSince, YearMonth suspendedUntil) {
+        if (standing.kind() == EnrollmentKind.PROGRAM) {
+            programEnrollmentRepository.findById(standing.enrollmentId()).ifPresent(enrollment -> eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, suspendedUntil)));
+        } else {
+            courseEnrollmentRepository.findById(standing.enrollmentId()).ifPresent(enrollment -> eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, suspendedUntil)));
+        }
+        EnrollmentSuspensionLiftedEvent.EnrollmentType type = standing.kind() == EnrollmentKind.PROGRAM
+                ? EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM : EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE;
+        eventPublisher.publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(type, standing.enrollmentId(), suspendedSince, suspendedUntil));
     }
 
     private Optional<EnrollmentPaymentStanding> lockStandingOf(EnrollmentKind kind, Long enrollmentId) {

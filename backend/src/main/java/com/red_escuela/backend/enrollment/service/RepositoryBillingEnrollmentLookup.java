@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -15,8 +17,11 @@ import java.util.Optional;
 public class RepositoryBillingEnrollmentLookup implements BillingEnrollmentLookup {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public RepositoryBillingEnrollmentLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
+    public RepositoryBillingEnrollmentLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+                                              EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
@@ -27,7 +32,8 @@ public class RepositoryBillingEnrollmentLookup implements BillingEnrollmentLooku
         Optional<ProgramEnrollmentRepository.BillingTemplateRef> ref = programEnrollmentRepository.findBillingTemplateRef(programEnrollmentId);
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .map(enrollment -> new BillingEnrollmentFacts(enrollment.getStudent().getId(), enrollment.getProgram().getCurrency(), enrollment.getProgram().getId(),
-                        ref.map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null), null, null, programEnrollmentRepository.isEnrolledAndNotSuspendedForNonPayment(programEnrollmentId)));
+                        ref.map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null), null, null, programEnrollmentRepository.existsByIdAndStatus(programEnrollmentId, ProgramEnrollmentStatus.ENROLLED)
+                                && !standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).map(standing -> standing.status().stopsBilling()).orElse(false)));
     }
 
     @Override

@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBi
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
-import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
@@ -110,14 +110,14 @@ public class MeInvoiceController {
     private List<EnrollmentPaymentStatusResponse> paymentStatusOf(Long studentId) {
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> enrollmentPaymentStatusResponse("CourseEnrollment", enrollment.getId(), enrollment)),
+                        .map(enrollment -> enrollmentPaymentStatusResponse("CourseEnrollment", enrollment.getId(), invoiceQueryService.courseStanding(enrollment.getId()))),
                 programEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> enrollmentPaymentStatusResponse("ProgramEnrollment", enrollment.getId(), enrollment)))
+                        .map(enrollment -> enrollmentPaymentStatusResponse("ProgramEnrollment", enrollment.getId(), invoiceQueryService.programStanding(enrollment.getId()))))
                 .toList();
     }
 
-    private EnrollmentPaymentStatusResponse enrollmentPaymentStatusResponse(String enrollmentType, Long enrollmentId, BillableEnrollment billable) {
-        return new EnrollmentPaymentStatusResponse(enrollmentType, enrollmentId, billable.getPaymentStatus().name(), billable.getPaymentStatusUpdatedAt());
+    private EnrollmentPaymentStatusResponse enrollmentPaymentStatusResponse(String enrollmentType, Long enrollmentId, EnrollmentPaymentStandingView standing) {
+        return new EnrollmentPaymentStatusResponse(enrollmentType, enrollmentId, EnrollmentPaymentStandingView.statusOrUpToDate(standing).name(), EnrollmentPaymentStandingView.statusChangedAtOrNull(standing));
     }
 
 }

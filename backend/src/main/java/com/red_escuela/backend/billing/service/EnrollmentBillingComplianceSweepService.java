@@ -9,24 +9,16 @@ import com.red_escuela.backend.billing.collections.operation.EnrollmentPaymentSt
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
-import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.red_escuela.backend.billing.collections.domain.EnrollmentComplianceSweepReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,30 +28,21 @@ import java.util.Optional;
 public class EnrollmentBillingComplianceSweepService implements EnrollmentComplianceSweepPort {
     private static final Logger log = LoggerFactory.getLogger(EnrollmentBillingComplianceSweepService.class);
     public static final String NO_LATE_PAYMENT_POLICY = "NO_LATE_PAYMENT_POLICY";
-    private static final int PAGE_SIZE = 200;
     private static final String JOB_NAME = "EnrollmentBillingComplianceSweepService";
 
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final BillingConfigurationReader configurationReader;
     private final BatchExecutionLogRepository batchExecutionLogRepository;
-    private final EnrollmentBillingComplianceRowProcessor rowProcessor;
     private final CollectionsDailySnapshotStep snapshotStep;
     private final EnrollmentPaymentStandingStep standingStep;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
-    public EnrollmentBillingComplianceSweepService(CourseEnrollmentRepository courseEnrollmentRepository,
-                                                     ProgramEnrollmentRepository programEnrollmentRepository,
-                                                     BillingConfigurationReader configurationReader,
+    public EnrollmentBillingComplianceSweepService(BillingConfigurationReader configurationReader,
                                                      BatchExecutionLogRepository batchExecutionLogRepository,
-                                                     EnrollmentBillingComplianceRowProcessor rowProcessor, CollectionsDailySnapshotStep snapshotStep,
+                                                     CollectionsDailySnapshotStep snapshotStep,
                                                      EnrollmentPaymentStandingStep standingStep, ObjectMapper objectMapper, Clock clock) {
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
         this.configurationReader = configurationReader;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
-        this.rowProcessor = rowProcessor;
         this.snapshotStep = snapshotStep;
         this.standingStep = standingStep;
         this.objectMapper = objectMapper;
@@ -110,58 +93,8 @@ public class EnrollmentBillingComplianceSweepService implements EnrollmentCompli
     @Override
     public EnrollmentComplianceSweepReport sweepEnrollmentCompliance(LocalDate today) {
         LatePaymentTerms policy = configurationReader.findLatePaymentSettingsEffectiveOn(today).orElseThrow();
-        List<EnrollmentComplianceSweepReport.EnrollmentComplianceFailure> failures = new ArrayList<>();
-        int candidates = 0;
-
-        Long lastCourseEnrollmentId = 0L;
-        while (true) {
-            List<CourseEnrollment> batch = courseEnrollmentRepository.findByStatusAndIdGreaterThanOrderByIdAsc(
-                    EnrollmentStatus.ENROLLED, lastCourseEnrollmentId, PageRequest.of(0, PAGE_SIZE));
-            if (batch.isEmpty()) {
-                break;
-            }
-            candidates += batch.size();
-            for (CourseEnrollment enrollment : batch) {
-                try {
-                    rowProcessor.processCourseEnrollment(enrollment.getId(), policy, today);
-                } catch (Exception e) {
-                    log.error("Falló el cumplimiento de facturación de la inscripción a curso id={}", enrollment.getId(), e);
-                    failures.add(new EnrollmentComplianceSweepReport.EnrollmentComplianceFailure(EnrollmentKind.COURSE, enrollment.getId(), e.getMessage()));
-                }
-            }
-            lastCourseEnrollmentId = batch.get(batch.size() - 1).getId();
-        }
-
-        Long lastProgramEnrollmentId = 0L;
-        List<ProgramEnrollmentStatus> activeStatuses = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
-        while (true) {
-            List<ProgramEnrollment> batch = programEnrollmentRepository.findByStatusInAndIdGreaterThanOrderByIdAsc(
-                    activeStatuses, lastProgramEnrollmentId, PageRequest.of(0, PAGE_SIZE));
-            if (batch.isEmpty()) {
-                break;
-            }
-            candidates += batch.size();
-            for (ProgramEnrollment enrollment : batch) {
-                try {
-                    rowProcessor.processProgramEnrollment(enrollment.getId(), policy, today);
-                } catch (Exception e) {
-                    log.error("Falló el cumplimiento de facturación de la inscripción a carrera id={}", enrollment.getId(), e);
-                    failures.add(new EnrollmentComplianceSweepReport.EnrollmentComplianceFailure(EnrollmentKind.PROGRAM, enrollment.getId(), e.getMessage()));
-                }
-            }
-            lastProgramEnrollmentId = batch.get(batch.size() - 1).getId();
-        }
-
-        evaluateEnrollmentPaymentStanding(today, policy);
-        return new EnrollmentComplianceSweepReport(candidates, failures);
-    }
-
-    private void evaluateEnrollmentPaymentStanding(LocalDate today, LatePaymentTerms terms) {
-        try {
-            standingStep.evaluateEnrollments(today, terms);
-        } catch (RuntimeException e) {
-            log.error("Falló el estado de cobranza nuevo de la fecha {}", today, e);
-        }
+        EnrollmentPaymentStandingStep.Result result = standingStep.evaluateEnrollments(today, policy);
+        return new EnrollmentComplianceSweepReport(result.candidates(), result.failures());
     }
 
     private Map<String, Object> errorOf(String enrollmentType, Long id, String message) {

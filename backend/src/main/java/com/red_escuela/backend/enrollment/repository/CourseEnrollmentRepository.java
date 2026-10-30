@@ -1,7 +1,6 @@
 package com.red_escuela.backend.enrollment.repository;
 
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,9 +33,6 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     List<CourseEnrollment> findByStatusAndIdGreaterThanOrderByIdAsc(EnrollmentStatus status, Long lastId, Pageable pageable);
 
-    List<CourseEnrollment> findByStudentIdAndCourseIdAndStatusAndPaymentStatus(
-            Long studentId, Long courseId, EnrollmentStatus status, EnrollmentPaymentStatus paymentStatus);
-
     @Query("select distinct e.student.id from CourseEnrollment e where e.status in :statuses")
     List<Long> findDistinctStudentIdsByStatusIn(@Param("statuses") Collection<EnrollmentStatus> statuses);
 
@@ -59,7 +55,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     @Query("select t.startDate as startDate, t.endDate as endDate from CourseEnrollment e join e.course c join c.term t where e.id = :id")
     Optional<CourseTermDates> findCourseTermDates(@Param("id") Long id);
 
-    @Query("select e.id as enrollmentId, e.course.id as targetId, e.paymentStatus as paymentStatus from CourseEnrollment e where e.id in :ids")
+    @Query("select e.id as enrollmentId, e.course.id as targetId from CourseEnrollment e where e.id in :ids")
     List<EnrollmentReminderTargetRow> findReminderTargetRows(@Param("ids") Collection<Long> ids);
 
     @Query("select e.id as enrollmentId, e.course.name as name from CourseEnrollment e where e.id in :ids")
