@@ -42,8 +42,8 @@ public class MonthlyInvoiceRunQueryService implements MonthlyInvoiceRunQueryUseC
     public RunPage<MonthlyInvoiceRunResponse> listMonthlyInvoiceRuns(YearMonth period, Integer page, Integer size) {
         Pageable pageable = boundedPage(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<MonthlyInvoiceRun> runs = Optional.ofNullable(period)
-                .map(wanted -> runRepository.findByPeriod(wanted.atDay(1), pageable))
-                .orElseGet(() -> runRepository.findAll(pageable));
+                .map(wanted -> runRepository.findByPeriodAndMode(wanted.atDay(1), com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode.REAL, pageable))
+                .orElseGet(() -> runRepository.findByMode(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode.REAL, pageable));
         Map<Long, Map<MonthlyInvoiceRunItemResult, Long>> countsByRun = countResultsByRun(runs.getContent());
         List<MonthlyInvoiceRunResponse> items = runs.getContent().stream()
                 .map(run -> MonthlyInvoiceRunResponse.of(run, countsByRun.getOrDefault(run.getId(), Map.of()))).toList();
@@ -52,13 +52,13 @@ public class MonthlyInvoiceRunQueryService implements MonthlyInvoiceRunQueryUseC
 
     @Override
     public MonthlyInvoiceRunResponse findMonthlyInvoiceRun(Long monthlyRunId) {
-        MonthlyInvoiceRun run = runRepository.findById(monthlyRunId).orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
+        MonthlyInvoiceRun run = runRepository.findById(monthlyRunId).filter(candidate -> candidate.getMode() == com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode.REAL).orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
         return MonthlyInvoiceRunResponse.of(run, countResultsByRun(List.of(run)).getOrDefault(monthlyRunId, Map.of()));
     }
 
     @Override
     public RunPage<MonthlyInvoiceRunItemResponse> listMonthlyInvoiceRunItems(Long monthlyRunId, MonthlyInvoiceRunItemResult result, Integer page, Integer size) {
-        runRepository.findById(monthlyRunId).orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
+        runRepository.findById(monthlyRunId).filter(candidate -> candidate.getMode() == com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode.REAL).orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
         Pageable pageable = boundedPage(page, size, Sort.by(Sort.Direction.ASC, "id"));
         Page<MonthlyInvoiceRunItem> items = Optional.ofNullable(result)
                 .map(wanted -> itemRepository.findByMonthlyInvoiceRunIdAndResult(monthlyRunId, wanted, pageable))

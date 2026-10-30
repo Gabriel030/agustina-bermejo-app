@@ -84,7 +84,8 @@ public class MonthlyInvoiceRunExecutor {
 
     private void interruptStaleRunningRunsOf(YearMonth period) {
         LocalDateTime limit = LocalDateTime.now(clock).minus(Duration.parse(MonthlyInvoiceRun.MAX_RUNNING_TIME_ISO));
-        for (MonthlyInvoiceRun stale : runRepository.findByPeriodAndStatusAndStartedAtBefore(period.atDay(1), MonthlyInvoiceRunStatus.RUNNING, limit)) {
+        for (MonthlyInvoiceRun stale : runRepository.findByPeriodAndStatusAndStartedAtBefore(period.atDay(1), MonthlyInvoiceRunStatus.RUNNING, limit).stream()
+                .filter(candidate -> candidate.getMode() == com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode.REAL).toList()) {
             log.error("Corrida mensual colgada marcada como interrumpida: periodo={}, corrida={}, inicio={}", period, stale.getId(), stale.getStartedAt());
             stale.abortInterruptedRun(LocalDateTime.now(clock));
             runRepository.saveAndFlush(stale);

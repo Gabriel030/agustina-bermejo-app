@@ -44,7 +44,10 @@ public class OpenApiConfig {
             "BillingRunItemResponse", List.of("subjectType"),
             "BillingRunAlertResponse", List.of("type"),
             "MonthlyInvoiceRunItemResponse", List.of("result"),
-            "MonthlyInvoiceRunResponse", List.of("mode", "issuanceMode", "status", "trigger"));
+            "MonthlyInvoiceRunResponse", List.of("mode", "issuanceMode", "status", "trigger"),
+            "MonthlyInvoiceSimulationResponse", List.of("status", "trigger"),
+            "MonthlyInvoiceSimulationLineResponse", List.of("enrollmentType", "result"),
+            "MonthlyInvoiceSimulationAlertResponse", List.of("alertType", "enrollmentType"));
 
     @Bean
     public OpenApiCustomizer extensibleResponseEnumsCustomizer() {

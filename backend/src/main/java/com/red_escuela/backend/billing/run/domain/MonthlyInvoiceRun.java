@@ -69,6 +69,14 @@ public class MonthlyInvoiceRun {
         return run;
     }
 
+    public static MonthlyInvoiceRun startSimulationRun(LocalDate period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger, LocalDateTime startedAt) {
+        MonthlyInvoiceRun run = base(period, businessDate, trigger, startedAt);
+        run.mode = MonthlyInvoiceRunMode.SIMULATION;
+        run.pricingDate = Objects.requireNonNull(pricingDate, "pricingDate");
+        run.status = MonthlyInvoiceRunStateMachine.resolveNextStatus(null, MonthlyInvoiceRunEvent.RUN_STARTED);
+        return run;
+    }
+
     public static MonthlyInvoiceRun recordRunBlockedByNight(LocalDate period, LocalDate businessDate, MonthlyInvoiceRunTrigger trigger, String failureCode,
                                                             LocalDateTime at) {
         MonthlyInvoiceRun run = base(period, businessDate, trigger, at);
