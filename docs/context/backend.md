@@ -68,6 +68,12 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   `@RequestMapping` de recurso (`StudentController`, `AuthController`), cada
   endpoint inyecta el/los `UseCase` que necesita — decisión explícita tomada
   al diseñar el patrón, no un olvido.
+  *Desde el ADR de módulos (30-oct-2026):* un controller depende solo de casos
+  de uso de su módulo (y DTOs), nunca de `service` ni de `repository` (regla R4,
+  congelada). Además, `@Transactional` ya no se declara en los casos de uso nuevos:
+  vive en el especialista (`service` o `..api..`) que es el compositor más externo
+  de las escrituras; los casos de uso existentes que lo tienen quedan congelados.
+  Ver `adr/0002-patron-de-modulos.md`.
 - **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
   del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
   (`identity/service/`) — reusalo, no dupliques esa resolución en un use case
@@ -276,6 +282,9 @@ Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
   se inyecta directo en los controllers para las consultas de soporte de
   UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
   no todo tiene que pasar por un Use Case.
+  *Desde el ADR de módulos (30-oct-2026):* inyectar un colaborador de `service`
+  en un controller queda prohibido para código nuevo (R4, congelada): la consulta
+  de soporte de UI pasa por un caso de uso de su módulo que llama al colaborador.
 - `SectionEvaluationConfigDraftInitializer` — `createInitialDraft`, se
   invoca desde `academicstructure.service.SubjectSectionService` al crear
   una comisión (colaborador cross-feature, no un Use Case porque no lo
@@ -354,6 +363,12 @@ Quedó como el colaborador `GraduationRequestAutoRequester`
 (`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
 — un colaborador plano puede depender de un Use Case de su propia feature,
 no hace falta que todo pase por otro Use Case.
+
+*Desde el ADR de módulos (30-oct-2026):* un especialista (`service`) no depende
+de `usecase` (R3, congelada) y un caso de uso nunca llama a otro caso de uso (R2,
+congelada). `GraduationRequestAutoRequester` queda como deuda declarada: se
+migra a un especialista que haga la escritura, o a un listener que invoque el
+caso de uso desde el lado coordinador.
 
 ## Paquete por feature: `notification`
 
