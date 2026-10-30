@@ -1,1 +1,1 @@
-COUNT enrollment 42
+COUNT enrollment 36
