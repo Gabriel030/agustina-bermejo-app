@@ -1,6 +1,6 @@
 package com.red_escuela.backend.characterization.coursework;
 
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.dto.InstructorRole;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;

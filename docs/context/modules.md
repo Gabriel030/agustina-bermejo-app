@@ -20,7 +20,7 @@ Un módulo solo puede depender de los de capas inferiores y de `shared` (módulo
 
 Todo lo demás (`repository`, `service`, `entity` no expuestas, `dto`, `exception`) es interno. En `billing`, `@NamedInterface("api")` queda fuera de `billing.usecase` hasta que V2-02 lo reubique; la API pública de billing es `billing.events`.
 
-Entidades en `model` y motivo (se referencian por relación JPA y cambiarlas por un id exigiría migración): `Person`, `Student` (identity); `Institution`, `Program`, `Course`, `Subject`, `SubjectSection`, `CourseSubjectSection`, `Instructor` (academicstructure); `ProgramEnrollment`, `CourseEnrollment`, `SubjectSectionEnrollment`, `CourseSubjectSectionEnrollment` (enrollment). Regla: si la relación se puede cambiar por un id sin migración y sin perder una consulta necesaria, no se expone.
+Entidades en `model` y motivo (se referencian por relación JPA y cambiarlas por un id exigiría migración): `Person`, `Student` (identity); `Institution`, `Program`, `Course`, `Subject`, `SubjectSection`, `CourseSubjectSection`, `Instructor`, `Term`, `CourseSubject` (academicstructure; además los enums `CurricularTerm`, `InstructorRole` y `RequirementType`, que viven en `academicstructure.dto`); `ProgramEnrollment`, `CourseEnrollment`, `SubjectSectionEnrollment`, `CourseSubjectSectionEnrollment` (enrollment). Regla: si la relación se puede cambiar por un id sin migración y sin perder una consulta necesaria, no se expone.
 
 ## Comunicación entre módulos
 
@@ -37,6 +37,7 @@ Todo lo que mueve plata o el estado de una inscripción es síncrono. Los evento
 1. Definir el método en un `*UseCase` (o `*Queries`) del paquete `usecase` del módulo proveedor, devolviendo records de lectura y no entidades.
 2. El paquete `usecase` ya es `api`; si el tipo vive en otro paquete, anotarlo con `@NamedInterface("api")` a nivel de tipo.
 3. En el consumidor, depender solo de ese tipo. Verificar con `ModularityTest`.
+4. Los puertos de `academicstructure` van en `usecase` con sufijo `Queries`, solo devuelven records de `dto` (con `@NamedInterface("api")` a nivel de tipo) y no nombran tipos de `entity` ni de `exception` en su firma (`ArchitectureRules.java:230-239`). identity, enrollment y billing difieren: siguen en `api` con `*Lookup`/`*Query`. Para asignar una relación JPA, el consumidor valida con `requireExists` y usa `entityManager.getReference(...)` de un tipo `model`.
 
 ## Línea base y `ModularityTest`
 

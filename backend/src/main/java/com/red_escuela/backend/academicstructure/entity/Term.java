@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 import jakarta.persistence.*;
+import org.springframework.modulith.NamedInterface;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
@@ -8,6 +9,7 @@ import java.time.temporal.ChronoUnit;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity

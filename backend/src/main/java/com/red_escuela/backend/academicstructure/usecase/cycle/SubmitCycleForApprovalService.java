@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.dto.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
