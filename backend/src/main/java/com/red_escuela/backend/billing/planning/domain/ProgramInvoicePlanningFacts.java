@@ -27,7 +27,17 @@ public record ProgramInvoicePlanningFacts(
         Map<String, SlotWindow> windows,
         Long entryTemplateId,
         Integer entrySlot,
-        LocalDate cursadaStart) {
+        LocalDate cursadaStart,
+        LocalDate issueDate) {
+
+    public ProgramInvoicePlanningFacts(Long enrollmentId, YearMonth month, LocalDate today, boolean academicallyActive, boolean suspendedOrWithdrawn,
+                                       boolean planCompleted, boolean paused, boolean onlyFinalExamsLeft, YearMonth entryMonth,
+                                       PaymentPlanCoverage paymentPlan, boolean hasAnyPaymentPlan, YearCycles cycles, List<IssuedEnrollmentFee> enrollmentFees,
+                                       Set<YearMonth> recurringPeriods, Map<String, SlotWindow> windows, Long entryTemplateId, Integer entrySlot,
+                                       LocalDate cursadaStart) {
+        this(enrollmentId, month, today, academicallyActive, suspendedOrWithdrawn, planCompleted, paused, onlyFinalExamsLeft, entryMonth, paymentPlan,
+                hasAnyPaymentPlan, cycles, enrollmentFees, recurringPeriods, windows, entryTemplateId, entrySlot, cursadaStart, today);
+    }
 
     public ProgramInvoicePlanningFacts(Long enrollmentId, YearMonth month, LocalDate today, boolean academicallyActive, boolean suspendedOrWithdrawn,
                                        boolean planCompleted, boolean paused, boolean onlyFinalExamsLeft, YearMonth entryMonth,

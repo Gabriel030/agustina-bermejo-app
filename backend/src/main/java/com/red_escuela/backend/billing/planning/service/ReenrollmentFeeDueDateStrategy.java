@@ -22,7 +22,7 @@ public final class ReenrollmentFeeDueDateStrategy implements EnrollmentFeeDueDat
                 .map(SlotWindow::closesOn)
                 .orElseGet(() -> periodOf(context).atDay(1));
         return regularDue.isBefore(context.facts().today())
-                ? context.facts().today().plusDays(context.terms().lateEnrollmentFeeDueDays())
+                ? context.facts().issueDate().plusDays(context.terms().lateEnrollmentFeeDueDays())
                 : regularDue;
     }
 }

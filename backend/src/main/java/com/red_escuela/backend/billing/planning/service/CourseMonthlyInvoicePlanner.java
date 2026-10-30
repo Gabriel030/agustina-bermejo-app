@@ -58,7 +58,7 @@ public final class CourseMonthlyInvoicePlanner implements MonthlyInvoicePlanner<
     private void planIssuableInstallment(CourseInstallmentPlanningContext context, CourseInstallmentMode mode, AtomicLong issued, List<PlannedInvoice> charges,
                                          List<InvoicePlanningDecision> decisions) {
         charges.add(new PlannedInvoice(FeeType.MONTHLY_INSTALLMENT, context.period(),
-                dueDateCalculator.calculateInstallmentDueDate(context.facts().today(), context.facts().recurringFeeDueDays()), context.facts().today(), null, null,
+                dueDateCalculator.calculateInstallmentDueDate(context.facts().issueDate(), context.facts().recurringFeeDueDays()), context.facts().today(), null, null,
                 "cuota " + (context.installmentsIssued() + 1) + " del curso", false, mode.upfront()));
         decisions.add(new InvoicePlanningDecision(5, mode.decisionCode(), "cuota " + context.period()));
         issued.incrementAndGet();

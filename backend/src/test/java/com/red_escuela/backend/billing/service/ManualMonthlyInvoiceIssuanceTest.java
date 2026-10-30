@@ -51,6 +51,8 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
     private MonthlyInvoiceRunExecutor executor;
     @Autowired
     private MonthlyInvoiceRunRepository runRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunItemProcessor itemProcessor;
 
     @BeforeEach
     void forgetPreviousRuns() {
@@ -185,6 +187,70 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
 
         assertThat(response.status()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
         assertThat(monthlyInstallmentsOf(enrollment)).isEqualTo(1);
+    }
+
+    private Long enrollmentWithFiveDueDays() {
+        Career career = careerWithAnIncreaseFromTheSecond();
+        Year year = newYear(career, 2026, 10, 1, 2, null);
+        configureYear(year, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeDueDays(template, 5));
+        return enrollInCohort(career, newCohort(year, CohortIntake.FIRST, date(2026, 3, 1)));
+    }
+
+    @Test
+    void aManualIssuanceLongAfterTheDueDaysFromTheFirstDayHavePassedKeepsEveryDueDateOnOrAfterTheIssueDate() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 4, 10));
+        Long simulationId = simulationUseCase.simulateMonthlyInvoicesOfPeriodAsOfToday(APRIL).runId();
+        job.completeTheNightOf(date(2026, 4, 10));
+
+        MonthlyInvoiceRunResponse response = manualIssuance.issueMonthlyInvoicesManuallyAsOfToday(APRIL, simulationId);
+
+        assertThat(response.status()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
+        assertThat(monthlyInstallmentsOf(enrollment)).isEqualTo(1);
+        invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(invoice -> APRIL.equals(invoice.getPeriod())).forEach(invoice -> {
+            assertThat(invoice.getIssueDate()).isEqualTo(date(2026, 4, 10));
+            assertThat(invoice.getDueDate()).isEqualTo(date(2026, 4, 15));
+        });
+    }
+
+    @Test
+    void theSimulationOfALateDayWouldIssueTheSameInstallmentTheManualIssuanceThenIssues() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 4, 10));
+
+        var simulation = simulationUseCase.simulateMonthlyInvoicesOfPeriodAsOfToday(APRIL);
+
+        assertThat(simulation.lines()).filteredOn(line -> line.enrollmentId().equals(enrollment))
+                .singleElement().satisfies(line -> assertThat(line.result()).isEqualTo(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult.ISSUED));
+    }
+
+    @Test
+    void aFailedItemRetriedAfterTheDueDaysFromTheFirstDayHavePassedIssuesWithTheDueDateCountedFromTheRetryDay() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 4, 12));
+
+        var outcome = itemProcessor.attemptEnrollmentMonthIssuance(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType.PROGRAM, enrollment, APRIL, date(2026, 4, 1));
+
+        assertThat(outcome.result()).isEqualTo(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult.ISSUED);
+        invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(invoice -> APRIL.equals(invoice.getPeriod())).forEach(invoice -> {
+            assertThat(invoice.getIssueDate()).isEqualTo(date(2026, 4, 12));
+            assertThat(invoice.getDueDate()).isEqualTo(date(2026, 4, 17));
+        });
+    }
+
+    @Test
+    void theNightlyRunOfTheFirstDayKeepsTheDueDateAtTheFirstDayPlusTheDueDays() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 4, 1));
+        job.completeTheNightOf(date(2026, 4, 1));
+
+        MonthlyInvoiceRun run = executor.runMonthlyInvoicesOfPeriod(APRIL, date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED).orElseThrow();
+
+        assertThat(run.getStatus()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
+        invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(invoice -> APRIL.equals(invoice.getPeriod())).forEach(invoice -> {
+            assertThat(invoice.getIssueDate()).isEqualTo(date(2026, 4, 1));
+            assertThat(invoice.getDueDate()).isEqualTo(date(2026, 4, 6));
+        });
     }
 
     @Test

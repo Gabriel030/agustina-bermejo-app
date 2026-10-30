@@ -44,6 +44,10 @@ public class CourseInvoicePlanningContextLoader {
     }
 
     public CourseContext load(Long enrollmentId, YearMonth month, LocalDate today) {
+        return load(enrollmentId, month, today, today);
+    }
+
+    public CourseContext load(Long enrollmentId, YearMonth month, LocalDate today, LocalDate issueDate) {
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(enrollmentId));
         Course course = enrollment.getCourse();
@@ -57,7 +61,7 @@ public class CourseInvoicePlanningContextLoader {
                 .map(standing -> standing.status().stopsBilling()).orElse(false);
         CourseInvoicePlanningFacts facts = new CourseInvoicePlanningFacts(enrollmentId, month, today, enrollment.getStatus() == EnrollmentStatus.ENROLLED, suspended,
                 selection != null, cadence, selection == null ? null : selection.getEffectiveFrom(), selection == null ? null : selection.getScopeMonths(),
-                course.getTerm()::contains, course.getDurationMonths(), periods, inTerm, configurationReader.courseTermsEffectiveOn(course.getId(), today).monthlyInstallmentDueDays());
+                course.getTerm()::contains, course.getDurationMonths(), periods, inTerm, configurationReader.courseTermsEffectiveOn(course.getId(), today).monthlyInstallmentDueDays(), issueDate);
         return new CourseContext(facts, selection, enrollment);
     }
 }
