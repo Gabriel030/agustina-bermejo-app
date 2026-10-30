@@ -20,7 +20,7 @@ public final class QualityRules {
 
     static final String ROOT = ArchitectureRules.ROOT;
 
-    static final String[] TRANSACTION_BOUNDARY_PACKAGES = {"..service..", "..usecase..", "..operation..", "..repository.."};
+    static final String[] TRANSACTION_BOUNDARY_PACKAGES = {"..service..", "..operation..", "..repository..", "..api.."};
 
     static final String[] EXTERNAL_CLIENT_HOME_PACKAGES = {"..adapter..", "..infrastructure..", "..gateway..", ROOT + ".shared.mail.."};
 
@@ -49,12 +49,12 @@ public final class QualityRules {
     private QualityRules() {
     }
 
-    public static ArchRule transactionsAreDeclaredOnlyInServicesAndUseCases() {
+    public static ArchRule transactionsAreDeclaredOnlyInSpecialists() {
         return classes()
                 .that().resideOutsideOfPackages(TRANSACTION_BOUNDARY_PACKAGES)
                 .should(notDeclareTransactional())
                 .allowEmptyShould(true)
-                .because("a transaction boundary belongs to a service, use case, operation or repository, never to a controller, domain, policy, DTO or entity");
+                .because("a transaction boundary belongs to a specialist (service, operation, repository or api), never to a use case, controller, domain, policy, DTO or entity");
     }
 
     public static ArchRule eventListenersDoNotDeclareTheirOwnTransaction() {
