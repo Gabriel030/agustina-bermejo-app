@@ -2,14 +2,17 @@ package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.Test;
@@ -35,6 +38,8 @@ class AcademicReferenceFinderTest {
     private TermRepository termRepository;
     @Mock
     private InstructorRepository instructorRepository;
+    @Mock
+    private ProgramRepository programRepository;
     @InjectMocks
     private AcademicReferenceFinder finder;
 
@@ -51,6 +56,21 @@ class AcademicReferenceFinderTest {
         when(subjectRepository.findById(3L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> finder.findSubject(3L)).isInstanceOf(SubjectNotFoundException.class);
+    }
+
+    @Test
+    void findProgramReturnsTheStoredProgram() {
+        Program program = new Program();
+        when(programRepository.findById(5L)).thenReturn(Optional.of(program));
+
+        assertThat(finder.findProgram(5L)).isSameAs(program);
+    }
+
+    @Test
+    void findProgramFailsWhenTheProgramDoesNotExist() {
+        when(programRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.findProgram(5L)).isInstanceOf(ProgramNotFoundException.class);
     }
 
     @Test

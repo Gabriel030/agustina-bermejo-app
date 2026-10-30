@@ -1,9 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
 import java.time.Clock;
-import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.service.ProgramCohortService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
@@ -11,6 +8,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationSta
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.service.ProgramSubjectReferenceFinder;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.enrollment.exception.AdmissionFeeAwaitingPaymentException;
@@ -23,18 +21,18 @@ import java.time.LocalDateTime;
 public class RequestProgramEnrollmentApplicationService implements RequestProgramEnrollmentApplicationUseCase {
 
     private final ProgramEnrollmentApplicationRepository applicationRepository;
-    private final ProgramRepository programRepository;
+    private final ProgramSubjectReferenceFinder programSubjectReferenceFinder;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ProgramCohortService programCohortService;
     private final Clock clock;
 
     public RequestProgramEnrollmentApplicationService(ProgramEnrollmentApplicationRepository applicationRepository,
-                                                        ProgramRepository programRepository,
+                                                        ProgramSubjectReferenceFinder programSubjectReferenceFinder,
                                                         ProgramEnrollmentService programEnrollmentService,
                                                         ProgramCohortService programCohortService,
                                                         Clock clock) {
         this.applicationRepository = applicationRepository;
-        this.programRepository = programRepository;
+        this.programSubjectReferenceFinder = programSubjectReferenceFinder;
         this.programEnrollmentService = programEnrollmentService;
         this.programCohortService = programCohortService;
         this.clock = clock;
@@ -51,8 +49,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
     @Transactional
     public ProgramEnrollmentApplication request(RequestProgramEnrollmentApplicationCommand command) {
         Student student = command.student();
-        Program program = programRepository.findById(command.programId())
-                .orElseThrow(() -> new ProgramNotFoundException(command.programId()));
+        var program = programSubjectReferenceFinder.findProgram(command.programId());
         ProgramCohort cohort = programCohortService.findOrThrow(command.cohortId());
         programEnrollmentService.validateAdmissionWindow(cohort);
 
