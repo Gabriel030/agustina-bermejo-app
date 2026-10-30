@@ -1,4 +1,4 @@
-import { BellRing, Home, CheckCircle2, ClipboardCheck, Users, UserCog, BarChart2, BookOpen, Receipt, Tag } from 'lucide-react';
+import { BellRing, CalendarClock, Home, CheckCircle2, ClipboardCheck, Users, UserCog, BarChart2, BookOpen, Receipt, Tag } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
 
 const ITEMS = [
@@ -11,6 +11,7 @@ const ITEMS = [
   { to: '/director/facturacion', label: 'Facturación', icon: Receipt },
   { to: '/director/descuentos', label: 'Descuentos', icon: Tag },
   { to: '/director/recordatorios-de-pago', label: 'Recordatorios de pago', icon: BellRing },
+  { to: '/director/emision-mensual', label: 'Emisión mensual', icon: CalendarClock },
   { to: '/director/financiero', label: 'Financiero', icon: BarChart2 },
 ];
 
