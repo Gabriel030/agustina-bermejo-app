@@ -5449,6 +5449,10 @@
           "decisionCode" : {
             "type" : "string"
           },
+          "dueDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "enrollmentId" : {
             "format" : "int64",
             "type" : "integer"
@@ -5479,7 +5483,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "chargeCount", "decisionCode", "enrollmentId", "enrollmentType", "errorCode", "id", "message", "offeringId", "result", "total" ],
+        "required" : [ "chargeCount", "decisionCode", "dueDate", "enrollmentId", "enrollmentType", "errorCode", "id", "message", "offeringId", "result", "total" ],
         "type" : "object"
       },
       "MonthlyInvoiceSimulationRequest" : {

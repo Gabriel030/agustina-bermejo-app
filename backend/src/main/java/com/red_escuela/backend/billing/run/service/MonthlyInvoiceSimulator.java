@@ -32,10 +32,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class MonthlyInvoiceSimulator {
@@ -109,11 +111,15 @@ public class MonthlyInvoiceSimulator {
     static MonthlyInvoiceSimulationOutcome outcomeOf(MonthlyIssuancePreview preview) {
         if (!preview.wouldBeIssued().isEmpty()) {
             return MonthlyInvoiceSimulationOutcome.wouldBeIssued(null, preview.wouldBeIssued().size(), sumOf(preview.wouldBeIssued(), null),
-                    sumOf(preview.wouldBeIssued(), FeeType.MONTHLY_INSTALLMENT));
+                    sumOf(preview.wouldBeIssued(), FeeType.MONTHLY_INSTALLMENT), earliestDueDateOf(preview.wouldBeIssued()));
         }
         return preview.alreadyIssuedInvoiceIds().isEmpty()
                 ? MonthlyInvoiceSimulationOutcome.wouldNotBeIssued(null, preview.planningDecisionCodes())
                 : MonthlyInvoiceSimulationOutcome.wouldBeAlreadyIssued(null);
+    }
+
+    private static LocalDate earliestDueDateOf(List<PreviewedCharge> charges) {
+        return charges.stream().map(PreviewedCharge::dueDate).filter(Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
     }
 
     private static NonNegativeMoney sumOf(List<PreviewedCharge> charges, FeeType onlyKind) {
