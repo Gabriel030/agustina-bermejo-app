@@ -1,14 +1,19 @@
-package com.red_escuela.backend.billing.entity;
+package com.red_escuela.backend.billing.payment.domain;
 
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "payment_gateway_config_change")
 public class PaymentGatewayConfigChange {

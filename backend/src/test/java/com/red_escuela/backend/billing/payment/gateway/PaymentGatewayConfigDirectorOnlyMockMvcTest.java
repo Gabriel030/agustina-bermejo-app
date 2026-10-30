@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.payment.gateway;
 
-import com.red_escuela.backend.billing.entity.PaymentGatewayConfigChange;
-import com.red_escuela.backend.billing.repository.PaymentGatewayConfigChangeRepository;
+import com.red_escuela.backend.billing.payment.domain.PaymentGatewayConfigChange;
+import com.red_escuela.backend.billing.payment.repository.PaymentGatewayConfigChangeRepository;
 import com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
