@@ -8,7 +8,7 @@ import com.red_escuela.backend.graduation.entity.CertificateType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
@@ -91,7 +91,7 @@ public class CertificateService {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         Person person = enrollment.getStudent().getPerson();
-        List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
+        List<ProgramSubjectView> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
@@ -100,8 +100,8 @@ public class CertificateService {
         if (aprobadas.isEmpty()) {
             texto.append(" ninguna materia aprobada todavía.");
         } else {
-            for (ProgramSubject entrada : aprobadas) {
-                texto.append("\n- ").append(entrada.getSubject().getName());
+            for (ProgramSubjectView entrada : aprobadas) {
+                texto.append("\n- ").append(entrada.subjectName());
             }
         }
         byte[] pdf = generatePdf("Constancia de materias aprobadas", texto.toString());

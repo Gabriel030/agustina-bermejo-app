@@ -55,7 +55,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
     @BeforeEach
     void setUp() {
         EnrollmentWithdrawalDateResolver resolver = new EnrollmentWithdrawalDateResolver(clock);
-        programService = new ProgramEnrollmentService(programRepository, null, null, null, null, null, null, null, null, null,
+        programService = new ProgramEnrollmentService(programRepository, null, null, null, null, null, null, null, null,
                 resolver, port, clock);
         CourseRepository courses = mock(CourseRepository.class);
         courseService = new CourseEnrollmentService(courseRepository, null, courses, null, null, mock(CourseSubjectSectionEnrollmentRepository.class), null, null,
