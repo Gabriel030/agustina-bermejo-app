@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.dto.ReceiptInvoiceSummary;
@@ -12,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePath, String status, String rejectionReason, String rejectionCode,
+public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePath, String status, @Schema(nullable = true) String rejectionReason, @Schema(nullable = true) String rejectionCode,
                                      LocalDateTime uploadedAt, String studentName, String studentDni,
                                      String invoicePeriod, String invoiceFeeType, String productName, List<Long> invoiceIds,
                                      Money declaredAmount, LocalDate transferDate, String operationNumber, String originAccount, String holderName,

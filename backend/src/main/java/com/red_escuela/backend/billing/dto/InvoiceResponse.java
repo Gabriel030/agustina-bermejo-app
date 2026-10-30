@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
 import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
 import com.red_escuela.backend.billing.invoice.service.InvoicePaymentShare;
@@ -20,7 +21,7 @@ public record InvoiceResponse(
         String paymentStatus, LocalDate issueDate, LocalDate dueDate, String currency,
         Money linesTotalAmount, Money discountsTotalAmount, Money totalAmount, Money paidAmount,
         Money creditedAmount, Money outstandingAmount, List<InvoiceLineResponse> lines,
-        String issuingReason, String discardedReason,
+        String issuingReason, @Schema(nullable = true) String discardedReason,
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod,

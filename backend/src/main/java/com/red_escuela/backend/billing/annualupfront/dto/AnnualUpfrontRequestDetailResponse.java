@@ -1,11 +1,11 @@
 package com.red_escuela.backend.billing.annualupfront.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontQuoteLine;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestDiscountView;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestView;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -16,7 +16,7 @@ public record AnnualUpfrontRequestDetailResponse(Long id, String status, Long pr
                                                  List<Line> lines, Money total, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "null si el pedido no lleva promoción") Discount discount,
                                                  LocalDateTime acceptedAt, String acceptedTermsVersion, boolean paymentUnderReview,
                                                  @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String discardReason,
-                                                 @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime decidedAt) {
+                                                 @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) LocalDateTime decidedAt) {
 
     public record Line(int lineNumber, YearMonth period, Money baseAmount, Money discountAmount, Money finalAmount) {
 
