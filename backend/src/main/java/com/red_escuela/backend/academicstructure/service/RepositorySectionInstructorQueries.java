@@ -1,10 +1,10 @@
-package com.red_escuela.backend.academicstructure.adapter;
+package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.dto.SectionInstructorView;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
-import com.red_escuela.backend.academicstructure.usecase.SectionInstructorQueries;
+import com.red_escuela.backend.academicstructure.api.SectionInstructorQueries;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

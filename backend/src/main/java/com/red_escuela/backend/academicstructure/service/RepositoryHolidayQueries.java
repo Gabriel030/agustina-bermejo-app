@@ -1,7 +1,7 @@
-package com.red_escuela.backend.academicstructure.adapter;
+package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
-import com.red_escuela.backend.academicstructure.usecase.HolidayQueries;
+import com.red_escuela.backend.academicstructure.api.HolidayQueries;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

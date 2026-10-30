@@ -1,8 +1,8 @@
-package com.red_escuela.backend.academicstructure.adapter;
+package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.dto.SectionSlotView;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
-import com.red_escuela.backend.academicstructure.usecase.SectionScheduleQueries;
+import com.red_escuela.backend.academicstructure.api.SectionScheduleQueries;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

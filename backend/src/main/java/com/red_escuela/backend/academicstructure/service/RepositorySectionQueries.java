@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.adapter;
+package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.dto.CourseSectionView;
 import com.red_escuela.backend.academicstructure.dto.ProgramSectionView;
@@ -7,8 +7,8 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
-import com.red_escuela.backend.academicstructure.usecase.SectionKind;
-import com.red_escuela.backend.academicstructure.usecase.SectionQueries;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.academicstructure.api.SectionQueries;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,8 +1,8 @@
-package com.red_escuela.backend.academicstructure.adapter;
+package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.usecase.SectionKind;
-import com.red_escuela.backend.academicstructure.usecase.SectionQueries;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.academicstructure.api.SectionQueries;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

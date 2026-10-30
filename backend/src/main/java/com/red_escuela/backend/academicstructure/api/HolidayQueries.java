@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.usecase;
+package com.red_escuela.backend.academicstructure.api;
 
 import java.time.LocalDate;
 

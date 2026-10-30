@@ -1,11 +1,11 @@
-package com.red_escuela.backend.academicstructure.adapter;
+package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
-import com.red_escuela.backend.academicstructure.usecase.SectionKind;
-import com.red_escuela.backend.academicstructure.usecase.SectionTeachingQueries;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.academicstructure.api.SectionTeachingQueries;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
