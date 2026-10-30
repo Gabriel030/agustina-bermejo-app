@@ -21,16 +21,18 @@ class QualityRulesTest {
     }
 
     @Test
-    void transactionsAreDeclaredOnlyInServicesAndUseCases() {
-        FreezingArchRule.freeze(QualityRules.transactionsAreDeclaredOnlyInServicesAndUseCases()).check(MAIN_CLASSES);
+    void transactionsAreDeclaredOnlyInSpecialists() {
+        FreezingArchRule.freeze(QualityRules.transactionsAreDeclaredOnlyInSpecialists()).check(MAIN_CLASSES);
     }
 
     @Test
     void transactionRuleDetectsATransactionalControllerAndAllowsAService() {
-        assertThatThrownBy(() -> QualityRules.transactionsAreDeclaredOnlyInServicesAndUseCases().check(fixtureClasses()))
+        assertThatThrownBy(() -> QualityRules.transactionsAreDeclaredOnlyInSpecialists().check(fixtureClasses()))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("TransactionalControllerFixture")
-                .hasMessageNotContaining("TransactionalServiceFixture");
+                .hasMessageContaining("TransactionalUseCaseFixture")
+                .hasMessageNotContaining("TransactionalServiceFixture")
+                .hasMessageNotContaining("TransactionalApiSpecialistFixture");
     }
 
     @Test
