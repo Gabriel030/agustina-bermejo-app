@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AttendanceRiskCalculatorTest {
 
-    private final AttendanceRiskCalculator calculator = new AttendanceRiskCalculator(null, null, null);
+    private final AttendanceRiskCalculator calculator = new AttendanceRiskCalculator(null, null);
     private final Percentage maxTwentyFive = Percentage.ofPoints(BigDecimal.valueOf(25));
 
     @Test
