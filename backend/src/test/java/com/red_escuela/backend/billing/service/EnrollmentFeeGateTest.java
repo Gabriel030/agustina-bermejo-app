@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
@@ -344,13 +345,13 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         Long personId = transactionTemplate.execute(s -> load(world.enrollment()).getStudent().getPerson().getId());
 
         grant(director, world, 1, "Plan de pago acordado con el alumno").andExpect(status().isCreated());
-        assertThat(notificationTypesOf(personId)).containsExactly(NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED);
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationTypesOf(personId)).containsExactly(NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED));
 
         mockMvc.perform(post("/enrollment-fee-exemptions/{id}/revoke", firstExemptionId(world)).contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + director).content("{\"notes\":\"Pagó la matrícula\"}")).andExpect(status().isNoContent());
 
-        assertThat(notificationTypesOf(personId)).containsExactlyInAnyOrder(
-                NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED, NotificationType.ENROLLMENT_FEE_EXEMPTION_REVOKED);
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationTypesOf(personId)).containsExactlyInAnyOrder(
+                NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED, NotificationType.ENROLLMENT_FEE_EXEMPTION_REVOKED));
     }
 
     @Test

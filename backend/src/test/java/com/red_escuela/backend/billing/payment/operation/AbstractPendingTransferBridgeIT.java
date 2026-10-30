@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentRecei
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.notification.PaymentReceiptApprovedNotification;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.notification.PaymentReceiptRejectedNotification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -21,6 +22,14 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.PayloadApplicationEvent;
 import java.util.Map;
 
 @RecordApplicationEvents
@@ -35,11 +44,30 @@ abstract class AbstractPendingTransferBridgeIT extends AbstractBankTransferRecei
     @Autowired
     ApplicationEvents applicationEvents;
     @Autowired
+    ConfigurableApplicationContext applicationContext;
+    private final Queue<Object> recordedNotifications = new ConcurrentLinkedQueue<>();
+    private final ApplicationListener<ApplicationEvent> notificationRecorder = event -> {
+        if (event instanceof PayloadApplicationEvent<?> payloadEvent
+                && (payloadEvent.getPayload() instanceof PaymentReceiptApprovedNotification || payloadEvent.getPayload() instanceof PaymentReceiptRejectedNotification)) {
+            recordedNotifications.add(payloadEvent.getPayload());
+        }
+    };
+    @Autowired
     RegisterCashPaymentOperation cashOperation;
     @Autowired
     CashPaymentPreviewService cashPreviewService;
     @Autowired
     CurrentAccountAllocationService allocationService;
+
+    @BeforeEach
+    void startRecordingNotifications() {
+        applicationContext.addApplicationListener(notificationRecorder);
+    }
+
+    @AfterEach
+    void stopRecordingNotifications() {
+        applicationContext.removeApplicationListener(notificationRecorder);
+    }
 
     CashPaymentPreview previewCashOf(Debtor debtor, String amount) {
         return inTransaction(() -> cashPreviewService.previewCashPaymentOfStudent(debtor.studentId(), ars(amount)));
@@ -89,10 +117,12 @@ abstract class AbstractPendingTransferBridgeIT extends AbstractBankTransferRecei
     }
 
     List<PaymentReceiptApprovedNotification> approvedEvents() {
-        return applicationEvents.stream(PaymentReceiptApprovedNotification.class).toList();
+        AsyncNotifications.awaitPublicationsOfDrained(jdbc, "%PaymentReceiptApprovedEvent");
+        return recordedNotifications.stream().filter(PaymentReceiptApprovedNotification.class::isInstance).map(PaymentReceiptApprovedNotification.class::cast).toList();
     }
 
     List<PaymentReceiptRejectedNotification> rejectedEvents() {
-        return applicationEvents.stream(PaymentReceiptRejectedNotification.class).toList();
+        AsyncNotifications.awaitPublicationsOfDrained(jdbc, "%PaymentReceiptRejectedEvent");
+        return recordedNotifications.stream().filter(PaymentReceiptRejectedNotification.class::isInstance).map(PaymentReceiptRejectedNotification.class::cast).toList();
     }
 }

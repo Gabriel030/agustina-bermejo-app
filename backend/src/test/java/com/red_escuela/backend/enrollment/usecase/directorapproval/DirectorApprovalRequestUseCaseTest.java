@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -427,13 +428,16 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         authenticateAsPerson("DIRECTOR_A0000010");
         approveDirectorApprovalRequestUseCase.approve(new DecideDirectorApprovalRequestCommand(request.getId(), "Por única vez"));
 
-        List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
-        assertThat(received).hasSize(1);
-        assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_APPROVED);
-        assertThat(received.get(0).getMessage())
-                .contains("Por única vez")
-                .contains(subject.getName())
-                .doesNotContain("Justificación interna");
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
+            assertThat(received).hasSize(1);
+            assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_APPROVED);
+            assertThat(received.get(0).getMessage())
+                    .contains("Por única vez")
+                    .contains(subject.getName())
+                    .doesNotContain("Justificación interna");
+        });
     }
 
     @Test
@@ -450,11 +454,14 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         authenticateAsPerson("DIRECTOR_A0000011");
         rejectDirectorApprovalRequestUseCase.reject(new DecideDirectorApprovalRequestCommand(request.getId(), "Falta el certificado"));
 
-        List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
-        assertThat(received).hasSize(1);
-        assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_REJECTED);
-        assertThat(received.get(0).getMessage())
-                .contains("Falta el certificado")
-                .doesNotContain("Justificación interna");
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
+            assertThat(received).hasSize(1);
+            assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_REJECTED);
+            assertThat(received.get(0).getMessage())
+                    .contains("Falta el certificado")
+                    .doesNotContain("Justificación interna");
+        });
     }
 }

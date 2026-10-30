@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
@@ -452,10 +453,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "El importe no coincide con la cuota", admin);
 
-        assertThat(notificationsOf(student))
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsOf(student))
                 .filteredOn(notification -> notification.getType() == NotificationType.PAYMENT_RECEIPT_REJECTED)
                 .singleElement()
-                .satisfies(notification -> assertThat(notification.getMessage()).contains("El importe no coincide con la cuota"));
+                .satisfies(notification -> assertThat(notification.getMessage()).contains("El importe no coincide con la cuota")));
     }
 
     @Test
@@ -468,9 +469,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
 
-        assertThat(notificationsOf(student))
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsOf(student))
                 .extracting(Notification::getType)
-                .contains(NotificationType.PAYMENT_RECEIPT_APPROVED);
+                .contains(NotificationType.PAYMENT_RECEIPT_APPROVED));
     }
 
     @Test
@@ -511,9 +512,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(notificationsOf(student)).extracting(Notification::getType)
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsOf(student)).extracting(Notification::getType)
                 .contains(NotificationType.PAYMENT_RECEIPT_APPROVED)
-                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT);
+                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT));
     }
 
     @Test

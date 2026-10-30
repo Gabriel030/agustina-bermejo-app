@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
@@ -132,7 +133,9 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
 
         reminderJob.sendReminders();
 
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(personId);
-        assertThat(notifications).extracting(Notification::getType).containsExactly(NotificationType.SECTION_EVAL_CONFIG_REMINDER);
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(personId);
+            assertThat(notifications).extracting(Notification::getType).containsExactly(NotificationType.SECTION_EVAL_CONFIG_REMINDER);
+        });
     }
 }

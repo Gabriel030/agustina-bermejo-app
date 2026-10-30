@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.support.PaymentStandingSeed;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
@@ -274,9 +275,11 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
         assertThat(EnrollmentPaymentStatus.valueOf(jdbc.queryForObject("select status from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollment.getId())))
                 .isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
-        assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId()))
-                .extracting(Notification::getType)
-                .contains(NotificationType.SUSPENSION_LIFTED);
+        AsyncNotifications.awaitAsserted(() -> {
+            assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId()))
+                    .extracting(Notification::getType)
+                    .contains(NotificationType.SUSPENSION_LIFTED);
+        });
     }
 
     @Test
