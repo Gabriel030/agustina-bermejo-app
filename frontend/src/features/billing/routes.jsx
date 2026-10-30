@@ -17,6 +17,7 @@ import { DiscountDefinitionFormPage } from '@/features/billing/discounts/Discoun
 import { DiscountDefinitionDetailPage } from '@/features/billing/discounts/DiscountDefinitionDetailPage';
 import { GrantDiscountPage } from '@/features/billing/discounts/GrantDiscountPage';
 
+import { MonthlyRunPage } from '@/features/billing/monthly-run/MonthlyRunPage';
 import { BillingRunsPage } from '@/features/billing/runs/BillingRunsPage';
 import { SimulatedMailsPage } from '@/features/billing/reminders/SimulatedMailsPage';
 import { ReminderSettingsPage } from '@/features/billing/reminders/ReminderSettingsPage';
@@ -43,6 +44,7 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'descuentos/promociones/nueva', element: <DiscountDefinitionFormPage mode="promotion" /> },
     { roles: ['administrativo', 'director'], path: 'descuentos/:id', element: <DiscountDefinitionDetailPage /> },
     { roles: ['administrativo', 'director'], path: 'corridas-de-facturacion', element: <BillingRunsPage /> },
+    { roles: ['administrativo', 'director'], path: 'emision-mensual', element: <MonthlyRunPage /> },
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago', element: <ReminderSettingsPage /> },
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago/mails-simulados', element: <SimulatedMailsPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion', element: <AuthorizationInboxPage /> },
