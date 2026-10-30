@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.dto;
+package com.red_escuela.backend.academicstructure.domain;
 
 import org.springframework.modulith.NamedInterface;
 

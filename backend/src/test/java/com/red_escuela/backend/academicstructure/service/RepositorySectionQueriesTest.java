@@ -10,7 +10,6 @@ import com.red_escuela.backend.academicstructure.exception.SectionNotFoundExcept
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.usecase.SectionKind;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -106,15 +105,22 @@ class RepositorySectionQueriesTest {
 
     @Test
     void findEvaluationSchemeIdReadsTheSectionOfEachKind() {
-        var scheme = new EvaluationScheme();
-        scheme.setId(99L);
-        SubjectSection program = programSection(5L, 7L, 8L, 30);
-        program.setEvaluationScheme(scheme);
-        when(programSectionRepository.findById(5L)).thenReturn(Optional.of(program));
-        when(courseSectionRepository.findById(6L)).thenReturn(Optional.of(new CourseSubjectSection()));
+        when(programSectionRepository.existsById(5L)).thenReturn(true);
+        when(programSectionRepository.findEvaluationSchemeIdById(5L)).thenReturn(Optional.of(99L));
+        when(courseSectionRepository.existsById(6L)).thenReturn(true);
+        when(courseSectionRepository.findEvaluationSchemeIdById(6L)).thenReturn(Optional.empty());
 
         assertThat(queries.findEvaluationSchemeId(SectionKind.PROGRAM, 5L)).contains(99L);
         assertThat(queries.findEvaluationSchemeId(SectionKind.COURSE, 6L)).isEmpty();
+    }
+
+    @Test
+    void findEvaluationSchemeIdRejectsMissingSectionOfEachKind() {
+        when(programSectionRepository.existsById(5L)).thenReturn(false);
+        when(courseSectionRepository.existsById(6L)).thenReturn(false);
+
+        assertThatThrownBy(() -> queries.findEvaluationSchemeId(SectionKind.PROGRAM, 5L)).isInstanceOf(SectionNotFoundException.class);
+        assertThatThrownBy(() -> queries.findEvaluationSchemeId(SectionKind.COURSE, 6L)).isInstanceOf(SectionNotFoundException.class);
     }
 
     @Test

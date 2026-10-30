@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.repository;
 
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.academicstructure.dto.RequirementType;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

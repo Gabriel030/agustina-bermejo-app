@@ -2,8 +2,8 @@ package com.red_escuela.backend.enrollment.dto;
 
 import com.red_escuela.backend.shared.domain.Grade;
 import java.math.BigDecimal;
-import com.red_escuela.backend.academicstructure.dto.CurricularTerm;
-import com.red_escuela.backend.academicstructure.dto.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 

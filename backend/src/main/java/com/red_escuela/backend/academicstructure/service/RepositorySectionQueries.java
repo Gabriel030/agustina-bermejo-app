@@ -75,15 +75,21 @@ public class RepositorySectionQueries implements SectionQueries {
     @Override
     public Optional<Long> findEvaluationSchemeId(SectionKind kind, Long id) {
         return switch (kind) {
-            case PROGRAM -> Optional.ofNullable(programSectionRepository.findById(id)
-                            .orElseThrow(() -> new SectionNotFoundException(id))
-                            .getEvaluationScheme())
-                    .map(scheme -> scheme.getId());
-            case COURSE -> Optional.ofNullable(courseSectionRepository.findById(id)
-                            .orElseThrow(() -> new SectionNotFoundException(id))
-                            .getEvaluationScheme())
-                    .map(scheme -> scheme.getId());
+            case PROGRAM -> {
+                requireExists(programSectionRepository.existsById(id), id);
+                yield programSectionRepository.findEvaluationSchemeIdById(id);
+            }
+            case COURSE -> {
+                requireExists(courseSectionRepository.existsById(id), id);
+                yield courseSectionRepository.findEvaluationSchemeIdById(id);
+            }
         };
+    }
+
+    private void requireExists(boolean exists, Long id) {
+        if (!exists) {
+            throw new SectionNotFoundException(id);
+        }
     }
 
     @Override

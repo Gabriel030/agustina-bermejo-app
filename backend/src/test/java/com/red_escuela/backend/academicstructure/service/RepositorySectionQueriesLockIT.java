@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.usecase.SectionKind;
 import com.red_escuela.backend.academicstructure.usecase.SectionQueries;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,14 @@ class RepositorySectionQueriesLockIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> transaction.executeWithoutResult(status -> sectionQueries.lockProgramSection(-1L)))
                 .isInstanceOf(SectionNotFoundException.class);
         assertThatThrownBy(() -> transaction.executeWithoutResult(status -> sectionQueries.lockCourseSection(-1L)))
+                .isInstanceOf(SectionNotFoundException.class);
+    }
+
+    @Test
+    void evaluationSchemeLookupOfMissingSectionFailsForEachKind() {
+        assertThatThrownBy(() -> sectionQueries.findEvaluationSchemeId(SectionKind.PROGRAM, -1L))
+                .isInstanceOf(SectionNotFoundException.class);
+        assertThatThrownBy(() -> sectionQueries.findEvaluationSchemeId(SectionKind.COURSE, -1L))
                 .isInstanceOf(SectionNotFoundException.class);
     }
 }

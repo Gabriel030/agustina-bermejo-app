@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
-import com.red_escuela.backend.academicstructure.dto.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.dto.SectionInstructorView;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;

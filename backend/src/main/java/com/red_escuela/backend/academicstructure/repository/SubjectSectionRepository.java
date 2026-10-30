@@ -24,6 +24,9 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
 
     boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
 
+    @Query("select s.evaluationScheme.id from SubjectSection s where s.id = :id")
+    Optional<Long> findEvaluationSchemeIdById(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SubjectSection s where s.id = :id")
     Optional<SubjectSection> findByIdForUpdate(@Param("id") Long id);

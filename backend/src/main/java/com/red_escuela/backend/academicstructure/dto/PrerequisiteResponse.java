@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.shared.domain.Grade;
 import java.math.BigDecimal;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
