@@ -32,7 +32,12 @@ class MonthlyInvoiceRunItemRetryTest {
             new Row(FAILED, RETRY_ALREADY_ISSUED), ALREADY_ISSUED,
             new Row(FAILED, RETRY_NOT_APPLICABLE), NOT_APPLICABLE,
             new Row(FAILED, RETRY_FAILED_WITH_WAIT), FAILED,
-            new Row(FAILED, RETRY_FAILED_WITHOUT_WAIT), RETRIES_EXHAUSTED);
+            new Row(FAILED, RETRY_FAILED_WITHOUT_WAIT), RETRIES_EXHAUSTED,
+            new Row(RETRIES_EXHAUSTED, RETRY_ISSUED), ISSUED,
+            new Row(RETRIES_EXHAUSTED, RETRY_ALREADY_ISSUED), ALREADY_ISSUED,
+            new Row(RETRIES_EXHAUSTED, RETRY_NOT_APPLICABLE), NOT_APPLICABLE,
+            new Row(RETRIES_EXHAUSTED, RETRY_FAILED_WITH_WAIT), FAILED,
+            new Row(RETRIES_EXHAUSTED, RETRY_FAILED_WITHOUT_WAIT), RETRIES_EXHAUSTED);
 
     private static List<MonthlyInvoiceRunItemResult> statesIncludingNone() {
         List<MonthlyInvoiceRunItemResult> states = new ArrayList<>();
@@ -139,6 +144,41 @@ class MonthlyInvoiceRunItemRetryTest {
         assertThat(suspended.getDecisionCode()).isEqualTo("SUSPENDED_OR_WITHDRAWN");
         assertThat(duplicate.getResult()).isEqualTo(ALREADY_ISSUED);
         assertThat(duplicate.getInvoiceIds()).containsExactly(9L);
+    }
+
+    @Test
+    void onlyFailedAndExhaustedItemsCanBeRetriedByStaff() {
+        MonthlyInvoiceRunItem failed = failedOnFirstDay(DEFAULT);
+        MonthlyInvoiceRunItem exhausted = failedOnFirstDay(new FailedInvoiceRetrySchedule(0, List.of()));
+        MonthlyInvoiceRunItem issued = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.COURSE, 8L, MonthlyInvoiceItemOutcome.issued(List.of(1L)),
+                FIRST_DAY_AT_FOUR, DEFAULT);
+        MonthlyInvoiceRunItem notApplicable = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.COURSE, 9L,
+                MonthlyInvoiceItemOutcome.notApplicable(List.of("X")), FIRST_DAY_AT_FOUR, DEFAULT);
+        MonthlyInvoiceRunItem alreadyIssued = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.COURSE, 10L,
+                MonthlyInvoiceItemOutcome.alreadyIssued(List.of(1L)), FIRST_DAY_AT_FOUR, DEFAULT);
+
+        assertThat(failed.isRetryableByStaff()).isTrue();
+        assertThat(exhausted.isRetryableByStaff()).isTrue();
+        assertThat(issued.isRetryableByStaff()).isFalse();
+        assertThat(notApplicable.isRetryableByStaff()).isFalse();
+        assertThat(alreadyIssued.isRetryableByStaff()).isFalse();
+    }
+
+    @Test
+    void anExhaustedItemRetriedByStaffClosesWithItsInvoiceAndNeverBecomesDueByItself() {
+        MonthlyInvoiceRunItem exhausted = failedOnFirstDay(new FailedInvoiceRetrySchedule(0, List.of()));
+
+        exhausted.recordRetryOutcome(FAILURE, new FailedInvoiceRetrySchedule(0, List.of()), FIRST_DAY_AT_FOUR.plusDays(3));
+
+        assertThat(exhausted.getResult()).isEqualTo(RETRIES_EXHAUSTED);
+        assertThat(exhausted.getAttempts()).isEqualTo(2);
+        assertThat(exhausted.isDueForRetryAt(FIRST_DAY_AT_FOUR.plusYears(1))).isFalse();
+
+        exhausted.recordRetryOutcome(MonthlyInvoiceItemOutcome.issued(List.of(3L)), DEFAULT, FIRST_DAY_AT_FOUR.plusDays(4));
+
+        assertThat(exhausted.getResult()).isEqualTo(ISSUED);
+        assertThat(exhausted.getAttempts()).isEqualTo(3);
+        assertThat(exhausted.getInvoiceIds()).containsExactly(3L);
     }
 
     @Test
