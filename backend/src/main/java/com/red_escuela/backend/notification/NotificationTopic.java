@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.api.PersonRecipientFinder;
 
 import java.util.List;
 
@@ -21,9 +21,9 @@ public enum NotificationTopic implements NotificationRecipient {
     }
 
     @Override
-    public List<Person> resolve(PersonRepository personRepository) {
+    public List<Person> resolve(PersonRecipientFinder personRecipientFinder) {
         return members.stream()
-                .flatMap(member -> member.resolve(personRepository).stream())
+                .flatMap(member -> member.resolve(personRecipientFinder).stream())
                 .distinct()
                 .toList();
     }
