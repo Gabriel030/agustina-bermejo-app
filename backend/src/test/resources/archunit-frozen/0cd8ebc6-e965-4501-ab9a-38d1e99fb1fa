@@ -2,7 +2,6 @@ com.red_escuela.backend.academicstructure.api.BusinessDayCalendar is an api inte
 com.red_escuela.backend.academicstructure.api.OfferingCurrencyLookup is an api interface not named *Port
 com.red_escuela.backend.academicstructure.api.TeachingTargetLookup is an api interface not named *Port
 com.red_escuela.backend.academicstructure.api.TermScheduleChangeValidator is an api interface not named *Port
-com.red_escuela.backend.academicstructure.api.package-info is an api interface not named *Port
 com.red_escuela.backend.billing.api.AdmissionReceiptLookup is an api interface not named *Port
 com.red_escuela.backend.billing.api.CollectionReminderApplicabilityQuery is an api interface not named *Port
 com.red_escuela.backend.billing.api.CollectionReminderEmailSettingsQuery is an api interface not named *Port
@@ -12,14 +11,12 @@ com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery is an api int
 com.red_escuela.backend.billing.api.PaymentFactsQuery is an api interface not named *Port
 com.red_escuela.backend.billing.api.ReminderPaymentGoalQuery is an api interface not named *Port
 com.red_escuela.backend.billing.api.StudentSegment is an api interface not named *Port
-com.red_escuela.backend.billing.api.package-info is an api interface not named *Port
 com.red_escuela.backend.enrollment.api.AdmissionApplicationExpiryPort has no implementation in another module
 com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup is an api interface not named *Port
 com.red_escuela.backend.enrollment.api.CourseEnrollmentApplicationCancellationPort has no implementation in another module
 com.red_escuela.backend.enrollment.api.EnrollmentNameLookup is an api interface not named *Port
 com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup is an api interface not named *Port
 com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup is an api interface not named *Port
-com.red_escuela.backend.enrollment.api.package-info is an api interface not named *Port
 com.red_escuela.backend.identity.api.EmailRecipientLookup is an api interface not named *Port
 com.red_escuela.backend.identity.api.NotificationPreferenceQuery is an api interface not named *Port
 com.red_escuela.backend.identity.api.PersonNameLookup is an api interface not named *Port
@@ -27,4 +24,3 @@ com.red_escuela.backend.identity.api.PersonRoleNamesLookup is an api interface n
 com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup is an api interface not named *Port
 com.red_escuela.backend.identity.api.StudentExistenceLookup is an api interface not named *Port
 com.red_escuela.backend.identity.api.StudentNameLookup is an api interface not named *Port
-com.red_escuela.backend.identity.api.package-info is an api interface not named *Port

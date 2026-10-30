@@ -126,6 +126,7 @@ class ModulePatternRulesTest {
                 .hasMessageContaining("UnnamedLookup is an api interface not named *Port")
                 .hasMessageContaining("OrphanPort has no implementation in another module")
                 .hasMessageContaining("SameModulePort has no implementation in another module")
-                .hasMessageNotContaining("ReleasedLookupPort");
+                .hasMessageNotContaining("ReleasedLookupPort")
+                .hasMessageNotContaining("package-info");
     }
 }
