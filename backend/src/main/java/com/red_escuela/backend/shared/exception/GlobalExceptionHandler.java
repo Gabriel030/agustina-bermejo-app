@@ -1,6 +1,5 @@
 package com.red_escuela.backend.shared.exception;
 
-import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
