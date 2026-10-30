@@ -15,6 +15,11 @@ public final class MonthlyInvoiceRunItemStateMachine {
                     .allowTransition(FAILED, RETRY_NOT_APPLICABLE, NOT_APPLICABLE)
                     .allowTransition(FAILED, RETRY_FAILED_WITH_WAIT, FAILED)
                     .allowTransition(FAILED, RETRY_FAILED_WITHOUT_WAIT, RETRIES_EXHAUSTED)
+                    .allowTransition(RETRIES_EXHAUSTED, RETRY_ISSUED, ISSUED)
+                    .allowTransition(RETRIES_EXHAUSTED, RETRY_ALREADY_ISSUED, ALREADY_ISSUED)
+                    .allowTransition(RETRIES_EXHAUSTED, RETRY_NOT_APPLICABLE, NOT_APPLICABLE)
+                    .allowTransition(RETRIES_EXHAUSTED, RETRY_FAILED_WITH_WAIT, FAILED)
+                    .allowTransition(RETRIES_EXHAUSTED, RETRY_FAILED_WITHOUT_WAIT, RETRIES_EXHAUSTED)
                     .buildTransitionTable();
 
     private MonthlyInvoiceRunItemStateMachine() {
