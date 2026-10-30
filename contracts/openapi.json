@@ -7131,6 +7131,45 @@
         } ],
         "required" : [ "rate" ]
       },
+      "ProspectResponse" : {
+        "properties" : {
+          "apellido" : {
+            "type" : "string"
+          },
+          "dni" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "onboardingStatus" : {
+            "enum" : [ "PROSPECTO", "CONFIRMADO" ],
+            "type" : "string"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "apellido", "dni", "email", "emailVerified", "id", "nombre", "onboardingStatus", "personId", "status", "username" ],
+        "type" : "object"
+      },
       "Quote" : {
         "properties" : {
           "discount" : {
@@ -32725,7 +32764,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/StudentResponse"
+                  "$ref" : "#/components/schemas/ProspectResponse"
                 }
               }
             },
@@ -32876,7 +32915,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/StudentResponse"
+                  "$ref" : "#/components/schemas/ProspectResponse"
                 }
               }
             },

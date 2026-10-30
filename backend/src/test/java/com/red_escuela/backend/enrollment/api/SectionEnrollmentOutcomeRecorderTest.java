@@ -13,7 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -131,5 +134,20 @@ class SectionEnrollmentOutcomeRecorderTest {
         assertThatThrownBy(() ->
                 recorder.recordCourseOutcome(2L, EnrollmentStatus.APPROVED, SEVEN, FinalGradeType.PROMOTION, false))
                 .isInstanceOf(SectionEnrollmentNotFoundException.class);
+    }
+
+    @Test
+    void outcomeRecordingJoinsTheCallerTransactionSoAFailureAfterwardsRollsItBack() throws Exception {
+        var attributes = new AnnotationTransactionAttributeSource();
+        for (String name : new String[] {"recordProgramOutcome", "recordCourseOutcome"}) {
+            Method method = SectionEnrollmentOutcomeRecorder.class.getMethod(
+                    name, Long.class, EnrollmentStatus.class, Grade.class, FinalGradeType.class, boolean.class);
+
+            var attribute = attributes.getTransactionAttribute(method, SectionEnrollmentOutcomeRecorder.class);
+
+            assertThat(attribute).isNotNull();
+            assertThat(attribute.getPropagationBehavior()).isEqualTo(TransactionDefinition.PROPAGATION_REQUIRED);
+            assertThat(attribute.isReadOnly()).isFalse();
+        }
     }
 }

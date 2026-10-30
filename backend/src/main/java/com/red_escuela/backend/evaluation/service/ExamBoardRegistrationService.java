@@ -4,6 +4,8 @@ import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementS
 import com.red_escuela.backend.academicstructure.entity.Term;
 import java.time.Clock;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
+import com.red_escuela.backend.enrollment.api.LateExamApprovalChecker;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
@@ -13,23 +15,18 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInAnotherExamBoardException;
 import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInExamBoardException;
-import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotWithdrawableException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
-import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.evaluation.exception.StudentNotRegularException;
 import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
-import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
-import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,27 +39,24 @@ public class ExamBoardRegistrationService {
 
     private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
     private final ExamBoardRepository examBoardRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
-    private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
+    private final SectionEnrollmentFinder sectionEnrollmentFinder;
+    private final LateExamApprovalChecker lateExamApprovalChecker;
     private final AttendanceRiskCalculator attendanceRiskCalculator;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
     public ExamBoardRegistrationService(ExamBoardRegistrationRepository examBoardRegistrationRepository,
             ExamBoardRepository examBoardRepository,
-            SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            DirectorApprovalRequestRepository directorApprovalRequestRepository,
+            SectionEnrollmentFinder sectionEnrollmentFinder,
+            LateExamApprovalChecker lateExamApprovalChecker,
             AttendanceRiskCalculator attendanceRiskCalculator,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
-        this.directorApprovalRequestRepository = directorApprovalRequestRepository;
+        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
+        this.lateExamApprovalChecker = lateExamApprovalChecker;
         this.attendanceRiskCalculator = attendanceRiskCalculator;
         this.clock = clock;
     }
@@ -77,15 +71,20 @@ public class ExamBoardRegistrationService {
     }
 
     @Transactional
+    public ExamBoardRegistration registerProgramEnrollmentOfStudent(Long studentId, Long examBoardId, Long enrollmentId) {
+        sectionEnrollmentFinder.requireProgramEnrollmentOf(enrollmentId, studentId);
+        return registerProgramEnrollment(examBoardId, enrollmentId);
+    }
+
+    @Transactional
     public ExamBoardRegistration registerProgramEnrollment(Long examBoardId, Long enrollmentId) {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
         requireScheduledExamBoard(examBoard);
 
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         requireEnrollmentFeeOfCourseTerm(enrollment);
-        if (!directorApprovalRequestRepository.hasApproved(
-                enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId(), ExceptionType.LATE_EXAM)) {
+        if (!lateExamApprovalChecker.hasApprovedLateExam(
+                enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId())) {
             requireOpenRegistrationWindow(examBoard);
         }
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
@@ -148,8 +147,7 @@ public class ExamBoardRegistrationService {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
         requireOpenExamBoard(examBoard);
 
-        CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
         }
@@ -207,7 +205,7 @@ public class ExamBoardRegistrationService {
         ExamBoardRegistration registration = examBoardRegistrationRepository.findById(registrationId)
                 .orElseThrow(() -> new ExamBoardRegistrationNotFoundException(registrationId));
         if (registration.getStatus() != ExamBoardRegistrationStatus.REGISTERED) {
-            throw new CannotWithdrawException(
+            throw new ExamBoardRegistrationNotWithdrawableException(
                     "La inscripción " + registrationId + " no está REGISTERED, no se puede dar de baja");
         }
         registration.setStatus(ExamBoardRegistrationStatus.WITHDRAWN);

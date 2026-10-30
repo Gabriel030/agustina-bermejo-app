@@ -156,4 +156,34 @@ class SectionEnrollmentFinderTest {
 
         assertThat(finder.findActiveWithStudentInCourseSection(3L)).containsExactly(enrollment);
     }
+
+    @Test
+    void findProgramEnrollmentIfPresentReturnsEmptyWhenMissing() {
+        when(programEnrollmentRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThat(finder.findProgramEnrollmentIfPresent(5L)).isEmpty();
+    }
+
+    @Test
+    void findProgramEnrollmentIfPresentReturnsTheEnrollment() {
+        SubjectSectionEnrollment enrollment = mock(SubjectSectionEnrollment.class);
+        when(programEnrollmentRepository.findById(5L)).thenReturn(Optional.of(enrollment));
+
+        assertThat(finder.findProgramEnrollmentIfPresent(5L)).containsSame(enrollment);
+    }
+
+    @Test
+    void findCourseEnrollmentIfPresentReturnsEmptyWhenMissing() {
+        when(courseEnrollmentRepository.findById(6L)).thenReturn(Optional.empty());
+
+        assertThat(finder.findCourseEnrollmentIfPresent(6L)).isEmpty();
+    }
+
+    @Test
+    void findCourseEnrollmentIfPresentReturnsTheEnrollment() {
+        CourseSubjectSectionEnrollment enrollment = mock(CourseSubjectSectionEnrollment.class);
+        when(courseEnrollmentRepository.findById(6L)).thenReturn(Optional.of(enrollment));
+
+        assertThat(finder.findCourseEnrollmentIfPresent(6L)).containsSame(enrollment);
+    }
 }
