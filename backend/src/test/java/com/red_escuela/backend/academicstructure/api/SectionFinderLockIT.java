@@ -1,8 +1,7 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
-import com.red_escuela.backend.academicstructure.api.SectionQueries;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,18 +15,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class RepositorySectionQueriesLockIT extends AbstractIntegrationTest {
+class SectionFinderLockIT extends AbstractIntegrationTest {
 
     @Autowired
-    private SectionQueries sectionQueries;
+    private SectionFinder sectionFinder;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Test
     void lockWithoutTransactionFails() {
-        assertThatThrownBy(() -> sectionQueries.lockProgramSection(-1L))
+        assertThatThrownBy(() -> sectionFinder.lockProgramSection(-1L))
                 .isInstanceOf(IllegalTransactionStateException.class);
-        assertThatThrownBy(() -> sectionQueries.lockCourseSection(-1L))
+        assertThatThrownBy(() -> sectionFinder.lockCourseSection(-1L))
                 .isInstanceOf(IllegalTransactionStateException.class);
     }
 
@@ -35,17 +34,17 @@ class RepositorySectionQueriesLockIT extends AbstractIntegrationTest {
     void lockInsideTransactionReachesTheDatabase() {
         var transaction = new TransactionTemplate(transactionManager);
 
-        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> sectionQueries.lockProgramSection(-1L)))
+        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> sectionFinder.lockProgramSection(-1L)))
                 .isInstanceOf(SectionNotFoundException.class);
-        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> sectionQueries.lockCourseSection(-1L)))
+        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> sectionFinder.lockCourseSection(-1L)))
                 .isInstanceOf(SectionNotFoundException.class);
     }
 
     @Test
     void evaluationSchemeLookupOfMissingSectionFailsForEachKind() {
-        assertThatThrownBy(() -> sectionQueries.findEvaluationSchemeId(SectionKind.PROGRAM, -1L))
+        assertThatThrownBy(() -> sectionFinder.findEvaluationSchemeId(SectionKind.PROGRAM, -1L))
                 .isInstanceOf(SectionNotFoundException.class);
-        assertThatThrownBy(() -> sectionQueries.findEvaluationSchemeId(SectionKind.COURSE, -1L))
+        assertThatThrownBy(() -> sectionFinder.findEvaluationSchemeId(SectionKind.COURSE, -1L))
                 .isInstanceOf(SectionNotFoundException.class);
     }
 }

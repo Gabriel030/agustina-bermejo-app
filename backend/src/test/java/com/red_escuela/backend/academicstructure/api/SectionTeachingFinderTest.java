@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
@@ -17,14 +17,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RepositorySectionTeachingQueriesTest {
+class SectionTeachingFinderTest {
 
     @Mock
     private SubjectSectionInstructorRepository programInstructorRepository;
     @Mock
     private CourseSubjectSectionInstructorRepository courseInstructorRepository;
     @InjectMocks
-    private RepositorySectionTeachingQueries queries;
+    private SectionTeachingFinder queries;
 
     @Test
     void teachesReturnsTrueForProgramLink() {

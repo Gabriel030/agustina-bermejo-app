@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.dto;
+package com.red_escuela.backend.academicstructure.api;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;

@@ -1,23 +1,21 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
-import com.red_escuela.backend.academicstructure.api.HolidayQueries;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-@Service
+@Component
 @Transactional(readOnly = true)
-public class RepositoryHolidayQueries implements HolidayQueries {
+public class HolidayFinder {
 
     private final HolidayRepository holidayRepository;
 
-    public RepositoryHolidayQueries(HolidayRepository holidayRepository) {
+    public HolidayFinder(HolidayRepository holidayRepository) {
         this.holidayRepository = holidayRepository;
     }
 
-    @Override
     public boolean isHoliday(LocalDate date) {
         return holidayRepository.existsByDate(date);
     }

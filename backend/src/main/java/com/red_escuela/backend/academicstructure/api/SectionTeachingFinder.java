@@ -1,28 +1,26 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
-import com.red_escuela.backend.academicstructure.api.SectionTeachingQueries;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Component
 @Transactional(readOnly = true)
-public class RepositorySectionTeachingQueries implements SectionTeachingQueries {
+public class SectionTeachingFinder {
 
     private final SubjectSectionInstructorRepository programInstructorRepository;
     private final CourseSubjectSectionInstructorRepository courseInstructorRepository;
 
-    public RepositorySectionTeachingQueries(SubjectSectionInstructorRepository programInstructorRepository,
+    public SectionTeachingFinder(SubjectSectionInstructorRepository programInstructorRepository,
                                             CourseSubjectSectionInstructorRepository courseInstructorRepository) {
         this.programInstructorRepository = programInstructorRepository;
         this.courseInstructorRepository = courseInstructorRepository;
     }
 
-    @Override
     public boolean teaches(SectionKind kind, Long sectionId, Long instructorId) {
         return switch (kind) {
             case PROGRAM -> programInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId);
@@ -30,14 +28,12 @@ public class RepositorySectionTeachingQueries implements SectionTeachingQueries 
         };
     }
 
-    @Override
     public void requireTeaches(SectionKind kind, Long sectionId, Long instructorId) {
         if (!teaches(kind, sectionId, instructorId)) {
             throw new NotOwnSectionException(instructorId, sectionId);
         }
     }
 
-    @Override
     public boolean isLead(Long programSectionId, Long instructorId) {
         return programInstructorRepository.existsBySectionIdAndInstructorIdAndRole(
                 programSectionId, instructorId, InstructorRole.LEAD);

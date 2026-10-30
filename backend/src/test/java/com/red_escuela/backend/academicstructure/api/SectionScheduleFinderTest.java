@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
@@ -17,12 +17,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RepositorySectionScheduleQueriesTest {
+class SectionScheduleFinderTest {
 
     @Mock
     private SectionScheduleSlotRepository slotRepository;
     @InjectMocks
-    private RepositorySectionScheduleQueries queries;
+    private SectionScheduleFinder queries;
 
     @Test
     void findProgramSectionSlotsMapsDayTimesAndClassroomName() {

@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -23,14 +23,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RepositorySectionQueriesTest {
+class SectionFinderTest {
 
     @Mock
     private SubjectSectionRepository programSectionRepository;
     @Mock
     private CourseSubjectSectionRepository courseSectionRepository;
     @InjectMocks
-    private RepositorySectionQueries queries;
+    private SectionFinder queries;
 
     @Test
     void findProgramSectionThrowsWhenMissing() {

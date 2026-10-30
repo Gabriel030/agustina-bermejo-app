@@ -1,11 +1,9 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
-import com.red_escuela.backend.academicstructure.dto.SectionInstructorView;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
-import com.red_escuela.backend.academicstructure.api.SectionInstructorQueries;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
@@ -14,24 +12,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
+@Component
 @Transactional(readOnly = true)
-public class RepositorySectionInstructorQueries implements SectionInstructorQueries {
+public class SectionInstructorFinder {
 
     private final SubjectSectionInstructorRepository programInstructorRepository;
 
-    public RepositorySectionInstructorQueries(SubjectSectionInstructorRepository programInstructorRepository) {
+    public SectionInstructorFinder(SubjectSectionInstructorRepository programInstructorRepository) {
         this.programInstructorRepository = programInstructorRepository;
     }
 
-    @Override
     public List<SectionInstructorView> findProgramSectionInstructors(Long programSectionId) {
         return programInstructorRepository.findBySectionId(programSectionId).stream()
                 .map(this::toView)
                 .toList();
     }
 
-    @Override
     public Map<Long, List<SectionInstructorView>> findProgramSectionInstructors(Collection<Long> programSectionIds) {
         Map<Long, List<SectionInstructorView>> instructorsBySectionId = new LinkedHashMap<>();
         programSectionIds.forEach(sectionId -> instructorsBySectionId.put(sectionId, new java.util.ArrayList<>()));
@@ -43,7 +39,6 @@ public class RepositorySectionInstructorQueries implements SectionInstructorQuer
         return instructorsBySectionId;
     }
 
-    @Override
     public Optional<Long> findProgramSectionLeadPersonId(Long programSectionId) {
         return programInstructorRepository.findBySectionId(programSectionId).stream()
                 .filter(link -> link.getRole() == InstructorRole.LEAD)
