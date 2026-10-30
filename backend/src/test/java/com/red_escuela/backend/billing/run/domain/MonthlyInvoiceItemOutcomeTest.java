@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-160")
 class MonthlyInvoiceItemOutcomeTest {
+    private static final FailedInvoiceRetrySchedule SCHEDULE = new FailedInvoiceRetrySchedule(5, List.of(1, 3, 6, 12, 24));
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 1, 4, 0);
 
     @Test
@@ -36,7 +37,7 @@ class MonthlyInvoiceItemOutcomeTest {
 
     @Test
     void aFailedItemIsScheduledForRetryOneHourLaterWithItsFirstAttempt() {
-        MonthlyInvoiceRunItem item = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 7L, MonthlyInvoiceItemOutcome.failed("E", "boom"), NOW);
+        MonthlyInvoiceRunItem item = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 7L, MonthlyInvoiceItemOutcome.failed("E", "boom"), NOW, SCHEDULE);
 
         assertThat(item.getAttempts()).isEqualTo(1);
         assertThat(item.getNextRetryAt()).isEqualTo(NOW.plusHours(1));
@@ -44,7 +45,7 @@ class MonthlyInvoiceItemOutcomeTest {
 
     @Test
     void anIssuedItemHasNoAttemptsNorRetry() {
-        MonthlyInvoiceRunItem item = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.COURSE, 7L, MonthlyInvoiceItemOutcome.issued(List.of(10L)), NOW);
+        MonthlyInvoiceRunItem item = MonthlyInvoiceRunItem.recordItemOutcome(1L, MonthlyInvoiceEnrollmentType.COURSE, 7L, MonthlyInvoiceItemOutcome.issued(List.of(10L)), NOW, SCHEDULE);
 
         assertThat(item.getAttempts()).isZero();
         assertThat(item.getNextRetryAt()).isNull();

@@ -57,7 +57,7 @@ function creditBalance(available = '0.00') {
 function renderPage(route = '/', receipts = [pendingReceipt]) {
   server.use(
     http.get(`${API}/students`, () =>
-      HttpResponse.json([{ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }]),
+      HttpResponse.json([{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO' }]),
     ),
     http.get(`${API}/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
     http.get(`${API}/students/2/payments`, () => HttpResponse.json([])),

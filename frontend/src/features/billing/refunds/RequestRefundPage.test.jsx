@@ -252,7 +252,7 @@ describe('RequestRefundPage', () => {
 
   it('shows the destination error returned by the backend next to the field', async () => {
     server.use(
-      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code: 'REFUND_DESTINATION_INVALID' }, { status: 400 })),
+      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code: 'REFUND_DESTINATION_INVALID', violations: [] }, { status: 400 })),
     );
     const user = userEvent.setup();
     renderPage();
@@ -269,7 +269,7 @@ describe('RequestRefundPage', () => {
     ['REFUND_EXCEEDS_AVAILABLE_AMOUNT', /supera lo que se puede devolver ahora/],
     ['REFUND_AMOUNT_INVALID', /mayor a cero/],
   ])('shows the %s conflict on the amount field and keeps the form', async (code, message) => {
-    server.use(http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code }, { status: 409 })));
+    server.use(http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code, violations: [] }, { status: 409 })));
     const user = userEvent.setup();
     renderPage();
     await screen.findByLabelText('Monto');
@@ -282,7 +282,7 @@ describe('RequestRefundPage', () => {
 
   it('reports other errors in a toast', async () => {
     server.use(
-      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code: 'REFUND_BLOCKED_BY_OVERDUE_DEBT' }, { status: 409 })),
+      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code: 'REFUND_BLOCKED_BY_OVERDUE_DEBT', violations: [] }, { status: 409 })),
     );
     const user = userEvent.setup();
     renderPage();

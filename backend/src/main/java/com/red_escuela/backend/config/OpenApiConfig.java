@@ -43,6 +43,7 @@ public class OpenApiConfig {
             "BillingRunStepResponse", List.of("step"),
             "BillingRunItemResponse", List.of("subjectType"),
             "BillingRunAlertResponse", List.of("type"),
+            "MonthlyInvoiceRunItemResponse", List.of("result"),
             "MonthlyInvoiceSimulationResponse", List.of("status", "trigger"),
             "MonthlyInvoiceSimulationLineResponse", List.of("enrollmentType", "result"),
             "MonthlyInvoiceSimulationAlertResponse", List.of("alertType", "enrollmentType"));
