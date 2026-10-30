@@ -815,7 +815,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): —
 - Eventos que publica: AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación APPROVE_BANK_TRANSFER_RECEIPT_PAYMENT
 
@@ -824,7 +824,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación APPROVE_PENDING_BANK_TRANSFER_PAYMENT
 
@@ -833,7 +833,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación CANCEL_CONFIGURATION_VERSION
 
@@ -927,7 +927,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: CreditNoteIssuedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación ISSUE_INVOICE
 
@@ -935,7 +935,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): InvoiceDiscountEnrichmentHandler
 - Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
 - Post-procesamiento de InvoiceIssuedDomainEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE
 
@@ -968,7 +968,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de PaymentChargedBackEvent: PaymentChargedBackNotificationListener#notifyAdministration
 - Post-procesamiento de PaymentAllocationReversedEvent: LateFeeOnPaymentAllocationReversedListener#reconcileLateFeesOfInvoiceWithReversedPayment
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REGISTER_GATEWAY_PAYMENT
 
@@ -979,7 +979,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de GatewayPaymentArrivedWithGatewayDisabledEvent: GatewayPaymentArrivedWithGatewayDisabledNotificationListener#notifySecretariat
 - Post-procesamiento de PaymentLeftAsAccountCreditEvent: PaymentLeftAsAccountCreditNotificationListener#notifySecretariat, PaymentLeftAsAccountCreditNotificationListener#notifyStudent
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REGISTER_PAYMENT
 
@@ -988,7 +988,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REJECT_PENDING_BANK_TRANSFER_PAYMENT
 
@@ -1009,7 +1009,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: ChargebackReversedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de ChargebackReversedEvent: —
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REVOKE_BANK_TRANSFER_APPROVAL
 
@@ -1019,7 +1019,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de BankTransferApprovalRevokedEvent: —
 - Post-procesamiento de PaymentAllocationReversedEvent: LateFeeOnPaymentAllocationReversedListener#reconcileLateFeesOfInvoiceWithReversedPayment
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REVOKE_STUDENT_DISCOUNT
 

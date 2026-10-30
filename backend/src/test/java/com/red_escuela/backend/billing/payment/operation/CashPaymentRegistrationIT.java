@@ -15,8 +15,6 @@ import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
-import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
-import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -799,21 +797,26 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, enrollmentId, EnrollmentPaymentStatus.SUSPENDED);
 
         MvcResult first = registerArs(debtor.studentId(), "key-lift-first", "80000.00", null, null, administrative);
+        awaitEventsDrained();
 
         assertThat(first.getResponse().getStatus()).isEqualTo(201);
         assertThat(statusOfInvoice(march)).isEqualTo("PAID");
         assertThat(statusOfInvoice(april)).isEqualTo("OVERDUE");
         assertThat(jdbc.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollmentId)).isEqualTo("SUSPENDED");
-        assertThat(applicationEvents.stream(SuspensionLiftedEvent.class).count()).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from enrollment_payment_status_change c join enrollment_payment_standing s on s.id = c.standing_id where s.program_enrollment_id = ? and c.event = 'ACCOUNT_SETTLED'", Long.class, enrollmentId)).isZero();
 
         MvcResult second = registerArs(debtor.studentId(), "key-lift-second", "80000.00", null, null, administrative);
+        awaitEventsDrained();
 
         assertThat(second.getResponse().getStatus()).isEqualTo(201);
         assertThat(statusOfInvoice(april)).isEqualTo("PAID");
         assertThat(jdbc.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollmentId)).isEqualTo("UP_TO_DATE");
-        assertThat(applicationEvents.stream(SuspensionLiftedEvent.class).count()).isEqualTo(1);
-        assertThat(applicationEvents.stream(EnrollmentSuspensionLiftedEvent.class)
-                .filter(event -> event.enrollmentId().equals(enrollmentId)).count()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from enrollment_payment_status_change c join enrollment_payment_standing s on s.id = c.standing_id where s.program_enrollment_id = ? and c.event = 'ACCOUNT_SETTLED'", Long.class, enrollmentId)).isEqualTo(1L);
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    private void awaitEventsDrained() {
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(25))
+                .until(() -> jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Long.class) == 0L);
     }
 }

@@ -141,7 +141,14 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     }
 
     private Long payInvoiceByBankTransfer(Invoice invoice, Person admin) {
-        return BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), admin.getId());
+        Long paymentId = BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), admin.getId());
+        awaitEventsDrained();
+        return paymentId;
+    }
+
+    private void awaitEventsDrained() {
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(25))
+                .until(() -> jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Long.class) == 0L);
     }
 
     @Test

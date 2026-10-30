@@ -26,7 +26,7 @@ public class EnrollmentMonthCloseFactsLoader {
 
     public MonthCloseFacts loadFactsAtCutoff(EnrollmentKind kind, Long enrollmentId, LocalDate cutoff) {
         Map<LocalDate, Integer> graceByDueDate = new HashMap<>();
-        List<InstallmentDueDate> overdueAtCutoff = factsQuery.findMonthlyInstallmentsUnpaidAtCutoff(kind, enrollmentId, cutoff).stream()
+        List<InstallmentDueDate> overdueAtCutoff = factsQuery.findMonthlyInstallmentsUnpaidAndUnprotectedAtCutoff(kind, enrollmentId, cutoff).stream()
                 .filter(installment -> cutoff.isAfter(installment.dueDate().plusDays(graceByDueDate.computeIfAbsent(installment.dueDate(), this::graceDaysOf))))
                 .toList();
         LocalDate oldest = overdueAtCutoff.stream().map(InstallmentDueDate::dueDate).min(LocalDate::compareTo).orElse(null);
