@@ -1,13 +1,11 @@
 package com.red_escuela.backend.evaluation.service;
 
-import com.red_escuela.backend.academicstructure.domain.InstructorRole;
-import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.api.SectionInstructorFinder;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigReminderEvent;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
@@ -29,15 +27,15 @@ public class SectionEvaluationConfigReminderJob {
     private static final List<Integer> REMINDER_DAYS_BEFORE = List.of(10, 5);
 
     private final SectionEvaluationConfigRepository configRepository;
-    private final SubjectSectionInstructorRepository sectionInstructorRepository;
+    private final SectionInstructorFinder sectionInstructorFinder;
     private final ApplicationEventPublisher eventPublisher;
 
     public SectionEvaluationConfigReminderJob(
             SectionEvaluationConfigRepository configRepository,
-            SubjectSectionInstructorRepository sectionInstructorRepository,
+            SectionInstructorFinder sectionInstructorFinder,
             ApplicationEventPublisher eventPublisher) {
         this.configRepository = configRepository;
-        this.sectionInstructorRepository = sectionInstructorRepository;
+        this.sectionInstructorFinder = sectionInstructorFinder;
         this.eventPublisher = eventPublisher;
     }
 
@@ -61,7 +59,7 @@ public class SectionEvaluationConfigReminderJob {
             }
             long daysToEnrollmentStart = ChronoUnit.DAYS.between(today, term.getEnrollmentStart().toLocalDate());
             if (REMINDER_DAYS_BEFORE.contains((int) daysToEnrollmentStart)) {
-                Optional<Person> lead = leadInstructorPerson(config);
+                Optional<Long> lead = leadInstructorPersonId(config);
                 if (lead.isPresent()) {
                     eventPublisher.publishEvent(
                             SectionEvaluationConfigReminderEvent.reminderFor(config, lead.get(), (int) daysToEnrollmentStart));
@@ -73,10 +71,7 @@ public class SectionEvaluationConfigReminderJob {
                 pending.size(), sent, System.currentTimeMillis() - start);
     }
 
-    private Optional<Person> leadInstructorPerson(SectionEvaluationConfig config) {
-        return sectionInstructorRepository.findBySectionId(config.getSubjectSection().getId()).stream()
-                .filter(instructor -> instructor.getRole() == InstructorRole.LEAD)
-                .findFirst()
-                .map(instructor -> instructor.getInstructor().getPerson());
+    private Optional<Long> leadInstructorPersonId(SectionEvaluationConfig config) {
+        return sectionInstructorFinder.findProgramSectionLeadPersonId(config.getSubjectSection().getId());
     }
 }

@@ -5,34 +5,23 @@ import com.red_escuela.backend.shared.domain.Grade;
 import java.math.BigDecimal;
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryResponse;
-import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
-import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
-import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
+import com.red_escuela.backend.academicstructure.api.HolidayFinder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
 import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
@@ -44,33 +33,24 @@ public class ExamBoardService {
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
-    private final SubjectRepository subjectRepository;
-    private final CourseSubjectRepository courseSubjectRepository;
-    private final TermRepository termRepository;
-    private final InstructorRepository instructorRepository;
-    private final HolidayRepository holidayRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
+    private final HolidayFinder holidayFinder;
     private final GradeItemRepository gradeItemRepository;
     private final Clock clock;
 
     public ExamBoardService(ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
             ExamBoardRegistrationRepository examBoardRegistrationRepository,
-            SubjectRepository subjectRepository,
-            CourseSubjectRepository courseSubjectRepository,
-            TermRepository termRepository,
-            InstructorRepository instructorRepository,
-            HolidayRepository holidayRepository,
+            AcademicReferenceFinder academicReferenceFinder,
+            HolidayFinder holidayFinder,
             GradeItemRepository gradeItemRepository,
             Clock clock) {
-        this.holidayRepository = holidayRepository;
+        this.holidayFinder = holidayFinder;
         this.gradeItemRepository = gradeItemRepository;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
-        this.subjectRepository = subjectRepository;
-        this.courseSubjectRepository = courseSubjectRepository;
-        this.termRepository = termRepository;
-        this.instructorRepository = instructorRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
         this.clock = clock;
     }
 
@@ -82,21 +62,16 @@ public class ExamBoardService {
             throw new IllegalArgumentException(
                     "La mesa de examen tiene que referenciar exactamente una materia: subjectId O courseSubjectId");
         }
-        Term term = termRepository.findById(request.termId())
-                .orElseThrow(() -> new TermNotFoundException(request.termId()));
-        if (holidayRepository.existsByDate(request.examDate().toLocalDate())) {
+        var term = academicReferenceFinder.findTerm(request.termId());
+        if (holidayFinder.isHoliday(request.examDate().toLocalDate())) {
             throw new ExamDateOnHolidayException(request.examDate().toLocalDate());
         }
 
         ExamBoard examBoard = new ExamBoard();
         if (hasSubject) {
-            Subject subject = subjectRepository.findById(request.subjectId())
-                    .orElseThrow(() -> new SubjectNotFoundException(request.subjectId()));
-            examBoard.setSubject(subject);
+            examBoard.setSubject(academicReferenceFinder.findSubject(request.subjectId()));
         } else {
-            CourseSubject courseSubject = courseSubjectRepository.findById(request.courseSubjectId())
-                    .orElseThrow(() -> new CourseSubjectNotFoundException(request.courseSubjectId()));
-            examBoard.setCourseSubject(courseSubject);
+            examBoard.setCourseSubject(academicReferenceFinder.findCourseSubject(request.courseSubjectId()));
         }
         examBoard.setTerm(term);
         examBoard.setExamDate(request.examDate());
@@ -114,8 +89,7 @@ public class ExamBoardService {
     @Transactional
     public void assignTribunal(Long examBoardId, Long instructorId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
-        Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new InstructorNotFoundException(instructorId));
+        var instructor = academicReferenceFinder.findInstructor(instructorId);
         if (examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
             return;
         }

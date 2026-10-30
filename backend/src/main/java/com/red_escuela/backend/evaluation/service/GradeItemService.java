@@ -19,12 +19,12 @@ import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,8 +46,7 @@ public class GradeItemService {
     private final GradeItemRepository gradeItemRepository;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
-    private final SubjectSectionInstructorRepository subjectSectionInstructorRepository;
-    private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
+    private final SectionTeachingFinder sectionTeachingFinder;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
@@ -58,8 +57,7 @@ public class GradeItemService {
             GradeItemRepository gradeItemRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            SubjectSectionInstructorRepository subjectSectionInstructorRepository,
-            CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
+            SectionTeachingFinder sectionTeachingFinder,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
             GraduationRequestAutoRequester graduationRequestAutoRequester,
@@ -68,8 +66,7 @@ public class GradeItemService {
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
-        this.subjectSectionInstructorRepository = subjectSectionInstructorRepository;
-        this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
+        this.sectionTeachingFinder = sectionTeachingFinder;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.graduationRequestAutoRequester = graduationRequestAutoRequester;
@@ -87,8 +84,8 @@ public class GradeItemService {
         }
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
-                () -> subjectSectionInstructorRepository
-                        .existsBySectionIdAndInstructorId(enrollment.getSubjectSection().getId(), instructorId),
+                () -> sectionTeachingFinder
+                        .teaches(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
 
         GradeItem gradeItem = gradeItemRepository
@@ -155,8 +152,8 @@ public class GradeItemService {
         }
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
-                () -> courseSubjectSectionInstructorRepository
-                        .existsBySectionIdAndInstructorId(enrollment.getCourseSubjectSection().getId(), instructorId),
+                () -> sectionTeachingFinder
+                        .teaches(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
 
         GradeItem gradeItem = gradeItemRepository
