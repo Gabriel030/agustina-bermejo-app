@@ -1,7 +1,7 @@
 package com.red_escuela.backend.announcement.service;
 
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.announcement.entity.SectionType;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -22,26 +22,21 @@ public class SectionMembership {
             EnrollmentStatus.APPROVED,
             EnrollmentStatus.FAILED);
 
-    private final SubjectSectionInstructorRepository subjectSectionInstructorRepository;
-    private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
+    private final SectionTeachingFinder sectionTeachingFinder;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
 
-    public SectionMembership(SubjectSectionInstructorRepository subjectSectionInstructorRepository,
-                             CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
+    public SectionMembership(SectionTeachingFinder sectionTeachingFinder,
                              SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
                              CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
-        this.subjectSectionInstructorRepository = subjectSectionInstructorRepository;
-        this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
+        this.sectionTeachingFinder = sectionTeachingFinder;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
     }
 
     public void requireInstructorOf(SectionType type, Long sectionId, Long instructorId) {
-        boolean teaches = type == SectionType.PROGRAM
-                ? subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)
-                : courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId);
-        if (!teaches) {
+        SectionKind kind = type == SectionType.PROGRAM ? SectionKind.PROGRAM : SectionKind.COURSE;
+        if (!sectionTeachingFinder.teaches(kind, sectionId, instructorId)) {
             throw new NotSectionInstructorException(sectionId);
         }
     }
