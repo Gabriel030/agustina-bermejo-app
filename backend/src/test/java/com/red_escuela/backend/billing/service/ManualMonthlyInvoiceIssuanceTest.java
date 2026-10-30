@@ -197,6 +197,7 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
+    @Tag("D-509")
     void aManualIssuanceLongAfterTheDueDaysFromTheFirstDayHavePassedKeepsEveryDueDateOnOrAfterTheIssueDate() {
         Long enrollment = enrollmentWithFiveDueDays();
         today(date(2026, 4, 10));
@@ -225,6 +226,7 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
+    @Tag("D-509")
     void aFailedItemRetriedAfterTheDueDaysFromTheFirstDayHavePassedIssuesWithTheDueDateCountedFromTheRetryDay() {
         Long enrollment = enrollmentWithFiveDueDays();
         today(date(2026, 4, 12));
