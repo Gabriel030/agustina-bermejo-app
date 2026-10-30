@@ -20,7 +20,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceTestData;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
-import com.red_escuela.backend.config.LocalSeedRunner;
+import com.red_escuela.backend.identity.service.LocalSeedRunner;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;

@@ -13,7 +13,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceLineDraft;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
-import com.red_escuela.backend.config.LocalSeedRunner;
+import com.red_escuela.backend.identity.service.LocalSeedRunner;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;

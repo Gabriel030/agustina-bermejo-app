@@ -1,8 +1,7 @@
 package com.red_escuela.backend.config;
-import com.red_escuela.backend.identity.infrastructure.JwtService;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
+import com.red_escuela.backend.identity.api.AccessTokenVerifier;
+import com.red_escuela.backend.identity.api.AuthenticatedPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,10 +22,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final JwtService jwtService;
+    private final AccessTokenVerifier accessTokenVerifier;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
+    public JwtAuthenticationFilter(AccessTokenVerifier accessTokenVerifier) {
+        this.accessTokenVerifier = accessTokenVerifier;
     }
 
     @Override
@@ -38,23 +37,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (header != null && header.startsWith(BEARER_PREFIX)) {
             String token = header.substring(BEARER_PREFIX.length());
-            try {
-                Claims claims = jwtService.validateAndParse(token);
-                SecurityContextHolder.getContext().setAuthentication(buildAuthentication(claims));
-            } catch (JwtException e) {
-                SecurityContextHolder.clearContext();
-            }
+            accessTokenVerifier.verify(token).ifPresentOrElse(
+                    principal -> SecurityContextHolder.getContext().setAuthentication(buildAuthentication(principal)),
+                    SecurityContextHolder::clearContext);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private UsernamePasswordAuthenticationToken buildAuthentication(Claims claims) {
-        List<String> roles = claims.get("roles", List.class);
-        List<GrantedAuthority> authorities = roles == null
-                ? List.of()
-                : roles.stream().<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList();
+    private UsernamePasswordAuthenticationToken buildAuthentication(AuthenticatedPrincipal principal) {
+        List<GrantedAuthority> authorities = principal.roles().stream()
+                .<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .toList();
 
-        return new UsernamePasswordAuthenticationToken(claims.getSubject(), null, authorities);
+        return new UsernamePasswordAuthenticationToken(principal.personId(), null, authorities);
     }
 }

@@ -1,8 +1,7 @@
-package com.red_escuela.backend.config;
+package com.red_escuela.backend.identity.service;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
-import com.red_escuela.backend.identity.service.PersonFactory;
 
 import com.red_escuela.backend.identity.entity.Person;
 import org.slf4j.Logger;
