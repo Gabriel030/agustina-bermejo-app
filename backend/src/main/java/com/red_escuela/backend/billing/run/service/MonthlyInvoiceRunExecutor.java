@@ -126,7 +126,7 @@ public class MonthlyInvoiceRunExecutor {
             run.abortMonthlyRun("SWEEP_ABORTED", LocalDateTime.now(clock));
             return runRepository.save(run);
         }
-        int failed = counters.getOrDefault(MonthlyInvoiceRunItemResult.FAILED, 0);
+        int failed = counters.getOrDefault(MonthlyInvoiceRunItemResult.FAILED, 0) + counters.getOrDefault(MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED, 0);
         run.finishMonthlyRun(failed == 0 ? MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN : MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_FAILURES, LocalDateTime.now(clock));
         MonthlyInvoiceRun finished = runRepository.save(run);
         log.info("Corrida mensual finalizada: periodo={}, estado={}, emitidas={}, noCorresponde={}, yaEmitidas={}, fallidas={}", period, finished.getStatus(),

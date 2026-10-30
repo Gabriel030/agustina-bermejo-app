@@ -42,7 +42,8 @@ public class OpenApiConfig {
     private static final Map<String, List<String>> EXTENSIBLE_RESPONSE_ENUMS = Map.of(
             "BillingRunStepResponse", List.of("step"),
             "BillingRunItemResponse", List.of("subjectType"),
-            "BillingRunAlertResponse", List.of("type"));
+            "BillingRunAlertResponse", List.of("type"),
+            "MonthlyInvoiceRunItemResponse", List.of("result"));
 
     @Bean
     public OpenApiCustomizer extensibleResponseEnumsCustomizer() {

@@ -1,8 +1,12 @@
 package com.red_escuela.backend.billing.run.service;
 
+import com.red_escuela.backend.billing.run.domain.FailedInvoiceRetrySchedule;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceItemOutcome;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemAttempt;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
+import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemAttemptRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemRepository;
 import com.red_escuela.backend.billing.service.MonthlyInstallmentRowProcessor;
 import com.red_escuela.backend.billing.service.MonthlyInstallmentRowProcessor.MonthlyIssuanceReport;
@@ -21,22 +25,34 @@ public class MonthlyInvoiceRunItemProcessor {
 
     private final MonthlyInstallmentRowProcessor rowProcessor;
     private final MonthlyInvoiceRunItemRepository itemRepository;
+    private final MonthlyInvoiceRunItemAttemptRepository attemptRepository;
+    private final FailedInvoiceRetryScheduleResolver scheduleResolver;
+    private final BillingRunAlertPublisher alertPublisher;
     private final Clock clock;
 
-    public MonthlyInvoiceRunItemProcessor(MonthlyInstallmentRowProcessor rowProcessor, MonthlyInvoiceRunItemRepository itemRepository, Clock clock) {
+    public MonthlyInvoiceRunItemProcessor(MonthlyInstallmentRowProcessor rowProcessor, MonthlyInvoiceRunItemRepository itemRepository,
+                                          MonthlyInvoiceRunItemAttemptRepository attemptRepository, FailedInvoiceRetryScheduleResolver scheduleResolver,
+                                          BillingRunAlertPublisher alertPublisher, Clock clock) {
         this.rowProcessor = rowProcessor;
         this.itemRepository = itemRepository;
+        this.attemptRepository = attemptRepository;
+        this.scheduleResolver = scheduleResolver;
+        this.alertPublisher = alertPublisher;
         this.clock = clock;
     }
 
     public MonthlyInvoiceRunItem issueAndRecordItem(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
-        MonthlyInvoiceItemOutcome outcome = issueEnrollmentMonth(type, enrollmentId, period, pricingDate);
+        MonthlyInvoiceItemOutcome outcome = attemptEnrollmentMonthIssuance(type, enrollmentId, period, pricingDate);
         return persistItemIsolatingFailure(runId, type, enrollmentId, outcome);
     }
 
     private MonthlyInvoiceRunItem persistItemIsolatingFailure(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, MonthlyInvoiceItemOutcome outcome) {
         try {
-            return itemRepository.save(MonthlyInvoiceRunItem.recordItemOutcome(runId, type, enrollmentId, outcome, LocalDateTime.now(clock)));
+            LocalDateTime recordedAt = LocalDateTime.now(clock);
+            FailedInvoiceRetrySchedule schedule = scheduleResolver.resolveScheduleEffectiveOn(recordedAt.toLocalDate());
+            MonthlyInvoiceRunItem item = itemRepository.save(MonthlyInvoiceRunItem.recordItemOutcome(runId, type, enrollmentId, outcome, recordedAt, schedule));
+            recordFirstFailedAttempt(item, outcome, recordedAt);
+            return item;
         } catch (RuntimeException e) {
             log.error("Falló el registro del ítem de la corrida mensual: corrida={}, tipo={}, id={}", runId, type, enrollmentId, e);
             return recordPersistenceFailure(runId, type, enrollmentId, e);
@@ -45,7 +61,8 @@ public class MonthlyInvoiceRunItemProcessor {
 
     private MonthlyInvoiceRunItem recordPersistenceFailure(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, RuntimeException cause) {
         MonthlyInvoiceRunItem failed = MonthlyInvoiceRunItem.recordItemOutcome(runId, type, enrollmentId,
-                MonthlyInvoiceItemOutcome.failed(cause.getClass().getSimpleName(), cause.getMessage()), LocalDateTime.now(clock));
+                MonthlyInvoiceItemOutcome.failed(cause.getClass().getSimpleName(), cause.getMessage()), LocalDateTime.now(clock),
+                scheduleResolver.resolveScheduleEffectiveOn(LocalDate.now(clock)));
         try {
             return itemRepository.save(failed);
         } catch (RuntimeException e) {
@@ -54,7 +71,16 @@ public class MonthlyInvoiceRunItemProcessor {
         }
     }
 
-    private MonthlyInvoiceItemOutcome issueEnrollmentMonth(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
+    private void recordFirstFailedAttempt(MonthlyInvoiceRunItem item, MonthlyInvoiceItemOutcome outcome, LocalDateTime recordedAt) {
+        if (outcome.result() == MonthlyInvoiceRunItemResult.FAILED) {
+            attemptRepository.save(MonthlyInvoiceRunItemAttempt.recordAttempt(item.getId(), item.getAttempts(), recordedAt, outcome));
+            if (item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED) {
+                alertPublisher.publishItemRetriesExhaustedAlert(item);
+            }
+        }
+    }
+
+    public MonthlyInvoiceItemOutcome attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
         try {
             MonthlyIssuanceReport report = switch (type) {
                 case PROGRAM -> rowProcessor.reportProgramEnrollmentIssuance(enrollmentId, period, pricingDate);

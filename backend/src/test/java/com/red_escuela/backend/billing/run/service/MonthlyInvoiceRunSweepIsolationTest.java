@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.service;
 
+import com.red_escuela.backend.billing.run.domain.FailedInvoiceRetrySchedule;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceItemOutcome;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
@@ -8,6 +9,7 @@ import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunStatus;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
 import com.red_escuela.backend.billing.run.policy.NightlyBillingCompletedTodayContext;
+import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemAttemptRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
 import com.red_escuela.backend.billing.run.repository.NightlyBillingRunRepository;
@@ -68,11 +70,17 @@ class MonthlyInvoiceRunSweepIsolationTest {
         when(candidateFinder.findCourseEnrollmentIdsAfter(any(), anyLong())).thenReturn(List.of());
     }
 
+    private static FailedInvoiceRetryScheduleResolver defaultScheduleResolver() {
+        FailedInvoiceRetryScheduleResolver resolver = mock(FailedInvoiceRetryScheduleResolver.class);
+        when(resolver.resolveScheduleEffectiveOn(any())).thenReturn(new FailedInvoiceRetrySchedule(5, List.of(1, 3, 6, 12, 24)));
+        return resolver;
+    }
+
     private static MonthlyInvoiceRunItem itemWith(MonthlyInvoiceEnrollmentType type, Long enrollmentId, MonthlyInvoiceRunItemResult result) {
         MonthlyInvoiceItemOutcome outcome = result == MonthlyInvoiceRunItemResult.FAILED
                 ? MonthlyInvoiceItemOutcome.failed("Boom", "boom")
                 : MonthlyInvoiceItemOutcome.issued(List.of(1L));
-        return MonthlyInvoiceRunItem.recordItemOutcome(1L, type, enrollmentId, outcome, LocalDateTime.of(2026, 4, 1, 7, 0));
+        return MonthlyInvoiceRunItem.recordItemOutcome(1L, type, enrollmentId, outcome, LocalDateTime.of(2026, 4, 1, 7, 0), new FailedInvoiceRetrySchedule(5, List.of(1, 3, 6, 12, 24)));
     }
 
     @Test
@@ -110,6 +118,46 @@ class MonthlyInvoiceRunSweepIsolationTest {
 
     @Test
     @Tag("D-160")
+    void aFirstFailureWithZeroConfiguredRetriesIsExhaustedAndAlertsOnceWhileAnIssuedItemDoesNot() {
+        MonthlyInvoiceRunItemRepository itemRepository = mock(MonthlyInvoiceRunItemRepository.class);
+        MonthlyInstallmentRowProcessor rowProcessor = mock(MonthlyInstallmentRowProcessor.class);
+        when(rowProcessor.reportProgramEnrollmentIssuance(eq(4L), any(), any())).thenThrow(new IllegalStateException("boom"));
+        when(rowProcessor.reportProgramEnrollmentIssuance(eq(5L), any(), any()))
+                .thenReturn(new MonthlyInstallmentRowProcessor.MonthlyIssuanceReport(List.of(9L), List.of(), List.of()));
+        when(itemRepository.save(any(MonthlyInvoiceRunItem.class))).thenAnswer(invocation -> {
+            MonthlyInvoiceRunItem saved = invocation.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(saved, "id", 100L);
+            return saved;
+        });
+        FailedInvoiceRetryScheduleResolver noRetries = mock(FailedInvoiceRetryScheduleResolver.class);
+        when(noRetries.resolveScheduleEffectiveOn(any())).thenReturn(FailedInvoiceRetrySchedule.withoutRetries());
+        BillingRunAlertPublisher alertPublisher = mock(BillingRunAlertPublisher.class);
+        MonthlyInvoiceRunItemProcessor processor = new MonthlyInvoiceRunItemProcessor(rowProcessor, itemRepository, mock(MonthlyInvoiceRunItemAttemptRepository.class),
+                noRetries, alertPublisher, clock);
+
+        MonthlyInvoiceRunItem exhausted = processor.issueAndRecordItem(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 4L, APRIL, FIRST);
+        processor.issueAndRecordItem(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 5L, APRIL, FIRST);
+
+        assertThat(exhausted.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED);
+        verify(alertPublisher, times(1)).publishItemRetriesExhaustedAlert(any());
+    }
+
+    @Test
+    @Tag("D-160")
+    void anItemExhaustedAtItsFirstFailureAlsoLeavesTheRunCompletedWithFailures() {
+        when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(1L));
+        when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(1L), anyBoolean())).thenReturn(List.of());
+        when(itemProcessor.issueAndRecordItem(any(), any(), anyLong(), any(), any())).thenReturn(MonthlyInvoiceRunItem.recordItemOutcome(1L,
+                MonthlyInvoiceEnrollmentType.PROGRAM, 1L, MonthlyInvoiceItemOutcome.failed("Boom", "boom"), LocalDateTime.of(2026, 4, 1, 7, 0),
+                FailedInvoiceRetrySchedule.withoutRetries()));
+
+        MonthlyInvoiceRun run = executor.runMonthlyInvoicesOfPeriod(APRIL, FIRST, MonthlyInvoiceRunTrigger.SCHEDULED).orElseThrow();
+
+        assertThat(run.getStatus()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED_WITH_FAILURES);
+    }
+
+    @Test
+    @Tag("D-160")
     void aFailedEnrollmentDoesNotStopTheFollowingOnesAndTheRunFinishesWithFailures() {
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(1L, 2L, 3L));
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(3L), anyBoolean())).thenReturn(List.of());
@@ -134,7 +182,8 @@ class MonthlyInvoiceRunSweepIsolationTest {
         when(itemRepository.save(any(MonthlyInvoiceRunItem.class)))
                 .thenThrow(new IllegalStateException("duplicate item"))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        MonthlyInvoiceRunItemProcessor processor = new MonthlyInvoiceRunItemProcessor(rowProcessor, itemRepository, clock);
+        MonthlyInvoiceRunItemProcessor processor = new MonthlyInvoiceRunItemProcessor(rowProcessor, itemRepository, mock(MonthlyInvoiceRunItemAttemptRepository.class), defaultScheduleResolver(),
+                mock(BillingRunAlertPublisher.class), clock);
 
         MonthlyInvoiceRunItem item = processor.issueAndRecordItem(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 4L, APRIL, FIRST);
 
@@ -154,7 +203,8 @@ class MonthlyInvoiceRunSweepIsolationTest {
         when(rowProcessor.reportCourseEnrollmentIssuance(anyLong(), any(), any()))
                 .thenReturn(new MonthlyInstallmentRowProcessor.MonthlyIssuanceReport(List.of(), List.of(), List.of()));
         doThrow(new IllegalStateException("database down")).when(itemRepository).save(any(MonthlyInvoiceRunItem.class));
-        MonthlyInvoiceRunItemProcessor processor = new MonthlyInvoiceRunItemProcessor(rowProcessor, itemRepository, clock);
+        MonthlyInvoiceRunItemProcessor processor = new MonthlyInvoiceRunItemProcessor(rowProcessor, itemRepository, mock(MonthlyInvoiceRunItemAttemptRepository.class), defaultScheduleResolver(),
+                mock(BillingRunAlertPublisher.class), clock);
 
         MonthlyInvoiceRunItem item = processor.issueAndRecordItem(1L, MonthlyInvoiceEnrollmentType.COURSE, 4L, APRIL, FIRST);
 
