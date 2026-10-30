@@ -18,6 +18,8 @@ import java.util.List;
 
 public interface MonthlyInvoiceRunRepository extends JpaRepository<MonthlyInvoiceRun, Long> {
 
+    boolean existsByPeriodAndModeAndStatusNot(LocalDate period, com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode mode, MonthlyInvoiceRunStatus status);
+
     Page<MonthlyInvoiceRun> findByPeriod(LocalDate period, Pageable page);
 
     List<MonthlyInvoiceRun> findByPeriodOrderByIdAsc(LocalDate period);

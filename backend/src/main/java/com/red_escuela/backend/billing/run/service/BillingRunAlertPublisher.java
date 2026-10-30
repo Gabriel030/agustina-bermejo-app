@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.run.service;
 
 import com.red_escuela.backend.billing.events.MonthlyInvoiceItemRetriesExhaustedEvent;
+import com.red_escuela.backend.billing.events.MonthlyInvoiceRunMissedEvent;
 import com.red_escuela.backend.billing.events.NightlyBillingRunCompletedWithErrorsEvent;
 import com.red_escuela.backend.billing.events.NightlyBillingRunFailedEvent;
 import com.red_escuela.backend.billing.events.NightlyBillingRunMissedEvent;
@@ -18,6 +19,7 @@ public class BillingRunAlertPublisher {
     static final String FAILED_ALERT = "BillingRunAlertPublisher.publishRunFailedAlert";
     static final String MISSED_ALERT = "BillingRunAlertPublisher.publishRunMissedAlert";
     static final String WITH_ERRORS_ALERT = "BillingRunAlertPublisher.publishRunCompletedWithErrorsAlert";
+    static final String MONTHLY_RUN_MISSED_ALERT = "BillingRunAlertPublisher.publishMonthlyRunMissedAlert";
     static final String RETRIES_EXHAUSTED_ALERT = "BillingRunAlertPublisher.publishItemRetriesExhaustedAlert";
 
     private final ApplicationEventPublisher eventPublisher;
@@ -36,6 +38,11 @@ public class BillingRunAlertPublisher {
     @Transactional
     public void publishRunMissedAlert(LocalDate businessDate) {
         publishOnce(NightlyBillingRunMissedEvent.missedOn(businessDate), MISSED_ALERT);
+    }
+
+    @Transactional
+    public void publishMonthlyRunMissedAlert(LocalDate period) {
+        publishOnce(MonthlyInvoiceRunMissedEvent.missedFor(period), MONTHLY_RUN_MISSED_ALERT);
     }
 
     @Transactional
