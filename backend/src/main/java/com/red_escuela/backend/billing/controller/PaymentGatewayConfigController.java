@@ -52,13 +52,13 @@ public class PaymentGatewayConfigController {
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentGatewayConfigResponse updateConfig(@RequestBody UpdatePaymentGatewayConfigRequest request) {
         return updateConfigUseCase.update(request, currentPersonService.resolveCurrentPerson());
     }
 
     @PostMapping("/qr")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentGatewayConfigResponse uploadQr(@RequestPart MultipartFile qr) {
         return uploadQrImageUseCase.upload(qr, currentPersonService.resolveCurrentPerson());
     }
