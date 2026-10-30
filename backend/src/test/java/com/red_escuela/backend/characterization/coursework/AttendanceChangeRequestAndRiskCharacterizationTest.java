@@ -1,7 +1,7 @@
 package com.red_escuela.backend.characterization.coursework;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;

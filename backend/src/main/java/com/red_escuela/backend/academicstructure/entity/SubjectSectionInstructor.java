@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

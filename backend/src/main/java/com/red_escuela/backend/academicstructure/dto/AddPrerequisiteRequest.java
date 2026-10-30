@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import java.math.BigDecimal;
-import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import jakarta.validation.constraints.NotNull;
 
 public record AddPrerequisiteRequest(

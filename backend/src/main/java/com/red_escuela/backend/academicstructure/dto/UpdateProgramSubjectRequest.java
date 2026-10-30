@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.SubjectRecurrence;
 
 public record UpdateProgramSubjectRequest(

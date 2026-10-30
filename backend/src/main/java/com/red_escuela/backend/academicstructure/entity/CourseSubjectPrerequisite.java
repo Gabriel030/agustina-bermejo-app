@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import jakarta.persistence.*;

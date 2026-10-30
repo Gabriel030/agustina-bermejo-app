@@ -11,7 +11,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;

@@ -14,13 +14,13 @@ Un módulo solo puede depender de los de capas inferiores y de `shared` (módulo
 
 | Interfaz | Contenido | Cómo se declara |
 |---|---|---|
-| `api` | `*UseCase` con sus `Command` y resultados, `Current*Service` de identity y academicstructure | `@NamedInterface("api")` en `usecase/package-info.java` o a nivel de tipo |
+| `api` | puertos de lectura `<modulo>.api` (interfaces `*Lookup`/`*Queries` con sus records de `dto`) y los `*UseCase` de `usecase` con sus `Command` y resultados; `Current*Service` de identity y academicstructure | `@NamedInterface("api")` en `api/package-info.java`, en `usecase/package-info.java` o a nivel de tipo |
 | `events` | eventos que publica el módulo | `@NamedInterface("events")` en `<modulo>/events/package-info.java` |
 | `model` | entidades que otro módulo referencia por relación JPA | `@NamedInterface("model")` a nivel de tipo en la entidad |
 
 Todo lo demás (`repository`, `service`, `entity` no expuestas, `dto`, `exception`) es interno. En `billing`, `@NamedInterface("api")` queda fuera de `billing.usecase` hasta que V2-02 lo reubique; la API pública de billing es `billing.events`.
 
-Entidades en `model` y motivo (se referencian por relación JPA y cambiarlas por un id exigiría migración): `Person`, `Student` (identity); `Institution`, `Program`, `Course`, `Subject`, `SubjectSection`, `CourseSubjectSection`, `Instructor` (academicstructure); `ProgramEnrollment`, `CourseEnrollment`, `SubjectSectionEnrollment`, `CourseSubjectSectionEnrollment` (enrollment). Regla: si la relación se puede cambiar por un id sin migración y sin perder una consulta necesaria, no se expone.
+Entidades en `model` y motivo (se referencian por relación JPA y cambiarlas por un id exigiría migración): `Person`, `Student` (identity); `Institution`, `Program`, `Course`, `Subject`, `SubjectSection`, `CourseSubjectSection`, `Instructor`, `Term`, `CourseSubject` (academicstructure; además los enums `CurricularTerm`, `InstructorRole` y `RequirementType`, que viven en `academicstructure.domain`, igual que `SectionKind`); `ProgramEnrollment`, `CourseEnrollment`, `SubjectSectionEnrollment`, `CourseSubjectSectionEnrollment` (enrollment). Regla: si la relación se puede cambiar por un id sin migración y sin perder una consulta necesaria, no se expone.
 
 ## Comunicación entre módulos
 
@@ -34,9 +34,10 @@ Todo lo que mueve plata o el estado de una inscripción es síncrono. Los evento
 
 ## Agregar una consulta pública
 
-1. Definir el método en un `*UseCase` (o `*Queries`) del paquete `usecase` del módulo proveedor, devolviendo records de lectura y no entidades.
-2. El paquete `usecase` ya es `api`; si el tipo vive en otro paquete, anotarlo con `@NamedInterface("api")` a nivel de tipo.
+1. Definir el método de lectura en una interfaz `*Lookup`/`*Queries` del paquete `<modulo>.api` del módulo proveedor, devolviendo records de lectura y no entidades; la acción que escribe va en un `*UseCase` del paquete `usecase`.
+2. El paquete `api` ya está expuesto; los records viven en `dto` con `@NamedInterface("api")` a nivel de tipo. El adaptador `Repository<Nombre>` vive en `<modulo>.service` con `@Transactional(readOnly = true)` y `Propagation.MANDATORY` en los `lock*`.
 3. En el consumidor, depender solo de ese tipo. Verificar con `ModularityTest`.
+4. Los puertos de `academicstructure` (`*Queries`) van en `api`, solo devuelven records de `dto` y enums de `domain`, no dependen de `service` ni de `usecase`, y no nombran tipos de `entity` ni de `exception` en su firma. Para asignar una relación JPA, el consumidor valida con `requireExists` y usa `entityManager.getReference(...)` de un tipo `model`.
 
 ## Línea base y `ModularityTest`
 
