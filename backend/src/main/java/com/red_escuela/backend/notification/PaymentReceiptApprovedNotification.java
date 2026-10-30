@@ -1,13 +1,13 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public record PaymentReceiptApprovedEvent(BankTransferReceipt receipt, Person payer) implements DomainNotificationEvent {
+public record PaymentReceiptApprovedNotification(Long invoiceId, YearMonth invoicePeriod, Person payer) implements DomainNotificationEvent {
     private static final DateTimeFormatter PERIOD_FORMAT = DateTimeFormatter.ofPattern("MM/yyyy");
 
     @Override
@@ -17,7 +17,7 @@ public record PaymentReceiptApprovedEvent(BankTransferReceipt receipt, Person pa
 
     @Override
     public String message() {
-        return "Aprobamos tu comprobante: el pago de " + receipt.getInvoice().getPeriod().format(PERIOD_FORMAT) + " ya está acreditado.";
+        return "Aprobamos tu comprobante: el pago de " + invoicePeriod.format(PERIOD_FORMAT) + " ya está acreditado.";
     }
 
     @Override
@@ -32,6 +32,6 @@ public record PaymentReceiptApprovedEvent(BankTransferReceipt receipt, Person pa
 
     @Override
     public Long relatedEntityId() {
-        return receipt.getInvoice().getId();
+        return invoiceId;
     }
 }

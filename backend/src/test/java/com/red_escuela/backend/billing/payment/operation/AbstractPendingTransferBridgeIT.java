@@ -13,8 +13,8 @@ import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentRece
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.notification.PaymentReceiptApprovedEvent;
-import com.red_escuela.backend.notification.PaymentReceiptRejectedEvent;
+import com.red_escuela.backend.notification.PaymentReceiptApprovedNotification;
+import com.red_escuela.backend.notification.PaymentReceiptRejectedNotification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -88,11 +88,11 @@ abstract class AbstractPendingTransferBridgeIT extends AbstractBankTransferRecei
         return inTransaction(() -> studentRepository.findById(debtor.studentId()).orElseThrow().getPerson());
     }
 
-    List<PaymentReceiptApprovedEvent> approvedEvents() {
-        return applicationEvents.stream(PaymentReceiptApprovedEvent.class).toList();
+    List<PaymentReceiptApprovedNotification> approvedEvents() {
+        return applicationEvents.stream(PaymentReceiptApprovedNotification.class).toList();
     }
 
-    List<PaymentReceiptRejectedEvent> rejectedEvents() {
-        return applicationEvents.stream(PaymentReceiptRejectedEvent.class).toList();
+    List<PaymentReceiptRejectedNotification> rejectedEvents() {
+        return applicationEvents.stream(PaymentReceiptRejectedNotification.class).toList();
     }
 }
