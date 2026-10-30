@@ -118,6 +118,32 @@ class MonthlyInvoiceRunSweepIsolationTest {
 
     @Test
     @Tag("D-160")
+    void aFirstFailureWithZeroConfiguredRetriesIsExhaustedAndAlertsOnceWhileAnIssuedItemDoesNot() {
+        MonthlyInvoiceRunItemRepository itemRepository = mock(MonthlyInvoiceRunItemRepository.class);
+        MonthlyInstallmentRowProcessor rowProcessor = mock(MonthlyInstallmentRowProcessor.class);
+        when(rowProcessor.reportProgramEnrollmentIssuance(eq(4L), any(), any())).thenThrow(new IllegalStateException("boom"));
+        when(rowProcessor.reportProgramEnrollmentIssuance(eq(5L), any(), any()))
+                .thenReturn(new MonthlyInstallmentRowProcessor.MonthlyIssuanceReport(List.of(9L), List.of(), List.of()));
+        when(itemRepository.save(any(MonthlyInvoiceRunItem.class))).thenAnswer(invocation -> {
+            MonthlyInvoiceRunItem saved = invocation.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(saved, "id", 100L);
+            return saved;
+        });
+        FailedInvoiceRetryScheduleResolver noRetries = mock(FailedInvoiceRetryScheduleResolver.class);
+        when(noRetries.resolveScheduleEffectiveOn(any())).thenReturn(FailedInvoiceRetrySchedule.withoutRetries());
+        BillingRunAlertPublisher alertPublisher = mock(BillingRunAlertPublisher.class);
+        MonthlyInvoiceRunItemProcessor processor = new MonthlyInvoiceRunItemProcessor(rowProcessor, itemRepository, mock(MonthlyInvoiceRunItemAttemptRepository.class),
+                noRetries, alertPublisher, clock);
+
+        MonthlyInvoiceRunItem exhausted = processor.issueAndRecordItem(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 4L, APRIL, FIRST);
+        processor.issueAndRecordItem(1L, MonthlyInvoiceEnrollmentType.PROGRAM, 5L, APRIL, FIRST);
+
+        assertThat(exhausted.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED);
+        verify(alertPublisher, times(1)).publishItemRetriesExhaustedAlert(any());
+    }
+
+    @Test
+    @Tag("D-160")
     void anItemExhaustedAtItsFirstFailureAlsoLeavesTheRunCompletedWithFailures() {
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(1L));
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(1L), anyBoolean())).thenReturn(List.of());
