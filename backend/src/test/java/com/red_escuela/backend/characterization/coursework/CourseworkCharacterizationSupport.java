@@ -1,6 +1,9 @@
 package com.red_escuela.backend.characterization.coursework;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.transaction.TestTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -54,6 +57,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @Transactional
 abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest {
 
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
     @Autowired
     protected MockMvc mockMvc;
 
@@ -238,6 +243,11 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
     }
 
     protected ResultActions getAs(Person actor, String path) throws Exception {
+        if (path.contains("/notifications")) {
+            AsyncNotifications.commitTestTransaction();
+            AsyncNotifications.awaitPublicationsOfDrained(jdbcTemplate, "%");
+            TestTransaction.start();
+        }
         return mockMvc.perform(get(path).header("Authorization", bearer(actor)));
     }
 

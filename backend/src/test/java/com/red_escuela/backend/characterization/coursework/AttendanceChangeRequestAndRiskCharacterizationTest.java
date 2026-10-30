@@ -1,5 +1,7 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
+import org.springframework.test.context.transaction.TestTransaction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
@@ -142,9 +144,13 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/reject")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
+        AsyncNotifications.commitTestTransaction();
+        TestTransaction.start();
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/approve")
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.code").value("INVALID_ATTENDANCE_CHANGE_REQUEST_STATE"));
+        TestTransaction.end();
+        TestTransaction.start();
 
         getAs(preceptor, "/section-enrollments/" + classroom.enrollment().getId() + "/attendance")
                 .andExpect(jsonPath("$[0].status").value("ABSENT"));
