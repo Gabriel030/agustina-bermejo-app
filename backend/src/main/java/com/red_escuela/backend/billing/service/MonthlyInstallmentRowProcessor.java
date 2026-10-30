@@ -94,7 +94,7 @@ public class MonthlyInstallmentRowProcessor {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public MonthlyIssuanceReport reportProgramEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
-        ProgramMonthPlan monthPlan = planProgramMonth(enrollmentId, month, pricingDate);
+        ProgramMonthPlan monthPlan = planProgramMonth(enrollmentId, month, pricingDate, LocalDate.now(clock));
         IssuanceTally tally = new IssuanceTally();
         for (PlannedInvoice charge : monthPlan.plan().charges()) {
             tally.add(plannedInvoiceIssuingService.issuePlannedProgramInvoice(monthPlan.enrollment(), monthPlan.selection(), charge, InvoiceIssuingReason.MONTHLY_RUN, false));
@@ -104,7 +104,7 @@ public class MonthlyInstallmentRowProcessor {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public MonthlyIssuanceReport reportCourseEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
-        CourseMonthPlan monthPlan = planCourseMonth(enrollmentId, month, pricingDate);
+        CourseMonthPlan monthPlan = planCourseMonth(enrollmentId, month, pricingDate, LocalDate.now(clock));
         IssuanceTally tally = new IssuanceTally();
         for (PlannedInvoice charge : monthPlan.plan().charges()) {
             tally.add(plannedInvoiceIssuingService.issuePlannedCourseInvoice(monthPlan.context().enrollment(), monthPlan.context().selection(), charge));
@@ -113,11 +113,11 @@ public class MonthlyInstallmentRowProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public MonthlyIssuancePreview previewProgramEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
-        ProgramMonthPlan monthPlan = planProgramMonth(enrollmentId, month, pricingDate);
+    public MonthlyIssuancePreview previewProgramEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate, LocalDate issueDate) {
+        ProgramMonthPlan monthPlan = planProgramMonth(enrollmentId, month, pricingDate, issueDate);
         PreviewTally tally = new PreviewTally();
         for (PlannedInvoice charge : monthPlan.plan().charges()) {
-            tally.add(charge.kind(), invoiceIssuingPreviewer.previewInvoiceIssuing(
+            tally.add(charge.kind(), charge.dueDate(), invoiceIssuingPreviewer.previewInvoiceIssuing(
                     InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(monthPlan.enrollment(), monthPlan.selection(), charge, InvoiceIssuingReason.MONTHLY_RUN)));
         }
         TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -125,26 +125,26 @@ public class MonthlyInstallmentRowProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public MonthlyIssuancePreview previewCourseEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
-        CourseMonthPlan monthPlan = planCourseMonth(enrollmentId, month, pricingDate);
+    public MonthlyIssuancePreview previewCourseEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate, LocalDate issueDate) {
+        CourseMonthPlan monthPlan = planCourseMonth(enrollmentId, month, pricingDate, issueDate);
         PreviewTally tally = new PreviewTally();
         for (PlannedInvoice charge : monthPlan.plan().charges()) {
-            tally.add(charge.kind(), invoiceIssuingPreviewer.previewInvoiceIssuing(InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(monthPlan.context().enrollment(),
+            tally.add(charge.kind(), charge.dueDate(), invoiceIssuingPreviewer.previewInvoiceIssuing(InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(monthPlan.context().enrollment(),
                     monthPlan.context().selection(), charge, InvoiceIssuingReason.COURSE_MONTHLY_RUN)));
         }
         TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         return tally.previewFor(monthPlan.plan());
     }
 
-    private ProgramMonthPlan planProgramMonth(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
+    private ProgramMonthPlan planProgramMonth(Long enrollmentId, YearMonth month, LocalDate pricingDate, LocalDate issueDate) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
-        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, pricingDate, LocalDate.now(clock));
+        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, pricingDate, issueDate);
         return new ProgramMonthPlan(enrollment, context.selection(), planner.planInvoicesForMonth(context.facts(), InvoicePlanningScope.ALL));
     }
 
-    private CourseMonthPlan planCourseMonth(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
-        CourseInvoicePlanningContextLoader.CourseContext context = courseContextLoader.load(enrollmentId, month, pricingDate, LocalDate.now(clock));
+    private CourseMonthPlan planCourseMonth(Long enrollmentId, YearMonth month, LocalDate pricingDate, LocalDate issueDate) {
+        CourseInvoicePlanningContextLoader.CourseContext context = courseContextLoader.load(enrollmentId, month, pricingDate, issueDate);
         return new CourseMonthPlan(context, courseMonthlyInvoicePlanner.planInvoicesForMonth(context.facts()));
     }
 
@@ -158,9 +158,9 @@ public class MonthlyInstallmentRowProcessor {
         private final List<PreviewedCharge> wouldBeIssued = new ArrayList<>();
         private final List<Long> alreadyIssued = new ArrayList<>();
 
-        void add(FeeType kind, InvoiceIssuingPreview preview) {
+        void add(FeeType kind, LocalDate dueDate, InvoiceIssuingPreview preview) {
             switch (preview) {
-                case InvoiceIssuingPreview.InvoiceWouldBeIssued issued -> wouldBeIssued.add(new PreviewedCharge(kind, issued.total()));
+                case InvoiceIssuingPreview.InvoiceWouldBeIssued issued -> wouldBeIssued.add(new PreviewedCharge(kind, issued.total(), dueDate));
                 case InvoiceIssuingPreview.InvoiceWouldBeAlreadyIssued existing -> alreadyIssued.add(existing.invoiceId());
                 case InvoiceIssuingPreview.InvoiceWouldBeRejected rejected -> throw new ChargeRejectedException(rejected.evaluationResult());
             }
@@ -171,7 +171,7 @@ public class MonthlyInstallmentRowProcessor {
         }
     }
 
-    public record PreviewedCharge(FeeType kind, NonNegativeMoney total) {
+    public record PreviewedCharge(FeeType kind, NonNegativeMoney total, LocalDate dueDate) {
     }
 
     public record MonthlyIssuancePreview(List<PreviewedCharge> wouldBeIssued, List<Long> alreadyIssuedInvoiceIds, List<String> planningDecisionCodes) {

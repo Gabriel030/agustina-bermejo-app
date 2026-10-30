@@ -48,6 +48,8 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private MonthlyInvoiceSimulationUseCase simulationUseCase;
     @Autowired
+    private com.red_escuela.backend.billing.service.MonthlyInstallmentRowProcessor rowProcessor;
+    @Autowired
     private MonthlyInvoiceRunExecutor executor;
     @Autowired
     private MonthlyInvoiceRunRepository runRepository;
@@ -240,7 +242,37 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
         });
     }
 
+    private LocalDate previewedInstallmentDueDate(Long enrollment, LocalDate issueDate) {
+        return rowProcessor.previewProgramEnrollmentIssuance(enrollment, APRIL, date(2026, 4, 1), issueDate).wouldBeIssued().stream()
+                .filter(charge -> charge.kind() == FeeType.MONTHLY_INSTALLMENT).findFirst().orElseThrow().dueDate();
+    }
+
     @Test
+    @Tag("D-511")
+    void aPreviewWithTheNextPeriodFirstDayAsIssueDateOnTheTwentiethOfTheMonthBeforeShowsTheFirstDayPlusTheDueDaysNotTodayPlusTheDueDays() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 3, 20));
+
+        assertThat(previewedInstallmentDueDate(enrollment, date(2026, 4, 1))).isEqualTo(date(2026, 4, 6));
+    }
+
+    @Test
+    @Tag("D-511")
+    void thePreviewOfTheManualIssuanceDayShowsTheSameDueDateTheManualIssuanceThenEmits() {
+        Long enrollment = enrollmentWithFiveDueDays();
+        today(date(2026, 4, 10));
+        Long simulationId = simulationUseCase.simulateMonthlyInvoicesOfPeriodAsOfToday(APRIL).runId();
+        LocalDate previewedDueDate = previewedInstallmentDueDate(enrollment, date(2026, 4, 10));
+        job.completeTheNightOf(date(2026, 4, 10));
+
+        manualIssuance.issueMonthlyInvoicesManuallyAsOfToday(APRIL, simulationId);
+
+        invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(invoice -> APRIL.equals(invoice.getPeriod()))
+                .forEach(invoice -> assertThat(invoice.getDueDate()).isEqualTo(previewedDueDate));
+    }
+
+    @Test
+    @Tag("D-511")
     void theNightlyRunOfTheFirstDayKeepsTheDueDateAtTheFirstDayPlusTheDueDays() {
         Long enrollment = enrollmentWithFiveDueDays();
         today(date(2026, 4, 1));

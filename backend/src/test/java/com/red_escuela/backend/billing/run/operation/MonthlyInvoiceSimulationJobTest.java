@@ -34,6 +34,17 @@ class MonthlyInvoiceSimulationJobTest {
 
         new MonthlyInvoiceSimulationJob(simulator, clock).run();
 
-        verify(simulator).simulateMonthlyInvoices(java.time.YearMonth.of(2027, 1), LocalDate.of(2026, 12, 25), LocalDate.of(2027, 1, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+        verify(simulator).simulateMonthlyInvoices(java.time.YearMonth.of(2027, 1), LocalDate.of(2026, 12, 25), LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+    }
+
+    @Test
+    @Tag("D-511")
+    void aScheduledSimulationRunningOnTheTwentiethCountsTheDueDateFromTheFirstDayOfTheSimulatedPeriod() {
+        MonthlyInvoiceSimulator simulator = mock(MonthlyInvoiceSimulator.class);
+        Clock clock = Clock.fixed(Instant.parse("2026-12-20T07:00:00Z"), ZoneOffset.UTC);
+
+        new MonthlyInvoiceSimulationJob(simulator, clock).run();
+
+        verify(simulator).simulateMonthlyInvoices(java.time.YearMonth.of(2027, 1), LocalDate.of(2026, 12, 20), LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
     }
 }
