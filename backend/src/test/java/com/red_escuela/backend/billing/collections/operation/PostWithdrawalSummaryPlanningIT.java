@@ -11,6 +11,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.billing.run.operation.CollectionReminderPlanningBillingRunStep;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,13 +34,13 @@ class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
     @Autowired
     private PostWithdrawalSummaryPlanningStep planningStep;
     @Autowired
-    private CollectionReminderPlanningJob planningJob;
+    private CollectionReminderPlanningBillingRunStep planningJob;
     @Autowired
     private PostWithdrawalSummaryStore summaryStore;
 
     private void runJobOn(LocalDate day) {
         MutableClock.INSTANCE.setDate(day);
-        planningJob.run(day);
+        planningJob.runStepForBusinessDate(day);
     }
 
     private List<LocalDate> summaryMonthsOf(Student student) {

@@ -5,5 +5,6 @@ public enum BillingRunSubjectType {
     LATE_FEE_CHARGE,
     PROGRAM_ENROLLMENT,
     COURSE_ENROLLMENT,
-    CURRENT_ACCOUNT
+    CURRENT_ACCOUNT,
+    STUDENT
 }
