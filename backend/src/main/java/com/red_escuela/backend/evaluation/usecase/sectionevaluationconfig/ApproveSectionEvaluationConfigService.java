@@ -11,7 +11,7 @@ import com.red_escuela.backend.evaluation.service.ExamBoardService;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.notification.SectionEvaluationConfigApprovedEvent;
+import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,7 +73,7 @@ public class ApproveSectionEvaluationConfigService implements ApproveSectionEval
         createFinalCall(section, term, slots, config.getFinalCall2Date(), approvedAt);
 
         Person leadInstructorPerson = instructorAccess.leadInstructorPerson(section);
-        eventPublisher.publishEvent(new SectionEvaluationConfigApprovedEvent(saved, leadInstructorPerson));
+        eventPublisher.publishEvent(SectionEvaluationConfigApprovedEvent.approvedFor(saved, leadInstructorPerson));
         return saved;
     }
 

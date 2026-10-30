@@ -4,7 +4,7 @@ import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
-import com.red_escuela.backend.notification.SectionEvaluationConfigProposedEvent;
+import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigProposedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,7 +36,7 @@ public class SubmitSectionEvaluationConfigForApprovalService implements SubmitSe
         SectionEvaluationConfig config = configFinder.findOrThrow(command.sectionId());
         config.submitForApproval(ApplicationTime.now());
         SectionEvaluationConfig saved = configRepository.save(config);
-        eventPublisher.publishEvent(new SectionEvaluationConfigProposedEvent(saved));
+        eventPublisher.publishEvent(SectionEvaluationConfigProposedEvent.proposedFor(saved));
         return saved;
     }
 }

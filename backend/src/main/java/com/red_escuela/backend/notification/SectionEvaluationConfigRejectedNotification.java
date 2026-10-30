@@ -1,12 +1,12 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.util.List;
 
-public record SectionEvaluationConfigRejectedEvent(SectionEvaluationConfig config, Person instructor) implements DomainNotificationEvent {
+public record SectionEvaluationConfigRejectedNotification(Long configId, String subjectName, String sectionName, String rejectionReason, Person instructor)
+        implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.SECTION_EVAL_CONFIG_REJECTED;
@@ -14,9 +14,7 @@ public record SectionEvaluationConfigRejectedEvent(SectionEvaluationConfig confi
 
     @Override
     public String message() {
-        return "Tu configuración de evaluación fue rechazada: "
-                + config.getSubjectSection().getSubject().getName() + " · " + config.getSubjectSection().getName()
-                + " — motivo: " + config.getRejectionReason();
+        return "Tu configuración de evaluación fue rechazada: " + subjectName + " · " + sectionName + " — motivo: " + rejectionReason;
     }
 
     @Override
@@ -31,6 +29,6 @@ public record SectionEvaluationConfigRejectedEvent(SectionEvaluationConfig confi
 
     @Override
     public Long relatedEntityId() {
-        return config.getId();
+        return configId;
     }
 }
