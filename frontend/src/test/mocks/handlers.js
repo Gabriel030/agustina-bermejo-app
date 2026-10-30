@@ -2,6 +2,28 @@ import { http, HttpResponse } from 'msw';
 
 const API = 'http://localhost:8080';
 
+const personResponse = (overrides = {}) => ({
+  id: 1,
+  nombre: 'Prueba',
+  apellido: 'Login',
+  email: 'prueba@example.com',
+  dni: '30111222',
+  documentType: 'DNI',
+  legajo: 'L-0001',
+  sexo: 'F',
+  telefono: '1155550000',
+  street: 'Calle Falsa',
+  number: '123',
+  floor: '',
+  city: 'Buenos Aires',
+  state: 'Buenos Aires',
+  country: 'Argentina',
+  postalCode: '1000',
+  hasAvatar: false,
+  roles: ['PRECEPTOR'],
+  ...overrides,
+});
+
 /*
  * Handlers "felices" por default — cada test sobreescribe con server.use(...)
  * el caso puntual que quiere probar (401, 429, etc.), ver
@@ -19,27 +41,10 @@ export const handlers = [
   http.post(`${API}/auth/forgot-password`, () => new HttpResponse(null, { status: 202 })),
   http.post(`${API}/auth/verify-reset-code`, () => HttpResponse.json({ resetToken: 'reset-token-1' })),
   http.post(`${API}/auth/reset-password`, () => new HttpResponse(null, { status: 204 })),
-  http.get(`${API}/me`, () =>
-    HttpResponse.json({
-      id: 1,
-      nombre: 'Prueba',
-      apellido: 'Login',
-      email: 'prueba@example.com',
-      roles: ['PRECEPTOR'],
-    }),
-  ),
-  http.put(`${API}/me`, () =>
-    HttpResponse.json({
-      id: 1,
-      nombre: 'Prueba',
-      apellido: 'Login',
-      email: 'prueba@example.com',
-      dni: '30111222',
-      roles: ['PRECEPTOR'],
-    }),
-  ),
+  http.get(`${API}/me`, () => HttpResponse.json(personResponse({ dni: '' }))),
+  http.put(`${API}/me`, () => HttpResponse.json(personResponse())),
   http.post(`${API}/auth/register`, () =>
-    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }, { status: 201 }),
   ),
   http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
