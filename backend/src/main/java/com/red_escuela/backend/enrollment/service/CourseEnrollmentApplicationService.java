@@ -14,10 +14,9 @@ import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentAppli
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.api.StudentFinder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +34,7 @@ import jakarta.persistence.EntityManager;
 
 @Service
 public class CourseEnrollmentApplicationService {
-    private final StudentRepository studentRepository;
+    private final StudentFinder studentFinder;
     private final CourseCatalogFinder courseCatalogFinder;
     private final CourseEnrollmentService courseEnrollmentService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
@@ -45,12 +44,12 @@ public class CourseEnrollmentApplicationService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
-    public CourseEnrollmentApplicationService(StudentRepository studentRepository, CourseCatalogFinder courseCatalogFinder,
+    public CourseEnrollmentApplicationService(StudentFinder studentFinder, CourseCatalogFinder courseCatalogFinder,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
             InvoiceIssuingService invoiceIssuingService, SubmitCourseAdmissionReceiptUseCase submitCourseAdmissionReceiptUseCase, EntityManager entityManager,
             ObjectMapper objectMapper, Clock clock) {
-        this.studentRepository = studentRepository;
+        this.studentFinder = studentFinder;
         this.courseCatalogFinder = courseCatalogFinder;
         this.courseEnrollmentService = courseEnrollmentService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
@@ -64,8 +63,7 @@ public class CourseEnrollmentApplicationService {
     @Transactional
     public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request,
             CourseTransferReceiptForm receipt, String idempotencyKey) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException(studentId));
+        Student student = studentFinder.requireById(studentId);
         String dni = student.getPerson().getDni();
         if (dni == null || dni.isBlank()) {
             throw new DniRequiredException(student.getPerson().getId());

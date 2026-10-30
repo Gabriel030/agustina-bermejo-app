@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentAppl
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.service.PersonRoleGranter;
+import com.red_escuela.backend.enrollment.service.ProgramApplicantRoleGranter;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,18 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class ApproveProgramEnrollmentApplicationService implements ApproveProgramEnrollmentApplicationUseCase {
 
     private final ProgramEnrollmentApplicationFinder applicationFinder;
-    private final PersonRoleGranter personRoleGranter;
+    private final ProgramApplicantRoleGranter programApplicantRoleGranter;
     private final ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ApplicationEventPublisher eventPublisher;
 
     public ApproveProgramEnrollmentApplicationService(ProgramEnrollmentApplicationFinder applicationFinder,
-                                                        PersonRoleGranter personRoleGranter,
+                                                        ProgramApplicantRoleGranter programApplicantRoleGranter,
                                                         ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer,
                                                         ProgramEnrollmentService programEnrollmentService,
                                                         ApplicationEventPublisher eventPublisher) {
         this.applicationFinder = applicationFinder;
-        this.personRoleGranter = personRoleGranter;
+        this.programApplicantRoleGranter = programApplicantRoleGranter;
         this.programAdmissionInvoiceIssuer = programAdmissionInvoiceIssuer;
         this.programEnrollmentService = programEnrollmentService;
         this.eventPublisher = eventPublisher;
@@ -49,7 +49,7 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
 
         Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
         application.approve(command.decidedBy(), admissionInvoice);
-        personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
+        programApplicantRoleGranter.grantStudentRole(student);
         eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
         return application;
     }

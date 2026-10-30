@@ -10,10 +10,9 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
-import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
@@ -32,8 +31,6 @@ import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.identity.exception.StudentNotActiveException;
-import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -58,6 +55,7 @@ public class SubjectSectionEnrollmentService {
     private final InvoiceRepository invoiceRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
+    private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -69,8 +67,10 @@ public class SubjectSectionEnrollmentService {
             InvoiceRepository invoiceRepository,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
+            StudentEnrollmentEligibility studentEnrollmentEligibility,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
+        this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.sectionFinder = sectionFinder;
@@ -87,7 +87,7 @@ public class SubjectSectionEnrollmentService {
         ProgramEnrollment programEnrollment = findProgramEnrollmentOrThrow(programEnrollmentId);
         validateActiveProgramEnrollment(programEnrollment);
         Student student = programEnrollment.getStudent();
-        validateStudentEligible(student);
+        studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
         ProgramSectionView section = sectionFinder.findProgramSection(request.sectionId());
         validateEnrollmentWindow(section.termId());
@@ -160,7 +160,7 @@ public class SubjectSectionEnrollmentService {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede cambiar de comisión");
         }
-        validateStudentEligible(origen.getStudent());
+        studentEnrollmentEligibility.requireConfirmedAndActive(origen.getStudent());
 
         ProgramSectionView destino = sectionFinder.findProgramSection(request.newSectionId());
         if (!destino.subjectId().equals(origen.subjectId())) {
@@ -297,15 +297,6 @@ public class SubjectSectionEnrollmentService {
         }
         if (!window.open()) {
             throw new EnrollmentWindowClosedException("Fuera de la ventana de inscripción del Term " + termId);
-        }
-    }
-
-    private void validateStudentEligible(Student student) {
-        if (student.getOnboardingStatus() != StudentOnboardingStatus.CONFIRMADO) {
-            throw new StudentNotConfirmedException(student.getId());
-        }
-        if (student.getPerson().getStatus() != StatusType.ACTIVE) {
-            throw new StudentNotActiveException(student.getId());
         }
     }
 

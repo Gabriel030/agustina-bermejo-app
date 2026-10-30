@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFi
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.service.PersonRoleGranter;
+import com.red_escuela.backend.enrollment.service.ProgramApplicantRoleGranter;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class ApproveProgramEnrollmentApplicationDebtTest {
         ProgramEnrollmentApplicationFinder finder = mock(ProgramEnrollmentApplicationFinder.class);
         ProgramAdmissionInvoiceIssuer issuer = mock(ProgramAdmissionInvoiceIssuer.class);
         ProgramEnrollmentService enrollmentService = mock(ProgramEnrollmentService.class);
-        PersonRoleGranter roleGranter = mock(PersonRoleGranter.class);
+        ProgramApplicantRoleGranter roleGranter = mock(ProgramApplicantRoleGranter.class);
         ProgramEnrollmentApplication application = mock(ProgramEnrollmentApplication.class);
         Student student = mock(Student.class);
         when(student.getId()).thenReturn(7L);

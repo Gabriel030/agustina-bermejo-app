@@ -4,6 +4,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -82,6 +83,14 @@ public final class ModulePatternRules {
                 .because("a public api method takes and returns java types, api records, events and entities marked @NamedInterface(\"model\"), never any other entity");
     }
 
+    public static ArchRule apiSignaturesExposeNoRepository(String apiPackage) {
+        return classes()
+                .that().resideInAPackage(apiPackage)
+                .should(exposeNoRepositoryInPublicSignatures())
+                .allowEmptyShould(true)
+                .because("a public api member never takes, returns or holds a repository in a public field: repositories are used inside the specialist, never handed to another module");
+    }
+
     public static ArchRule apiInterfacesAreNamedPortAndImplementedByAnotherModule(String root) {
         return classes()
                 .that().resideInAPackage("..api..")
@@ -155,6 +164,33 @@ public final class ModulePatternRules {
                             .distinct()
                             .forEach(type -> events.add(SimpleConditionEvent.violated(method,
                                     method.getFullName() + " exposes " + type.getName() + " which is not @NamedInterface(\"model\")")));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> exposeNoRepositoryInPublicSignatures() {
+        return new ArchCondition<>("expose no repository in public method signatures or public fields") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (JavaMethod method : javaClass.getMethods()) {
+                    if (!method.getModifiers().contains(JavaModifier.PUBLIC)) {
+                        continue;
+                    }
+                    Stream.concat(
+                                    method.getReturnType().getAllInvolvedRawTypes().stream(),
+                                    method.getParameterTypes().stream().flatMap(type -> type.getAllInvolvedRawTypes().stream()))
+                            .filter(type -> type.getPackageName().matches(".*\\.repository(\\..*)?"))
+                            .distinct()
+                            .forEach(type -> events.add(SimpleConditionEvent.violated(method,
+                                    method.getFullName() + " exposes repository " + type.getName())));
+                }
+                for (JavaField field : javaClass.getFields()) {
+                    if (field.getModifiers().contains(JavaModifier.PUBLIC)
+                            && field.getRawType().getPackageName().matches(".*\\.repository(\\..*)?")) {
+                        events.add(SimpleConditionEvent.violated(field,
+                                field.getFullName() + " exposes repository " + field.getRawType().getName()));
+                    }
                 }
             }
         };

@@ -58,10 +58,8 @@ class NotificationDeliveryBoundaryTest {
     }
 
     @Test
-    void theIdentityApiDoesNotExposeEntitiesOrRepositories() {
-        noClasses().that().resideInAPackage(ROOT + ".identity.api..")
-                .should().dependOnClassesThat().resideInAnyPackage(ROOT + ".identity.entity..", ROOT + ".identity.repository..")
-                .check(MAIN_CLASSES);
+    void theIdentityApiSignaturesExposeNoRepository() {
+        ModulePatternRules.apiSignaturesExposeNoRepository(ROOT + ".identity.api..").check(MAIN_CLASSES);
     }
 
     @Test
