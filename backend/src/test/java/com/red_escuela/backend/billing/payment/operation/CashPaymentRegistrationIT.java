@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -794,22 +796,21 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         Long april = invoiceOfEnrollment(debtor, enrollmentId, "80000.00", LocalDate.of(2027, 4, 10));
         markOverdue(march);
         markOverdue(april);
-        jdbc.update("update program_enrollment set payment_status = 'SUSPENDED', payment_status_updated_at = ? where id = ?",
-                LocalDateTime.of(2027, 4, 1, 8, 0), enrollmentId);
+        PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, enrollmentId, EnrollmentPaymentStatus.SUSPENDED);
 
         MvcResult first = registerArs(debtor.studentId(), "key-lift-first", "80000.00", null, null, administrative);
 
         assertThat(first.getResponse().getStatus()).isEqualTo(201);
         assertThat(statusOfInvoice(march)).isEqualTo("PAID");
         assertThat(statusOfInvoice(april)).isEqualTo("OVERDUE");
-        assertThat(jdbc.queryForObject("select payment_status from program_enrollment where id = ?", String.class, enrollmentId)).isEqualTo("SUSPENDED");
+        assertThat(jdbc.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollmentId)).isEqualTo("SUSPENDED");
         assertThat(applicationEvents.stream(SuspensionLiftedEvent.class).count()).isZero();
 
         MvcResult second = registerArs(debtor.studentId(), "key-lift-second", "80000.00", null, null, administrative);
 
         assertThat(second.getResponse().getStatus()).isEqualTo(201);
         assertThat(statusOfInvoice(april)).isEqualTo("PAID");
-        assertThat(jdbc.queryForObject("select payment_status from program_enrollment where id = ?", String.class, enrollmentId)).isEqualTo("UP_TO_DATE");
+        assertThat(jdbc.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollmentId)).isEqualTo("UP_TO_DATE");
         assertThat(applicationEvents.stream(SuspensionLiftedEvent.class).count()).isEqualTo(1);
         assertThat(applicationEvents.stream(EnrollmentSuspensionLiftedEvent.class)
                 .filter(event -> event.enrollmentId().equals(enrollmentId)).count()).isEqualTo(1);

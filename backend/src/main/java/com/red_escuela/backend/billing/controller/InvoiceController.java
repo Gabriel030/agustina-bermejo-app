@@ -26,13 +26,13 @@ public class InvoiceController {
     @GetMapping("/course-enrollments/{id}/invoices")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public EnrollmentBillingStatusResponse byCourse(@PathVariable Long id) {
-        return EnrollmentBillingStatusResponse.of(invoiceQueryService.courseBillable(id), invoiceQueryService.byCourse(id));
+        return EnrollmentBillingStatusResponse.of(invoiceQueryService.courseBillable(id), invoiceQueryService.courseStanding(id), invoiceQueryService.byCourse(id));
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public EnrollmentBillingStatusResponse byProgram(@PathVariable Long id) {
-        return EnrollmentBillingStatusResponse.of(invoiceQueryService.programBillable(id), invoiceQueryService.byProgram(id));
+        return EnrollmentBillingStatusResponse.of(invoiceQueryService.programBillable(id), invoiceQueryService.programStanding(id), invoiceQueryService.byProgram(id));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")

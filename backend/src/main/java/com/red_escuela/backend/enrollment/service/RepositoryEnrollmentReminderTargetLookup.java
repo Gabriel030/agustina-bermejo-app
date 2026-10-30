@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.api.EnrollmentReminderTarget;
 import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup;
@@ -16,8 +17,11 @@ import java.util.Map;
 public class RepositoryEnrollmentReminderTargetLookup implements EnrollmentReminderTargetLookup {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public RepositoryEnrollmentReminderTargetLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
+    public RepositoryEnrollmentReminderTargetLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+                                                    EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
@@ -29,8 +33,9 @@ public class RepositoryEnrollmentReminderTargetLookup implements EnrollmentRemin
         if (programEnrollmentIds.isEmpty()) {
             return targets;
         }
+        Map<Long, EnrollmentPaymentStatus> statuses = standingQuery.findStatusesOfProgramEnrollments(programEnrollmentIds);
         programEnrollmentRepository.findReminderTargetRows(programEnrollmentIds).forEach(row -> targets.put(row.getEnrollmentId(),
-                new EnrollmentReminderTarget(row.getEnrollmentId(), row.getTargetId(), null, row.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED)));
+                new EnrollmentReminderTarget(row.getEnrollmentId(), row.getTargetId(), null, statuses.get(row.getEnrollmentId()) == EnrollmentPaymentStatus.SUSPENDED)));
         return targets;
     }
 
@@ -41,8 +46,9 @@ public class RepositoryEnrollmentReminderTargetLookup implements EnrollmentRemin
         if (courseEnrollmentIds.isEmpty()) {
             return targets;
         }
+        Map<Long, EnrollmentPaymentStatus> statuses = standingQuery.findStatusesOfCourseEnrollments(courseEnrollmentIds);
         courseEnrollmentRepository.findReminderTargetRows(courseEnrollmentIds).forEach(row -> targets.put(row.getEnrollmentId(),
-                new EnrollmentReminderTarget(row.getEnrollmentId(), null, row.getTargetId(), row.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED)));
+                new EnrollmentReminderTarget(row.getEnrollmentId(), null, row.getTargetId(), statuses.get(row.getEnrollmentId()) == EnrollmentPaymentStatus.SUSPENDED)));
         return targets;
     }
 }

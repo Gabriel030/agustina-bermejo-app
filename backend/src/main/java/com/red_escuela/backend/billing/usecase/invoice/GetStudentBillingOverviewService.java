@@ -35,9 +35,9 @@ public class GetStudentBillingOverviewService implements GetStudentBillingOvervi
         }
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.byCourseEnrollment(enrollment.getId()))),
+                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfCourseEnrollmentOrNull(enrollment.getId()), invoiceDetailLoader.byCourseEnrollment(enrollment.getId()))),
                 programEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.byProgramEnrollment(enrollment.getId()))))
+                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfProgramEnrollmentOrNull(enrollment.getId()), invoiceDetailLoader.byProgramEnrollment(enrollment.getId()))))
                 .toList();
     }
 }

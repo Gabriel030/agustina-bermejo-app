@@ -6,6 +6,9 @@ import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
+import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
@@ -46,6 +49,8 @@ public class SuspendedEnrollmentClosureService {
     private static final List<ProgramEnrollmentStatus> ACTIVE = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final EnrollmentPaymentStandingRepository standingRepository;
+    private final EnrollmentPaymentStandingQuery standingQuery;
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final YearCycleFactory cycleFactory;
     private final TermRepository termRepository;
@@ -59,7 +64,10 @@ public class SuspendedEnrollmentClosureService {
                                              ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository, InvoiceRepository invoiceRepository,
                                              ProgramEnrollmentService programEnrollmentService, Clock clock,
                                              PlatformTransactionManager transactionManager, YearCycleFactory cycleFactory,
-                                             ApplicationEventPublisher eventPublisher) {
+                                             ApplicationEventPublisher eventPublisher,
+                                             EnrollmentPaymentStandingRepository standingRepository, EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingRepository = standingRepository;
+        this.standingQuery = standingQuery;
         this.eventPublisher = eventPublisher;
         this.cycleFactory = cycleFactory;
         this.requiresNew = new TransactionTemplate(transactionManager);
@@ -77,7 +85,8 @@ public class SuspendedEnrollmentClosureService {
     }
 
     public SuspendedEnrollmentClosureReport closeFinishedCyclesReportingFailures() {
-        List<Long> candidateIds = programEnrollmentRepository.findIdsByPaymentStatusAndStatusIn(EnrollmentPaymentStatus.SUSPENDED, ACTIVE);
+        List<Long> candidateIds = programEnrollmentRepository.findAllById(standingRepository.findSuspendedProgramEnrollmentIds()).stream()
+                .filter(enrollment -> ACTIVE.contains(enrollment.getStatus())).map(ProgramEnrollment::getId).sorted().toList();
         int closed = 0;
         List<SuspendedEnrollmentClosureReport.EnrollmentClosureFailure> failures = new ArrayList<>();
         for (Long id : candidateIds) {
@@ -114,7 +123,7 @@ public class SuspendedEnrollmentClosureService {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
         LocalDate today = LocalDate.now(clock);
-        LocalDate suspendedOn = enrollment.getPaymentStatusUpdatedAt() != null ? enrollment.getPaymentStatusUpdatedAt().toLocalDate() : today;
+        LocalDate suspendedOn = standingQuery.findStandingOfProgramEnrollment(enrollmentId).map(EnrollmentPaymentStandingView::suspendedSince).orElse(today);
         YearMonth suspensionMonth = YearMonth.from(suspendedOn);
         YearCycles cycles = new YearCycles(cycleFactory.cyclesOf(templateRepository.findAllByProgramId(enrollment.getProgram().getId()), suspensionMonth.getYear()), null);
         Optional<YearCycle> cycle = cycles.covering(suspensionMonth).or(() -> cycles.latestStartedOn(suspensionMonth));

@@ -27,6 +27,6 @@ public class GetOwnProgramEnrollmentBillingStatusService implements GetOwnProgra
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, enrollmentId);
         }
-        return MeEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.byProgramEnrollment(enrollmentId));
+        return MeEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfProgramEnrollmentOrNull(enrollmentId), invoiceDetailLoader.byProgramEnrollment(enrollmentId));
     }
 }

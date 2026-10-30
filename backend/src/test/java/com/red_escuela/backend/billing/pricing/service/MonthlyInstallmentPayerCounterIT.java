@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.pricing.service;
 
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -139,6 +140,7 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
+        PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), payment);
         if (option != null) {
             PaymentPlanSelection selection = new PaymentPlanSelection();
             selection.setProgramEnrollment(enrollment);
@@ -158,6 +160,7 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         enrollment.setPaymentStatus(payment);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
         entityManager.persist(enrollment);
+        PaymentStandingSeed.seedCourseEnrollmentStanding(entityManager, enrollment.getId(), payment);
         PaymentPlanSelection selection = new PaymentPlanSelection();
         selection.setCourseEnrollment(enrollment);
         selection.setPaymentPlanOption(option);

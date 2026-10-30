@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class InvoiceQueryService {
+    private final EnrollmentPaymentStandingQuery standingQuery;
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceViewLoader invoiceViewLoader;
@@ -53,7 +56,9 @@ public class InvoiceQueryService {
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
                                PriceReader priceReader, AllocationSourceQueryService allocationSources, CreditNoteRepository creditNoteRepository,
-                               PaymentRepository paymentRepository, Clock clock) {
+                               PaymentRepository paymentRepository, Clock clock,
+                               EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.priceReader = priceReader;
@@ -71,6 +76,14 @@ public class InvoiceQueryService {
     @Transactional(readOnly = true)
     public List<InvoiceView> byProgram(Long programEnrollmentId) {
         return invoiceViewLoader.loadInvoiceViews(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId));
+    }
+
+    public EnrollmentPaymentStandingView courseStanding(Long courseEnrollmentId) {
+        return standingQuery.findStandingOfCourseEnrollment(courseEnrollmentId).orElse(null);
+    }
+
+    public EnrollmentPaymentStandingView programStanding(Long programEnrollmentId) {
+        return standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).orElse(null);
     }
 
     public CourseEnrollment courseBillable(Long courseEnrollmentId) {

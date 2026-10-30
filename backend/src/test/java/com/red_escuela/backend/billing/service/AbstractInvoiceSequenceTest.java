@@ -265,6 +265,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
 
     protected void setStanding(Long enrollmentId, EnrollmentPaymentStatus standing) {
         transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setPaymentStatus(standing));
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbcTemplate, enrollmentId, standing);
     }
 
     protected void markInvoices(Long enrollmentId, FeeType type, YearMonth period, InvoicePaymentStatus newStatus) {

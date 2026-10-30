@@ -19,6 +19,7 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -571,4 +572,53 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         assertThat(eventsOf(enrollment.getId())).containsExactly("STANDING_OPENED", "OVERDUE_DEBT_DETECTED", "MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
         assertTheHistoryChainIsConsistent(enrollment.getId());
     }
+
+    @Test
+    @Tag("D-490")
+    @Tag("D-473")
+    void aReceiptSubmittedAfterTheCutoffOverAnInstallmentThatWasAlreadyOverdueAtTheCutoffCountsAsUnpaidAtTheCutoff() {
+        arrange(YEAR);
+        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+
+        MutableClock.INSTANCE.setDate(d(YEAR, 6, 2));
+        jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", installment.getId());
+        evaluate(d(YEAR, 6, 2));
+
+        assertThat(eventsOf(enrollment.getId())).contains("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
+    }
+
+    @Test
+    @Tag("D-490")
+    @Tag("D-473")
+    void anInvoiceCancelledAfterTheCutoffCountsAsItWasAtTheCutoff() {
+        arrange(YEAR);
+        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+
+        MutableClock.INSTANCE.setDate(d(YEAR, 6, 2));
+        jdbc.update("update invoice set payment_status = 'CANCELLED', paid_amount = 0, outstanding_amount = 0, credited_amount = total where id = ?", installment.getId());
+        evaluate(d(YEAR, 6, 2));
+
+        assertThat(eventsOf(enrollment.getId())).contains("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
+    }
+
+    @Test
+    @Tag("D-490")
+    @Tag("D-473")
+    void aChargebackBetweenTheCutoffAndTheFirstOfTheMonthRunDoesNotSuspendWhoPaidOnTime() {
+        arrange(YEAR);
+        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+        CurrentAccountEntry credit = receiveMoney(installment, "100000.00", d(YEAR, 5, 28));
+        allocateOn(installment, d(YEAR, 5, 28));
+
+        MutableClock.INSTANCE.setDate(d(YEAR, 6, 1));
+        reversePayment(installment, credit, d(YEAR, 6, 1), 0);
+        evaluate(d(YEAR, 6, 1));
+
+        assertThat(eventsOf(enrollment.getId())).doesNotContain("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
+        assertThat(statusOf(enrollment.getId())).isNotEqualTo(EnrollmentPaymentStatus.SUSPENDED);
+    }
 }
+

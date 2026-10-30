@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PaymentStandingSeed;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -223,7 +225,9 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         enrollment.setPaymentStatus(standing);
         enrollment.setPaymentStatusUpdatedAt(LocalDateTime.now().minusMonths(1));
-        return courseEnrollmentRepository.save(enrollment);
+        CourseEnrollment saved = courseEnrollmentRepository.save(enrollment);
+        PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, saved.getId(), standing);
+        return saved;
     }
 
     @Test
@@ -236,7 +240,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
         payInvoiceByBankTransfer(overdue, admin);
 
-        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getPaymentStatus())
+        assertThat(EnrollmentPaymentStatus.valueOf(jdbc.queryForObject("select status from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollment.getId())))
                 .isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
     }
 
@@ -250,7 +254,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
         payInvoiceByBankTransfer(first, admin);
 
-        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getPaymentStatus())
+        assertThat(EnrollmentPaymentStatus.valueOf(jdbc.queryForObject("select status from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollment.getId())))
                 .isEqualTo(EnrollmentPaymentStatus.OVERDUE);
     }
 
@@ -263,7 +267,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
         payInvoiceByBankTransfer(overdue, admin);
 
-        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getPaymentStatus())
+        assertThat(EnrollmentPaymentStatus.valueOf(jdbc.queryForObject("select status from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollment.getId())))
                 .isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
         assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId()))
                 .extracting(Notification::getType)
@@ -279,7 +283,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
         payInvoiceByBankTransfer(overdue, admin);
 
-        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getPaymentStatus())
+        assertThat(EnrollmentPaymentStatus.valueOf(jdbc.queryForObject("select status from enrollment_payment_standing where course_enrollment_id = ?", String.class, enrollment.getId())))
                 .isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
     }
 }

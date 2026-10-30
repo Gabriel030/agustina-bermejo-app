@@ -43,6 +43,7 @@ class BillingDecisionRegistryTest {
         assertThat(registry.find("D-001")).isPresent();
         assertThat(registry.find("D-177")).isPresent();
         assertThat(registry.find("D-170").orElseThrow().implementation()).isEqualTo("implementada");
+        assertThat(registry.find("D-490").orElseThrow().implementation()).isEqualTo("implementada");
     }
 
     @Test

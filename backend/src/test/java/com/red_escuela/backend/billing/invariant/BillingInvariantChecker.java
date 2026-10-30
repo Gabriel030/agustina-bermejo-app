@@ -109,9 +109,10 @@ public final class BillingInvariantChecker {
         return violations("I-16 invoice emitted for a suspended enrollment", """
                 select 'invoice ' || i.id || ' enrollment ' || e.id
                 from invoice i join invoice_line l on l.invoice_id = i.id join program_enrollment e on e.id = l.program_enrollment_id
-                where e.id > ? and e.payment_status = 'SUSPENDED'
+                join enrollment_payment_standing s on s.program_enrollment_id = e.id
+                where e.id > ? and s.status = 'SUSPENDED'
                   and i.issuing_reason = 'MONTHLY_RUN'
-                  and i.created_at > e.payment_status_updated_at
+                  and i.created_at > (select max(c.occurred_at) from enrollment_payment_status_change c where c.standing_id = s.id)
                 """, baselineEnrollmentId);
     }
 
