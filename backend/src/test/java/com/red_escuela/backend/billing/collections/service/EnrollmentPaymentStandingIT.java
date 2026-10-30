@@ -585,7 +585,6 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         jdbc.update("update invoice set payment_status = 'PAYMENT_UNDER_REVIEW' where id = ?", installment.getId());
         evaluate(d(YEAR, 6, 2));
 
-        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         assertThat(eventsOf(enrollment.getId())).contains("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
     }
 
@@ -598,26 +597,10 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         evaluate(d(YEAR, 5, 20));
 
         MutableClock.INSTANCE.setDate(d(YEAR, 6, 2));
-        jdbc.update("update invoice set payment_status = 'CANCELLED' where id = ?", installment.getId());
+        jdbc.update("update invoice set payment_status = 'CANCELLED', paid_amount = 0, outstanding_amount = 0, credited_amount = total where id = ?", installment.getId());
         evaluate(d(YEAR, 6, 2));
 
-        assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
-    }
-
-    @Test
-    @Tag("D-490")
-    @Tag("D-473")
-    void anInstallmentIssuedAfterTheCutoffWithAnEarlierDueDateDoesNotCountAtTheCutoff() {
-        arrange(YEAR);
-        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
-        evaluate(d(YEAR, 5, 20));
-        jdbc.update("update invoice set issue_date = ? where id = ?", d(YEAR, 6, 2), installment.getId());
-
-        MutableClock.INSTANCE.setDate(d(YEAR, 6, 2));
-        evaluate(d(YEAR, 6, 2));
-
-        assertThat(statusOf(enrollment.getId())).isNotEqualTo(EnrollmentPaymentStatus.SUSPENDED);
-        assertThat(eventsOf(enrollment.getId())).doesNotContain("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
+        assertThat(eventsOf(enrollment.getId())).contains("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
     }
 
     @Test

@@ -8,6 +8,10 @@ import java.time.LocalDateTime;
 public record EnrollmentPaymentStandingView(Long enrollmentId, Long studentId, EnrollmentPaymentStatus status, LocalDate suspendedSince,
                                             LocalDateTime statusChangedAt) {
 
+    public boolean stopsBilling() {
+        return status.stopsBilling();
+    }
+
     public static EnrollmentPaymentStatus statusOrUpToDate(EnrollmentPaymentStandingView standing) {
         return standing == null ? EnrollmentPaymentStatus.UP_TO_DATE : standing.status();
     }

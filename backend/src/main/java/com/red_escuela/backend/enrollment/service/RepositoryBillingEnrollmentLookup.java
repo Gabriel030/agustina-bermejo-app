@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
@@ -33,7 +34,7 @@ public class RepositoryBillingEnrollmentLookup implements BillingEnrollmentLooku
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .map(enrollment -> new BillingEnrollmentFacts(enrollment.getStudent().getId(), enrollment.getProgram().getCurrency(), enrollment.getProgram().getId(),
                         ref.map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null), null, null, programEnrollmentRepository.existsByIdAndStatus(programEnrollmentId, ProgramEnrollmentStatus.ENROLLED)
-                                && !standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).map(standing -> standing.status().stopsBilling()).orElse(false)));
+                                && !standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).map(EnrollmentPaymentStandingView::stopsBilling).orElse(false)));
     }
 
     @Override

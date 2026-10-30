@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.usecase.invoice;
 
-import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.service.InvoiceDetailLoader;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -14,11 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class GetOwnProgramEnrollmentBillingStatusService implements GetOwnProgramEnrollmentBillingStatusUseCase {
     private final ProgramEnrollmentRepository enrollmentRepository;
     private final InvoiceDetailLoader invoiceDetailLoader;
-    private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public GetOwnProgramEnrollmentBillingStatusService(ProgramEnrollmentRepository enrollmentRepository, InvoiceDetailLoader invoiceDetailLoader,
-            EnrollmentPaymentStandingQuery standingQuery) {
-        this.standingQuery = standingQuery;
+    public GetOwnProgramEnrollmentBillingStatusService(ProgramEnrollmentRepository enrollmentRepository, InvoiceDetailLoader invoiceDetailLoader) {
         this.enrollmentRepository = enrollmentRepository;
         this.invoiceDetailLoader = invoiceDetailLoader;
     }
@@ -31,6 +27,6 @@ public class GetOwnProgramEnrollmentBillingStatusService implements GetOwnProgra
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, enrollmentId);
         }
-        return MeEnrollmentBillingStatusResponse.of(enrollment, standingQuery.findStandingOfProgramEnrollment(enrollmentId).orElse(null), invoiceDetailLoader.byProgramEnrollment(enrollmentId));
+        return MeEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfProgramEnrollmentOrNull(enrollmentId), invoiceDetailLoader.byProgramEnrollment(enrollmentId));
     }
 }

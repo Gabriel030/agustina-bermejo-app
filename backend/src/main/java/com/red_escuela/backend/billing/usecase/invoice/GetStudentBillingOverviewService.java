@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.usecase.invoice;
 
-import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.service.InvoiceDetailLoader;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -19,12 +18,9 @@ public class GetStudentBillingOverviewService implements GetStudentBillingOvervi
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final InvoiceDetailLoader invoiceDetailLoader;
-    private final EnrollmentPaymentStandingQuery standingQuery;
 
     public GetStudentBillingOverviewService(StudentRepository studentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                            ProgramEnrollmentRepository programEnrollmentRepository, InvoiceDetailLoader invoiceDetailLoader,
-                                            EnrollmentPaymentStandingQuery standingQuery) {
-        this.standingQuery = standingQuery;
+                                            ProgramEnrollmentRepository programEnrollmentRepository, InvoiceDetailLoader invoiceDetailLoader) {
         this.studentRepository = studentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -39,9 +35,9 @@ public class GetStudentBillingOverviewService implements GetStudentBillingOvervi
         }
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, standingQuery.findStandingOfCourseEnrollment(enrollment.getId()).orElse(null), invoiceDetailLoader.byCourseEnrollment(enrollment.getId()))),
+                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfCourseEnrollmentOrNull(enrollment.getId()), invoiceDetailLoader.byCourseEnrollment(enrollment.getId()))),
                 programEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, standingQuery.findStandingOfProgramEnrollment(enrollment.getId()).orElse(null), invoiceDetailLoader.byProgramEnrollment(enrollment.getId()))))
+                        .map(enrollment -> AdminEnrollmentBillingStatusResponse.of(enrollment, invoiceDetailLoader.findStandingOfProgramEnrollmentOrNull(enrollment.getId()), invoiceDetailLoader.byProgramEnrollment(enrollment.getId()))))
                 .toList();
     }
 }

@@ -59,6 +59,10 @@ public class EnrollmentPaymentStandingService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void evaluateEnrollmentStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, EnrollmentSuspensionRuleTimeline rules) {
         EnrollmentPaymentStanding standing = lockStandingOf(kind, enrollmentId).orElseGet(() -> openStandingOf(kind, enrollmentId, businessDate));
+        if (standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED && factsQuery.isEnrollmentWithdrawnForNonpayment(kind, enrollmentId)) {
+            closeSuspendedStanding(standing, businessDate);
+            return;
+        }
         YearMonth lastClosedMonth = YearMonth.from(businessDate).minusMonths(1);
         if (!standing.isMonthCloseDue(lastClosedMonth)) {
             applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
@@ -79,6 +83,10 @@ public class EnrollmentPaymentStandingService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void reevaluateExistingStanding(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate) {
         lockStandingOf(kind, enrollmentId).ifPresent(standing -> {
+            if (standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED && factsQuery.isEnrollmentWithdrawnForNonpayment(kind, enrollmentId)) {
+                closeSuspendedStanding(standing, businessDate);
+                return;
+            }
             applyEvaluation(standing, businessDate, null, UNUSED_OUTSIDE_MONTH_CLOSE);
             standingRepository.save(standing);
         });

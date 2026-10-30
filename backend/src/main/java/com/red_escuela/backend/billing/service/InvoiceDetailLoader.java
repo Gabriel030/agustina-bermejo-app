@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 
 import com.red_escuela.backend.billing.authorization.domain.PendingInvoiceAuthorization;
@@ -23,9 +25,12 @@ public class InvoiceDetailLoader {
     private final BankTransferReceiptRepository bankTransferReceiptRepository;
 
     private final PendingInvoiceAuthorizationReader pendingAuthorizations;
+    private final EnrollmentPaymentStandingQuery standingQuery;
 
     public InvoiceDetailLoader(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
-                               BankTransferReceiptRepository bankTransferReceiptRepository, PendingInvoiceAuthorizationReader pendingAuthorizations) {
+                               BankTransferReceiptRepository bankTransferReceiptRepository, PendingInvoiceAuthorizationReader pendingAuthorizations,
+                               EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.pendingAuthorizations = pendingAuthorizations;
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
@@ -40,6 +45,16 @@ public class InvoiceDetailLoader {
     @Transactional(readOnly = true)
     public List<InvoiceWithReceipts> byProgramEnrollment(Long programEnrollmentId) {
         return attachReceipts(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId));
+    }
+
+    @Transactional(readOnly = true)
+    public EnrollmentPaymentStandingView findStandingOfCourseEnrollmentOrNull(Long courseEnrollmentId) {
+        return standingQuery.findStandingOfCourseEnrollment(courseEnrollmentId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public EnrollmentPaymentStandingView findStandingOfProgramEnrollmentOrNull(Long programEnrollmentId) {
+        return standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).orElse(null);
     }
 
     private List<InvoiceWithReceipts> attachReceipts(List<Invoice> invoices) {
