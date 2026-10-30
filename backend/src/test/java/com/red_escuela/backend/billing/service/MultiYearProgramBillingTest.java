@@ -19,7 +19,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException;
+import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontOfProgramMustUseRequestEndpointException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -31,6 +31,7 @@ import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepo
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -330,6 +331,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-444")
     void studentAlternatesPaymentMethodsWithinAndAcrossYearsNoCarryover() {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRINT" + System.nanoTime());
@@ -360,7 +362,8 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         Long enrollmentId = enrollment.getId();
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(enrollmentId, new SelectPaymentPlanRequest(adelantado.getId(), 6)))
-                .isInstanceOf(AnnualUpfrontNotAvailableException.class);
+                .isInstanceOfSatisfying(AnnualUpfrontOfProgramMustUseRequestEndpointException.class, e -> assertThat(e.violations())
+                        .extracting(violation -> violation.code()).containsExactly("ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT"));
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(4);
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
@@ -375,6 +378,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-444")
     void annualUpfrontIsRejectedEvenAfterACompleteYear() {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRTOPE" + System.nanoTime());
@@ -406,7 +410,8 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 9)))
-                .isInstanceOf(AnnualUpfrontNotAvailableException.class);
+                .isInstanceOfSatisfying(AnnualUpfrontOfProgramMustUseRequestEndpointException.class, e -> assertThat(e.violations())
+                        .extracting(violation -> violation.code()).containsExactly("ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT"));
     }
 
     @Test
