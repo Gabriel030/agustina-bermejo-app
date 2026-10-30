@@ -76,7 +76,7 @@ class MonthlyInvoiceRunSweepIsolationTest {
     }
 
     @Test
-    @Tag("D-448")
+    @Tag("D-160")
     void anEnrollmentFoundByTwoSweepsIsProcessedOnlyOncePerRun() {
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(7L));
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(7L), eq(false))).thenReturn(List.of());
@@ -93,7 +93,7 @@ class MonthlyInvoiceRunSweepIsolationTest {
     }
 
     @Test
-    @Tag("D-448")
+    @Tag("D-160")
     void aProgramAndACourseEnrollmentWithTheSameIdAreBothProcessed() {
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(5L));
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(5L), anyBoolean())).thenReturn(List.of());
@@ -109,7 +109,7 @@ class MonthlyInvoiceRunSweepIsolationTest {
     }
 
     @Test
-    @Tag("D-448")
+    @Tag("D-160")
     void aFailedEnrollmentDoesNotStopTheFollowingOnesAndTheRunFinishesWithFailures() {
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(0L), eq(false))).thenReturn(List.of(1L, 2L, 3L));
         when(candidateFinder.findProgramEnrollmentIdsAfter(eq(APRIL), eq(3L), anyBoolean())).thenReturn(List.of());
@@ -125,7 +125,7 @@ class MonthlyInvoiceRunSweepIsolationTest {
     }
 
     @Test
-    @Tag("D-448")
+    @Tag("D-160")
     void anItemThatCannotBeSavedIsReturnedAsFailedWithItsCodeAndRetriedAsFailed() {
         MonthlyInvoiceRunItemRepository itemRepository = mock(MonthlyInvoiceRunItemRepository.class);
         MonthlyInstallmentRowProcessor rowProcessor = mock(MonthlyInstallmentRowProcessor.class);
@@ -147,7 +147,7 @@ class MonthlyInvoiceRunSweepIsolationTest {
     }
 
     @Test
-    @Tag("D-448")
+    @Tag("D-160")
     void anItemThatCannotBeSavedEvenAsFailedStillCountsAsFailedWithoutThrowing() {
         MonthlyInvoiceRunItemRepository itemRepository = mock(MonthlyInvoiceRunItemRepository.class);
         MonthlyInstallmentRowProcessor rowProcessor = mock(MonthlyInstallmentRowProcessor.class);
