@@ -105,6 +105,15 @@ class ModulePatternRulesTest {
     }
 
     @Test
+    void apiSignatureRuleDetectsARepositoryAndAllowsAnInternalOne() {
+        assertThatThrownBy(() -> ModulePatternRules.apiSignaturesExposeNoRepository("..api..").check(fixturesOf("r8")))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("RepositoryLeakyFinder.repository")
+                .hasMessageContaining("RepositoryLeakyFinder.use")
+                .hasMessageNotContaining("InternalRepositoryFinder");
+    }
+
+    @Test
     void apiInterfacesAreNamedPortAndImplementedByAnotherModule() {
         FreezingArchRule.freeze(ModulePatternRules.apiInterfacesAreNamedPortAndImplementedByAnotherModule(ArchitectureRules.ROOT))
                 .check(MAIN_CLASSES);
