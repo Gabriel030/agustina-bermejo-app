@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-055")
 @Tag("D-453")
@@ -39,6 +40,8 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
 
     @Autowired
     private MonthlyInvoiceSimulator simulator;
+    @Autowired
+    private com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunQueryUseCase queryUseCase;
     @Autowired
     private com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceSimulationUseCase simulationUseCase;
     @Autowired
@@ -204,5 +207,18 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
             pool.shutdown();
         }
         assertThat(runRepository.findByPeriodOrderByIdAsc(APRIL.atDay(1))).hasSize(1);
+    }
+
+    @Test
+    void aSimulationIsInvisibleToTheRealRunQueries() {
+        enrollmentOfAprilCohort();
+        MonthlyInvoiceRun simulation = simulator.simulateMonthlyInvoices(APRIL, date(2026, 3, 25), date(2026, 4, 1), MonthlyInvoiceRunTrigger.SCHEDULED);
+
+        assertThatThrownBy(() -> queryUseCase.findMonthlyInvoiceRun(simulation.getId()))
+                .isInstanceOf(com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunNotFoundException.class);
+        assertThatThrownBy(() -> queryUseCase.listMonthlyInvoiceRunItems(simulation.getId(), null, null, null))
+                .isInstanceOf(com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunNotFoundException.class);
+        assertThat(queryUseCase.listMonthlyInvoiceRuns(APRIL, null, null).items()).isEmpty();
+        assertThat(queryUseCase.listMonthlyInvoiceRuns(null, 0, 200).items()).noneMatch(run -> run.id().equals(simulation.getId()));
     }
 }

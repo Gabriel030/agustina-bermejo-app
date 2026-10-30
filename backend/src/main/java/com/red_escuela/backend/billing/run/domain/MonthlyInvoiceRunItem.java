@@ -88,6 +88,10 @@ public class MonthlyInvoiceRunItem {
         return result == MonthlyInvoiceRunItemResult.FAILED && nextRetryAt != null && !nextRetryAt.isAfter(now);
     }
 
+    public boolean isRetryableByStaff() {
+        return result == MonthlyInvoiceRunItemResult.FAILED || result == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED;
+    }
+
     public void recordRetryOutcome(MonthlyInvoiceItemOutcome outcome, FailedInvoiceRetrySchedule schedule, LocalDateTime attemptedAt) {
         attempts++;
         Optional<Duration> wait = outcome.result() == MonthlyInvoiceRunItemResult.FAILED ? schedule.waitAfterFailedExecution(attempts) : Optional.empty();

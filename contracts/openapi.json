@@ -5274,6 +5274,32 @@
           "type" : "object"
         } ]
       },
+      "MonthlyInvoiceRunItemCountersResponse" : {
+        "properties" : {
+          "alreadyIssued" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "issued" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "notApplicable" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "retriesExhausted" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "alreadyIssued", "failed", "issued", "notApplicable", "retriesExhausted" ],
+        "type" : "object"
+      },
       "MonthlyInvoiceRunItemResponse" : {
         "properties" : {
           "attempts" : {
@@ -5318,6 +5344,58 @@
           }
         },
         "required" : [ "attempts", "decisionCode", "enrollmentId", "enrollmentType", "errorCode", "id", "invoiceIds", "message", "nextRetryAt", "result" ],
+        "type" : "object"
+      },
+      "MonthlyInvoiceRunResponse" : {
+        "properties" : {
+          "businessDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "counters" : {
+            "$ref" : "#/components/schemas/MonthlyInvoiceRunItemCountersResponse"
+          },
+          "failureCode" : {
+            "type" : "string"
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "issuanceMode" : {
+            "type" : "string",
+            "x-extensible-enum" : [ "DIRECT" ]
+          },
+          "mode" : {
+            "type" : "string",
+            "x-extensible-enum" : [ "REAL", "SIMULATION" ]
+          },
+          "period" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "pricingDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "startedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "x-extensible-enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_FAILURES", "FAILED" ]
+          },
+          "trigger" : {
+            "type" : "string",
+            "x-extensible-enum" : [ "SCHEDULED", "MANUAL" ]
+          }
+        },
+        "required" : [ "businessDate", "counters", "failureCode", "finishedAt", "id", "issuanceMode", "mode", "period", "pricingDate", "startedAt", "status", "trigger" ],
         "type" : "object"
       },
       "MonthlyInvoiceSimulationAlertResponse" : {
@@ -25958,6 +26036,103 @@
         "tags" : [ "me-teaching-section-controller" ]
       }
     },
+    "/monthly-invoice-runs" : {
+      "get" : {
+        "operationId" : "MonthlyInvoiceRun_list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "period",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/MonthlyInvoiceRunResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Corridas mensuales, la más nueva primero; el total sin paginar viaja en el header X-Total-Count",
+            "headers" : {
+              "X-Total-Count" : {
+                "description" : "Cantidad total de corridas que cumplen el filtro, sin paginar",
+                "schema" : {
+                  "format" : "int64",
+                  "type" : "integer"
+                },
+                "style" : "simple"
+              }
+            }
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
     "/monthly-invoice-runs/simulations" : {
       "post" : {
         "operationId" : "MonthlyInvoiceSimulation_simulateMonthlyInvoices",
@@ -26028,6 +26203,75 @@
         "tags" : [ "monthly-invoice-simulation-controller" ]
       }
     },
+    "/monthly-invoice-runs/{monthlyRunId}" : {
+      "get" : {
+        "operationId" : "MonthlyInvoiceRun_find",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "monthlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MonthlyInvoiceRunResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
     "/monthly-invoice-runs/{monthlyRunId}/items" : {
       "get" : {
         "operationId" : "MonthlyInvoiceRun_listItems",
@@ -26047,6 +26291,22 @@
             "enum" : [ "ISSUED", "NOT_APPLICABLE", "ALREADY_ISSUED", "FAILED", "RETRIES_EXHAUSTED" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -26057,6 +26317,93 @@
                     "$ref" : "#/components/schemas/MonthlyInvoiceRunItemResponse"
                   },
                   "type" : "array"
+                }
+              }
+            },
+            "description" : "Ítems de la corrida por id ascendente; el total sin paginar viaja en el header X-Total-Count",
+            "headers" : {
+              "X-Total-Count" : {
+                "description" : "Cantidad total de ítems que cumplen el filtro, sin paginar",
+                "schema" : {
+                  "format" : "int64",
+                  "type" : "integer"
+                },
+                "style" : "simple"
+              }
+            }
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
+    "/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries" : {
+      "post" : {
+        "operationId" : "MonthlyInvoiceRun_retryItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "monthlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MonthlyInvoiceRunItemResponse"
                 }
               }
             },

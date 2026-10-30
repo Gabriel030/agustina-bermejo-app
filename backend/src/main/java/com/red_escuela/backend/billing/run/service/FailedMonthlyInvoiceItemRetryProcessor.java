@@ -6,6 +6,8 @@ import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemAttempt;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
+import com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunItemNotFoundException;
+import com.red_escuela.backend.billing.run.exception.RunItemNotRetryableException;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemAttemptRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
@@ -48,7 +50,19 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
         return locked;
     }
 
+    @Transactional
+    public MonthlyInvoiceRunItem retryItemManually(Long runId, Long itemId) {
+        MonthlyInvoiceRunItem item = itemRepository.findByIdForUpdate(itemId).filter(found -> found.getMonthlyInvoiceRunId().equals(runId))
+                .orElseThrow(() -> new MonthlyInvoiceRunItemNotFoundException(runId, itemId));
+        if (!item.isRetryableByStaff()) {
+            throw new RunItemNotRetryableException(itemId, item.getResult().name());
+        }
+        retryDueItem(item, LocalDateTime.now(clock));
+        return item;
+    }
+
     private void retryDueItem(MonthlyInvoiceRunItem item, LocalDateTime now) {
+        boolean wasExhausted = item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED;
         MonthlyInvoiceRun run = runRepository.findById(item.getMonthlyInvoiceRunId()).orElseThrow();
         LocalDate pricingDate = run.getPeriod();
         MonthlyInvoiceItemOutcome outcome = itemProcessor.attemptEnrollmentMonthIssuance(item.getEnrollmentType(), item.getEnrollmentId(), YearMonth.from(pricingDate), pricingDate);
@@ -56,7 +70,7 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
         item.recordRetryOutcome(outcome, schedule, now);
         itemRepository.save(item);
         attemptRepository.save(MonthlyInvoiceRunItemAttempt.recordAttempt(item.getId(), item.getAttempts(), now, outcome));
-        if (item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED) {
+        if (!wasExhausted && item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED) {
             alertPublisher.publishItemRetriesExhaustedAlert(item);
         }
     }
