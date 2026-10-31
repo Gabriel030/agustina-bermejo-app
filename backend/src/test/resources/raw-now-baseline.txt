@@ -8,6 +8,5 @@ com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionServic
 com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService
 com.red_escuela.backend.announcement.service.ScheduledAnnouncementDispatchJob
 com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementService
-com.red_escuela.backend.announcement.usecase.announcement.ListMyAnnouncementsService
 com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementService
 com.red_escuela.backend.identity.infrastructure.JwtService

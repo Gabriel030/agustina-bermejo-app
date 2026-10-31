@@ -34,7 +34,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester;
+import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 
 @Service
 public class GradeItemService {
@@ -47,7 +47,7 @@ public class GradeItemService {
     private final SectionTeachingFinder sectionTeachingFinder;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
-    private final GraduationRequestAutoRequester graduationRequestAutoRequester;
+    private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
 
@@ -58,7 +58,7 @@ public class GradeItemService {
             SectionTeachingFinder sectionTeachingFinder,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
-            GraduationRequestAutoRequester graduationRequestAutoRequester,
+            GraduationRequestTriggerPort graduationRequestTrigger,
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator) {
         this.gradeItemRepository = gradeItemRepository;
@@ -67,7 +67,7 @@ public class GradeItemService {
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
-        this.graduationRequestAutoRequester = graduationRequestAutoRequester;
+        this.graduationRequestTrigger = graduationRequestTrigger;
         this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
     }
@@ -127,7 +127,7 @@ public class GradeItemService {
             sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
                     enrollmentId, result.status(), result.finalScore(), result.finalGradeType(), finalCorrection);
             if (result.status() == EnrollmentStatus.APPROVED) {
-                graduationRequestAutoRequester.createIfEligible(enrollment.getProgramEnrollment().getId());
+                graduationRequestTrigger.requestGraduationIfEligible(enrollment.getProgramEnrollment().getId());
             }
         }
     }

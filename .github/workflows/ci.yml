@@ -155,7 +155,10 @@ jobs:
           RUN_MIGRATION: ${{ needs.changes.outputs.run_migration }}
           RUN_KARATE: ${{ needs.changes.outputs.run_karate }}
           RUN_DOCS: ${{ needs.changes.outputs.run_docs }}
+          COVERAGE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'coverage') }}
         run: |
+          coverage_profile='!coverage'
+          [ "$COVERAGE" = "true" ] && coverage_profile=coverage
           excluded=()
           [ "$RUN_MIGRATION" = "true" ] || excluded+=(migration)
           [ "$RUN_KARATE" = "true" ] || excluded+=(karate)
@@ -168,7 +171,7 @@ jobs:
           echo "excluded groups: $groups"
           rerun=0
           [ "${{ github.event_name }}" = "pull_request" ] && rerun=1
-          ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 6)" -Dsurefire.rerunFailingTestsCount=$rerun -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$groups"
+          ./mvnw -B "-P$coverage_profile" test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 6)" -Dsurefire.rerunFailingTestsCount=$rerun -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$groups"
 
       - name: Save the Maven repository
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 0 && steps.maven-cache.outputs.cache-hit != 'true'
@@ -182,8 +185,8 @@ jobs:
       - name: Enforce the time budget of the shard
         if: always()
         env:
-          SHARD_LIMIT: ${{ github.event_name == 'push' && 'warn' || 'error' }}
-          BUDGET_ENFORCEMENT: ${{ github.event_name == 'pull_request' && 'warn' || 'block' }}
+          SHARD_LIMIT: ${{ (github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'coverage')) && 'warn' || 'error' }}
+          BUDGET_ENFORCEMENT: ${{ (github.event_name == 'pull_request' || contains(github.event.pull_request.labels.*.name, 'coverage')) && 'warn' || 'block' }}
         run: |
           export SHARD_END=$(date +%s)
           mkdir -p shard-out
@@ -204,6 +207,69 @@ jobs:
           path: shard-out
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Upload the JaCoCo execution data of the shard
+        if: always() && (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'coverage'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-${{ matrix.shard }}
+          path: |
+            backend/target/jacoco.exec
+            backend/target/site/jacoco/jacoco.csv
+          retention-days: 7
+          if-no-files-found: ignore
+
+  coverage-report:
+    runs-on: ubuntu-latest
+    needs: [changes, backend-tests]
+    if: always() && needs.backend-tests.result != 'skipped' && (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'coverage'))
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+
+      - name: Restore the Maven repository
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
+          key: maven-${{ runner.os }}-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Download the JaCoCo execution data of the shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jacoco-exec-*
+          path: backend/target/jacoco-shards
+
+      - name: Merge the shards and build the coverage report
+        if: hashFiles('backend/target/jacoco-shards/**/jacoco.exec') != ''
+        working-directory: backend
+        run: ./mvnw -B -Pcoverage-merge process-classes -DskipTests
+
+      - name: Summarize the coverage of the usecase services
+        if: hashFiles('backend/target/jacoco-merged-report/jacoco.csv') != ''
+        run: python3 .github/scripts/coverage-usecase-summary.py backend/target/jacoco-merged-report/jacoco.csv --classes --markdown-out coverage-summary.md && cat coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the merged coverage report
+        if: hashFiles('backend/target/jacoco-merged-report/jacoco.csv') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: |
+            backend/target/jacoco-merged-report
+            coverage-summary.md
+          retention-days: 14
 
   backend-extra-tests:
     runs-on: ubuntu-latest

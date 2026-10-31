@@ -1,7 +1,6 @@
 package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
-import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
@@ -9,10 +8,10 @@ import com.red_escuela.backend.identity.exception.InvalidStaffRoleException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.service.PersonFactory;
+import com.red_escuela.backend.identity.service.StaffInstructorProfileCreator;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.identity.exception.RoleNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
 @UseCase
 public class CreateStaffService implements CreateStaffUseCase {
     private final PersonRepository personRepository;
-    private final InstructorRepository instructorRepository;
+    private final StaffInstructorProfileCreator staffInstructorProfileCreator;
     private final RoleRepository roleRepository;
     private final PersonFactory personFactory;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
 
-    public CreateStaffService(PersonRepository personRepository, InstructorRepository instructorRepository,
+    public CreateStaffService(PersonRepository personRepository, StaffInstructorProfileCreator staffInstructorProfileCreator,
                                RoleRepository roleRepository, PersonFactory personFactory,
                                StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
                                RequestPasswordResetUseCase requestPasswordResetUseCase) {
         this.personRepository = personRepository;
-        this.instructorRepository = instructorRepository;
+        this.staffInstructorProfileCreator = staffInstructorProfileCreator;
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
@@ -71,9 +70,7 @@ public class CreateStaffService implements CreateStaffUseCase {
         }
 
         if ("DOCENTE".equals(requestedRole)) {
-            Instructor instructor = new Instructor();
-            instructor.setPerson(person);
-            instructorRepository.save(instructor);
+            staffInstructorProfileCreator.createInstructorProfileFor(person);
         }
 
         requestPasswordResetUseCase.requestReset(person.emailValue());
