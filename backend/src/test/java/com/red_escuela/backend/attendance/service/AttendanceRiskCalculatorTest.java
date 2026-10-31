@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.service;
 
+import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
 import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -11,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AttendanceRiskCalculatorTest {
 
-    private final AttendanceRiskCalculator calculator = new AttendanceRiskCalculator(null, null);
+    private final AttendanceRiskCalculator calculator = new AttendanceRiskCalculator(new AttendanceRiskReader(null, null));
     private final Percentage maxTwentyFive = Percentage.ofPoints(BigDecimal.valueOf(25));
 
     @Test
