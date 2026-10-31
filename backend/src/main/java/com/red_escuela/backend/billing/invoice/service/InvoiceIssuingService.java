@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.service;
 
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
@@ -54,8 +55,12 @@ public class InvoiceIssuingService {
     }
 
     public InvoiceIssuingResult issueInvoiceInNewTransaction(InvoiceIssuingRequest request) {
+        return issueInvoiceInNewTransaction(request, InvoiceIssuanceDestination.EMIT_NOW);
+    }
+
+    public InvoiceIssuingResult issueInvoiceInNewTransaction(InvoiceIssuingRequest request, InvoiceIssuanceDestination destination) {
         try {
-            return ownTransaction.execute(status -> issueInvoice(request));
+            return ownTransaction.execute(status -> issueInvoice(request, destination));
         } catch (DataIntegrityViolationException e) {
             if (!violatesChargeKeyUniqueness(e)) {
                 throw e;
@@ -70,7 +75,7 @@ public class InvoiceIssuingService {
     @Transactional(propagation = Propagation.MANDATORY)
     public InvoiceIssuingResult issueInvoiceInCallerTransaction(InvoiceIssuingRequest request) {
         try {
-            return issueInvoice(request);
+            return issueInvoice(request, InvoiceIssuanceDestination.EMIT_NOW);
         } catch (DataIntegrityViolationException e) {
             if (!violatesChargeKeyUniqueness(e)) {
                 throw e;
@@ -80,18 +85,29 @@ public class InvoiceIssuingService {
         }
     }
 
-    private InvoiceIssuingResult issueInvoice(InvoiceIssuingRequest request) {
+    private InvoiceIssuingResult issueInvoice(InvoiceIssuingRequest request, InvoiceIssuanceDestination destination) {
         InvoiceIssuingContext context = contextLoader.loadContextLockingRecipient(request);
+        context.directTo(destination);
         PolicyEvaluationResult evaluation = issuingPolicies.evaluateRulesUntilFirstViolation(context);
         if (!evaluation.allowed()) {
             return resultOfRejection(context, evaluation);
         }
         InvoiceIssuingResult.InvoiceIssued issued = pipeline.runOperation(operation, context)
                 .resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("Invoice issuing does not wait for authorization: " + requestId));
+        recordIssuance(issued, request, destination);
+        return issued;
+    }
+
+    private void recordIssuance(InvoiceIssuingResult.InvoiceIssued issued, InvoiceIssuingRequest request, InvoiceIssuanceDestination destination) {
+        if (destination instanceof InvoiceIssuanceDestination.DraftOfMonthlyRun draftOfRun) {
+            log.info("Borrador creado: factura={}, corrida={}, tipo={}, periodo={}, motivo={}", issued.invoice().getId(), draftOfRun.monthlyInvoiceRunId(),
+                    issued.invoice().getInvoiceType(), request.period(), request.issuingReason());
+            meterRegistry.counter("billing_invoice_draft_created_total", "reason", request.issuingReason().name(), "invoiceType", request.invoiceType().name()).increment();
+            return;
+        }
         log.info("Factura emitida: factura={}, numero={}, tipo={}, periodo={}, vencimiento={}, motivo={}", issued.invoice().getId(),
                 issued.invoice().getInvoiceNumber().value(), issued.invoice().getInvoiceType(), request.period(), request.dueDate(), request.issuingReason());
         meterRegistry.counter("billing_invoice_issued_total", "reason", request.issuingReason().name(), "invoiceType", request.invoiceType().name()).increment();
-        return issued;
     }
 
     private InvoiceIssuingResult resultOfRejection(InvoiceIssuingContext context, PolicyEvaluationResult evaluation) {
