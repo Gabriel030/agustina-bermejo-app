@@ -48,7 +48,8 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
     @Transactional
     public Optional<MonthlyInvoiceRunItem> retryItemIfDue(Long itemId) {
         LocalDateTime now = LocalDateTime.now(clock);
-        Optional<MonthlyInvoiceRunItem> locked = itemRepository.findByIdForUpdate(itemId).filter(item -> item.isDueForRetryAt(now));
+        Optional<MonthlyInvoiceRunItem> locked = itemRepository.findByIdForUpdate(itemId).filter(item -> item.isDueForRetryAt(now))
+                .filter(item -> findRunOf(item).isOpenForRetriedItems());
         locked.ifPresent(item -> retryDueItem(item, now));
         return locked;
     }
@@ -60,13 +61,21 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
         if (!item.isRetryableByStaff()) {
             throw new RunItemNotRetryableException(itemId, item.getResult().name());
         }
+        MonthlyInvoiceRun run = findRunOf(item);
+        if (!run.isOpenForRetriedItems()) {
+            throw new RunItemNotRetryableException(itemId, "owned by a " + run.getStatus().name() + " review run");
+        }
         retryDueItem(item, LocalDateTime.now(clock));
         return item;
     }
 
+    private MonthlyInvoiceRun findRunOf(MonthlyInvoiceRunItem item) {
+        return runRepository.findById(item.getMonthlyInvoiceRunId()).orElseThrow();
+    }
+
     private void retryDueItem(MonthlyInvoiceRunItem item, LocalDateTime now) {
         boolean wasExhausted = item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED;
-        MonthlyInvoiceRun run = runRepository.findById(item.getMonthlyInvoiceRunId()).orElseThrow();
+        MonthlyInvoiceRun run = findRunOf(item);
         LocalDate pricingDate = run.getPeriod();
         MonthlyInvoiceItemOutcome outcome = itemProcessor.attemptEnrollmentMonthIssuance(item.getEnrollmentType(), item.getEnrollmentId(), YearMonth.from(pricingDate), pricingDate,
                 issuanceStrategies.strategyOf(run.getIssuanceMode()).destinationOfRun(run.getId()));

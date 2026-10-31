@@ -47,6 +47,9 @@ public class PlannedInvoiceIssuingService {
 
     public InvoiceIssuingResult issuePlannedProgramInvoice(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge, InvoiceIssuingReason reason,
                                                            boolean inCurrentTransaction, InvoiceIssuanceDestination destination) {
+        if (inCurrentTransaction && !InvoiceIssuanceDestination.EMIT_NOW.equals(destination)) {
+            throw new IllegalArgumentException("Issuing in the caller transaction only supports immediate emission, got " + destination);
+        }
         var request = InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(enrollment, selection, charge, reason);
         InvoiceIssuingResult result = inCurrentTransaction ? invoiceIssuingService.issueInvoiceInCallerTransaction(request) : invoiceIssuingService.issueInvoiceInNewTransaction(request, destination);
         if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {

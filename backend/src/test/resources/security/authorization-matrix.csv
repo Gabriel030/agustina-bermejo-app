@@ -390,6 +390,7 @@ GET,/monthly-invoice-runs/{monthlyRunId},DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 POST,/monthly-invoice-runs/simulations,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,"{""period"":""2026-11""}"
 POST,/monthly-invoice-runs/manual-issuances,DENY,DENY,DENY,DENY,DENY,ALLOW,,"{""period"":""2026-11"",""simulationRunId"":1}"
 GET,/monthly-invoice-runs/{monthlyRunId}/items,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
+GET,/monthly-invoice-runs/{monthlyRunId}/draft-invoices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 POST,/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
 GET,/me/program-enrollments/{id}/annual-upfront/quote,DENY,OWNER,DENY,DENY,DENY,DENY,program-enrollment,
 GET,/program-enrollments/{id}/annual-upfront/quote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,,
