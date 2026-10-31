@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.run.domain.DraftInvoiceGroupKey;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.repository.DraftInvoiceLineRepository;
-import com.red_escuela.backend.enrollment.api.EnrollmentNameLookup;
+import com.red_escuela.backend.enrollment.api.EnrollmentNameFinder;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +22,9 @@ import java.util.Set;
 @Service
 public class MonthlyRunDraftInvoiceGrouper {
     private final DraftInvoiceLineRepository lineRepository;
-    private final EnrollmentNameLookup enrollmentNames;
+    private final EnrollmentNameFinder enrollmentNames;
 
-    public MonthlyRunDraftInvoiceGrouper(DraftInvoiceLineRepository lineRepository, EnrollmentNameLookup enrollmentNames) {
+    public MonthlyRunDraftInvoiceGrouper(DraftInvoiceLineRepository lineRepository, EnrollmentNameFinder enrollmentNames) {
         this.lineRepository = lineRepository;
         this.enrollmentNames = enrollmentNames;
     }
