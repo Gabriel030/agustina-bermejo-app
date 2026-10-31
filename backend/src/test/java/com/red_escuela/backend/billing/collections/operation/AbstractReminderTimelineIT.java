@@ -250,7 +250,7 @@ abstract class AbstractReminderTimelineIT extends AbstractIntegrationTest {
     }
 
     protected Long uploadReceipt(Invoice invoice) {
-        return jdbc.queryForObject("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', now(), 'PENDING_REVIEW', 0) returning id",
+        return jdbc.queryForObject("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', timestamp '2099-01-01 10:00:00', 'PENDING_REVIEW', 0) returning id",
                 Long.class, invoice.getId());
     }
 

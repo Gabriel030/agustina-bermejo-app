@@ -18,15 +18,17 @@ public class EnrollmentMonthCloseFactsLoader {
 
     private final EnrollmentDebtFactsQuery factsQuery;
     private final BillingConfigurationReader configurationReader;
+    private final PendingReceiptProtectionWindow protectionWindow;
 
-    public EnrollmentMonthCloseFactsLoader(EnrollmentDebtFactsQuery factsQuery, BillingConfigurationReader configurationReader) {
+    public EnrollmentMonthCloseFactsLoader(EnrollmentDebtFactsQuery factsQuery, BillingConfigurationReader configurationReader, PendingReceiptProtectionWindow protectionWindow) {
         this.factsQuery = factsQuery;
         this.configurationReader = configurationReader;
+        this.protectionWindow = protectionWindow;
     }
 
     public MonthCloseFacts loadFactsAtCutoff(EnrollmentKind kind, Long enrollmentId, LocalDate cutoff) {
         Map<LocalDate, Integer> graceByDueDate = new HashMap<>();
-        List<InstallmentDueDate> overdueAtCutoff = factsQuery.findMonthlyInstallmentsUnpaidAndUnprotectedAtCutoff(kind, enrollmentId, cutoff).stream()
+        List<InstallmentDueDate> overdueAtCutoff = factsQuery.findMonthlyInstallmentsUnpaidAndUnprotectedAtCutoff(kind, enrollmentId, cutoff, protectionWindow.earliestProtectedUploadDateAsOf(cutoff)).stream()
                 .filter(installment -> cutoff.isAfter(installment.dueDate().plusDays(graceByDueDate.computeIfAbsent(installment.dueDate(), this::graceDaysOf))))
                 .toList();
         LocalDate oldest = overdueAtCutoff.stream().map(InstallmentDueDate::dueDate).min(LocalDate::compareTo).orElse(null);

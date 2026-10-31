@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.collections.domain.PostWithdrawalSummaryC
 import com.red_escuela.backend.billing.collections.domain.PostWithdrawalSummarySchedule;
 import com.red_escuela.backend.billing.collections.domain.WithdrawnEnrollmentDebtLine;
 import com.red_escuela.backend.billing.collections.repository.PostWithdrawalSummaryStore;
+import com.red_escuela.backend.billing.collections.service.PendingReceiptProtectionWindow;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,20 +27,23 @@ public class PostWithdrawalSummaryPlanningStep {
     private final StudentPostWithdrawalSummaryRecorder summaryRecorder;
     private final BillingConfigurationReader configurationReader;
     private final BusinessDayCalendar businessDayCalendar;
+    private final PendingReceiptProtectionWindow protectionWindow;
 
     public PostWithdrawalSummaryPlanningStep(PostWithdrawalSummaryStore summaryStore, StudentPostWithdrawalSummaryRecorder summaryRecorder,
-                                             BillingConfigurationReader configurationReader, BusinessDayCalendar businessDayCalendar) {
+                                             BillingConfigurationReader configurationReader, BusinessDayCalendar businessDayCalendar,
+                                             PendingReceiptProtectionWindow protectionWindow) {
         this.summaryStore = summaryStore;
         this.summaryRecorder = summaryRecorder;
         this.configurationReader = configurationReader;
         this.businessDayCalendar = businessDayCalendar;
+        this.protectionWindow = protectionWindow;
     }
 
     public int planPostWithdrawalSummariesOf(LocalDate businessDate) {
         NonBusinessDays nonBusinessDays = nonBusinessDaysFromStartOfMonthTo(businessDate);
         LocalDate summaryDay = PostWithdrawalSummarySchedule.summaryDayOfMonth(YearMonth.from(businessDate), nonBusinessDays);
         int summaryMonths = configurationReader.collectionReminderSettingsEffectiveOn(businessDate).postWithdrawalSummaryMonths();
-        List<WithdrawnEnrollmentDebtLine> debtLines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(businessDate, summaryDay);
+        List<WithdrawnEnrollmentDebtLine> debtLines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(businessDate, summaryDay, protectionWindow.earliestProtectedUploadDateAsOf(businessDate));
         int recorded = 0;
         for (PostWithdrawalSummaryCandidate candidate : PostWithdrawalSummaryCandidate.groupDueOn(debtLines, businessDate, summaryMonths, nonBusinessDays)) {
             try {

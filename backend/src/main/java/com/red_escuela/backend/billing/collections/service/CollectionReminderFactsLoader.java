@@ -48,11 +48,13 @@ public class CollectionReminderFactsLoader {
     private final ReminderFactsQuery factsQuery;
     private final EnrollmentReminderTargetFinder enrollmentTargets;
     private final BillingConfigurationReader configurationReader;
+    private final PendingReceiptProtectionWindow protectionWindow;
 
-    public CollectionReminderFactsLoader(ReminderFactsQuery factsQuery, EnrollmentReminderTargetFinder enrollmentTargets, BillingConfigurationReader configurationReader) {
+    public CollectionReminderFactsLoader(ReminderFactsQuery factsQuery, EnrollmentReminderTargetFinder enrollmentTargets, BillingConfigurationReader configurationReader, PendingReceiptProtectionWindow protectionWindow) {
         this.factsQuery = factsQuery;
         this.enrollmentTargets = enrollmentTargets;
         this.configurationReader = configurationReader;
+        this.protectionWindow = protectionWindow;
     }
 
     @Transactional(readOnly = true)
@@ -67,13 +69,14 @@ public class CollectionReminderFactsLoader {
 
     @Transactional(readOnly = true)
     public List<ReminderInvoiceFact> loadInvoiceFactsOf(Collection<Long> invoiceIds, LocalDate businessDate) {
-        return factsQuery.findOpenInvoicesByIds(invoiceIds, businessDate).stream().map(row -> factOf(row, Collections.emptyMap(), Collections.emptyMap())).toList();
+        return factsQuery.findOpenInvoicesByIds(invoiceIds, businessDate, protectionWindow.earliestProtectedUploadDateAsOf(businessDate)).stream().map(row -> factOf(row, Collections.emptyMap(), Collections.emptyMap())).toList();
     }
 
     @Transactional(readOnly = true)
     public List<StudentReminderContext> loadContextsOf(Collection<Long> studentIds, LocalDate businessDate) {
         LocalDate previousBusinessDate = businessDate.minusDays(1);
-        List<OpenInvoiceRow> invoiceRows = factsQuery.findOpenInvoicesOf(studentIds, previousBusinessDate, previousBusinessDate.atTime(PLANNING_RUN_TIME));
+        List<OpenInvoiceRow> invoiceRows = factsQuery.findOpenInvoicesOf(studentIds, previousBusinessDate, previousBusinessDate.atTime(PLANNING_RUN_TIME),
+                protectionWindow.earliestProtectedUploadDateAsOf(businessDate));
         Map<Long, EnrollmentReminderTarget> programTargets = enrollmentTargets.findProgramEnrollmentTargets(distinctIdsOf(invoiceRows, OpenInvoiceRow::programEnrollmentId));
         Map<Long, EnrollmentReminderTarget> courseTargets = enrollmentTargets.findCourseEnrollmentTargets(distinctIdsOf(invoiceRows, OpenInvoiceRow::courseEnrollmentId));
         Map<Long, List<CreditRow>> creditsByStudent = factsQuery.findUnallocatedCreditOf(studentIds).stream().collect(Collectors.groupingBy(CreditRow::studentId));
