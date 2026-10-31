@@ -4,6 +4,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,10 +20,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+    private static final String PLATFORM_ADMIN_ROLE = "PLATFORM_ADMIN";
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final List<String> corsAllowedOrigins;
 
@@ -28,6 +35,16 @@ public class SecurityConfig {
             @Value("${app.cors.allowed-origins}") List<String> corsAllowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.corsAllowedOrigins = corsAllowedOrigins;
+    }
+
+    private static AuthorizationDecision authenticatedExceptPlatformAdmin(
+            Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+        Authentication current = authentication.get();
+        boolean authenticated = current != null && current.isAuthenticated()
+                && !(current instanceof AnonymousAuthenticationToken);
+        boolean platformAdmin = authenticated && current.getAuthorities().stream()
+                .anyMatch(authority -> ("ROLE_" + PLATFORM_ADMIN_ROLE).equals(authority.getAuthority()));
+        return new AuthorizationDecision(authenticated && !platformAdmin);
     }
 
     @Bean
@@ -64,7 +81,9 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.POST, "/payments/mp-webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/verify-email").permitAll()
-                .anyRequest().authenticated())
+                .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
+                .requestMatchers("/me/modules").authenticated()
+                .anyRequest().access(SecurityConfig::authenticatedExceptPlatformAdmin))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
