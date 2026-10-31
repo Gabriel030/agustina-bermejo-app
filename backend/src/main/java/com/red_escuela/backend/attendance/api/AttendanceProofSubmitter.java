@@ -28,6 +28,8 @@ public class AttendanceProofSubmitter {
         attendance.setStatus(AttendanceStatus.JUSTIFICATION_PENDING);
         attendance.setJustificationReason(reason);
         attendance.setJustificationAttachmentUrl(attachmentUrl);
+        attendance.setJustificationRejectionReason(null);
+        attendance.setJustificationRejectedAt(null);
         return StudentAttendanceView.from(attendanceRepository.save(attendance));
     }
 }

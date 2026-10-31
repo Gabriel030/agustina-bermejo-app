@@ -9,6 +9,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
+import com.red_escuela.backend.attendance.events.AttendanceJustificationApprovedEvent;
 import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ public class ApproveAttendanceJustificationService implements ApproveAttendanceJ
         attendance.setJustifiedAt(ApplicationTime.now());
         Attendance saved = attendanceRepository.save(attendance);
         eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved));
+        eventPublisher.publishEvent(AttendanceJustificationApprovedEvent.approvedFor(saved));
         return saved;
     }
 }

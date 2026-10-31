@@ -456,9 +456,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
                 new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(attendance.getId(), "motivo médico", "students/1/comprobante.pdf"));
+        Person preceptor = persistPersonBase("80000099");
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        Attendance rechazada = rejectAttendanceJustificationUseCase.reject(attendance.getId());
+        Attendance rechazada = rejectAttendanceJustificationUseCase.reject(new RejectAttendanceJustificationCommand(attendance.getId(), "El comprobante no es legible"));
         assertThat(rechazada.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+        assertThat(rechazada.getJustificationRejectionReason()).isEqualTo("El comprobante no es legible");
+        assertThat(rechazada.getJustificationRejectedAt()).isNotNull();
     }
 
     @Test

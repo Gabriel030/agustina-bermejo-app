@@ -35,7 +35,7 @@ class StudentAttendanceReaderTest {
         List<StudentAttendanceView> views = reader.listProgramEnrollmentAttendance(7L);
 
         assertThat(views).containsExactly(new StudentAttendanceView(
-                11L, 7L, LocalDate.of(2026, 3, 2), "ABSENT", null, null, null));
+                11L, 7L, LocalDate.of(2026, 3, 2), "ABSENT", null, null, null, null));
     }
 
     @Test
