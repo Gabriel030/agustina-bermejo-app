@@ -2,9 +2,8 @@ package com.red_escuela.backend.academicrecord.controller;
 
 import com.red_escuela.backend.academicrecord.dto.StudentAttendanceResponse;
 import com.red_escuela.backend.academicrecord.dto.StudentAttendanceRiskResponse;
-import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
-import com.red_escuela.backend.evaluation.service.GradeItemService;
-import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
+import com.red_escuela.backend.academicrecord.dto.StudentGradeItemResponse;
+import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyEnrollmentGradeItemsUseCase;
 import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyEnrollmentAttendanceUseCase;
 import com.red_escuela.backend.academicrecord.usecase.studentrecord.ReadMyEnrollmentAttendanceRiskUseCase;
 import com.red_escuela.backend.academicrecord.usecase.studentrecord.SubmitMyAbsenceProofUseCase;
@@ -25,22 +24,19 @@ import java.util.List;
 @RequestMapping("/me")
 public class MeAcademicRecordController {
     private final CurrentStudentService currentStudentService;
-    private final SectionEnrollmentFinder sectionEnrollmentFinder;
-    private final GradeItemService gradeItemService;
+    private final ListMyEnrollmentGradeItemsUseCase listMyEnrollmentGradeItemsUseCase;
     private final ListMyEnrollmentAttendanceUseCase listMyEnrollmentAttendanceUseCase;
     private final ReadMyEnrollmentAttendanceRiskUseCase readMyEnrollmentAttendanceRiskUseCase;
     private final SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase;
 
     public MeAcademicRecordController(
             CurrentStudentService currentStudentService,
-            SectionEnrollmentFinder sectionEnrollmentFinder,
-            GradeItemService gradeItemService,
+            ListMyEnrollmentGradeItemsUseCase listMyEnrollmentGradeItemsUseCase,
             ListMyEnrollmentAttendanceUseCase listMyEnrollmentAttendanceUseCase,
             ReadMyEnrollmentAttendanceRiskUseCase readMyEnrollmentAttendanceRiskUseCase,
             SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase) {
         this.currentStudentService = currentStudentService;
-        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
-        this.gradeItemService = gradeItemService;
+        this.listMyEnrollmentGradeItemsUseCase = listMyEnrollmentGradeItemsUseCase;
         this.listMyEnrollmentAttendanceUseCase = listMyEnrollmentAttendanceUseCase;
         this.readMyEnrollmentAttendanceRiskUseCase = readMyEnrollmentAttendanceRiskUseCase;
         this.submitMyAbsenceProofUseCase = submitMyAbsenceProofUseCase;
@@ -57,9 +53,8 @@ public class MeAcademicRecordController {
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
-    public List<GradeItemResponse> myGrades(@PathVariable Long id) {
-        sectionEnrollmentFinder.requireProgramEnrollmentOf(id, currentStudentService.resolveCurrentStudent().getId());
-        return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
+    public List<StudentGradeItemResponse> myGrades(@PathVariable Long id) {
+        return listMyEnrollmentGradeItemsUseCase.list(currentStudentService.resolveCurrentStudent().getId(), id);
     }
 
     @PostMapping(value = "/attendance/{id}/justify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
