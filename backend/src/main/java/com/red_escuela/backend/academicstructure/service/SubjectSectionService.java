@@ -10,7 +10,6 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
@@ -29,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigDraftInitializer;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 
 @Service
 public class SubjectSectionService {
@@ -39,7 +38,7 @@ public class SubjectSectionService {
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
-    private final SectionEvaluationConfigDraftInitializer sectionEvaluationConfigDraftInitializer;
+    private final SectionEvaluationSetupPort evaluationSetupPort;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -48,14 +47,14 @@ public class SubjectSectionService {
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
             EntityManager entityManager,
-            SectionEvaluationConfigDraftInitializer sectionEvaluationConfigDraftInitializer) {
+            SectionEvaluationSetupPort evaluationSetupPort) {
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
-        this.sectionEvaluationConfigDraftInitializer = sectionEvaluationConfigDraftInitializer;
+        this.evaluationSetupPort = evaluationSetupPort;
     }
 
     @Transactional
@@ -78,7 +77,7 @@ public class SubjectSectionService {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         SubjectSection guardada = sectionRepository.save(section);
-        sectionEvaluationConfigDraftInitializer.createInitialDraft(guardada);
+        evaluationSetupPort.createInitialEvaluationDraft(guardada);
         return guardada;
     }
 
@@ -163,10 +162,7 @@ public class SubjectSectionService {
     }
 
     private EvaluationScheme resolveEvaluationScheme(Long id) {
-        EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
-        if (scheme == null) {
-            throw new EvaluationSchemeNotFoundException(id);
-        }
-        return scheme;
+        evaluationSetupPort.requireEvaluationSchemeExists(id);
+        return entityManager.find(EvaluationScheme.class, id);
     }
 }

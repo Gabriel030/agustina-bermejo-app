@@ -1,3 +1,1 @@
 COUNT enrollment 2
-Module 'identity' depends on module 'academicstructure' via com.red_escuela.backend.identity.usecase.staff.CreateStaffService -> com.red_escuela.backend.academicstructure.repository.InstructorRepository. Allowed targets: shared.
-Module 'identity' depends on named interface(s) 'academicstructure :: model' via com.red_escuela.backend.identity.usecase.staff.CreateStaffService -> com.red_escuela.backend.academicstructure.entity.Instructor. Allowed targets: shared.
