@@ -24,7 +24,7 @@ public class EnrollmentDebtFactsQuery {
         this.jdbc = jdbc;
     }
 
-    public EnrollmentDebtFacts findLiveFactsOf(EnrollmentKind kind, Long enrollmentId) {
+    public EnrollmentDebtFacts findLiveFactsOf(EnrollmentKind kind, Long enrollmentId, LocalDate businessDate, LocalDate protectionFloor) {
         int[] counts = new int[4];
         jdbc.query("""
                 select i.invoice_type, count(distinct i.id) as invoices
@@ -32,10 +32,15 @@ public class EnrollmentDebtFactsQuery {
                 join invoice_line l on l.invoice_id = i.id
                 where l.%s = :enrollmentId
                   and i.document_status = 'ISSUED'
-                  and i.payment_status = 'OVERDUE'
+                  and (i.payment_status = 'OVERDUE'
+                       or (i.payment_status = 'PAYMENT_UNDER_REVIEW'
+                           and i.due_date < :businessDate
+                           and exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and cast(r.uploaded_at as date) < :protectionFloor)
+                           and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and cast(r.uploaded_at as date) >= :protectionFloor)))
                   and i.outstanding_amount > 0
                 group by i.invoice_type
-                """.formatted(enrollmentColumn(kind)), new MapSqlParameterSource("enrollmentId", enrollmentId), row -> {
+                """.formatted(enrollmentColumn(kind)),
+                new MapSqlParameterSource("enrollmentId", enrollmentId).addValue("businessDate", Date.valueOf(businessDate)).addValue("protectionFloor", Date.valueOf(protectionFloor)), row -> {
             int invoices = row.getInt("invoices");
             switch (row.getString("invoice_type")) {
                 case "MONTHLY_INSTALLMENT" -> counts[0] += invoices;
@@ -47,7 +52,7 @@ public class EnrollmentDebtFactsQuery {
         return new EnrollmentDebtFacts(counts[0], counts[1], counts[2], counts[3]);
     }
 
-    public List<InstallmentDueDate> findMonthlyInstallmentsUnpaidAndUnprotectedAtCutoff(EnrollmentKind kind, Long enrollmentId, LocalDate cutoff) {
+    public List<InstallmentDueDate> findMonthlyInstallmentsUnpaidAndUnprotectedAtCutoff(EnrollmentKind kind, Long enrollmentId, LocalDate cutoff, LocalDate protectionFloor) {
         List<InstallmentDueDate> installments = new ArrayList<>();
         jdbc.query("""
                 select distinct i.id, i.due_date
@@ -71,13 +76,14 @@ public class EnrollmentDebtFactsQuery {
                                     and p.method_type = 'BANK_TRANSFER'
                                     and cast(p.registered_at as date) <= i.due_date
                                     and cast(p.registered_at as date) <= :cutoff
+                                    and cast(p.registered_at as date) >= :protectionFloor
                                     and not exists (select 1 from payment_status_change change
                                                     where change.payment_id = p.id
                                                       and change.to_status <> 'PENDING'
                                                       and cast(change.occurred_at as date) <= :cutoff))
                 order by i.due_date, i.id
                 """.formatted(enrollmentColumn(kind)),
-                new MapSqlParameterSource("enrollmentId", enrollmentId).addValue("cutoff", Date.valueOf(cutoff)),
+                new MapSqlParameterSource("enrollmentId", enrollmentId).addValue("cutoff", Date.valueOf(cutoff)).addValue("protectionFloor", Date.valueOf(protectionFloor)),
                 row -> {
                     installments.add(new InstallmentDueDate(row.getLong("id"), row.getDate("due_date").toLocalDate()));
                 });

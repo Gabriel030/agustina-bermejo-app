@@ -127,7 +127,7 @@ public abstract class AbstractOverdueContactIT extends AbstractIntegrationTest {
     }
 
     protected void putReceiptUnderReview(Invoice invoice) {
-        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', now(), 'PENDING_REVIEW', 0)",
+        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', timestamp '2099-01-01 10:00:00', 'PENDING_REVIEW', 0)",
                 invoice.getId());
     }
 }

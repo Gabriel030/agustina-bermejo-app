@@ -146,7 +146,7 @@ class PostWithdrawalSummaryPlanningIT extends AbstractOverdueContactIT {
         installmentDueOn(enrollment, JULY_TENTH);
         withdrawVoluntarily(enrollment, JULY_THIRTY_FIRST);
 
-        List<WithdrawnEnrollmentDebtLine> lines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(LocalDate.of(2027, 8, 2), LocalDate.of(2027, 8, 2)).stream()
+        List<WithdrawnEnrollmentDebtLine> lines = summaryStore.findPendingDebtLinesOfWithdrawnEnrollments(LocalDate.of(2027, 8, 2), LocalDate.of(2027, 8, 2), LocalDate.of(2027, 1, 1)).stream()
                 .filter(line -> line.studentId().equals(student.getId())).toList();
 
         assertThat(lines).singleElement().satisfies(line -> {

@@ -716,8 +716,8 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     @Tag("D-153")
     void aReceiptUploadedOnTimeProtectsTheInstallmentAtTheCutoffSoNobodyIsSuspendedAndNoSpuriousEventIsRecorded() {
         arrange(YEAR);
-        Invoice installment = pendingInstallmentDueOn(d(YEAR, 5, 10));
-        submitReceipt(installment, d(YEAR, 5, 10), true);
+        Invoice installment = pendingInstallmentDueOn(d(YEAR, 5, 24));
+        submitReceipt(installment, d(YEAR, 5, 24), true);
         evaluate(d(YEAR, 5, 20));
 
         evaluate(d(YEAR, 6, 1));
@@ -763,8 +763,8 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     @Tag("D-154")
     void aReceiptRejectedAfterTheCutoffStillProtectedTheInstallmentAtTheCutoff() {
         arrange(YEAR);
-        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 10));
-        Long paymentId = submitReceipt(installment, d(YEAR, 5, 9), true);
+        Invoice installment = overdueInstallmentDueOn(d(YEAR, 5, 24));
+        Long paymentId = submitReceipt(installment, d(YEAR, 5, 21), true);
         changePaymentStatus(paymentId, "BANK_TRANSFER_REJECTED", "REJECTED", d(YEAR, 6, 1));
         evaluate(d(YEAR, 5, 26));
 
