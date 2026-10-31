@@ -40,8 +40,6 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Tag("D-222")
-@Tag("D-460")
 @Tag("D-517")
 @Tag("D-518")
 @Tag("D-516")

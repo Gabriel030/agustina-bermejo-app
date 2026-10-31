@@ -5,23 +5,21 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.billing.planning.service.MonthlyInstallmentDueDateCalculator;
-import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @Component
 public class DraftInvoiceDueDateResolver {
 
     private final BillingConfigurationReader configurationReader;
-    private final ProgramYearBillingTemplateRepository templateRepository;
     private final JdbcTemplate jdbcTemplate;
     private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
 
-    public DraftInvoiceDueDateResolver(BillingConfigurationReader configurationReader, ProgramYearBillingTemplateRepository templateRepository, JdbcTemplate jdbcTemplate) {
+    public DraftInvoiceDueDateResolver(BillingConfigurationReader configurationReader, JdbcTemplate jdbcTemplate) {
         this.configurationReader = configurationReader;
-        this.templateRepository = templateRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -39,7 +37,8 @@ public class DraftInvoiceDueDateResolver {
         if (templateId == null) {
             throw new IllegalStateException("The program installment draft line has no billing template");
         }
-        return configurationReader.requireYearTermsEffectiveOn(templateRepository.findProgramIdById(templateId), templateRepository.findTermIdById(templateId), approvalDate)
+        Map<String, Object> template = jdbcTemplate.queryForMap("select program_id, term_id from program_year_billing_template where id = ?", templateId);
+        return configurationReader.requireYearTermsEffectiveOn(((Number) template.get("program_id")).longValue(), ((Number) template.get("term_id")).longValue(), approvalDate)
                 .recurringFeeDueDays();
     }
 
