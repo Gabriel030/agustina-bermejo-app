@@ -71,7 +71,7 @@ public class CreateLatePaymentSettingsOperation implements BillingOperation<Crea
                 .orElseGet(LatePaymentTerms::initial);
         LatePaymentTerms terms = new LatePaymentTerms(command.gracePeriodDays(), command.surchargeRate(),
                 command.suspensionAfterDays(), command.suspensionAfterInvoiceCount(), base.blockNewEnrollmentsWhenOverdue(), base.lateFeeDebitNoteDueDays(),
-                base.freezeLateFeesOnWithdrawal(), base.lateFeeChargingEnabled());
+                base.freezeLateFeesOnWithdrawal(), base.lateFeeChargingEnabled(), base.pendingReceiptProtectionBusinessDays());
         return publisher.publishVersion(topic, terms, effectiveFrom, LATE_PAYMENT_CHANGE_REASON, command.requestedByPersonId());
     }
 

@@ -184,7 +184,7 @@ class CollectionReminderApplicabilityIT extends AbstractIntegrationTest {
         Invoice invoice = installment();
         Long reminderId = storedReminderWithMailNoticesOn(invoice);
 
-        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', now(), 'PENDING_REVIEW', 0)", invoice.getId());
+        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', timestamp '2099-01-01 10:00:00', 'PENDING_REVIEW', 0)", invoice.getId());
         boolean whileUnderReview = applicabilityQuery.isStillApplicable(reminderId, LocalDate.of(2027, 3, 9));
         jdbc.update("delete from bank_transfer_receipt where invoice_id = ?", invoice.getId());
 

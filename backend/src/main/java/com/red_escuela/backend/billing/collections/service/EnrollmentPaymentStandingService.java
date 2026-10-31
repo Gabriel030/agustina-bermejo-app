@@ -43,11 +43,14 @@ public class EnrollmentPaymentStandingService {
     private final ApplicationEventPublisher eventPublisher;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final PendingReceiptProtectionWindow protectionWindow;
 
     public EnrollmentPaymentStandingService(EnrollmentPaymentStandingRepository standingRepository, EnrollmentDebtFactsQuery factsQuery,
                                             EnrollmentMonthCloseFactsLoader closeFactsLoader,
                                             ApplicationEventPublisher eventPublisher, ProgramEnrollmentRepository programEnrollmentRepository,
-                                            CourseEnrollmentRepository courseEnrollmentRepository) {
+                                            CourseEnrollmentRepository courseEnrollmentRepository,
+                                            PendingReceiptProtectionWindow protectionWindow) {
+        this.protectionWindow = protectionWindow;
         this.eventPublisher = eventPublisher;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -110,7 +113,7 @@ public class EnrollmentPaymentStandingService {
     }
 
     private void applyEvaluation(EnrollmentPaymentStanding standing, LocalDate businessDate, MonthCloseFacts closeFacts, EnrollmentSuspensionRule rule) {
-        EnrollmentDebtFacts facts = factsQuery.findLiveFactsOf(standing.kind(), standing.enrollmentId());
+        EnrollmentDebtFacts facts = factsQuery.findLiveFactsOf(standing.kind(), standing.enrollmentId(), businessDate, protectionWindow.earliestProtectedUploadDateAsOf(businessDate));
         List<EnrollmentPaymentEvent> events = EnrollmentPaymentStandingEvaluator.evaluateStanding(standing.getStatus(), facts, closeFacts, rule);
         for (EnrollmentPaymentEvent event : events) {
             EnrollmentPaymentStatus before = standing.getStatus();
