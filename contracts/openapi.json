@@ -4834,8 +4834,11 @@
             "type" : "string"
           },
           "discount" : {
-            "$ref" : "#/components/schemas/InvoiceLineDiscountResponse",
-            "type" : "null"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/InvoiceLineDiscountResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "feeType" : {
             "type" : "string"
@@ -6143,8 +6146,11 @@
             "type" : "string"
           },
           "request" : {
-            "$ref" : "#/components/schemas/OwnGraduationRequestDetail",
-            "type" : "null"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OwnGraduationRequestDetail"
+            }, {
+              "type" : "null"
+            } ]
           },
           "requiredCredits" : {
             "format" : "int32",
@@ -7092,8 +7098,11 @@
       "ProgramEnrollmentApplicationResponse" : {
         "properties" : {
           "admissionInvoice" : {
-            "$ref" : "#/components/schemas/AdmissionInvoiceSummary",
-            "type" : "null"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdmissionInvoiceSummary"
+            }, {
+              "type" : "null"
+            } ]
           },
           "decidedAt" : {
             "format" : "date-time",
