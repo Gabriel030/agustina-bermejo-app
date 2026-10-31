@@ -5,6 +5,9 @@ import com.red_escuela.backend.academicstructure.entity.SectionModificationPropo
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.lang.Nullable;
+
 import java.util.List;
 
 public record CycleSectionResponse(
@@ -16,8 +19,8 @@ public record CycleSectionResponse(
         boolean pendingApproval,
         List<InstructorInfo> instructors,
         List<SlotInfo> slots,
-        PendingModificationInfo pendingModification,
-        String lastRejectionReason
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) PendingModificationInfo pendingModification,
+        @Nullable String lastRejectionReason
 ) {
     public record InstructorInfo(String name, String role) {}
     public record SlotInfo(String dayOfWeek, String startTime, String endTime, Long classroomId, String classroomName) {}
