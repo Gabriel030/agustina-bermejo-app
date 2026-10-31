@@ -61,7 +61,6 @@ public class CycleTestFixtures {
         Term term = new Term();
         term.setYear(year);
         term.setDescription("Ciclo lectivo " + year + " " + UUID.randomUUID());
-        term.setType("ANUAL");
         term.setStartDate(LocalDateTime.of(year, 3, 1, 0, 0));
         term.setEndDate(LocalDateTime.of(year, 12, 15, 0, 0));
         term.setStatus(StatusType.ACTIVE);

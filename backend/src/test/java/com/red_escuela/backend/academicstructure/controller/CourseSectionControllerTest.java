@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
@@ -101,7 +102,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
         Term courseTerm = new Term();
         courseTerm.setYear(2026);
         courseTerm.setDescription("Term del curso");
-        courseTerm.setType("1C");
+        courseTerm.setType(TermType.FIRST_SEMESTER);
         courseTerm.setStartDate(LocalDateTime.now());
         courseTerm.setEndDate(LocalDateTime.now().plusMonths(2));
         entityManager.persist(courseTerm);
@@ -125,7 +126,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
         Term term = new Term();
         term.setYear(2026);
         term.setDescription("Term de la comisión");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);

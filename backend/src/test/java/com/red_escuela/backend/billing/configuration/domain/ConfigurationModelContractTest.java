@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.domain;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.configuration.exception.CancellationReasonRequiredException;
 import com.red_escuela.backend.billing.configuration.exception.ChangeReasonRequiredException;
 import com.red_escuela.backend.billing.configuration.exception.ProposalAlreadyOpenException;
@@ -61,7 +62,7 @@ class ConfigurationModelContractTest {
                 new AllocationSettings(true),
                 new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 48),
                 new CourseTerms(10),
-                new IrregularTermTypes(List.of("Intensivo", "Verano")),
+                new IrregularTermTypes(List.of(TermType.INTENSIVE, TermType.ANNUAL)),
                 CollectionReminderSettings.initial(),
                 new BillingDashboardGoals(Percentage.ofPoints(new BigDecimal("85")), null, 3, null),
                 new ProgramReminderSchedule(ReminderSchedule.initial()),
@@ -118,10 +119,9 @@ class ConfigurationModelContractTest {
     }
 
     @Test
-    void irregularTermTypesAreTrimmedDeduplicatedSortedAndNeverBlank() {
-        assertThat(new IrregularTermTypes(List.of(" Verano", "Intensivo", "Verano ")).types()).containsExactly("Intensivo", "Verano");
-        assertThatThrownBy(() -> new IrregularTermTypes(List.of("a", " "))).isInstanceOf(InvalidConfigurationValuesException.class);
-        assertThatThrownBy(() -> new IrregularTermTypes(java.util.Arrays.asList("a", null))).isInstanceOf(InvalidConfigurationValuesException.class);
+    void irregularTermTypesAreDeduplicatedSortedAndNeverNull() {
+        assertThat(new IrregularTermTypes(List.of(TermType.INTENSIVE, TermType.ANNUAL, TermType.INTENSIVE)).types()).containsExactly(TermType.ANNUAL, TermType.INTENSIVE);
+        assertThatThrownBy(() -> new IrregularTermTypes(java.util.Arrays.asList(TermType.ANNUAL, null))).isInstanceOf(InvalidConfigurationValuesException.class);
         assertThatThrownBy(() -> new IrregularTermTypes(null)).isInstanceOf(InvalidConfigurationValuesException.class);
     }
 

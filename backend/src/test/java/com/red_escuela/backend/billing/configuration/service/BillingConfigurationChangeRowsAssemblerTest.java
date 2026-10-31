@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.service;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.BillingDashboardGoals;
@@ -153,11 +154,11 @@ class BillingConfigurationChangeRowsAssemblerTest {
 
     @Test
     void irregularTermsReadTheTypesInForceToday() {
-        when(reader.irregularTermTypesEffectiveOn(TODAY)).thenReturn(new IrregularTermTypes(List.of("Libre")));
+        when(reader.irregularTermTypesEffectiveOn(TODAY)).thenReturn(new IrregularTermTypes(List.of(TermType.ANNUAL)));
 
-        List<ChangeRow> rows = assembler.assembleRows(commandOf(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), new IrregularTermTypes(List.of("Libre", "Oyente"))));
+        List<ChangeRow> rows = assembler.assembleRows(commandOf(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), new IrregularTermTypes(List.of(TermType.ANNUAL, TermType.INTENSIVE))));
 
-        assertThat(rows).containsExactly(new ChangeRow("Tipos de cursada irregular", "Libre", "Libre, Oyente", "Cambia"));
+        assertThat(rows).containsExactly(new ChangeRow("Tipos de cursada irregular", "Anual", "Anual, Intensivo de verano", "Cambia"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -295,7 +296,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
         return invoices(enrollmentId, type).stream().map(Invoice::getPeriod).toList();
     }
 
-    protected Term newCuatrimestre(int year, int startMonth, LocalDate windowOpens, LocalDate windowCloses, String type) {
+    protected Term newCuatrimestre(int year, int startMonth, LocalDate windowOpens, LocalDate windowCloses, TermType type) {
         return transactionTemplate.execute(status -> {
             Term term = new Term();
             term.setYear(year);

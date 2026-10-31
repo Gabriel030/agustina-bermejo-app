@@ -6,7 +6,7 @@ Feature: Helper — crea un ciclo con fechas dadas, una comisión de la materia 
     * def nombreTerm = 'Ciclo QA config ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(nombreTerm)', type: 'ANUAL', startDate: '#(startDate)', endDate: '#(endDate)' }
+    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '#(startDate)', endDate: '#(endDate)' }
     When method post
     Then status 201
     * def termId = response.id

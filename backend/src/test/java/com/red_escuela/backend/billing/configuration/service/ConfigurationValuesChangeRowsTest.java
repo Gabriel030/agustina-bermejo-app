@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.service;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.BillingDashboardGoals;
@@ -138,11 +139,11 @@ class ConfigurationValuesChangeRowsTest {
 
     @Test
     void irregularTermsListTheTypesAndFlagWhenTheyChange() {
-        Map<String, String> changed = tableOf(ConfigurationValuesChangeRows.buildIrregularTermsRows(new IrregularTermTypes(List.of("Libre")), new IrregularTermTypes(List.of("Libre", "Oyente"))));
-        Map<String, String> same = tableOf(ConfigurationValuesChangeRows.buildIrregularTermsRows(new IrregularTermTypes(List.of("Libre")), new IrregularTermTypes(List.of("Libre"))));
+        Map<String, String> changed = tableOf(ConfigurationValuesChangeRows.buildIrregularTermsRows(new IrregularTermTypes(List.of(TermType.ANNUAL)), new IrregularTermTypes(List.of(TermType.ANNUAL, TermType.INTENSIVE))));
+        Map<String, String> same = tableOf(ConfigurationValuesChangeRows.buildIrregularTermsRows(new IrregularTermTypes(List.of(TermType.ANNUAL)), new IrregularTermTypes(List.of(TermType.ANNUAL))));
 
-        assertThat(changed).containsOnlyKeys("Tipos de cursada irregular").containsEntry("Tipos de cursada irregular", "Libre | Libre, Oyente | Cambia");
-        assertThat(same).containsEntry("Tipos de cursada irregular", "Libre | Libre | Sin cambio");
+        assertThat(changed).containsOnlyKeys("Tipos de cursada irregular").containsEntry("Tipos de cursada irregular", "Anual | Anual, Intensivo de verano | Cambia");
+        assertThat(same).containsEntry("Tipos de cursada irregular", "Anual | Anual | Sin cambio");
     }
 
     @Test
