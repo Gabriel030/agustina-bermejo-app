@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.domain;
 
-import com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup;
+import com.red_escuela.backend.identity.api.StudentEnrollmentActivityPort;
 import com.red_escuela.backend.identity.exception.StudentHasActiveEnrollmentsException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.policy.StudentWithdrawalContext;
@@ -17,10 +17,10 @@ public class StudentWithdrawalGuard {
     private static final PolicySet<StudentWithdrawalContext> STUDENT_WITHDRAWAL_RULES =
             PolicySet.named("STUDENT_WITHDRAWAL", List.of(new StudentWithdrawalRequiresNoActiveEnrollmentsPolicy()));
 
-    private final StudentEnrollmentActivityLookup enrollmentActivityLookup;
+    private final StudentEnrollmentActivityPort enrollmentActivityLookup;
     private final StudentRepository studentRepository;
 
-    public StudentWithdrawalGuard(StudentEnrollmentActivityLookup enrollmentActivityLookup, StudentRepository studentRepository) {
+    public StudentWithdrawalGuard(StudentEnrollmentActivityPort enrollmentActivityLookup, StudentRepository studentRepository) {
         this.enrollmentActivityLookup = enrollmentActivityLookup;
         this.studentRepository = studentRepository;
     }

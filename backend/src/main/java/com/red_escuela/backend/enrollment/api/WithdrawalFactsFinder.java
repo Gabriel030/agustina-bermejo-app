@@ -1,8 +1,5 @@
-package com.red_escuela.backend.enrollment.service;
+package com.red_escuela.backend.enrollment.api;
 
-import com.red_escuela.backend.enrollment.api.WithdrawalCause;
-import com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup;
-import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -13,16 +10,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Component
-public class RepositoryWithdrawalFactsLookup implements WithdrawalFactsLookup {
+public class WithdrawalFactsFinder {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
 
-    public RepositoryWithdrawalFactsLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
+    public WithdrawalFactsFinder(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Optional<WithdrawnEnrollmentFacts> findVoluntaryWithdrawalOfProgramEnrollment(Long programEnrollmentId) {
         return programEnrollmentRepository.findById(programEnrollmentId)
@@ -32,7 +28,6 @@ public class RepositoryWithdrawalFactsLookup implements WithdrawalFactsLookup {
                         enrollment.getWithdrawalEffectiveDate(), enrollment.getWithdrawalRegisteredOn(), WithdrawalCause.VOLUNTARY));
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Optional<WithdrawnEnrollmentFacts> findVoluntaryWithdrawalOfCourseEnrollment(Long courseEnrollmentId) {
         return courseEnrollmentRepository.findById(courseEnrollmentId)

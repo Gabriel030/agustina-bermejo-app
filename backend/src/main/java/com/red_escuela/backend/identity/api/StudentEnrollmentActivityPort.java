@@ -1,5 +1,5 @@
 package com.red_escuela.backend.identity.api;
 
-public interface StudentEnrollmentActivityLookup {
+public interface StudentEnrollmentActivityPort {
     boolean hasActiveEnrollments(Long studentId);
 }

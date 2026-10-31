@@ -19,7 +19,7 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReview
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.support.PriceFixtures;
-import com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup;
+import com.red_escuela.backend.enrollment.api.WithdrawalFactsFinder;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -78,7 +78,7 @@ class LeftOutInvoiceCancellationOnReceiptRejectionIT extends AbstractInvoiceCanc
     @Autowired
     private ApplicationEventPublisher eventPublisher;
     @Autowired
-    private WithdrawalFactsLookup withdrawalFacts;
+    private WithdrawalFactsFinder withdrawalFacts;
     @Autowired
     private CourseEnrollmentRepository courseEnrollmentRepository;
 

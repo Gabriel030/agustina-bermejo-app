@@ -1,9 +1,7 @@
-package com.red_escuela.backend.enrollment.service;
+package com.red_escuela.backend.enrollment.api;
 
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
-import com.red_escuela.backend.enrollment.api.EnrollmentReminderTarget;
-import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Component;
@@ -14,19 +12,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class RepositoryEnrollmentReminderTargetLookup implements EnrollmentReminderTargetLookup {
+public class EnrollmentReminderTargetFinder {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public RepositoryEnrollmentReminderTargetLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+    public EnrollmentReminderTargetFinder(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
                                                     EnrollmentPaymentStandingQuery standingQuery) {
         this.standingQuery = standingQuery;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Map<Long, EnrollmentReminderTarget> findProgramEnrollmentTargets(Collection<Long> programEnrollmentIds) {
         Map<Long, EnrollmentReminderTarget> targets = new HashMap<>();
@@ -39,7 +36,6 @@ public class RepositoryEnrollmentReminderTargetLookup implements EnrollmentRemin
         return targets;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Map<Long, EnrollmentReminderTarget> findCourseEnrollmentTargets(Collection<Long> courseEnrollmentIds) {
         Map<Long, EnrollmentReminderTarget> targets = new HashMap<>();

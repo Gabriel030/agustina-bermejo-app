@@ -26,7 +26,7 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.event.DomainEvent;
@@ -49,7 +49,7 @@ public class AcquireCohortPromotionOperation implements BillingOperation<Acquire
     private static final DiscountCandidateRanking RANKING = new DiscountCandidateRanking();
 
     private final PolicySet<CohortPromotionAcquisitionCheck> acquisitionPolicies;
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
     private final DiscountDefinitionRepository definitionRepository;
     private final StudentDiscountRepository repository;
     private final DiscountQuotaUsageReader quotaUsageReader;
@@ -58,7 +58,7 @@ public class AcquireCohortPromotionOperation implements BillingOperation<Acquire
     private final PriceReader priceReader;
     private final Clock clock;
 
-    public AcquireCohortPromotionOperation(PolicySet<CohortPromotionAcquisitionCheck> acquisitionPolicies, BillingEnrollmentLookup enrollmentLookup,
+    public AcquireCohortPromotionOperation(PolicySet<CohortPromotionAcquisitionCheck> acquisitionPolicies, BillingEnrollmentFactsFinder enrollmentLookup,
                                            DiscountDefinitionRepository definitionRepository, StudentDiscountRepository repository,
                                            DiscountQuotaUsageReader quotaUsageReader, EnrollmentDiscountLock enrollmentLock, StudentCurrentAccountService accountService, PriceReader priceReader, Clock clock) {
         this.acquisitionPolicies = acquisitionPolicies;

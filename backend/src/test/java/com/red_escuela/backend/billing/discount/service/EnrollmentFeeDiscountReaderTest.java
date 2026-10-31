@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDiscount;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ class EnrollmentFeeDiscountReaderTest {
 
     private final LiveEnrollmentFeeRepository repository = mock(LiveEnrollmentFeeRepository.class);
     private final ConfiguredLectiveYearReader lectiveYearReader = mock(ConfiguredLectiveYearReader.class);
-    private final BillingEnrollmentLookup lookup = mock(BillingEnrollmentLookup.class);
+    private final BillingEnrollmentFactsFinder lookup = mock(BillingEnrollmentFactsFinder.class);
     private final EnrollmentFeeDiscountReader reader = new EnrollmentFeeDiscountReader(repository, lectiveYearReader, lookup);
 
     private Invoice augustFeeWithDiscount() {

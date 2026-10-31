@@ -1,10 +1,8 @@
-package com.red_escuela.backend.enrollment.service;
+package com.red_escuela.backend.enrollment.api;
 
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Component;
@@ -15,19 +13,18 @@ import java.time.YearMonth;
 import java.util.Optional;
 
 @Component
-public class RepositoryBillingEnrollmentLookup implements BillingEnrollmentLookup {
+public class BillingEnrollmentFactsFinder {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public RepositoryBillingEnrollmentLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+    public BillingEnrollmentFactsFinder(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
                                               EnrollmentPaymentStandingQuery standingQuery) {
         this.standingQuery = standingQuery;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Optional<BillingEnrollmentFacts> findProgramEnrollmentFacts(Long programEnrollmentId) {
         Optional<ProgramEnrollmentRepository.BillingTemplateRef> ref = programEnrollmentRepository.findBillingTemplateRef(programEnrollmentId);
@@ -37,7 +34,6 @@ public class RepositoryBillingEnrollmentLookup implements BillingEnrollmentLooku
                                 && !standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).map(EnrollmentPaymentStandingView::stopsBilling).orElse(false)));
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Optional<BillingEnrollmentFacts> findCourseEnrollmentFacts(Long courseEnrollmentId) {
         Optional<CourseEnrollmentRepository.CourseTermDates> dates = courseEnrollmentRepository.findCourseTermDates(courseEnrollmentId);

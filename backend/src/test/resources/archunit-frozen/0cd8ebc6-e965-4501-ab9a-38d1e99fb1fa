@@ -12,9 +12,4 @@ com.red_escuela.backend.billing.api.PaymentFactsQuery is an api interface not na
 com.red_escuela.backend.billing.api.ReminderPaymentGoalQuery is an api interface not named *Port
 com.red_escuela.backend.billing.api.StudentSegment is an api interface not named *Port
 com.red_escuela.backend.enrollment.api.AdmissionApplicationExpiryPort has no implementation in another module
-com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup is an api interface not named *Port
 com.red_escuela.backend.enrollment.api.CourseEnrollmentApplicationCancellationPort has no implementation in another module
-com.red_escuela.backend.enrollment.api.EnrollmentNameLookup is an api interface not named *Port
-com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup is an api interface not named *Port
-com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup is an api interface not named *Port
-com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup is an api interface not named *Port
