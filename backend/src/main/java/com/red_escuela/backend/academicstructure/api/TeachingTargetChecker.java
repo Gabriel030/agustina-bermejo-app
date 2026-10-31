@@ -1,26 +1,26 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
-import com.red_escuela.backend.academicstructure.api.TeachingTargetLookup;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
-public class TeachingTargetLookupService implements TeachingTargetLookup {
+public class TeachingTargetChecker {
     private final ProgramRepository programRepository;
     private final CourseRepository courseRepository;
 
-    public TeachingTargetLookupService(ProgramRepository programRepository, CourseRepository courseRepository) {
+    public TeachingTargetChecker(ProgramRepository programRepository, CourseRepository courseRepository) {
         this.programRepository = programRepository;
         this.courseRepository = courseRepository;
     }
 
-    @Override
+    @Transactional(readOnly = true)
     public boolean programExists(Long programId) {
         return programRepository.existsById(programId);
     }
 
-    @Override
+    @Transactional(readOnly = true)
     public boolean courseExists(Long courseId) {
         return courseRepository.existsById(courseId);
     }

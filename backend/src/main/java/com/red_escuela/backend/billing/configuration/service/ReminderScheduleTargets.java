@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.configuration.service;
 
-import com.red_escuela.backend.academicstructure.api.TeachingTargetLookup;
+import com.red_escuela.backend.academicstructure.api.TeachingTargetChecker;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
@@ -17,11 +17,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ReminderScheduleTargets {
-    private final TeachingTargetLookup teachingTargetLookup;
+    private final TeachingTargetChecker teachingTargetChecker;
     private final ConfigurationPolicyEvaluator policyEvaluator;
 
-    public ReminderScheduleTargets(TeachingTargetLookup teachingTargetLookup, ConfigurationPolicyEvaluator policyEvaluator) {
-        this.teachingTargetLookup = teachingTargetLookup;
+    public ReminderScheduleTargets(TeachingTargetChecker teachingTargetChecker, ConfigurationPolicyEvaluator policyEvaluator) {
+        this.teachingTargetChecker = teachingTargetChecker;
         this.policyEvaluator = policyEvaluator;
     }
 
@@ -30,8 +30,8 @@ public class ReminderScheduleTargets {
             return ConfigurationTopic.ofReminderScheduleGroup(target.group());
         }
         boolean exists = switch (target.group()) {
-            case PROGRAMS -> teachingTargetLookup.programExists(target.targetId());
-            case MONTHLY_COURSES -> teachingTargetLookup.courseExists(target.targetId());
+            case PROGRAMS -> teachingTargetChecker.programExists(target.targetId());
+            case MONTHLY_COURSES -> teachingTargetChecker.courseExists(target.targetId());
         };
         if (!exists) {
             throw new ReminderScheduleTargetNotFoundException(target.targetId());
