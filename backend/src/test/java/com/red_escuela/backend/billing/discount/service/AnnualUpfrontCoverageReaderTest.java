@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.discount.service;
 
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
@@ -20,7 +21,7 @@ import static org.mockito.Mockito.when;
 @Tag("D-408")
 class AnnualUpfrontCoverageReaderTest {
     private final PaymentPlanSelectionRepository repository = mock(PaymentPlanSelectionRepository.class);
-    private final AnnualUpfrontCoverageReader reader = new AnnualUpfrontCoverageReader(repository);
+    private final AnnualUpfrontCoverageReader reader = new AnnualUpfrontCoverageReader(repository, mock(StudentDiscountRepository.class));
     private final EnrollmentReference enrollment = EnrollmentReference.ofProgram(5L);
 
     private PaymentPlanSelection closedSelection(YearMonth from, Integer scopeMonths, YearMonth effectiveTo) {

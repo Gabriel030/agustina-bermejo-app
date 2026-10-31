@@ -61,6 +61,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
             throw new PaymentPlanOptionMismatchException(option.getId());
         }
         guard.requireAnnualUpfrontAvailableForProgram(option);
+        guard.requirePlanChangeAllowed(programEnrollmentId);
 
         boolean isFirstSelection = paymentPlanSelectionRepository.findByProgramEnrollmentIdOrderByEffectiveFrom(programEnrollmentId).isEmpty();
 

@@ -124,6 +124,8 @@ class StudentDiscountIssuingIT extends AbstractStudentDiscountIssuingIT {
 
         assertThat(revoked.getStatus()).isEqualTo(StudentDiscountStatus.REVOKED);
         assertThat(revoked.getRevokedFromPeriod()).isEqualTo(JULY);
+        assertThat(revoked.getRevokedById()).isNotNull();
+        assertThat(revoked.getRevokedByProcess()).isNull();
         assertThat(onlyDiscountOn(FeeType.MONTHLY_INSTALLMENT, JUNE).get("student_discount_id")).isEqualTo(scholarship.getId());
         assertThat(discountsOn(FeeType.MONTHLY_INSTALLMENT, JULY)).isEmpty();
         invariants.assertAllBillingInvariantsHold();

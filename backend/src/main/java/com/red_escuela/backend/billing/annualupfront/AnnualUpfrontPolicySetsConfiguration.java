@@ -18,6 +18,9 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontPlanCannotBeChangedPolicy;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontPlanChange;
+
 import java.util.List;
 
 @Configuration
@@ -35,6 +38,11 @@ public class AnnualUpfrontPolicySetsConfiguration {
                 new AnnualUpfrontLineCountSupportedPolicy(),
                 new AnnualUpfrontPriceAvailablePolicy());
         return PolicySet.named("ANNUAL_UPFRONT_REQUEST", ordered);
+    }
+
+    @Bean
+    public PolicySet<AnnualUpfrontPlanChange> annualUpfrontPlanChangePolicies() {
+        return PolicySet.named("ANNUAL_UPFRONT_PLAN_CHANGE", List.of(new AnnualUpfrontPlanCannotBeChangedPolicy()));
     }
 
     @Bean

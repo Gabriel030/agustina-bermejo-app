@@ -28,7 +28,21 @@ public record ProgramInvoicePlanningFacts(
         Long entryTemplateId,
         Integer entrySlot,
         LocalDate cursadaStart,
-        LocalDate issueDate) {
+        LocalDate issueDate,
+        Set<YearMonth> annualUpfrontAwaitingPaymentPeriods) {
+
+    public ProgramInvoicePlanningFacts {
+        annualUpfrontAwaitingPaymentPeriods = annualUpfrontAwaitingPaymentPeriods == null ? Set.of() : Set.copyOf(annualUpfrontAwaitingPaymentPeriods);
+    }
+
+    public ProgramInvoicePlanningFacts(Long enrollmentId, YearMonth month, LocalDate today, boolean academicallyActive, boolean suspendedOrWithdrawn,
+                                       boolean planCompleted, boolean paused, boolean onlyFinalExamsLeft, YearMonth entryMonth,
+                                       PaymentPlanCoverage paymentPlan, boolean hasAnyPaymentPlan, YearCycles cycles, List<IssuedEnrollmentFee> enrollmentFees,
+                                       Set<YearMonth> recurringPeriods, Map<String, SlotWindow> windows, Long entryTemplateId, Integer entrySlot,
+                                       LocalDate cursadaStart, LocalDate issueDate) {
+        this(enrollmentId, month, today, academicallyActive, suspendedOrWithdrawn, planCompleted, paused, onlyFinalExamsLeft, entryMonth, paymentPlan,
+                hasAnyPaymentPlan, cycles, enrollmentFees, recurringPeriods, windows, entryTemplateId, entrySlot, cursadaStart, issueDate, Set.of());
+    }
 
     public ProgramInvoicePlanningFacts(Long enrollmentId, YearMonth month, LocalDate today, boolean academicallyActive, boolean suspendedOrWithdrawn,
                                        boolean planCompleted, boolean paused, boolean onlyFinalExamsLeft, YearMonth entryMonth,
@@ -47,6 +61,10 @@ public record ProgramInvoicePlanningFacts(
         this(enrollmentId, month, today, academicallyActive, suspendedOrWithdrawn, planCompleted, paused, onlyFinalExamsLeft, entryMonth,
                 PaymentPlanCoverage.ofCadence(cadence), hasAnyPaymentPlan, cycles, enrollmentFees, recurringPeriods, windows, entryTemplateId, entrySlot,
                 cursadaStart);
+    }
+
+    public boolean annualUpfrontAwaitsPaymentFor(YearMonth period) {
+        return annualUpfrontAwaitingPaymentPeriods.contains(period);
     }
 
     public PaymentPlanCadence cadenceAtMonth() {

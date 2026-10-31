@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import java.time.Clock;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontPlanChangeGuard;
 import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontOfProgramMustUseRequestEndpointException;
 import com.red_escuela.backend.billing.invoice.policy.PaymentPlanChoice;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -19,8 +20,10 @@ public class PaymentPlanSelectionGuard {
     private final CurrentStudentService currentStudentService;
     private final Clock clock;
     private final PolicySet<PaymentPlanChoice> annualUpfrontPolicies;
+    private final AnnualUpfrontPlanChangeGuard planChangeGuard;
 
-    public PaymentPlanSelectionGuard(CurrentStudentService currentStudentService, Clock clock, PolicySet<PaymentPlanChoice> paymentPlanSelectionPolicySet) {
+    public PaymentPlanSelectionGuard(CurrentStudentService currentStudentService, Clock clock, PolicySet<PaymentPlanChoice> paymentPlanSelectionPolicySet, AnnualUpfrontPlanChangeGuard planChangeGuard) {
+        this.planChangeGuard = planChangeGuard;
         this.currentStudentService = currentStudentService;
         this.clock = clock;
         this.annualUpfrontPolicies = paymentPlanSelectionPolicySet;
@@ -37,6 +40,10 @@ public class PaymentPlanSelectionGuard {
     public void requireAnnualUpfrontAvailableForProgram(PaymentPlanOption option) {
         annualUpfrontPolicies.evaluateRulesUntilFirstViolation(new PaymentPlanChoice(option.getCadence() == PaymentPlanCadence.ANNUAL_UPFRONT, true))
                 .throwIfDenied(AnnualUpfrontOfProgramMustUseRequestEndpointException::new);
+    }
+
+    public void requirePlanChangeAllowed(Long programEnrollmentId) {
+        planChangeGuard.requirePlanChangeAllowed(programEnrollmentId);
     }
 
     public void validateUpfrontWindow(PaymentPlanOption option) {

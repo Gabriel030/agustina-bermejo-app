@@ -66,4 +66,11 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from StudentDiscount d where d.courseEnrollmentId = :enrollmentId and d.status in :statuses order by d.id")
     List<StudentDiscount> findByCourseEnrollmentIdAndStatusInForUpdate(@Param("enrollmentId") Long enrollmentId, @Param("statuses") Collection<StudentDiscountStatus> statuses);
+
+    @Query(value = """
+            select l.period from annual_upfront_request r join invoice_line l on l.invoice_id = r.invoice_id
+            where r.program_enrollment_id = :programEnrollmentId and r.status in ('AWAITING_PAYMENT', 'PAYMENT_UNDER_REVIEW', 'CONFIRMED')
+            order by l.period
+            """, nativeQuery = true)
+    List<java.sql.Date> findPeriodsOfLiveAnnualUpfrontRequests(@Param("programEnrollmentId") Long programEnrollmentId);
 }
