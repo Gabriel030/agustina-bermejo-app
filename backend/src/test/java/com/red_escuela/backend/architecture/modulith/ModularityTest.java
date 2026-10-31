@@ -24,7 +24,7 @@ class ModularityTest {
 
     private static final List<String> EXPECTED_MODULES = List.of(
             "academicrecord", "academicstructure", "announcement", "attendance", "billing", "config",
-            "enrollment", "evaluation", "graduation", "identity", "notification", "shared");
+            "enrollment", "evaluation", "graduation", "identity", "notification", "platform", "shared");
 
     private final ApplicationModules modules = ImportedApplicationClasses.modules();
 

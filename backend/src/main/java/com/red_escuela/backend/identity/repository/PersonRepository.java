@@ -18,6 +18,8 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     Optional<Person> findByUsername(String username);
 
+    boolean existsByRoles_Name(String roleName);
+
     @Query("select distinct p from Person p left join fetch p.roles where p.id in :personIds")
     List<Person> findAllWithRolesByIdIn(@Param("personIds") Collection<Long> personIds);
 

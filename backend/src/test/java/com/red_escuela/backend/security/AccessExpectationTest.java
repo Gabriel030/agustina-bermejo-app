@@ -37,8 +37,8 @@ class AccessExpectationTest {
     @Test
     void matrixFileKeepsJsonBodiesWithCommasAndQuotes() {
         List<String> lines = List.of(
-                "method,path,anonymous,ALUMNO,DOCENTE,PRECEPTOR,ADMINISTRATIVO,DIRECTOR,ownership,body",
-                "POST,/foo,DENY,DENY,DENY,ALLOW,ALLOW,DENY,program-enrollment,\"{\"\"a\"\":1,\"\"b\"\":\"\"x,y\"\"}\"");
+                "method,path,anonymous,ALUMNO,DOCENTE,PRECEPTOR,ADMINISTRATIVO,DIRECTOR,PLATFORM_ADMIN,ownership,body",
+                "POST,/foo,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,program-enrollment,\"{\"\"a\"\":1,\"\"b\"\":\"\"x,y\"\"}\"");
 
         AuthorizationMatrixRow row = AuthorizationMatrixFile.parse(lines).get(0);
 

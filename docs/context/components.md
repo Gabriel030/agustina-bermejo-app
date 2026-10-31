@@ -1,5 +1,7 @@
 # Catálogo de componentes del frontend
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Inventario por categoría de lo que existe hoy en `frontend/src/`, relevado del código real. Se usa para elegir componentes al diseñar, al escribir criterios de aceptación de una spec ("Componentes a usar") y al implementar. Reglas de estilo, tokens y motion: [frontend.md](frontend.md).
 
 **Mantenimiento:** todo PR que cree, elimine o cambie la API (props/variantes) de un componente compartido actualiza este archivo. Si un componente que necesitás no figura acá, verificá con `ls src/components src/components/ui` antes de crearlo.
@@ -13,7 +15,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
 | `MeshBackground` [shared] | Fondo de pantallas públicas | — |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
-| `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `RUTAS_POR_ROL` | — |
+| `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
 ## 2. Navegación
 | Componente | Uso | API relevante |

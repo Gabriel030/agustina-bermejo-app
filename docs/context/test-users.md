@@ -1,5 +1,7 @@
 # Usuarios de prueba y casos de uso
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Credenciales **solo de desarrollo local** (nunca prod/staging). El campo de login acepta username o email. Frontend en `http://localhost:5173`, backend en `http://localhost:8080`.
 
 ## 1. Cuentas demo (una por rol)
@@ -36,7 +38,7 @@ Arranque local: `JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES
 
 ## 3. Casos de uso y con qué usuario probarlos
 
-Rutas reales de `RUTAS_POR_ROL` (`frontend/src/routes/AppRouter.jsx`). "Necesita datos" = la pantalla se ve vacía con la cuenta demo pelada.
+Rutas reales de `ROLE_CONFIG` (`frontend/src/routes/roleConfig.js`) y `FEATURE_ROUTES` (`frontend/src/routes/featureRoutes.jsx`). "Necesita datos" = la pantalla se ve vacía con la cuenta demo pelada.
 
 | Caso de uso | Usuario | Ruta | Necesita datos |
 |---|---|---|---|
