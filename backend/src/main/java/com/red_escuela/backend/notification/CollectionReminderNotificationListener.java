@@ -2,7 +2,7 @@ package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.billing.events.CollectionReminderPlannedEvent;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
-import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
@@ -23,11 +23,11 @@ public class CollectionReminderNotificationListener {
 
     private final ProcessedEffectGuard effectGuard;
     private final NotificationDeliveryService deliveryService;
-    private final NotificationPreferenceQuery preferenceQuery;
+    private final NotificationPreferenceFinder preferenceQuery;
     private final CollectionReminderMessageComposer composer;
 
     public CollectionReminderNotificationListener(ProcessedEffectGuard effectGuard, NotificationDeliveryService deliveryService,
-                                                  NotificationPreferenceQuery preferenceQuery, CollectionReminderMessageComposer composer) {
+                                                  NotificationPreferenceFinder preferenceQuery, CollectionReminderMessageComposer composer) {
         this.effectGuard = effectGuard;
         this.deliveryService = deliveryService;
         this.preferenceQuery = preferenceQuery;

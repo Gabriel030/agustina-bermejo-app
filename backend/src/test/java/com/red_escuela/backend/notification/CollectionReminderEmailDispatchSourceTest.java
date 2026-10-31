@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.api.StoredReminderEmails;
 import com.red_escuela.backend.billing.events.PlannedReminderFormat;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.billing.events.PlannedReminderNoticeType;
-import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
@@ -44,14 +44,14 @@ class CollectionReminderEmailDispatchSourceTest {
 
     private CollectionReminderApplicabilityQuery applicability;
     private CollectionReminderEmailsQuery emails;
-    private NotificationPreferenceQuery preferences;
+    private NotificationPreferenceFinder preferences;
     private CollectionReminderEmailDispatchSource source;
 
     @BeforeEach
     void setUp() {
         applicability = mock(CollectionReminderApplicabilityQuery.class);
         emails = mock(CollectionReminderEmailsQuery.class);
-        preferences = mock(NotificationPreferenceQuery.class);
+        preferences = mock(NotificationPreferenceFinder.class);
         when(preferences.isPreDueReminderEmailEnabled(PERSON_ID)).thenReturn(true);
         source = new CollectionReminderEmailDispatchSource(applicability, emails, preferences, new CollectionReminderMessageComposer());
     }

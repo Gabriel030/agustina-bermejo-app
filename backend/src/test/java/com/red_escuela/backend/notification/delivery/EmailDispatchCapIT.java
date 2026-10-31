@@ -7,8 +7,8 @@ import ch.qos.logback.core.read.ListAppender;
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.identity.api.EmailRecipientLookup;
-import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
+import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
@@ -88,9 +88,9 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     @Autowired
     private TransactionalEmailGateway realGateway;
     @Autowired
-    private EmailRecipientLookup emailRecipientLookup;
+    private PersonContactFinder personContactFinder;
     @Autowired
-    private NotificationPreferenceQuery preferenceQuery;
+    private NotificationPreferenceFinder preferenceQuery;
     @Autowired
     private PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     @Autowired
@@ -192,7 +192,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     }
 
     private EmailDeliveryChannel channelWith(TransactionalEmailGateway gateway) {
-        return new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, gateway) {
+        return new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway) {
             @Override
             public void dispatchDelivery(Long deliveryId) {
                 transactionTemplate.executeWithoutResult(status -> super.dispatchDelivery(deliveryId));
