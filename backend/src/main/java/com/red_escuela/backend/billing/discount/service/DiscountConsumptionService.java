@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.discount.domain.StudentDiscountStatus;
 import com.red_escuela.backend.billing.discount.repository.AppliedStudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoiceDiscardedEvent;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,16 @@ public class DiscountConsumptionService {
 
     @EventListener
     public void releaseDiscountConsumption(InvoiceCancelledEvent event) {
-        List<LiveInvoiceDiscount> live = appliedRepository.findLiveDiscountsOfInvoice(event.invoiceId());
+        releaseConsumptionOfInvoice(event.invoiceId());
+    }
+
+    @EventListener
+    public void releaseDiscountConsumption(InvoiceDiscardedEvent event) {
+        releaseConsumptionOfInvoice(event.invoiceId());
+    }
+
+    private void releaseConsumptionOfInvoice(Long invoiceId) {
+        List<LiveInvoiceDiscount> live = appliedRepository.findLiveDiscountsOfInvoice(invoiceId);
         if (live.isEmpty()) {
             return;
         }
@@ -66,7 +76,7 @@ public class DiscountConsumptionService {
             discount.returnInstallmentConsumption(StatusChangeActor.ofProcess(PROCESS_NAME), now);
             studentDiscountRepository.save(discount);
         });
-        log.info("Consumo de descuentos devuelto por cancelacion: factura={}, descuentos={}, aplicaciones={}", event.invoiceId(), studentDiscountIds, live.size());
+        log.info("Consumo de descuentos devuelto por cancelacion o descarte: factura={}, descuentos={}, aplicaciones={}", invoiceId, studentDiscountIds, live.size());
     }
 
     @Transactional(readOnly = true)

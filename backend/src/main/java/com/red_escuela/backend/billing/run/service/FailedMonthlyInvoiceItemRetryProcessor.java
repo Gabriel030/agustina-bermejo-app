@@ -29,10 +29,12 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
     private final FailedInvoiceRetryScheduleResolver scheduleResolver;
     private final BillingRunAlertPublisher alertPublisher;
     private final Clock clock;
+    private final MonthlyInvoiceIssuanceStrategies issuanceStrategies;
 
     public FailedMonthlyInvoiceItemRetryProcessor(MonthlyInvoiceRunItemRepository itemRepository, MonthlyInvoiceRunItemAttemptRepository attemptRepository,
                                                   MonthlyInvoiceRunRepository runRepository, MonthlyInvoiceRunItemProcessor itemProcessor,
-                                                  FailedInvoiceRetryScheduleResolver scheduleResolver, BillingRunAlertPublisher alertPublisher, Clock clock) {
+                                                  FailedInvoiceRetryScheduleResolver scheduleResolver, BillingRunAlertPublisher alertPublisher, Clock clock,
+                                                  MonthlyInvoiceIssuanceStrategies issuanceStrategies) {
         this.itemRepository = itemRepository;
         this.attemptRepository = attemptRepository;
         this.runRepository = runRepository;
@@ -40,6 +42,7 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
         this.scheduleResolver = scheduleResolver;
         this.alertPublisher = alertPublisher;
         this.clock = clock;
+        this.issuanceStrategies = issuanceStrategies;
     }
 
     @Transactional
@@ -65,7 +68,8 @@ public class FailedMonthlyInvoiceItemRetryProcessor {
         boolean wasExhausted = item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED;
         MonthlyInvoiceRun run = runRepository.findById(item.getMonthlyInvoiceRunId()).orElseThrow();
         LocalDate pricingDate = run.getPeriod();
-        MonthlyInvoiceItemOutcome outcome = itemProcessor.attemptEnrollmentMonthIssuance(item.getEnrollmentType(), item.getEnrollmentId(), YearMonth.from(pricingDate), pricingDate);
+        MonthlyInvoiceItemOutcome outcome = itemProcessor.attemptEnrollmentMonthIssuance(item.getEnrollmentType(), item.getEnrollmentId(), YearMonth.from(pricingDate), pricingDate,
+                issuanceStrategies.strategyOf(run.getIssuanceMode()).destinationOfRun(run.getId()));
         FailedInvoiceRetrySchedule schedule = scheduleResolver.resolveScheduleEffectiveOn(now.toLocalDate());
         item.recordRetryOutcome(outcome, schedule, now);
         itemRepository.save(item);

@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.planning.domain.InvoicePlanningDecision;
 import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;
@@ -94,20 +95,30 @@ public class MonthlyInstallmentRowProcessor {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public MonthlyIssuanceReport reportProgramEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
+        return reportProgramEnrollmentIssuance(enrollmentId, month, pricingDate, InvoiceIssuanceDestination.EMIT_NOW);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public MonthlyIssuanceReport reportProgramEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate, InvoiceIssuanceDestination destination) {
         ProgramMonthPlan monthPlan = planProgramMonth(enrollmentId, month, pricingDate, LocalDate.now(clock));
         IssuanceTally tally = new IssuanceTally();
         for (PlannedInvoice charge : monthPlan.plan().charges()) {
-            tally.add(plannedInvoiceIssuingService.issuePlannedProgramInvoice(monthPlan.enrollment(), monthPlan.selection(), charge, InvoiceIssuingReason.MONTHLY_RUN, false));
+            tally.add(plannedInvoiceIssuingService.issuePlannedProgramInvoice(monthPlan.enrollment(), monthPlan.selection(), charge, InvoiceIssuingReason.MONTHLY_RUN, false, destination));
         }
         return tally.reportFor(monthPlan.plan());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public MonthlyIssuanceReport reportCourseEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate) {
+        return reportCourseEnrollmentIssuance(enrollmentId, month, pricingDate, InvoiceIssuanceDestination.EMIT_NOW);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public MonthlyIssuanceReport reportCourseEnrollmentIssuance(Long enrollmentId, YearMonth month, LocalDate pricingDate, InvoiceIssuanceDestination destination) {
         CourseMonthPlan monthPlan = planCourseMonth(enrollmentId, month, pricingDate, LocalDate.now(clock));
         IssuanceTally tally = new IssuanceTally();
         for (PlannedInvoice charge : monthPlan.plan().charges()) {
-            tally.add(plannedInvoiceIssuingService.issuePlannedCourseInvoice(monthPlan.context().enrollment(), monthPlan.context().selection(), charge));
+            tally.add(plannedInvoiceIssuingService.issuePlannedCourseInvoice(monthPlan.context().enrollment(), monthPlan.context().selection(), charge, destination));
         }
         return tally.reportFor(monthPlan.plan());
     }
