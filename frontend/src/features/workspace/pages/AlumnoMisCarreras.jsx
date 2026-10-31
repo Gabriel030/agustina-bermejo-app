@@ -14,6 +14,7 @@ import { TabPlanDeEstudio } from '@/features/workspace/components/TabPlanDeEstud
 import { TabNotas } from '@/features/evaluation';
 import { TabAsistencia } from '@/features/attendance';
 import { TabMesasDeExamen } from '@/features/evaluation';
+import { GraduationTab, GraduationRequestAction } from '@/features/graduation';
 import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
@@ -113,18 +114,21 @@ export function AlumnoMisCarreras() {
         {/* Siempre visible, aunque haya una sola carrera — predecible, no aparece/desaparece
             según cuántas carreras tenga el alumno (decisión de producto). En la URL
             (?carrera=) para que el breadcrumb pueda volver acá sin perder la carrera elegida. */}
-        <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {activas.map((m) => (
-              <SelectItem key={m.id} value={String(m.id)}>
-                {m.status === 'COMPLETED' ? `${m.programName} (finalizada)` : m.programName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {tab === 'egreso' && <GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
+          <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {activas.map((m) => (
+                <SelectItem key={m.id} value={String(m.id)}>
+                  {m.status === 'COMPLETED' ? `${m.programName} (finalizada)` : m.programName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -158,6 +162,7 @@ export function AlumnoMisCarreras() {
           <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>
           <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           <TabsTrigger value="plan-de-estudio">Plan de estudio</TabsTrigger>
+          <TabsTrigger value="egreso">Egreso</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -170,6 +175,7 @@ export function AlumnoMisCarreras() {
       {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
       {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
       {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
+      {tab === 'egreso' && <GraduationTab key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
     </PageContainer>
   );
 }
