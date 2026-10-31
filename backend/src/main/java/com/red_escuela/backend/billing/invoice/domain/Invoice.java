@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReversedEvent;
 import com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCreditableAmountException;
 import com.red_escuela.backend.billing.invoice.exception.DiscountExceedsLineAmountException;
+import com.red_escuela.backend.billing.invoice.exception.DraftNotPendingException;
 import com.red_escuela.backend.billing.invoice.exception.DueDateBeforeIssueDateException;
 import com.red_escuela.backend.billing.invoice.exception.IllegalInvoiceDocumentStatusTransitionException;
 import com.red_escuela.backend.billing.invoice.exception.IllegalInvoicePaymentStatusTransitionException;
@@ -298,6 +299,12 @@ public class Invoice {
         recordedDomainEvents.add(invoiceId -> new InvoiceIssuedEvent(invoiceId, studentCurrentAccountId, documentType, invoiceType, amounts.total(), issueDate, dueDate));
         if (zeroTotal) {
             recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, InvoicePaymentEvent.ISSUED_WITH_ZERO_TOTAL, issueDate));
+        }
+    }
+
+    public void requirePendingDraftOfRun(Long monthlyRunId) {
+        if (documentStatus != InvoiceDocumentStatus.DRAFT || !monthlyRunId.equals(monthlyInvoiceRunId)) {
+            throw new DraftNotPendingException(id);
         }
     }
 
