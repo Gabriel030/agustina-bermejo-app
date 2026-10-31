@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +18,9 @@ import java.util.Optional;
 public class EnrollmentFeeDiscountReader {
     private final LiveEnrollmentFeeRepository repository;
     private final ConfiguredLectiveYearReader lectiveYearReader;
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
 
-    public EnrollmentFeeDiscountReader(LiveEnrollmentFeeRepository repository, ConfiguredLectiveYearReader lectiveYearReader, BillingEnrollmentLookup enrollmentLookup) {
+    public EnrollmentFeeDiscountReader(LiveEnrollmentFeeRepository repository, ConfiguredLectiveYearReader lectiveYearReader, BillingEnrollmentFactsFinder enrollmentLookup) {
         this.repository = repository;
         this.lectiveYearReader = lectiveYearReader;
         this.enrollmentLookup = enrollmentLookup;

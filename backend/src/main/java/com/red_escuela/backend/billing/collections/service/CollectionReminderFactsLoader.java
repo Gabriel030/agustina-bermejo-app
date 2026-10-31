@@ -18,7 +18,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.enrollment.api.EnrollmentReminderTarget;
-import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup;
+import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.springframework.stereotype.Service;
@@ -46,10 +46,10 @@ public class CollectionReminderFactsLoader {
     public static final LocalTime PLANNING_RUN_TIME = LocalTime.of(5, 0);
 
     private final ReminderFactsQuery factsQuery;
-    private final EnrollmentReminderTargetLookup enrollmentTargets;
+    private final EnrollmentReminderTargetFinder enrollmentTargets;
     private final BillingConfigurationReader configurationReader;
 
-    public CollectionReminderFactsLoader(ReminderFactsQuery factsQuery, EnrollmentReminderTargetLookup enrollmentTargets, BillingConfigurationReader configurationReader) {
+    public CollectionReminderFactsLoader(ReminderFactsQuery factsQuery, EnrollmentReminderTargetFinder enrollmentTargets, BillingConfigurationReader configurationReader) {
         this.factsQuery = factsQuery;
         this.enrollmentTargets = enrollmentTargets;
         this.configurationReader = configurationReader;

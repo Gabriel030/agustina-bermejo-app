@@ -14,7 +14,7 @@ import com.red_escuela.backend.billing.discount.service.NextMonthlyInstallmentPe
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -42,7 +42,7 @@ class GrantStudentDiscountPreviewTest {
     private static final YearMonth NEXT_INSTALLMENT = YearMonth.of(2027, 4);
     private static final MonetaryAdjustment THIRTY_PERCENT = new MonetaryAdjustment.Proportional(Percentage.ofPoints(new BigDecimal("30")));
 
-    private final BillingEnrollmentLookup enrollmentLookup = mock(BillingEnrollmentLookup.class);
+    private final BillingEnrollmentFactsFinder enrollmentLookup = mock(BillingEnrollmentFactsFinder.class);
     private final DiscountDefinitionRepository definitionRepository = mock(DiscountDefinitionRepository.class);
     private final StudentDiscountRepository repository = mock(StudentDiscountRepository.class);
     private final NextMonthlyInstallmentPeriodQuery nextInstallmentQuery = mock(NextMonthlyInstallmentPeriodQuery.class);

@@ -21,7 +21,7 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCan
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingFacts;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -59,7 +59,7 @@ class CohortPromotionCandidateStrategyTest {
     private final DiscountDefinitionRepository definitionRepository = mock(DiscountDefinitionRepository.class);
     private final StudentDiscountRepository studentDiscountRepository = mock(StudentDiscountRepository.class);
     private final StudentDiscountCandidateStrategy strategy = new StudentDiscountCandidateStrategy(discountReader, mock(EnrollmentLectiveYearReader.class),
-            mock(BillingEnrollmentLookup.class), mock(EnrollmentFeeIssuanceReader.class), appliedRepository, definitionRepository, studentDiscountRepository, CLOCK);
+            mock(BillingEnrollmentFactsFinder.class), mock(EnrollmentFeeIssuanceReader.class), appliedRepository, definitionRepository, studentDiscountRepository, CLOCK);
 
     private StudentDiscount acquire(DiscountDraftBuilder draft) {
         DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(draft.build(), 99L, ENROLLED_AT);

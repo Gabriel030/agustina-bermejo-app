@@ -10,7 +10,7 @@ import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.SystemCancellationOrigin;
 import com.red_escuela.backend.billing.note.domain.WithdrawalCancellationPlanner;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
-import com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup;
+import com.red_escuela.backend.enrollment.api.WithdrawalFactsFinder;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +32,12 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
 
     private final InvoiceCreditAccessService invoices;
     private final WithdrawalInvoiceAccess invoiceAccess;
-    private final WithdrawalFactsLookup withdrawalFacts;
+    private final WithdrawalFactsFinder withdrawalFacts;
     private final StudentCurrentAccountService accountService;
     private final BillingOperationPipeline pipeline;
     private final CancelInvoiceOperation cancelInvoiceOperation;
 
-    public LeftOutInvoiceCancellationOnReceiptRejectionListener(InvoiceCreditAccessService invoices, WithdrawalInvoiceAccess invoiceAccess, WithdrawalFactsLookup withdrawalFacts,
+    public LeftOutInvoiceCancellationOnReceiptRejectionListener(InvoiceCreditAccessService invoices, WithdrawalInvoiceAccess invoiceAccess, WithdrawalFactsFinder withdrawalFacts,
                                                          StudentCurrentAccountService accountService, BillingOperationPipeline pipeline,
                                                          CancelInvoiceOperation cancelInvoiceOperation) {
         this.invoices = invoices;
