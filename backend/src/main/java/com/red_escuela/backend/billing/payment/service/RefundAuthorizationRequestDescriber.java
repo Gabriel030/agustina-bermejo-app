@@ -12,7 +12,7 @@ import com.red_escuela.backend.billing.operation.MoneyText;
 import com.red_escuela.backend.billing.payment.domain.Refund;
 import com.red_escuela.backend.billing.payment.operation.IssueRefundCommand;
 import com.red_escuela.backend.billing.payment.repository.RefundRepository;
-import com.red_escuela.backend.identity.api.StudentNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -21,9 +21,9 @@ import java.util.List;
 @Component
 public class RefundAuthorizationRequestDescriber implements AuthorizationRequestDescriber<IssueRefundCommand> {
     private final RefundRepository refunds;
-    private final StudentNameLookup studentNames;
+    private final PersonNameFinder studentNames;
 
-    public RefundAuthorizationRequestDescriber(RefundRepository refunds, StudentNameLookup studentNames) {
+    public RefundAuthorizationRequestDescriber(RefundRepository refunds, PersonNameFinder studentNames) {
         this.refunds = refunds;
         this.studentNames = studentNames;
     }

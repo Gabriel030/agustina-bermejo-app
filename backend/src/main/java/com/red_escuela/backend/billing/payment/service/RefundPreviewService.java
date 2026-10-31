@@ -14,7 +14,7 @@ import com.red_escuela.backend.billing.payment.domain.StudentCreditBalance;
 import com.red_escuela.backend.billing.payment.policy.RefundAvailabilityCheck;
 import com.red_escuela.backend.billing.payment.policy.RefundRequestCheck;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
@@ -38,7 +38,7 @@ public class RefundPreviewService {
     private static final String DESTINATION_REQUIRED = "REFUND_DESTINATION_REQUIRED";
     private static final PolicyViolation NO_ACCOUNT_CREDIT = new PolicyViolation("INSUFFICIENT_ACCOUNT_CREDIT", "El alumno no tiene saldo a favor para devolver.");
 
-    private final StudentExistenceLookup students;
+    private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final RefundRequestRecorder recorder;
     private final PaymentRepository payments;
@@ -46,7 +46,7 @@ public class RefundPreviewService {
     private final PolicySet<RefundAvailabilityCheck> availabilityPolicies;
     private final Clock clock;
 
-    public RefundPreviewService(StudentExistenceLookup students, StudentCurrentAccountService accountService, RefundRequestRecorder recorder, PaymentRepository payments,
+    public RefundPreviewService(StudentExistenceChecker students, StudentCurrentAccountService accountService, RefundRequestRecorder recorder, PaymentRepository payments,
                                 PolicySet<RefundRequestCheck> refundRequestFormatPolicySet,
                                 PolicySet<RefundAvailabilityCheck> refundAvailabilityPolicySet, Clock clock) {
         this.students = students;

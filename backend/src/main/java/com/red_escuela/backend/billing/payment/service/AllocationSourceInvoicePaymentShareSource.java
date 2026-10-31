@@ -13,7 +13,7 @@ import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
 import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +33,9 @@ public class AllocationSourceInvoicePaymentShareSource implements InvoicePayment
 
     private final AllocationSourceQueryService allocationSources;
     private final PaymentRepository payments;
-    private final PersonNameLookup personNames;
+    private final PersonNameFinder personNames;
 
-    public AllocationSourceInvoicePaymentShareSource(AllocationSourceQueryService allocationSources, PaymentRepository payments, PersonNameLookup personNames) {
+    public AllocationSourceInvoicePaymentShareSource(AllocationSourceQueryService allocationSources, PaymentRepository payments, PersonNameFinder personNames) {
         this.allocationSources = allocationSources;
         this.payments = payments;
         this.personNames = personNames;

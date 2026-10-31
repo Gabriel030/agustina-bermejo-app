@@ -26,7 +26,7 @@ import com.red_escuela.backend.billing.payment.policy.ReceiptProtectionCheck;
 import com.red_escuela.backend.billing.payment.repository.BankTransferReceiptRecordRepository;
 import com.red_escuela.backend.billing.payment.repository.PaymentCheckoutItemRepository;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -59,7 +59,7 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
     private final PolicySet<BankTransferReceiptDetailsCheck> detailsPolicies;
     private final PolicySet<BankTransferReceiptRegistrationCheck> registrationPolicies;
     private final PolicySet<ReceiptProtectionCheck> protectionPolicies;
-    private final StudentExistenceLookup students;
+    private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final InvoiceAllocationQueryService invoiceQueries;
     private final PaymentRepository payments;
@@ -71,7 +71,7 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
     public SubmitBankTransferReceiptOperation(PolicySet<CashPaymentCheck> bankTransferReceiptIdempotencyKeyPolicySet,
                                               PolicySet<BankTransferReceiptDetailsCheck> bankTransferReceiptDetailsPolicySet,
                                               PolicySet<BankTransferReceiptRegistrationCheck> bankTransferReceiptRegistrationPolicySet,
-                                              PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet, StudentExistenceLookup students,
+                                              PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet, StudentExistenceChecker students,
                                               StudentCurrentAccountService accountService, InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
                                               PaymentCheckoutItemRepository checkoutItems, BankTransferReceiptRecordRepository receipts, TransactionBoundFileCleanup fileCleanup,
                                               Clock clock) {

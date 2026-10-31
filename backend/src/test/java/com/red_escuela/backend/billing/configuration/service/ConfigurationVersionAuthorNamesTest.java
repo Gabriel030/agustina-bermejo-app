@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 @Tag("D-351")
 class ConfigurationVersionAuthorNamesTest {
-    private final PersonNameLookup personNames = mock(PersonNameLookup.class);
+    private final PersonNameFinder personNames = mock(PersonNameFinder.class);
     private final ConfigurationVersionAuthorNames service = new ConfigurationVersionAuthorNames(personNames);
 
     private static ConfigurationVersion versionBy(Long proposedById, Long decidedById) {

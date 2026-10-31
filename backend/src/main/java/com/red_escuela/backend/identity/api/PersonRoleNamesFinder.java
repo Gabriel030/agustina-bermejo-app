@@ -1,6 +1,5 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.api;
 
-import com.red_escuela.backend.identity.api.PersonRoleNamesLookup;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import org.springframework.stereotype.Component;
@@ -12,15 +11,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class RepositoryPersonRoleNamesLookup implements PersonRoleNamesLookup {
+public class PersonRoleNamesFinder {
 
     private final PersonRepository personRepository;
 
-    public RepositoryPersonRoleNamesLookup(PersonRepository personRepository) {
+    public PersonRoleNamesFinder(PersonRepository personRepository) {
         this.personRepository = personRepository;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Map<Long, List<String>> findRoleNamesByPersonId(Collection<Long> personIds) {
         if (personIds.isEmpty()) {
