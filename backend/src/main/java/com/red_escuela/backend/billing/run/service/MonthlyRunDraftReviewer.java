@@ -1,8 +1,11 @@
 package com.red_escuela.backend.billing.run.service;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.operation.DraftInvoiceBatchApprover;
+import com.red_escuela.backend.billing.invoice.domain.issuing.DraftInvoiceApprovalCommand;
+import com.red_escuela.backend.billing.invoice.operation.DraftInvoiceApprovalOperation;
 import com.red_escuela.backend.billing.invoice.operation.DraftInvoiceBatchDiscarder;
+import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode;
@@ -29,15 +32,17 @@ public class MonthlyRunDraftReviewer {
 
     private final MonthlyInvoiceRunRepository runRepository;
     private final DraftInvoiceLineRepository draftRepository;
-    private final DraftInvoiceBatchApprover approver;
+    private final BillingOperationPipeline pipeline;
+    private final DraftInvoiceApprovalOperation approval;
     private final DraftInvoiceBatchDiscarder discarder;
     private final Clock clock;
 
-    public MonthlyRunDraftReviewer(MonthlyInvoiceRunRepository runRepository, DraftInvoiceLineRepository draftRepository, DraftInvoiceBatchApprover approver,
-                                   DraftInvoiceBatchDiscarder discarder, Clock clock) {
+    public MonthlyRunDraftReviewer(MonthlyInvoiceRunRepository runRepository, DraftInvoiceLineRepository draftRepository, BillingOperationPipeline pipeline,
+                                   DraftInvoiceApprovalOperation approval, DraftInvoiceBatchDiscarder discarder, Clock clock) {
         this.runRepository = runRepository;
         this.draftRepository = draftRepository;
-        this.approver = approver;
+        this.pipeline = pipeline;
+        this.approval = approval;
         this.discarder = discarder;
         this.clock = clock;
     }
@@ -45,7 +50,8 @@ public class MonthlyRunDraftReviewer {
     @Transactional
     public List<Invoice> approveDraftsOfRun(Long monthlyRunId, Collection<Long> invoiceIds, StatusChangeActor actor) {
         MonthlyInvoiceRun run = lockRunAwaitingReview(monthlyRunId);
-        List<Invoice> approved = approver.approveDraftsOfRun(monthlyRunId, invoiceIds, LocalDate.now(clock), actor);
+        List<Invoice> approved = pipeline.runOperation(approval, new DraftInvoiceApprovalCommand(monthlyRunId, invoiceIds, LocalDate.now(clock), actor))
+                .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
         completeRunWhenNoDraftsRemain(run);
         return approved;
     }

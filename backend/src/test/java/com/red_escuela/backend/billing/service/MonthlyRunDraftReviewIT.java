@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-517")
 @Tag("D-518")
 @Tag("D-516")
+@SlowTest(reason = "Runs concurrent approvals and three lock-wait scenarios that hold row locks from another transaction while the approval waits")
 class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
     private static final StatusChangeActor REVIEWER = new StatusChangeActor(null, "test-reviewer");
 
@@ -262,5 +264,56 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
 
         assertThat(outcomes).as(outcomes.toString()).noneMatch(outcome -> outcome instanceof Throwable);
         assertThat(documentStatusOf(id)).isEqualTo("ISSUED");
+    }
+
+    private void requireApprovalToWaitWhileRowIsLocked(String lockSql) throws Exception {
+        MonthlyInvoiceRun run = reviewRunWithDrafts(1);
+        Long id = draftIdsOf(run).get(0);
+        today(date(2026, 4, 5));
+        Long accountId = jdbcTemplate.queryForObject("select student_current_account_id from invoice where id = ?", Long.class, id);
+        Long target = lockSql.contains("monthly_invoice_run") ? run.getId() : lockSql.contains("invoice where") ? id : accountId;
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService holderPool = Executors.newSingleThreadExecutor();
+        Future<?> holder = holderPool.submit(() -> transactionTemplate.execute(status -> {
+            jdbcTemplate.queryForList(lockSql, target);
+            locked.countDown();
+            try {
+                release.await(30, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        }));
+        try {
+            assertThat(locked.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<Object> approval = pool.submit(() -> reviewer.approveDraftsOfRun(run.getId(), List.of(id), REVIEWER));
+            org.awaitility.Awaitility.await().during(java.time.Duration.ofMillis(1000)).atMost(java.time.Duration.ofSeconds(10)).untilAsserted(
+                    () -> assertThat(approval.isDone()).as("approval must wait for the lock held by another transaction").isFalse());
+            release.countDown();
+            holder.get(30, TimeUnit.SECONDS);
+            approval.get(30, TimeUnit.SECONDS);
+            assertThat(documentStatusOf(id)).isEqualTo("ISSUED");
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+            holderPool.shutdownNow();
+        }
+    }
+
+    @Test
+    void approvalWaitsForTheLockOfTheRun() throws Exception {
+        requireApprovalToWaitWhileRowIsLocked("select id from monthly_invoice_run where id = ? for update");
+    }
+
+    @Test
+    void approvalWaitsForTheLockOfTheDraft() throws Exception {
+        requireApprovalToWaitWhileRowIsLocked("select id from invoice where id = ? for update");
+    }
+
+    @Test
+    void approvalWaitsForTheLockOfTheAccount() throws Exception {
+        requireApprovalToWaitWhileRowIsLocked("select id from student_current_account where id = ? for update");
     }
 }

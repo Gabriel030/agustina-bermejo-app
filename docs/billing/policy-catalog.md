@@ -834,6 +834,14 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Post-procesamiento de AccountCreditAllocatedEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
+## Operación APPROVE_DRAFT_INVOICES
+
+- Validaciones (momentos): —
+- Pre-procesamiento (en orden): —
+- Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
+- Post-procesamiento de InvoiceIssuedDomainEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
 ## Operación APPROVE_PENDING_BANK_TRANSFER_PAYMENT
 
 - Validaciones (momentos): PAYMENT_REVIEW
