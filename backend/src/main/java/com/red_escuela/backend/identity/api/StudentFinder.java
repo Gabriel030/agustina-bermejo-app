@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Component
 public class StudentFinder {
     private final StudentRepository studentRepository;
@@ -18,6 +20,11 @@ public class StudentFinder {
     @Transactional(readOnly = true)
     public Student requireById(Long studentId) {
         return studentRepository.findById(studentId).orElseThrow(() -> new StudentNotFoundException(studentId));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Long> findIdByPersonId(Long personId) {
+        return studentRepository.findByPerson_Id(personId).map(Student::getId);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

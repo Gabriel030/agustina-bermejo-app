@@ -6,12 +6,12 @@ import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
-import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
@@ -38,6 +38,7 @@ public class CourseSectionService {
     private final CourseSubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
+    private final SectionEvaluationSetupPort evaluationSetupPort;
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
@@ -45,13 +46,15 @@ public class CourseSectionService {
             TermRepository termRepository,
             CourseSubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            SectionEvaluationSetupPort evaluationSetupPort) {
         this.sectionRepository = sectionRepository;
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
+        this.evaluationSetupPort = evaluationSetupPort;
     }
 
     @Transactional
@@ -156,10 +159,7 @@ public class CourseSectionService {
     }
 
     private EvaluationScheme resolveEvaluationScheme(Long id) {
-        EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
-        if (scheme == null) {
-            throw new EvaluationSchemeNotFoundException(id);
-        }
-        return scheme;
+        evaluationSetupPort.requireEvaluationSchemeExists(id);
+        return entityManager.find(EvaluationScheme.class, id);
     }
 }
