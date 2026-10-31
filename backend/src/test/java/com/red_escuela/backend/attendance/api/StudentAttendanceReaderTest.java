@@ -46,7 +46,7 @@ class StudentAttendanceReaderTest {
         when(attendanceRepository.findByCourseSubjectSectionEnrollmentId(8L)).thenReturn(List.of(attendance));
 
         assertThat(reader.listCourseEnrollmentAttendance(8L)).containsExactly(new StudentAttendanceView(
-                12L, 8L, LocalDate.of(2026, 3, 9), "ABSENT", null, null, null));
+                12L, 8L, LocalDate.of(2026, 3, 9), "ABSENT", null, null, null, null));
     }
 
     @Test
