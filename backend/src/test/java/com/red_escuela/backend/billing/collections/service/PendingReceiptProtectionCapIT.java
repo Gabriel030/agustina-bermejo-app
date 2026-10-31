@@ -58,7 +58,17 @@ class PendingReceiptProtectionCapIT extends AbstractLateFeeScenarioIT {
     }
 
     private Invoice installmentUnderReviewWithReceiptUploadedOn(LocalDate uploadDate) {
-        Invoice installment = pendingInstallmentDueOn(INSTALLMENT_DUE);
+        return installmentDueOnUnderReviewWithReceiptUploadedOn(INSTALLMENT_DUE, uploadDate);
+    }
+
+    private void configureProtectionCapOf(int businessDays) {
+        publish(0, "0.002", 10, true, true, d(YEAR, 1, 1));
+        jdbc.update("update configuration_version set config_values = jsonb_set(config_values, '{pendingReceiptProtectionBusinessDays}', ?::jsonb) "
+                + "where scope = 'LATE_PAYMENT' and effective_from = ?", String.valueOf(businessDays), d(YEAR, 1, 1));
+    }
+
+    private Invoice installmentDueOnUnderReviewWithReceiptUploadedOn(LocalDate dueDate, LocalDate uploadDate) {
+        Invoice installment = pendingInstallmentDueOn(dueDate);
         Timestamp uploadedAt = Timestamp.valueOf(uploadDate.atTime(10, 0));
         Long paymentId = jdbc.queryForObject("insert into payment (student_current_account_id, currency, status, gateway, method_type, amount, amount_currency, "
                 + "refunded_amount, refunded_amount_currency, registered_at, started_at, method_details, registered_by_process) "
@@ -136,13 +146,29 @@ class PendingReceiptProtectionCapIT extends AbstractLateFeeScenarioIT {
     @Test
     void theCapComesFromTheLatePaymentTermsEffectiveOnTheReferenceDate() {
         arrange(YEAR);
-        publish(0, "0.002", 10, true, true, d(YEAR, 1, 1));
-        jdbc.update("update configuration_version set config_values = jsonb_set(config_values, '{pendingReceiptProtectionBusinessDays}', '3') "
-                + "where scope = 'LATE_PAYMENT' and effective_from = ?", d(YEAR, 1, 1));
+        configureProtectionCapOf(3);
         installmentUnderReviewWithReceiptUploadedOn(d(YEAR, 5, 26));
 
         assertThat(protectionWindow.earliestProtectedUploadDateAsOf(CUTOFF)).isEqualTo(d(YEAR, 5, 26));
         assertThat(protectionWindow.earliestProtectedUploadDateAsOf(d(YEAR, 6, 1))).isEqualTo(d(YEAR, 5, 27));
+    }
+
+    @Test
+    void aConfiguredCapOfThreeBusinessDaysStillProtectsAReceiptUploadedOnTimeAtTheCutoff() {
+        arrange(YEAR);
+        configureProtectionCapOf(3);
+        installmentDueOnUnderReviewWithReceiptUploadedOn(d(YEAR, 5, 28), d(YEAR, 5, 26));
+
+        assertThat(eventsAfterTheCutoffRuns()).doesNotContain("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
+    }
+
+    @Test
+    void aConfiguredCapOfTwoBusinessDaysExpiresTheSameReceiptAtTheCutoffAndTheStudentIsSuspended() {
+        arrange(YEAR);
+        configureProtectionCapOf(2);
+        installmentDueOnUnderReviewWithReceiptUploadedOn(d(YEAR, 5, 28), d(YEAR, 5, 26));
+
+        assertThat(eventsAfterTheCutoffRuns()).contains("MONTH_CLOSED_WITH_UNPAID_INSTALLMENT");
     }
 
     @Test
