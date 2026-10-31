@@ -381,7 +381,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(body))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("id").asLong();
     }
@@ -419,8 +419,8 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         createTermAs(token, 2063, "\"FIRST_SEMESTER\"");
 
         assertThat(createTermStatus(token, 2063, "\"FIRST_SEMESTER\"")).isEqualTo(409);
-        assertThat(createTermStatus(token, 2063, "\"SECOND_SEMESTER\"")).isEqualTo(200);
-        assertThat(createTermStatus(token, 2064, "\"FIRST_SEMESTER\"")).isEqualTo(200);
+        assertThat(createTermStatus(token, 2063, "\"SECOND_SEMESTER\"")).isEqualTo(201);
+        assertThat(createTermStatus(token, 2064, "\"FIRST_SEMESTER\"")).isEqualTo(201);
     }
 
     @Test

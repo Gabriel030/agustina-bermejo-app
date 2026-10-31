@@ -220,7 +220,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void aReceiptUnderReviewDoesNotEnableTheEnrollmentButApprovingItDoes() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.FIRST_SEMESTER);
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
         Long section = newSection(career, first);
         today(date(2027, 2, 5));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
@@ -288,8 +288,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 2, 2, 7);
         Year y28 = newYear(career, 2028, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.FIRST_SEMESTER);
-        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), TermType.SECOND_SEMESTER);
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
+        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), null);
         newSection(career, first);
         newSection(career, second);
         today(date(2027, 2, 5));
@@ -367,8 +367,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void aSuspendedStudentWhoDoesNotPayIsWithdrawnWhenTheTermOfTheSuspensionEndsWithTheDebtStillOwed() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.FIRST_SEMESTER);
-        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), TermType.SECOND_SEMESTER);
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
+        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), null);
         newSection(career, first);
         newSection(career, second);
         today(date(2027, 1, 4));
@@ -404,7 +404,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         configureYear(y27, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setWithdrawSuspendedAtTermEnd(template, false));
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.FIRST_SEMESTER);
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
         newSection(career, first);
         today(date(2027, 1, 4));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));

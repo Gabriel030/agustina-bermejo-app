@@ -21,6 +21,13 @@ class TermTypeCatalogMigrationTest {
                 + (end == null ? "null" : "timestamp '" + end + "'") + ")", year, type, status);
     }
 
+    private static void insertIrregularTermsVersion(JdbcTemplate jdbc, String values) {
+        jdbc.update("insert into address default values");
+        jdbc.update("insert into person (name, last_name, dni, email, username, address_id) values ('Seed', 'Person', '30111222', 'seed@example.com', 'seed.person', (select max(id) from address))");
+        jdbc.update("insert into configuration_version (scope, topic_key, config_values, status, effective_from, change_reason, proposed_by_id, proposed_at, decided_by_id, decided_at, direct_publication) "
+                + "select 'IRREGULAR_TERMS', 'IRREGULAR_TERMS', ?::jsonb, 'EFFECTIVE', current_date, 'Seed', max(id), now(), max(id), now(), true from person", values);
+    }
+
     private static void migrate(MigrationTestDatabase dataSource) {
         Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
     }
@@ -50,7 +57,7 @@ class TermTypeCatalogMigrationTest {
     void theIrregularTermsConfigurationIsRewrittenFromFreeTextToCatalogValues() {
         try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("165")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-            jdbc.update("update configuration_version set config_values = '{\"type\":\"IRREGULAR_TERMS\",\"types\":[\" Intensivo de verano\",\"1C\",\"intensivo de verano\"]}'::jsonb where scope = 'IRREGULAR_TERMS'");
+            insertIrregularTermsVersion(jdbc, "{\"type\":\"IRREGULAR_TERMS\",\"types\":[\" Intensivo de verano\",\"1C\",\"intensivo de verano\"]}");
 
             migrate(dataSource);
 
@@ -63,7 +70,7 @@ class TermTypeCatalogMigrationTest {
     void theMigrationFailsWhenTheIrregularTermsConfigurationHoldsATypeOutsideTheCatalog() {
         try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("165")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-            jdbc.update("update configuration_version set config_values = '{\"type\":\"IRREGULAR_TERMS\",\"types\":[\"Libre\"]}'::jsonb where scope = 'IRREGULAR_TERMS'");
+            insertIrregularTermsVersion(jdbc, "{\"type\":\"IRREGULAR_TERMS\",\"types\":[\"Libre\"]}");
 
             assertThatThrownBy(() -> migrate(dataSource))
                     .hasMessageContaining("Libre")

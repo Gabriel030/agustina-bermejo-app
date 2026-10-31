@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
@@ -33,7 +32,7 @@ class InvoiceSequenceWindowAndFleetTest extends AbstractInvoiceSequenceScenarioT
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
         today(date(2026, 1, 10));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 10));
-        var term = newCuatrimestre(2026, 3, date(2026, 2, 1), date(2026, 3, 10), TermType.FIRST_SEMESTER);
+        var term = newCuatrimestre(2026, 3, date(2026, 2, 1), date(2026, 3, 10), null);
         addSectionEnrollment(enrollment, career, term, EnrollmentStatus.REGULAR);
 
         runEveryMonth(JAN_2026, YearMonth.of(2026, 3), () -> {
@@ -54,7 +53,7 @@ class InvoiceSequenceWindowAndFleetTest extends AbstractInvoiceSequenceScenarioT
     void enrollmentFeeIsEmittedFifteenDaysBeforeTheEnrollmentWindowOpensWithDueDateAtWindowCloseAndNotRetroactively() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), TermType.FIRST_SEMESTER));
+        newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), null));
         today(date(2026, 12, 1));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2026, 12), date(2026, 12, 1));
 
@@ -76,7 +75,7 @@ class InvoiceSequenceWindowAndFleetTest extends AbstractInvoiceSequenceScenarioT
     void windowThatClosedBeforeTheYearWasConfiguredIsNotChargedRetroactively() {
         Career career = newCareer();
         newYear(career, 2027, 10, 1, 2, null);
-        newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), TermType.FIRST_SEMESTER));
+        newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), null));
         today(date(2026, 12, 1));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2026, 12), date(2026, 12, 1));
 
@@ -90,7 +89,7 @@ class InvoiceSequenceWindowAndFleetTest extends AbstractInvoiceSequenceScenarioT
     @Tag("D-026")
     void settingUpTheYearEmitsImmediatelyToWhoeverHasAnOpenWindowWithoutEnrollmentFee() {
         Career career = newCareer();
-        newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), TermType.FIRST_SEMESTER));
+        newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), null));
         today(date(2026, 12, 1));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2026, 12), date(2026, 12, 1));
         today(date(2027, 2, 10));

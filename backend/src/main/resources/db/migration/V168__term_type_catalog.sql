@@ -57,6 +57,5 @@ BEGIN
 END $$;
 
 ALTER TABLE term ALTER COLUMN type SET DEFAULT 'ANNUAL';
-ALTER TABLE term ALTER COLUMN type SET NOT NULL;
 ALTER TABLE term ADD CONSTRAINT chk_term_type_catalog CHECK (type IN ('ANNUAL', 'FIRST_SEMESTER', 'SECOND_SEMESTER', 'INTENSIVE'));
 CREATE UNIQUE INDEX uk_term_active_year_type ON term (year_number, type) WHERE status = 'ACTIVE';
