@@ -1,5 +1,7 @@
 # Módulos (Spring Modulith)
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Cada paquete de primer nivel de `com.red_escuela.backend` es un módulo de Spring Modulith 1.4.13. Leer este doc antes de tocar cualquier módulo. Decisión de fondo: [ADR 0002](../adr/0002-patron-de-modulos.md). Los límites se declaran en el `package-info.java` de cada módulo y se verifican con `ModularityTest`.
 
 ## Capas
@@ -97,7 +99,7 @@ El estado de cobranza de la inscripción vive en billing, pero billing está por
 
 El puerto todavía no existe: se crea en V2-09 junto con el caso de uso que lo necesita. Se verificó que `ModularityTest` no prohíbe el patrón (un puerto en `enrollment.api` implementado por un componente de billing no agrega violaciones).
 
-Deuda a invertir en V2-09 / M3b: hoy hay accesos enrollment -> billing (72 violaciones en `COUNT billing 72` de `modulith-baseline/enrollment.txt`, en 22 clases): el gate de matrícula (`EnrollmentFeeRequirementService`, `GetEnrollmentFeeStatusService`, `GrantEnrollmentFeeExemptionService`), `EnrollmentBillingStanding`, `EnrollmentDebtGuard` (puerto de deuda, ya por `billing.api`), la alta de cohortes y plantillas (`ProgramCohort`, `ProgramYearBillingTemplate`), la emisión de cargos (`ChargeIssuer`) y los comprobantes (`PaymentReceipt`, `UploadPaymentReceiptUseCase`). Cada reemplazo por un puerto o un evento debe bajar ese conteo.
+Deuda a invertir en V2-09 / M3b: hoy hay accesos enrollment -> billing registrados en la línea base (el conteo vigente está en las líneas `COUNT` de `backend/src/test/resources/modulith-baseline/enrollment.txt`; no se copia acá porque cambia con cada PR): el gate de matrícula (`EnrollmentFeeRequirementService`, `GetEnrollmentFeeStatusService`, `GrantEnrollmentFeeExemptionService`), `EnrollmentBillingStanding`, `EnrollmentDebtGuard` (puerto de deuda, ya por `billing.api`), la alta de cohortes y plantillas (`ProgramCohort`, `ProgramYearBillingTemplate`), la emisión de cargos (`ChargeIssuer`) y los comprobantes (`PaymentReceipt`, `UploadPaymentReceiptUseCase`). Cada reemplazo por un puerto o un evento debe bajar ese conteo.
 
 ## Documentación generada
 

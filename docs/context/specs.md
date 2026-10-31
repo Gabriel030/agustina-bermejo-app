@@ -1,5 +1,7 @@
 # Specs de producto y roadmap — dónde viven
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Todo lo que es **producto** (qué pantallas hay, qué flujo sigue una feature, qué
 épica bloquea a cuál, criterios de aceptación) vive en Obsidian, no en este repo:
 
@@ -11,11 +13,12 @@ Todo lo que es **producto** (qué pantallas hay, qué flujo sigue una feature, q
     Fase N - <nombre>.md                           ← índice de cada fase (2, 3, 4)
     <nombre de dominio>/                           ← Gestión de personas, Estructura
       Spec [funcional|técnica] - <nombre>.md          académica, Inscripciones académicas,
-                                                       Evaluación y asistencia, Procesos
-                                                       administrativos y financieros
+                                                       Evaluación y asistencia, Facturación y
+                                                       cobranzas, Procesos administrativos y
+                                                       financieros
   Roadmap frontend/
-    Indice.md                                    ← punto de entrada del roadmap, nada
-                                                     implementado todavía
+    Indice.md                                    ← punto de entrada del roadmap; el estado
+                                                     de cada épica vive en su índice
     Documento maestro - Stack y sistema de diseño.md
     Deuda técnica y gaps de QA.md                 ← gaps reales encontrados en el
                                                      backfill de QA, transversal a los
@@ -33,7 +36,8 @@ Todo lo que es **producto** (qué pantallas hay, qué flujo sigue una feature, q
 ya está implementado (referencia, no lista de tareas) — cada spec ahí tiene
 además una sección "Estado de QA (backfill)" con la cobertura de Karate/
 Bruno y links a la deuda técnica relacionada. `Roadmap frontend/` es diseño
-de producto, nada implementado.
+de producto y plan de épicas (incluye las de arquitectura backend, Épica 18 en
+adelante); el estado de cada una está en su índice, no en este doc.
 
 **Antes de implementar una fase**, leer su `Spec - <nombre>.md` completa — trae
 contexto verificado, decisiones tomadas con motivo, alcance explícito (qué entra
