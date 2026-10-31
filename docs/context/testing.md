@@ -1,5 +1,7 @@
 # Testing — estrategia
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Principio general del proyecto: **la cobertura numérica no es el objetivo, los
 casos de uso reales sí lo son.** Un test que solo existe para subir el % de
 cobertura sin verificar un comportamiento que alguien podría romper no vale nada.
@@ -59,9 +61,9 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 | Es lógica de dominio de facturación | PIT (umbral 90%): lo corre el job `mutation` del CI; en local solo compilar y correr los tests focalizados del área | Si alguien rompe esto, ¿algún test se entera? |
 | Agrega clases, paquetes o dependencias entre módulos | ArchUnit y Modulith (corren en CI) | ¿La estructura se degrada? |
 | Cambia permisos o roles | Matriz rol × endpoint: 403 para cada rol que no corresponde | ¿Un rol puede hacer algo que no debería? |
-| Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (propuesto) | ¿Un usuario real lo completa en el navegador? |
-| Cambia la forma de una respuesta que consume el front | Contrato OpenAPI (propuesto) | ¿El cambio rompe al front sin que nadie se entere? |
-| Procesa volumen (corrida mensual, pipeline nocturno) | k6 o Gatling (propuesto) | ¿Aguanta miles de alumnos en el tiempo disponible? |
+| Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (`e2e/`, solo local) | ¿Un usuario real lo completa en el navegador? |
+| Cambia la forma de una respuesta que consume el front | Contrato OpenAPI (`contracts/openapi.json`, verificado en CI) | ¿El cambio rompe al front sin que nadie se entere? |
+| Procesa volumen (corrida mensual, pipeline nocturno) | k6 (`scripts/load-tests.sh`, solo local) | ¿Aguanta miles de alumnos en el tiempo disponible? |
 
 ### Dónde corre cada cosa y cómo queda constancia
 

@@ -1,5 +1,7 @@
 # Frontend — convenciones y patrones (React)
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Leé esto antes de tocar `frontend/`. Los ejemplos de rutas/carpetas de abajo son
 ilustrativos (no todos existen aún); el inventario real de componentes vive en
 [components.md](components.md). Es la propuesta de patrones para el proyecto —
@@ -162,9 +164,11 @@ necesite de verdad.
   patrón de compound components de Radix (`<Dialog><DialogTrigger/><DialogContent/>`)
   antes que un único componente con 10 props booleanas.
 - **Los layouts de rol son el ejemplo del patrón Strategy aplicado al frontend**:
-  `RUTAS_POR_ROL` en `AppRouter.jsx` mapea rol → `{Layout, paginas}` en vez de un
-  único componente con un `switch` gigante por rol. Cuando agregues una pantalla
-  nueva de un rol, se agrega a `paginas` de ese rol, no se toca el router en sí.
+  `ROLE_CONFIG` (`frontend/src/routes/roleConfig.js`) mapea rol → `{Layout, pages}` y
+  `FEATURE_ROUTES` (`routes/featureRoutes.jsx`) declara las rutas de cada funcionalidad
+  (públicas, compartidas y por rol) en vez de un único componente con un `switch`
+  gigante por rol. Cuando agregues una pantalla nueva de un rol, se agrega a `pages` de
+  ese rol y a `FEATURE_ROUTES`, no se toca `AppRouter.jsx` en sí.
 - **`apiFetch` es una Facade** sobre `fetch` — cualquier lógica nueva de red
   (headers, reintentos, manejo de error) va ahí adentro, nunca duplicada
   componente por componente.
