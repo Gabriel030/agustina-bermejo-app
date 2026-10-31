@@ -5,6 +5,7 @@ import java.util.Arrays;
 enum OwnershipKind {
     PROGRAM_ENROLLMENT("program-enrollment", MatrixRole.ALUMNO, 404),
     SECTION_ENROLLMENT("section-enrollment", MatrixRole.ALUMNO, 404),
+    COURSE_SECTION_ENROLLMENT("course-section-enrollment", MatrixRole.ALUMNO, 404),
     SECTION_INSTRUCTOR("section-instructor", MatrixRole.DOCENTE, 403),
     ANNUAL_UPFRONT_REQUEST("annual-upfront-request", MatrixRole.ALUMNO, 404);
 

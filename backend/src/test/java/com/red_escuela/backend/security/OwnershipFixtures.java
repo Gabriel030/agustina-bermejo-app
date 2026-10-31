@@ -1,6 +1,9 @@
 package com.red_escuela.backend.security;
 
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.CourseSubject;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -10,6 +13,8 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.TestSubjectCodes;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -45,6 +50,7 @@ final class OwnershipFixtures {
     private String strangerInstructorToken;
     private Long programEnrollmentId;
     private Long sectionEnrollmentId;
+    private Long courseSectionEnrollmentId;
     private Long sectionId;
     private Long annualUpfrontRequestId;
 
@@ -60,6 +66,7 @@ final class OwnershipFixtures {
         return switch (kind) {
             case PROGRAM_ENROLLMENT -> programEnrollmentId;
             case SECTION_ENROLLMENT -> sectionEnrollmentId;
+            case COURSE_SECTION_ENROLLMENT -> courseSectionEnrollmentId;
             case SECTION_INSTRUCTOR -> sectionId;
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
         };
@@ -145,6 +152,7 @@ final class OwnershipFixtures {
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
         entityManager.flush();
+        courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
 
         ownerStudentToken = jwtService.generateAccessToken(ownerPerson);
@@ -154,6 +162,39 @@ final class OwnershipFixtures {
         programEnrollmentId = programEnrollment.getId();
         sectionEnrollmentId = enrollment.getId();
         sectionId = section.getId();
+    }
+
+    private Long persistCourseSectionEnrollment(Student student, Term term) {
+        Course course = new Course();
+        course.setName("Curso matriz");
+        course.setTerm(term);
+        entityManager.persist(course);
+        CourseSubject courseSubject = new CourseSubject();
+        courseSubject.setCourse(course);
+        courseSubject.setName("Modulo matriz");
+        entityManager.persist(courseSubject);
+        CourseSubjectSection courseSection = new CourseSubjectSection();
+        courseSection.setName("Comision curso matriz");
+        courseSection.setCourseSubject(courseSubject);
+        courseSection.setTerm(term);
+        courseSection.setStatus(StatusType.ACTIVE);
+        entityManager.persist(courseSection);
+        CourseEnrollment courseEnrollment = new CourseEnrollment();
+        courseEnrollment.setStudent(student);
+        courseEnrollment.setCourse(course);
+        courseEnrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
+        courseEnrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(courseEnrollment);
+        CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setCourseEnrollment(courseEnrollment);
+        enrollment.setCourseSubjectSection(courseSection);
+        enrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
+        enrollment.setEnrolledAt(LocalDateTime.now());
+        enrollment.setAttemptNumber(1);
+        entityManager.persist(enrollment);
+        entityManager.flush();
+        return enrollment.getId();
     }
 
     private Long persistAnnualUpfrontRequestAwaitingPayment(Student student, Person person, ProgramEnrollment programEnrollment, Term term) {

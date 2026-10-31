@@ -5714,6 +5714,71 @@
         "required" : [ "body", "category", "createdAt", "id", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
+      "MyCourseSectionEnrollmentResponse" : {
+        "properties" : {
+          "attemptNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "courseEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "courseName" : {
+            "type" : "string"
+          },
+          "courseSubjectId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "courseSubjectName" : {
+            "type" : "string"
+          },
+          "droppedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "enrolledAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "finalGradeType" : {
+            "type" : "string"
+          },
+          "finalScore" : {
+            "type" : "number"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "instructorAdjunto" : {
+            "type" : "string"
+          },
+          "instructorTitular" : {
+            "type" : "string"
+          },
+          "schedule" : {
+            "type" : "string"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "attemptNumber", "courseEnrollmentId", "courseId", "courseName", "courseSubjectId", "courseSubjectName", "droppedAt", "enrolledAt", "finalGradeType", "finalScore", "id", "instructorAdjunto", "instructorTitular", "schedule", "sectionId", "sectionName", "status" ],
+        "type" : "object"
+      },
       "MyExamBoardRegistrationResponse" : {
         "properties" : {
           "enrollmentId" : {
@@ -22837,6 +22902,360 @@
           }
         },
         "tags" : [ "me-invoice-controller" ]
+      }
+    },
+    "/me/course-section-enrollments" : {
+      "get" : {
+        "operationId" : "MeCourseSectionEnrollment_mine",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "courseEnrollmentId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/MyCourseSectionEnrollmentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-course-section-enrollment-controller" ]
+      }
+    },
+    "/me/course-section-enrollments/{id}" : {
+      "get" : {
+        "operationId" : "MeCourseSectionEnrollment_mineById",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MyCourseSectionEnrollmentResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-course-section-enrollment-controller" ]
+      }
+    },
+    "/me/course-section-enrollments/{id}/attendance" : {
+      "get" : {
+        "operationId" : "MeCourseSectionEnrollment_myAttendance",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AttendanceResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-course-section-enrollment-controller" ]
+      }
+    },
+    "/me/course-section-enrollments/{id}/attendance/risk" : {
+      "get" : {
+        "operationId" : "MeCourseSectionEnrollment_myAttendanceRisk",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AttendanceRiskResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-course-section-enrollment-controller" ]
+      }
+    },
+    "/me/course-section-enrollments/{id}/grade-items" : {
+      "get" : {
+        "operationId" : "MeCourseSectionEnrollment_myGrades",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/GradeItemResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-course-section-enrollment-controller" ]
       }
     },
     "/me/credit-balance" : {

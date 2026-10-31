@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.api;
 
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
@@ -38,6 +39,21 @@ class GradeItemFinderTest {
 
         assertThat(views).containsExactly(new GradeItemView(
                 9L, 4L, "EXAM", 2, Grade.of(new BigDecimal("7.5")), null, null));
+    }
+
+    @Test
+    void mapsCourseGradeItemsToViewsWithTheCourseEnrollmentId() {
+        CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
+        enrollment.setId(5L);
+        GradeItem item = new GradeItem();
+        item.setId(11L);
+        item.setCourseSubjectSectionEnrollment(enrollment);
+        item.setType(GradeItemType.EXAM);
+        item.setSequenceNumber(1);
+        when(gradeItemRepository.findByCourseSubjectSectionEnrollmentId(5L)).thenReturn(List.of(item));
+
+        assertThat(finder.findByCourseEnrollment(5L)).containsExactly(new GradeItemView(
+                11L, 5L, "EXAM", 1, null, null, null));
     }
 
     @Test
