@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,31 +42,35 @@ public class ReminderFactsQuery {
                 new MapSqlParameterSource().addValue("studentIds", studentIds), Long.class);
     }
 
-    public List<OpenInvoiceRow> findOpenInvoicesOf(Collection<Long> studentIds, LocalDate previousBusinessDate, LocalDateTime previousPlanningRun) {
+    public List<OpenInvoiceRow> findOpenInvoicesOf(Collection<Long> studentIds, LocalDate previousBusinessDate, LocalDateTime previousPlanningRun, LocalDate protectionFloor) {
         if (studentIds.isEmpty()) {
             return List.of();
         }
         return queryOpenInvoices("a.student_id in (:studentIds)", "order by a.student_id, i.id",
-                new MapSqlParameterSource().addValue("studentIds", studentIds), previousBusinessDate, previousPlanningRun);
+                new MapSqlParameterSource().addValue("studentIds", studentIds), previousBusinessDate, previousPlanningRun, protectionFloor);
     }
 
-    public List<OpenInvoiceRow> findOpenInvoicesByIds(Collection<Long> invoiceIds, LocalDate businessDate) {
+    public List<OpenInvoiceRow> findOpenInvoicesByIds(Collection<Long> invoiceIds, LocalDate businessDate, LocalDate protectionFloor) {
         if (invoiceIds.isEmpty()) {
             return List.of();
         }
         return queryOpenInvoices("i.id in (:invoiceIds)", "order by i.id", new MapSqlParameterSource().addValue("invoiceIds", invoiceIds),
-                businessDate.minusDays(1), businessDate.minusDays(1).atStartOfDay());
+                businessDate.minusDays(1), businessDate.minusDays(1).atStartOfDay(), protectionFloor);
     }
 
     private List<OpenInvoiceRow> queryOpenInvoices(String scope, String ordering, MapSqlParameterSource scopeParameters, LocalDate previousBusinessDate,
-                                                   LocalDateTime previousPlanningRun) {
+                                                   LocalDateTime previousPlanningRun, LocalDate protectionFloor) {
         return jdbc.query("""
-                select a.student_id, i.id, i.origin_invoice_id, i.document_type, i.invoice_type, i.document_status, i.payment_status, i.issue_date, i.due_date,
+                select a.student_id, i.id, i.origin_invoice_id, i.document_type, i.invoice_type, i.document_status,
+                       case when i.payment_status = 'PAYMENT_UNDER_REVIEW' and exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW'
+                                                                                     and cast(r.uploaded_at as date) < :protectionFloor)
+                                 and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and cast(r.uploaded_at as date) >= :protectionFloor)
+                            then 'PENDING' else i.payment_status end as payment_status, i.issue_date, i.due_date,
                        i.currency, i.outstanding_amount,
                        (select l.amount from invoice_line l where l.invoice_id = i.id order by l.id limit 1) as final_price,
                        (select min(l.program_enrollment_id) from invoice_line l where l.invoice_id = i.id) as program_enrollment_id,
                        (select min(l.course_enrollment_id) from invoice_line l where l.invoice_id = i.id) as course_enrollment_id,
-                       exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW') as receipt_under_review,
+                       exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and cast(r.uploaded_at as date) >= :protectionFloor) as receipt_under_review,
                        exists (select 1 from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
                                where ari.invoice_id = i.id and ar.status = 'PENDING') as open_cancellation_request,
                        (i.issue_date = :previousBusinessDate and exists (select 1 from invoice_status_change c where c.invoice_id = i.id and c.status_kind = 'DOCUMENT'
@@ -76,7 +81,8 @@ public class ReminderFactsQuery {
                   and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
                 %s
                 """.formatted(scope, ordering),
-                scopeParameters.addValue("previousBusinessDate", previousBusinessDate).addValue("previousPlanningRun", Timestamp.valueOf(previousPlanningRun)),
+                scopeParameters.addValue("previousBusinessDate", previousBusinessDate).addValue("previousPlanningRun", Timestamp.valueOf(previousPlanningRun))
+                        .addValue("protectionFloor", Date.valueOf(protectionFloor)),
                 (rs, rowNumber) -> new OpenInvoiceRow(rs.getLong("student_id"), rs.getLong("id"), (Long) rs.getObject("origin_invoice_id"), rs.getString("document_type"),
                         rs.getString("invoice_type"), rs.getString("document_status"), rs.getString("payment_status"), rs.getObject("issue_date", LocalDate.class),
                         rs.getObject("due_date", LocalDate.class), rs.getString("currency"), rs.getBigDecimal("outstanding_amount"),

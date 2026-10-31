@@ -282,7 +282,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
         Invoice withCancellation = installmentOf(enrollment, MARCH_FIRST, MARCH_ELEVENTH);
         Invoice examFee = withDates(BillingTestFixtures.invoice().forStudent(student).ofType(FeeType.EXAM_FEE).dueOn(MARCH_ELEVENTH).withBaseAmount(ars(5000)).build(),
                 MARCH_FIRST, MARCH_ELEVENTH);
-        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', now(), 'PENDING_REVIEW', 0)",
+        jdbc.update("insert into bank_transfer_receipt (invoice_id, file_path, uploaded_at, status, version) values (?, 'comprobante.pdf', timestamp '2099-01-01 10:00:00', 'PENDING_REVIEW', 0)",
                 withReceipt.getId());
         Long requestId = jdbc.queryForObject("insert into authorization_request (operation_type, operation_payload, required_role, reason, status, requested_by_id, requested_at) "
                 + "values ('CANCEL_INVOICE', '{}'::jsonb, 'DIRECTOR', 'Baja', 'PENDING', ?, now()) returning id", Long.class, director.getId());

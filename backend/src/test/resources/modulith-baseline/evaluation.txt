@@ -1,2 +1,1 @@
 COUNT billing 2
-Module 'evaluation' depends on module 'graduation' via com.red_escuela.backend.evaluation.service.GradeItemService -> com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *.
