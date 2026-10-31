@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.discount.service.EnrollmentDiscountLock;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAwaitingPaymentDiscardService;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public class AnnualUpfrontRequestDeadlineDiscarder {
     private static final String DISCARD_REASON = "Pedido de pago anual descartado por vencimiento del plazo de pago";
     private static final StatusChangeActor SYSTEM_ACTOR = StatusChangeActor.ofProcess("ANNUAL_UPFRONT_DEADLINE_EXPIRY");
 
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
     private final StudentCurrentAccountService accountService;
     private final EnrollmentDiscountLock enrollmentLock;
     private final AnnualUpfrontDiscountReservationService discountReservations;
@@ -32,7 +32,7 @@ public class AnnualUpfrontRequestDeadlineDiscarder {
     private final AnnualUpfrontRequestRepository requestRepository;
     private final Clock clock;
 
-    public AnnualUpfrontRequestDeadlineDiscarder(BillingEnrollmentLookup enrollmentLookup, StudentCurrentAccountService accountService, EnrollmentDiscountLock enrollmentLock,
+    public AnnualUpfrontRequestDeadlineDiscarder(BillingEnrollmentFactsFinder enrollmentLookup, StudentCurrentAccountService accountService, EnrollmentDiscountLock enrollmentLock,
                                                  AnnualUpfrontDiscountReservationService discountReservations, InvoiceAwaitingPaymentDiscardService invoices,
                                                  AnnualUpfrontRequestRepository requestRepository, Clock clock) {
         this.enrollmentLookup = enrollmentLookup;
