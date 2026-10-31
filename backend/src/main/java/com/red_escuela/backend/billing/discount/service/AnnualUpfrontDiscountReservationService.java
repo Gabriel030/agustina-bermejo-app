@@ -30,6 +30,8 @@ public class AnnualUpfrontDiscountReservationService {
 
     private static final String DISCARD_REASON = "Liberación de la reserva por descarte del pedido de pago anual";
 
+    private static final String DEADLINE_EXPIRY_REASON = "Liberación de la reserva por vencimiento automático del pedido de pago anual";
+
     private final DiscountDefinitionRepository definitionRepository;
     private final StudentDiscountRepository studentDiscountRepository;
     private final AppliedStudentDiscountRepository appliedRepository;
@@ -59,8 +61,9 @@ public class AnnualUpfrontDiscountReservationService {
         List<StudentDiscount> discounts = studentDiscountIds.stream().map(id -> studentDiscountRepository.findByIdForUpdate(id).orElseThrow()).toList();
         appliedRepository.markConsumptionReleased(live.stream().map(LiveInvoiceDiscount::invoiceDiscountId).toList(), LocalDateTime.now(clock));
         Instant now = Instant.now(clock);
+        String revocationReason = actor.processName() != null ? DEADLINE_EXPIRY_REASON : DISCARD_REASON;
         discounts.stream().filter(discount -> discount.getOrigin() == StudentDiscountOrigin.ANNUAL_UPFRONT_REQUEST && discount.getStatus() == StudentDiscountStatus.ACTIVE).forEach(discount -> {
-            discount.revokeStudentDiscount(DISCARD_REASON, discount.getFromPeriod(), actor, now);
+            discount.revokeStudentDiscount(revocationReason, discount.getFromPeriod(), actor, now);
             studentDiscountRepository.save(discount);
         });
     }

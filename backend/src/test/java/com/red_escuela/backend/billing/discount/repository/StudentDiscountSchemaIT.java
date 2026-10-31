@@ -172,6 +172,18 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aRevokedRowNeedsExactlyOneRevoker() {
+        Map<String, Object> byProcess = with(validRow(), "status", "REVOKED", "revoked_at", java.time.OffsetDateTime.parse("2027-04-10T10:00:00Z"),
+                "revoked_by_process", "ANNUAL_UPFRONT_DEADLINE_EXPIRY", "revocation_reason", "motivo", "revoked_from_period", java.time.LocalDate.of(2027, 5, 1));
+        transactionTemplate.executeWithoutResult(status -> {
+            assertThat(insert(byProcess)).isPositive();
+            status.setRollbackOnly();
+        });
+        expectViolation("ck_student_discount_revocation", with(new LinkedHashMap<>(byProcess), "revoked_by_id", offering.directorId()));
+        expectViolation("ck_student_discount_revocation", with(new LinkedHashMap<>(byProcess), "revoked_by_process", null));
+    }
+
+    @Test
     void theStatusHistoryOfAStudentDiscountCanNeverBeUpdatedNorDeleted() {
         long discount = insert(validRow());
         long change = jdbc.queryForObject("""

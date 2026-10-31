@@ -53,8 +53,9 @@ public interface AnnualUpfrontRequestRepository extends JpaRepository<AnnualUpfr
     Optional<Long> findProgramEnrollmentIdById(@Param("id") Long id);
 
     @Query(value = """
-            select count(*) > 0 from annual_upfront_request r join term t on t.id = r.lective_year_term_id
-            where r.program_enrollment_id = :programEnrollmentId and r.status = 'CONFIRMED' and t.year_number = :lectiveYear
+            select count(*) > 0 from annual_upfront_request r
+            where r.program_enrollment_id = :programEnrollmentId and r.status = 'CONFIRMED'
+              and (select max(l.period) from invoice_line l where l.invoice_id = r.invoice_id) >= :currentMonthStart
             """, nativeQuery = true)
-    boolean existsConfirmedOfLectiveYear(@Param("programEnrollmentId") Long programEnrollmentId, @Param("lectiveYear") int lectiveYear);
+    boolean existsConfirmedWithUnfinishedLectiveYear(@Param("programEnrollmentId") Long programEnrollmentId, @Param("currentMonthStart") java.time.LocalDate currentMonthStart);
 }

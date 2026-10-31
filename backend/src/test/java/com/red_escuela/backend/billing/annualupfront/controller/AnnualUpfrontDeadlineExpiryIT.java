@@ -80,6 +80,10 @@ class AnnualUpfrontDeadlineExpiryIT extends AbstractAnnualUpfrontRequestIT {
         assertThat(count("select count(*) from student_discount where origin = 'ANNUAL_UPFRONT_REQUEST' and status = 'REVOKED' and program_enrollment_id = " + learner.programEnrollmentId()))
                 .isEqualTo(1);
         assertThat(count("select count(*) from invoice_status_change where invoice_id = " + invoiceId + " and to_status = 'DISCARDED'")).isEqualTo(1);
+        assertThat(count("select count(*) from student_discount where origin = 'ANNUAL_UPFRONT_REQUEST' and status = 'REVOKED' and revoked_by_id is null and revoked_by_process = 'ANNUAL_UPFRONT_DEADLINE_EXPIRY' and revocation_reason like '%vencimiento automático%' and program_enrollment_id = " + learner.programEnrollmentId()))
+                .isEqualTo(1);
+        assertThat(count("select count(*) from student_discount_status_change where to_status = 'REVOKED' and actor_person_id is null and actor_process = 'ANNUAL_UPFRONT_DEADLINE_EXPIRY' and student_discount_id in (select id from student_discount where program_enrollment_id = " + learner.programEnrollmentId() + ")"))
+                .isEqualTo(1);
         assertThat(accountEntriesOfInvoice(invoiceId)).isZero();
     }
 
@@ -153,16 +157,48 @@ class AnnualUpfrontDeadlineExpiryIT extends AbstractAnnualUpfrontRequestIT {
         assertThat(afterExpiry.annualUpfrontAwaitingPaymentPeriods()).isEmpty();
     }
 
+    private void confirmRequestOfLectiveYear(JsonNode requested, int lectiveYear) {
+        long invoiceId = requested.get("invoiceId").asLong();
+        jdbc.update("update annual_upfront_request set status = 'CONFIRMED' where id = ?", requested.get("id").asLong());
+        jdbc.update("update invoice_line set period = make_date(?, extract(month from period)::int, 1) where invoice_id = ?", lectiveYear, invoiceId);
+    }
+
+    private void requirePlanChangeBlockedOn(LocalDateTime moment) {
+        MutableClock.INSTANCE.setDateTime(moment);
+        assertThatThrownBy(() -> planChangeGuard.requirePlanChangeAllowed(learner.programEnrollmentId())).isInstanceOf(AnnualUpfrontPlanCannotBeChangedException.class);
+    }
+
     @Test
     void aConfirmedAnnualUpfrontBlocksChangingThePlanOnlyInItsLectiveYear() throws Exception {
         JsonNode requested = requestTheYear();
         planChangeGuard.requirePlanChangeAllowed(learner.programEnrollmentId());
         jdbc.update("update annual_upfront_request set status = 'CONFIRMED' where id = ?", requested.get("id").asLong());
 
-        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 6, 10, 9, 0));
-        assertThatThrownBy(() -> planChangeGuard.requirePlanChangeAllowed(learner.programEnrollmentId())).isInstanceOf(AnnualUpfrontPlanCannotBeChangedException.class);
+        requirePlanChangeBlockedOn(LocalDateTime.of(2027, 6, 10, 9, 0));
 
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2028, 3, 1, 9, 0));
+        planChangeGuard.requirePlanChangeAllowed(learner.programEnrollmentId());
+    }
+
+    @Test
+    void aConfirmedAnnualUpfrontOfNextYearBlocksChangingThePlanFromTheDecemberBeforeItsFirstClassesUntilItsLastMonth() throws Exception {
+        confirmRequestOfLectiveYear(requestTheYear(), 2028);
+
+        requirePlanChangeBlockedOn(LocalDateTime.of(2027, 12, 20, 9, 0));
+        requirePlanChangeBlockedOn(LocalDateTime.of(2028, 1, 15, 9, 0));
+        requirePlanChangeBlockedOn(LocalDateTime.of(2028, 2, 20, 9, 0));
+        requirePlanChangeBlockedOn(LocalDateTime.of(2028, 12, 31, 23, 0));
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2029, 1, 1, 9, 0));
+        planChangeGuard.requirePlanChangeAllowed(learner.programEnrollmentId());
+    }
+
+    @Test
+    void aRequestNotConfirmedDoesNotBlockChangingThePlanInTheYearBeforeItsLectiveYear() throws Exception {
+        JsonNode requested = requestTheYear();
+        jdbc.update("update invoice_line set period = make_date(2028, extract(month from period)::int, 1) where invoice_id = ?", requested.get("invoiceId").asLong());
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 12, 20, 9, 0));
         planChangeGuard.requirePlanChangeAllowed(learner.programEnrollmentId());
     }
 

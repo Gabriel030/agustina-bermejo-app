@@ -22,7 +22,7 @@ public class AnnualUpfrontPlanChangeGuard {
     }
 
     public void requirePlanChangeAllowed(Long programEnrollmentId) {
-        boolean confirmed = requestRepository.existsConfirmedOfLectiveYear(programEnrollmentId, LocalDate.now(clock).getYear());
+        boolean confirmed = requestRepository.existsConfirmedWithUnfinishedLectiveYear(programEnrollmentId, LocalDate.now(clock).withDayOfMonth(1));
         planChangePolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontPlanChange(confirmed)).throwIfDenied(AnnualUpfrontPlanCannotBeChangedException::new);
     }
 }

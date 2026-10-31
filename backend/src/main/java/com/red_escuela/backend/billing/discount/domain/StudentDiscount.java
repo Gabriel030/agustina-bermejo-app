@@ -122,6 +122,9 @@ public class StudentDiscount {
     @Column(name = "revoked_by_id")
     private Long revokedById;
 
+    @Column(name = "revoked_by_process")
+    private String revokedByProcess;
+
     @Column(name = "revocation_reason")
     private String revocationReason;
 
@@ -231,6 +234,7 @@ public class StudentDiscount {
         moveTo(StudentDiscountEvent.DISCOUNT_REVOKED, actor, now, reason);
         this.revokedAt = now;
         this.revokedById = actor.personId();
+        this.revokedByProcess = actor.processName();
         this.revocationReason = reason;
         this.revokedFromPeriod = nextInstallmentPeriod;
     }

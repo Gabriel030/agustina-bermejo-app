@@ -61,7 +61,7 @@ public class AnnualUpfrontRequestDeadlineDiscarder {
         }
         request.discardDeadlineExpired(now);
         invoices.discardInvoiceAwaitingPayment(invoice, DISCARD_REASON, SYSTEM_ACTOR);
-        discountReservations.releaseReservationsOfDiscardedInvoice(invoiceId, StatusChangeActor.ofPerson(request.getRequestedByPersonId()));
+        discountReservations.releaseReservationsOfDiscardedInvoice(invoiceId, SYSTEM_ACTOR);
         requestRepository.saveAndFlush(request);
         return true;
     }
