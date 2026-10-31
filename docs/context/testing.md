@@ -267,6 +267,15 @@ python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con
 
 Para reproducir en local: `python3 .github/scripts/test-budget.py check-shard --shard 0 --reports backend/target/surefire-reports` contra los reportes de una corrida (`--max-class 5` fuerza el fallo para ver el mensaje; para probar el tope de shard exportá `SHARD_START` y `SHARD_END` en segundos epoch). Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
 
+### Cobertura con JaCoCo
+
+Mide líneas y ramas reales del backend (no reemplaza a PIT, que solo cubre dominio puro). **No hay umbral todavía**: nada falla por cobertura; es un termómetro para ubicar casos de uso sin ejercitar.
+
+- **Cómo se genera**: perfil Maven `coverage` (`./mvnw -Pcoverage test ...`); agrega el agente de JaCoCo a surefire y escribe `backend/target/jacoco.exec` y `backend/target/site/jacoco/jacoco.{xml,csv}`. Sin el perfil el build no cambia. Se excluyen `BackendApplication`, `config/**` y los `dto/**`; los métodos generados por Lombok y los records ya los filtra JaCoCo.
+- **Dónde se ve en CI**: es opt-in: solo corre en los PR que lleven la etiqueta `coverage` (en una medición local el agente sumó ~50 % al reloj de los tests, así que no va en cada PR ni en cada push; en esos runs el presupuesto de tiempo de shards y clases queda en advertencia). Para medir la rama base, abrir un PR con la etiqueta. Cada shard sube `jacoco-exec-N`; el job `coverage-report` los une (`-Pcoverage-merge`), publica el artifact `jacoco-report` (HTML, XML, CSV) y escribe en el resumen del run la cobertura de los `*Service` bajo `usecase` por módulo y por clase.
+- **En local**: `python3 .github/scripts/coverage-usecase-summary.py backend/target/site/jacoco/jacoco.csv --classes` imprime la misma tabla de un reporte local (con un subconjunto de tests, "nunca ejecutado" solo significa que ese subconjunto no lo toca).
+- **Cómo leerlo**: "never executed" = ninguna línea del servicio corrió en ningún test; cobertura alta no garantiza aserciones (para eso está PIT/mutación en dominio).
+
 ## Frontend (Vitest + RTL + MSW, instalado desde la Fase 1)
 
 Stack propuesto: **Vitest** (nativo de Vite, mismo config/transform que el build,
