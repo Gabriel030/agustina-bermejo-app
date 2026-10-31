@@ -27,7 +27,7 @@ public final class QualityRules {
     static final Set<String> BILLING_SUBDOMAINS = Set.of("account", "authorization", "collections", "configuration", "invoice", "note", "operation", "payment");
 
     static final String[] FEATURES = {"academicrecord", "academicstructure", "announcement", "attendance", "billing",
-            "enrollment", "evaluation", "graduation", "identity", "notification"};
+            "enrollment", "evaluation", "graduation", "identity", "notification", "platform"};
 
     private static final Set<String> TRANSACTIONAL_ANNOTATIONS = Set.of(
             "org.springframework.transaction.annotation.Transactional", "jakarta.transaction.Transactional");
