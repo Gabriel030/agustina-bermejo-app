@@ -13,7 +13,6 @@ import com.red_escuela.backend.academicstructure.service.CurrentInstructorServic
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,6 @@ public class PreviewAudienceService implements PreviewAudienceUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public AudiencePreviewResponse preview(PreviewAudienceCommand command) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         sectionMembership.requireInstructorOf(command.sectionType(), command.sectionId(), instructor.getId());

@@ -10,7 +10,6 @@ import com.red_escuela.backend.announcement.service.audience.AudienceService;
 import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -30,7 +29,6 @@ public class ListAudienceSegmentsService implements ListAudienceSegmentsUseCase 
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<AudienceSegmentResponse> list(SectionType sectionType, Long sectionId) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         sectionMembership.requireInstructorOf(sectionType, sectionId, instructor.getId());
