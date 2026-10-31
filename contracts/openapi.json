@@ -5960,6 +5960,77 @@
         "required" : [ "dni", "entryReason", "newlyListed", "oldestDaysOverdue", "overdueAmounts", "overdueInstallments", "studentId", "studentName" ],
         "type" : "object"
       },
+      "OwnGraduationRequestDetail" : {
+        "properties" : {
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "verifiedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "decidedAt", "id", "rejectionReason", "requestedAt", "status", "verifiedAt" ],
+        "type" : "object"
+      },
+      "OwnGraduationRequestResponse" : {
+        "properties" : {
+          "accumulatedCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "eligible" : {
+            "type" : "boolean"
+          },
+          "graduated" : {
+            "type" : "boolean"
+          },
+          "pendingMandatorySubjects" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "programName" : {
+            "type" : "string"
+          },
+          "request" : {
+            "$ref" : "#/components/schemas/OwnGraduationRequestDetail",
+            "type" : "null"
+          },
+          "requiredCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "unfulfilledElectiveGroups" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accumulatedCredits", "eligible", "graduated", "pendingMandatorySubjects", "programEnrollmentId", "programName", "request", "requiredCredits", "unfulfilledElectiveGroups" ],
+        "type" : "object"
+      },
       "PaymentActionAvailabilityResponse" : {
         "properties" : {
           "allowed" : {
@@ -24686,6 +24757,73 @@
       }
     },
     "/me/program-enrollments/{id}/graduation-request" : {
+      "get" : {
+        "operationId" : "MeGraduationRequest_get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OwnGraduationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-graduation-request-controller" ]
+      },
       "post" : {
         "operationId" : "MeGraduationRequest_request",
         "parameters" : [ {

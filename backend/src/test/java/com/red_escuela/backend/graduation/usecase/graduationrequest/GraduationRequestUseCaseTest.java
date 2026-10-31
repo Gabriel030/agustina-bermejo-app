@@ -10,6 +10,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.graduation.dto.OwnGraduationRequestResponse;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -69,6 +70,9 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private RejectGraduationRequestUseCase rejectGraduationRequestUseCase;
+
+    @Autowired
+    private GetOwnGraduationRequestUseCase getOwnGraduationRequestUseCase;
 
     @Autowired
     private EntityManager entityManager;
@@ -466,5 +470,148 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         GraduationRequest second = requestGraduationUseCase.request(enrollment.getId());
         assertThat(second.getId()).isNotEqualTo(first.getId());
         assertThat(second.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
+    }
+
+    @Test
+    void requestingGraduationPublishesOneRequestedEventWithFlatValues() {
+        Student student = persistStudent("80000021");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento1");
+        entityManager.flush();
+
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.requestId()).isEqualTo(request.getId());
+                    assertThat(event.studentPersonId()).isEqualTo(student.getPerson().getId());
+                    assertThat(event.studentName()).isEqualTo("Persona 80000021");
+                    assertThat(event.programName()).isEqualTo("CarreraEvento1");
+                });
+    }
+
+    @Test
+    void aRejectedRequestPublishesNoRequestedEventUntilTheNextRequest() {
+        Student student = persistStudent("80000022");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento2");
+        entityManager.flush();
+        GraduationRequest first = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000022");
+        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(first.getId(), "Datos incompletos"));
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestedEvent.class)).hasSize(1);
+        requestGraduationUseCase.request(enrollment.getId());
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestedEvent.class)).hasSize(2);
+    }
+
+    @Test
+    void verifyingTheDebtPublishesOneVerifiedEventWithFlatValues() {
+        Student student = persistStudent("80000023");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento3");
+        entityManager.flush();
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000023");
+
+        verifyGraduationRequestDebtUseCase.verify(request.getId());
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.requestId()).isEqualTo(request.getId());
+                    assertThat(event.studentPersonId()).isEqualTo(student.getPerson().getId());
+                    assertThat(event.programName()).isEqualTo("CarreraEvento3");
+                });
+    }
+
+    @Test
+    void aVerificationBlockedByDebtPublishesNoVerifiedEvent() {
+        Student student = persistStudent("80000028");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento4");
+        entityManager.flush();
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        persistInvoice(enrollment, LocalDate.of(2026, 1, 10));
+        authenticateAsPerson("ADMIN80000028");
+
+        assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId())).isInstanceOf(PendingDebtException.class);
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void ownRequestWithoutAnyRequestReportsEligibilityAndNoRequest() {
+        Student student = persistStudent("80000024");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraPropia1");
+        entityManager.flush();
+
+        OwnGraduationRequestResponse response = getOwnGraduationRequestUseCase.get(enrollment.getId());
+
+        assertThat(response.request()).isNull();
+        assertThat(response.eligible()).isTrue();
+        assertThat(response.graduated()).isFalse();
+        assertThat(response.programName()).isEqualTo("CarreraPropia1");
+        assertThat(response.pendingMandatorySubjects()).isEmpty();
+    }
+
+    @Test
+    void ownRequestWithoutBeingEligibleListsTheMissingSubjects() {
+        Student student = persistStudent("80000025");
+        Program program = persistProgramWithPendingSubject("CarreraPropia2");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+
+        OwnGraduationRequestResponse response = getOwnGraduationRequestUseCase.get(enrollment.getId());
+
+        assertThat(response.eligible()).isFalse();
+        assertThat(response.pendingMandatorySubjects()).containsExactly("Materia pendiente CarreraPropia2");
+        assertThat(response.requiredCredits()).isEqualTo(10);
+        assertThat(response.accumulatedCredits()).isZero();
+        assertThat(response.request()).isNull();
+    }
+
+    @Test
+    void ownRequestFollowsTheRequestThroughVerificationAndApproval() {
+        Student student = persistStudent("80000026");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraPropia3");
+        entityManager.flush();
+
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        var requested = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(requested.id()).isEqualTo(request.getId());
+        assertThat(requested.status()).isEqualTo("REQUESTED");
+        assertThat(requested.verifiedAt()).isNull();
+        assertThat(requested.decidedAt()).isNull();
+
+        authenticateAsPerson("ADMIN80000026");
+        verifyGraduationRequestDebtUseCase.verify(request.getId());
+        var verified = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(verified.status()).isEqualTo("ADMIN_VERIFIED");
+        assertThat(verified.verifiedAt()).isNotNull();
+        assertThat(verified.decidedAt()).isNull();
+
+        authenticateAsPerson("DIRECTOR80000026");
+        approveGraduationRequestUseCase.approve(request.getId());
+        OwnGraduationRequestResponse approved = getOwnGraduationRequestUseCase.get(enrollment.getId());
+        assertThat(approved.request().status()).isEqualTo("APPROVED");
+        assertThat(approved.request().decidedAt()).isNotNull();
+        assertThat(approved.request().rejectionReason()).isNull();
+        assertThat(approved.graduated()).isTrue();
+    }
+
+    @Test
+    void ownRequestShowsTheRejectionReasonAndThenTheNewerRequest() {
+        Student student = persistStudent("80000027");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraPropia4");
+        entityManager.flush();
+        GraduationRequest first = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000027");
+        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(first.getId(), "Datos incompletos"));
+
+        var rejected = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(rejected.status()).isEqualTo("REJECTED");
+        assertThat(rejected.rejectionReason()).isEqualTo("Datos incompletos");
+
+        GraduationRequest second = requestGraduationUseCase.request(enrollment.getId());
+        var latest = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(latest.id()).isEqualTo(second.getId());
+        assertThat(latest.status()).isEqualTo("REQUESTED");
+        assertThat(latest.rejectionReason()).isNull();
     }
 }
