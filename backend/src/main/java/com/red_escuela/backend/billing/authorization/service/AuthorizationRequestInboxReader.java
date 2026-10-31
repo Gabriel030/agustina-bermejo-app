@@ -5,8 +5,8 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestSearch;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
-import com.red_escuela.backend.identity.api.PersonRoleNamesLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
+import com.red_escuela.backend.identity.api.PersonRoleNamesFinder;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +22,11 @@ public class AuthorizationRequestInboxReader {
     private final AuthorizationRequestSearcher searcher;
     private final AuthorizationCallerAccess callerAccess;
     private final AuthorizationRequestDescriptionAssembler descriptions;
-    private final PersonNameLookup personNames;
-    private final PersonRoleNamesLookup personRoles;
+    private final PersonNameFinder personNames;
+    private final PersonRoleNamesFinder personRoles;
 
     public AuthorizationRequestInboxReader(AuthorizationRequestRepository repository, AuthorizationRequestSearcher searcher, AuthorizationCallerAccess callerAccess,
-                                           AuthorizationRequestDescriptionAssembler descriptions, PersonNameLookup personNames, PersonRoleNamesLookup personRoles) {
+                                           AuthorizationRequestDescriptionAssembler descriptions, PersonNameFinder personNames, PersonRoleNamesFinder personRoles) {
         this.repository = repository;
         this.searcher = searcher;
         this.callerAccess = callerAccess;

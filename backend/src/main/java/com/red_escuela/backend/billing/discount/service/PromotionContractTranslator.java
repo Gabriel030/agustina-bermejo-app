@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.discount.dto.PromotionBenefitResponse;
 import com.red_escuela.backend.billing.discount.dto.PromotionResponse;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -33,10 +33,10 @@ public class PromotionContractTranslator {
     private static final int DEFAULT_PRIORITY = 1;
     private static final Duration SAME_REQUEST_WINDOW = Duration.ofSeconds(2);
 
-    private final PersonNameLookup personNames;
+    private final PersonNameFinder personNames;
     private final Clock clock;
 
-    public PromotionContractTranslator(PersonNameLookup personNames, Clock clock) {
+    public PromotionContractTranslator(PersonNameFinder personNames, Clock clock) {
         this.personNames = personNames;
         this.clock = clock;
     }

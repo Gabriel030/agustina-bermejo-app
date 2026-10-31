@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.payment.service;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,11 +12,11 @@ import java.util.List;
 @Service
 public class StudentPaymentQueryService {
 
-    private final StudentExistenceLookup students;
+    private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final PaymentRepository payments;
 
-    public StudentPaymentQueryService(StudentExistenceLookup students, StudentCurrentAccountService accountService, PaymentRepository payments) {
+    public StudentPaymentQueryService(StudentExistenceChecker students, StudentCurrentAccountService accountService, PaymentRepository payments) {
         this.students = students;
         this.accountService = accountService;
         this.payments = payments;

@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.operation.ReceiptInvoiceIdsLookup;
 import com.red_escuela.backend.billing.operation.ReceiptReviewFacts;
 import com.red_escuela.backend.billing.operation.ReceiptReviewFactsLookup;
 import com.red_escuela.backend.billing.operation.ReceiptSelectedInvoice;
-import com.red_escuela.backend.identity.api.PersonRoleNamesLookup;
+import com.red_escuela.backend.identity.api.PersonRoleNamesFinder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
@@ -30,10 +30,10 @@ public class BankTransferReceiptResponseAssembler {
     private final InvoiceRepository invoiceRepository;
     private final ReceiptInvoiceIdsLookup receiptInvoiceIds;
     private final ReceiptReviewFactsLookup receiptReviewFacts;
-    private final PersonRoleNamesLookup personRoles;
+    private final PersonRoleNamesFinder personRoles;
 
     public BankTransferReceiptResponseAssembler(InvoiceViewLoader invoiceViewLoader, InvoiceRepository invoiceRepository, ReceiptInvoiceIdsLookup receiptInvoiceIds,
-                                                ReceiptReviewFactsLookup receiptReviewFacts, PersonRoleNamesLookup personRoles) {
+                                                ReceiptReviewFactsLookup receiptReviewFacts, PersonRoleNamesFinder personRoles) {
         this.personRoles = personRoles;
         this.invoiceViewLoader = invoiceViewLoader;
         this.invoiceRepository = invoiceRepository;

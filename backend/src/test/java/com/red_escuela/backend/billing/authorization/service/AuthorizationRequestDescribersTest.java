@@ -46,7 +46,7 @@ import com.red_escuela.backend.billing.payment.domain.RefundPart;
 import com.red_escuela.backend.billing.payment.operation.IssueRefundCommand;
 import com.red_escuela.backend.billing.payment.repository.RefundRepository;
 import com.red_escuela.backend.billing.payment.service.RefundAuthorizationRequestDescriber;
-import com.red_escuela.backend.identity.api.StudentNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
@@ -248,7 +248,7 @@ class AuthorizationRequestDescribersTest {
     @Test
     void aRefundListsItsPartsPluralizesTheEffectAndFallsBackToTheOriginalPaymentDestination() {
         RefundRepository refunds = mock(RefundRepository.class);
-        StudentNameLookup names = mock(StudentNameLookup.class);
+        PersonNameFinder names = mock(PersonNameFinder.class);
         when(names.findFullNamesByStudentId(List.of(5L))).thenReturn(Map.of(5L, "Ledesma, Florencia"));
         LocalDate today = LocalDate.of(2026, 10, 22);
         when(refunds.findByAuthorizationRequestIdOrderByIdAsc(19L)).thenReturn(List.of(

@@ -12,7 +12,7 @@ import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRep
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitsSlice;
-import com.red_escuela.backend.identity.api.StudentNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -34,11 +34,11 @@ public class LostCohortPromotionBenefitsReader {
     private final StudentDiscountRepository repository;
     private final DiscountDefinitionRepository definitionRepository;
     private final AppliedStudentDiscountRepository appliedRepository;
-    private final StudentNameLookup studentNames;
+    private final PersonNameFinder studentNames;
     private final Clock clock;
 
     public LostCohortPromotionBenefitsReader(StudentDiscountRepository repository, DiscountDefinitionRepository definitionRepository,
-                                                  AppliedStudentDiscountRepository appliedRepository, StudentNameLookup studentNames, Clock clock) {
+                                                  AppliedStudentDiscountRepository appliedRepository, PersonNameFinder studentNames, Clock clock) {
         this.repository = repository;
         this.definitionRepository = definitionRepository;
         this.appliedRepository = appliedRepository;

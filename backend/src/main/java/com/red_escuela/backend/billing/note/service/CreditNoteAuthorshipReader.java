@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.authorization.domain.RequestAuthorship;
 import com.red_escuela.backend.billing.authorization.service.RequestAuthorshipReader;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.domain.CreditNoteAuthorshipTrace;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
 @Component
 public class CreditNoteAuthorshipReader {
     private final RequestAuthorshipReader authorshipReader;
-    private final PersonNameLookup personNames;
+    private final PersonNameFinder personNames;
 
-    public CreditNoteAuthorshipReader(RequestAuthorshipReader authorshipReader, PersonNameLookup personNames) {
+    public CreditNoteAuthorshipReader(RequestAuthorshipReader authorshipReader, PersonNameFinder personNames) {
         this.authorshipReader = authorshipReader;
         this.personNames = personNames;
     }

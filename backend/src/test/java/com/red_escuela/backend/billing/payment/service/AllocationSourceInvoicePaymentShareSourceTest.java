@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.payment.domain.PaymentFixtures;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class AllocationSourceInvoicePaymentShareSourceTest {
 
     private final AllocationSourceQueryService sources = mock(AllocationSourceQueryService.class);
     private final PaymentRepository payments = mock(PaymentRepository.class);
-    private final PersonNameLookup names = mock(PersonNameLookup.class);
+    private final PersonNameFinder names = mock(PersonNameFinder.class);
     private final AllocationSourceInvoicePaymentShareSource shareSource = new AllocationSourceInvoicePaymentShareSource(sources, payments, names);
 
     private static Payment withId(Payment payment, long id) {
