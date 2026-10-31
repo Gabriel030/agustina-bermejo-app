@@ -1,7 +1,6 @@
 package com.red_escuela.backend.security;
 
 import com.red_escuela.backend.testsupport.SlowTest;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Tag("D-484")
 @SlowTest(reason = "una request MockMvc por endpoint de la aplicación contra el contexto completo")
 class PlatformAdminIsolationTest extends AuthorizationMatrixSupport {
 
