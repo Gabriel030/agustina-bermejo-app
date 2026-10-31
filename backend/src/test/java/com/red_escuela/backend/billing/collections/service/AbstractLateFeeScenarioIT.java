@@ -181,6 +181,10 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
         });
     }
 
+    protected long pendingPublicationsSinceScenarioStart() {
+        return jdbc.queryForObject("select count(*) from event_publication where completion_date is null and publication_date >= ?", Long.class, scenarioStart);
+    }
+
     protected void awaitEventsDrained() {
         await().atMost(Duration.ofSeconds(25)).until(() -> jdbc.queryForObject("select count(*) from event_publication where completion_date is null and publication_date >= ?", Long.class, scenarioStart) == 0L);
     }
