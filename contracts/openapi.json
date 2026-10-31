@@ -3802,6 +3802,39 @@
         "required" : [ "violations" ],
         "type" : "object"
       },
+      "DraftInvoiceGroupResponse" : {
+        "properties" : {
+          "difference" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "differencePercentage" : {
+            "type" : "number"
+          },
+          "draftCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "draftTotal" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "enrollmentType" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "feeType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "previousPeriodIssuedTotal" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "difference", "differencePercentage", "draftCount", "draftTotal", "enrollmentType", "feeType", "name", "previousPeriodIssuedTotal" ],
+        "type" : "object"
+      },
       "EffectLine" : {
         "properties" : {
           "text" : {
@@ -26347,6 +26380,78 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MonthlyInvoiceRunResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
+    "/monthly-invoice-runs/{monthlyRunId}/draft-invoices" : {
+      "get" : {
+        "operationId" : "MonthlyInvoiceRun_listDraftInvoiceGroups",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "monthlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DraftInvoiceGroupResponse"
+                  },
+                  "type" : "array"
                 }
               }
             },

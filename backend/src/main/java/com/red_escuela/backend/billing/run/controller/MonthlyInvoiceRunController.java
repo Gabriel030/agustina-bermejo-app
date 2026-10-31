@@ -1,10 +1,12 @@
 package com.red_escuela.backend.billing.run.controller;
 
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
+import com.red_escuela.backend.billing.run.dto.DraftInvoiceGroupResponse;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceRunItemResponse;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceRunResponse;
 import com.red_escuela.backend.billing.run.dto.RunPage;
 import com.red_escuela.backend.billing.run.usecase.ManualMonthlyInvoiceItemRetryUseCase;
+import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunDraftQueryUseCase;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunQueryUseCase;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,10 +32,13 @@ public class MonthlyInvoiceRunController {
 
     private final MonthlyInvoiceRunQueryUseCase queryUseCase;
     private final ManualMonthlyInvoiceItemRetryUseCase manualRetryUseCase;
+    private final MonthlyInvoiceRunDraftQueryUseCase draftQueryUseCase;
 
-    public MonthlyInvoiceRunController(MonthlyInvoiceRunQueryUseCase queryUseCase, ManualMonthlyInvoiceItemRetryUseCase manualRetryUseCase) {
+    public MonthlyInvoiceRunController(MonthlyInvoiceRunQueryUseCase queryUseCase, ManualMonthlyInvoiceItemRetryUseCase manualRetryUseCase,
+                                      MonthlyInvoiceRunDraftQueryUseCase draftQueryUseCase) {
         this.queryUseCase = queryUseCase;
         this.manualRetryUseCase = manualRetryUseCase;
+        this.draftQueryUseCase = draftQueryUseCase;
     }
 
     @GetMapping
@@ -57,6 +62,11 @@ public class MonthlyInvoiceRunController {
                                                                          @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
         RunPage<MonthlyInvoiceRunItemResponse> items = queryUseCase.listMonthlyInvoiceRunItems(monthlyRunId, result, page, size);
         return ResponseEntity.ok().header(TOTAL_COUNT_HEADER, Long.toString(items.totalElements())).body(items.items());
+    }
+
+    @GetMapping("/{monthlyRunId}/draft-invoices")
+    public List<DraftInvoiceGroupResponse> listDraftInvoiceGroups(@PathVariable Long monthlyRunId) {
+        return draftQueryUseCase.listDraftInvoiceGroups(monthlyRunId);
     }
 
     @PostMapping("/{monthlyRunId}/items/{itemId}/retries")

@@ -99,6 +99,10 @@ public class MonthlyInvoiceRun {
         return run;
     }
 
+    public boolean isOpenForRetriedItems() {
+        return issuanceMode != MonthlyInvoiceIssuanceMode.REVIEW || status == MonthlyInvoiceRunStatus.RUNNING || status == MonthlyInvoiceRunStatus.AWAITING_REVIEW;
+    }
+
     public void finishMonthlyRun(MonthlyInvoiceRunEvent event, LocalDateTime finishedAt) {
         this.status = MonthlyInvoiceRunStateMachine.resolveNextStatus(status, event);
         this.finishedAt = Objects.requireNonNull(finishedAt, "finishedAt");
