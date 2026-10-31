@@ -14,7 +14,7 @@ public final class PersonSpecifications {
 
     public static Specification<Person> withRoleIn(Set<String> roles) {
         return (root, query, cb) -> {
-            if (roles == null || roles.isEmpty()) return cb.conjunction();
+            if (roles == null || roles.isEmpty()) return cb.disjunction();
             var roleJoin = root.join("roles", JoinType.INNER);
             return roleJoin.get("name").in(roles);
         };
