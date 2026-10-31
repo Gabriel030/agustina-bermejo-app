@@ -35,9 +35,11 @@ public class PostWithdrawalSummaryStore {
               and i.document_status = 'ISSUED'
               and i.document_type = 'INVOICE'
               and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
-              and i.payment_status in ('PENDING', 'OVERDUE')
+              and (i.payment_status in ('PENDING', 'OVERDUE')
+                       or (i.payment_status = 'PAYMENT_UNDER_REVIEW' and exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW'
+                                                                                 and cast(r.uploaded_at as date) < :protectionFloor)))
               and i.due_date < :summaryDay
-              and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW')
+              and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and cast(r.uploaded_at as date) >= :protectionFloor)
               and not exists (select 1 from post_withdrawal_summary w where w.%2$s = e.id and w.summary_month = :summaryMonth)
             order by e.student_id, e.id, i.id
             """;
@@ -48,8 +50,8 @@ public class PostWithdrawalSummaryStore {
         this.jdbc = jdbc;
     }
 
-    public List<WithdrawnEnrollmentDebtLine> findPendingDebtLinesOfWithdrawnEnrollments(LocalDate businessDate, LocalDate summaryDay) {
-        MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("summaryDay", Date.valueOf(summaryDay))
+    public List<WithdrawnEnrollmentDebtLine> findPendingDebtLinesOfWithdrawnEnrollments(LocalDate businessDate, LocalDate summaryDay, LocalDate protectionFloor) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("summaryDay", Date.valueOf(summaryDay)).addValue("protectionFloor", Date.valueOf(protectionFloor))
                 .addValue("summaryMonth", Date.valueOf(YearMonth.from(businessDate).atDay(1)));
         List<WithdrawnEnrollmentDebtLine> lines = new ArrayList<>(jdbc.query(DEBT_LINES_SQL.formatted("program_enrollment", "program_enrollment_id", "program", "program_id"), parameters,
                 (rs, rowNumber) -> lineOf(rs, true)));

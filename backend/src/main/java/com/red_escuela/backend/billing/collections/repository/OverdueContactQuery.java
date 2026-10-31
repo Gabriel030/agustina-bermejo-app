@@ -18,7 +18,7 @@ public class OverdueContactQuery {
         this.jdbc = jdbc;
     }
 
-    public List<OverdueAccountRow> findOverdueAccountsAsOf(LocalDate asOf) {
+    public List<OverdueAccountRow> findOverdueAccountsAsOf(LocalDate asOf, LocalDate protectionFloor) {
         return jdbc.query("""
                 select a.student_id, i.currency, count(*) as overdue_installments, max(cast(:asOf as date) - i.due_date) as oldest_days_overdue,
                        sum(i.outstanding_amount) as overdue_amount
@@ -26,13 +26,15 @@ public class OverdueContactQuery {
                 where i.document_status = 'ISSUED'
                   and i.document_type = 'INVOICE'
                   and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
-                  and i.payment_status in ('PENDING', 'OVERDUE')
+                  and (i.payment_status in ('PENDING', 'OVERDUE')
+                       or (i.payment_status = 'PAYMENT_UNDER_REVIEW' and exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW'
+                                                                                 and cast(r.uploaded_at as date) < :protectionFloor)))
                   and i.due_date < :asOf
                   and i.outstanding_amount > 0
-                  and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW')
+                  and not exists (select 1 from bank_transfer_receipt r where r.invoice_id = i.id and r.status = 'PENDING_REVIEW' and cast(r.uploaded_at as date) >= :protectionFloor)
                 group by a.student_id, i.currency
                 order by a.student_id, i.currency
-                """, new MapSqlParameterSource().addValue("asOf", asOf),
+                """, new MapSqlParameterSource().addValue("asOf", asOf).addValue("protectionFloor", java.sql.Date.valueOf(protectionFloor)),
                 (rs, rowNumber) -> new OverdueAccountRow(rs.getLong("student_id"), rs.getString("currency"), rs.getInt("overdue_installments"),
                         rs.getInt("oldest_days_overdue"), rs.getBigDecimal("overdue_amount")));
     }

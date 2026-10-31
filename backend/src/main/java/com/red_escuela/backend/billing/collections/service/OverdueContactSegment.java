@@ -32,10 +32,12 @@ public class OverdueContactSegment implements StudentSegment {
 
     private final OverdueContactQuery overdueContactQuery;
     private final BillingConfigurationReader configurationReader;
+    private final PendingReceiptProtectionWindow protectionWindow;
 
-    public OverdueContactSegment(OverdueContactQuery overdueContactQuery, BillingConfigurationReader configurationReader) {
+    public OverdueContactSegment(OverdueContactQuery overdueContactQuery, BillingConfigurationReader configurationReader, PendingReceiptProtectionWindow protectionWindow) {
         this.overdueContactQuery = overdueContactQuery;
         this.configurationReader = configurationReader;
+        this.protectionWindow = protectionWindow;
     }
 
     @Override
@@ -90,7 +92,7 @@ public class OverdueContactSegment implements StudentSegment {
     }
 
     private List<OverdueContact> contactsOn(LocalDate date, OverdueContactCriteria criteria) {
-        List<OverdueAccountBalance> balances = overdueContactQuery.findOverdueAccountsAsOf(date).stream()
+        List<OverdueAccountBalance> balances = overdueContactQuery.findOverdueAccountsAsOf(date, protectionWindow.earliestProtectedUploadDateAsOf(date)).stream()
                 .map(row -> new OverdueAccountBalance(row.studentId(), row.overdueInstallments(), row.oldestDaysOverdue(),
                         Money.of(row.overdueAmount(), Currency.valueOf(row.currency()))))
                 .toList();
