@@ -3377,11 +3377,17 @@
             },
             "type" : "array"
           },
+          "lastRejectionReason" : {
+            "type" : "string"
+          },
           "name" : {
             "type" : "string"
           },
           "pendingApproval" : {
             "type" : "boolean"
+          },
+          "pendingModification" : {
+            "$ref" : "#/components/schemas/PendingModificationInfo"
           },
           "slots" : {
             "items" : {
@@ -3396,7 +3402,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "capacity", "id", "instructors", "name", "pendingApproval", "slots", "status", "subjectName" ],
+        "required" : [ "capacity", "id", "instructors", "lastRejectionReason", "name", "pendingApproval", "pendingModification", "slots", "status", "subjectName" ],
         "type" : "object"
       },
       "DaysValue" : {
@@ -6283,6 +6289,24 @@
           }
         },
         "required" : [ "id", "requestedAt", "requestedByName", "requestedByPersonId", "type" ],
+        "type" : "object"
+      },
+      "PendingModificationInfo" : {
+        "properties" : {
+          "replacesSchedule" : {
+            "type" : "boolean"
+          },
+          "requestedAt" : {
+            "type" : "string"
+          },
+          "slots" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SlotInfo"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "replacesSchedule", "requestedAt", "slots" ],
         "type" : "object"
       },
       "PendingRefundResponse" : {

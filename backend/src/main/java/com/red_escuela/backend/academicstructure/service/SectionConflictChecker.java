@@ -34,6 +34,15 @@ public class SectionConflictChecker {
         }
     }
 
+    public void checkClassroomAvailabilityIgnoringSlots(Term term, Long classroomId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Set<Long> ignoredSlotIds) {
+        boolean conflicts = occupyingSlots(term, dayOfWeek, startTime, endTime).stream()
+                .filter(slot -> !ignoredSlotIds.contains(slot.getId()))
+                .anyMatch(slot -> slot.getClassroom().getId().equals(classroomId));
+        if (conflicts) {
+            throw new SectionScheduleConflictException(classroomId, dayOfWeek, startTime, endTime);
+        }
+    }
+
     public Set<Long> occupiedClassroomIds(Term term, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
         return occupyingSlots(term, dayOfWeek, startTime, endTime).stream()
                 .map(slot -> slot.getClassroom().getId())

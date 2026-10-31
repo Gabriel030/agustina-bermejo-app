@@ -49,6 +49,26 @@ public interface SectionScheduleSlotRepository extends JpaRepository<SectionSche
             @Param("endTime") LocalTime endTime
     );
 
+    @Query("""
+            select s from SectionScheduleSlot s
+            left join s.subjectSection ss
+            left join ss.academicOfferingCycle ssc
+            left join s.courseSection cs
+            left join cs.academicOfferingCycle csc
+            where s.classroom.id = :classroomId
+            and (
+                ss.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or cs.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or ssc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                or csc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+            )
+            """)
+    List<SectionScheduleSlot> findSlotsOfActiveSectionsInClassroom(@Param("classroomId") Long classroomId);
+
     List<SectionScheduleSlot> findBySubjectSectionId(Long subjectSectionId);
 
     List<SectionScheduleSlot> findByCourseSectionId(Long courseSectionId);
