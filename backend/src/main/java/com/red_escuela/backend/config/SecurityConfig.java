@@ -81,6 +81,7 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.POST, "/payments/mp-webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/verify-email").permitAll()
+                .requestMatchers(HttpMethod.GET, "/public/modules").permitAll()
                 .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
                 .requestMatchers("/me/modules").authenticated()
                 .anyRequest().access(SecurityConfig::authenticatedExceptPlatformAdmin))
