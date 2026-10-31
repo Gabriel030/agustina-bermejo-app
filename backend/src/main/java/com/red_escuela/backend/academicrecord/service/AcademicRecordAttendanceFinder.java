@@ -30,6 +30,16 @@ public class AcademicRecordAttendanceFinder {
         return StudentAttendanceRiskResponse.from(attendanceRiskReader.readProgramEnrollmentRisk(enrollmentId));
     }
 
+    public List<StudentAttendanceResponse> listCourseEnrollmentAttendance(Long enrollmentId) {
+        return studentAttendanceReader.listCourseEnrollmentAttendance(enrollmentId).stream()
+                .map(StudentAttendanceResponse::from)
+                .toList();
+    }
+
+    public StudentAttendanceRiskResponse readCourseEnrollmentRisk(Long enrollmentId) {
+        return StudentAttendanceRiskResponse.from(attendanceRiskReader.readCourseEnrollmentRisk(enrollmentId));
+    }
+
     public void requireAttendanceOwnedBy(Long attendanceId, Long studentId) {
         studentAttendanceReader.requireAttendanceOwnedBy(attendanceId, studentId);
     }
