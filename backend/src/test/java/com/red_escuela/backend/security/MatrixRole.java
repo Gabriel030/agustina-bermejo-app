@@ -5,5 +5,6 @@ enum MatrixRole {
     DOCENTE,
     PRECEPTOR,
     ADMINISTRATIVO,
-    DIRECTOR
+    DIRECTOR,
+    PLATFORM_ADMIN
 }
