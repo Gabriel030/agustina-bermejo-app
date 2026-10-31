@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-160")
+@Tag("D-514")
 @ExhaustiveTransitionExpectations(machine = MonthlyInvoiceRunStateMachine.class)
 class MonthlyInvoiceRunTransitionTest {
 
@@ -28,6 +29,8 @@ class MonthlyInvoiceRunTransitionTest {
             new Row(null, RUN_BLOCKED_BY_NIGHT), FAILED,
             new Row(RUNNING, RUN_FINISHED_CLEAN), COMPLETED,
             new Row(RUNNING, RUN_FINISHED_WITH_FAILURES), COMPLETED_WITH_FAILURES,
+            new Row(RUNNING, RUN_FINISHED_WITH_DRAFTS_PENDING_REVIEW), AWAITING_REVIEW,
+            new Row(AWAITING_REVIEW, RUN_REVIEW_COMPLETED), COMPLETED,
             new Row(RUNNING, RUN_ABORTED), FAILED);
 
     private static List<MonthlyInvoiceRunStatus> statesIncludingNone() {

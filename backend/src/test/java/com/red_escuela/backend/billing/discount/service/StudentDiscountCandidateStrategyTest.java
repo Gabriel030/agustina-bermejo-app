@@ -19,7 +19,7 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingCont
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingFacts;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
@@ -64,7 +64,7 @@ class StudentDiscountCandidateStrategyTest {
 
     private final EnrollmentStudentDiscountReader discountReader = mock(EnrollmentStudentDiscountReader.class);
     private final EnrollmentLectiveYearReader lectiveYearReader = mock(EnrollmentLectiveYearReader.class);
-    private final BillingEnrollmentLookup enrollmentLookup = mock(BillingEnrollmentLookup.class);
+    private final BillingEnrollmentFactsFinder enrollmentLookup = mock(BillingEnrollmentFactsFinder.class);
     private final EnrollmentFeeIssuanceReader enrollmentFeeReader = mock(EnrollmentFeeIssuanceReader.class);
     private final StudentDiscountCandidateStrategy strategy = new StudentDiscountCandidateStrategy(discountReader, lectiveYearReader, enrollmentLookup, enrollmentFeeReader,
             mock(AppliedStudentDiscountRepository.class), mock(DiscountDefinitionRepository.class), mock(StudentDiscountRepository.class), Clock.systemUTC());

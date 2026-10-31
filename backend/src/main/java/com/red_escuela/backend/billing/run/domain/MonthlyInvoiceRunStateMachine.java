@@ -14,6 +14,8 @@ public final class MonthlyInvoiceRunStateMachine {
                     .allowInitialTransition(RUN_BLOCKED_BY_NIGHT, FAILED)
                     .allowTransition(RUNNING, RUN_FINISHED_CLEAN, COMPLETED)
                     .allowTransition(RUNNING, RUN_FINISHED_WITH_FAILURES, COMPLETED_WITH_FAILURES)
+                    .allowTransition(RUNNING, RUN_FINISHED_WITH_DRAFTS_PENDING_REVIEW, AWAITING_REVIEW)
+                    .allowTransition(AWAITING_REVIEW, RUN_REVIEW_COMPLETED, COMPLETED)
                     .allowTransition(RUNNING, RUN_ABORTED, FAILED)
                     .buildTransitionTable();
 

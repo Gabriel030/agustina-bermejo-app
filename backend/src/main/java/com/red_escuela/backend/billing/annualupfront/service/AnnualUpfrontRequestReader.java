@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontEnro
 import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontRequestNotFoundException;
 import com.red_escuela.backend.billing.annualupfront.repository.AnnualUpfrontRequestRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -20,11 +20,11 @@ public class AnnualUpfrontRequestReader {
     private final AnnualUpfrontRequestRepository requests;
     private final AnnualUpfrontRequestViewAssembler viewAssembler;
     private final AnnualUpfrontQuoteService quoteService;
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
     private final BillingActorResolver actorResolver;
 
     public AnnualUpfrontRequestReader(AnnualUpfrontRequestRepository requests, AnnualUpfrontRequestViewAssembler viewAssembler, AnnualUpfrontQuoteService quoteService,
-                                      BillingEnrollmentLookup enrollmentLookup, BillingActorResolver actorResolver) {
+                                      BillingEnrollmentFactsFinder enrollmentLookup, BillingActorResolver actorResolver) {
         this.requests = requests;
         this.viewAssembler = viewAssembler;
         this.quoteService = quoteService;

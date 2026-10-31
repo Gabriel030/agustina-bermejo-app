@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
-import com.red_escuela.backend.enrollment.api.WithdrawalFactsLookup;
+import com.red_escuela.backend.enrollment.api.WithdrawalFactsFinder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -29,7 +29,7 @@ class LeftOutInvoiceCancellationOnReceiptRejectionListenerOrderTest {
 
     private final InvoiceCreditAccessService invoices = mock(InvoiceCreditAccessService.class);
     private final WithdrawalInvoiceAccess invoiceAccess = mock(WithdrawalInvoiceAccess.class);
-    private final WithdrawalFactsLookup withdrawalFacts = mock(WithdrawalFactsLookup.class);
+    private final WithdrawalFactsFinder withdrawalFacts = mock(WithdrawalFactsFinder.class);
     private final StudentCurrentAccountService accountService = mock(StudentCurrentAccountService.class);
     private final BillingOperationPipeline pipeline = mock(BillingOperationPipeline.class);
     private final CancelInvoiceOperation operation = mock(CancelInvoiceOperation.class);

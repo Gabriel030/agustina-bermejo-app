@@ -424,6 +424,25 @@ proveedor real. `EmailDeliveryDispatchJob` despacha solo en días hábiles
 nunca espera a otro. El buzón `GET /notification-deliveries/simulated` existe solo con
 los perfiles `local` o `demo`.
 
+## Transacciones: del caso de uso al compositor (D4, regla R10)
+
+Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAreDeclaredOnlyInSpecialists`; los casos de uso existentes están congelados y la Épica 22 los migra). La transacción la abre un especialista de `service/`, `operation/`, `repository/` o `api/`.
+
+**Plantilla "caso de uso → compositor transaccional"** (un compositor por caso de uso que escribe en más de un lugar):
+
+1. El caso de uso conserva la interfaz `XxxUseCase` y la clase `XxxService` con `@UseCase`, sin `@Transactional`. Queda como guion: valida entradas, llama al compositor y arma la respuesta.
+2. El compositor es un bean propio en `service/` del mismo subdominio, clase concreta sin interfaz, nombrado acción + objeto (`RegisterAccountTransaction`, no `Processor`). Lleva `@Transactional` y ejecuta, en orden, todos los pasos de escritura. Nunca se invoca desde un método de su misma clase (el proxy no abriría transacción).
+3. Un caso de uso que llama a dos especialistas que escriben, cada uno con su `@Transactional`, produce dos commits: es un bug. Si hay más de una escritura, va un compositor.
+4. Los lectores (`<Objeto>Reader`, `readOnly = true`) devuelven records ya resueltos dentro de su transacción. El caso de uso no toca relaciones perezosas.
+5. No se cambia ninguna propagación existente (`MANDATORY`, `REQUIRES_NEW`, `NOT_SUPPORTED`). Los colaboradores `MANDATORY` exigen que el compositor haya abierto la transacción.
+6. Los eventos síncronos (`@EventListener`) corren en la transacción del publicador: la publicación va dentro del compositor.
+
+**Open-in-view.** `spring.jpa.open-in-view` no está definido en `backend/src/main/resources`: rige el valor por defecto de Spring Boot (`true`), verificado por `AtomicityTestSupportIT.openInViewInterceptorIsRegisteredBecauseNoPropertyDisablesIt`. Efecto: durante una petición HTTP el `EntityManager` sigue abierto en el caso de uso y puede tapar un acceso perezoso fuera de transacción; no se apoyen en eso: los lectores devuelven records resueltos.
+
+**Test de atomicidad.** `AtomicityTestSupport` (`testsupport/`) observa un conjunto de tablas y ejecuta el flujo con un `FailingStep` que falla en el paso N; verifica con `count(*)` que el flujo falló por esa inyección y que no quedó ninguna fila nueva. El test no debe ser `@Transactional` (el soporte lo rechaza): una transacción de test esconde la falta de transacción del flujo. Ejemplo de uso en `AtomicityTestSupportIT`.
+
+**Progreso de R10.** `scripts/r10-progress` cuenta las líneas del almacén de R10 por módulo.
+
 ## Reglas de arquitectura
 
 Tests ArchUnit en `backend/src/test/java/com/red_escuela/backend/architecture/` (`ArchitectureRules` define las reglas, `ArchitectureTest` las ejecuta sobre las clases de `main`). Fallan el build (`verify`):

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.service;
 
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.run.domain.FailedInvoiceRetrySchedule;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceItemOutcome;
@@ -58,7 +59,7 @@ class FailedMonthlyInvoiceRetrierTest {
         alertPublisher = mock(BillingRunAlertPublisher.class);
         FailedInvoiceRetryScheduleResolver resolver = mock(FailedInvoiceRetryScheduleResolver.class);
         when(resolver.resolveScheduleEffectiveOn(any())).thenReturn(SCHEDULE);
-        retryProcessor = new FailedMonthlyInvoiceItemRetryProcessor(itemRepository, attemptRepository, runRepository, itemProcessor, resolver, alertPublisher, clock);
+        retryProcessor = new FailedMonthlyInvoiceItemRetryProcessor(itemRepository, attemptRepository, runRepository, itemProcessor, resolver, alertPublisher, clock, new MonthlyInvoiceIssuanceStrategies());
         retrier = new FailedMonthlyInvoiceRetrier(itemRepository, retryProcessor, new SimpleMeterRegistry(), clock);
         MonthlyInvoiceRun run = MonthlyInvoiceRun.startRealDirectRun(FIRST_DAY, FIRST_DAY, MonthlyInvoiceRunTrigger.SCHEDULED, FIRST_DAY.atTime(4, 0));
         when(runRepository.findById(anyLong())).thenReturn(Optional.of(run));
@@ -113,11 +114,11 @@ class FailedMonthlyInvoiceRetrierTest {
     void aRetryOnTheFourthDayIssuesWithThePricingDateOfTheFirstDayOfThePeriod() {
         MonthlyInvoiceRunItem item = failedItemDueAt(LocalDateTime.of(2026, 10, 1, 4, 0), SCHEDULE);
         clock.setDateTime(LocalDateTime.of(2026, 10, 4, 10, 0));
-        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.issued(List.of(5L)));
+        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.issued(List.of(5L)));
 
         retryProcessor.retryItemIfDue(1L);
 
-        verify(itemProcessor).attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType.PROGRAM, 7L, YearMonth.of(2026, 10), FIRST_DAY);
+        verify(itemProcessor).attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType.PROGRAM, 7L, YearMonth.of(2026, 10), FIRST_DAY, InvoiceIssuanceDestination.EMIT_NOW);
         assertThat(item.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.ISSUED);
     }
 
@@ -138,13 +139,13 @@ class FailedMonthlyInvoiceRetrierTest {
     void theLastFailedRetryExhaustsTheItemRecordsItsAttemptAndRaisesOneAlert() {
         MonthlyInvoiceRunItem item = failedItemDueAt(LocalDateTime.of(2026, 10, 1, 4, 0), new FailedInvoiceRetrySchedule(1, List.of(1)));
         clock.setDateTime(LocalDateTime.of(2026, 10, 1, 6, 0));
-        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.failed("E2", "again"));
+        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.failed("E2", "again"));
         when(runRepository.findById(eq(1L))).thenReturn(Optional.of(MonthlyInvoiceRun.startRealDirectRun(FIRST_DAY, FIRST_DAY, MonthlyInvoiceRunTrigger.SCHEDULED,
                 FIRST_DAY.atTime(4, 0))));
         FailedInvoiceRetryScheduleResolver oneRetry = mock(FailedInvoiceRetryScheduleResolver.class);
         when(oneRetry.resolveScheduleEffectiveOn(any())).thenReturn(new FailedInvoiceRetrySchedule(1, List.of(1)));
         FailedMonthlyInvoiceItemRetryProcessor processor = new FailedMonthlyInvoiceItemRetryProcessor(itemRepository, attemptRepository, runRepository, itemProcessor,
-                oneRetry, alertPublisher, clock);
+                oneRetry, alertPublisher, clock, new MonthlyInvoiceIssuanceStrategies());
 
         processor.retryItemIfDue(1L);
 
@@ -158,7 +159,7 @@ class FailedMonthlyInvoiceRetrierTest {
     void aRetryThatFailsButHasMoreRetriesLeftRaisesNoAlert() {
         failedItemDueAt(LocalDateTime.of(2026, 10, 1, 4, 0), SCHEDULE);
         clock.setDateTime(LocalDateTime.of(2026, 10, 1, 6, 0));
-        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.failed("E2", "again"));
+        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.failed("E2", "again"));
         doThrow(new AssertionError("no alert expected")).when(alertPublisher).publishItemRetriesExhaustedAlert(any());
 
         MonthlyInvoiceRunItem retried = retryProcessor.retryItemIfDue(1L).orElseThrow();

@@ -30,7 +30,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -53,7 +53,7 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
     private static final int INDIVIDUAL_DISCOUNT_PRIORITY = 1;
 
     private final PolicySet<StudentDiscountGrantCheck> grantPolicies;
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
     private final DiscountDefinitionRepository definitionRepository;
     private final StudentDiscountRepository repository;
     private final NextMonthlyInstallmentPeriodQuery nextInstallmentQuery;
@@ -63,7 +63,7 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
     private final EnrollmentDiscountLock enrollmentLock;
     private final Clock clock;
 
-    public GrantStudentDiscountOperation(PolicySet<StudentDiscountGrantCheck> grantPolicies, BillingEnrollmentLookup enrollmentLookup,
+    public GrantStudentDiscountOperation(PolicySet<StudentDiscountGrantCheck> grantPolicies, BillingEnrollmentFactsFinder enrollmentLookup,
                                          DiscountDefinitionRepository definitionRepository, StudentDiscountRepository repository,
                                          NextMonthlyInstallmentPeriodQuery nextInstallmentQuery, AnnualUpfrontCoverageReader annualUpfrontReader, EnrollmentLectiveYearReader lectiveYearReader,
                                          EnrollmentFeeIssuanceReader enrollmentFeeReader, EnrollmentDiscountLock enrollmentLock, Clock clock) {

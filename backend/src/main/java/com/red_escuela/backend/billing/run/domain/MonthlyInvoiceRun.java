@@ -71,8 +71,14 @@ public class MonthlyInvoiceRun {
 
     public static MonthlyInvoiceRun startRealDirectRunPricedAt(LocalDate period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger,
                                                                LocalDateTime startedAt) {
+        return startRealRunPricedAt(period, businessDate, pricingDate, trigger, MonthlyInvoiceIssuanceMode.DIRECT, startedAt);
+    }
+
+    public static MonthlyInvoiceRun startRealRunPricedAt(LocalDate period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger,
+                                                         MonthlyInvoiceIssuanceMode issuanceMode, LocalDateTime startedAt) {
         MonthlyInvoiceRun run = startRealDirectRun(period, businessDate, trigger, startedAt);
         run.pricingDate = Objects.requireNonNull(pricingDate, "pricingDate");
+        run.issuanceMode = Objects.requireNonNull(issuanceMode, "issuanceMode");
         return run;
     }
 

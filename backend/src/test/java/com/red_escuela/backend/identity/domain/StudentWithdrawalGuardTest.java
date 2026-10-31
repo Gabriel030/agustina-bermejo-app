@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.domain;
 
-import com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup;
+import com.red_escuela.backend.identity.api.StudentEnrollmentActivityPort;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentHasActiveEnrollmentsException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 @Tag("D-250")
 class StudentWithdrawalGuardTest {
 
-    private final StudentEnrollmentActivityLookup lookup = mock(StudentEnrollmentActivityLookup.class);
+    private final StudentEnrollmentActivityPort lookup = mock(StudentEnrollmentActivityPort.class);
     private final StudentRepository students = mock(StudentRepository.class);
     private final StudentWithdrawalGuard guard = new StudentWithdrawalGuard(lookup, students);
 
