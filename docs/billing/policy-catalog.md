@@ -14,6 +14,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | AnnualUpfrontIdempotencyKeyPolicy | IDEMPOTENCY_KEY_INVALID | D-136 |
 
+## Momento ANNUAL_UPFRONT_PLAN_CHANGE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontPlanCannotBeChangedPolicy | ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED | D-168 |
+
 ## Momento ANNUAL_UPFRONT_REQUEST
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -357,12 +363,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | NotBeforeEntryMonthPolicy | BEFORE_ENTRY | D-049 |
-| 2 | MonthlyCadencePolicy | PLAN_NOT_MONTHLY | D-040 |
-| 3 | InstallmentWithinLectiveYearRangePolicy | OUTSIDE_TERM, YEAR_NOT_CONFIGURED | D-001, D-006 |
-| 4 | BillingWhilePausedPolicy | PAUSED_NOT_BILLED | D-050 |
-| 5 | InstallmentCapPolicy | INSTALLMENT_CAP_REACHED | D-034, D-039 |
-| 6 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
-| 7 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
+| 2 | AnnualUpfrontAwaitingPaymentPolicy | ANNUAL_UPFRONT_AWAITING_PAYMENT | D-160, D-131 |
+| 3 | MonthlyCadencePolicy | PLAN_NOT_MONTHLY | D-040 |
+| 4 | InstallmentWithinLectiveYearRangePolicy | OUTSIDE_TERM, YEAR_NOT_CONFIGURED | D-001, D-006 |
+| 5 | BillingWhilePausedPolicy | PAUSED_NOT_BILLED | D-050 |
+| 6 | InstallmentCapPolicy | INSTALLMENT_CAP_REACHED | D-034, D-039 |
+| 7 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
+| 8 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
 
 ## Momento NIGHTLY_BILLING_COMPLETED_TODAY
 

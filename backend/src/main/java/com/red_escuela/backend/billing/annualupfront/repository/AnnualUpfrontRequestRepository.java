@@ -41,4 +41,20 @@ public interface AnnualUpfrontRequestRepository extends JpaRepository<AnnualUpfr
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from AnnualUpfrontRequest r where r.id = :id")
     Optional<AnnualUpfrontRequest> findByIdForUpdate(@Param("id") Long id);
+
+    @Query(value = """
+            select r.id from annual_upfront_request r join invoice i on i.id = r.invoice_id
+            where r.status = 'AWAITING_PAYMENT' and r.payment_id is null and i.document_status = 'AWAITING_PAYMENT' and i.payment_deadline < :now
+            order by r.id
+            """, nativeQuery = true)
+    List<Long> findIdsAwaitingPaymentWithDeadlineBefore(@Param("now") java.time.LocalDateTime now);
+
+    @Query(value = "select r.program_enrollment_id from annual_upfront_request r where r.id = :id", nativeQuery = true)
+    Optional<Long> findProgramEnrollmentIdById(@Param("id") Long id);
+
+    @Query(value = """
+            select count(*) > 0 from annual_upfront_request r join term t on t.id = r.lective_year_term_id
+            where r.program_enrollment_id = :programEnrollmentId and r.status = 'CONFIRMED' and t.year_number = :lectiveYear
+            """, nativeQuery = true)
+    boolean existsConfirmedOfLectiveYear(@Param("programEnrollmentId") Long programEnrollmentId, @Param("lectiveYear") int lectiveYear);
 }

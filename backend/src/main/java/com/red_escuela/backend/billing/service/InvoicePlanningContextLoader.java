@@ -7,6 +7,9 @@ import com.red_escuela.backend.billing.configuration.service.BillingConfiguratio
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.planning.domain.PaymentPlanCoverage;
 import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
@@ -99,6 +102,9 @@ public class InvoicePlanningContextLoader {
                 .map(i -> new IssuedEnrollmentFee(i.getId(), i.getTemplateId(), i.getEnrollmentFeeSlot(), i.getPeriod(), i.getPaymentStatus(), i.getDueDate(),
                         i.getPrimaryLine().getChargeKeyReleased())).toList();
         Set<YearMonth> recurringPeriods = periods(invoices, FeeType.MONTHLY_INSTALLMENT);
+        Set<YearMonth> awaitingAnnualPeriods = invoices.stream()
+                .filter(i -> i.getInvoiceType() == InvoiceType.ANNUAL_UPFRONT && i.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT)
+                .flatMap(i -> i.getLines().stream()).filter(line -> !line.getChargeKeyReleased()).map(InvoiceLine::getPeriod).collect(Collectors.toSet());
 
         YearMonth entryMonth = enrollment.getProgramCohort() != null ? YearMonth.from(enrollment.getProgramCohort().getCursadaStart())
                 : (enrollment.getEnrollmentDate() != null ? YearMonth.from(enrollment.getEnrollmentDate()) : null);
@@ -115,7 +121,7 @@ public class InvoicePlanningContextLoader {
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
                 coverage, !selections.isEmpty(),
                 cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList, today),
-                entryTemplateId, entrySlot, cursadaStart, issueDate);
+                entryTemplateId, entrySlot, cursadaStart, issueDate, awaitingAnnualPeriods);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
     }
 

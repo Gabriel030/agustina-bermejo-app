@@ -92,4 +92,11 @@ public class AnnualUpfrontRequest {
         this.discardReason = AnnualUpfrontDiscardReason.CANCELLED_BY_STUDENT;
         this.decidedAt = decidedAt;
     }
+
+    public void discardDeadlineExpired(LocalDateTime decidedAt) {
+        Objects.requireNonNull(decidedAt, "decidedAt");
+        this.status = AnnualUpfrontRequestStateMachine.requireTargetFor(status, AnnualUpfrontRequestEvent.DEADLINE_PASSED);
+        this.discardReason = AnnualUpfrontDiscardReason.DEADLINE_EXPIRED;
+        this.decidedAt = decidedAt;
+    }
 }
