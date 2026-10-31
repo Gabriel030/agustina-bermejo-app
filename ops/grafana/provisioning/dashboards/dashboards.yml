@@ -1,0 +1,16 @@
+# Carga los dashboards de la Fase 3 si existen. Hoy el directorio está vacío y Grafana
+# levanta igual: esta fase es independiente de la 3, y sin dashboards queda un Grafana
+# con el datasource listo para explorar con Explore.
+apiVersion: 1
+
+providers:
+  - name: 'agustina-bermejo'
+    orgId: 1
+    folder: 'Agustina Bermejo'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

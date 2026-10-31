@@ -1,0 +1,56 @@
+# Stack local de observabilidad (Épica 17 Fase 4). Separado del docker-compose.yml
+# principal a propósito: ese es el que se levanta para trabajar en la app y no tiene
+# por qué arrastrar dos servicios de monitoreo cada vez. Mismo criterio que
+# docker-compose.qa.yml.
+#
+#   docker compose -f docker-compose.observability.yml up -d
+#
+# Requiere el backend corriendo en el host (puerto 8080) con ACTUATOR_USER y
+# ACTUATOR_PASSWORD seteadas, y el password del scrape en
+# ops/prometheus/scrape_password (gitignoreado, ver el .example al lado).
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/scrape_password:/etc/prometheus/scrape_password:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      # Retención: 365 días es la política; el tope de tamaño es la red de contención
+      # por si una etiqueta de alta cardinalidad se cuela. Gana la que se cumpla primero.
+      # Con las ~3.700 series medidas en la Fase 1 son ~10,7 MB/día y ~3,9 GB/año, así
+      # que manda el tiempo y el tope recién se tocaría a los ~2,6 años.
+      - "--storage.tsdb.retention.time=365d"
+      - "--storage.tsdb.retention.size=10GB"
+    # El backend NO está containerizado (no hay Dockerfile en el repo), así que corre en
+    # el host y el target no puede ser "backend:8080". En Docker Desktop
+    # host.docker.internal ya resuelve al host; en Linux hay que declararlo. Se deja en
+    # las dos plataformas para que el compose no funcione en una máquina y en otra no.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana-oss:11.5.1
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Definí GRAFANA_ADMIN_PASSWORD antes de levantar el stack}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      - prometheus
+
+# Nombrados y persistentes, al revés que docker-compose.qa.yml: acá el punto entero
+# es retener el histórico que el free tier de Grafana Cloud borra a los 14 días.
+volumes:
+  prometheus_data:
+  grafana_data:
