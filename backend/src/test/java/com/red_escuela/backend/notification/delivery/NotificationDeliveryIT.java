@@ -1,8 +1,8 @@
 package com.red_escuela.backend.notification.delivery;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.identity.api.EmailRecipientLookup;
-import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
+import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.identity.entity.NotificationChannel;
 import com.red_escuela.backend.identity.entity.NotificationEvent;
 import com.red_escuela.backend.identity.entity.NotificationPreference;
@@ -69,9 +69,9 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
     @Autowired
     private TransactionalEmailGateway gateway;
     @Autowired
-    private EmailRecipientLookup emailRecipientLookup;
+    private PersonContactFinder personContactFinder;
     @Autowired
-    private NotificationPreferenceQuery preferenceQuery;
+    private NotificationPreferenceFinder preferenceQuery;
     @Autowired
     private PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     @Autowired
@@ -251,7 +251,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         deliveryService.enqueue(request(student, key, false));
 
         assertThat(deliveryOf(key, DeliveryChannel.EMAIL).getStatusReason()).isEqualTo("NO_VERIFIED_EMAIL");
-        assertThat(emailRecipientLookup.findEmailRecipient(student.getId())).hasValueSatisfying(recipient -> assertThat(recipient.verified()).isFalse());
+        assertThat(personContactFinder.findEmailRecipient(student.getId())).hasValueSatisfying(recipient -> assertThat(recipient.verified()).isFalse());
     }
 
     @Test
@@ -327,7 +327,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             sends.incrementAndGet();
             throw new TransactionalEmailDeliveryException("proveedor caido", null);
         };
-        EmailDeliveryChannel failingChannel = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, failing);
+        EmailDeliveryChannel failingChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, failing);
 
         assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> failingChannel.dispatchDelivery(id))).doesNotThrowAnyException();
         NotificationDelivery afterFirst = deliveryRepository.findById(id).orElseThrow();
@@ -362,7 +362,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel flakyChannel = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, flaky);
+        EmailDeliveryChannel flakyChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, flaky);
 
         transactionTemplate.executeWithoutResult(status -> flakyChannel.dispatchDelivery(id));
         transactionTemplate.executeWithoutResult(status -> flakyChannel.dispatchDelivery(id));
@@ -461,7 +461,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         TransactionalEmailGateway broken = (TransactionalEmail email) -> {
             throw new IllegalStateException("503 del proveedor");
         };
-        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, broken);
+        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, broken);
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> brokenChannel.dispatchDelivery(id))).doesNotThrowAnyException();
@@ -511,7 +511,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, gated);
+        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gated);
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));

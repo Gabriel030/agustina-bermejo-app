@@ -1,14 +1,12 @@
 package com.red_escuela.backend.notification.delivery.usecase;
 
-import com.red_escuela.backend.identity.api.EmailRecipient;
-import com.red_escuela.backend.identity.api.EmailRecipientLookup;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
 import com.red_escuela.backend.notification.delivery.dto.SimulatedEmailPageResponse;
 import com.red_escuela.backend.notification.delivery.dto.SimulatedEmailResponse;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
+import com.red_escuela.backend.notification.delivery.service.SimulatedEmailAddressMaskFinder;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.shared.mail.MaskedEmailAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -18,14 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 @UseCase
 public class ListSimulatedEmailsService implements ListSimulatedEmailsUseCase {
     public static final int MAX_PAGE_SIZE = 100;
-    private static final String NO_RECIPIENT_ADDRESS = "-";
 
     private final NotificationDeliveryRepository deliveryRepository;
-    private final EmailRecipientLookup emailRecipientLookup;
+    private final SimulatedEmailAddressMaskFinder maskFinder;
 
-    public ListSimulatedEmailsService(NotificationDeliveryRepository deliveryRepository, EmailRecipientLookup emailRecipientLookup) {
+    public ListSimulatedEmailsService(NotificationDeliveryRepository deliveryRepository, SimulatedEmailAddressMaskFinder maskFinder) {
         this.deliveryRepository = deliveryRepository;
-        this.emailRecipientLookup = emailRecipientLookup;
+        this.maskFinder = maskFinder;
     }
 
     @Override
@@ -41,8 +38,7 @@ public class ListSimulatedEmailsService implements ListSimulatedEmailsUseCase {
     }
 
     private SimulatedEmailResponse toResponse(NotificationDelivery delivery) {
-        String masked = emailRecipientLookup.findEmailRecipient(delivery.getRecipientPersonId())
-                .map(EmailRecipient::address).map(MaskedEmailAddress::of).orElse(NO_RECIPIENT_ADDRESS);
+        String masked = maskFinder.findMaskedAddress(delivery.getRecipientPersonId());
         return SimulatedEmailResponse.from(delivery, masked);
     }
 }

@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.events.PlannedReminderFormat;
 import com.red_escuela.backend.billing.events.PlannedReminderLine;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.billing.events.PlannedReminderNotice;
-import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatusReason;
 import com.red_escuela.backend.notification.delivery.domain.DispatchItem;
@@ -28,11 +28,11 @@ public class CollectionReminderEmailDispatchSource implements EmailDispatchSourc
 
     private final CollectionReminderApplicabilityQuery applicabilityQuery;
     private final CollectionReminderEmailsQuery emailsQuery;
-    private final NotificationPreferenceQuery preferenceQuery;
+    private final NotificationPreferenceFinder preferenceQuery;
     private final CollectionReminderMessageComposer composer;
 
     public CollectionReminderEmailDispatchSource(CollectionReminderApplicabilityQuery applicabilityQuery, CollectionReminderEmailsQuery emailsQuery,
-                                                 NotificationPreferenceQuery preferenceQuery, CollectionReminderMessageComposer composer) {
+                                                 NotificationPreferenceFinder preferenceQuery, CollectionReminderMessageComposer composer) {
         this.applicabilityQuery = applicabilityQuery;
         this.emailsQuery = emailsQuery;
         this.preferenceQuery = preferenceQuery;

@@ -1,7 +1,5 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.api;
 
-import com.red_escuela.backend.identity.api.EmailRecipient;
-import com.red_escuela.backend.identity.api.EmailRecipientLookup;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import org.springframework.stereotype.Component;
@@ -10,15 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Component
-public class RepositoryEmailRecipientLookup implements EmailRecipientLookup {
+public class PersonContactFinder {
 
     private final PersonRepository personRepository;
 
-    public RepositoryEmailRecipientLookup(PersonRepository personRepository) {
+    public PersonContactFinder(PersonRepository personRepository) {
         this.personRepository = personRepository;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Optional<EmailRecipient> findEmailRecipient(Long personId) {
         return personRepository.findById(personId)

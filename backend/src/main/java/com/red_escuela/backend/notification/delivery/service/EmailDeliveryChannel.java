@@ -1,8 +1,8 @@
 package com.red_escuela.backend.notification.delivery.service;
 
 import com.red_escuela.backend.identity.api.EmailRecipient;
-import com.red_escuela.backend.identity.api.EmailRecipientLookup;
-import com.red_escuela.backend.identity.api.NotificationPreferenceQuery;
+import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
@@ -33,16 +33,16 @@ public class EmailDeliveryChannel {
     private static final Logger log = LoggerFactory.getLogger(EmailDeliveryChannel.class);
 
     private final NotificationDeliveryRepository deliveryRepository;
-    private final EmailRecipientLookup emailRecipientLookup;
-    private final NotificationPreferenceQuery notificationPreferenceQuery;
+    private final PersonContactFinder personContactFinder;
+    private final NotificationPreferenceFinder notificationPreferenceQuery;
     private final PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     private final TransactionalEmailGateway gateway;
 
-    public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, EmailRecipientLookup emailRecipientLookup,
-                                NotificationPreferenceQuery notificationPreferenceQuery,
+    public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
+                                NotificationPreferenceFinder notificationPreferenceQuery,
                                 PolicySet<EmailDeliveryContext> emailDeliveryPolicySet, TransactionalEmailGateway gateway) {
         this.deliveryRepository = deliveryRepository;
-        this.emailRecipientLookup = emailRecipientLookup;
+        this.personContactFinder = personContactFinder;
         this.notificationPreferenceQuery = notificationPreferenceQuery;
         this.emailDeliveryPolicySet = emailDeliveryPolicySet;
         this.gateway = gateway;
@@ -55,7 +55,7 @@ public class EmailDeliveryChannel {
             return;
         }
         Long personId = envelope.recipientPersonId();
-        boolean verified = emailRecipientLookup.findEmailRecipient(personId).map(EmailRecipient::verified).orElse(false);
+        boolean verified = personContactFinder.findEmailRecipient(personId).map(EmailRecipient::verified).orElse(false);
         EmailDeliveryContext context = new EmailDeliveryContext(request.emailPrecedesDueDate(),
                 notificationPreferenceQuery.isPreDueReminderEmailEnabled(personId), verified);
         var denial = emailDeliveryPolicySet.evaluateRulesUntilFirstViolation(context).firstDenial();
@@ -81,7 +81,7 @@ public class EmailDeliveryChannel {
         if (!delivery.getStatus().isWaitingForDispatch()) {
             return;
         }
-        Optional<EmailRecipient> recipient = emailRecipientLookup.findEmailRecipient(delivery.getRecipientPersonId())
+        Optional<EmailRecipient> recipient = personContactFinder.findEmailRecipient(delivery.getRecipientPersonId())
                 .filter(EmailRecipient::verified);
         if (recipient.isEmpty()) {
             delivery.suppress(DeliveryStatusReason.NO_VERIFIED_EMAIL);
