@@ -87,6 +87,7 @@ class FailedMonthlyInvoiceItemManualRetryTest {
         when(reviewRun.getId()).thenReturn(99L);
         when(reviewRun.getPeriod()).thenReturn(FIRST_DAY);
         when(reviewRun.getIssuanceMode()).thenReturn(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceIssuanceMode.REVIEW);
+        when(reviewRun.isOpenForRetriedItems()).thenReturn(true);
         when(reviewRunRepository.findById(anyLong())).thenReturn(Optional.of(reviewRun));
         FailedInvoiceRetryScheduleResolver resolver = mock(FailedInvoiceRetryScheduleResolver.class);
         when(resolver.resolveScheduleEffectiveOn(any())).thenReturn(SCHEDULE);
@@ -209,5 +210,84 @@ class FailedMonthlyInvoiceItemManualRetryTest {
 
         assertThat(item.getResult()).isEqualTo(MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED);
         verify(alertPublisher).publishItemRetriesExhaustedAlert(item);
+    }
+
+    private FailedMonthlyInvoiceItemRetryProcessor processorOverRun(MonthlyInvoiceRun run) {
+        MonthlyInvoiceRunRepository runRepository = mock(MonthlyInvoiceRunRepository.class);
+        when(runRepository.findById(anyLong())).thenReturn(Optional.of(run));
+        FailedInvoiceRetryScheduleResolver resolver = mock(FailedInvoiceRetryScheduleResolver.class);
+        when(resolver.resolveScheduleEffectiveOn(any())).thenReturn(SCHEDULE);
+        return new FailedMonthlyInvoiceItemRetryProcessor(itemRepository, attemptRepository, runRepository, itemProcessor, resolver, alertPublisher, clock, new MonthlyInvoiceIssuanceStrategies());
+    }
+
+    private MonthlyInvoiceRun reviewRunFinishedWith(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent event) {
+        MonthlyInvoiceRun run = MonthlyInvoiceRun.startRealRunPricedAt(FIRST_DAY, FIRST_DAY, FIRST_DAY, MonthlyInvoiceRunTrigger.SCHEDULED,
+                com.red_escuela.backend.billing.run.domain.MonthlyInvoiceIssuanceMode.REVIEW, FIRST_DAY.atTime(4, 0));
+        ReflectionTestUtils.setField(run, "id", 99L);
+        if (event != null) {
+            run.finishMonthlyRun(event, FIRST_DAY.atTime(5, 0));
+        }
+        return run;
+    }
+
+    @Test
+    @Tag("D-515")
+    void anItemOfAReviewRunAwaitingReviewIsRetriedAsADraft() {
+        lockedItem(MonthlyInvoiceItemOutcome.failed("E", "price missing"), NO_RETRIES);
+        clock.setDateTime(LocalDateTime.of(2026, 10, 4, 23, 30));
+        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.issued(List.of(41L)));
+
+        processorOverRun(reviewRunFinishedWith(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_DRAFTS_PENDING_REVIEW)).retryItemManually(RUN_ID, ITEM_ID);
+
+        verify(itemProcessor).attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType.PROGRAM, 7L, YearMonth.of(2026, 10), FIRST_DAY, new InvoiceIssuanceDestination.DraftOfMonthlyRun(99L));
+    }
+
+    @Test
+    @Tag("D-515")
+    void anItemOfAReviewRunThatAlreadyCompletedIsNotManuallyRetriedSoNoOrphanDraftIsCreated() {
+        lockedItem(MonthlyInvoiceItemOutcome.failed("E", "price missing"), NO_RETRIES);
+        FailedMonthlyInvoiceItemRetryProcessor processor = processorOverRun(reviewRunFinishedWith(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN));
+
+        assertThatThrownBy(() -> processor.retryItemManually(RUN_ID, ITEM_ID)).isInstanceOf(RunItemNotRetryableException.class);
+
+        verifyNoInteractions(itemProcessor);
+    }
+
+    @Test
+    @Tag("D-515")
+    void anItemOfAReviewRunCompletedWithFailuresIsNotManuallyRetried() {
+        lockedItem(MonthlyInvoiceItemOutcome.failed("E", "price missing"), NO_RETRIES);
+        FailedMonthlyInvoiceItemRetryProcessor processor = processorOverRun(reviewRunFinishedWith(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_FAILURES));
+
+        assertThatThrownBy(() -> processor.retryItemManually(RUN_ID, ITEM_ID)).isInstanceOf(RunItemNotRetryableException.class);
+
+        verifyNoInteractions(itemProcessor);
+    }
+
+    @Test
+    @Tag("D-515")
+    void theScheduledRetrySkipsAnItemOfAReviewRunThatAlreadyCompleted() {
+        MonthlyInvoiceRunItem item = lockedItem(MonthlyInvoiceItemOutcome.failed("E", "price missing"), SCHEDULE);
+        clock.setDateTime(LocalDateTime.of(2026, 10, 2, 12, 0));
+        assertThat(item.isDueForRetryAt(LocalDateTime.now(clock))).isTrue();
+
+        Optional<MonthlyInvoiceRunItem> retried = processorOverRun(reviewRunFinishedWith(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN)).retryItemIfDue(ITEM_ID);
+
+        assertThat(retried).isEmpty();
+        verifyNoInteractions(itemProcessor);
+    }
+
+    @Test
+    @Tag("D-515")
+    void anItemOfACompletedDirectRunIsStillRetriedImmediately() {
+        lockedItem(MonthlyInvoiceItemOutcome.failed("E", "price missing"), NO_RETRIES);
+        clock.setDateTime(LocalDateTime.of(2026, 10, 4, 23, 30));
+        when(itemProcessor.attemptEnrollmentMonthIssuance(any(), anyLong(), any(), any(), any())).thenReturn(MonthlyInvoiceItemOutcome.issued(List.of(41L)));
+        MonthlyInvoiceRun directRun = MonthlyInvoiceRun.startRealDirectRun(FIRST_DAY, FIRST_DAY, MonthlyInvoiceRunTrigger.SCHEDULED, FIRST_DAY.atTime(4, 0));
+        directRun.finishMonthlyRun(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_FAILURES, FIRST_DAY.atTime(5, 0));
+
+        processorOverRun(directRun).retryItemManually(RUN_ID, ITEM_ID);
+
+        verify(itemProcessor).attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType.PROGRAM, 7L, YearMonth.of(2026, 10), FIRST_DAY, InvoiceIssuanceDestination.EMIT_NOW);
     }
 }

@@ -15,6 +15,7 @@ import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.domain.SignedPercentage;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -37,6 +38,8 @@ public class ValueObjectJacksonModule extends SimpleModule {
         addSerializer(Grade.class, new GradeSerializer());
         addSerializer(Percentage.class, new PercentageSerializer());
         addDeserializer(Percentage.class, new PercentageDeserializer());
+        addSerializer(SignedPercentage.class, new SignedPercentageSerializer());
+        addDeserializer(SignedPercentage.class, new SignedPercentageDeserializer());
         addSerializer(EmailAddress.class, new EmailAddressSerializer());
         addDeserializer(EmailAddress.class, new EmailAddressDeserializer());
         addSerializer(MonetaryAdjustment.class, new MonetaryAdjustmentSerializer());
@@ -101,6 +104,21 @@ public class ValueObjectJacksonModule extends SimpleModule {
         @Override
         public Percentage deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             return Percentage.ofPoints(parser.getDecimalValue());
+        }
+    }
+
+    private static final class SignedPercentageSerializer extends JsonSerializer<SignedPercentage> {
+        @Override
+        public void serialize(SignedPercentage percentage, JsonGenerator generator, SerializerProvider provider)
+                throws IOException {
+            generator.writeNumber(percentage.points().stripTrailingZeros().toPlainString());
+        }
+    }
+
+    private static final class SignedPercentageDeserializer extends JsonDeserializer<SignedPercentage> {
+        @Override
+        public SignedPercentage deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+            return SignedPercentage.ofPoints(parser.getDecimalValue());
         }
     }
 
