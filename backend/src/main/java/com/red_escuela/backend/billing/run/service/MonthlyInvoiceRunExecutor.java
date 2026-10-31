@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.run.service;
 
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceIssuanceMode;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
@@ -47,11 +49,14 @@ public class MonthlyInvoiceRunExecutor {
     private final PolicySet<NightlyBillingCompletedTodayContext> nightlyCompletedPolicySet;
     private final MeterRegistry meterRegistry;
     private final Clock clock;
+    private final MonthlyInvoiceIssuanceStrategies issuanceStrategies;
+    private final EffectiveMonthlyInvoiceIssuanceModeResolver modeResolver;
 
     public MonthlyInvoiceRunExecutor(MonthlyInvoiceRunRepository runRepository, NightlyBillingRunRepository nightlyRunRepository,
                                      MonthlyInvoiceCandidateFinder candidateFinder, MonthlyInvoiceRunItemProcessor itemProcessor,
                                      BillingConfigurationAlertService alertService,
-                                     PolicySet<NightlyBillingCompletedTodayContext> nightlyBillingCompletedTodayPolicySet, MeterRegistry meterRegistry, Clock clock) {
+                                     PolicySet<NightlyBillingCompletedTodayContext> nightlyBillingCompletedTodayPolicySet, MeterRegistry meterRegistry, Clock clock,
+                                     MonthlyInvoiceIssuanceStrategies issuanceStrategies, EffectiveMonthlyInvoiceIssuanceModeResolver modeResolver) {
         this.runRepository = runRepository;
         this.nightlyRunRepository = nightlyRunRepository;
         this.candidateFinder = candidateFinder;
@@ -60,6 +65,8 @@ public class MonthlyInvoiceRunExecutor {
         this.nightlyCompletedPolicySet = nightlyBillingCompletedTodayPolicySet;
         this.meterRegistry = meterRegistry;
         this.clock = clock;
+        this.issuanceStrategies = issuanceStrategies;
+        this.modeResolver = modeResolver;
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger trigger) {
@@ -79,11 +86,16 @@ public class MonthlyInvoiceRunExecutor {
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriodPricedAt(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
+        return runMonthlyInvoicesOfPeriodPricedAt(period, businessDate, pricingDate, trigger, modeResolver.resolveModeOfNewRun());
+    }
+
+    public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriodPricedAt(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger,
+                                                                          MonthlyInvoiceIssuanceMode issuanceMode) {
         interruptStaleRunningRunsOf(period);
         Optional<PolicyVerdict> nightDenial = findNightlyBillingDenialOf(businessDate);
         return nightDenial.isPresent()
                 ? Optional.of(recordRunBlockedByNight(period, businessDate, trigger, nightDenial.get().code()))
-                : startRunUnlessPeriodAlreadyHasOne(period, businessDate, pricingDate, trigger);
+                : startRunUnlessPeriodAlreadyHasOne(period, businessDate, pricingDate, trigger, issuanceMode);
     }
 
     public Optional<PolicyVerdict> findNightlyBillingDenialOf(LocalDate businessDate) {
@@ -111,10 +123,11 @@ public class MonthlyInvoiceRunExecutor {
         return runRepository.save(MonthlyInvoiceRun.recordRunBlockedByNight(period.atDay(1), businessDate, trigger, failureCode, LocalDateTime.now(clock)));
     }
 
-    private Optional<MonthlyInvoiceRun> startRunUnlessPeriodAlreadyHasOne(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
+    private Optional<MonthlyInvoiceRun> startRunUnlessPeriodAlreadyHasOne(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger,
+                                                                           MonthlyInvoiceIssuanceMode issuanceMode) {
         MonthlyInvoiceRun run;
         try {
-            run = runRepository.saveAndFlush(MonthlyInvoiceRun.startRealDirectRunPricedAt(period.atDay(1), businessDate, pricingDate, trigger, LocalDateTime.now(clock)));
+            run = runRepository.saveAndFlush(MonthlyInvoiceRun.startRealRunPricedAt(period.atDay(1), businessDate, pricingDate, trigger, issuanceMode, LocalDateTime.now(clock)));
         } catch (DataIntegrityViolationException e) {
             log.info("Corrida mensual ignorada: el periodo {} ya tiene una corrida real", period);
             return Optional.empty();
@@ -136,7 +149,7 @@ public class MonthlyInvoiceRunExecutor {
             return runRepository.save(run);
         }
         int failed = counters.getOrDefault(MonthlyInvoiceRunItemResult.FAILED, 0) + counters.getOrDefault(MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED, 0);
-        run.finishMonthlyRun(failed == 0 ? MonthlyInvoiceRunEvent.RUN_FINISHED_CLEAN : MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_FAILURES, LocalDateTime.now(clock));
+        run.finishMonthlyRun(issuanceStrategies.strategyOf(run.getIssuanceMode()).finishEventOf(failed, counters.getOrDefault(MonthlyInvoiceRunItemResult.ISSUED, 0)), LocalDateTime.now(clock));
         MonthlyInvoiceRun finished = runRepository.save(run);
         log.info("Corrida mensual finalizada: periodo={}, estado={}, emitidas={}, noCorresponde={}, yaEmitidas={}, fallidas={}", period, finished.getStatus(),
                 counters.getOrDefault(MonthlyInvoiceRunItemResult.ISSUED, 0), counters.getOrDefault(MonthlyInvoiceRunItemResult.NOT_APPLICABLE, 0),
@@ -175,13 +188,17 @@ public class MonthlyInvoiceRunExecutor {
                 if (!processed.add(new EnrollmentKey(type, enrollmentId))) {
                     continue;
                 }
-                MonthlyInvoiceRunItem item = itemProcessor.issueAndRecordItem(run.getId(), type, enrollmentId, period, pricingDate);
+                MonthlyInvoiceRunItem item = itemProcessor.issueAndRecordItem(run.getId(), destinationOf(run), type, enrollmentId, period, pricingDate);
                 counters.merge(item.getResult(), 1, Integer::sum);
                 meterRegistry.counter("monthly_invoice_run_items_total", "result", item.getResult().name()).increment();
             }
             lastId = page.get(page.size() - 1);
             page = nextPage.apply(lastId);
         }
+    }
+
+    private InvoiceIssuanceDestination destinationOf(MonthlyInvoiceRun run) {
+        return issuanceStrategies.strategyOf(run.getIssuanceMode()).destinationOfRun(run.getId());
     }
 
     private record EnrollmentKey(MonthlyInvoiceEnrollmentType type, Long enrollmentId) {

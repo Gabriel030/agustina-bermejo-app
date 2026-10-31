@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.invoice.operation;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult.InvoiceIssued;
@@ -78,6 +79,9 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         context.replaceWinningDiscounts(strategiesByOrigin.registerWinnersBeforeInvoiceIsAssembled(context.winningDiscounts(), context));
         StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(request.studentId(), context.facts().offeringCurrency());
         Invoice invoice = InvoiceDraftAssembler.assembleDraftInvoice(context, account.getId());
+        if (context.destination() instanceof InvoiceIssuanceDestination.DraftOfMonthlyRun draftOfRun) {
+            return new InvoiceIssued(saveDraftConsumingDiscounts(invoice, draftOfRun, context));
+        }
         invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), context.facts().issueDate(), request.dueDate(),
                 context.facts().studentSnapshot(), request.actor());
         Invoice issued = invoiceRepository.save(invoice);
@@ -86,6 +90,14 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         allocationService.allocateAccountCreditToOldestInvoices(account, context.facts().issueDate(), request.actor());
         strategiesByOrigin.markWinnersAsApplied(context.winningDiscounts().values());
         return new InvoiceIssued(issued);
+    }
+
+    private Invoice saveDraftConsumingDiscounts(Invoice draft, InvoiceIssuanceDestination.DraftOfMonthlyRun draftOfRun, InvoiceIssuingContext context) {
+        draft.assignDraftToMonthlyRun(draftOfRun.monthlyInvoiceRunId());
+        Invoice saved = invoiceRepository.save(draft);
+        invoiceRepository.flush();
+        strategiesByOrigin.markWinnersAsApplied(context.winningDiscounts().values());
+        return saved;
     }
 
     @Override

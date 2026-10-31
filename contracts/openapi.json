@@ -5381,7 +5381,7 @@
           },
           "issuanceMode" : {
             "type" : "string",
-            "x-extensible-enum" : [ "DIRECT" ]
+            "x-extensible-enum" : [ "DIRECT", "REVIEW" ]
           },
           "mode" : {
             "type" : "string",
@@ -5401,7 +5401,7 @@
           },
           "status" : {
             "type" : "string",
-            "x-extensible-enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_FAILURES", "FAILED" ]
+            "x-extensible-enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_FAILURES", "AWAITING_REVIEW", "FAILED" ]
           },
           "trigger" : {
             "type" : "string",
@@ -5534,7 +5534,7 @@
           },
           "status" : {
             "type" : "string",
-            "x-extensible-enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_FAILURES", "FAILED" ]
+            "x-extensible-enum" : [ "RUNNING", "COMPLETED", "COMPLETED_WITH_FAILURES", "AWAITING_REVIEW", "FAILED" ]
           },
           "trigger" : {
             "type" : "string",

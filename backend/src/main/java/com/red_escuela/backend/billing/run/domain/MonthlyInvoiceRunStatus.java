@@ -4,5 +4,6 @@ public enum MonthlyInvoiceRunStatus {
     RUNNING,
     COMPLETED,
     COMPLETED_WITH_FAILURES,
+    AWAITING_REVIEW,
     FAILED
 }

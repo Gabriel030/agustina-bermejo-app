@@ -15,10 +15,19 @@ public final class InvoiceIssuingContext {
     private List<InvoiceDiscountCandidate> discountCandidates = List.of();
     private Map<Integer, InvoiceDiscountCandidate> winningDiscounts = Map.of();
     private Runnable discountReselection = () -> { };
+    private InvoiceIssuanceDestination destination = InvoiceIssuanceDestination.EMIT_NOW;
 
     public InvoiceIssuingContext(InvoiceIssuingRequest request, InvoiceIssuingFacts facts) {
         this.request = Objects.requireNonNull(request, "request");
         this.facts = Objects.requireNonNull(facts, "facts");
+    }
+
+    public InvoiceIssuanceDestination destination() {
+        return destination;
+    }
+
+    public void directTo(InvoiceIssuanceDestination destination) {
+        this.destination = Objects.requireNonNull(destination, "destination");
     }
 
     public InvoiceIssuingRequest request() {

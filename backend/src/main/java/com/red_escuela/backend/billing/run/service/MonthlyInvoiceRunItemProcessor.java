@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.service;
 
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.run.domain.FailedInvoiceRetrySchedule;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceItemOutcome;
@@ -41,8 +42,8 @@ public class MonthlyInvoiceRunItemProcessor {
         this.clock = clock;
     }
 
-    public MonthlyInvoiceRunItem issueAndRecordItem(Long runId, MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
-        MonthlyInvoiceItemOutcome outcome = attemptEnrollmentMonthIssuance(type, enrollmentId, period, pricingDate);
+    public MonthlyInvoiceRunItem issueAndRecordItem(Long runId, InvoiceIssuanceDestination destination, MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
+        MonthlyInvoiceItemOutcome outcome = attemptEnrollmentMonthIssuance(type, enrollmentId, period, pricingDate, destination);
         return persistItemIsolatingFailure(runId, type, enrollmentId, outcome);
     }
 
@@ -80,11 +81,12 @@ public class MonthlyInvoiceRunItemProcessor {
         }
     }
 
-    public MonthlyInvoiceItemOutcome attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate) {
+    public MonthlyInvoiceItemOutcome attemptEnrollmentMonthIssuance(MonthlyInvoiceEnrollmentType type, Long enrollmentId, YearMonth period, LocalDate pricingDate,
+                                                                    InvoiceIssuanceDestination destination) {
         try {
             MonthlyIssuanceReport report = switch (type) {
-                case PROGRAM -> rowProcessor.reportProgramEnrollmentIssuance(enrollmentId, period, pricingDate);
-                case COURSE -> rowProcessor.reportCourseEnrollmentIssuance(enrollmentId, period, pricingDate);
+                case PROGRAM -> rowProcessor.reportProgramEnrollmentIssuance(enrollmentId, period, pricingDate, destination);
+                case COURSE -> rowProcessor.reportCourseEnrollmentIssuance(enrollmentId, period, pricingDate, destination);
             };
             return outcomeOf(report);
         } catch (Exception e) {

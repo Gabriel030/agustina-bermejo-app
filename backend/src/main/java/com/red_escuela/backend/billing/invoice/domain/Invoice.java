@@ -120,6 +120,9 @@ public class Invoice {
     @Embedded
     private InvoiceAmounts amounts;
 
+    @Column(name = "monthly_invoice_run_id", updatable = false)
+    private Long monthlyInvoiceRunId;
+
     @Column(name = "discarded_reason", length = MAX_DISCARD_REASON_LENGTH)
     private String discardedReason;
 
@@ -261,6 +264,14 @@ public class Invoice {
         requireAtLeastOneLine(InvoiceDocumentEvent.DRAFT_SUBMITTED_FOR_PAYMENT);
         changeDocumentStatus(InvoiceDocumentEvent.DRAFT_SUBMITTED_FOR_PAYMENT, actor, null, null);
         this.paymentDeadline = paymentDeadline;
+    }
+
+    public void assignDraftToMonthlyRun(Long monthlyInvoiceRunId) {
+        Objects.requireNonNull(monthlyInvoiceRunId, "monthlyInvoiceRunId");
+        if (documentStatus != InvoiceDocumentStatus.DRAFT) {
+            throw new IllegalStateException("Only a draft can belong to a monthly run draft batch");
+        }
+        this.monthlyInvoiceRunId = monthlyInvoiceRunId;
     }
 
     public void issueInvoice(InvoiceNumber invoiceNumber, LocalDate issueDate, LocalDate dueDate, StudentSnapshot studentSnapshot,

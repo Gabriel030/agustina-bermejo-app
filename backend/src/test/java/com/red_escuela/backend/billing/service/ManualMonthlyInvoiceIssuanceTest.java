@@ -233,7 +233,7 @@ class ManualMonthlyInvoiceIssuanceTest extends AbstractInvoiceSequenceTest {
         Long enrollment = enrollmentWithFiveDueDays();
         today(date(2026, 4, 12));
 
-        var outcome = itemProcessor.attemptEnrollmentMonthIssuance(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType.PROGRAM, enrollment, APRIL, date(2026, 4, 1));
+        var outcome = itemProcessor.attemptEnrollmentMonthIssuance(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceEnrollmentType.PROGRAM, enrollment, APRIL, date(2026, 4, 1), com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination.EMIT_NOW);
 
         assertThat(outcome.result()).isEqualTo(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult.ISSUED);
         invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(invoice -> APRIL.equals(invoice.getPeriod())).forEach(invoice -> {
