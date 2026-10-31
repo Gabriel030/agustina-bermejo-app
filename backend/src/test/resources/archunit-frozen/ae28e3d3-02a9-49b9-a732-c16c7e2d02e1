@@ -1,12 +1,7 @@
-com.red_escuela.backend.academicstructure.usecase.classroom.GetClassroomAvailabilityService declares @Transactional on the class
-com.red_escuela.backend.academicstructure.usecase.classroom.ListClassroomsService declares @Transactional on the class
 com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.ApproveSectionModificationService.approveModification(java.lang.Long) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.GetAcademicOfferingCycleService declares @Transactional on the class
-com.red_escuela.backend.academicstructure.usecase.cycle.GetCycleSectionsService declares @Transactional on the class
-com.red_escuela.backend.academicstructure.usecase.cycle.ListAcademicOfferingCyclesService declares @Transactional on the class
 com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService.reject(java.lang.Long, java.lang.String) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.RejectSectionModificationService.rejectModification(java.lang.Long, java.lang.String) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.RequestSectionModificationService.requestModification(java.lang.Long, com.red_escuela.backend.academicstructure.dto.ModifySectionRequest) declares @Transactional
@@ -20,12 +15,7 @@ com.red_escuela.backend.academicstructure.usecase.term.OpenTermEnrollmentService
 com.red_escuela.backend.academicstructure.usecase.term.UpdateTermService.update(com.red_escuela.backend.academicstructure.usecase.term.UpdateTermCommand) declares @Transactional
 com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand) declares @Transactional
 com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
-com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsService.list(java.lang.Long) declares @Transactional
-com.red_escuela.backend.announcement.usecase.announcement.ListMyAnnouncementsService.listForCurrentStudent() declares @Transactional
-com.red_escuela.backend.announcement.usecase.announcement.ListSectionAnnouncementsService.list(com.red_escuela.backend.announcement.entity.SectionType, java.lang.Long) declares @Transactional
 com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand) declares @Transactional
-com.red_escuela.backend.announcement.usecase.audience.ListAudienceSegmentsService.list(com.red_escuela.backend.announcement.entity.SectionType, java.lang.Long) declares @Transactional
-com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceService.preview(com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.ApproveAttendanceJustificationService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.CancelCourseSectionClassSessionService.cancel(com.red_escuela.backend.attendance.usecase.attendance.CancelCourseSectionClassSessionCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassSessionService.cancel(com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassSessionCommand) declares @Transactional
@@ -95,20 +85,13 @@ com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCo
 com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.EnrollmentLifecycleQueryService.findCourseEnrollmentEndDate(java.lang.Long) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.EnrollmentLifecycleQueryService.findProgramEnrollmentEndDate(java.lang.Long) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.OnlineOnlyEnrollmentLookupService.findOnlineOnlyCourseEnrollmentIds(java.util.Collection) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.OnlineOnlyEnrollmentLookupService.findOnlineOnlyProgramEnrollmentIds(java.util.Collection) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.directorapproval.ApproveDirectorApprovalRequestService.approve(com.red_escuela.backend.enrollment.usecase.directorapproval.DecideDirectorApprovalRequestCommand) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.directorapproval.RejectDirectorApprovalRequestService.reject(com.red_escuela.backend.enrollment.usecase.directorapproval.DecideDirectorApprovalRequestCommand) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.directorapproval.RequestDirectorApprovalService.request(com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.enrollmentfee.GetEnrollmentFeeStatusService.get(java.lang.Long) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.enrollmentfee.GrantEnrollmentFeeExemptionService.grant(java.lang.Long, com.red_escuela.backend.enrollment.dto.GrantEnrollmentFeeExemptionRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.enrollmentfee.ListEnrollmentFeeExemptionsService.list(java.lang.Long) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.enrollmentfee.RevokeEnrollmentFeeExemptionService.revoke(java.lang.Long, java.lang.String) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentService.add(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationService.approve(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationCommand) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RejectProgramEnrollmentApplicationService.reject(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RejectProgramEnrollmentApplicationCommand) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationService.request(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationCommand) declares @Transactional
 com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigService.approve(com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigCommand) declares @Transactional
 com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.RejectSectionEvaluationConfigService.reject(com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.RejectSectionEvaluationConfigCommand) declares @Transactional

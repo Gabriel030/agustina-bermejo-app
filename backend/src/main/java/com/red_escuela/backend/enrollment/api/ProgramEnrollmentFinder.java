@@ -32,6 +32,22 @@ public class ProgramEnrollmentFinder {
         return enrollment;
     }
 
+    public ProgramEnrollment requireById(Long id) {
+        return find(id);
+    }
+
+    public EnrollmentBillingView requireBillingViewById(Long id) {
+        ProgramEnrollment enrollment = find(id);
+        Long templateId = programEnrollmentRepository.findBillingTemplateRef(id)
+                .map(ProgramEnrollmentRepository.BillingTemplateRef::getTemplateId).orElse(null);
+        return new EnrollmentBillingView(enrollment.getId(), enrollment.getStudent().getId(), enrollment.getProgram().getId(), null, templateId,
+                enrollment.getStatus(), null, enrollment.getWithdrawalEffectiveDate(), enrollment.getWithdrawalRegisteredOn());
+    }
+
+    public List<Long> findIdsByStudentId(Long studentId) {
+        return programEnrollmentRepository.findByStudentId(studentId).stream().map(ProgramEnrollment::getId).toList();
+    }
+
     public List<ProgramEnrollment> findByStudent(Long studentId) {
         return programEnrollmentRepository.findByStudentId(studentId);
     }

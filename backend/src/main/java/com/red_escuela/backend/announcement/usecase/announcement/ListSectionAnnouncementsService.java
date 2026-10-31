@@ -7,7 +7,6 @@ import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -27,7 +26,6 @@ public class ListSectionAnnouncementsService implements ListSectionAnnouncements
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Announcement> list(SectionType sectionType, Long sectionId) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         sectionMembership.requireInstructorOf(sectionType, sectionId, instructor.getId());

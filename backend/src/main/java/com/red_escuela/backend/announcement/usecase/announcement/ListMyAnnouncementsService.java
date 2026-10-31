@@ -5,7 +5,6 @@ import com.red_escuela.backend.announcement.service.StudentAnnouncementFeedLoade
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,7 +21,6 @@ public class ListMyAnnouncementsService implements ListMyAnnouncementsUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Announcement> listForCurrentStudent() {
         Person person = currentPersonService.resolveCurrentPerson();
         return feedLoader.loadFeedOfPerson(person.getId());

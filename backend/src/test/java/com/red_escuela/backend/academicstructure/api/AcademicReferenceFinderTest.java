@@ -1,15 +1,18 @@
 package com.red_escuela.backend.academicstructure.api;
 
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -21,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +44,8 @@ class AcademicReferenceFinderTest {
     private InstructorRepository instructorRepository;
     @Mock
     private ProgramRepository programRepository;
+    @Mock
+    private CourseRepository courseRepository;
     @InjectMocks
     private AcademicReferenceFinder finder;
 
@@ -116,5 +122,36 @@ class AcademicReferenceFinderTest {
         when(instructorRepository.findById(6L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> finder.findInstructor(6L)).isInstanceOf(InstructorNotFoundException.class);
+    }
+
+    @Test
+    void findCourseReturnsTheStoredCourse() {
+        Course course = new Course();
+        when(courseRepository.findById(8L)).thenReturn(Optional.of(course));
+
+        assertThat(finder.findCourse(8L)).isSameAs(course);
+    }
+
+    @Test
+    void findCourseFailsWhenTheCourseDoesNotExist() {
+        when(courseRepository.findById(8L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.findCourse(8L)).isInstanceOf(CourseNotFoundException.class);
+    }
+
+    @Test
+    void getProgramReferenceReturnsTheLazyReference() {
+        Program program = new Program();
+        when(programRepository.getReferenceById(3L)).thenReturn(program);
+
+        assertThat(finder.getProgramReference(3L)).isSameAs(program);
+    }
+
+    @Test
+    void findTermsOfProgramReturnsTheTermsOfThatProgram() {
+        List<Term> terms = List.of(new Term(), new Term());
+        when(termRepository.findTermsOfProgram(3L)).thenReturn(terms);
+
+        assertThat(finder.findTermsOfProgram(3L)).isEqualTo(terms);
     }
 }
