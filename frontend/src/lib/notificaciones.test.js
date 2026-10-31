@@ -48,4 +48,12 @@ describe('notificaciones', () => {
       expect(TONO_NOTIFICACION[tipo], tipo).toBeDefined();
     });
   });
+
+  it('labels and tones the graduation request notifications', () => {
+    expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_CREATED).toBe('Solicitud de egreso registrada');
+    expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_PENDING_REVIEW).toBe('Egreso pendiente de revisión');
+    expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_VERIFIED).toBe('Egreso verificado por Administración');
+    expect(TONO_NOTIFICACION.GRADUATION_REQUEST_PENDING_REVIEW).toBe('warning');
+    expect(TONO_NOTIFICACION.GRADUATION_REQUEST_VERIFIED).toBe('accent2');
+  });
 });
