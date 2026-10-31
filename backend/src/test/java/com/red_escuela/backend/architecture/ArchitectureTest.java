@@ -589,4 +589,40 @@ class ArchitectureTest {
                 .because("the campaigns of epic 12 are not implemented by the contact list (D-339)")
                 .check(MAIN_CLASSES);
     }
+
+    @Test
+    void billingControllersDeclareRequiresModule() {
+        FreezingArchRule.freeze(ArchitectureRules.billingControllersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..")).check(MAIN_CLASSES);
+    }
+
+    @Test
+    void controllerGuardRuleDetectsUnguardedControllersAndAllowsGuardedOnes() {
+        assertThatThrownBy(() -> ArchitectureRules.billingControllersDeclareRequiresModule(GUARD_FIXTURE_ROOT + "..").check(guardFixtures()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnguardedControllerFixture")
+                .hasMessageContaining("PartlyGuardedControllerFixture")
+                .hasMessageNotContaining("ClassGuardedControllerFixture")
+                .hasMessageNotContaining("MethodGuardedControllerFixture");
+    }
+
+    @Test
+    void billingJobsAndListenersDeclareRequiresModule() {
+        FreezingArchRule.freeze(ArchitectureRules.billingJobsAndListenersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..")).check(MAIN_CLASSES);
+    }
+
+    @Test
+    void jobGuardRuleDetectsUnguardedJobsAndListenersAndAllowsGuardedOnes() {
+        assertThatThrownBy(() -> ArchitectureRules.billingJobsAndListenersDeclareRequiresModule(GUARD_FIXTURE_ROOT + "..").check(guardFixtures()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnguardedJobFixture")
+                .hasMessageContaining("UnguardedListenerFixture")
+                .hasMessageNotContaining("ClassGuardedJobFixture")
+                .hasMessageNotContaining("MethodGuardedListenerFixture");
+    }
+
+    private static final String GUARD_FIXTURE_ROOT = ArchitectureRules.ROOT + ".architecture.fixture.guard";
+
+    private static JavaClasses guardFixtures() {
+        return ImportedApplicationClasses.fixturesIn(GUARD_FIXTURE_ROOT);
+    }
 }
