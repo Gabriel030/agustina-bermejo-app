@@ -15,7 +15,7 @@ public final class AuthorizationOperationCatalog {
     public static AuthorizationOperationFamily familyOf(BillingOperationType type) {
         return switch (type) {
             case ISSUE_REFUND, COMPLETE_REFUND, FAIL_REFUND -> AuthorizationOperationFamily.REFUNDS;
-            case REQUEST_ANNUAL_UPFRONT, DISCARD_ANNUAL_UPFRONT_REQUEST, ISSUE_INVOICE, ISSUE_CREDIT_NOTE, ISSUE_LATE_FEE_DEBIT_NOTE, ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE, CANCEL_INVOICE, CANCEL_INVOICES_AFTER_WITHDRAWAL ->
+            case REQUEST_ANNUAL_UPFRONT, DISCARD_ANNUAL_UPFRONT_REQUEST, ISSUE_INVOICE, APPROVE_DRAFT_INVOICES, ISSUE_CREDIT_NOTE, ISSUE_LATE_FEE_DEBIT_NOTE, ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE, CANCEL_INVOICE, CANCEL_INVOICES_AFTER_WITHDRAWAL ->
                     AuthorizationOperationFamily.INVOICES_AND_NOTES;
             case ALLOCATE_ACCOUNT_CREDIT, REGISTER_PAYMENT, REGISTER_GATEWAY_PAYMENT, APPROVE_BANK_TRANSFER_RECEIPT_PAYMENT, SUBMIT_BANK_TRANSFER_RECEIPT,
                  APPROVE_PENDING_BANK_TRANSFER_PAYMENT, REJECT_PENDING_BANK_TRANSFER_PAYMENT, REVOKE_BANK_TRANSFER_APPROVAL, REGISTER_CHARGEBACK, REVERSE_CHARGEBACK ->
@@ -30,6 +30,7 @@ public final class AuthorizationOperationCatalog {
         return switch (type) {
             case CREATE_LATE_PAYMENT_SETTINGS -> "Alta del recargo por mora";
             case ISSUE_INVOICE -> "Emisión de factura";
+            case APPROVE_DRAFT_INVOICES -> "Aprobación de borradores de facturas";
             case CHANGE_BILLING_CONFIGURATION -> "Cambio de configuración de facturación";
             case CANCEL_CONFIGURATION_VERSION -> "Cancelación de una versión de configuración";
             case ALLOCATE_ACCOUNT_CREDIT -> "Imputación de saldo a favor";

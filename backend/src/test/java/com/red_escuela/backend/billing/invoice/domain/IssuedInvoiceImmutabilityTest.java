@@ -22,7 +22,7 @@ class IssuedInvoiceImmutabilityTest {
             "addChargeLineToDraft", "addDiscountToDraftLine", "submitDraftForPayment", "issueInvoice", "discardDraftInvoice",
             "markPaymentUnderReview", "releasePaymentReview", "releasePaymentReviewWithoutLateTerms", "allocateFullInvoicePayment", "reversePaymentAllocation",
             "applyCreditNote", "markInvoiceAsOverdue", "pullRecordedDomainEvents", "assignInvoiceToProgramEnrollment", "assignInvoiceToCourseEnrollment", "assignDraftToMonthlyRun",
-            "currency", "findProgramEnrollmentId", "findCourseEnrollmentId", "requirePayable");
+            "currency", "findProgramEnrollmentId", "findCourseEnrollmentId", "requirePayable", "requirePendingDraftOfRun");
 
     @Test
     void anIssuedInvoiceRejectsLinesAndDiscountsAndNothingChanges() {

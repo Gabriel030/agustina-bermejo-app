@@ -9,7 +9,10 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.EnrollmentInvoiceQueryService;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceIssuanceMode;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunStatus;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
+import com.red_escuela.backend.billing.run.service.MonthlyRunDraftReviewer;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -42,6 +45,9 @@ class DraftInvoiceDiscountConsumptionIT extends AbstractStudentDiscountIssuingIT
     @Autowired
     private EnrollmentInvoiceQueryService invoiceQueries;
 
+    @Autowired
+    private MonthlyRunDraftReviewer draftReviewer;
+
     private MonthlyInvoiceRun reviewRun;
 
     @BeforeEach
@@ -53,8 +59,15 @@ class DraftInvoiceDiscountConsumptionIT extends AbstractStudentDiscountIssuingIT
 
     @AfterEach
     void closeReviewRun() {
-        reviewRun.abortMonthlyRun("TEST_CLEANUP", LocalDateTime.of(2040, 3, 1, 4, 0));
-        runRepository.saveAndFlush(reviewRun);
+        MonthlyInvoiceRun current = runRepository.findById(reviewRun.getId()).orElseThrow();
+        if (current.getStatus() == MonthlyInvoiceRunStatus.RUNNING) {
+            current.abortMonthlyRun("TEST_CLEANUP", LocalDateTime.of(2040, 3, 1, 4, 0));
+            runRepository.saveAndFlush(current);
+        } else {
+            jdbc.update("update invoice set monthly_invoice_run_id = null where monthly_invoice_run_id = ?", current.getId());
+            jdbc.update("delete from monthly_invoice_run_item where monthly_invoice_run_id = ?", current.getId());
+            jdbc.update("delete from monthly_invoice_run where id = ?", current.getId());
+        }
     }
 
     private Long createDraft(YearMonth period) {
@@ -135,5 +148,23 @@ class DraftInvoiceDiscountConsumptionIT extends AbstractStudentDiscountIssuingIT
         assertThat(rows).hasSize(2);
         assertThat(rows.get(0).get("consumption_released_at")).isNotNull();
         assertThat(rows.get(1).get("consumption_released_at")).isNull();
+    }
+
+    @Test
+    void discardingTheDiscountedDraftThroughTheRunReviewReturnsTheConsumptionAndCompletesTheRun() {
+        Long promotionId = factory.acquireCohortPromotion(offering, learner, FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("10")), 1);
+        Long march = createDraft(MARCH);
+        assertThat(statusOf(promotionId)).isEqualTo("EXHAUSTED");
+        MonthlyInvoiceRun awaiting = runRepository.findById(reviewRun.getId()).orElseThrow();
+        awaiting.finishMonthlyRun(MonthlyInvoiceRunEvent.RUN_FINISHED_WITH_DRAFTS_PENDING_REVIEW, LocalDateTime.of(2040, 3, 1, 3, 30));
+        runRepository.saveAndFlush(awaiting);
+        today(MARCH.atDay(6));
+
+        draftReviewer.discardDraftsOfRun(reviewRun.getId(), List.of(march), "Descarte de prueba", StatusChangeActor.ofProcess("TEST_DRAFT_DISCARD"));
+
+        assertThat(invoiceRepository.findById(march).orElseThrow().getDocumentStatus()).isEqualTo(InvoiceDocumentStatus.DISCARDED);
+        assertThat(statusOf(promotionId)).isEqualTo("ACTIVE");
+        assertThat(liveUsesOf(promotionId)).isZero();
+        assertThat(runRepository.findById(reviewRun.getId()).orElseThrow().getStatus()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
     }
 }

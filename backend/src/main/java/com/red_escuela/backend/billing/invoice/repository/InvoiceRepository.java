@@ -40,6 +40,9 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     @Query(value = "select id from invoice where id = :id for update", nativeQuery = true)
     Optional<Long> lockInvoiceRowById(@Param("id") Long id);
 
+    @Query("select distinct i.studentCurrentAccountId from Invoice i where i.id in :ids")
+    List<Long> findAccountIdsOfInvoices(@Param("ids") java.util.Collection<Long> ids);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Invoice i where i.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
