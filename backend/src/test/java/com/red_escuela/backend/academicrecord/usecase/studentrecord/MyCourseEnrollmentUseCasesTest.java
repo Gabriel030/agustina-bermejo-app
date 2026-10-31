@@ -33,7 +33,7 @@ class MyCourseEnrollmentUseCasesTest {
     @Test
     void listsAttendanceOnlyAfterCheckingCourseOwnership() {
         List<StudentAttendanceResponse> attendance = List.of(
-                new StudentAttendanceResponse(1L, 4L, null, "PRESENT", null, null, null));
+                new StudentAttendanceResponse(1L, 4L, null, "PRESENT", null, null, null, null));
         when(attendanceFinder.listCourseEnrollmentAttendance(4L)).thenReturn(attendance);
 
         assertThat(attendanceService.list(7L, 4L)).isEqualTo(attendance);
