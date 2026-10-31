@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface GraduationRequestRepository extends JpaRepository<GraduationRequest, Long> {
@@ -15,6 +16,8 @@ public interface GraduationRequestRepository extends JpaRepository<GraduationReq
     List<GraduationRequest> findByStatus(GraduationRequestStatus status);
 
     List<GraduationRequest> findByProgramEnrollmentIdAndStatusNot(Long programEnrollmentId, GraduationRequestStatus status);
+
+    Optional<GraduationRequest> findFirstByProgramEnrollmentIdOrderByIdDesc(Long programEnrollmentId);
 
     boolean existsByProgramEnrollmentIdAndStatusNot(Long programEnrollmentId, GraduationRequestStatus status);
 }
