@@ -9,11 +9,12 @@ import java.time.LocalDateTime;
 @Schema(name = "AttendanceResponse")
 public record StudentAttendanceResponse(
         Long id, Long enrollmentId, LocalDate classDate, String status,
-        String justificationReason, String justificationAttachmentUrl, LocalDateTime justifiedAt) {
+        String justificationReason, String justificationAttachmentUrl, LocalDateTime justifiedAt,
+        String justificationRejectionReason) {
 
     public static StudentAttendanceResponse from(StudentAttendanceView view) {
         return new StudentAttendanceResponse(
                 view.id(), view.enrollmentId(), view.classDate(), view.status(),
-                view.justificationReason(), view.justificationAttachmentUrl(), view.justifiedAt());
+                view.justificationReason(), view.justificationAttachmentUrl(), view.justifiedAt(), view.justificationRejectionReason());
     }
 }

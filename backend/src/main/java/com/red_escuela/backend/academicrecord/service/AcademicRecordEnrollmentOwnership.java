@@ -15,4 +15,8 @@ public class AcademicRecordEnrollmentOwnership {
     public void requireProgramEnrollmentOf(Long enrollmentId, Long studentId) {
         sectionEnrollmentFinder.requireProgramEnrollmentOf(enrollmentId, studentId);
     }
+
+    public void requireCourseEnrollmentOf(Long enrollmentId, Long studentId) {
+        sectionEnrollmentFinder.requireCourseEnrollmentOf(enrollmentId, studentId);
+    }
 }

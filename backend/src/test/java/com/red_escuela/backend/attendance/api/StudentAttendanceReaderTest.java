@@ -35,7 +35,18 @@ class StudentAttendanceReaderTest {
         List<StudentAttendanceView> views = reader.listProgramEnrollmentAttendance(7L);
 
         assertThat(views).containsExactly(new StudentAttendanceView(
-                11L, 7L, LocalDate.of(2026, 3, 2), "ABSENT", null, null, null));
+                11L, 7L, LocalDate.of(2026, 3, 2), "ABSENT", null, null, null, null));
+    }
+
+    @Test
+    void listsCourseAttendanceAsViewsWithTheCourseEnrollmentId() {
+        Attendance attendance = attendanceOf(null, courseEnrollment(8L, 3L));
+        attendance.setId(12L);
+        attendance.setClassDate(LocalDate.of(2026, 3, 9));
+        when(attendanceRepository.findByCourseSubjectSectionEnrollmentId(8L)).thenReturn(List.of(attendance));
+
+        assertThat(reader.listCourseEnrollmentAttendance(8L)).containsExactly(new StudentAttendanceView(
+                12L, 8L, LocalDate.of(2026, 3, 9), "ABSENT", null, null, null));
     }
 
     @Test

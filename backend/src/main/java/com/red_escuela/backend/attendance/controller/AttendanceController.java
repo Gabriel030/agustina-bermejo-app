@@ -7,6 +7,8 @@ import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.ClassSessionResponse;
 import com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest;
+import com.red_escuela.backend.attendance.dto.RejectAttendanceJustificationRequest;
+import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationCommand;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
 import com.red_escuela.backend.attendance.service.AttendanceExportService;
 import com.red_escuela.backend.attendance.usecase.attendance.ApproveAttendanceJustificationUseCase;
@@ -165,8 +167,8 @@ public class AttendanceController {
 
     @PostMapping("/attendance/{id}/reject-justification")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceResponse rejectJustification(@PathVariable Long id) {
-        return AttendanceResponse.from(rejectAttendanceJustificationUseCase.reject(id));
+    public AttendanceResponse rejectJustification(@PathVariable Long id, @Valid @RequestBody RejectAttendanceJustificationRequest request) {
+        return AttendanceResponse.from(rejectAttendanceJustificationUseCase.reject(new RejectAttendanceJustificationCommand(id, request.reason())));
     }
 
     @GetMapping("/section-enrollments/{id}/attendance")

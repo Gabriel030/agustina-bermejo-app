@@ -1,9 +1,11 @@
 package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import org.junit.jupiter.api.Test;
@@ -23,8 +25,28 @@ class SectionInstructorFinderTest {
 
     @Mock
     private SubjectSectionInstructorRepository programInstructorRepository;
+    @Mock
+    private CourseSubjectSectionInstructorRepository courseInstructorRepository;
     @InjectMocks
     private SectionInstructorFinder queries;
+
+    @Test
+    void listsCourseSectionInstructorsWithNameAndRole() {
+        Person person = new Person();
+        person.setId(100L);
+        person.setName("Ana");
+        person.setLastname("Paz");
+        Instructor instructor = new Instructor();
+        instructor.setId(10L);
+        instructor.setPerson(person);
+        CourseSubjectSectionInstructor link = new CourseSubjectSectionInstructor();
+        link.setInstructor(instructor);
+        link.setRole(InstructorRole.ASSISTANT);
+        when(courseInstructorRepository.findBySectionId(7L)).thenReturn(List.of(link));
+
+        assertThat(queries.findCourseSectionInstructors(7L)).containsExactly(
+                new SectionInstructorView(10L, 100L, "Ana Paz", InstructorRole.ASSISTANT));
+    }
 
     @Test
     void batchGroupsBySectionId() {

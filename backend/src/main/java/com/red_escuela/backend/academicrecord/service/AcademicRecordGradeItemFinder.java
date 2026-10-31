@@ -20,4 +20,10 @@ public class AcademicRecordGradeItemFinder {
                 .map(StudentGradeItemResponse::from)
                 .toList();
     }
+
+    public List<StudentGradeItemResponse> listCourseEnrollmentGradeItems(Long enrollmentId) {
+        return gradeItemFinder.findByCourseEnrollment(enrollmentId).stream()
+                .map(StudentGradeItemResponse::from)
+                .toList();
+    }
 }
