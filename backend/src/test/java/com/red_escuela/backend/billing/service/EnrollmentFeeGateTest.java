@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -73,8 +74,8 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     private World world(int feeCount, Integer secondFeeMonth, boolean withCohort) {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, feeCount, 2, secondFeeMonth);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
-        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), "2C");
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.FIRST_SEMESTER);
+        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), TermType.SECOND_SEMESTER);
         Long firstSection = newSection(career, first);
         Long secondSection = newSection(career, second);
         today(date(2027, 2, 5));
@@ -130,7 +131,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     @Tag("D-011")
     void anAnnualSubjectStartingInTheFirstSemesterOnlyNeedsTheFirstEnrollmentFee() {
         World world = world(2, 7, false);
-        Term annual = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "ANUAL");
+        Term annual = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.ANNUAL);
         Long annualSection = newSection(world.career(), annual);
         today(date(2027, 2, 5));
         assertThatThrownBy(() -> enrollIn(world, annualSection)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
@@ -189,7 +190,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         assertThatCode(() -> enrollIn(world, world.firstSection())).doesNotThrowAnyException();
 
         Career bare = newCareer();
-        Term term = newCuatrimestre(2030, 3, date(2030, 2, 1), date(2030, 3, 10), "1C");
+        Term term = newCuatrimestre(2030, 3, date(2030, 2, 1), date(2030, 3, 10), TermType.FIRST_SEMESTER);
         Long section = newSection(bare, term);
         today(date(2030, 2, 5));
         Long enrollment = newEnrollment(bare, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2030, 1), date(2030, 1, 5));
@@ -329,7 +330,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     @Test
     void theGateIsNotEvaluatedForPreviousYearsWhenThereIsNoTemplateCoveringTheTerm() {
         World world = world(1, null, false);
-        Term old = newCuatrimestre(2024, 3, date(2024, 2, 1), date(2024, 3, 10), "1C");
+        Term old = newCuatrimestre(2024, 3, date(2024, 2, 1), date(2024, 3, 10), TermType.FIRST_SEMESTER);
         Long oldSection = newSection(world.career(), old);
         today(date(2024, 2, 5));
 

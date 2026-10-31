@@ -6,6 +6,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
 
@@ -26,8 +27,9 @@ public class Term {
     @Column(name = "description")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private String type;
+    private TermType type;
 
     @Column(name = "start_date")
     private LocalDateTime startDate;
