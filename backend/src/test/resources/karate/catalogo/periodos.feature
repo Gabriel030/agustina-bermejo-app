@@ -16,7 +16,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
     * def descripcionPeriodo = 'Karate - Periodo catálogo ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2027, description: '#(descripcionPeriodo)', type: 'ANUAL', startDate: '2027-01-01T00:00:00', endDate: '2027-12-31T00:00:00' }
+    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2027-01-01T00:00:00', endDate: '2027-12-31T00:00:00' }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -105,7 +105,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
     * def descripcionInvertida = 'Karate - Periodo invertido ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00' }
+    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANNUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00' }
     When method post
     Then status 400
     And match response.code == 'INVALID_TERM_DATES'
