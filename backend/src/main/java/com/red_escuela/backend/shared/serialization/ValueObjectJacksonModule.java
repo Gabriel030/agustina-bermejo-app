@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.UnsupportedCurrencyException;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
@@ -33,6 +34,7 @@ public class ValueObjectJacksonModule extends SimpleModule {
         super("ValueObjectJacksonModule");
         addSerializer(Money.class, new MoneySerializer());
         addDeserializer(Money.class, new MoneyDeserializer());
+        addSerializer(Grade.class, new GradeSerializer());
         addSerializer(Percentage.class, new PercentageSerializer());
         addDeserializer(Percentage.class, new PercentageDeserializer());
         addSerializer(EmailAddress.class, new EmailAddressSerializer());
@@ -52,6 +54,13 @@ public class ValueObjectJacksonModule extends SimpleModule {
             return context.reportInputMismatch(target, "Missing field '%s'", field);
         }
         return value;
+    }
+
+    private static final class GradeSerializer extends JsonSerializer<Grade> {
+        @Override
+        public void serialize(Grade grade, JsonGenerator generator, SerializerProvider provider) throws IOException {
+            generator.writeNumber(grade.value());
+        }
     }
 
     private static final class MoneySerializer extends JsonSerializer<Money> {
