@@ -1,7 +1,9 @@
 package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +20,18 @@ public class SectionInstructorFinder {
 
     private final SubjectSectionInstructorRepository programInstructorRepository;
 
-    public SectionInstructorFinder(SubjectSectionInstructorRepository programInstructorRepository) {
+    private final CourseSubjectSectionInstructorRepository courseInstructorRepository;
+
+    public SectionInstructorFinder(SubjectSectionInstructorRepository programInstructorRepository,
+                                   CourseSubjectSectionInstructorRepository courseInstructorRepository) {
         this.programInstructorRepository = programInstructorRepository;
+        this.courseInstructorRepository = courseInstructorRepository;
+    }
+
+    public List<SectionInstructorView> findCourseSectionInstructors(Long courseSectionId) {
+        return courseInstructorRepository.findBySectionId(courseSectionId).stream()
+                .map(link -> viewOf(link.getInstructor(), link.getRole()))
+                .toList();
     }
 
     public List<SectionInstructorView> findProgramSectionInstructors(Long programSectionId) {
@@ -47,9 +59,12 @@ public class SectionInstructorFinder {
     }
 
     private SectionInstructorView toView(SubjectSectionInstructor link) {
-        var instructor = link.getInstructor();
+        return viewOf(link.getInstructor(), link.getRole());
+    }
+
+    private static SectionInstructorView viewOf(Instructor instructor, InstructorRole role) {
         var person = instructor.getPerson();
         return new SectionInstructorView(
-                instructor.getId(), person.getId(), person.getName() + " " + person.getLastname(), link.getRole());
+                instructor.getId(), person.getId(), person.getName() + " " + person.getLastname(), role);
     }
 }

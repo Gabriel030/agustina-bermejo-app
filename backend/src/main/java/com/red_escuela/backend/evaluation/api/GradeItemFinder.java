@@ -23,6 +23,12 @@ public class GradeItemFinder {
                 .toList();
     }
 
+    public List<GradeItemView> findByCourseEnrollment(Long enrollmentId) {
+        return gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId).stream()
+                .map(GradeItemFinder::viewOf)
+                .toList();
+    }
+
     private static GradeItemView viewOf(GradeItem gradeItem) {
         Long enrollmentId = gradeItem.getProgramSubjectSectionEnrollment() != null
                 ? gradeItem.getProgramSubjectSectionEnrollment().getId()

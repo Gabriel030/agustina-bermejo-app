@@ -24,6 +24,12 @@ public class StudentAttendanceReader {
                 .toList();
     }
 
+    public List<StudentAttendanceView> listCourseEnrollmentAttendance(Long enrollmentId) {
+        return attendanceRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId).stream()
+                .map(StudentAttendanceView::from)
+                .toList();
+    }
+
     public void requireAttendanceOwnedBy(Long attendanceId, Long studentId) {
         Attendance attendance = attendanceRepository.findById(attendanceId)
                 .orElseThrow(() -> new AttendanceNotFoundException(attendanceId));
