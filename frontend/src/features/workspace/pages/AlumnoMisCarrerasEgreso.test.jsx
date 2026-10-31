@@ -52,7 +52,7 @@ function mockEgreso({ own = ownRequest(), post } = {}) {
     http.post(`${API}/me/program-enrollments/5/graduation-request`, () => {
       if (post) return post();
       current = ownRequest({ request: detail('REQUESTED') });
-      return HttpResponse.json({ id: 9, status: 'REQUESTED' }, { status: 201 });
+      return HttpResponse.json({ id: 9, status: 'REQUESTED', programEnrollmentId: 5, programName: 'Tecnicatura', studentId: 1, studentName: 'Ana Pérez', requestedAt: '2026-10-31T10:00:00', decidedAt: null, rejectionReason: null }, { status: 201 });
     }),
     http.get(`${API}/*`, () => HttpResponse.json([])),
   );
@@ -108,7 +108,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
     mockEgreso({
       post: () => {
         posted = true;
-        return HttpResponse.json({}, { status: 201 });
+        return HttpResponse.json({ id: 9, status: 'REQUESTED', programEnrollmentId: 5, programName: 'Tecnicatura', studentId: 1, studentName: 'Ana Pérez', requestedAt: '2026-10-31T10:00:00', decidedAt: null, rejectionReason: null }, { status: 201 });
       },
     });
     const user = userEvent.setup();

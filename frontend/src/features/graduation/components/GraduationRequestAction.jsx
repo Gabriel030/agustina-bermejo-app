@@ -42,7 +42,7 @@ export function GraduationRequestAction({ carreraId }) {
             <Button variant="outline" onClick={() => setOpen(false)} disabled={requestGraduation.isPending}>
               Cancelar
             </Button>
-            <Button variant="gradient" loading={requestGraduation.isPending} onClick={confirmRequest}>
+            <Button loading={requestGraduation.isPending} onClick={confirmRequest}>
               Solicitar
             </Button>
           </DialogFooter>
