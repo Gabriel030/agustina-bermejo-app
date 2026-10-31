@@ -327,6 +327,64 @@ public final class ArchitectureRules {
                 .because("domain events are serialized into event_publication and carry ids and plain values, never entities");
     }
 
+    public static ArchRule billingControllersDeclareRequiresModule(String billingPackage) {
+        ArchCondition<JavaClass> condition = new ArchCondition<>("declare @RequiresModule on the class or on every request mapping") {
+            @Override
+            public void check(JavaClass controller, ConditionEvents events) {
+                boolean classGuarded = controller.isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class);
+                java.util.List<String> unguarded = controller.getMethods().stream()
+                        .filter(method -> REQUEST_MAPPINGS.stream().anyMatch(method::isAnnotatedWith))
+                        .filter(method -> !method.isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class))
+                        .map(method -> method.getName())
+                        .sorted()
+                        .toList();
+                boolean satisfied = classGuarded || unguarded.isEmpty();
+                events.add(new SimpleConditionEvent(controller, satisfied,
+                        controller.getName() + " exposes endpoints without @RequiresModule: " + unguarded));
+            }
+        };
+        return classes()
+                .that().resideInAPackage(billingPackage)
+                .and(DescribedPredicate.describe("are controllers", (JavaClass javaClass) ->
+                        javaClass.isAnnotatedWith(org.springframework.web.bind.annotation.RestController.class)
+                                || javaClass.getPackageName().contains(".controller")))
+                .should(condition)
+                .allowEmptyShould(true)
+                .because("with billing off every billing endpoint answers 404 (R-G1, Epic 19)");
+    }
+
+    public static ArchRule billingJobsAndListenersDeclareRequiresModule(String billingPackage) {
+        ArchCondition<com.tngtech.archunit.core.domain.JavaMethod> condition = new ArchCondition<>("be guarded by @RequiresModule on the method or its class") {
+            @Override
+            public void check(com.tngtech.archunit.core.domain.JavaMethod method, ConditionEvents events) {
+                boolean guarded = method.isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class)
+                        || method.getOwner().isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class);
+                events.add(new SimpleConditionEvent(method, guarded, method.getFullName() + " is a job or listener without @RequiresModule"));
+            }
+        };
+        return com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods()
+                .that().areDeclaredInClassesThat().resideInAPackage(billingPackage)
+                .and(DescribedPredicate.describe("are scheduled jobs or event listeners", (com.tngtech.archunit.core.domain.JavaMethod method) ->
+                        JOB_AND_LISTENER_ANNOTATIONS.stream().anyMatch(method::isAnnotatedWith)))
+                .should(condition)
+                .allowEmptyShould(true)
+                .because("with billing off no billing job or listener runs (R-G2, Epic 19)");
+    }
+
+    private static final java.util.List<Class<? extends java.lang.annotation.Annotation>> REQUEST_MAPPINGS = java.util.List.of(
+            org.springframework.web.bind.annotation.RequestMapping.class,
+            org.springframework.web.bind.annotation.GetMapping.class,
+            org.springframework.web.bind.annotation.PostMapping.class,
+            org.springframework.web.bind.annotation.PutMapping.class,
+            org.springframework.web.bind.annotation.PatchMapping.class,
+            org.springframework.web.bind.annotation.DeleteMapping.class);
+
+    private static final java.util.List<Class<? extends java.lang.annotation.Annotation>> JOB_AND_LISTENER_ANNOTATIONS = java.util.List.of(
+            org.springframework.scheduling.annotation.Scheduled.class,
+            org.springframework.modulith.events.ApplicationModuleListener.class,
+            org.springframework.context.event.EventListener.class,
+            org.springframework.transaction.event.TransactionalEventListener.class);
+
     public static ArchRule academicStructureDoesNotDependOnBilling() {
         return noClasses()
                 .that().resideInAPackage(ROOT + ".academicstructure..")

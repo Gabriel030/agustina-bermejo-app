@@ -1416,6 +1416,16 @@
         "required" : [ "affectedEnrollments", "detectedAt", "id", "lastDetectedAt", "period", "programId", "programName", "reason" ],
         "type" : "object"
       },
+      "BillingModule" : {
+        "properties" : {
+          "mode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "mode" ],
+        "type" : "object"
+      },
       "BillingPeriodResponse" : {
         "properties" : {
           "effectiveFrom" : {
@@ -1683,6 +1693,24 @@
           }
         },
         "required" : [ "changeReason", "effectiveFrom", "values" ],
+        "type" : "object"
+      },
+      "ChangeFeatureRequest" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "mode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 5,
+            "type" : "string"
+          }
+        },
+        "required" : [ "enabled", "mode", "reason" ],
         "type" : "object"
       },
       "ChangePasswordRequest" : {
@@ -3950,6 +3978,15 @@
         "required" : [ "description", "id", "name" ],
         "type" : "object"
       },
+      "EnabledFlag" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "enabled" ],
+        "type" : "object"
+      },
       "EnrollmentBillingStatusResponse" : {
         "properties" : {
           "enrollmentId" : {
@@ -4360,6 +4397,27 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "FeatureStateResponse" : {
+        "properties" : {
+          "code" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "mode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "code", "enabled", "mode", "version" ],
         "type" : "object"
       },
       "FinancialDashboardResponse" : {
@@ -5737,6 +5795,33 @@
         "required" : [ "enrollmentId", "examBoard", "id", "score", "status" ],
         "type" : "object"
       },
+      "MyModulesResponse" : {
+        "properties" : {
+          "analytics" : {
+            "$ref" : "#/components/schemas/EnabledFlag"
+          },
+          "billing" : {
+            "$ref" : "#/components/schemas/BillingModule"
+          },
+          "billingNotifications" : {
+            "$ref" : "#/components/schemas/EnabledFlag"
+          },
+          "externalBilling" : {
+            "$ref" : "#/components/schemas/EnabledFlag"
+          },
+          "fiscalInvoicing" : {
+            "$ref" : "#/components/schemas/EnabledFlag"
+          },
+          "paymentMethods" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentMethodAvailability"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "analytics", "billing", "billingNotifications", "externalBilling", "fiscalInvoicing", "paymentMethods" ],
+        "type" : "object"
+      },
       "NightlyBillingExecutionResponse" : {
         "properties" : {
           "run" : {
@@ -5933,6 +6018,77 @@
         "required" : [ "dni", "entryReason", "newlyListed", "oldestDaysOverdue", "overdueAmounts", "overdueInstallments", "studentId", "studentName" ],
         "type" : "object"
       },
+      "OwnGraduationRequestDetail" : {
+        "properties" : {
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "verifiedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "decidedAt", "id", "rejectionReason", "requestedAt", "status", "verifiedAt" ],
+        "type" : "object"
+      },
+      "OwnGraduationRequestResponse" : {
+        "properties" : {
+          "accumulatedCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "eligible" : {
+            "type" : "boolean"
+          },
+          "graduated" : {
+            "type" : "boolean"
+          },
+          "pendingMandatorySubjects" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "programName" : {
+            "type" : "string"
+          },
+          "request" : {
+            "$ref" : "#/components/schemas/OwnGraduationRequestDetail",
+            "type" : "null"
+          },
+          "requiredCredits" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "unfulfilledElectiveGroups" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "accumulatedCredits", "eligible", "graduated", "pendingMandatorySubjects", "programEnrollmentId", "programName", "request", "requiredCredits", "unfulfilledElectiveGroups" ],
+        "type" : "object"
+      },
       "PaymentActionAvailabilityResponse" : {
         "properties" : {
           "allowed" : {
@@ -5979,6 +6135,18 @@
           }
         },
         "required" : [ "accountHolder", "bankAlias", "bankCbu", "mpEnabled", "qrImageUrl" ],
+        "type" : "object"
+      },
+      "PaymentMethodAvailability" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "available", "code" ],
         "type" : "object"
       },
       "PaymentPlanOptionResponse" : {
@@ -7259,6 +7427,15 @@
           }
         },
         "required" : [ "apellido", "dni", "email", "emailVerified", "id", "nombre", "onboardingStatus", "personId", "status", "username" ],
+        "type" : "object"
+      },
+      "PublicModulesResponse" : {
+        "properties" : {
+          "billingEnabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "billingEnabled" ],
         "type" : "object"
       },
       "Quote" : {
@@ -23576,6 +23753,66 @@
         "tags" : [ "me-invoice-controller" ]
       }
     },
+    "/me/modules" : {
+      "get" : {
+        "operationId" : "Modules_myModules",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MyModulesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "modules-controller" ]
+      }
+    },
     "/me/notification-preferences" : {
       "get" : {
         "operationId" : "Person_getNotificationPreferences",
@@ -24687,6 +24924,73 @@
       }
     },
     "/me/program-enrollments/{id}/graduation-request" : {
+      "get" : {
+        "operationId" : "MeGraduationRequest_get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OwnGraduationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "me-graduation-request-controller" ]
+      },
       "post" : {
         "operationId" : "MeGraduationRequest_request",
         "parameters" : [ {
@@ -27590,6 +27894,93 @@
           }
         },
         "tags" : [ "payment-reversal-preview-controller" ]
+      }
+    },
+    "/platform/features/{code}" : {
+      "put" : {
+        "operationId" : "PlatformFeature_changeFeature",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "header",
+          "name" : "If-Match",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeFeatureRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeatureStateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "platform-feature-controller" ]
       }
     },
     "/price-versions/{priceVersionId}/cancellation" : {
@@ -33462,6 +33853,66 @@
           }
         },
         "tags" : [ "prospect-controller" ]
+      }
+    },
+    "/public/modules" : {
+      "get" : {
+        "operationId" : "Modules_publicModules",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PublicModulesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "modules-controller" ]
       }
     },
     "/refunds/{refundId}/completion" : {
