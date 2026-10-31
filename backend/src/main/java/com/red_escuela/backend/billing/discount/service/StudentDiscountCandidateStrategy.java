@@ -21,7 +21,7 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingCont
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCandidateStrategy;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.springframework.stereotype.Component;
@@ -43,7 +43,7 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
 
     private final EnrollmentStudentDiscountReader discountReader;
     private final EnrollmentLectiveYearReader lectiveYearReader;
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
     private final EnrollmentFeeIssuanceReader enrollmentFeeReader;
     private final AppliedStudentDiscountRepository appliedRepository;
     private final DiscountDefinitionRepository definitionRepository;
@@ -51,7 +51,7 @@ public class StudentDiscountCandidateStrategy implements InvoiceDiscountCandidat
     private final Clock clock;
 
     public StudentDiscountCandidateStrategy(EnrollmentStudentDiscountReader discountReader, EnrollmentLectiveYearReader lectiveYearReader,
-                                            BillingEnrollmentLookup enrollmentLookup, EnrollmentFeeIssuanceReader enrollmentFeeReader,
+                                            BillingEnrollmentFactsFinder enrollmentLookup, EnrollmentFeeIssuanceReader enrollmentFeeReader,
                                             AppliedStudentDiscountRepository appliedRepository, DiscountDefinitionRepository definitionRepository,
                                             StudentDiscountRepository studentDiscountRepository, Clock clock) {
         this.appliedRepository = appliedRepository;

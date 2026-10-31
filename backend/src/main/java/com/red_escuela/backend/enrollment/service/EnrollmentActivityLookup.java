@@ -4,14 +4,14 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup;
+import com.red_escuela.backend.identity.api.StudentEnrollmentActivityPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-public class EnrollmentActivityLookup implements StudentEnrollmentActivityLookup {
+public class EnrollmentActivityLookup implements StudentEnrollmentActivityPort {
 
     private static final List<ProgramEnrollmentStatus> ACTIVE_PROGRAM_STATUSES = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
     private static final List<EnrollmentStatus> ACTIVE_COURSE_STATUSES = List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.WAITLISTED);

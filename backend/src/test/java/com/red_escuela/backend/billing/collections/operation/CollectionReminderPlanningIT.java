@@ -33,7 +33,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.api.EnrollmentReminderTarget;
-import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetLookup;
+import com.red_escuela.backend.enrollment.api.EnrollmentReminderTargetFinder;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -115,7 +115,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
     @Autowired
-    private EnrollmentReminderTargetLookup targetLookup;
+    private EnrollmentReminderTargetFinder targetLookup;
 
     private Institution institution;
     private Term term;

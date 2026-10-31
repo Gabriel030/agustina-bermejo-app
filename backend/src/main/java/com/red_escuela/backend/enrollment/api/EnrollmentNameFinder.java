@@ -1,6 +1,5 @@
-package com.red_escuela.backend.enrollment.service;
+package com.red_escuela.backend.enrollment.api;
 
-import com.red_escuela.backend.enrollment.api.EnrollmentNameLookup;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.EnrollmentNameRow;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -13,22 +12,20 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class RepositoryEnrollmentNameLookup implements EnrollmentNameLookup {
+public class EnrollmentNameFinder {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
 
-    public RepositoryEnrollmentNameLookup(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
+    public EnrollmentNameFinder(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Map<Long, String> findProgramNamesByProgramEnrollmentId(Collection<Long> programEnrollmentIds) {
         return namesOf(programEnrollmentIds, programEnrollmentRepository::findNameRows);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Map<Long, String> findCourseNamesByCourseEnrollmentId(Collection<Long> courseEnrollmentIds) {
         return namesOf(courseEnrollmentIds, courseEnrollmentRepository::findNameRows);

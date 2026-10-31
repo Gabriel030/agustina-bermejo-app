@@ -4,11 +4,11 @@
 |`com.red_escuela.backend.enrollment`
 |Spring components
 |* `c.r.b.e.api.AdmissionApplicationExpiryPort` (via `c.r.b.e.service.RepositoryAdmissionApplicationExpiryPort`)
-* `c.r.b.e.api.BillingEnrollmentLookup` (via `c.r.b.e.service.RepositoryBillingEnrollmentLookup`)
+* `c.r.b.e.api.BillingEnrollmentFactsFinder` (in Enrollment)
 * `c.r.b.e.api.CourseEnrollmentApplicationCancellationPort` (via `c.r.b.e.service.RepositoryCourseEnrollmentApplicationCancellationPort`)
-* `c.r.b.e.api.EnrollmentNameLookup` (via `c.r.b.e.service.RepositoryEnrollmentNameLookup`)
-* `c.r.b.e.api.EnrollmentReminderTargetLookup` (via `c.r.b.e.service.RepositoryEnrollmentReminderTargetLookup`)
-* `c.r.b.e.api.WithdrawalFactsLookup` (via `c.r.b.e.service.RepositoryWithdrawalFactsLookup`)
+* `c.r.b.e.api.EnrollmentNameFinder` (in Enrollment)
+* `c.r.b.e.api.EnrollmentReminderTargetFinder` (in Enrollment)
+* `c.r.b.e.api.WithdrawalFactsFinder` (in Enrollment)
 * `c.r.b.e.usecase.EnrollmentLifecycleQuery` (via `c.r.b.e.usecase.EnrollmentLifecycleQueryService`)
 * `c.r.b.e.usecase.OnlineOnlyEnrollmentLookup` (via `c.r.b.e.usecase.OnlineOnlyEnrollmentLookupService`)
 |Bean references

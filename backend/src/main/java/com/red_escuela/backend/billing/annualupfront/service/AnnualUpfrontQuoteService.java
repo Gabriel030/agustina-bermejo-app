@@ -21,7 +21,7 @@ import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
-import com.red_escuela.backend.enrollment.api.BillingEnrollmentLookup;
+import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
@@ -42,7 +42,7 @@ import java.util.stream.IntStream;
 
 @Service
 public class AnnualUpfrontQuoteService {
-    private final BillingEnrollmentLookup enrollmentLookup;
+    private final BillingEnrollmentFactsFinder enrollmentLookup;
     private final CurrentStudentService currentStudentService;
     private final AnnualUpfrontCycleReader cycleReader;
     private final BillingConfigurationReader configurationReader;
@@ -56,7 +56,7 @@ public class AnnualUpfrontQuoteService {
     private final PolicySet<AnnualUpfrontRequestCheck> eligibilityPolicies;
     private final Clock clock;
 
-    public AnnualUpfrontQuoteService(BillingEnrollmentLookup enrollmentLookup, CurrentStudentService currentStudentService, AnnualUpfrontCycleReader cycleReader,
+    public AnnualUpfrontQuoteService(BillingEnrollmentFactsFinder enrollmentLookup, CurrentStudentService currentStudentService, AnnualUpfrontCycleReader cycleReader,
                                      BillingConfigurationReader configurationReader, PriceReader priceReader, EnrollmentInvoiceQueryService enrollmentInvoices,
                                      InvoiceFollowUpQueries invoiceFollowUp, StudentCurrentAccountService accountService, ScholarshipCoverageReader scholarshipCoverage,
                                      AnnualUpfrontDiscountCandidateFinder candidateFinder, AnnualUpfrontDiscountSelector discountSelector,
