@@ -1,21 +1,14 @@
 package com.red_escuela.backend.academicrecord.controller;
 
-import com.red_escuela.backend.attendance.dto.AttendanceResponse;
-import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
+import com.red_escuela.backend.academicrecord.dto.StudentAttendanceResponse;
+import com.red_escuela.backend.academicrecord.dto.StudentAttendanceRiskResponse;
 import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
-import com.red_escuela.backend.attendance.entity.Attendance;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
-import com.red_escuela.backend.shared.storage.UnsupportedFileTypeException;
-import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetAttendanceUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
-import com.red_escuela.backend.shared.storage.FileStorageService;
 import com.red_escuela.backend.evaluation.service.GradeItemService;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
+import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyEnrollmentAttendanceUseCase;
+import com.red_escuela.backend.academicrecord.usecase.studentrecord.ReadMyEnrollmentAttendanceRiskUseCase;
+import com.red_escuela.backend.academicrecord.usecase.studentrecord.SubmitMyAbsenceProofUseCase;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,74 +26,46 @@ import java.util.List;
 public class MeAcademicRecordController {
     private final CurrentStudentService currentStudentService;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
-    private final ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase;
-    private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
-    private final GetAttendanceUseCase getAttendanceUseCase;
-    private final SubmitAttendanceProofUseCase submitAttendanceProofUseCase;
     private final GradeItemService gradeItemService;
-    private final FileStorageService fileStorageService;
+    private final ListMyEnrollmentAttendanceUseCase listMyEnrollmentAttendanceUseCase;
+    private final ReadMyEnrollmentAttendanceRiskUseCase readMyEnrollmentAttendanceRiskUseCase;
+    private final SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase;
 
     public MeAcademicRecordController(
             CurrentStudentService currentStudentService,
             SectionEnrollmentFinder sectionEnrollmentFinder,
-            ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase,
-            CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
-            GetAttendanceUseCase getAttendanceUseCase,
-            SubmitAttendanceProofUseCase submitAttendanceProofUseCase,
             GradeItemService gradeItemService,
-            FileStorageService fileStorageService) {
+            ListMyEnrollmentAttendanceUseCase listMyEnrollmentAttendanceUseCase,
+            ReadMyEnrollmentAttendanceRiskUseCase readMyEnrollmentAttendanceRiskUseCase,
+            SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase) {
         this.currentStudentService = currentStudentService;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
-        this.listProgramEnrollmentAttendanceUseCase = listProgramEnrollmentAttendanceUseCase;
-        this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
-        this.getAttendanceUseCase = getAttendanceUseCase;
-        this.submitAttendanceProofUseCase = submitAttendanceProofUseCase;
         this.gradeItemService = gradeItemService;
-        this.fileStorageService = fileStorageService;
+        this.listMyEnrollmentAttendanceUseCase = listMyEnrollmentAttendanceUseCase;
+        this.readMyEnrollmentAttendanceRiskUseCase = readMyEnrollmentAttendanceRiskUseCase;
+        this.submitMyAbsenceProofUseCase = submitMyAbsenceProofUseCase;
     }
 
     @GetMapping("/section-enrollments/{id}/attendance")
-    public List<AttendanceResponse> myAttendance(@PathVariable Long id) {
-        requireOwner(id);
-        return listProgramEnrollmentAttendanceUseCase.list(id).stream().map(AttendanceResponse::from).toList();
+    public List<StudentAttendanceResponse> myAttendance(@PathVariable Long id) {
+        return listMyEnrollmentAttendanceUseCase.list(currentStudentService.resolveCurrentStudent().getId(), id);
     }
 
     @GetMapping("/section-enrollments/{id}/attendance/risk")
-    public AttendanceRiskResponse myAttendanceRisk(@PathVariable Long id) {
-        requireOwner(id);
-        return calculateProgramEnrollmentAttendanceRiskUseCase.calculate(id);
+    public StudentAttendanceRiskResponse myAttendanceRisk(@PathVariable Long id) {
+        return readMyEnrollmentAttendanceRiskUseCase.read(currentStudentService.resolveCurrentStudent().getId(), id);
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
     public List<GradeItemResponse> myGrades(@PathVariable Long id) {
-        requireOwner(id);
+        sectionEnrollmentFinder.requireProgramEnrollmentOf(id, currentStudentService.resolveCurrentStudent().getId());
         return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
     @PostMapping(value = "/attendance/{id}/justify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public AttendanceResponse justifyMyAbsence(
+    public StudentAttendanceResponse justifyMyAbsence(
             @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile comprobante) {
-        Student student = currentStudentService.resolveCurrentStudent();
-        Attendance attendance = getAttendanceUseCase.get(id);
-        requireAttendanceOwner(attendance, student);
-        String tipo = comprobante.getContentType();
-        boolean tipoPermitido = MediaType.APPLICATION_PDF_VALUE.equals(tipo) || MediaType.IMAGE_JPEG_VALUE.equals(tipo);
-        if (!tipoPermitido) {
-            throw new UnsupportedFileTypeException(tipo);
-        }
-        String relativePath = fileStorageService.store(student.getId(), "justificaciones-asistencia", comprobante);
-        String motivo = reason != null && !reason.isBlank() ? reason : "Comprobante subido por el alumno";
-        return AttendanceResponse.from(submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(id, motivo, relativePath)));
-    }
-
-    private void requireOwner(Long enrollmentId) {
-        Student student = currentStudentService.resolveCurrentStudent();
-        sectionEnrollmentFinder.requireProgramEnrollmentOf(enrollmentId, student.getId());
-    }
-
-    private void requireAttendanceOwner(Attendance attendance, Student student) {
-        if (!attendance.belongsTo(student)) {
-            throw new AttendanceNotFoundException(attendance.getId());
-        }
+        return submitMyAbsenceProofUseCase.submit(
+                currentStudentService.resolveCurrentStudent().getId(), id, reason, comprobante);
     }
 }
