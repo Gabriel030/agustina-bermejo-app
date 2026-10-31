@@ -350,7 +350,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
                 + "when (new.standing_id = " + standingId + ") execute function fail_standing_history_for_test()");
         try {
             payInFull(installment, d(YEAR, 6, 5), d(YEAR, 6, 5));
-            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L);
+            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L && pendingPublicationsSinceScenarioStart() == 1L);
         } finally {
             jdbc.execute("drop trigger trg_fail_standing_history_for_test on enrollment_payment_status_change");
         }
@@ -857,7 +857,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
                 + "when (new.standing_id = " + standingId + ") execute function fail_standing_history_for_test()");
         try {
             payInFull(installment, d(YEAR, 6, 5), d(YEAR, 6, 5));
-            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L);
+            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L && pendingPublicationsSinceScenarioStart() == 1L);
         } finally {
             jdbc.execute("drop trigger trg_fail_standing_history_for_test on enrollment_payment_status_change");
         }
@@ -938,7 +938,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         try {
             MutableClock.INSTANCE.setDate(d(YEAR, 6, 3));
             pipeline.runOperation(cancelInvoiceOperation, CancelInvoiceCommand.byPerson(installment.getId(), CreditNoteReason.BILLING_ERROR, "Cancelación", person.getId(), true));
-            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L);
+            await().atMost(Duration.ofSeconds(25)).until(() -> pendingStandingPublications() == 1L && pendingPublicationsSinceScenarioStart() == 1L);
         } finally {
             jdbc.execute("drop trigger trg_fail_standing_history_for_test on enrollment_payment_status_change");
         }
