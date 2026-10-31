@@ -23,4 +23,10 @@ public interface DraftInvoiceLineRepository extends Repository<InvoiceLine, Long
             and (l.programEnrollmentId is not null or l.courseEnrollmentId is not null)
             """)
     List<InvoiceLine> findEnrollmentLinesOfIssuedInvoicesOfPeriod(@Param("period") YearMonth period);
+
+    @Query("""
+            select count(i) from Invoice i
+            where i.monthlyInvoiceRunId = :runId and i.documentStatus = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.DRAFT
+            """)
+    long countDraftInvoicesOfRun(@Param("runId") Long runId);
 }

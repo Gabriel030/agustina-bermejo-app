@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -31,15 +30,18 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final InvoiceRepository invoiceRepository;
     private final Clock clock;
+    private final StudentSnapshotFinder snapshotFinder;
 
     public EnrollmentBackedInvoiceIssuingContextLoader(JdbcTemplate jdbcTemplate, PriceReader priceReader,
-                                                       ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader, Clock clock) {
+                                                       ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader, Clock clock,
+                                                       StudentSnapshotFinder snapshotFinder) {
         this.configurationReader = configurationReader;
         this.jdbcTemplate = jdbcTemplate;
         this.priceReader = priceReader;
         this.templateRepository = templateRepository;
         this.invoiceRepository = invoiceRepository;
         this.clock = clock;
+        this.snapshotFinder = snapshotFinder;
     }
 
     @Override
@@ -54,7 +56,7 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
                 : resolution.orElseThrow(() -> new NoEffectivePriceException(request.feeType(), request.pricingDate())).finalAmount();
         InvoiceIssuingFacts facts = new InvoiceIssuingFacts(LocalDate.now(clock), offeringCurrency, chargeAmount,
                 resolution.map(PriceVersionResolution::priceVersionId).orElse(null), findExistingInvoiceId(request), enrollmentFeeCountOf(request),
-                snapshotOf(request.studentId()), enrollmentMatches, resolution.map(PriceVersionResolution::marketingDiscountAmount).orElse(null));
+                snapshotFinder.findSnapshotOfStudent(request.studentId()), enrollmentMatches, resolution.map(PriceVersionResolution::marketingDiscountAmount).orElse(null));
         return new InvoiceIssuingContext(request, facts);
     }
 
@@ -92,22 +94,5 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
         }
         return configurationReader.requireYearTermsEffectiveOn(templateRepository.findProgramIdById(request.templateId()), templateRepository.findTermIdById(request.templateId()),
                 request.pricingDate()).enrollmentFeeCount();
-    }
-
-    private StudentSnapshot snapshotOf(Long studentId) {
-        return jdbcTemplate.queryForObject("""
-                select p.name, p.last_name, p.dni, a.street, a.number, a.city, a.state
-                from student s join person p on p.id = s.person_id left join address a on a.id = p.address_id
-                where s.id = ?
-                """, (row, index) -> new StudentSnapshot(joinNonBlank(row.getString("name"), row.getString("last_name")), row.getString("dni"),
-                nullIfBlank(joinNonBlank(row.getString("street"), row.getString("number"), row.getString("city"), row.getString("state")))), studentId);
-    }
-
-    private static String joinNonBlank(String... parts) {
-        return Stream.of(parts).filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
-    }
-
-    private static String nullIfBlank(String value) {
-        return value.isBlank() ? null : value;
     }
 }
