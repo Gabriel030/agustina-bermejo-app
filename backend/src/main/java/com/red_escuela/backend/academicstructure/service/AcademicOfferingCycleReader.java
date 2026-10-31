@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleSta
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import org.springframework.stereotype.Component;
@@ -20,17 +21,20 @@ public class AcademicOfferingCycleReader {
     private final SubjectSectionRepository subjectSectionRepository;
     private final CourseSubjectSectionRepository courseSectionRepository;
     private final SectionScheduleSlotRepository slotRepository;
+    private final SectionModificationProposalRepository proposalRepository;
 
     public AcademicOfferingCycleReader(
             AcademicOfferingCycleRepository cycleRepository,
             SubjectSectionRepository subjectSectionRepository,
             CourseSubjectSectionRepository courseSectionRepository,
-            SectionScheduleSlotRepository slotRepository
+            SectionScheduleSlotRepository slotRepository,
+            SectionModificationProposalRepository proposalRepository
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.courseSectionRepository = courseSectionRepository;
         this.slotRepository = slotRepository;
+        this.proposalRepository = proposalRepository;
     }
 
     @Transactional(readOnly = true)
@@ -64,7 +68,10 @@ public class AcademicOfferingCycleReader {
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
         if (cycle.getProgram() != null) {
             return subjectSectionRepository.findByAcademicOfferingCycleId(cycleId).stream()
-                    .map(s -> CycleSectionResponse.fromSubjectSection(s, slotRepository.findBySubjectSectionId(s.getId())))
+                    .map(s -> CycleSectionResponse.fromSubjectSection(
+                            s,
+                            slotRepository.findBySubjectSectionId(s.getId()),
+                            proposalRepository.findFirstBySubjectSectionIdOrderByIdDesc(s.getId()).orElse(null)))
                     .toList();
         }
         return courseSectionRepository.findByAcademicOfferingCycleId(cycleId).stream()

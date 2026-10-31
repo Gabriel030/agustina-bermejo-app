@@ -1,10 +1,7 @@
 com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleService.approve(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.ApproveSectionModificationService.approveModification(java.lang.Long) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService.reject(java.lang.Long, java.lang.String) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.RejectSectionModificationService.rejectModification(java.lang.Long, java.lang.String) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.RequestSectionModificationService.requestModification(java.lang.Long, com.red_escuela.backend.academicstructure.dto.ModifySectionRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.SubmitCycleForApprovalService.submit(java.lang.Long) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.term.ActivateTermService.activate(java.lang.Long) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.term.ClearTermEnrollmentOverrideService.clear(java.lang.Long) declares @Transactional
