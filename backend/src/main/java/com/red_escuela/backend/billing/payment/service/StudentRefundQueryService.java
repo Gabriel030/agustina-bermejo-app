@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.account.service.StudentCurrentAccountServ
 import com.red_escuela.backend.billing.payment.domain.Refund;
 import com.red_escuela.backend.billing.payment.domain.RefundRequestGroup;
 import com.red_escuela.backend.billing.payment.repository.RefundRepository;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +17,11 @@ import java.util.Map;
 @Service
 public class StudentRefundQueryService {
 
-    private final StudentExistenceLookup students;
+    private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final RefundRepository refunds;
 
-    public StudentRefundQueryService(StudentExistenceLookup students, StudentCurrentAccountService accountService, RefundRepository refunds) {
+    public StudentRefundQueryService(StudentExistenceChecker students, StudentCurrentAccountService accountService, RefundRepository refunds) {
         this.students = students;
         this.accountService = accountService;
         this.refunds = refunds;

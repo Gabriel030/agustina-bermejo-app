@@ -20,7 +20,7 @@ import com.red_escuela.backend.billing.payment.policy.CashPaymentPreviewCheck;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentRejections;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.billing.payment.service.CashPaymentPlanner;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -42,7 +42,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
     private final PolicySet<CashPaymentCheck> registrationPolicies;
     private final PolicySet<CashPaymentCheck> datingPolicies;
     private final PolicySet<CashPaymentPreviewCheck> previewPolicies;
-    private final StudentExistenceLookup students;
+    private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final CurrentAccountAllocationService allocationService;
     private final CashPaymentPlanner planner;
@@ -52,7 +52,7 @@ public class RegisterCashPaymentOperation implements BillingOperation<RegisterCa
 
     public RegisterCashPaymentOperation(PolicySet<CashPaymentCheck> cashPaymentRegistrationPolicySet, PolicySet<CashPaymentCheck> cashPaymentDatingPolicySet,
                                         PolicySet<CashPaymentPreviewCheck> cashPaymentPreviewPolicySet,
-                                        StudentExistenceLookup students, StudentCurrentAccountService accountService,
+                                        StudentExistenceChecker students, StudentCurrentAccountService accountService,
                                         CurrentAccountAllocationService allocationService, CashPaymentPlanner planner, PaymentGatewayRegistry gateways,
                                         PaymentRepository payments, Clock clock) {
         this.registrationPolicies = cashPaymentRegistrationPolicySet;

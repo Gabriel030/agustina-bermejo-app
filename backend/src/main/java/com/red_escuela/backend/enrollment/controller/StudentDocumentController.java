@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,12 +17,12 @@ import java.util.List;
 @RequestMapping("/students")
 @Tag(name = "student-controller")
 public class StudentDocumentController {
-    private final StudentExistenceLookup studentExistenceLookup;
+    private final StudentExistenceChecker studentExistenceChecker;
     private final StudentDocumentRepository studentDocumentRepository;
 
-    public StudentDocumentController(StudentExistenceLookup studentExistenceLookup,
+    public StudentDocumentController(StudentExistenceChecker studentExistenceChecker,
                                      StudentDocumentRepository studentDocumentRepository) {
-        this.studentExistenceLookup = studentExistenceLookup;
+        this.studentExistenceChecker = studentExistenceChecker;
         this.studentDocumentRepository = studentDocumentRepository;
     }
 
@@ -30,7 +30,7 @@ public class StudentDocumentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     @Operation(operationId = "Student_getDocuments")
     public List<StudentDocumentResponse> getDocuments(@PathVariable Long id) {
-        studentExistenceLookup.requireExistingStudent(id);
+        studentExistenceChecker.requireExistingStudent(id);
         return studentDocumentRepository.findByStudentId(id).stream()
                 .map(StudentDocumentResponse::from).toList();
     }

@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountLabels;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import com.red_escuela.backend.enrollment.api.EnrollmentNameLookup;
-import com.red_escuela.backend.identity.api.StudentNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
 public class StudentDiscountLabelReader {
     private final EnrollmentNameLookup enrollmentNames;
     private final DiscountDefinitionRepository definitionRepository;
-    private final StudentNameLookup studentNames;
+    private final PersonNameFinder studentNames;
 
-    public StudentDiscountLabelReader(EnrollmentNameLookup enrollmentNames, DiscountDefinitionRepository definitionRepository, StudentNameLookup studentNames) {
+    public StudentDiscountLabelReader(EnrollmentNameLookup enrollmentNames, DiscountDefinitionRepository definitionRepository, PersonNameFinder studentNames) {
         this.enrollmentNames = enrollmentNames;
         this.definitionRepository = definitionRepository;
         this.studentNames = studentNames;

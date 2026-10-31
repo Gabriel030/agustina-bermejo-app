@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -12,9 +12,9 @@ import java.util.Set;
 
 @Component
 public class ConfigurationVersionAuthorNames {
-    private final PersonNameLookup personNames;
+    private final PersonNameFinder personNames;
 
-    public ConfigurationVersionAuthorNames(PersonNameLookup personNames) {
+    public ConfigurationVersionAuthorNames(PersonNameFinder personNames) {
         this.personNames = personNames;
     }
 

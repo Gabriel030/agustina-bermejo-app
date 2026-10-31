@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.account.service.StudentCurrentAccountServ
 import com.red_escuela.backend.billing.payment.domain.CashPaymentPreview;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentCheck;
 import com.red_escuela.backend.billing.payment.policy.CashPaymentRejections;
-import com.red_escuela.backend.identity.api.StudentExistenceLookup;
+import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -14,11 +14,11 @@ import org.springframework.stereotype.Service;
 public class CashPaymentPreviewService {
 
     private final PolicySet<CashPaymentCheck> previewRequestPolicies;
-    private final StudentExistenceLookup students;
+    private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final CashPaymentPlanner planner;
 
-    public CashPaymentPreviewService(PolicySet<CashPaymentCheck> cashPaymentPreviewRequestPolicySet, StudentExistenceLookup students,
+    public CashPaymentPreviewService(PolicySet<CashPaymentCheck> cashPaymentPreviewRequestPolicySet, StudentExistenceChecker students,
                                      StudentCurrentAccountService accountService, CashPaymentPlanner planner) {
         this.previewRequestPolicies = cashPaymentPreviewRequestPolicySet;
         this.students = students;

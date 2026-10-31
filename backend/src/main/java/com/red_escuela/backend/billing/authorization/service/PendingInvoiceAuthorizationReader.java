@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.authorization.service;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.domain.PendingInvoiceAuthorization;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
-import com.red_escuela.backend.identity.api.PersonNameLookup;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 @Component
 public class PendingInvoiceAuthorizationReader {
     private final AuthorizationRequestRepository requests;
-    private final PersonNameLookup personNames;
+    private final PersonNameFinder personNames;
 
-    public PendingInvoiceAuthorizationReader(AuthorizationRequestRepository requests, PersonNameLookup personNames) {
+    public PendingInvoiceAuthorizationReader(AuthorizationRequestRepository requests, PersonNameFinder personNames) {
         this.requests = requests;
         this.personNames = personNames;
     }
