@@ -851,6 +851,61 @@
         "required" : [ "classDates", "rows" ],
         "type" : "object"
       },
+      "AttendanceJustificationPage" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AttendanceJustificationResponse"
+            },
+            "type" : "array"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "totalElements" ],
+        "type" : "object"
+      },
+      "AttendanceJustificationResponse" : {
+        "properties" : {
+          "attachmentUrl" : {
+            "type" : "string"
+          },
+          "attendanceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "classDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "rejectionReason" : {
+            "type" : "string"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "studentName" : {
+            "type" : "string"
+          },
+          "subjectName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "attachmentUrl", "attendanceId", "classDate", "decidedAt", "reason", "rejectionReason", "sectionName", "status", "studentName", "subjectName" ],
+        "type" : "object"
+      },
       "AttendanceResponse" : {
         "properties" : {
           "classDate" : {
@@ -871,6 +926,9 @@
           "justificationReason" : {
             "type" : "string"
           },
+          "justificationRejectionReason" : {
+            "type" : "string"
+          },
           "justifiedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -879,7 +937,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "classDate", "enrollmentId", "id", "justificationAttachmentUrl", "justificationReason", "justifiedAt", "status" ],
+        "required" : [ "classDate", "enrollmentId", "id", "justificationAttachmentUrl", "justificationReason", "justificationRejectionReason", "justifiedAt", "status" ],
         "type" : "object"
       },
       "AttendanceRiskResponse" : {
@@ -7625,6 +7683,17 @@
         "required" : [ "apellido", "email", "institutionId", "nombre", "password", "username" ],
         "type" : "object"
       },
+      "RejectAttendanceJustificationRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 10,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "RejectCycleRequest" : {
         "properties" : {
           "reason" : {
@@ -10758,6 +10827,94 @@
         "tags" : [ "attendance-change-request-controller" ]
       }
     },
+    "/attendance/justifications" : {
+      "get" : {
+        "operationId" : "AttendanceJustification_listJustifications",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "default" : "PENDING",
+            "enum" : [ "PENDING", "APPROVED", "REJECTED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AttendanceJustificationPage"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "attendance-justification-controller" ]
+      }
+    },
     "/attendance/{id}/approve-justification" : {
       "post" : {
         "operationId" : "Attendance_approveJustification",
@@ -10997,6 +11154,16 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RejectAttendanceJustificationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {

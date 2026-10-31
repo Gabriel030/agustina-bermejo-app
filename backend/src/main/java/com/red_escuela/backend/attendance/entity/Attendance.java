@@ -58,6 +58,12 @@ public class Attendance {
     @Column(name = "justified_at")
     private LocalDateTime justifiedAt;
 
+    @Column(name = "justification_rejection_reason", length = 500)
+    private String justificationRejectionReason;
+
+    @Column(name = "justification_rejected_at")
+    private LocalDateTime justificationRejectedAt;
+
     @PrePersist
     @PreUpdate
     private void validateSingleEnrollmentTarget() {

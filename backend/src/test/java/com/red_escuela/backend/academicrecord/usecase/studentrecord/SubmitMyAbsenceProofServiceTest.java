@@ -29,7 +29,7 @@ class SubmitMyAbsenceProofServiceTest {
     @Test
     void recordsTheProofAfterCheckingTheAttendanceBelongsToTheStudent() {
         StudentAttendanceResponse response = new StudentAttendanceResponse(
-                5L, 9L, LocalDate.of(2025, 9, 15), "ABSENT", "Fiebre", "/proofs/5", LocalDateTime.of(2025, 9, 16, 10, 0));
+                5L, 9L, LocalDate.of(2025, 9, 15), "ABSENT", "Fiebre", "/proofs/5", LocalDateTime.of(2025, 9, 16, 10, 0), null);
         when(proofRecorder.recordProof(2L, 5L, "Fiebre", proof)).thenReturn(response);
 
         assertThat(service.submit(2L, 5L, "Fiebre", proof)).isSameAs(response);
