@@ -7,7 +7,6 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,7 +28,6 @@ public class ListMyAnnouncementsService implements ListMyAnnouncementsUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Announcement> listForCurrentStudent() {
         Person person = currentPersonService.resolveCurrentPerson();
         Optional<Student> student = studentRepository.findByPerson_Id(person.getId());
