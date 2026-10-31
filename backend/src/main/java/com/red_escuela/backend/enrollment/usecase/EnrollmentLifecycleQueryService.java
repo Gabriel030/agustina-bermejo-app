@@ -7,7 +7,6 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,7 +30,6 @@ public class EnrollmentLifecycleQueryService implements EnrollmentLifecycleQuery
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<LocalDate> findProgramEnrollmentEndDate(Long programEnrollmentId) {
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .filter(enrollment -> ENDED_PROGRAM_STATUSES.contains(enrollment.getStatus()))
@@ -40,7 +38,6 @@ public class EnrollmentLifecycleQueryService implements EnrollmentLifecycleQuery
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<LocalDate> findCourseEnrollmentEndDate(Long courseEnrollmentId) {
         return courseEnrollmentRepository.findById(courseEnrollmentId).flatMap(this::courseEndDateOf);
     }
