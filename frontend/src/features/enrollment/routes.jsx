@@ -4,6 +4,7 @@ import { DetalleCurso } from '@/features/enrollment/pages/DetalleCurso';
 import { InscripcionCarrera } from '@/features/enrollment/pages/InscripcionCarrera';
 import { InscripcionCurso } from '@/features/enrollment/pages/InscripcionCurso';
 import { DetalleSolicitud } from '@/features/enrollment/pages/DetalleSolicitud';
+import { AlumnoMisCursos } from '@/features/enrollment/pages/AlumnoMisCursos';
 import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/features/workspace/pages/AlumnoMateriaDetalle';
 import { DirectorAprobacionesExcepciones } from '@/features/enrollment/pages/DirectorAprobacionesExcepciones';
@@ -24,6 +25,7 @@ export const routes = {
   ],
   role: [
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos', element: <PadronAlumnos /> },
+    { roles: ['alumno'], path: 'mis-cursos', element: <AlumnoMisCursos /> },
     { roles: ['alumno'], path: 'mis-carreras', element: <AlumnoMisCarreras /> },
     { roles: ['alumno'], path: 'mis-carreras/materias/:id', element: <AlumnoMateriaDetalle /> },
     { roles: ['director'], path: 'aprobaciones/excepciones', element: <DirectorAprobacionesExcepciones /> },
