@@ -9,5 +9,10 @@ public record FeatureChange(
         BillingMode mode,
         Long expectedVersion,
         String reason,
-        BillingModeChangeClearance clearance) {
+        BillingModeChangeClearance clearance,
+        String previewConfirmationToken) {
+
+    public FeatureChange(FeatureCode code, Boolean enabled, BillingMode mode, Long expectedVersion, String reason, BillingModeChangeClearance clearance) {
+        this(code, enabled, mode, expectedVersion, reason, clearance, null);
+    }
 }
