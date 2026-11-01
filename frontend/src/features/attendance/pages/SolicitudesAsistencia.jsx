@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { apiFetchBlob } from '@/api/client';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -24,8 +26,22 @@ const TABS = [
   { value: 'justification', label: 'Justificaciones' },
 ];
 
-function isHttpUrl(value) {
-  return typeof value === 'string' && /^https?:\/\//i.test(value);
+const TAB_PARAM_TO_VALUE = { todas: 'all', correcciones: 'correction', justificaciones: 'justification' };
+
+async function openJustificationAttachment(attendanceId) {
+  const preview = window.open('', '_blank');
+  try {
+    const { blob } = await apiFetchBlob(`/attendance/${attendanceId}/justification-attachment`);
+    const url = URL.createObjectURL(blob);
+    if (preview) {
+      preview.location.href = url;
+    } else {
+      window.location.assign(url);
+    }
+  } catch {
+    preview?.close();
+    toast.error('No pudimos abrir el comprobante. Probá de nuevo.');
+  }
 }
 
 function toRequestItem(s) {
@@ -42,7 +58,7 @@ function toRequestItem(s) {
       { label: 'Cambio pedido', value: `${ESTADO_LABEL[s.previousStatus] ?? s.previousStatus} → ${ESTADO_LABEL[s.requestedStatus] ?? s.requestedStatus}` },
     ],
     reason: s.reason,
-    attachmentUrl: null,
+    hasAttachment: false,
   };
 }
 
@@ -59,13 +75,13 @@ function toJustificationItem(j) {
       { label: 'Cambio pedido', value: 'Ausente → Justificada' },
     ],
     reason: j.reason,
-    attachmentUrl: j.attachmentUrl,
+    hasAttachment: Boolean(j.attachmentUrl),
   };
 }
 
 function RequestCard({ item, busy, onApprove, onReject }) {
   return (
-    <GlassCard className="flex flex-col gap-3 p-4">
+    <GlassCard className="flex flex-col gap-3 p-4" data-testid={`attendance-request-${item.key}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-heading text-[14.5px] font-semibold text-ink">{item.title}</div>
         <div className="flex items-center gap-2">
@@ -89,18 +105,22 @@ function RequestCard({ item, busy, onApprove, onReject }) {
         <div className="text-[12.5px] text-ink-faint">Motivo</div>
         <div className="text-[13px] text-ink">{item.reason}</div>
         {item.kind === 'justification' &&
-          (isHttpUrl(item.attachmentUrl) ? (
-            <a href={item.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-[12.5px] font-bold text-brand hover:underline">
+          (item.hasAttachment ? (
+            <button
+              type="button"
+              onClick={() => openJustificationAttachment(item.ref)}
+              className="text-[12.5px] font-bold text-brand hover:underline"
+            >
               Ver adjunto
-            </a>
+            </button>
           ) : (
             <div className="text-[12.5px] text-ink-faint">Sin adjunto</div>
           ))}
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => onReject(item)} disabled={busy}>Rechazar</Button>
-        <Button variant="secondary" size="sm" onClick={() => onApprove(item)} disabled={busy}>Aprobar</Button>
+        <Button variant="outline" size="sm" className="min-h-11 flex-1 sm:min-h-0 sm:flex-none" onClick={() => onReject(item)} disabled={busy}>Rechazar</Button>
+        <Button variant="secondary" size="sm" className="min-h-11 flex-1 sm:min-h-0 sm:flex-none" onClick={() => onApprove(item)} disabled={busy}>Aprobar</Button>
       </div>
     </GlassCard>
   );
@@ -113,7 +133,8 @@ export function SolicitudesAsistencia() {
   const rejectCorrection = useRechazarSolicitud();
   const approveJustification = useAprobarJustificacion();
   const rejectJustification = useRechazarJustificacion();
-  const [tab, setTab] = useState('all');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(TAB_PARAM_TO_VALUE[searchParams.get('tab')] ?? 'all');
   const [rejecting, setRejecting] = useState(null);
 
   const correctionItems = (corrections.data ?? []).map(toRequestItem);
@@ -165,7 +186,7 @@ export function SolicitudesAsistencia() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented" className="w-full sm:w-fit">
+        <TabsList variant="segmented" className="w-full px-1 sm:w-fit">
           {TABS.map((t) => (
             <TabsTrigger key={t.value} value={t.value} className="flex-1">
               {t.label}

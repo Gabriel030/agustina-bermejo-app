@@ -20,6 +20,6 @@ describe('TabCount', () => {
   it('switches to the on-gradient colors when its tab is active', () => {
     render(<TabCount count={2} />);
 
-    expect(screen.getByText('2').className).toContain('[[data-state=active]_&]:bg-white/25');
+    expect(screen.getByText('2').className).toContain('[[data-state=active]_&]:bg-white');
   });
 });

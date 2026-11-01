@@ -5,7 +5,8 @@
   "scripts": {
     "test": "playwright test",
     "test:smoke": "playwright test --grep @smoke",
-    "test:flows": "playwright test --grep @flow"
+    "test:flows": "playwright test --grep @flow",
+    "test:demo": "playwright test --config playwright.demo.config.js"
   },
   "devDependencies": {
     "@playwright/test": "1.55.0"

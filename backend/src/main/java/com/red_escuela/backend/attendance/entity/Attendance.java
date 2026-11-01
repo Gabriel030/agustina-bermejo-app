@@ -67,6 +67,10 @@ public class Attendance {
     @PrePersist
     @PreUpdate
     private void validateSingleEnrollmentTarget() {
+        if (this.status != AttendanceStatus.ABSENT) {
+            this.justificationRejectionReason = null;
+            this.justificationRejectedAt = null;
+        }
         boolean hasCourse = this.courseSubjectSectionEnrollment != null;
         boolean hasProgram = this.programSubjectSectionEnrollment != null;
         if (hasCourse == hasProgram) {
