@@ -870,7 +870,7 @@
       "AttendanceJustificationResponse" : {
         "properties" : {
           "attachmentUrl" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "attendanceId" : {
             "format" : "int64",
@@ -882,13 +882,13 @@
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reason" : {
             "type" : "string"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "sectionName" : {
             "type" : "string"
@@ -903,7 +903,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attachmentUrl", "attendanceId", "classDate", "decidedAt", "reason", "rejectionReason", "sectionName", "status", "studentName", "subjectName" ],
+        "required" : [ "attendanceId", "classDate", "reason", "sectionName", "status", "studentName", "subjectName" ],
         "type" : "object"
       },
       "AttendanceResponse" : {
@@ -3436,7 +3436,7 @@
             "type" : "array"
           },
           "lastRejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "name" : {
             "type" : "string"
@@ -3445,7 +3445,11 @@
             "type" : "boolean"
           },
           "pendingModification" : {
-            "$ref" : "#/components/schemas/PendingModificationInfo"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PendingModificationInfo"
+            }, {
+              "type" : "null"
+            } ]
           },
           "slots" : {
             "items" : {
@@ -3460,7 +3464,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "capacity", "id", "instructors", "lastRejectionReason", "name", "pendingApproval", "pendingModification", "slots", "status", "subjectName" ],
+        "required" : [ "capacity", "id", "instructors", "name", "pendingApproval", "slots", "status", "subjectName" ],
         "type" : "object"
       },
       "DaysValue" : {
