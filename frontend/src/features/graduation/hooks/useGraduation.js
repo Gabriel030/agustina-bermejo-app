@@ -47,3 +47,22 @@ export function useRechazarEgreso(id) {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
   });
 }
+
+export function useMiSolicitudEgreso(programEnrollmentId) {
+  return useQuery({
+    queryKey: ['me', 'program-enrollments', programEnrollmentId, 'graduation-request'],
+    queryFn: () => apiFetch(`/me/program-enrollments/${programEnrollmentId}/graduation-request`),
+    enabled: !!programEnrollmentId,
+  });
+}
+
+export function useSolicitarEgreso(programEnrollmentId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch(`/me/program-enrollments/${programEnrollmentId}/graduation-request`, { method: 'POST' }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['me', 'program-enrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['graduation-requests'] });
+    },
+  });
+}

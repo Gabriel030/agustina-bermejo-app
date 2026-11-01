@@ -17,6 +17,7 @@ export function ModalMotivo({
   confirmarLabel = 'Rechazar',
   confirmarVariant = 'gradient',
   maxLength = DEFAULT_MAX_REASON_LENGTH,
+  minLength = 0,
   mensajeRequerido = 'El motivo del rechazo es obligatorio.',
 }) {
   const [motivo, setMotivo] = useState('');
@@ -25,6 +26,10 @@ export function ModalMotivo({
   async function confirmar() {
     if (requerido && !motivo.trim()) {
       setError(mensajeRequerido);
+      return;
+    }
+    if (minLength > 0 && motivo.trim().length < minLength) {
+      setError(`El motivo debe tener al menos ${minLength} caracteres.`);
       return;
     }
     const saved = await onConfirmar(motivo.trim());

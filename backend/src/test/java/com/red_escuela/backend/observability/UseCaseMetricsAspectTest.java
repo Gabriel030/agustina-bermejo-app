@@ -2,6 +2,7 @@ package com.red_escuela.backend.observability;
 
 import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -43,7 +44,7 @@ class UseCaseMetricsAspectTest extends AbstractIntegrationTest {
 
     @Test
     void failingUseCaseIsRecordedWithTheErrorCodeAsOutcomeAndRethrows() {
-        assertThatThrownBy(() -> rejectAttendanceJustification.reject(-1L))
+        assertThatThrownBy(() -> rejectAttendanceJustification.reject(new RejectAttendanceJustificationCommand(-1L, "Motivo suficiente")))
                 .isInstanceOf(AttendanceNotFoundException.class);
 
         Timer timer = meterRegistry.find("usecase.duration")

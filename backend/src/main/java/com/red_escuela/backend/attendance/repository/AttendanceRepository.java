@@ -7,6 +7,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +18,12 @@ import java.util.Optional;
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
+
+    Page<Attendance> findByStatus(AttendanceStatus status, Pageable pageable);
+
+    Page<Attendance> findByStatusAndJustificationReasonIsNotNull(AttendanceStatus status, Pageable pageable);
+
+    Page<Attendance> findByStatusAndJustificationRejectionReasonIsNotNull(AttendanceStatus status, Pageable pageable);
 
     @Query("""
             select a.programSubjectSectionEnrollment.id, count(a),

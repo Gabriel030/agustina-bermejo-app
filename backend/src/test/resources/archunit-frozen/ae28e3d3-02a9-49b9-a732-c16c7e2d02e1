@@ -19,7 +19,6 @@ com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassS
 com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceService.justify(com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceCommand) declares @Transactional
-com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationService.reject(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofService.submit(com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.RejectAttendanceChangeRequestService.reject(java.lang.Long) declares @Transactional
