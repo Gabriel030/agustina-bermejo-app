@@ -138,7 +138,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         Map<String, Object> term = new LinkedHashMap<>();
         term.put("year", 2026);
         term.put("description", TERM_DESCRIPTION);
-        term.put("type", "ANUAL");
+        term.put("type", "ANNUAL");
         term.put("startDate", "2026-03-01T00:00:00");
         term.put("endDate", "2026-12-20T00:00:00");
         long termId = api.post(ADMIN, "/terms", term).get("id").asLong();
