@@ -6,7 +6,7 @@ import com.red_escuela.backend.platform.domain.FeatureTransitionRequest;
 import com.red_escuela.backend.platform.dto.ChangeFeatureRequest;
 import com.red_escuela.backend.platform.dto.FeatureStateResponse;
 import com.red_escuela.backend.platform.dto.FeatureTransitionPreviewResponse;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import com.red_escuela.backend.platform.usecase.ChangePlatformFeatureUseCase;
 import com.red_escuela.backend.platform.usecase.PreviewPlatformFeatureChangeUseCase;

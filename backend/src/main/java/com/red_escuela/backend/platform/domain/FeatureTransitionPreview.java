@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.domain;
 
 import com.red_escuela.backend.shared.domain.BillingShutdownImpact;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 
 import java.time.LocalDateTime;
