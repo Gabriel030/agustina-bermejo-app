@@ -81,7 +81,7 @@ function toJustificationItem(j) {
 
 function RequestCard({ item, busy, onApprove, onReject }) {
   return (
-    <GlassCard className="flex flex-col gap-3 p-4">
+    <GlassCard className="flex flex-col gap-3 p-4" data-testid={`attendance-request-${item.key}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-heading text-[14.5px] font-semibold text-ink">{item.title}</div>
         <div className="flex items-center gap-2">
