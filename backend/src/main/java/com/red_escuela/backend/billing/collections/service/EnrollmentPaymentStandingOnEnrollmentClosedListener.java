@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -17,6 +19,7 @@ public class EnrollmentPaymentStandingOnEnrollmentClosedListener {
         this.effectGuard = effectGuard;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void recordWithdrawalForNonpayment(EnrollmentClosedWhileSuspendedEvent event) {
         effectGuard.runEffectOnce(event, HANDLER_NAME,

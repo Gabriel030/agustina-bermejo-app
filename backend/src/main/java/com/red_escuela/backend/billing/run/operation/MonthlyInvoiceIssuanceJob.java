@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
 import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
@@ -17,6 +19,7 @@ public class MonthlyInvoiceIssuanceJob {
         this.executor = executor;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @Scheduled(cron = CRON, zone = "${app.timezone}")
     @SchedulerLock(name = "MonthlyInvoiceIssuanceJob", lockAtMostFor = MonthlyInvoiceRun.MAX_RUNNING_TIME_ISO)
     public void run() {

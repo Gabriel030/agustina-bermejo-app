@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.run.domain.NightlyBillingSchedule;
 import com.red_escuela.backend.billing.run.service.MissedMonthlyInvoiceRunDetector;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -21,6 +23,7 @@ public class MissedMonthlyInvoiceRunAlertJob {
         this.clock = clock;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @Scheduled(cron = CRON, zone = "${app.timezone}")
     @SchedulerLock(name = "MissedMonthlyInvoiceRunAlertJob", lockAtMostFor = "PT10M")
     public void run() {

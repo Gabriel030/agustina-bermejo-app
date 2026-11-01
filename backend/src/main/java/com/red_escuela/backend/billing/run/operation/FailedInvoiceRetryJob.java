@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.run.service.FailedMonthlyInvoiceRetrier;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,6 +17,7 @@ public class FailedInvoiceRetryJob {
         this.retrier = retrier;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @Scheduled(cron = CRON, zone = "${app.timezone}")
     @SchedulerLock(name = "FailedInvoiceRetryJob", lockAtMostFor = "PT20M")
     public void run() {

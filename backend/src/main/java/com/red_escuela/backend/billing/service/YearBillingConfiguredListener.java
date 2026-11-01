@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.slf4j.Logger;
@@ -30,6 +32,7 @@ public class YearBillingConfiguredListener {
         this.clock = clock;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void onConfigured(YearBillingConfiguredEvent event) {
         alertService.resolveCoveredAlerts(event.programId());

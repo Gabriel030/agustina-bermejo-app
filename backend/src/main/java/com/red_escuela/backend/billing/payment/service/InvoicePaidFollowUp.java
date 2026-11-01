@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
@@ -20,6 +22,7 @@ public class InvoicePaidFollowUp {
         this.eventPublisher = eventPublisher;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @EventListener
     public void followUpInvoicePaidByAllocation(InvoicePaidDomainEvent event) {
         if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {

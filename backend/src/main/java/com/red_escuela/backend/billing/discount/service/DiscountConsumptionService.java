@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.discount.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.discount.domain.DiscountEnrollmentIds;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
@@ -53,11 +55,13 @@ public class DiscountConsumptionService {
                 .forEach(enrollmentLock::lockDiscountsOf);
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @EventListener
     public void releaseDiscountConsumption(InvoiceCancelledEvent event) {
         releaseConsumptionOfInvoice(event.invoiceId());
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @EventListener
     public void releaseDiscountConsumption(InvoiceDiscardedEvent event) {
         releaseConsumptionOfInvoice(event.invoiceId());

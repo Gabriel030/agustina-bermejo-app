@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
@@ -21,6 +23,7 @@ public class LateFeeOnInvoiceSettledListener {
         this.effectGuard = effectGuard;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void reconcileLateFeesOfSettledInvoice(InvoicePaidDomainEvent event) {
         if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {

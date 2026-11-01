@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceMarkedAsOverdueEvent;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -13,6 +15,7 @@ public class LateFeeOnOverdueInvoiceListener {
         this.accrualService = accrualService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void reconcileLateFeesOfOverdueInvoice(InvoiceMarkedAsOverdueEvent event) {
         accrualService.reconcileLateFeesOfInvoice(event.invoiceId(), event.businessDate());

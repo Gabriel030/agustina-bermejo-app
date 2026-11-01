@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReviewReleasedEvent;
@@ -23,6 +25,7 @@ public class LateFeeCorrectionOnPaymentReviewDecidedListener {
         this.effectGuard = effectGuard;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void retryCorrectionOfDebitNoteWhoseReceiptWasApproved(InvoicePaidDomainEvent event) {
         if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {
@@ -31,6 +34,7 @@ public class LateFeeCorrectionOnPaymentReviewDecidedListener {
         effectGuard.runEffectOnce(event, APPROVED_HANDLER_NAME, () -> correctLateFeesOfDebitNote(event.invoiceId()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void retryCorrectionOfDebitNoteWhoseReceiptWasRejected(InvoicePaymentReviewReleasedEvent event) {
         correctLateFeesOfDebitNote(event.invoiceId());
