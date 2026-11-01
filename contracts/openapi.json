@@ -5785,6 +5785,41 @@
         "required" : [ "body", "category", "createdAt", "id", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
+      "MyCourseEnrollmentResponse" : {
+        "properties" : {
+          "completionDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "courseName" : {
+            "type" : "string"
+          },
+          "enrollmentDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "progressPercent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "studentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "completionDate", "courseId", "courseName", "enrollmentDate", "id", "progressPercent", "status", "studentId" ],
+        "type" : "object"
+      },
       "MyCourseSectionEnrollmentResponse" : {
         "properties" : {
           "attemptNumber" : {
@@ -22827,7 +22862,7 @@
               "application/json" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/CourseEnrollmentResponse"
+                    "$ref" : "#/components/schemas/MyCourseEnrollmentResponse"
                   },
                   "type" : "array"
                 }

@@ -11,6 +11,7 @@ import com.red_escuela.backend.identity.api.StudentFinder;
 import com.red_escuela.backend.identity.api.StudentRoleGranter;
 
 import com.red_escuela.backend.enrollment.dto.CourseProgressResponse;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -32,6 +33,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
@@ -275,6 +278,18 @@ public class CourseEnrollmentService {
                 .toList();
 
         return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty());
+    }
+
+    public Optional<Percentage> calculateApprovedModulesPercentage(CourseEnrollment enrollment) {
+        Set<Long> activeModuleIds = courseCatalogFinder.findActiveModules(enrollment.courseId()).stream()
+                .map(CourseModuleView::id)
+                .collect(Collectors.toSet());
+        List<Long> approvedModuleIds = courseSubjectSectionEnrollmentRepository
+                .findByCourseEnrollmentId(enrollment.getId()).stream()
+                .filter(inscripcion -> inscripcion.getStatus() == EnrollmentStatus.APPROVED)
+                .map(CourseSubjectSectionEnrollment::courseSubjectId)
+                .toList();
+        return CourseModuleProgressCalculator.calculateApprovedModulesPercentage(activeModuleIds, approvedModuleIds);
     }
 
     private CourseEnrollment findOrThrow(Long id) {
