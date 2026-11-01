@@ -11378,6 +11378,76 @@
         "tags" : [ "attendance-change-request-controller" ]
       }
     },
+    "/attendance/{id}/justification-attachment" : {
+      "get" : {
+        "operationId" : "AttendanceJustification_getJustificationAttachment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "attendance-justification-controller" ]
+      }
+    },
     "/attendance/{id}/justify" : {
       "post" : {
         "operationId" : "Attendance_justify",

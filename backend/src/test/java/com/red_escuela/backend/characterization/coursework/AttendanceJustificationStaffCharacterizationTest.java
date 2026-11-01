@@ -10,7 +10,10 @@ import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,6 +29,9 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
 
     @Autowired
     private AttendanceProofSubmitter attendanceProofSubmitter;
+
+    @Value("${app.uploads.directory}")
+    private String uploadsDirectory;
 
     private Classroom classroom(String key, String dniBase) {
         return persistClassroom(key, dniBase, persistScheme(2, true, null), null, 10, 10, InstructorRole.LEAD);
@@ -160,5 +166,58 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
         assertThat(entityManager.find(Attendance.class, first).getJustificationRejectedAt()).isNull();
         assertThat(totalOf(preceptor, "REJECTED")).isEqualTo(rejectedBefore);
         assertThat(totalOf(preceptor, "PENDING")).isEqualTo(pendingBefore + 3);
+    }
+
+    @Test
+    void staffOpensTheAttachmentOfAJustificationAndOthersAreDenied() throws Exception {
+        Classroom classroom = classroom("jus7", "7700007");
+        Person preceptor = persistPerson("jus7.preceptor", "77000077", "PRECEPTOR");
+        Path file = Path.of(uploadsDirectory).resolve("students/7/jus7-comprobante.pdf");
+        Files.createDirectories(file.getParent());
+        Files.write(file, new byte[] {1, 2, 3});
+        CargarAsistenciaRequest request = new CargarAsistenciaRequest(
+                LocalDate.of(2026, 3, 2), List.of(new AttendanceEntry(classroom.enrollment().getId(), AttendanceStatus.ABSENT)), null, null);
+        long attendanceId = bodyOf(postJson(classroom.teacher(), "/program-sections/" + classroom.section().getId() + "/attendance", request)
+                .andExpect(status().isCreated())).get(0).get("id").asLong();
+        attendanceProofSubmitter.submitProof(attendanceId, "Fiebre", "students/7/jus7-comprobante.pdf");
+        entityManager.flush();
+        String path = "/attendance/" + attendanceId + "/justification-attachment";
+
+        getAs(preceptor, path)
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType("application/pdf"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().bytes(new byte[] {1, 2, 3}));
+        getAs(classroom.student(), path).andExpect(status().isForbidden());
+        getAs(classroom.teacher(), path).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void openingTheAttachmentFailsWhenThereIsNoFileOrNoAttendance() throws Exception {
+        Classroom classroom = classroom("jus8", "7700008");
+        Person preceptor = persistPerson("jus8.preceptor", "77000087", "PRECEPTOR");
+        long attendanceId = pendingJustification(classroom, 2);
+
+        getAs(preceptor, "/attendance/" + attendanceId + "/justification-attachment").andExpect(status().isNotFound());
+        getAs(preceptor, "/attendance/999999/justification-attachment").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void justifyingARejectedAbsenceClearsThePreviousRejection() throws Exception {
+        Classroom classroom = classroom("jus9", "7700009");
+        Person preceptor = persistPerson("jus9.preceptor", "77000097", "PRECEPTOR");
+        long attendanceId = pendingJustification(classroom, 2);
+        postJson(preceptor, "/attendance/" + attendanceId + "/reject-justification", new RejectAttendanceJustificationRequest(LONG_REASON))
+                .andExpect(status().isOk());
+
+        postJson(preceptor, "/attendance/" + attendanceId + "/justify",
+                new com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest("Certificado presentado en mostrador", null))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("JUSTIFIED"))
+                .andExpect(jsonPath("$.justificationRejectionReason").doesNotExist());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(entityManager.find(Attendance.class, attendanceId).getJustificationRejectionReason()).isNull();
+        assertThat(entityManager.find(Attendance.class, attendanceId).getJustificationRejectedAt()).isNull();
     }
 }
