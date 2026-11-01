@@ -103,7 +103,7 @@ export function AlumnoMisCursos() {
               }
             />
           ) : (
-            <EmptyState title="Todavía no terminaste ningún curso" />
+            <EmptyState title="Todavía no terminaste ningún curso" description="Cuando completes un curso, aparece en esta pestaña." />
           )}
         </GlassCard>
       ) : (

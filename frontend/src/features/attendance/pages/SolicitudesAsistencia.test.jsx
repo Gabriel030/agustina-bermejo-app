@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -27,7 +27,7 @@ const JUSTIFICATION = {
   attendanceId: 42,
   classDate: '2026-10-14',
   reason: 'Certificado médico por gripe.',
-  attachmentUrl: 'https://files.example.com/certificado.pdf',
+  attachmentUrl: 'students/1/justificaciones-asistencia_abc.pdf',
   sectionName: 'Comisión B',
   studentName: 'Valentina Suárez',
   subjectName: 'Taller de Cerámica',
@@ -134,13 +134,39 @@ describe('SolicitudesAsistencia', () => {
     expect(calls.correctionRejected).toBe(true);
   });
 
-  it('solo ofrece el adjunto cuando es una URL http', async () => {
-    mockInbox({ corrections: [], justifications: [{ ...JUSTIFICATION, attachmentUrl: 'javascript:alert(1)' }] });
+  it('opens the attachment through the authenticated download endpoint', async () => {
+    const preview = { location: { href: '' }, close: vi.fn() };
+    vi.spyOn(window, 'open').mockReturnValue(preview);
+    URL.createObjectURL = vi.fn(() => 'blob:justificacion-42');
+    server.use(
+      http.get(`${API}/attendance/42/justification-attachment`, () =>
+        new HttpResponse('contenido', { headers: { 'Content-Type': 'application/pdf' } }),
+      ),
+    );
+    mockInbox({ corrections: [] });
+    renderWithProviders(<SolicitudesAsistencia />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver adjunto' }));
+
+    await vi.waitFor(() => expect(preview.location.href).toBe('blob:justificacion-42'));
+  });
+
+  it('shows no attachment action when the justification has no file', async () => {
+    mockInbox({ corrections: [], justifications: [{ ...JUSTIFICATION, attachmentUrl: null }] });
     renderWithProviders(<SolicitudesAsistencia />);
 
     await screen.findByText('Valentina Suárez');
-    expect(screen.queryByRole('link', { name: 'Ver adjunto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver adjunto' })).not.toBeInTheDocument();
     expect(screen.getByText('Sin adjunto')).toBeInTheDocument();
+  });
+
+  it('opens the tab named in the query string', async () => {
+    mockInbox();
+    renderWithProviders(<SolicitudesAsistencia />, { route: '/?tab=justificaciones' });
+
+    await screen.findByText('Valentina Suárez');
+    expect(screen.queryByText('Mateo Giménez')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Justificaciones/ })).toHaveAttribute('data-state', 'active');
   });
 
   it('muestra el estado vacío cuando no hay nada pendiente', async () => {

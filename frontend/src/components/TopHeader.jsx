@@ -17,13 +17,13 @@ export function TopHeader({ titulo, items }) {
 
   return (
     <div className="mx-auto w-full max-w-[1200px] shrink-0">
-      <GlassCard className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex min-w-0 items-center gap-3">
+      <GlassCard className="flex items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <MobileMenu titulo={titulo} items={items} />
-          <div className="truncate font-heading text-base font-bold text-ink lg:hidden">{titulo}</div>
+          <div className="font-heading text-[15px] font-bold sm:text-base text-ink lg:hidden whitespace-nowrap">{titulo}</div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           {usuario && (
             <Link to="/perfil" className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80">
               <div className="h-9 w-9 overflow-hidden rounded-xl">
