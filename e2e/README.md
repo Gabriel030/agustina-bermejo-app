@@ -13,10 +13,6 @@ Dos configuraciones, cada una con su propio backend de sistema (Postgres de Test
 
 El seed demo es idempotente y los specs de `specs/demo` no dependen de su estado: cada test crea sus propios datos por API (por ejemplo `fixtures/attendance.js` registra una inasistencia nueva con una fecha de clase única) y puede correrse varias veces contra el mismo backend.
 
-## Tests pendientes (`test.fixme`)
-
-`specs/demo/attendance-justification.spec.js` deja listos, marcados con `test.fixme`, los pasos que dependen de `fix/qa-visual-h1-h2-h5`: el alumno ve el motivo del rechazo y el staff abre el comprobante. Al mergear ese fix, cambiar `test.fixme` por `test` y correr el spec.
-
 ## CI
 
 No hay job de E2E en el workflow. Cómo sería: un job con Docker, `node 20`, JDK 21 y `scripts/system-tests.sh --config playwright.demo.config.js` (el flujo de asistencia tarda ~25 s; el arranque en frío del backend demo y el build del front suman ~3 a 4 min en una máquina cargada), con `retries: 1` (ya activo con `CI`) y el reporte HTML (`playwright-report/`) como artefacto.

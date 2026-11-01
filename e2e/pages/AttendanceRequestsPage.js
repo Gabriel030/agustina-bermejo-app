@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test';
+
 export class AttendanceRequestsPage {
   constructor(page) {
     this.page = page;
@@ -22,5 +24,15 @@ export class AttendanceRequestsPage {
     await this.justificationCard(attendanceId).getByRole('button', { name: 'Rechazar' }).click();
     await this.rejectionReasonInput.fill(reason);
     await this.confirmRejectionButton.click();
+  }
+
+  async expectReceiptOpens(attendanceId) {
+    const popupPromise = this.page.waitForEvent('popup');
+    const responsePromise = this.page.waitForResponse((response) => response.url().endsWith(`/attendance/${attendanceId}/justification-attachment`));
+    await this.justificationCard(attendanceId).getByRole('button', { name: 'Ver adjunto' }).click();
+    const receiptResponse = await responsePromise;
+    expect(receiptResponse.status()).toBe(200);
+    const receiptPopup = await popupPromise;
+    await receiptPopup.close();
   }
 }

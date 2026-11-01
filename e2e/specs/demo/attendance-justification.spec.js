@@ -41,6 +41,7 @@ test.describe('@flow attendance justification', () => {
 
     await justifyAsStudent(browser, absence);
     await reviewAsPreceptor(browser, absence, async (page, requestsPage) => {
+      await requestsPage.expectReceiptOpens(absence.attendanceId);
       await requestsPage.rejectJustification(absence.attendanceId, REJECTION_REASON);
       await expect(page.getByText('Justificación rechazada')).toBeVisible();
       await expect(requestsPage.justificationCard(absence.attendanceId)).toHaveCount(0);
@@ -48,6 +49,16 @@ test.describe('@flow attendance justification', () => {
 
     const rejected = await findAttendanceRecord(request, absence);
     expect(rejected.status).toBe('ABSENT');
+
+    const rejectedView = await signedInPage(browser, 'alumno', /\/alumno\/inicio$/);
+    const rejectedAttendancePage = new StudentAttendancePage(rejectedView.page);
+    await rejectedAttendancePage.open(absence.sectionEnrollmentId);
+    await expect(rejectedView.page.getByText(`Motivo del rechazo: ${REJECTION_REASON}`)).toBeVisible();
+    await rejectedAttendancePage.openAbsence(absence.dayOfMonth);
+    await expect(rejectedAttendancePage.justifyDialog.getByText('Tu justificación fue rechazada')).toBeVisible();
+    await expect(rejectedAttendancePage.justifyDialog.getByText(REJECTION_REASON)).toBeVisible();
+    await expect(rejectedAttendancePage.justifyDialog.getByRole('heading', { name: 'Volver a justificar' })).toBeVisible();
+    await rejectedView.context.close();
 
     await justifyAsStudent(browser, absence);
     await reviewAsPreceptor(browser, absence, async (page, requestsPage) => {
@@ -62,34 +73,6 @@ test.describe('@flow attendance justification', () => {
     const { context, page } = await signedInPage(browser, 'alumno', /\/alumno\/inicio$/);
     await new StudentAttendancePage(page).open(absence.sectionEnrollmentId);
     await expect(page.getByTitle('Ausencia justificada')).not.toHaveCount(0);
-    await context.close();
-  });
-
-  test.fixme('studentSeesRejectionReasonAfterRejection', async ({ browser, request }) => {
-    const absence = await recordFreshAbsenceForDemoStudent(request);
-    await justifyAsStudent(browser, absence);
-    await reviewAsPreceptor(browser, absence, async (_page, requestsPage) => {
-      await requestsPage.rejectJustification(absence.attendanceId, REJECTION_REASON);
-    });
-
-    const { context, page } = await signedInPage(browser, 'alumno', /\/alumno\/inicio$/);
-    await new StudentAttendancePage(page).open(absence.sectionEnrollmentId);
-    await expect(page.getByText(REJECTION_REASON)).toBeVisible();
-    await context.close();
-  });
-
-  test.fixme('staffCanOpenReceiptOfPendingJustification', async ({ browser, request }) => {
-    const absence = await recordFreshAbsenceForDemoStudent(request);
-    await justifyAsStudent(browser, absence);
-
-    const { context, page } = await signedInPage(browser, 'preceptor', /\/preceptor\/inicio$/);
-    const requestsPage = new AttendanceRequestsPage(page);
-    await requestsPage.open('preceptor');
-    const receiptLink = requestsPage.justificationCard(absence.attendanceId).getByRole('link', { name: 'Ver adjunto' });
-    await expect(receiptLink).toBeVisible();
-    const href = await receiptLink.getAttribute('href');
-    const receiptResponse = await page.request.get(href);
-    expect(receiptResponse.status()).toBe(200);
     await context.close();
   });
 });
