@@ -30,7 +30,23 @@ Arranque local: `JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES
 - Las 5 cuentas del seeder son **solo `Person` + rol**: sin `Student`/`Instructor` ni datos académicos. Login, layout y ruteo por rol funcionan; las pantallas que dependen de datos propios (mis carreras, pagos, comisiones del docente) salen vacías con `alumno.demo` y `docente.demo`.
 - **Alumnos con datos más completos** (existen en la base local del usuario, contraseñas desconocidas): `agustin.torres`, `camila.rodriguez`, `mateo.lopez`, `sofia.herrera`, `nicolas.fernandez`. No hace falta loguearse con ellos: se ven desde el padrón como `preceptor.demo`/`administrativo.demo`/`director.demo`.
 - **Alumno nuevo con flujo real:** `/registrarse` crea una persona con `Student` confirmado, sin rol hasta la primera inscripción (sirve para probar catálogo e inscripción). Alta de prospecto: `alumno/nuevo` como Preceptor o Administrativo, y verificación de email en `GET /verify-email`.
-- **Brecha conocida:** no hay un alumno o docente demo con datos académicos y contraseña conocida. Recomendado: extender `LocalSeedRunner` (es el lugar acordado en `debugging.md`) antes de la siguiente épica de UI que necesite datos.
+- **Con perfil `local,demo`** hay alumnos y docente con datos académicos y clave conocida: ver 2a.
+
+## 2a. Seed educativo demo (perfil `local,demo`)
+
+Con `SPRING_PROFILES_ACTIVE=local,demo` el arranque deja datos educativos reales además de las 5 cuentas (clave `Test1234`). Corre una sola vez (idempotente) y el seed de sistema (E2E, perfil solo `local`) no lo incluye. `DemoLearnerAccountsSeeder` (identity) crea los alumnos y el perfil de docente; `DemoEducationalSeedRunner` (config) arma la estructura llamando a la API HTTP real con las cuentas demo.
+
+| Usuario | Sirve para | Datos |
+|---|---|---|
+| `alumno.demo` | Alumno regular: Mis carreras, notas, asistencia, plan de estudios | Inscripto a "Tecnicatura en Gestión Cultural (Demo)" y a 2 de sus 3 comisiones, 4 clases con 2 inasistencias (una con comprobante enviado por el alumno, pendiente de aprobación) y un parcial con nota 7 |
+| `alumno.egreso.demo` | Egreso: solicitar, verificar deuda (administrativo), aprobar (director) | Inscripto a "Tecnicatura en Producción Escénica (Demo)", cursada completa de su única materia, por eso ya es elegible y el sistema le generó la solicitud de egreso en estado REQUESTED |
+| `alumno.cursos.demo` | Mis cursos con módulos | Inscripto a "Taller de Fotografía Digital (Demo)" con 3 módulos: 2 aprobados y 1 pendiente |
+| `docente.demo` | Tomar asistencia, configurar evaluación, cargar notas | Titular (LEAD) de las 3 comisiones del ciclo; ya tiene perfil de docente |
+| `preceptor.demo` | Aprobar o rechazar la justificación pendiente, oferta académica | Ve en `/attendance/justifications` la justificación de `alumno.demo` |
+| `administrativo.demo` | Aprobar o rechazar la justificación pendiente, verificar deuda de egreso, crear la estructura académica | Bandeja `/administrativo/solicitudes-de-asistencia` con 1 justificación |
+| `director.demo` | Aprobaciones de dirección | Ciclo "Ciclo lectivo 2026 (Demo)" con inscripción abierta |
+
+Los horarios de las comisiones son texto libre (`schedule`), no franjas con aula.
 
 ## 2b. Seed de sistema (E2E)
 
