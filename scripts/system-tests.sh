@@ -11,7 +11,12 @@ free_port() {
 
 if [[ -f "$slot_script" ]]; then
   zsh "$slot_script" acquire "$owner"
-  trap 'zsh "$slot_script" release "$owner"' EXIT
+  release_slot() {
+    local status=$?
+    zsh "$slot_script" release "$owner" || true
+    exit "$status"
+  }
+  trap release_slot EXIT
 fi
 
 if ! docker info >/dev/null 2>&1; then

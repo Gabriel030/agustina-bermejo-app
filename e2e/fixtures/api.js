@@ -1,6 +1,17 @@
 import { BACKEND_URL, PASSWORD, ROLES } from './accounts.js';
 
+const tokenCache = new Map();
+
 export async function loginByApi(request, role) {
+  if (tokenCache.has(role)) {
+    return tokenCache.get(role);
+  }
+  const tokens = await requestTokens(request, role);
+  tokenCache.set(role, tokens);
+  return tokens;
+}
+
+async function requestTokens(request, role) {
   const response = await request.post(`${BACKEND_URL}/auth/login`, {
     data: { username: ROLES[role].username, password: PASSWORD },
   });
@@ -24,6 +35,12 @@ export class BackendApi {
   async get(path) {
     const response = await this.request.get(`${BACKEND_URL}${path}`, { headers: this.headers });
     return { status: response.status(), body: response.ok() ? await response.json() : null };
+  }
+
+  async attempt(method, path, data) {
+    const response = await this.request.fetch(`${BACKEND_URL}${path}`, { method, headers: this.headers, data });
+    const text = await response.text();
+    return { status: response.status(), body: text ? JSON.parse(text) : null };
   }
 
   async post(path, data) {

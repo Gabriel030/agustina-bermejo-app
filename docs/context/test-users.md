@@ -38,9 +38,10 @@ Con `SPRING_PROFILES_ACTIVE=local,demo` el arranque deja datos educativos reales
 
 | Usuario | Sirve para | Datos |
 |---|---|---|
-| `alumno.demo` | Alumno regular: Mis carreras, notas, asistencia, plan de estudios | Inscripto a "Tecnicatura en Gestión Cultural (Demo)" y a 2 de sus 3 comisiones, 4 clases con 2 inasistencias (una con comprobante enviado por el alumno, pendiente de aprobación) y un parcial con nota 7 |
+| `alumno.demo` | Alumno regular: Mis carreras, notas, asistencia, plan de estudios | Inscripto a "Tecnicatura en Gestión Cultural (Demo)" y a 2 de sus 3 comisiones, 4 clases con 2 inasistencias (una con comprobante enviado por el alumno, pendiente de aprobación) y un parcial con nota 7. La comisión de Políticas Culturales tiene tope de ausentismo del 25 % (el único dato con `/attendance/risk` calculable) |
 | `alumno.egreso.demo` | Egreso: solicitar, verificar deuda (administrativo), aprobar (director) | Inscripto a "Tecnicatura en Producción Escénica (Demo)", cursada completa de su única materia, por eso ya es elegible y el sistema le generó la solicitud de egreso en estado REQUESTED |
 | `alumno.cursos.demo` | Mis cursos con módulos | Inscripto a "Taller de Fotografía Digital (Demo)" con 3 módulos: 2 aprobados y 1 pendiente |
+| `alumno.inscripcion.demo`, `alumno.cupo.demo`, `alumno.notas.demo` | Cuentas de los E2E de inscripción y notas (`e2e/specs/demo`): sin inscripciones propias, cada test les crea una carrera y comisión nueva por API | Sin datos; no usarlas a mano |
 | `docente.demo` | Tomar asistencia, configurar evaluación, cargar notas | Titular (LEAD) de las 3 comisiones del ciclo; ya tiene perfil de docente |
 | `preceptor.demo` | Aprobar o rechazar la justificación pendiente, oferta académica | Ve en `/attendance/justifications` la justificación de `alumno.demo` |
 | `administrativo.demo` | Aprobar o rechazar la justificación pendiente, verificar deuda de egreso, crear la estructura académica | Bandeja `/administrativo/solicitudes-de-asistencia` con 1 justificación |
