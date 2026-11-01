@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.run.controller;
 
 import com.red_escuela.backend.billing.run.dto.BillingRunAlertResponse;
 import com.red_escuela.backend.billing.run.usecase.BillingRunAlertQueryUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing-run-alerts")
 @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class BillingRunAlertController {

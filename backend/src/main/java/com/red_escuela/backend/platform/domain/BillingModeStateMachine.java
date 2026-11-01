@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.domain;
 
 import com.red_escuela.backend.platform.exception.InvalidBillingModeTransitionException;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 
 import java.util.Map;
 

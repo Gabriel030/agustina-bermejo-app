@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/me")
 public class MeInvoiceController {
 

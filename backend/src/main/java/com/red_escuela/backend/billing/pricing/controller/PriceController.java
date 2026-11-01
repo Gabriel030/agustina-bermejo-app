@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.pricing.usecase.ListPriceVersionHistoryUs
 import com.red_escuela.backend.billing.pricing.usecase.ListPricesUseCase;
 import com.red_escuela.backend.billing.pricing.usecase.ProposePriceChangeUseCase;
 import com.red_escuela.backend.billing.pricing.usecase.ValidatePriceChangeUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class PriceController {
     private final ProposePriceChangeUseCase proposePriceChangeUseCase;
     private final ValidatePriceChangeUseCase validatePriceChangeUseCase;

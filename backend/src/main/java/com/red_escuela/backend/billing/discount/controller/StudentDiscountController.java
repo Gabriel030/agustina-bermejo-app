@@ -21,6 +21,7 @@ import com.red_escuela.backend.billing.discount.usecase.RevokeStudentDiscountUse
 import com.red_escuela.backend.billing.discount.usecase.SearchStudentDiscountsUseCase;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class StudentDiscountController {
     private final GrantStudentDiscountUseCase grantUseCase;
     private final RevokeStudentDiscountUseCase revokeUseCase;

@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.payment.usecase.FailRefundUseCase;
 import com.red_escuela.backend.billing.payment.usecase.ListStudentRefundsUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RequestRefundUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class RefundController {
     private final RequestRefundUseCase requestRefundUseCase;
     private final CompleteRefundUseCase completeRefundUseCase;

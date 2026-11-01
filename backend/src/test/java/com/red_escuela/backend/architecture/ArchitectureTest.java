@@ -592,7 +592,7 @@ class ArchitectureTest {
 
     @Test
     void billingControllersDeclareRequiresModule() {
-        FreezingArchRule.freeze(ArchitectureRules.billingControllersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..")).check(MAIN_CLASSES);
+        ArchitectureRules.billingControllersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..").check(MAIN_CLASSES);
     }
 
     @Test

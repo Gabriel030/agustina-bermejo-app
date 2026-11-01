@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.usecase.paymentreceipt.PaymentReceiptFile
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ListPendingPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/bank-transfer-receipts")
 public class BankTransferReceiptController {
 

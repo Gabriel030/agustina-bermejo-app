@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyC
 import com.red_escuela.backend.billing.discount.usecase.FindLostCohortPromotionBenefitsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ListActivePromotionsByLegacyContractUseCase;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,6 +32,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class PromotionController {
     public static final String TOTAL_COUNT_HEADER = "X-Total-Count";
 

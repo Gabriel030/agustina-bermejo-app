@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.entity;
 
 import com.red_escuela.backend.platform.domain.FeatureState;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

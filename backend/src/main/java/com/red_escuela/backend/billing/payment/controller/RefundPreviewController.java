@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.payment.dto.RefundPreviewResponse;
 import com.red_escuela.backend.billing.payment.dto.RequestRefundRequest;
 import com.red_escuela.backend.billing.payment.usecase.PreviewRefundUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class RefundPreviewController {
     private static final String CURRENCY_DEFAULT = "ARS";
 

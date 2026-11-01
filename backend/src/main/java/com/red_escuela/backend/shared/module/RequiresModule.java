@@ -1,6 +1,4 @@
-package com.red_escuela.backend.platform.api;
-
-import com.red_escuela.backend.platform.model.BillingMode;
+package com.red_escuela.backend.shared.module;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

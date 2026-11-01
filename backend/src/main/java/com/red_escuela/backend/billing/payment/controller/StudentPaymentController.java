@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.payment.usecase.ListStudentPaymentsUseCas
 import com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class StudentPaymentController {
     private final RegisterCashPaymentUseCase registerCashPaymentUseCase;
     private final PreviewCashPaymentUseCase previewCashPaymentUseCase;

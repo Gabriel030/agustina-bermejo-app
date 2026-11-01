@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.dto;
 
 import com.red_escuela.backend.platform.domain.EffectiveModules;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 
 import java.util.List;

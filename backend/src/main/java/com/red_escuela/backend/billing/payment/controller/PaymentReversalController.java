@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.payment.dto.RevokeBankTransferApprovalReq
 import com.red_escuela.backend.billing.payment.usecase.RegisterChargebackUseCase;
 import com.red_escuela.backend.billing.payment.usecase.ReverseChargebackUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RevokeBankTransferApprovalUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class PaymentReversalController {
     private final RevokeBankTransferApprovalUseCase revokeBankTransferApprovalUseCase;
     private final RegisterChargebackUseCase registerChargebackUseCase;

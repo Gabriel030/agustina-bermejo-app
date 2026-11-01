@@ -14,7 +14,7 @@ import com.red_escuela.backend.platform.exception.FeatureValueInvalidException;
 import com.red_escuela.backend.platform.exception.InvalidTransitionConfirmationException;
 import com.red_escuela.backend.platform.exception.StaleFeatureVersionException;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.repository.FeatureChangeLogRepository;
 import com.red_escuela.backend.platform.repository.PlatformFeatureRepository;
 import org.springframework.stereotype.Service;

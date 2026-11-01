@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.service;
 
 import com.red_escuela.backend.platform.domain.IssuedTransitionConfirmation;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
