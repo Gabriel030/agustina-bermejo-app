@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.repository;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,10 @@ import java.util.List;
 public interface TermRepository extends JpaRepository<Term, Long> {
 
     List<Term> findByStatus(StatusType status);
+
+    boolean existsByYearAndTypeAndStatus(Integer year, TermType type, StatusType status);
+
+    boolean existsByYearAndTypeAndStatusAndIdNot(Integer year, TermType type, StatusType status, Long id);
 
     @Query("""
             select distinct ss.term from SubjectSection ss, ProgramSubject ps

@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.configuration.domain.BillingDashboardGoal
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceMode;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
@@ -90,7 +91,11 @@ final class ConfigurationValuesChangeRows {
     }
 
     static List<ChangeRow> buildIrregularTermsRows(IrregularTermTypes today, IrregularTermTypes proposed) {
-        return List.of(buildListRow("Tipos de cursada irregular", read(today, IrregularTermTypes::types), proposed.types()));
+        return List.of(buildListRow("Tipos de cursada irregular", read(today, irregular -> labelsOf(irregular.types())), labelsOf(proposed.types())));
+    }
+
+    private static List<String> labelsOf(List<TermType> types) {
+        return types.stream().map(TermType::label).toList();
     }
 
     static List<ChangeRow> buildDashboardGoalsRows(BillingDashboardGoals today, BillingDashboardGoals proposed) {

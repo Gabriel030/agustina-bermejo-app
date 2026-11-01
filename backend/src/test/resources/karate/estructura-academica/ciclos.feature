@@ -10,7 +10,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
     * def termName = 'Ciclo lectivo 2031 ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2031, description: '#(termName)', type: 'ANUAL', startDate: '2031-03-01T00:00:00', endDate: '2031-12-15T00:00:00' }
+    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(termName)', type: 'ANNUAL', startDate: '2031-03-01T00:00:00', endDate: '2031-12-15T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id

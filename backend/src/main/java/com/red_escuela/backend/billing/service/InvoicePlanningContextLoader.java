@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
@@ -138,10 +139,10 @@ public class InvoicePlanningContextLoader {
         if (cycles.isEmpty()) {
             return windows;
         }
-        Set<String> irregularTypes = configurationReader.irregularTermTypesEffectiveOn(today).types().stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<TermType> irregularTypes = Set.copyOf(configurationReader.irregularTermTypesEffectiveOn(today).types());
         List<Term> terms = termRepository.findTermsOfProgram(programId).stream()
                 .filter(t -> t.getEnrollmentStart() != null && t.getStartDate() != null)
-                .filter(t -> t.getType() == null || !irregularTypes.contains(t.getType().trim().toUpperCase())).toList();
+                .filter(t -> t.getType() == null || !irregularTypes.contains(t.getType())).toList();
         for (YearCycle cycle : cycles) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
                 final int currentSlot = slot;

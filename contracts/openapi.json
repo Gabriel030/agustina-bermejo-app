@@ -3295,7 +3295,7 @@
             "type" : "string"
           },
           "type" : {
-            "minLength" : 1,
+            "enum" : [ "ANNUAL", "FIRST_SEMESTER", "SECOND_SEMESTER", "INTENSIVE" ],
             "type" : "string"
           },
           "year" : {
@@ -9432,6 +9432,7 @@
             "type" : "string"
           },
           "type" : {
+            "enum" : [ "ANNUAL", "FIRST_SEMESTER", "SECOND_SEMESTER", "INTENSIVE" ],
             "type" : "string"
           },
           "year" : {
