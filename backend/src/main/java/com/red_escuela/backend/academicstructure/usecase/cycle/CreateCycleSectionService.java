@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
+import java.util.stream.Collectors;
 import com.red_escuela.backend.academicstructure.entity.*;
 import com.red_escuela.backend.academicstructure.exception.*;
 import com.red_escuela.backend.academicstructure.repository.*;
@@ -50,11 +51,19 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
         cycle.ensureEditable();
+        lockRequestedClassrooms(request);
         if (cycle.getProgram() != null) {
             return createSubjectSection(cycle, request);
         } else {
             return createCourseSection(cycle, request);
         }
+    }
+
+    private void lockRequestedClassrooms(CreateCycleSectionRequest request) {
+        if (request.slots() == null) return;
+        classroomRepository.lockAllByIdOrdered(request.slots().stream()
+                .map(ScheduleSlotRequest::classroomId)
+                .collect(Collectors.toSet()));
     }
 
     private Long createSubjectSection(AcademicOfferingCycle cycle, CreateCycleSectionRequest request) {
