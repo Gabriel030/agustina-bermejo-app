@@ -7,6 +7,7 @@ const frontendUrl = `http://localhost:${frontendPort}`;
 
 export default defineConfig({
   testDir: './specs',
+  testIgnore: '**/demo/**',
   fullyParallel: true,
   workers: 2,
   retries: process.env.CI ? 1 : 0,
