@@ -12,6 +12,8 @@ import { PreceptorOfertaAcademica } from '@/features/academic-structure/pages/Pr
 import { PreceptorDetalleCarrera } from '@/features/academic-structure/pages/PreceptorDetalleCarrera';
 import { PreceptorDetalleCurso } from '@/features/academic-structure/pages/PreceptorDetalleCurso';
 import { PreceptorCalendario } from '@/features/academic-structure/pages/PreceptorCalendario';
+import { PreceptorPeriodos } from '@/features/academic-structure/pages/PreceptorPeriodos';
+import { PreceptorPeriodoForm } from '@/features/academic-structure/pages/PreceptorPeriodoForm';
 import { PreceptorNuevoCiclo } from '@/features/academic-structure/pages/PreceptorNuevoCiclo';
 
 export const routes = {
@@ -34,5 +36,8 @@ export const routes = {
     { roles: ['preceptor'], path: 'oferta-academica/cursos/:cursoId', element: <PreceptorDetalleCurso /> },
     { roles: ['preceptor'], path: 'oferta-academica/calendario', element: <PreceptorCalendario /> },
     { roles: ['preceptor'], path: 'oferta-academica/nuevo-ciclo', element: <PreceptorNuevoCiclo /> },
+    { roles: ['preceptor'], path: 'periodos', element: <PreceptorPeriodos /> },
+    { roles: ['preceptor'], path: 'periodos/nuevo', element: <PreceptorPeriodoForm /> },
+    { roles: ['preceptor'], path: 'periodos/:termId/editar', element: <PreceptorPeriodoForm /> },
   ],
 };
