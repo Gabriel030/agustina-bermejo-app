@@ -1,6 +1,7 @@
 package com.red_escuela.backend.platform.service;
 
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.platform.domain.BillingModeChangeClearance;
 import com.red_escuela.backend.platform.domain.BillingModeStateMachine;
 import com.red_escuela.backend.platform.domain.FeatureChange;
 import com.red_escuela.backend.platform.domain.FeatureState;
@@ -10,6 +11,7 @@ import com.red_escuela.backend.platform.entity.PlatformFeature;
 import com.red_escuela.backend.platform.exception.FeatureAlreadyInRequestedStateException;
 import com.red_escuela.backend.platform.exception.FeatureNotProvisionedException;
 import com.red_escuela.backend.platform.exception.FeatureValueInvalidException;
+import com.red_escuela.backend.platform.exception.InvalidTransitionConfirmationException;
 import com.red_escuela.backend.platform.exception.StaleFeatureVersionException;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import com.red_escuela.backend.shared.module.BillingMode;
@@ -32,6 +34,7 @@ public class PlatformFeatureChanger {
     private final FeatureChangeJsonWriter jsonWriter;
     private final FeatureSnapshotHolder snapshotHolder;
     private final CurrentActorFinder currentActorFinder;
+    private final FeatureTransitionConfirmationSigner confirmationSigner;
     private final Clock clock;
 
     public PlatformFeatureChanger(
@@ -41,6 +44,7 @@ public class PlatformFeatureChanger {
             FeatureChangeJsonWriter jsonWriter,
             FeatureSnapshotHolder snapshotHolder,
             CurrentActorFinder currentActorFinder,
+            FeatureTransitionConfirmationSigner confirmationSigner,
             Clock clock) {
         this.featureRepository = featureRepository;
         this.changeLogRepository = changeLogRepository;
@@ -48,6 +52,7 @@ public class PlatformFeatureChanger {
         this.jsonWriter = jsonWriter;
         this.snapshotHolder = snapshotHolder;
         this.currentActorFinder = currentActorFinder;
+        this.confirmationSigner = confirmationSigner;
         this.clock = clock;
     }
 
@@ -65,7 +70,7 @@ public class PlatformFeatureChanger {
             throw new FeatureAlreadyInRequestedStateException(change.code());
         }
         if (change.code().hasMode()) {
-            BillingModeStateMachine.requireTransitionAllowed(before.mode(), requested.mode(), change.clearance());
+            BillingModeStateMachine.requireTransitionAllowed(before.mode(), requested.mode(), clearanceOf(change, before, requested, feature.getVersion()));
         }
         Long actorPersonId = currentActorFinder.currentPersonId();
         LocalDateTime changedAt = LocalDateTime.now(clock);
@@ -82,6 +87,16 @@ public class PlatformFeatureChanger {
                 .build());
         refreshSnapshotAfterCommit();
         return after;
+    }
+
+    private BillingModeChangeClearance clearanceOf(FeatureChange change, FeatureState before, FeatureState requested, long featureVersion) {
+        if (change.previewConfirmationToken() == null) {
+            return change.clearance();
+        }
+        if (!confirmationSigner.isConfirmationValid(change.previewConfirmationToken(), change.code(), before.mode(), requested.mode(), featureVersion)) {
+            throw new InvalidTransitionConfirmationException();
+        }
+        return new BillingModeChangeClearance(change.clearance().cutoverCompleted(), true);
     }
 
     private FeatureState resolveRequestedState(FeatureChange change, PlatformFeature feature) {

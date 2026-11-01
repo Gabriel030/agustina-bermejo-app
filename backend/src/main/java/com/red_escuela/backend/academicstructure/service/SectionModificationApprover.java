@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.SectionModificationNotPendingException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
@@ -24,6 +25,7 @@ public class SectionModificationApprover {
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionModificationProposalRepository proposalRepository;
     private final SectionConflictChecker conflictChecker;
+    private final ClassroomRepository classroomRepository;
     private final Clock clock;
 
     public SectionModificationApprover(
@@ -31,12 +33,14 @@ public class SectionModificationApprover {
             SectionScheduleSlotRepository slotRepository,
             SectionModificationProposalRepository proposalRepository,
             SectionConflictChecker conflictChecker,
+            ClassroomRepository classroomRepository,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
         this.slotRepository = slotRepository;
         this.proposalRepository = proposalRepository;
         this.conflictChecker = conflictChecker;
+        this.classroomRepository = classroomRepository;
         this.clock = clock;
     }
 
@@ -58,6 +62,9 @@ public class SectionModificationApprover {
     }
 
     private void replaceSchedule(SubjectSection section, SectionModificationProposal proposal) {
+        classroomRepository.lockAllByIdOrdered(proposal.getSlots().stream()
+                .map(slot -> slot.getClassroom().getId())
+                .collect(Collectors.toSet()));
         var current = slotRepository.findBySubjectSectionId(section.getId());
         Set<Long> currentIds = current.stream().map(SectionScheduleSlot::getId).collect(Collectors.toSet());
         for (var proposed : proposal.getSlots()) {

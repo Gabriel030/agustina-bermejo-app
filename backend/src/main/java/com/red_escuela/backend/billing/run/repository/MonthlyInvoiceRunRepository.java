@@ -14,9 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface MonthlyInvoiceRunRepository extends JpaRepository<MonthlyInvoiceRun, Long> {
+
+    long countByStatusIn(Collection<MonthlyInvoiceRunStatus> statuses);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from MonthlyInvoiceRun r where r.id = :id")

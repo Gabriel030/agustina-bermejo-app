@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.run.repository;
 
 import com.red_escuela.backend.billing.run.domain.NightlyBillingRun;
+import com.red_escuela.backend.billing.run.domain.NightlyBillingRunStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface NightlyBillingRunRepository extends JpaRepository<NightlyBillingRun, Long> {
+
+    long countByStatus(NightlyBillingRunStatus status);
 
     boolean existsByBusinessDate(LocalDate businessDate);
 

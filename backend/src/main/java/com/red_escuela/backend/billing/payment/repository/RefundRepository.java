@@ -12,6 +12,8 @@ import java.util.Optional;
 
 public interface RefundRepository extends Repository<Refund, Long> {
 
+    long countByStatusIn(Collection<RefundStatus> statuses);
+
     Refund save(Refund refund);
 
     Optional<Refund> findById(Long id);
