@@ -1715,7 +1715,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "enabled", "mode", "previewConfirmationToken", "reason" ],
+        "required" : [ "enabled", "mode", "reason" ],
         "type" : "object"
       },
       "ChangePasswordRequest" : {
