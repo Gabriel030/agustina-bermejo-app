@@ -19,6 +19,9 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
 
+    @Query("select a.justificationAttachmentUrl from Attendance a where a.id = :attendanceId and a.justificationAttachmentUrl is not null")
+    Optional<String> findJustificationAttachmentKeyById(@Param("attendanceId") Long attendanceId);
+
     Page<Attendance> findByStatus(AttendanceStatus status, Pageable pageable);
 
     Page<Attendance> findByStatusAndJustificationReasonIsNotNull(AttendanceStatus status, Pageable pageable);

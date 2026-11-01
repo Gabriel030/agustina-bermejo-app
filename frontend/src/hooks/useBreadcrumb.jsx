@@ -15,6 +15,7 @@ const ETIQUETA_TAB = {
   notas: 'Notas',
   'mesas-de-examen': 'Mesas de examen',
   asistencia: 'Asistencia',
+  egreso: 'Egreso',
 };
 
 const ETIQUETA_TAB_PADRON = {
