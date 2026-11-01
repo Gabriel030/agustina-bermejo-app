@@ -1,6 +1,6 @@
 package com.red_escuela.backend.platform.guard;
 
-import com.red_escuela.backend.platform.api.RequiresModule;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -25,7 +25,7 @@ public class ModuleGuardAspect {
         this.moduleGuard = moduleGuard;
     }
 
-    @Around("(@annotation(com.red_escuela.backend.platform.api.RequiresModule) || @within(com.red_escuela.backend.platform.api.RequiresModule))"
+    @Around("(@annotation(com.red_escuela.backend.shared.module.RequiresModule) || @within(com.red_escuela.backend.shared.module.RequiresModule))"
             + " && !@within(org.springframework.web.bind.annotation.RestController)")
     public Object skipWhenModuleIsUnavailable(ProceedingJoinPoint joinPoint) throws Throwable {
         Class<?> targetClass = AopUtils.getTargetClass(joinPoint.getTarget());

@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.discount.usecase.FindDiscountDefinitionUs
 import com.red_escuela.backend.billing.discount.usecase.ListDiscountDefinitionsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ValidateDiscountDefinitionUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/discount-definitions")
 public class DiscountDefinitionController {
     private final ListDiscountDefinitionsUseCase listUseCase;

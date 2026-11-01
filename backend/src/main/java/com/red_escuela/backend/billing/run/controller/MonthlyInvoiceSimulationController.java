@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.run.controller;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceSimulationRequest;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceSimulationResponse;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceSimulationUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/monthly-invoice-runs/simulations")
 @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class MonthlyInvoiceSimulationController {

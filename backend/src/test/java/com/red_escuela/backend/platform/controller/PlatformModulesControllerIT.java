@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import com.red_escuela.backend.platform.repository.FeatureChangeLogRepository;
 import com.red_escuela.backend.platform.repository.PlatformFeatureRepository;

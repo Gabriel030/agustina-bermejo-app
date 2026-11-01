@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.payment.dto.PaymentReversalPreviewRespons
 import com.red_escuela.backend.billing.payment.dto.RegisterChargebackRequest;
 import com.red_escuela.backend.billing.payment.dto.RevokeBankTransferApprovalRequest;
 import com.red_escuela.backend.billing.payment.usecase.PreviewPaymentReversalUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class PaymentReversalPreviewController {
     private final PreviewPaymentReversalUseCase previewPaymentReversalUseCase;
 

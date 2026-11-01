@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.reporting.controller;
 
 import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/students")
 @Tag(name = "student-controller")
 public class StudentBillingOverviewController {

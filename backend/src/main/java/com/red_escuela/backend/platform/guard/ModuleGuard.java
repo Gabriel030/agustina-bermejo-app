@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.guard;
 
 import com.red_escuela.backend.platform.api.BillingModeGate;
-import com.red_escuela.backend.platform.api.RequiresModule;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.platform.exception.UnknownGuardedModuleException;
 import org.springframework.stereotype.Component;
 

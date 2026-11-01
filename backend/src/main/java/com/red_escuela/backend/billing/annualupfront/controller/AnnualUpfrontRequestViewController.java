@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontRequestDet
 import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontRequestPageResponse;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestSearch;
 import com.red_escuela.backend.billing.annualupfront.usecase.ViewAnnualUpfrontRequestUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class AnnualUpfrontRequestViewController {
     private final ViewAnnualUpfrontRequestUseCase viewUseCase;
 

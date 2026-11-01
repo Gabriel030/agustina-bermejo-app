@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentUseC
 import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class CreditNoteController {
     private final IssueCreditNoteUseCase issueCreditNoteUseCase;
     private final ListCreditNotesOfStudentUseCase listCreditNotesOfStudentUseCase;

@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.payment.controller;
 import com.red_escuela.backend.billing.payment.dto.StudentCreditBalanceResponse;
 import com.red_escuela.backend.billing.payment.usecase.DescribeStudentCreditBalanceUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class StudentCreditBalanceController {
     private static final String CURRENCY_DEFAULT = "ARS";
 

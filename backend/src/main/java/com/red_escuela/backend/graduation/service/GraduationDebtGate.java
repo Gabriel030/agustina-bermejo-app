@@ -1,7 +1,7 @@
 package com.red_escuela.backend.graduation.service;
 
 import com.red_escuela.backend.platform.api.BillingModeGate;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import org.springframework.stereotype.Service;
 
 @Service

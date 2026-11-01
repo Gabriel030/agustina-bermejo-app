@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.note.dto.InvoiceCancellationPreviewRespon
 import com.red_escuela.backend.billing.note.usecase.CancelInvoiceUseCase;
 import com.red_escuela.backend.billing.note.usecase.PreviewInvoiceCancellationUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class InvoiceCancellationController {
     private final CancelInvoiceUseCase cancelInvoiceUseCase;
 

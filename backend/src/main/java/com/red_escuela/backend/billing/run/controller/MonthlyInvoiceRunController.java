@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.run.dto.RunPage;
 import com.red_escuela.backend.billing.run.usecase.ManualMonthlyInvoiceItemRetryUseCase;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunDraftQueryUseCase;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunQueryUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +26,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/monthly-invoice-runs")
 @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class MonthlyInvoiceRunController {
