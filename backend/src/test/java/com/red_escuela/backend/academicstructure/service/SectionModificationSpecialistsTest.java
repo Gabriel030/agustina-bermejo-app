@@ -82,7 +82,7 @@ class SectionModificationSpecialistsTest {
     }
 
     private SectionModificationApprover approver() {
-        return new SectionModificationApprover(sectionRepository, slotRepository, proposalRepository, conflictChecker, CLOCK);
+        return new SectionModificationApprover(sectionRepository, slotRepository, proposalRepository, conflictChecker, classroomRepository, CLOCK);
     }
 
     private SectionModificationRejecter rejecter() {
