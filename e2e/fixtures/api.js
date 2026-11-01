@@ -26,6 +26,14 @@ export class BackendApi {
     return { status: response.status(), body: response.ok() ? await response.json() : null };
   }
 
+  async post(path, data) {
+    const response = await this.request.post(`${BACKEND_URL}${path}`, { headers: this.headers, data });
+    if (!response.ok()) {
+      throw new Error(`POST ${path} failed: ${response.status()}`);
+    }
+    return response.json();
+  }
+
   async put(path, data) {
     const response = await this.request.put(`${BACKEND_URL}${path}`, { headers: this.headers, data });
     if (!response.ok()) {
