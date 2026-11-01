@@ -1,8 +1,6 @@
 package com.red_escuela.backend.billing.run.service;
 
-import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceOpenWorkCounter;
 import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
 import com.red_escuela.backend.billing.payment.domain.RefundStatus;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
@@ -38,13 +36,11 @@ public class BillingShutdownImpactCounter implements BillingShutdownImpactPort {
             "NightlyBillingJob",
             "OverdueReceiptReviewAlertJob");
 
-    private static final Set<InvoicePaymentStatus> OPEN_PAYMENT_STATUSES =
-            Set.of(InvoicePaymentStatus.PENDING, InvoicePaymentStatus.OVERDUE, InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
     private static final Set<PaymentStatus> UNRECONCILED_PAYMENT_STATUSES = Set.of(PaymentStatus.PENDING, PaymentStatus.AUTHORIZED);
     private static final Set<MonthlyInvoiceRunStatus> MONTHLY_RUNS_IN_PROGRESS =
             Set.of(MonthlyInvoiceRunStatus.RUNNING, MonthlyInvoiceRunStatus.AWAITING_REVIEW);
 
-    private final InvoiceRepository invoiceRepository;
+    private final InvoiceOpenWorkCounter invoiceOpenWorkCounter;
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
     private final MonthlyInvoiceRunRepository monthlyInvoiceRunRepository;
@@ -52,13 +48,13 @@ public class BillingShutdownImpactCounter implements BillingShutdownImpactPort {
     private final BillingRunRepository billingRunRepository;
 
     public BillingShutdownImpactCounter(
-            InvoiceRepository invoiceRepository,
+            InvoiceOpenWorkCounter invoiceOpenWorkCounter,
             PaymentRepository paymentRepository,
             RefundRepository refundRepository,
             MonthlyInvoiceRunRepository monthlyInvoiceRunRepository,
             NightlyBillingRunRepository nightlyBillingRunRepository,
             BillingRunRepository billingRunRepository) {
-        this.invoiceRepository = invoiceRepository;
+        this.invoiceOpenWorkCounter = invoiceOpenWorkCounter;
         this.paymentRepository = paymentRepository;
         this.refundRepository = refundRepository;
         this.monthlyInvoiceRunRepository = monthlyInvoiceRunRepository;
@@ -72,12 +68,13 @@ public class BillingShutdownImpactCounter implements BillingShutdownImpactPort {
         long runsInProgress = monthlyInvoiceRunRepository.countByStatusIn(MONTHLY_RUNS_IN_PROGRESS)
                 + nightlyBillingRunRepository.countByStatus(NightlyBillingRunStatus.RUNNING)
                 + billingRunRepository.countByStatus(BillingRunStatus.RUNNING);
+        InvoiceOpenWorkCounter.InvoiceOpenWork invoices = invoiceOpenWorkCounter.countOpenWork();
         return new BillingShutdownImpact(
-                invoiceRepository.countByDocumentStatusAndPaymentStatusIn(InvoiceDocumentStatus.ISSUED, OPEN_PAYMENT_STATUSES),
-                invoiceRepository.countByDocumentStatusAndPaymentStatusIn(InvoiceDocumentStatus.ISSUED, Set.of(InvoicePaymentStatus.OVERDUE)),
-                invoiceRepository.countByDocumentStatus(InvoiceDocumentStatus.DRAFT),
-                invoiceRepository.countByDocumentStatus(InvoiceDocumentStatus.AWAITING_PAYMENT),
-                invoiceRepository.countByDocumentStatusAndPaymentStatusIn(InvoiceDocumentStatus.ISSUED, Set.of(InvoicePaymentStatus.PAYMENT_UNDER_REVIEW)),
+                invoices.open(),
+                invoices.overdue(),
+                invoices.drafts(),
+                invoices.awaitingPayment(),
+                invoices.underPaymentReview(),
                 paymentRepository.countByStatusIn(UNRECONCILED_PAYMENT_STATUSES),
                 refundRepository.countByStatusIn(RefundStatus.PENDING),
                 runsInProgress,
