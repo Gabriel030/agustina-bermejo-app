@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.annualupfront.dto.DiscardedAnnualUpfrontR
 import com.red_escuela.backend.billing.annualupfront.dto.RequestAnnualUpfrontBody;
 import com.red_escuela.backend.billing.annualupfront.usecase.DiscardAnnualUpfrontRequestUseCase;
 import com.red_escuela.backend.billing.annualupfront.usecase.RequestAnnualUpfrontUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class AnnualUpfrontRequestController {
     private final RequestAnnualUpfrontUseCase requestUseCase;
 

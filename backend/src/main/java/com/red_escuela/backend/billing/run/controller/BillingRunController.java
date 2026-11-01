@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.run.dto.NightlyBillingExecutionResponse;
 import com.red_escuela.backend.billing.run.dto.NightlyBillingRunResponse;
 import com.red_escuela.backend.billing.run.usecase.BillingRunExecutionUseCase;
 import com.red_escuela.backend.billing.run.usecase.BillingRunQueryUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing-runs")
 @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class BillingRunController {

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.platform.dto;
 
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.service.FeatureChangeReasonValidator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

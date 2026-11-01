@@ -1,6 +1,6 @@
 package com.red_escuela.backend.architecture.fixture.guard.job;
 
-import com.red_escuela.backend.platform.api.RequiresModule;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @RequiresModule("billing")

@@ -18,6 +18,7 @@ import com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTe
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramBillingTemplatesUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramCohortsForProgramUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramCohortsForTemplateUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +34,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class ProgramYearBillingTemplateController {
     private final CreateProgramYearBillingTemplateUseCase createTemplateUseCase;
     private final CreateProgramCohortUseCase createCohortUseCase;

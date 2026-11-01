@@ -1,12 +1,12 @@
 package com.red_escuela.backend.platform.guard;
 
 import com.red_escuela.backend.platform.api.BillingModeGate;
-import com.red_escuela.backend.platform.api.RequiresModule;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.platform.domain.FeatureSnapshot;
 import com.red_escuela.backend.platform.domain.FeatureState;
 import com.red_escuela.backend.platform.exception.UnknownGuardedModuleException;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

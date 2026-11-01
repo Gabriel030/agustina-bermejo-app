@@ -1,6 +1,6 @@
 package com.red_escuela.backend.platform.domain;
 
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 
 public record FeatureState(boolean enabled, BillingMode mode, long version) {
 

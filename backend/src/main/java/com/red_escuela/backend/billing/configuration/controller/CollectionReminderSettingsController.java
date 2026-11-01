@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.configuration.usecase.ListConfigurationVe
 import com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfigurationChangeUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ValidateBillingConfigurationChangeUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS")
 public class CollectionReminderSettingsController {
     private static final ConfigurationTopic TOPIC = ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS);

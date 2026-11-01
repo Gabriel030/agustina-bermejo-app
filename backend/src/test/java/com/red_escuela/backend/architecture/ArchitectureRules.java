@@ -331,10 +331,10 @@ public final class ArchitectureRules {
         ArchCondition<JavaClass> condition = new ArchCondition<>("declare @RequiresModule on the class or on every request mapping") {
             @Override
             public void check(JavaClass controller, ConditionEvents events) {
-                boolean classGuarded = controller.isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class);
+                boolean classGuarded = controller.isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class);
                 java.util.List<String> unguarded = controller.getMethods().stream()
                         .filter(method -> REQUEST_MAPPINGS.stream().anyMatch(method::isAnnotatedWith))
-                        .filter(method -> !method.isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class))
+                        .filter(method -> !method.isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class))
                         .map(method -> method.getName())
                         .sorted()
                         .toList();
@@ -357,8 +357,8 @@ public final class ArchitectureRules {
         ArchCondition<com.tngtech.archunit.core.domain.JavaMethod> condition = new ArchCondition<>("be guarded by @RequiresModule on the method or its class") {
             @Override
             public void check(com.tngtech.archunit.core.domain.JavaMethod method, ConditionEvents events) {
-                boolean guarded = method.isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class)
-                        || method.getOwner().isAnnotatedWith(com.red_escuela.backend.platform.api.RequiresModule.class);
+                boolean guarded = method.isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class)
+                        || method.getOwner().isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class);
                 events.add(new SimpleConditionEvent(method, guarded, method.getFullName() + " is a job or listener without @RequiresModule"));
             }
         };

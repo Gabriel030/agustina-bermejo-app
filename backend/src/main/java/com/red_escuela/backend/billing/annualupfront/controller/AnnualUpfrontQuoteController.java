@@ -2,11 +2,13 @@ package com.red_escuela.backend.billing.annualupfront.controller;
 
 import com.red_escuela.backend.billing.annualupfront.dto.AnnualUpfrontQuoteResponse;
 import com.red_escuela.backend.billing.annualupfront.usecase.QuoteAnnualUpfrontUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class AnnualUpfrontQuoteController {
     private final QuoteAnnualUpfrontUseCase quoteUseCase;
 

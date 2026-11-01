@@ -1,6 +1,6 @@
 package com.red_escuela.backend.platform.service;
 
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

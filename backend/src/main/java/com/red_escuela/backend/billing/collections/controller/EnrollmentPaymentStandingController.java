@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.dto.EnrollmentPaymentStandingResponse;
 import com.red_escuela.backend.billing.collections.dto.EnrollmentPaymentStatusChangeResponse;
 import com.red_escuela.backend.billing.collections.usecase.GetEnrollmentPaymentStandingUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class EnrollmentPaymentStandingController {
     private final GetEnrollmentPaymentStandingUseCase getEnrollmentPaymentStandingUseCase;
 

@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.reporting.exception.UnknownMetricPanelExc
 import com.red_escuela.backend.billing.reporting.usecase.GetFirstBillingMonthUseCase;
 import com.red_escuela.backend.billing.reporting.usecase.GetMonthlyBillingMetricsCommand;
 import com.red_escuela.backend.billing.reporting.usecase.GetMonthlyBillingMetricsUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.YearMonth;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing/metrics")
 @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
 public class BillingMetricsController {

@@ -1,8 +1,5 @@
-package com.red_escuela.backend.platform.model;
+package com.red_escuela.backend.shared.module;
 
-import org.springframework.modulith.NamedInterface;
-
-@NamedInterface("model")
 public enum BillingMode {
     OFF,
     MIRROR,

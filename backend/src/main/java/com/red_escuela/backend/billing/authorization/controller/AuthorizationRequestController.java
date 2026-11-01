@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.authorization.usecase.ListAuthorizationRe
 import com.red_escuela.backend.billing.authorization.usecase.RejectAuthorizationRequestUseCase;
 import com.red_escuela.backend.billing.authorization.usecase.WithdrawAuthorizationRequestUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Set;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class AuthorizationRequestController {
     private final ApproveAuthorizationRequestUseCase approveUseCase;
     private final RejectAuthorizationRequestUseCase rejectUseCase;

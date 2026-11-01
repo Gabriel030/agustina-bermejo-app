@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.collections.domain.OverdueContactFilter;
 import com.red_escuela.backend.billing.collections.domain.OverdueContactReason;
 import com.red_escuela.backend.billing.collections.dto.OverdueContactPageResponse;
 import com.red_escuela.backend.billing.collections.usecase.ListOverdueContactsUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/collection-reminders")
 public class OverdueContactListController {
     private final ListOverdueContactsUseCase listOverdueContactsUseCase;

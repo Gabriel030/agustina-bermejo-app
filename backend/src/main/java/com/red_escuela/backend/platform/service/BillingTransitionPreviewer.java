@@ -8,7 +8,7 @@ import com.red_escuela.backend.platform.entity.PlatformFeature;
 import com.red_escuela.backend.platform.exception.FeatureAlreadyInRequestedStateException;
 import com.red_escuela.backend.platform.exception.FeatureNotProvisionedException;
 import com.red_escuela.backend.platform.exception.FeatureValueInvalidException;
-import com.red_escuela.backend.platform.model.BillingMode;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import com.red_escuela.backend.platform.repository.PlatformFeatureRepository;
 import org.springframework.stereotype.Service;

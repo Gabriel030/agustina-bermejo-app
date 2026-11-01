@@ -15,6 +15,7 @@ import com.red_escuela.backend.billing.configuration.usecase.ListReminderSchedul
 import com.red_escuela.backend.billing.configuration.usecase.ProposeReminderScheduleChangeUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ValidateReminderScheduleChangeUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing-configuration/collection-reminder-schedules")
 @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
 public class CollectionReminderScheduleController {
