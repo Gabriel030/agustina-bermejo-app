@@ -19,6 +19,9 @@ public class InstructorProfileCreator implements InstructorProfileCreationPort {
     @Override
     @Transactional
     public void createInstructorProfile(Person person) {
+        if (instructorRepository.findByPerson_Id(person.getId()).isPresent()) {
+            return;
+        }
         Instructor instructor = new Instructor();
         instructor.setPerson(person);
         instructorRepository.save(instructor);
