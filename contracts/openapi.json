@@ -1704,13 +1704,18 @@
             "enum" : [ "OFF", "MIRROR", "FULL" ],
             "type" : "string"
           },
+          "previewConfirmationToken" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "reason" : {
             "maxLength" : 500,
             "minLength" : 5,
             "type" : "string"
           }
         },
-        "required" : [ "enabled", "mode", "reason" ],
+        "required" : [ "enabled", "mode", "previewConfirmationToken", "reason" ],
         "type" : "object"
       },
       "ChangePasswordRequest" : {
@@ -4430,6 +4435,38 @@
         "required" : [ "code", "enabled", "mode", "version" ],
         "type" : "object"
       },
+      "FeatureTransitionPreviewResponse" : {
+        "properties" : {
+          "code" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          },
+          "confirmationExpiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "confirmationToken" : {
+            "type" : "string"
+          },
+          "currentMode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          },
+          "currentVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "impact" : {
+            "$ref" : "#/components/schemas/Impact"
+          },
+          "targetMode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "confirmationExpiresAt", "confirmationToken", "currentMode", "currentVersion", "impact", "targetMode" ],
+        "type" : "object"
+      },
       "FinancialDashboardResponse" : {
         "properties" : {
           "studentsInDebt" : {
@@ -4699,6 +4736,50 @@
           }
         },
         "required" : [ "date", "description", "id" ],
+        "type" : "object"
+      },
+      "Impact" : {
+        "properties" : {
+          "invoicesAwaitingPayment" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "invoicesUnderPaymentReview" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "openInvoices" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "overdueInvoices" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paymentsPendingReconciliation" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pendingDraftInvoices" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "refundsInProgress" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "runsInProgress" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "scheduledJobs" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "invoicesAwaitingPayment", "invoicesUnderPaymentReview", "openInvoices", "overdueInvoices", "paymentsPendingReconciliation", "pendingDraftInvoices", "refundsInProgress", "runsInProgress", "scheduledJobs" ],
         "type" : "object"
       },
       "InstitutionResponse" : {
@@ -28424,6 +28505,83 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/FeatureStateResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "platform-feature-controller" ]
+      }
+    },
+    "/platform/features/{code}/preview" : {
+      "get" : {
+        "operationId" : "PlatformFeature_previewFeatureChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "target",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeatureTransitionPreviewResponse"
                 }
               }
             },

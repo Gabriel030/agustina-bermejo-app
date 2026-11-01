@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.invoice.repository;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,10 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     void flush();
 
     long count();
+
+    long countByDocumentStatus(InvoiceDocumentStatus documentStatus);
+
+    long countByDocumentStatusAndPaymentStatusIn(InvoiceDocumentStatus documentStatus, Collection<InvoicePaymentStatus> paymentStatuses);
 
     List<Invoice> findAll();
 

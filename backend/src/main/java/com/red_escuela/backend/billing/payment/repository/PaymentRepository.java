@@ -15,6 +15,8 @@ public interface PaymentRepository extends Repository<Payment, Long> {
 
     Payment save(Payment payment);
 
+    long countByStatusIn(Collection<PaymentStatus> statuses);
+
     Optional<Payment> findById(Long id);
 
     @Query("select p.studentCurrentAccountId from Payment p where p.id = :paymentId")
