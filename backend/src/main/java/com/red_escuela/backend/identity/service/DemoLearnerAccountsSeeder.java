@@ -34,7 +34,10 @@ public class DemoLearnerAccountsSeeder implements ApplicationRunner {
     private static final List<LearnerAccount> LEARNERS = List.of(
             new LearnerAccount("alumno.demo", "Alumno", "Demo"),
             new LearnerAccount("alumno.egreso.demo", "Alumno Egreso", "Demo"),
-            new LearnerAccount("alumno.cursos.demo", "Alumno Cursos", "Demo"));
+            new LearnerAccount("alumno.cursos.demo", "Alumno Cursos", "Demo"),
+            new LearnerAccount("alumno.inscripcion.demo", "Alumno Inscripción", "Demo"),
+            new LearnerAccount("alumno.cupo.demo", "Alumno Cupo", "Demo"),
+            new LearnerAccount("alumno.notas.demo", "Alumno Notas", "Demo"));
 
     private final LocalSeedRunner demoAccountsSeed;
     private final PersonRepository personRepository;

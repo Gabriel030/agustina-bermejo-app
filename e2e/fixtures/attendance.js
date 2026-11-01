@@ -1,7 +1,8 @@
 import { BackendApi } from './api.js';
 
-const FIRST_UNUSED_CLASS_DATE = Date.UTC(2040, 0, 1);
-const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+const FIRST_UNUSED_YEAR = 2040;
+const DAYS_PER_MONTH_AVOIDING_SEEDED_ONES = 9;
+const FIRST_DAY_OF_MONTH_AVOIDING_SEEDED_ONES = 20;
 const DISTINCT_CLASS_DATES = 36_500;
 
 export const RECEIPT_FILE = {
@@ -10,9 +11,11 @@ export const RECEIPT_FILE = {
   buffer: Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n'),
 };
 
-function nextUnusedClassDate() {
+export function nextUnusedClassDate() {
   const offset = Math.floor(Date.now() / 1000) % DISTINCT_CLASS_DATES;
-  return new Date(FIRST_UNUSED_CLASS_DATE + offset * DAY_IN_MILLISECONDS).toISOString().slice(0, 10);
+  const month = Math.floor(offset / DAYS_PER_MONTH_AVOIDING_SEEDED_ONES);
+  const day = FIRST_DAY_OF_MONTH_AVOIDING_SEEDED_ONES + (offset % DAYS_PER_MONTH_AVOIDING_SEEDED_ONES);
+  return new Date(Date.UTC(FIRST_UNUSED_YEAR, month, day)).toISOString().slice(0, 10);
 }
 
 export async function recordFreshAbsenceForDemoStudent(request) {

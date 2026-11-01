@@ -9,6 +9,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -45,10 +46,14 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     private static final byte[] MEDICAL_CERTIFICATE_PDF =
             "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
 
-    private final Environment environment;
+    private static final String ABSENCE_LIMITED_SECTION_FRACTION = "0.25";
 
-    public DemoEducationalSeedRunner(Environment environment) {
+    private final Environment environment;
+    private final JdbcTemplate jdbcTemplate;
+
+    public DemoEducationalSeedRunner(Environment environment, JdbcTemplate jdbcTemplate) {
         this.environment = environment;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -73,6 +78,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         List<Long> sectionIds = createSectionsWithLeadTeacher(api, subjectIds, termId, schemeId, instructorId);
         long regularStudentId = findStudentId(api, REGULAR_STUDENT);
         enrollRegularStudent(api, regularStudentId, programId, sectionIds);
+        limitAbsencesOfSection(sectionIds.get(1));
         enrollGraduatingStudent(api, termId, schemeId, instructorId);
         seedLooseCourse(api, termId, schemeId, instructorId);
         log.info("Seed demo educativo creado: carrera={}, ciclo={}, curso={}", PROGRAM_NAME, TERM_DESCRIPTION, COURSE_NAME);
@@ -196,6 +202,10 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         }
         api.post(TEACHER, "/section-enrollments/" + sectionEnrollmentIds.get(0) + "/grade-items", Map.of("type", "EXAM", "date", "2026-04-15T00:00:00", "score", 7));
         justifyFirstAbsence(api, sectionEnrollmentIds.get(0));
+    }
+
+    private void limitAbsencesOfSection(long sectionId) {
+        jdbcTemplate.update("update subject_section set max_absence_percentage = ?::numeric where id = ?", ABSENCE_LIMITED_SECTION_FRACTION, sectionId);
     }
 
     private void enrollGraduatingStudent(DemoApiClient api, long termId, long schemeId, long instructorId) {

@@ -19,6 +19,7 @@ import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -32,6 +33,8 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
     private int port;
     @Autowired
     private Environment environment;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     @Autowired
     private PersonRepository personRepository;
     @Autowired
@@ -54,7 +57,7 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
         LocalSeedRunner localSeedRunner = new LocalSeedRunner(personRepository, roleRepository, personFactory, passwordEncoder);
         new DemoLearnerAccountsSeeder(localSeedRunner, personRepository, roleRepository, personFactory, passwordEncoder,
                 institutionRepository, studentRepository, instructorProfileCreationPort).run(arguments);
-        new DemoEducationalSeedRunner(environment).seedThroughPort(port);
+        new DemoEducationalSeedRunner(environment, jdbcTemplate).seedThroughPort(port);
         api = new DemoApiClient(port);
     }
 
@@ -84,6 +87,17 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
         seed();
 
         assertThat(api.get("administrativo.demo", "/attendance/justifications")).isNotEmpty();
+    }
+
+    @Test
+    void seedLeavesASectionWithAbsenceLimitSoRiskIsCalculable() {
+        seed();
+
+        long limitedSectionEnrollmentId = api.get("alumno.demo", "/me/section-enrollments").get(1).get("id").asLong();
+        JsonNode risk = api.get("alumno.demo", "/me/section-enrollments/" + limitedSectionEnrollmentId + "/attendance/risk");
+
+        assertThat(risk.get("calculable").asBoolean()).isTrue();
+        assertThat(risk.get("libre").asBoolean()).isTrue();
     }
 
     @Test

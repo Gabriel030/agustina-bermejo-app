@@ -13,6 +13,8 @@ Dos configuraciones, cada una con su propio backend de sistema (Postgres de Test
 
 El seed demo es idempotente y los specs de `specs/demo` no dependen de su estado: cada test crea sus propios datos por API (por ejemplo `fixtures/attendance.js` registra una inasistencia nueva con una fecha de clase única) y puede correrse varias veces contra el mismo backend.
 
+Los specs de inscripción y notas usan las cuentas `alumno.inscripcion.demo`, `alumno.cupo.demo` y `alumno.notas.demo` (seed demo, sin datos propios): cada test crea una carrera, materia y comisión nuevas por API (`fixtures/academic.js`), da de baja las inscripciones vigentes de la cuenta y la matricula en la carrera nueva. El spec de inscripción corre en serie porque comparte cuentas.
+
 ## CI
 
-No hay job de E2E en el workflow. Cómo sería: un job con Docker, `node 20`, JDK 21 y `scripts/system-tests.sh --config playwright.demo.config.js` (el flujo de asistencia tarda ~25 s; el arranque en frío del backend demo y el build del front suman ~3 a 4 min en una máquina cargada), con `retries: 1` (ya activo con `CI`) y el reporte HTML (`playwright-report/`) como artefacto.
+No hay job de E2E en el workflow. Cómo sería: un job con Docker, `node 20`, JDK 21 y `scripts/system-tests.sh --config playwright.demo.config.js` (el flujo de asistencia tarda ~25 s, inscripción, notas y riesgo de asistencia 3 a 10 s cada uno; el arranque en frío del backend demo y el build del front suman ~3 a 4 min en una máquina cargada), con `retries: 1` (ya activo con `CI`) y el reporte HTML (`playwright-report/`) como artefacto.
