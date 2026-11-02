@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.enrollment.api.AdmissionApplicationExpiryPort;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
@@ -25,6 +27,7 @@ public class AdmissionApplicationExpiryJob {
         this.clock = clock;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @Scheduled(cron = "0 20 0 * * *", zone = "${app.timezone}")
     @SchedulerLock(name = "AdmissionApplicationExpiryJob", lockAtMostFor = "PT30M")
     public void expireApplicationsWhoseAdmissionClosedUnpaid() {

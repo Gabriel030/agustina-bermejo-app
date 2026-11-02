@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
@@ -48,6 +50,7 @@ public class LeftOutInvoiceCancellationOnReceiptRejectionListener {
         this.cancelInvoiceOperation = cancelInvoiceOperation;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void cancelInvoiceLeftOutOfWithdrawalWhoseReceiptWasRejected(InvoicePaymentReviewReleasedEvent event) {
         cancelIfLeftOutOfWithdrawal(event.invoiceId());

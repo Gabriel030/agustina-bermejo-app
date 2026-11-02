@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentDebtFactsQuery;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
@@ -23,11 +25,13 @@ public class EnrollmentPaymentStandingOnInvoicePaidListener {
         this.standingService = standingService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void reevaluateStandingOfPaidInvoice(InvoicePaidDomainEvent event) {
         reevaluateStandingOfInvoice(event.invoiceId(), event.businessDate());
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void reevaluateStandingOfCancelledInvoice(InvoiceCancelledEvent event) {
         reevaluateStandingOfInvoice(event.invoiceId(), event.businessDate());

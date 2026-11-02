@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.run.domain.NightlyBillingSchedule;
 import com.red_escuela.backend.billing.run.domain.NightlyBillingTrigger;
 import com.red_escuela.backend.billing.run.service.NightlyBillingRunner;
@@ -22,6 +24,7 @@ public class NightlyBillingJob {
         this.clock = clock;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @Scheduled(cron = CRON, zone = "${app.timezone}")
     @SchedulerLock(name = "NightlyBillingJob", lockAtMostFor = "PT2H")
     public void run() {

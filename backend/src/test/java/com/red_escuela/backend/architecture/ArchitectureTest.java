@@ -607,7 +607,7 @@ class ArchitectureTest {
 
     @Test
     void billingJobsAndListenersDeclareRequiresModule() {
-        FreezingArchRule.freeze(ArchitectureRules.billingJobsAndListenersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..")).check(MAIN_CLASSES);
+        ArchitectureRules.billingJobsAndListenersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..").check(MAIN_CLASSES);
     }
 
     @Test
