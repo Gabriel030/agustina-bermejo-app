@@ -26,7 +26,9 @@ export function TermRowMenu({ term, onEdit, onAction }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => onAction(term, 'open')}>Abrir inscripción ahora</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAction(term, 'close')}>Cerrar inscripción ahora</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAction(term, 'clear')}>Quitar apertura manual</DropdownMenuItem>
+            {term.enrollmentOverride && (
+              <DropdownMenuItem onSelect={() => onAction(term, 'clear')}>Quitar apertura manual</DropdownMenuItem>
+            )}
           </>
         )}
       </DropdownMenuContent>
