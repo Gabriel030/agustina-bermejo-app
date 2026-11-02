@@ -2,10 +2,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
 
   # Mismo criterio que carreras/cursos.feature — cubre lo que faltaba de TermController
   # además del alta (ya usada como setup en casi todos los dominios). El campo
-  # enrollmentOverride no se expone en TermResponse (ver TermResponse.from) — los
-  # endpoints de open/close/clear-override solo se verifican por status code, su efecto
-  # real sobre la ventana de inscripción ya está cubierto en el dominio Inscripciones
-  # académicas (decisión 5 de la spec de Procesos administrativos).
+  # TermResponse expone enrollmentOverride (null, OPEN o CLOSED) tras open/close/clear-override.
 
   Background:
     * url baseUrl
@@ -80,15 +77,33 @@ Feature: Catálogo — Períodos lectivos (TermController)
     When method post
     Then status 204
 
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.enrollmentOverride == 'OPEN'
+
     Given path '/terms', termId, 'enrollment', 'close'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 204
 
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.enrollmentOverride == 'CLOSED'
+
     Given path '/terms', termId, 'enrollment', 'clear-override'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 204
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.enrollmentOverride == null
 
     # Sobre un período inexistente — 404
     Given path '/terms', 999999, 'enrollment', 'open'
