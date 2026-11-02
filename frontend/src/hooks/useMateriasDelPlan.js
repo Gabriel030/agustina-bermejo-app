@@ -35,6 +35,7 @@ export function useMateriasDelPlan(carreraSeleccionada) {
           return {
             key: `plan-${programSubject.id}`,
             programSubjectId: programSubject.id,
+            subjectId: programSubject.subjectId,
             subjectCode: programSubject.subjectCode,
             subjectName: programSubject.subjectName,
             curricularYear: programSubject.curricularYear,
