@@ -70,10 +70,14 @@ public class CourseSectionService {
         section.setName(request.name());
         section.setSchedule(request.schedule());
         section.setCapacity(request.capacity());
+        section.setMaxAbsenceRate(request.maxAbsencePercent());
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(LocalDateTime.now());
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
+        }
+        if (request.maxAbsencePercent() != null) {
+            section.setMaxAbsenceRate(request.maxAbsencePercent());
         }
         return sectionRepository.save(section);
     }
