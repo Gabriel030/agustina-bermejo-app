@@ -2,7 +2,7 @@ package com.red_escuela.backend.characterization.access;
 
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.PasswordResetCodeIssuedEvent;
+import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
