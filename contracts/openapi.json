@@ -2353,6 +2353,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "maxAbsencePercent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
           "name" : {
             "type" : "string"
           },
@@ -2367,7 +2370,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "courseSubjectId", "id", "name", "schedule", "status", "termId" ],
+        "required" : [ "capacity", "courseSubjectId", "id", "maxAbsencePercent", "name", "schedule", "status", "termId" ],
         "type" : "object"
       },
       "CoveredInvoiceResponse" : {
@@ -3175,6 +3178,9 @@
           "evaluationSchemeId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "maxAbsencePercent" : {
+            "$ref" : "#/components/schemas/Percentage"
           },
           "name" : {
             "minLength" : 1,
@@ -9491,6 +9497,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "maxAbsencePercent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
           "name" : {
             "type" : "string"
           },
@@ -9512,7 +9521,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "id", "name", "schedule", "status", "subjectId", "subjectName", "termId" ],
+        "required" : [ "capacity", "id", "maxAbsencePercent", "name", "schedule", "status", "subjectId", "subjectName", "termId" ],
         "type" : "object"
       },
       "TeachingSectionResponse" : {
@@ -9902,6 +9911,9 @@
           "evaluationSchemeId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "maxAbsencePercent" : {
+            "$ref" : "#/components/schemas/Percentage"
           },
           "name" : {
             "type" : "string"
