@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.dto.RefreshRequest;
 import com.red_escuela.backend.identity.dto.ResetPasswordRequest;
 import com.red_escuela.backend.identity.dto.VerifyResetCodeRequest;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.PasswordResetCodeIssuedEvent;
+import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
