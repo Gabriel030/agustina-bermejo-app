@@ -103,7 +103,6 @@ com.red_escuela.backend.identity.usecase.auth.LogoutService.logout(java.lang.Str
 com.red_escuela.backend.identity.usecase.auth.RefreshTokenService.refresh(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RegisterService.register(com.red_escuela.backend.identity.dto.RegisterRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService.register(com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleCommand) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetService.requestReset(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.ResetPasswordService.reset(com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeService.verify(com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationService.sendVerification(java.lang.Long) declares @Transactional

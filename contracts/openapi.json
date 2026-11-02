@@ -4497,6 +4497,26 @@
         "required" : [ "month" ],
         "type" : "object"
       },
+      "FirstDirectorProvisioningResponse" : {
+        "properties" : {
+          "directorEmail" : {
+            "type" : "string"
+          },
+          "directorPersonId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "institutionCreated" : {
+            "type" : "boolean"
+          },
+          "institutionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "directorEmail", "directorPersonId", "institutionCreated", "institutionId" ],
+        "type" : "object"
+      },
       "ForgotPasswordRequest" : {
         "properties" : {
           "email" : {
@@ -7645,6 +7665,47 @@
           }
         },
         "required" : [ "apellido", "dni", "email", "emailVerified", "id", "nombre", "onboardingStatus", "personId", "status", "username" ],
+        "type" : "object"
+      },
+      "ProvisionFirstDirectorRequest" : {
+        "properties" : {
+          "documentNumber" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "documentType" : {
+            "enum" : [ "DNI", "PASSPORT", "OTHER" ],
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "firstName" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "institutionName" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "lastName" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 5,
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "documentType", "email", "firstName", "institutionName", "lastName", "reason" ],
         "type" : "object"
       },
       "PublicModulesResponse" : {
@@ -28701,6 +28762,84 @@
           }
         },
         "tags" : [ "platform-feature-controller" ]
+      }
+    },
+    "/platform/provisioning/first-director" : {
+      "post" : {
+        "operationId" : "PlatformProvisioning_provisionFirstDirector",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProvisionFirstDirectorRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FirstDirectorProvisioningResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "platform-provisioning-controller" ]
       }
     },
     "/price-versions/{priceVersionId}/cancellation" : {
