@@ -9567,6 +9567,10 @@
           "enrollmentOpen" : {
             "type" : "boolean"
           },
+          "enrollmentOverride" : {
+            "enum" : [ "OPEN", "CLOSED" ],
+            "type" : [ "string", "null" ]
+          },
           "enrollmentStart" : {
             "format" : "date-time",
             "type" : "string"

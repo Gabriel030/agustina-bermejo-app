@@ -100,6 +100,44 @@ describe('PreceptorPeriodos', () => {
 
     expect(await screen.findByText(/Ya hay un período activo de este año y tipo/)).toBeInTheDocument();
   });
+
+  it('labels the enrollment pill by how enrollment is opened', async () => {
+    server.use(
+      http.get(`${API}/terms`, () =>
+        HttpResponse.json([
+          aTerm({ id: 1, description: 'Manual abierta', enrollmentOpen: true, enrollmentOverride: 'OPEN' }),
+          aTerm({ id: 2, description: 'Manual cerrada', year: 2026, enrollmentOpen: false, enrollmentOverride: 'CLOSED' }),
+          aTerm({ id: 3, description: 'Por ventana', year: 2025, enrollmentOpen: true, enrollmentOverride: null }),
+        ]),
+      ),
+    );
+    renderApp('/preceptor/periodos');
+
+    expect(await screen.findByText('Abierta (manual)')).toBeInTheDocument();
+    expect(screen.getByText('Cerrada')).toBeInTheDocument();
+    expect(screen.getByText('Según ventana')).toBeInTheDocument();
+  });
+
+  it('offers to remove the manual opening only when the term has an enrollment override', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/terms`, () =>
+        HttpResponse.json([
+          aTerm({ id: 1, description: 'Manual abierta', enrollmentOpen: true, enrollmentOverride: 'OPEN' }),
+          aTerm({ id: 2, description: 'Por ventana', year: 2026, enrollmentOverride: null }),
+        ]),
+      ),
+    );
+    renderApp('/preceptor/periodos');
+
+    await user.click(await screen.findByRole('button', { name: 'Acciones de Manual abierta 2027' }));
+    expect(await screen.findByRole('menuitem', { name: 'Quitar apertura manual' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    await user.click(screen.getByRole('button', { name: 'Acciones de Por ventana 2026' }));
+    expect(await screen.findByRole('menuitem', { name: 'Abrir inscripción ahora' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Quitar apertura manual' })).not.toBeInTheDocument();
+  });
 });
 
 describe('PreceptorPeriodoForm', () => {
