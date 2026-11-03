@@ -3,3 +3,4 @@ export { useConfiguracionComision, useConfiguracionComisionStaff, useMisComision
 export { useNotasDeMateria } from './hooks/useStudentExams';
 export { TabNotas } from './components/TabNotas';
 export { TabMesasDeExamen } from './components/TabMesasDeExamen';
+export { TeacherGradeGrid } from './components/TeacherGradeGrid';
