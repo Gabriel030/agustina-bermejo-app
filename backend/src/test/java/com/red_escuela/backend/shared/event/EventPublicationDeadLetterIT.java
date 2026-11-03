@@ -6,14 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -26,8 +24,14 @@ class EventPublicationDeadLetterIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private EventPublicationResubmissionJob newJob() {
-        return new EventPublicationResubmissionJob(mock(IncompleteEventPublications.class), jdbcTemplate, MAX_ATTEMPTS);
+    private EventPublicationAttemptLedger newLedger() {
+        return new EventPublicationAttemptLedger(jdbcTemplate, MAX_ATTEMPTS);
+    }
+
+    private void runLedgerCycle(EventPublicationAttemptLedger ledger) {
+        ledger.moveExhaustedPublicationsToDeadLetter();
+        ledger.countAttemptsOfPendingPublications();
+        ledger.forgetAttemptsOfFinishedPublications();
     }
 
     private UUID insertPublication(String listener, String minutesOld, boolean completed) {
@@ -49,14 +53,14 @@ class EventPublicationDeadLetterIT extends AbstractIntegrationTest {
     @Test
     void aPublicationThatKeepsFailingIsMovedToDeadLetterAfterTheMaximumAttemptsAndStopsBeingRetried() {
         UUID poisoned = insertPublication("poisoned-listener", "10", false);
-        EventPublicationResubmissionJob job = newJob();
+        EventPublicationAttemptLedger ledger = newLedger();
 
         for (int run = 1; run <= MAX_ATTEMPTS; run++) {
-            job.resubmitIncompletePublications();
+            runLedgerCycle(ledger);
             assertThat(attemptsOf(poisoned)).isEqualTo(run);
             assertThat(count("event_publication", poisoned, "id")).isEqualTo(1);
         }
-        job.resubmitIncompletePublications();
+        runLedgerCycle(ledger);
 
         assertThat(count("event_publication", poisoned, "id")).isZero();
         assertThat(count("event_publication_attempt", poisoned, "publication_id")).isZero();
@@ -70,12 +74,12 @@ class EventPublicationDeadLetterIT extends AbstractIntegrationTest {
         UUID completed = insertPublication("done-listener", "10", true);
         jdbcTemplate.update("insert into event_publication_attempt values (?, 2, now())", completed);
 
-        newJob().resubmitIncompletePublications();
+        runLedgerCycle(newLedger());
 
         assertThat(attemptsOf(young)).isZero();
         assertThat(count("event_publication_attempt", completed, "publication_id")).isEqualTo(1);
         jdbcTemplate.update("delete from event_publication where id = ?", completed);
-        newJob().resubmitIncompletePublications();
+        runLedgerCycle(newLedger());
         assertThat(count("event_publication_attempt", completed, "publication_id")).isZero();
         assertThat(count("event_publication_dead_letter", young, "publication_id")).isZero();
     }
