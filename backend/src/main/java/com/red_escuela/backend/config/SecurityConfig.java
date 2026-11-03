@@ -28,16 +28,19 @@ public class SecurityConfig {
     private static final String PLATFORM_ADMIN_ROLE = "PLATFORM_ADMIN";
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RequestRateLimitFilter requestRateLimitFilter;
     private final UnauthenticatedEntryPoint unauthenticatedEntryPoint;
     private final InsufficientPermissionsHandler insufficientPermissionsHandler;
     private final List<String> corsAllowedOrigins;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            RequestRateLimitFilter requestRateLimitFilter,
             UnauthenticatedEntryPoint unauthenticatedEntryPoint,
             InsufficientPermissionsHandler insufficientPermissionsHandler,
             @Value("${app.cors.allowed-origins}") List<String> corsAllowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.requestRateLimitFilter = requestRateLimitFilter;
         this.unauthenticatedEntryPoint = unauthenticatedEntryPoint;
         this.insufficientPermissionsHandler = insufficientPermissionsHandler;
         this.corsAllowedOrigins = corsAllowedOrigins;
@@ -95,7 +98,8 @@ public class SecurityConfig {
                 .requestMatchers("/me/modules").authenticated()
                 .requestMatchers(HttpMethod.GET, "/me").authenticated()
                 .anyRequest().access(SecurityConfig::authenticatedExceptPlatformAdmin))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(requestRateLimitFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }

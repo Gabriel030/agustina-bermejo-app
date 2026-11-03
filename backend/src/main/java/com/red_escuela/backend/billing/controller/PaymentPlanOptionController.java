@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.PaymentPlanOptionResponse;
 import com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase;
 import com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class PaymentPlanOptionController {
         this.createForProgramUseCase = createForProgramUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/courses/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -33,6 +35,7 @@ public class PaymentPlanOptionController {
         return PaymentPlanOptionResponse.from(createForCourseUseCase.create(id, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/programs/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")

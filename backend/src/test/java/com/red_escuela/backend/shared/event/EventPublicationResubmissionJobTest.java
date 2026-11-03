@@ -19,7 +19,7 @@ class EventPublicationResubmissionJobTest {
 
     private final IncompleteEventPublications incompleteEventPublications = mock(IncompleteEventPublications.class);
     private final JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
-    private final EventPublicationResubmissionJob job = new EventPublicationResubmissionJob(incompleteEventPublications, jdbcTemplate);
+    private final EventPublicationResubmissionJob job = new EventPublicationResubmissionJob(incompleteEventPublications, jdbcTemplate, 100);
 
     @Test
     @Tag("D-178")

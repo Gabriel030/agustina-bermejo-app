@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.usecase.paymentgateway.GetPaymentGatewayC
 import com.red_escuela.backend.billing.usecase.paymentgateway.UpdatePaymentGatewayConfigUseCase;
 import com.red_escuela.backend.billing.usecase.paymentgateway.UploadQrImageUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import org.springframework.http.MediaType;
@@ -53,12 +54,14 @@ public class PaymentGatewayConfigController {
         return getConfigUseCase.get();
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PutMapping
     @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentGatewayConfigResponse updateConfig(@RequestBody UpdatePaymentGatewayConfigRequest request) {
         return updateConfigUseCase.update(request, currentPersonService.resolveCurrentPerson());
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/qr")
     @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentGatewayConfigResponse uploadQr(@RequestPart MultipartFile qr) {

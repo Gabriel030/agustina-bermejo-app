@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.annualupfront.dto.DiscardedAnnualUpfrontR
 import com.red_escuela.backend.billing.annualupfront.dto.RequestAnnualUpfrontBody;
 import com.red_escuela.backend.billing.annualupfront.usecase.DiscardAnnualUpfrontRequestUseCase;
 import com.red_escuela.backend.billing.annualupfront.usecase.RequestAnnualUpfrontUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,12 +28,14 @@ public class AnnualUpfrontRequestController {
         this.discardUseCase = discardUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/me/annual-upfront-requests/{id}/discard")
     @PreAuthorize("hasRole('ALUMNO')")
     public DiscardedAnnualUpfrontRequestResponse discardAnnualUpfrontRequest(@PathVariable Long id) {
         return DiscardedAnnualUpfrontRequestResponse.from(discardUseCase.discardAnnualUpfrontRequestOfCurrentStudent(id));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/me/program-enrollments/{id}/annual-upfront-requests")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ALUMNO')")

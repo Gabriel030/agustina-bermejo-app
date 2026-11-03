@@ -21,6 +21,7 @@ import com.red_escuela.backend.billing.discount.usecase.RevokeStudentDiscountUse
 import com.red_escuela.backend.billing.discount.usecase.SearchStudentDiscountsUseCase;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -62,6 +63,7 @@ public class StudentDiscountController {
         this.previewUseCase = previewUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/program-enrollments/{id}/student-discounts")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
@@ -71,6 +73,7 @@ public class StudentDiscountController {
         return responseOf(grantUseCase.grantStudentDiscount(EnrollmentReference.ofProgram(id), request.toGrantRequest()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/course-enrollments/{id}/student-discounts")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
@@ -127,6 +130,7 @@ public class StudentDiscountController {
         return StudentDiscountGrantPreviewResponse.from(previewUseCase.previewStudentDiscountGrant(EnrollmentReference.ofCourse(id), request.toGrantRequest()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/student-discounts/{id}/revocation")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({

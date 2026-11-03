@@ -231,6 +231,18 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void avatarUploadWithoutDeclaredContentTypeIsRejectedAsUnsupportedFileTypeInsteadOfFailing() throws Exception {
+        Person owner = persistPersonWithRole("avatar3", "60141414", "ALUMNO");
+        String token = jwtService.generateAccessToken(owner);
+
+        mockMvc.perform(multipart("/me/avatar")
+                        .file(new MockMultipartFile("file", "foto.png", null, new byte[] {1, 2}))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_FILE_TYPE"));
+    }
+
+    @Test
     void getAvatarReturns404WhenTheStoredFileIsMissing() throws Exception {
         Person owner = persistPersonWithRole("avatar2", "60131313", "ALUMNO");
         owner.setAvatarPath("avatars/missing-" + owner.getId() + ".png");

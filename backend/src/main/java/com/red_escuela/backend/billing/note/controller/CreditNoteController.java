@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentUseC
 import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,7 @@ public class CreditNoteController {
         this.currentStudentService = currentStudentService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{invoiceId}/credit-notes")
     public ResponseEntity<?> issueOrRequestCreditNote(@PathVariable Long invoiceId, @Valid @RequestBody CreateCreditNoteRequest request) {
         BillingOperationOutcome<CreditNote> outcome = issueCreditNoteUseCase.issueOrRequestCreditNote(invoiceId, request);
