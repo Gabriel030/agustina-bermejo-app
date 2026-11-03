@@ -17,9 +17,13 @@ public class JsonErrorResponseWriter {
     }
 
     public void write(HttpServletResponse response, int status, String code) throws IOException {
+        write(response, status, new ErrorCodeResponse(code));
+    }
+
+    public void write(HttpServletResponse response, int status, ErrorCodeResponse body) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getWriter(), new ErrorCodeResponse(code));
+        objectMapper.writeValue(response.getWriter(), body);
     }
 }
