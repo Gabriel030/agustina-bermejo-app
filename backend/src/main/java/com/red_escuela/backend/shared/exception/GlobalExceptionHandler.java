@@ -83,8 +83,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorCodeResponse handleNotFound(NotFoundException exception) {
-        return ErrorCodeResponse.of(exception);
+    public ResponseEntity<ErrorCodeResponse> handleNotFound(NotFoundException exception) {
+        return exception instanceof ReportsErrorCode
+                ? ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorCodeResponse.of(exception))
+                : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
     @ExceptionHandler(ConflictException.class)

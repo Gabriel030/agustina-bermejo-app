@@ -314,7 +314,7 @@ class ErrorCatalogTest {
         out.append("Todo error de la API sale con `{\"code\": \"...\", \"retryable\": true|false, \"requestId\": \"...\", \"violations\": [...]}`. ");
         out.append("`code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, ");
         out.append("`requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas. ");
-        out.append("Un `429` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`.\n\n");
+        out.append("Un `429` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).\n\n");
         out.append("## Política de reintentos\n\n");
         out.append("| HTTP | Reintentable | Por qué |\n|---|---|---|\n");
         out.append("| 400 | no | El pedido es inválido; repetirlo igual falla igual |\n");

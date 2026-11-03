@@ -33,7 +33,7 @@ class ExceptionHierarchyContractTest {
             new Contract(BadRequestException.class, 400, true),
             new Contract(UnauthorizedException.class, 401, true),
             new Contract(ForbiddenException.class, 403, true),
-            new Contract(NotFoundException.class, 404, true),
+            new Contract(NotFoundException.class, 404, false),
             new Contract(ConflictException.class, 409, true),
             new Contract(TooManyRequestsException.class, 429, true),
             new Contract(ExternalServiceException.class, 502, true));
@@ -63,6 +63,10 @@ class ExceptionHierarchyContractTest {
                     ErrorCodeResponse expected = ErrorCodeResponse.of(TO_THROW.get());
                     assertThat(result.getContentAsString()).as(type.getSimpleName())
                             .isEqualTo("{\"code\":\"" + expected.code() + "\",\"retryable\":" + expected.retryable() + "}");
+                } else if (ReportsErrorCode.class.isAssignableFrom(type)) {
+                    ErrorCodeResponse expected = ErrorCodeResponse.of(TO_THROW.get());
+                    assertThat(result.getContentAsString()).as(type.getSimpleName())
+                            .isEqualTo("{\"code\":\"" + expected.code() + "\",\"retryable\":false}");
                 } else {
                     assertThat(result.getContentAsString()).as(type.getSimpleName()).isEmpty();
                 }
@@ -88,7 +92,7 @@ class ExceptionHierarchyContractTest {
     }
 
     @Test
-    void aNewNotFoundRespondsWith404AndItsCodeWithoutRegisteringItInTheHandler() throws Exception {
+    void aNewNotFoundRespondsWith404WithoutRegisteringItInTheHandler() throws Exception {
         class WidgetNotFoundException extends NotFoundException {
             WidgetNotFoundException() {
                 super("no existe");
@@ -99,7 +103,7 @@ class ExceptionHierarchyContractTest {
         var response = mockMvc.perform(get("/throw")).andReturn().getResponse();
 
         assertThat(response.getStatus()).isEqualTo(404);
-        assertThat(response.getContentAsString()).isEqualTo("{\"code\":\"WIDGET_NOT_FOUND\",\"retryable\":false}");
+        assertThat(response.getContentAsString()).isEmpty();
     }
 
     @Test

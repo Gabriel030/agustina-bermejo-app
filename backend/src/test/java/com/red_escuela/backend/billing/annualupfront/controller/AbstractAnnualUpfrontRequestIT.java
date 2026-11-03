@@ -122,4 +122,8 @@ abstract class AbstractAnnualUpfrontRequestIT extends AbstractStudentDiscountIss
     protected long count(String sql) {
         return jdbc.queryForObject(sql, Long.class);
     }
+
+    protected static String withoutRequestId(String errorBody) {
+        return errorBody.replaceAll(",?\"requestId\":\"[^\"]*\"", "");
+    }
 }
