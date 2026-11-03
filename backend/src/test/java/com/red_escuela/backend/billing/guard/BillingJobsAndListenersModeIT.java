@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -25,6 +26,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -45,6 +48,9 @@ class BillingJobsAndListenersModeIT extends AbstractIntegrationTest {
 
     @Autowired
     private ApplicationContext context;
+
+    @Autowired
+    private ThreadPoolTaskExecutor eventListenerExecutor;
 
     @Autowired
     private LateFeeCorrectionOnWithdrawalListener withdrawalListener;
@@ -76,15 +82,36 @@ class BillingJobsAndListenersModeIT extends AbstractIntegrationTest {
         EnrollmentWithdrawnForBillingEvent whileFull = withdrawalEvent();
 
         switchBillingTo("OFF", false);
-        withdrawalListener.correctLateFeesOfWithdrawnEnrollment(whileOff);
+        deliverAndAwaitListenerRun(whileOff);
         switchBillingTo("MIRROR", true);
-        withdrawalListener.correctLateFeesOfWithdrawnEnrollment(whileMirror);
+        deliverAndAwaitListenerRun(whileMirror);
         switchBillingTo("FULL", true);
-        withdrawalListener.correctLateFeesOfWithdrawnEnrollment(whileFull);
+        deliverAndAwaitListenerRun(whileFull);
 
-        await().atMost(Duration.ofSeconds(10)).until(() -> isClaimed(whileFull));
+        assertThat(isClaimed(whileFull)).isTrue();
         assertThat(isClaimed(whileOff)).isFalse();
         assertThat(isClaimed(whileMirror)).isFalse();
+    }
+
+    private void deliverAndAwaitListenerRun(EnrollmentWithdrawnForBillingEvent event) {
+        ThreadPoolExecutor pool = eventListenerExecutor.getThreadPoolExecutor();
+        long completedBefore = pool.getCompletedTaskCount();
+        CountDownLatch release = new CountDownLatch(1);
+        for (int worker = 0; worker < pool.getCorePoolSize(); worker++) {
+            eventListenerExecutor.execute(() -> awaitQuietly(release));
+        }
+        withdrawalListener.correctLateFeesOfWithdrawnEnrollment(event);
+        release.countDown();
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> pool.getCompletedTaskCount() >= completedBefore + pool.getCorePoolSize() + 1);
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private boolean isClaimed(EnrollmentWithdrawnForBillingEvent event) {
