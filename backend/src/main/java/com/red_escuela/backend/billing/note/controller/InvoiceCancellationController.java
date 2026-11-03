@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.note.dto.InvoiceCancellationPreviewRespon
 import com.red_escuela.backend.billing.note.usecase.CancelInvoiceUseCase;
 import com.red_escuela.backend.billing.note.usecase.PreviewInvoiceCancellationUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ public class InvoiceCancellationController {
         return InvoiceCancellationPreviewResponse.from(previewInvoiceCancellationUseCase.previewInvoiceCancellation(invoiceId, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{invoiceId}/cancellations")
     public ResponseEntity<?> cancelOrRequestInvoiceCancellation(@PathVariable Long invoiceId, @Valid @RequestBody CancelInvoiceRequest request) {
         BillingOperationOutcome<CreditNote> outcome = cancelInvoiceUseCase.cancelOrRequestInvoiceCancellation(invoiceId, request);
