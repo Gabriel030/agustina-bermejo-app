@@ -2853,7 +2853,7 @@
       "CreateGradeItemRequest" : {
         "properties" : {
           "comments" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "date" : {
             "format" : "date-time",
@@ -2861,7 +2861,7 @@
           },
           "examBoardId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "score" : {
             "type" : "number"
@@ -2876,10 +2876,10 @@
           },
           "weight" : {
             "format" : "double",
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "comments", "date", "examBoardId", "score", "sequenceNumber", "type", "weight" ],
+        "required" : [ "date", "score", "sequenceNumber", "type" ],
         "type" : "object"
       },
       "CreateLatePaymentSettingsRequest" : {
