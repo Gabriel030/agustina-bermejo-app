@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -184,7 +185,7 @@ describe('CarreraDetalle — plan de estudios', () => {
 
   it('shows the specific reason when the backend rejects the year', async () => {
     mockProgram({
-      onAdd: () => HttpResponse.json({ code: 'CURRICULAR_YEAR_OUT_OF_RANGE' }, { status: 400 }),
+      onAdd: () => HttpResponse.json(errorBody('CURRICULAR_YEAR_OUT_OF_RANGE'), { status: 400 }),
     });
     const user = userEvent.setup();
     mount();

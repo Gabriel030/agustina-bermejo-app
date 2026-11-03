@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -89,7 +90,7 @@ describe('PreceptorPeriodos', () => {
     server.use(
       http.get(`${API}/terms`, () => HttpResponse.json(TERMS)),
       http.post(`${API}/terms/2/activate`, () =>
-        HttpResponse.json({ code: 'ACTIVE_TERM_ALREADY_EXISTS', violations: [] }, { status: 409 }),
+        HttpResponse.json(errorBody('ACTIVE_TERM_ALREADY_EXISTS'), { status: 409 }),
       ),
     );
     renderApp('/preceptor/periodos');
@@ -148,7 +149,7 @@ describe('PreceptorPeriodoForm', () => {
       http.get(`${API}/terms`, () => HttpResponse.json([])),
       http.post(`${API}/terms`, async ({ request }) => {
         body = await request.json();
-        return HttpResponse.json({ code: 'ACTIVE_TERM_ALREADY_EXISTS', violations: [] }, { status: 409 });
+        return HttpResponse.json(errorBody('ACTIVE_TERM_ALREADY_EXISTS'), { status: 409 });
       }),
     );
     renderApp('/preceptor/periodos/nuevo');

@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.pricing.usecase.ListPriceVersionHistoryUs
 import com.red_escuela.backend.billing.pricing.usecase.ListPricesUseCase;
 import com.red_escuela.backend.billing.pricing.usecase.ProposePriceChangeUseCase;
 import com.red_escuela.backend.billing.pricing.usecase.ValidatePriceChangeUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -73,6 +74,7 @@ public class PriceController {
         return PriceChangeImpactResponse.from(getPriceChangeImpactUseCase.getPriceChangeImpact(priceId, request.amount(), request.discountOrNull(), request.effectiveFrom()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/prices/{priceId}/versions")
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     @ApiResponses({
@@ -95,6 +97,7 @@ public class PriceController {
                 request.effectiveFrom(), request.changeReason()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/price-versions/{priceVersionId}/cancellation")
     @PreAuthorize("hasRole('DIRECTOR')")
     public PriceVersionResponse cancelScheduledPriceVersion(@PathVariable Long priceVersionId, @Valid @RequestBody CancelPriceVersionRequest request) {

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { todayIsoDate } from '@/lib/billing';
 import { ManualIssuanceSimulationPanel } from './ManualIssuanceSimulationPanel';
@@ -247,7 +248,7 @@ describe('manual issuance confirmation dialog', () => {
     ['NIGHTLY_BILLING_NOT_COMPLETED', 'La corrida nocturna de hoy todavía no terminó. Esperá a que finalice para emitir.'],
     ['MONTHLY_INVOICE_RUN_ALREADY_EXISTS', 'Este período ya tiene una corrida. Revisala en la pantalla.'],
   ])('maps the 409 %s to a clear message', async (code, message) => {
-    mockBackend({ issue: () => HttpResponse.json({ code, violations: [] }, { status: 409 }) });
+    mockBackend({ issue: () => HttpResponse.json(errorBody(code), { status: 409 }) });
     const dialog = await openDialog();
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Emitir' }));
