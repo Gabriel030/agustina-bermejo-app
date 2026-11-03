@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -9,6 +10,7 @@ const RESUME_LABELS = {
 
 export function ResumeCycleButton({ cycle }) {
   const navigate = useNavigate();
+  const basePath = useRoleBasePath();
   const label = RESUME_LABELS[cycle.status];
   if (!label) return null;
 
@@ -16,7 +18,7 @@ export function ResumeCycleButton({ cycle }) {
     <Button
       variant="outline"
       size="sm"
-      onClick={() => navigate(`/preceptor/oferta-academica/nuevo-ciclo?cicloId=${cycle.id}`)}
+      onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo?cicloId=${cycle.id}`)}
     >
       <Pencil className="mr-1.5 h-3.5 w-3.5" />
       {label}
