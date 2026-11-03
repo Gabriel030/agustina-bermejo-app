@@ -22,6 +22,7 @@ describe('feature routes', () => {
         'graduation',
         'identity',
         'notifications',
+        'platform',
         'workspace',
       ].sort(),
     );
