@@ -127,7 +127,7 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
         String unknown = mockMvc.perform(get("/me/annual-upfront-requests/987654323").header("Authorization", "Bearer " + strangerToken)).andExpect(status().isNotFound())
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat(foreign.replace(String.valueOf(requestId), "ID")).isEqualTo(unknown.replace("987654323", "ID"));
+        assertThat(withoutRequestId(foreign).replace(String.valueOf(requestId), "ID")).isEqualTo(withoutRequestId(unknown).replace("987654323", "ID"));
     }
 
     @Test

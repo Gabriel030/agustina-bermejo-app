@@ -26,7 +26,8 @@ Feature: Login (POST /auth/login)
     And request { username: '#(emailUnico)', password: 'contraseña-incorrecta' }
     When method post
     Then status 401
-    And match response == ''
+    And match response.code == 'INVALID_CREDENTIALS'
+    And match response.retryable == false
 
   Scenario: Usuario inexistente — también 401 (RF-AUTH-05: no se puede distinguir de credenciales inválidas)
     Given path '/auth/login'

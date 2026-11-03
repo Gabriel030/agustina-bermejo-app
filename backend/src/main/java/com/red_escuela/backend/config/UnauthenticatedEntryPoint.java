@@ -1,5 +1,6 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -12,8 +13,8 @@ import java.io.IOException;
 @Component
 public class UnauthenticatedEntryPoint implements AuthenticationEntryPoint {
     static final String REJECTED_TOKEN_ATTRIBUTE = UnauthenticatedEntryPoint.class.getName() + ".REJECTED_TOKEN";
-    static final String TOKEN_EXPIRED_CODE = "TOKEN_EXPIRED";
-    static final String UNAUTHENTICATED_CODE = "UNAUTHENTICATED";
+    static final String TOKEN_EXPIRED_CODE = ErrorCodeResponse.TOKEN_EXPIRED_CODE;
+    static final String UNAUTHENTICATED_CODE = ErrorCodeResponse.UNAUTHENTICATED_CODE;
 
     private final JsonErrorResponseWriter errorWriter;
 

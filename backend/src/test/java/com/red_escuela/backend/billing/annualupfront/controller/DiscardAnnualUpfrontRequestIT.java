@@ -85,8 +85,8 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
         Long requestId = objectMapper.readTree(request(true, "v1", 201).getResponse().getContentAsString()).get("id").asLong();
         String otherStudentToken = studentTokenOf(newCohortLearner());
 
-        String foreignMessage = discard(requestId, otherStudentToken, 404).getResponse().getContentAsString();
-        String unknownMessage = discard(987654322L, otherStudentToken, 404).getResponse().getContentAsString();
+        String foreignMessage = withoutRequestId(discard(requestId, otherStudentToken, 404).getResponse().getContentAsString());
+        String unknownMessage = withoutRequestId(discard(987654322L, otherStudentToken, 404).getResponse().getContentAsString());
 
         assertThat(foreignMessage.replace(String.valueOf(requestId), "ID")).isEqualTo(unknownMessage.replace("987654322", "ID"));
 
