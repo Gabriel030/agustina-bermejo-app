@@ -2853,7 +2853,7 @@
       "CreateGradeItemRequest" : {
         "properties" : {
           "comments" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "date" : {
             "format" : "date-time",
@@ -2861,7 +2861,7 @@
           },
           "examBoardId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "score" : {
             "type" : "number"
@@ -2876,10 +2876,10 @@
           },
           "weight" : {
             "format" : "double",
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "comments", "date", "examBoardId", "score", "sequenceNumber", "type", "weight" ],
+        "required" : [ "date", "score", "sequenceNumber", "type" ],
         "type" : "object"
       },
       "CreateLatePaymentSettingsRequest" : {
@@ -4523,6 +4523,18 @@
         "required" : [ "directorEmail", "directorPersonId", "institutionCreated", "institutionId" ],
         "type" : "object"
       },
+      "FirstDirectorStatusResponse" : {
+        "properties" : {
+          "directorExists" : {
+            "type" : "boolean"
+          },
+          "institutionName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "directorExists", "institutionName" ],
+        "type" : "object"
+      },
       "ForgotPasswordRequest" : {
         "properties" : {
           "email" : {
@@ -4583,6 +4595,87 @@
           }
         },
         "required" : [ "idToken", "institutionId" ],
+        "type" : "object"
+      },
+      "GradeGridCellResponse" : {
+        "properties" : {
+          "comments" : {
+            "type" : [ "string", "null" ]
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "gradeItemId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "score" : {
+            "type" : "number"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "EXAM", "TP", "FINAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "gradeItemId", "sequenceNumber", "type" ],
+        "type" : "object"
+      },
+      "GradeGridColumnResponse" : {
+        "properties" : {
+          "date" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "enum" : [ "EXAM", "TP", "FINAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "sequenceNumber", "type" ],
+        "type" : "object"
+      },
+      "GradeGridStudentResponse" : {
+        "properties" : {
+          "condition" : {
+            "enum" : [ "IN_PROGRESS", "REGULAR", "FREE", "APPROVED", "FAILED" ],
+            "type" : "string"
+          },
+          "dni" : {
+            "type" : "string"
+          },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "finalEnabled" : {
+            "type" : "boolean"
+          },
+          "finalScore" : {
+            "type" : "number"
+          },
+          "grades" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GradeGridCellResponse"
+            },
+            "type" : "array"
+          },
+          "lastname" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "condition", "dni", "enrollmentId", "finalEnabled", "grades", "lastname", "name" ],
         "type" : "object"
       },
       "GradeItemResponse" : {
@@ -9522,6 +9615,40 @@
           }
         },
         "required" : [ "capacity", "id", "maxAbsencePercent", "name", "schedule", "status", "subjectId", "subjectName", "termId" ],
+        "type" : "object"
+      },
+      "TeacherGradeGridResponse" : {
+        "properties" : {
+          "columns" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GradeGridColumnResponse"
+            },
+            "type" : "array"
+          },
+          "evaluationSchemeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "minApprovalGrade" : {
+            "type" : "number"
+          },
+          "minRegularGrade" : {
+            "type" : "number"
+          },
+          "promotionMinGrade" : {
+            "type" : "number"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "students" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GradeGridStudentResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "columns", "sectionId", "students" ],
         "type" : "object"
       },
       "TeachingSectionResponse" : {
@@ -17249,6 +17376,75 @@
           }
         },
         "tags" : [ "course-section-controller" ]
+      }
+    },
+    "/course-sections/{id}/grade-grid" : {
+      "get" : {
+        "operationId" : "TeacherGradeGrid_getCourseSectionGradeGrid",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TeacherGradeGridResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "teacher-grade-grid-controller" ]
       }
     },
     "/course-sections/{id}/instructors" : {
@@ -28858,6 +29054,66 @@
         "tags" : [ "platform-provisioning-controller" ]
       }
     },
+    "/platform/provisioning/first-director/status" : {
+      "get" : {
+        "operationId" : "PlatformProvisioning_findFirstDirectorStatus",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FirstDirectorStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "platform-provisioning-controller" ]
+      }
+    },
     "/price-versions/{priceVersionId}/cancellation" : {
       "post" : {
         "operationId" : "Price_cancelScheduledPriceVersion",
@@ -31839,6 +32095,75 @@
           }
         },
         "tags" : [ "subject-section-controller" ]
+      }
+    },
+    "/program-sections/{id}/grade-grid" : {
+      "get" : {
+        "operationId" : "TeacherGradeGrid_getProgramSectionGradeGrid",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TeacherGradeGridResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "teacher-grade-grid-controller" ]
       }
     },
     "/program-sections/{id}/instructors" : {

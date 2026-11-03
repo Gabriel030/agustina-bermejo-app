@@ -93,6 +93,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/public/modules").permitAll()
                 .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
                 .requestMatchers("/me/modules").authenticated()
+                .requestMatchers(HttpMethod.GET, "/me").authenticated()
                 .anyRequest().access(SecurityConfig::authenticatedExceptPlatformAdmin))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

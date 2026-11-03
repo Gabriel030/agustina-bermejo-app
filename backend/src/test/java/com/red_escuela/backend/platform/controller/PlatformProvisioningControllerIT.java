@@ -31,8 +31,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,6 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
 
     private static final String ENDPOINT = "/platform/provisioning/first-director";
+    private static final String STATUS_ENDPOINT = "/platform/provisioning/first-director/status";
     private static final String NEW_PASSWORD = "ClaveNueva456";
 
     @Autowired
@@ -209,6 +217,78 @@ class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
 
         assertThat(count("institution")).isZero();
         assertThat(count("platform_provisioning_log")).isZero();
+    }
+
+    @Test
+    void twoSimultaneousRequestsWithTheSameIdempotencyKeyReturnTheSameResultAndCreateOnce() throws Exception {
+        String token = platformAdminToken();
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+        Callable<String[]> sameRequest = () -> {
+            ready.countDown();
+            go.await();
+            var result = provision(token, "race-key", "dir@example.com", "30111222").andReturn().getResponse();
+            return new String[] {String.valueOf(result.getStatus()), result.getContentAsString()};
+        };
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<String[]> first = executor.submit(sameRequest);
+            Future<String[]> second = executor.submit(sameRequest);
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            go.countDown();
+            String[] firstResult = first.get(30, TimeUnit.SECONDS);
+            String[] secondResult = second.get(30, TimeUnit.SECONDS);
+
+            assertThat(firstResult[0]).isEqualTo("201");
+            assertThat(secondResult[0]).isEqualTo("201");
+            assertThat(secondResult[1]).isEqualTo(firstResult[1]);
+        } finally {
+            executor.shutdownNow();
+        }
+        assertThat(count("person_role pr join role r on r.id = pr.role_id where r.name = 'DIRECTOR'")).isEqualTo(1);
+        assertThat(count("institution")).isEqualTo(1);
+        assertThat(count("platform_provisioning_log")).isEqualTo(1);
+        assertThat(applicationEvents.stream(PasswordResetCodeIssuedEvent.class).count()).isEqualTo(1);
+    }
+
+    @Test
+    void statusReportsNoDirectorAndNoInstitutionBeforeProvisioning() throws Exception {
+        mockMvc.perform(get(STATUS_ENDPOINT).header("Authorization", "Bearer " + platformAdminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.directorExists").value(false))
+                .andExpect(jsonPath("$.institutionName").doesNotExist());
+    }
+
+    @Test
+    void statusReportsTheInstitutionWithoutDirectorWhenOnlyTheInstitutionExists() throws Exception {
+        jdbc.update("insert into institution (name) values ('Instituto Preexistente')");
+
+        mockMvc.perform(get(STATUS_ENDPOINT).header("Authorization", "Bearer " + platformAdminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.directorExists").value(false))
+                .andExpect(jsonPath("$.institutionName").value("Instituto Preexistente"));
+    }
+
+    @Test
+    void statusReportsTheDirectorAndTheInstitutionNameWithoutSensitiveData() throws Exception {
+        provision(platformAdminToken(), null, "dir@example.com", "30111222").andExpect(status().isCreated());
+
+        String body = mockMvc.perform(get(STATUS_ENDPOINT).header("Authorization", "Bearer " + platformAdminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.directorExists").value(true))
+                .andExpect(jsonPath("$.institutionName").value("Instituto Demo"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(objectMapper.readTree(body).fieldNames()).toIterable().containsExactlyInAnyOrder("directorExists", "institutionName");
+        assertThat(body).doesNotContain("dir@example.com").doesNotContain("30111222");
+    }
+
+    @Test
+    void statusIsForbiddenForEveryRoleExceptPlatformAdmin() throws Exception {
+        for (String role : List.of("ALUMNO", "DOCENTE", "PRECEPTOR", "ADMINISTRATIVO")) {
+            mockMvc.perform(get(STATUS_ENDPOINT).header("Authorization", "Bearer " + tokensByRole.get(role))).andExpect(status().isForbidden());
+        }
+        mockMvc.perform(get(STATUS_ENDPOINT)).andExpect(status().isForbidden());
     }
 
     private String platformAdminToken() {
