@@ -85,7 +85,7 @@ if [ -n "$base" ]; then
     if [ "$relevant" = false ]; then
       mutation=false
     fi
-    if ! grep -qE '^(frontend/|\.github/workflows/)' <<< "$changed"; then
+    if ! grep -qE '^(frontend/|contracts/openapi\.json$|\.github/workflows/)' <<< "$changed"; then
       frontend=false
     fi
     if ! grep -qE '^frontend/package-lock\.json$' <<< "$changed"; then
