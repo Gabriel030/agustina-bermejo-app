@@ -2,7 +2,9 @@ package com.red_escuela.backend.enrollment.repository;
 
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -34,4 +36,8 @@ public interface CourseSubjectSectionEnrollmentRepository extends JpaRepository<
             Long courseSubjectSectionId, EnrollmentStatus status);
 
     Optional<CourseSubjectSectionEnrollment> findByStudentIdAndCourseSubjectSectionId(Long studentId, Long courseSubjectSectionId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from CourseSubjectSectionEnrollment e where e.id = :id")
+    Optional<CourseSubjectSectionEnrollment> findByIdForUpdate(@Param("id") Long id);
 }
