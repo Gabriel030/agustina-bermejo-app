@@ -71,8 +71,8 @@ function buildColumns(onEdit, onAction) {
       header: 'Inscripción',
       enableSorting: false,
       cell: ({ row }) => (
-        <StatusPill dot tone={row.original.enrollmentOpen ? 'success' : 'neutral'}>
-          {row.original.enrollmentOpen ? 'Abierta' : 'Cerrada'}
+        <StatusPill dot tone={ENROLLMENT_PILLS[enrollmentMode(row.original)].tone}>
+          {ENROLLMENT_PILLS[enrollmentMode(row.original)].label}
         </StatusPill>
       ),
     },
@@ -84,6 +84,18 @@ function buildColumns(onEdit, onAction) {
       cell: ({ row }) => <TermRowMenu term={row.original} onEdit={onEdit} onAction={onAction} />,
     },
   ];
+}
+
+const ENROLLMENT_PILLS = {
+  manualOpen: { tone: 'warning', label: 'Abierta (manual)' },
+  manualClosed: { tone: 'neutral', label: 'Cerrada' },
+  window: { tone: 'accent', label: 'Según ventana' },
+};
+
+function enrollmentMode(term) {
+  if (term.enrollmentOverride === 'OPEN') return 'manualOpen';
+  if (term.enrollmentOverride === 'CLOSED') return 'manualClosed';
+  return 'window';
 }
 
 export function PreceptorPeriodos() {
