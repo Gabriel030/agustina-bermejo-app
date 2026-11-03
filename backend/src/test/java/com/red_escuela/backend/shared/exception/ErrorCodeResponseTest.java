@@ -20,9 +20,12 @@ class ErrorCodeResponseTest {
 
     @Test
     @org.junit.jupiter.api.Tag("D-096")
-    void anExceptionWithoutViolationsSerializesOnlyTheCode() throws Exception {
-        String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ErrorCodeResponse.of(new CohortAdmissionWindowClosedException(1L)));
+    void anExceptionWithoutViolationsSerializesNoViolationsField() throws Exception {
+        com.fasterxml.jackson.databind.JsonNode json = new com.fasterxml.jackson.databind.ObjectMapper()
+                .valueToTree(ErrorCodeResponse.of(new CohortAdmissionWindowClosedException(1L)));
 
-        assertThat(json).isEqualTo("{\"code\":\"COHORT_ADMISSION_WINDOW_CLOSED\"}");
+        assertThat(json.get("code").asText()).isEqualTo("COHORT_ADMISSION_WINDOW_CLOSED");
+        assertThat(json.get("retryable").asBoolean()).isFalse();
+        assertThat(json.has("violations")).isFalse();
     }
 }

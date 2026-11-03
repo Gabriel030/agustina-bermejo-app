@@ -48,6 +48,12 @@ El resto de la carpeta son artefactos generados, sin documento `.md`: `component
 | [billing/mutation-exclusions.md](billing/mutation-exclusions.md) | Mutantes equivalentes excluidos de PIT | vigente |
 | [billing/mirror-mode-endpoint-classification.md](billing/mirror-mode-endpoint-classification.md) | Qué endpoints de billing sirven en MIRROR (lecturas) y cuáles solo en FULL (escrituras) | vigente (lo valida `BillingEndpointModeClassificationTest`) |
 
+## API (`docs/api/`)
+
+| Documento | Para qué | Estado |
+|---|---|---|
+| [api/error-catalog.md](api/error-catalog.md) | Catálogo de códigos de error, reintentables, política de reintentos e idempotencia de las escrituras | generado (`ErrorCatalogTest`) |
+
 ## Pruebas
 
 | Documento | Para qué | Estado |

@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,8 +29,56 @@ class GlobalExceptionHandlerTest {
         }
     }
 
+    static class RateLimitedException extends TooManyRequestsException {
+        RateLimitedException() {
+            super("too many");
+        }
+
+        @Override
+        public java.time.Duration retryAfter() {
+            return java.time.Duration.ofSeconds(45);
+        }
+    }
+
+    static class GatewayDownException extends ExternalServiceException {
+        GatewayDownException() {
+            super("jdbc:postgresql://internal-host/secret failed");
+        }
+    }
+
+    static class BusinessConflictException extends ConflictException {
+        BusinessConflictException() {
+            super("conflict");
+        }
+    }
+
     @RestController
     static class ThrowingController {
+        @GetMapping("/rate-limited")
+        void rateLimited() {
+            throw new RateLimitedException();
+        }
+
+        @GetMapping("/gateway-down")
+        void gatewayDown() {
+            throw new GatewayDownException();
+        }
+
+        @GetMapping("/business-conflict")
+        void businessConflict() {
+            throw new BusinessConflictException();
+        }
+
+        @GetMapping("/unexpected")
+        void unexpected() {
+            throw new RuntimeException("select * from secret_table where id = 7");
+        }
+
+        @GetMapping("/denied")
+        void denied() {
+            throw new org.springframework.security.access.AccessDeniedException("denied");
+        }
+
         @GetMapping("/broken-integrity")
         void brokenIntegrity() {
             throw new BrokenLinkException();
@@ -55,7 +106,10 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void aBrokenDataIntegrityIsAServerErrorLoggedAtErrorLevel(CapturedOutput output) throws Exception {
-        mockMvc.perform(get("/broken-integrity")).andExpect(status().isInternalServerError()).andExpect(content().string(""));
+        mockMvc.perform(get("/broken-integrity")).andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.retryable").value(false))
+                .andExpect(content().string(not(containsString("Payment 404"))));
 
         assertThat(output).contains("ERROR").contains("Payment 404 referenced by an allocation source does not exist");
     }
@@ -81,5 +135,55 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/optimistic-lock")).andExpect(status().isConflict());
 
         assertThat(output).contains("ObjectOptimisticLockingFailureException");
+    }
+
+    @Test
+    void aRateLimitAnswersWithRetryAfterAndARetryableBody() throws Exception {
+        mockMvc.perform(get("/rate-limited"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Retry-After", "45"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"))
+                .andExpect(jsonPath("$.retryable").value(true));
+    }
+
+    @Test
+    void anExternalServiceFailureIsARetryableBadGatewayWithoutInternalDetails() throws Exception {
+        mockMvc.perform(get("/gateway-down"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("GATEWAY_DOWN"))
+                .andExpect(jsonPath("$.retryable").value(true))
+                .andExpect(content().string(not(containsString("jdbc"))));
+    }
+
+    @Test
+    void aBusinessConflictIsNotRetryable() throws Exception {
+        mockMvc.perform(get("/business-conflict"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("BUSINESS_CONFLICT"))
+                .andExpect(jsonPath("$.retryable").value(false));
+    }
+
+    @Test
+    void anUnexpectedFailureIsAGenericNonRetryableServerErrorThatLeaksNothing(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/unexpected"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.retryable").value(false))
+                .andExpect(content().string(not(containsString("secret_table"))));
+
+        assertThat(output).contains("secret_table");
+    }
+
+    @Test
+    void anAccessDeniedFailureIsLeftToTheSecurityFilterChain() {
+        assertThatThrownBy(() -> mockMvc.perform(get("/denied")))
+                .hasRootCauseInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test
+    void aDataIntegrityViolationBodyDoesNotLeakTheConstraint() throws Exception {
+        mockMvc.perform(get("/data-integrity"))
+                .andExpect(jsonPath("$.code").value("DATA_INTEGRITY_VIOLATION"))
+                .andExpect(content().string(not(containsString("uk_person_email"))));
     }
 }

@@ -31,12 +31,12 @@ class ExceptionHierarchyContractTest {
 
     private static final List<Contract> CONTRACTS = List.of(
             new Contract(BadRequestException.class, 400, true),
-            new Contract(UnauthorizedException.class, 401, false),
-            new Contract(ForbiddenException.class, 403, false),
+            new Contract(UnauthorizedException.class, 401, true),
+            new Contract(ForbiddenException.class, 403, true),
             new Contract(NotFoundException.class, 404, false),
             new Contract(ConflictException.class, 409, true),
-            new Contract(TooManyRequestsException.class, 429, false),
-            new Contract(ExternalServiceException.class, 502, false));
+            new Contract(TooManyRequestsException.class, 429, true),
+            new Contract(ExternalServiceException.class, 502, true));
 
     @RestController
     static class ThrowingController {
@@ -60,12 +60,13 @@ class ExceptionHierarchyContractTest {
 
                 assertThat(result.getStatus()).as(type.getSimpleName()).isEqualTo(contract.status());
                 if (contract.hasBody()) {
-                    String expectedCode = ErrorCodeResponse.of(TO_THROW.get()).code();
+                    ErrorCodeResponse expected = ErrorCodeResponse.of(TO_THROW.get());
                     assertThat(result.getContentAsString()).as(type.getSimpleName())
-                            .isEqualTo("{\"code\":\"" + expectedCode + "\"}");
+                            .isEqualTo("{\"code\":\"" + expected.code() + "\",\"retryable\":" + expected.retryable() + "}");
                 } else if (ReportsErrorCode.class.isAssignableFrom(type)) {
+                    ErrorCodeResponse expected = ErrorCodeResponse.of(TO_THROW.get());
                     assertThat(result.getContentAsString()).as(type.getSimpleName())
-                            .isEqualTo("{\"code\":\"" + ErrorCodeResponse.of(TO_THROW.get()).code() + "\"}");
+                            .isEqualTo("{\"code\":\"" + expected.code() + "\",\"retryable\":false}");
                 } else {
                     assertThat(result.getContentAsString()).as(type.getSimpleName()).isEmpty();
                 }
