@@ -733,9 +733,9 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-110")
     void anUnauthenticatedCallerCannotTouchTheCatalog() throws Exception {
-        send("GET", "", null, null).andExpect(status().isForbidden());
-        send("GET", "/1", null, null).andExpect(status().isForbidden());
-        send("POST", "", null, annualUpfront("anónimo")).andExpect(status().isForbidden());
+        send("GET", "", null, null).andExpect(status().isUnauthorized());
+        send("GET", "/1", null, null).andExpect(status().isUnauthorized());
+        send("POST", "", null, annualUpfront("anónimo")).andExpect(status().isUnauthorized());
     }
 
     @Test

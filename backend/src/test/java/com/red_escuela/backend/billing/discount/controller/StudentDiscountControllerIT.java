@@ -145,7 +145,7 @@ class StudentDiscountControllerIT extends AbstractIntegrationTest {
             postJson("/student-discounts/1/revocation", token, Map.of("reason", "x")).andExpect(status().isForbidden());
             mockMvc.perform(get(grantPath()).header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
         }
-        mockMvc.perform(get(grantPath())).andExpect(status().isForbidden());
+        mockMvc.perform(get(grantPath())).andExpect(status().isUnauthorized());
     }
 
     @Test

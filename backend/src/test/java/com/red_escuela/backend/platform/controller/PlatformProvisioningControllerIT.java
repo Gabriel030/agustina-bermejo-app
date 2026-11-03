@@ -103,7 +103,7 @@ class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
             provision(tokensByRole.get(role), null, "dir@example.com", "30111222").andExpect(status().isForbidden());
         }
         mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(body("dir@example.com", "30111222")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         assertThat(count("person_role pr join role r on r.id = pr.role_id where r.name = 'DIRECTOR'")).isZero();
         assertThat(count("institution")).isZero();
@@ -288,7 +288,7 @@ class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
         for (String role : List.of("ALUMNO", "DOCENTE", "PRECEPTOR", "ADMINISTRATIVO")) {
             mockMvc.perform(get(STATUS_ENDPOINT).header("Authorization", "Bearer " + tokensByRole.get(role))).andExpect(status().isForbidden());
         }
-        mockMvc.perform(get(STATUS_ENDPOINT)).andExpect(status().isForbidden());
+        mockMvc.perform(get(STATUS_ENDPOINT)).andExpect(status().isUnauthorized());
     }
 
     private String platformAdminToken() {

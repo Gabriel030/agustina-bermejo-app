@@ -106,7 +106,7 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
         mockMvc.perform(post("/invoices/" + scenario.invoiceId() + "/cancellations/preview").header("Authorization", "Bearer " + student.token())
                 .contentType(APPLICATION_JSON).content(cancellationBody("BILLING_ERROR", "x"))).andExpect(status().isForbidden());
         mockMvc.perform(post("/invoices/" + scenario.invoiceId() + "/cancellations/preview").contentType(APPLICATION_JSON)
-                .content(cancellationBody("BILLING_ERROR", "x"))).andExpect(status().isForbidden());
+                .content(cancellationBody("BILLING_ERROR", "x"))).andExpect(status().isUnauthorized());
     }
 
     @Test

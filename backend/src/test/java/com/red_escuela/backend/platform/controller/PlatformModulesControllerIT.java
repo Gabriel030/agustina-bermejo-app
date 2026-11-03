@@ -113,7 +113,7 @@ class PlatformModulesControllerIT extends AbstractIntegrationTest {
 
     @Test
     void meModulesRequiresASession() throws Exception {
-        mockMvc.perform(get("/me/modules")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/me/modules")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -243,7 +243,7 @@ class PlatformModulesControllerIT extends AbstractIntegrationTest {
                             .header("Authorization", "Bearer " + tokensByRole.get(role)))
                     .andExpect(status().isForbidden());
         }
-        mockMvc.perform(get("/platform/features/BILLING/preview").param("target", "OFF")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/platform/features/BILLING/preview").param("target", "OFF")).andExpect(status().isUnauthorized());
     }
 
     @Test

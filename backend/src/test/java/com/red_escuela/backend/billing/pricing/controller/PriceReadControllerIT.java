@@ -255,7 +255,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
             mockMvc.perform(get("/prices/{priceId}/versions", priceId).header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
             impact(token, 120000, TODAY, null).andExpect(status().isForbidden());
         }
-        mockMvc.perform(get("/prices")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/prices")).andExpect(status().isUnauthorized());
     }
 
     @Test

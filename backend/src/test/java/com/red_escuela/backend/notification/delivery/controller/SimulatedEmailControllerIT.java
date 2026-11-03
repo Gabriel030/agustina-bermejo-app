@@ -114,7 +114,7 @@ class SimulatedEmailControllerIT extends AbstractIntegrationTest {
 
     @Test
     void anonymousRequestsAreRejected() throws Exception {
-        mockMvc.perform(get(PATH)).andExpect(status().isForbidden());
+        mockMvc.perform(get(PATH)).andExpect(status().isUnauthorized());
     }
 
     @Test

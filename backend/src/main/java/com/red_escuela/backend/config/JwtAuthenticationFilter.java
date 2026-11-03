@@ -39,7 +39,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(BEARER_PREFIX.length());
             accessTokenVerifier.verify(token).ifPresentOrElse(
                     principal -> SecurityContextHolder.getContext().setAuthentication(buildAuthentication(principal)),
-                    SecurityContextHolder::clearContext);
+                    () -> {
+                        SecurityContextHolder.clearContext();
+                        request.setAttribute(UnauthenticatedEntryPoint.REJECTED_TOKEN_ATTRIBUTE, Boolean.TRUE);
+                    });
         }
 
         filterChain.doFilter(request, response);

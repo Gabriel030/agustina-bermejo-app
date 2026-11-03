@@ -50,7 +50,7 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     Then status 200
     And match response == '#[0]'
 
-  Scenario: Sin sesión, 403
+  Scenario: Sin sesión, 401
     Given path '/me/course-enrollments'
     When method get
-    Then status 403
+    Then status 401

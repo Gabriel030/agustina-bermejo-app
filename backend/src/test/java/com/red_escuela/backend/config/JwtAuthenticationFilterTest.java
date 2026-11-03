@@ -87,4 +87,23 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         assertThat(chain.getRequest()).isNotNull();
     }
+
+    @Test
+    void rejectedTokenMarksTheRequestSoTheEntryPointCanReportIt() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-invalido");
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(request.getAttribute(UnauthenticatedEntryPoint.REJECTED_TOKEN_ATTRIBUTE)).isEqualTo(Boolean.TRUE);
+    }
+
+    @Test
+    void requestWithoutTokenIsNotMarkedAsRejected() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(request.getAttribute(UnauthenticatedEntryPoint.REJECTED_TOKEN_ATTRIBUTE)).isNull();
+    }
 }

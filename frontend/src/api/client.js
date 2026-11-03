@@ -46,6 +46,7 @@ let onSessionExpired = null;
 
 export function setAccessToken(token) {
   accessToken = token;
+  if (token) sessionExpiredNotified = false;
 }
 
 export function setSessionExpiredHandler(handler) {
@@ -66,6 +67,18 @@ async function rawFetch(path, options) {
   return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
 }
 
+let refreshInFlight = null;
+let sessionExpiredNotified = false;
+
+function requestSessionRefresh() {
+  if (!refreshInFlight) {
+    refreshInFlight = refreshSession().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 async function refreshSession() {
   const refreshToken = localStorage.getItem('refreshToken');
   if (!refreshToken) return false;
@@ -82,25 +95,24 @@ async function refreshSession() {
   return true;
 }
 
+function expireSession() {
+  if (!sessionExpiredNotified) {
+    sessionExpiredNotified = true;
+    onSessionExpired?.();
+  }
+  throw new AuthError();
+}
+
 async function fetchWithAuth(path, options) {
+  const tokenSent = accessToken;
   let response = await rawFetch(path, options);
 
-  // El backend nunca manda body en sus errores, así que un token expirado y un rol
-  // realmente insuficiente son indistinguibles acá: ambos casos caen en el mismo
-  // JwtAuthenticationFilter (limpia el contexto ante un JWT inválido/vencido en vez de
-  // cortar la request, ver JwtAuthenticationFilter.java) y terminan en 403 vía
-  // @PreAuthorize, no en 401. Reintentar refresh también en 403 es lo único que
-  // recupera la sesión vencida sin pedirle al usuario que vuelva a loguearse a mano;
-  // el costo en el caso de rol insuficiente es un round-trip de más (refresh exitoso,
-  // reintento que vuelve a dar 403 legítimo).
-  if ((response.status === 401 || response.status === 403) && !path.startsWith('/auth/')) {
-    const refreshed = await refreshSession();
-    if (refreshed) {
-      response = await rawFetch(path, options);
-    } else if (response.status === 401) {
-      onSessionExpired?.();
-      throw new AuthError();
-    }
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    const alreadyRefreshed = accessToken !== null && accessToken !== tokenSent;
+    const refreshed = alreadyRefreshed || (await requestSessionRefresh());
+    if (!refreshed) expireSession();
+    response = await rawFetch(path, options);
+    if (response.status === 401) expireSession();
   }
 
   if (response.status === 429) {

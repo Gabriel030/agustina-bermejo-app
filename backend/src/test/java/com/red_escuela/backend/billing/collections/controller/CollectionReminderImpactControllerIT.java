@@ -106,9 +106,9 @@ class CollectionReminderImpactControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-110")
-    void anonymousIsForbidden() throws Exception {
+    void anonymousIsUnauthorized() throws Exception {
         mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(body("\"PROGRAMS\"", standardNotices(-2), TODAY.plusDays(1))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

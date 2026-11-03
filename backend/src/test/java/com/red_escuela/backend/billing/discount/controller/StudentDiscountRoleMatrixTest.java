@@ -157,6 +157,6 @@ class StudentDiscountRoleMatrixTest extends AbstractIntegrationTest {
 
     @Test
     void anAnonymousCallerIsRejected() throws Exception {
-        mockMvc.perform(get("/me/student-discounts")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/me/student-discounts")).andExpect(status().isUnauthorized());
     }
 }
