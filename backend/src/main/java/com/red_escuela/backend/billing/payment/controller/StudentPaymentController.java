@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.payment.usecase.ListStudentPaymentsUseCas
 import com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -41,6 +42,7 @@ public class StudentPaymentController {
         this.currentStudentService = currentStudentService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/students/{studentId}/cash-payments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")

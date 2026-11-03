@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyC
 import com.red_escuela.backend.billing.discount.usecase.FindLostCohortPromotionBenefitsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ListActivePromotionsByLegacyContractUseCase;
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -50,6 +51,7 @@ public class PromotionController {
     }
 
     @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.")
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/courses/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -58,6 +60,7 @@ public class PromotionController {
     }
 
     @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions con tipo COHORT_PROMOTION. Responde 400 INVALID_DISCOUNT_DEFINITION si algún beneficio es de EXAM_FEE, DEGREE_ISSUANCE_FEE o ADMINISTRATIVE_FEE (D-433). Se retira cuando el front use el contrato nuevo.")
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/programs/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -66,6 +69,7 @@ public class PromotionController {
     }
 
     @Operation(deprecated = true, description = "Deprecado (D-432): usar POST /discount-definitions/{id}/closure. Se retira cuando el front use el contrato nuevo.")
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/promotions/{id}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('DIRECTOR')")

@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.configuration.usecase.ListConfigurationVe
 import com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfigurationChangeUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ValidateBillingConfigurationChangeUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,7 @@ public class CollectionReminderSettingsController {
         this.findAuthorNamesUseCase = findAuthorNamesUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/changes")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public ResponseEntity<?> proposeOrPublishChange(@Valid @RequestBody ChangeCollectionReminderSettingsRequest request) {
