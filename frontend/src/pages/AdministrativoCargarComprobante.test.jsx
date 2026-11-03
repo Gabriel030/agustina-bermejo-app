@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -222,7 +223,7 @@ describe('AdministrativoCargarComprobante', () => {
   });
 
   it('returns to the data step with the duplicate notice when the transfer was already registered', async () => {
-    captureSubmission(() => HttpResponse.json({ code: 'POSSIBLE_DUPLICATE_BANK_TRANSFER', violations: [] }, { status: 409 }));
+    captureSubmission(() => HttpResponse.json(errorBody('POSSIBLE_DUPLICATE_BANK_TRANSFER'), { status: 409 }));
     const user = userEvent.setup();
     renderPage();
     await fillValidForm(user);
@@ -236,7 +237,7 @@ describe('AdministrativoCargarComprobante', () => {
   });
 
   it('shows the server message on the review step when the upload is rejected for another reason', async () => {
-    captureSubmission(() => HttpResponse.json({ code: 'INVOICE_ALREADY_UNDER_REVIEW', violations: [] }, { status: 409 }));
+    captureSubmission(() => HttpResponse.json(errorBody('INVOICE_ALREADY_UNDER_REVIEW'), { status: 409 }));
     const user = userEvent.setup();
     renderPage();
     await fillValidForm(user);

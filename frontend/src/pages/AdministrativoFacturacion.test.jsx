@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -164,7 +165,7 @@ describe('AdministrativoFacturacion — comprobantes', () => {
   it('explains why a receipt cannot be approved when its installment was already paid at the counter', async () => {
     server.use(
       http.post(`${API}/bank-transfer-receipts/7/approve`, () =>
-        HttpResponse.json({ code: 'INVOICE_NOT_PAYABLE' }, { status: 409 }),
+        HttpResponse.json(errorBody('INVOICE_NOT_PAYABLE'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();
@@ -278,7 +279,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
       http.post(`${API}/students/2/cash-payments`, async ({ request }) => {
         keys.push(request.headers.get('Idempotency-Key'));
         fingerprints.push((await request.json()).previewFingerprint);
-        if (keys.length === 1) return HttpResponse.json({ code: 'CASH_PAYMENT_PREVIEW_OUTDATED' }, { status: 409 });
+        if (keys.length === 1) return HttpResponse.json(errorBody('CASH_PAYMENT_PREVIEW_OUTDATED'), { status: 409 });
         return HttpResponse.json({ paymentId: 9 }, { status: 201 });
       }),
     );
@@ -341,7 +342,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     server.use(
       http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
       http.post(`${API}/students/2/cash-payments`, () =>
-        HttpResponse.json({ code: 'CASH_PAYMENT_RECEIPT_NUMBER_INVALID' }, { status: 400 }),
+        HttpResponse.json(errorBody('CASH_PAYMENT_RECEIPT_NUMBER_INVALID'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();
@@ -471,7 +472,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
 
   it('drops the student when the backend says it no longer exists', async () => {
     server.use(
-      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json({ code: 'STUDENT_NOT_FOUND' }, { status: 404 })),
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(errorBody('STUDENT_NOT_FOUND'), { status: 404 })),
     );
     const user = userEvent.setup();
     renderPage();
@@ -489,7 +490,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
         previews += 1;
         return HttpResponse.json(previewOf());
       }),
-      http.post(`${API}/students/2/cash-payments`, () => HttpResponse.json({ code: 'IDEMPOTENCY_KEY_CONFLICT' }, { status: 409 })),
+      http.post(`${API}/students/2/cash-payments`, () => HttpResponse.json(errorBody('IDEMPOTENCY_KEY_CONFLICT'), { status: 409 })),
     );
     const user = userEvent.setup();
     renderPage();
