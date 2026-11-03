@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -252,7 +253,7 @@ describe('RequestRefundPage', () => {
 
   it('shows the destination error returned by the backend next to the field', async () => {
     server.use(
-      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code: 'REFUND_DESTINATION_INVALID', violations: [] }, { status: 400 })),
+      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json(errorBody('REFUND_DESTINATION_INVALID'), { status: 400 })),
     );
     const user = userEvent.setup();
     renderPage();
@@ -282,7 +283,7 @@ describe('RequestRefundPage', () => {
 
   it('reports other errors in a toast', async () => {
     server.use(
-      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json({ code: 'REFUND_BLOCKED_BY_OVERDUE_DEBT', violations: [] }, { status: 409 })),
+      http.post(`${API}/students/7/refund-requests`, () => HttpResponse.json(errorBody('REFUND_BLOCKED_BY_OVERDUE_DEBT'), { status: 409 })),
     );
     const user = userEvent.setup();
     renderPage();

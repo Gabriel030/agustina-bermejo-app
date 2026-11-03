@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { RefundsSection } from './RefundsSection';
 
@@ -209,7 +210,7 @@ describe('RefundsSection', () => {
     ['INSUFFICIENT_ACCOUNT_CREDIT', 409, /no tiene saldo a favor suficiente/],
   ])('keeps the dialog open and explains the %s error', async (code, status, message) => {
     mockRefunds([refund({ id: 2, paymentId: 56, requestedOn: '2020-01-01' })]);
-    server.use(http.post(`${API}/refunds/2/completion`, () => HttpResponse.json({ code, violations: [] }, { status })));
+    server.use(http.post(`${API}/refunds/2/completion`, () => HttpResponse.json(errorBody(code), { status })));
     const user = userEvent.setup();
     renderWithProviders(<RefundsSection studentId={7} />);
     await expandFirstRequest(user);
@@ -231,7 +232,7 @@ describe('RefundsSection', () => {
           loads += 1;
           return HttpResponse.json([refund({ id: 2, paymentId: 56, requestedOn: '2020-01-01' })]);
         }),
-        http.post(`${API}/refunds/2/completion`, () => HttpResponse.json({ code, violations: [] }, { status: 409 })),
+        http.post(`${API}/refunds/2/completion`, () => HttpResponse.json(errorBody(code), { status: 409 })),
       );
       const user = userEvent.setup();
       renderWithProviders(<RefundsSection studentId={7} />);
@@ -273,7 +274,7 @@ describe('RefundsSection', () => {
 
   it('shows the server error when the failure reason is rejected', async () => {
     mockRefunds([refund({ id: 2, paymentId: 56 })]);
-    server.use(http.post(`${API}/refunds/2/failure`, () => HttpResponse.json({ code: 'REFUND_FAILURE_REASON_INVALID', violations: [] }, { status: 400 })));
+    server.use(http.post(`${API}/refunds/2/failure`, () => HttpResponse.json(errorBody('REFUND_FAILURE_REASON_INVALID'), { status: 400 })));
     const user = userEvent.setup();
     renderWithProviders(<RefundsSection studentId={7} />);
     await expandFirstRequest(user);

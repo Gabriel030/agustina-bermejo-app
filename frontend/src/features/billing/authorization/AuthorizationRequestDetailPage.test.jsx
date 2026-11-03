@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AuthorizationRequestDetailPage } from './AuthorizationRequestDetailPage';
 import { API, detail } from './authorizationFixtures';
@@ -164,7 +165,7 @@ describe('AuthorizationRequestDetailPage as director', () => {
     server.use(
       http.post(`${API}/authorization-requests/11/approve`, () => {
         setCurrent(detail({ status: 'REJECTED', decidedAt: '2026-10-24T09:00:00Z' }, { decidedBy: { id: 2, name: 'Otra Directora', roles: [] } }));
-        return HttpResponse.json({ code: 'ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION', violations: [] }, { status: 409 });
+        return HttpResponse.json(errorBody('ILLEGAL_AUTHORIZATION_REQUEST_TRANSITION'), { status: 409 });
       }),
     );
     const user = userEvent.setup();
@@ -190,7 +191,7 @@ describe('AuthorizationRequestDetailPage as director', () => {
             { decidedBy: { id: 1, name: 'Director', roles: [] }, effectLines: [] },
           ),
         );
-        return HttpResponse.json({ code: 'REFUND_EXCEEDS_AVAILABLE_AMOUNT', violations: [] }, { status: 409 });
+        return HttpResponse.json(errorBody('REFUND_EXCEEDS_AVAILABLE_AMOUNT'), { status: 409 });
       }),
     );
     const user = userEvent.setup();
