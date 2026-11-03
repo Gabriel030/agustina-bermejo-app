@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -110,7 +111,7 @@ describe('NuevoAlumno', () => {
       onConfirm: () => {
         confirmAttempts += 1;
         return confirmAttempts === 1
-          ? HttpResponse.json({ code: 'DNI_ALREADY_EXISTS' }, { status: 400 })
+          ? HttpResponse.json(errorBody('DNI_ALREADY_EXISTS'), { status: 400 })
           : HttpResponse.json({ id: 64 });
       },
     });

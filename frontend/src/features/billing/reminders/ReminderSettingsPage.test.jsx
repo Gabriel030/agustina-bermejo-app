@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -196,7 +197,7 @@ describe('ReminderSettingsPage', () => {
 
   it('shows the server violations without leaving the confirmation step', async () => {
     changeResponse = () =>
-      HttpResponse.json({ code: 'REMINDER_POLICY_VIOLATION', violations: [{ code: 'DUPLICATE_SLOT', message: 'Dos avisos caen el mismo día.' }] }, { status: 400 });
+      HttpResponse.json({ ...errorBody('REMINDER_POLICY_VIOLATION'), violations: [{ code: 'DUPLICATE_SLOT', message: 'Dos avisos caen el mismo día.' }] }, { status: 400 });
     const user = userEvent.setup();
     renderPage();
     await addAfterDueNotice(user);

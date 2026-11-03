@@ -3,6 +3,7 @@ package com.red_escuela.backend.shared.event;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.IncompleteEventPublications;
@@ -18,18 +19,28 @@ public class EventPublicationResubmissionJob {
     static final Duration MINIMUM_AGE = Duration.ofMinutes(5);
     static final Duration STUCK_AFTER = Duration.ofHours(1);
 
+
     private final IncompleteEventPublications incompleteEventPublications;
     private final JdbcTemplate jdbcTemplate;
 
-    public EventPublicationResubmissionJob(IncompleteEventPublications incompleteEventPublications, JdbcTemplate jdbcTemplate) {
+    private final EventPublicationAttemptLedger attemptLedger;
+
+    public EventPublicationResubmissionJob(
+            IncompleteEventPublications incompleteEventPublications,
+            JdbcTemplate jdbcTemplate,
+            @Value("${app.event-publication.resubmission.max-attempts:100}") int maxAttempts) {
         this.incompleteEventPublications = incompleteEventPublications;
         this.jdbcTemplate = jdbcTemplate;
+        this.attemptLedger = new EventPublicationAttemptLedger(jdbcTemplate, maxAttempts);
     }
 
     @Scheduled(fixedDelayString = "PT5M", initialDelayString = "PT5M", zone = "${app.timezone}")
     @SchedulerLock(name = "EventPublicationResubmissionJob", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void resubmitIncompletePublications() {
+        attemptLedger.moveExhaustedPublicationsToDeadLetter();
+        attemptLedger.countAttemptsOfPendingPublications();
         incompleteEventPublications.resubmitIncompletePublicationsOlderThan(MINIMUM_AGE);
+        attemptLedger.forgetAttemptsOfFinishedPublications();
         reportStuckPublications();
     }
 
