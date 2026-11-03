@@ -12,6 +12,8 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -36,6 +38,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 final class OwnershipFixtures {
@@ -52,6 +55,7 @@ final class OwnershipFixtures {
     private Long sectionEnrollmentId;
     private Long courseSectionEnrollmentId;
     private Long sectionId;
+    private Long attendanceId;
     private Long annualUpfrontRequestId;
 
     OwnershipFixtures(TransactionTemplate transactions, EntityManager entityManager, RoleRepository roleRepository,
@@ -68,6 +72,7 @@ final class OwnershipFixtures {
             case SECTION_ENROLLMENT -> sectionEnrollmentId;
             case COURSE_SECTION_ENROLLMENT -> courseSectionEnrollmentId;
             case SECTION_INSTRUCTOR -> sectionId;
+            case ATTENDANCE_SECTION_INSTRUCTOR -> attendanceId;
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
         };
     }
@@ -151,7 +156,14 @@ final class OwnershipFixtures {
         enrollment.setEnrolledAt(LocalDateTime.now());
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
+        Attendance absence = new Attendance();
+        absence.setProgramSubjectSectionEnrollment(enrollment);
+        absence.setClassDate(LocalDate.of(2026, 3, 2));
+        absence.setStatus(AttendanceStatus.ABSENT);
+        absence.setRecordedBy(instructor);
+        entityManager.persist(absence);
         entityManager.flush();
+        attendanceId = absence.getId();
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
 
