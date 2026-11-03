@@ -30,10 +30,8 @@ public class RefreshTokenService implements RefreshTokenUseCase {
                 .filter(rt -> !rt.getRevoked())
                 .filter(rt -> rt.getExpiresAt().isAfter(ApplicationTime.now()))
                 .filter(rt -> rt.getPerson().getStatus() == StatusType.ACTIVE)
+                .filter(rt -> refreshTokenRepository.revokeIfActive(hash) > 0)
                 .orElseThrow(InvalidRefreshTokenException::new);
-
-        existing.setRevoked(true);
-        refreshTokenRepository.save(existing);
 
         return authTokenIssuer.issueTokens(existing.getPerson());
     }

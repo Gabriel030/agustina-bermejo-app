@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -393,7 +394,7 @@ describe('AlumnoPagarTransferencia', () => {
   });
 
   it('showsTheDuplicateBlockWithTwoWaysOutWhenTheTransferWasAlreadyRegistered', async () => {
-    captureSubmission(() => HttpResponse.json({ code: 'POSSIBLE_DUPLICATE_BANK_TRANSFER', violations: [] }, { status: 409 }));
+    captureSubmission(() => HttpResponse.json(errorBody('POSSIBLE_DUPLICATE_BANK_TRANSFER'), { status: 409 }));
     const user = userEvent.setup();
     renderTransfer();
     await goToUploadStep(user);
@@ -407,7 +408,7 @@ describe('AlumnoPagarTransferencia', () => {
   });
 
   it('theDuplicateBlockLeadsToTheFollowUpOfTheExistingReceipt', async () => {
-    captureSubmission(() => HttpResponse.json({ code: 'POSSIBLE_DUPLICATE_BANK_TRANSFER', violations: [] }, { status: 409 }));
+    captureSubmission(() => HttpResponse.json(errorBody('POSSIBLE_DUPLICATE_BANK_TRANSFER'), { status: 409 }));
     const user = userEvent.setup();
     renderTransfer({ receipts: [receiptOf({ status: 'APPROVED' })] });
     await goToUploadStep(user);
@@ -420,7 +421,7 @@ describe('AlumnoPagarTransferencia', () => {
   });
 
   it('asksToReviewTheOrderWhenTheBackendSaysTheOldestInstallmentsComeFirst', async () => {
-    captureSubmission(() => HttpResponse.json({ code: 'RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST', violations: [] }, { status: 409 }));
+    captureSubmission(() => HttpResponse.json(errorBody('RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST'), { status: 409 }));
     const user = userEvent.setup();
     renderTransfer();
     await goToUploadStep(user);
@@ -436,7 +437,7 @@ describe('AlumnoPagarTransferencia', () => {
     server.use(
       http.post(`${API}/me/bank-transfer-receipts`, ({ request }) => {
         keys.push(request.headers.get('Idempotency-Key'));
-        return HttpResponse.json({ code: 'IDEMPOTENCY_KEY_CONFLICT', violations: [] }, { status: 409 });
+        return HttpResponse.json(errorBody('IDEMPOTENCY_KEY_CONFLICT'), { status: 409 });
       }),
     );
     const user = userEvent.setup();
@@ -457,7 +458,7 @@ describe('AlumnoPagarTransferencia', () => {
     server.use(
       http.post(`${API}/me/bank-transfer-receipts`, ({ request }) => {
         keys.push(request.headers.get('Idempotency-Key'));
-        return HttpResponse.json({ code: 'BANK_TRANSFER_DETAILS_REQUIRED', violations: [{ code: 'BANK_TRANSFER_OPERATION_NUMBER_REQUIRED' }] }, { status: 400 });
+        return HttpResponse.json({ ...errorBody('BANK_TRANSFER_DETAILS_REQUIRED'), violations: [{ code: 'BANK_TRANSFER_OPERATION_NUMBER_REQUIRED' }] }, { status: 400 });
       }),
     );
     const user = userEvent.setup();
@@ -549,7 +550,7 @@ describe('AlumnoPagarTransferencia', () => {
 
   it('refreshesTheInstallmentListWhenTheBackendReportsAnOrderConflict', async () => {
     let listLoads = 0;
-    captureSubmission(() => HttpResponse.json({ code: 'RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST', violations: [] }, { status: 409 }));
+    captureSubmission(() => HttpResponse.json(errorBody('RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST'), { status: 409 }));
     const user = userEvent.setup();
     renderTransfer();
     server.use(
@@ -613,7 +614,7 @@ describe('AlumnoPagarTransferencia', () => {
     });
 
     it('marksTheCoveredInstallmentsAsPaidWhenTheReceiptIsApproved', async () => {
-      captureSubmission(() => HttpResponse.json({ code: 'POSSIBLE_DUPLICATE_BANK_TRANSFER', violations: [] }, { status: 409 }));
+      captureSubmission(() => HttpResponse.json(errorBody('POSSIBLE_DUPLICATE_BANK_TRANSFER'), { status: 409 }));
       const user = userEvent.setup();
       renderTransfer({
         receipts: [receiptOf({ status: 'APPROVED', invoiceIds: [61, 62], invoices: twoInstallments, declaredAmount: money('105600.00') })],
@@ -628,7 +629,7 @@ describe('AlumnoPagarTransferencia', () => {
     });
 
     it('marksOnlyTheCoveredInstallmentsAsPaidWhenAnApprovedReceiptCoveredJustSome', async () => {
-      captureSubmission(() => HttpResponse.json({ code: 'POSSIBLE_DUPLICATE_BANK_TRANSFER', violations: [] }, { status: 409 }));
+      captureSubmission(() => HttpResponse.json(errorBody('POSSIBLE_DUPLICATE_BANK_TRANSFER'), { status: 409 }));
       const user = userEvent.setup();
       renderTransfer({
         receipts: [receiptOf({ status: 'APPROVED', invoiceIds: [61, 62], invoices: twoInstallments, declaredAmount: money('60000.00') })],

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import {
@@ -347,7 +348,7 @@ describe('Facturación — diálogo de cancelación', () => {
   });
 
   it('keeps the written justification and explains a receipt conflict returned by the server', async () => {
-    mockServer({ cancel: () => HttpResponse.json({ code: 'PENDING_BANK_TRANSFER_ON_INVOICE', violations: [] }, { status: 409 }) });
+    mockServer({ cancel: () => HttpResponse.json(errorBody('PENDING_BANK_TRANSFER_ON_INVOICE'), { status: 409 }) });
     const user = userEvent.setup();
     renderPage();
     const dialog = await openCancelDialog(user);
@@ -364,7 +365,7 @@ describe('Facturación — diálogo de cancelación', () => {
   });
 
   it('rejects the whole cancellation when a late fee has a receipt in review', async () => {
-    mockServer({ cancel: () => HttpResponse.json({ code: 'LATE_FEE_UNDER_PAYMENT_REVIEW', violations: [] }, { status: 409 }) });
+    mockServer({ cancel: () => HttpResponse.json(errorBody('LATE_FEE_UNDER_PAYMENT_REVIEW'), { status: 409 }) });
     const user = userEvent.setup();
     renderPage();
     const dialog = await openCancelDialog(user);
@@ -378,7 +379,7 @@ describe('Facturación — diálogo de cancelación', () => {
   });
 
   it('when the installment changed offers to reload it, which refreshes the account and closes the dialog', async () => {
-    mockServer({ cancel: () => HttpResponse.json({ code: 'ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION', violations: [] }, { status: 409 }) });
+    mockServer({ cancel: () => HttpResponse.json(errorBody('ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION'), { status: 409 }) });
     const user = userEvent.setup();
     renderPage();
     const dialog = await openCancelDialog(user);

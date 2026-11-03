@@ -28,9 +28,9 @@ public class FileStorageService {
     }
 
     public String store(Long studentId, String carpeta, MultipartFile file) {
-        String extension = ALLOWED_CONTENT_TYPES.get(file.getContentType());
+        String extension = ALLOWED_CONTENT_TYPES.get(declaredContentType(file));
         if (extension == null) {
-            throw new UnsupportedFileTypeException(file.getContentType());
+            throw new UnsupportedFileTypeException(declaredContentType(file));
         }
 
         Path studentDirectory = uploadsDirectory.resolve("students").resolve(studentId.toString());
@@ -46,10 +46,10 @@ public class FileStorageService {
     }
 
     public String storeAvatar(Long personId, MultipartFile file) {
-        String extension = switch (file.getContentType()) {
+        String extension = switch (declaredContentType(file)) {
             case "image/jpeg" -> "jpg";
             case "image/png" -> "png";
-            default -> throw new UnsupportedFileTypeException(file.getContentType());
+            default -> throw new UnsupportedFileTypeException(declaredContentType(file));
         };
         Path dir = uploadsDirectory.resolve("avatars");
         try (InputStream content = file.getInputStream()) {
@@ -60,6 +60,11 @@ public class FileStorageService {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static String declaredContentType(MultipartFile file) {
+        String contentType = file.getContentType();
+        return contentType == null ? "" : contentType;
     }
 
     public boolean exists(String relativePath) {
@@ -75,10 +80,10 @@ public class FileStorageService {
     }
 
     public String storeQr(MultipartFile file) {
-        String extension = switch (file.getContentType()) {
+        String extension = switch (declaredContentType(file)) {
             case "image/jpeg" -> "jpg";
             case "image/png" -> "png";
-            default -> throw new UnsupportedFileTypeException(file.getContentType());
+            default -> throw new UnsupportedFileTypeException(declaredContentType(file));
         };
         Path dir = uploadsDirectory.resolve("payment-gateway");
         try {

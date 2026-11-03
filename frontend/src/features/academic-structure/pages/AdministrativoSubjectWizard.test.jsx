@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -138,7 +139,7 @@ describe('AdministrativoSubjectWizard', () => {
 
   it('explains a duplicate code or name instead of a generic error', async () => {
     server.use(
-      http.post(`${API}/subjects`, () => HttpResponse.json({ code: 'SUBJECT_ALREADY_EXISTS' }, { status: 409 })),
+      http.post(`${API}/subjects`, () => HttpResponse.json(errorBody('SUBJECT_ALREADY_EXISTS'), { status: 409 })),
     );
     const user = userEvent.setup();
     mount('/administrativo/gestion-academica/nueva');

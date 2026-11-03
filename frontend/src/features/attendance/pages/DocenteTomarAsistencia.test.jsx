@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -70,7 +71,7 @@ describe('TabAsistencia', () => {
   it('si la fecha es feriado lo dice en vez de un error genérico', async () => {
     mockSection();
     server.use(
-      http.post(`${API}/program-sections/5/attendance`, () => HttpResponse.json({ code: 'CLASS_ON_HOLIDAY' }, { status: 400 })),
+      http.post(`${API}/program-sections/5/attendance`, () => HttpResponse.json(errorBody('CLASS_ON_HOLIDAY'), { status: 400 })),
     );
     const user = userEvent.setup();
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);

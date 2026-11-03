@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { useIssueMonthlyRunManually, useMonthlyRuns, useRetryFailedMonthlyRunItems, useSimulateMonthlyRun } from './useMonthlyRuns';
 
 const API = 'http://localhost:8080';
@@ -119,7 +120,7 @@ describe('useIssueMonthlyRunManually', () => {
   });
 
   it('exposes the conflict code from the backend', async () => {
-    server.use(http.post(`${API}/monthly-invoice-runs/manual-issuances`, () => HttpResponse.json({ code: 'NIGHTLY_BILLING_NOT_COMPLETED', violations: [] }, { status: 409 })));
+    server.use(http.post(`${API}/monthly-invoice-runs/manual-issuances`, () => HttpResponse.json(errorBody('NIGHTLY_BILLING_NOT_COMPLETED'), { status: 409 })));
     const { result } = renderHook(() => useIssueMonthlyRunManually(), { wrapper });
 
     await act(async () => {

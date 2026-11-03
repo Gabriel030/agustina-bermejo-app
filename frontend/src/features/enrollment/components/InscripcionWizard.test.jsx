@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -414,7 +415,7 @@ describe('InscripcionWizard validation with zod', () => {
       http.put(`${API}/me`, () => HttpResponse.json({})),
       http.post(`${API}/me/course-enrollments`, ({ request }) => {
         keys.push(request.headers.get('idempotency-key'));
-        return HttpResponse.json({ code: 'POSSIBLE_DUPLICATE_BANK_TRANSFER' }, { status: 409 });
+        return HttpResponse.json(errorBody('POSSIBLE_DUPLICATE_BANK_TRANSFER'), { status: 409 });
       }),
     );
     const user = userEvent.setup();
