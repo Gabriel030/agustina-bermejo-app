@@ -90,6 +90,18 @@ public class AttendanceSectionAccess {
         return entityManager.getReference(Instructor.class, instructorId);
     }
 
+    public void requireOwnSectionOfAttendanceIfInstructorGiven(Attendance attendance, Long instructorIdIfDocente) {
+        if (instructorIdIfDocente == null) {
+            return;
+        }
+        Long sectionId = sectionIdOf(attendance);
+        if (attendance.getProgramSubjectSectionEnrollment() != null) {
+            requireOwnProgramSection(sectionId, instructorIdIfDocente);
+        } else {
+            requireOwnCourseSection(sectionId, instructorIdIfDocente);
+        }
+    }
+
     public Long sectionIdOf(Attendance attendance) {
         if (attendance.getProgramSubjectSectionEnrollment() != null) {
             return attendance.getProgramSubjectSectionEnrollment().getSubjectSection().getId();
