@@ -4523,6 +4523,18 @@
         "required" : [ "directorEmail", "directorPersonId", "institutionCreated", "institutionId" ],
         "type" : "object"
       },
+      "FirstDirectorStatusResponse" : {
+        "properties" : {
+          "directorExists" : {
+            "type" : "boolean"
+          },
+          "institutionName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "directorExists", "institutionName" ],
+        "type" : "object"
+      },
       "ForgotPasswordRequest" : {
         "properties" : {
           "email" : {
@@ -28811,6 +28823,66 @@
               }
             },
             "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "platform-provisioning-controller" ]
+      }
+    },
+    "/platform/provisioning/first-director/status" : {
+      "get" : {
+        "operationId" : "PlatformProvisioning_findFirstDirectorStatus",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FirstDirectorStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
           },
           "400" : {
             "content" : {
