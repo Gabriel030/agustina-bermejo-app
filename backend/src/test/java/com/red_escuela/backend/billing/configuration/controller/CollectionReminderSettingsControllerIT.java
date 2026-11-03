@@ -203,7 +203,7 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-110")
-    void anonymousIsForbidden() throws Exception {
-        mockMvc.perform(get(BASE + "/versions")).andExpect(status().isForbidden());
+    void anonymousIsUnauthorized() throws Exception {
+        mockMvc.perform(get(BASE + "/versions")).andExpect(status().isUnauthorized());
     }
 }

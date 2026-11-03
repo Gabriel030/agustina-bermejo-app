@@ -194,7 +194,7 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
             read(path, preceptor, 403);
             read(path, teacher, 403);
             read(path, studentToken(), 403);
-            mockMvc.perform(get(path)).andExpect(status().isForbidden());
+            mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
         }
         read("/me/annual-upfront-requests", staffToken(), 403);
     }

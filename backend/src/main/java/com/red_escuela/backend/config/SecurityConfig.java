@@ -28,12 +28,18 @@ public class SecurityConfig {
     private static final String PLATFORM_ADMIN_ROLE = "PLATFORM_ADMIN";
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UnauthenticatedEntryPoint unauthenticatedEntryPoint;
+    private final InsufficientPermissionsHandler insufficientPermissionsHandler;
     private final List<String> corsAllowedOrigins;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            UnauthenticatedEntryPoint unauthenticatedEntryPoint,
+            InsufficientPermissionsHandler insufficientPermissionsHandler,
             @Value("${app.cors.allowed-origins}") List<String> corsAllowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.unauthenticatedEntryPoint = unauthenticatedEntryPoint;
+        this.insufficientPermissionsHandler = insufficientPermissionsHandler;
         this.corsAllowedOrigins = corsAllowedOrigins;
     }
 
@@ -74,6 +80,9 @@ public class SecurityConfig {
             .headers(headers -> headers.httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
                     .maxAgeInSeconds(31536000)))
+            .exceptionHandling(handling -> handling
+                .authenticationEntryPoint(unauthenticatedEntryPoint)
+                .accessDeniedHandler(insufficientPermissionsHandler))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/prospects").permitAll()

@@ -286,7 +286,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         mockMvc.perform(get(staffPath).header("Authorization", "Bearer " + tokenOf(persistPerson("aq.preceptor", "PRECEPTOR")))).andExpect(status().isForbidden());
         mockMvc.perform(get(staffPath).header("Authorization", "Bearer " + tokenOf(persistPerson("aq.docente", "DOCENTE")))).andExpect(status().isForbidden());
         mockMvc.perform(get(staffPath).header("Authorization", "Bearer " + tokenOf(director))).andExpect(status().isOk());
-        mockMvc.perform(get(path)).andExpect(status().isForbidden());
+        mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
     }
 
     @Test

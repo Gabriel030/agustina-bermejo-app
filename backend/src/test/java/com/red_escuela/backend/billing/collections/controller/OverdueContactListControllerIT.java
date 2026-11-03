@@ -75,7 +75,7 @@ class OverdueContactListControllerIT extends AbstractOverdueContactIT {
     @Test
     @Tag("D-110")
     void anonymousRequestsAreRejected() throws Exception {
-        mockMvc.perform(get(PATH)).andExpect(status().isForbidden());
+        mockMvc.perform(get(PATH)).andExpect(status().isUnauthorized());
     }
 
     @Test

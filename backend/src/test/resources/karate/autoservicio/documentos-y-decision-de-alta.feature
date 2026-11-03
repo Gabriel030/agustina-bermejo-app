@@ -62,12 +62,12 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def applicationId = response.id
 
   Scenario: Agregar documentación propia, no ajena; listar pendientes; rechazar con motivo
-    # Sin sesión — 403
+    # Sin sesión — 401
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And param type = 'DNI_FRENTE'
     And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
-    Then status 403
+    Then status 401
 
     # El propio alumno puede subir su documento — 201
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
@@ -183,7 +183,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
   Scenario: El alumno ve los documentos que ya subió, y solo los propios
     Given path '/me/documents'
     When method get
-    Then status 403
+    Then status 401
 
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + alumnoToken

@@ -70,8 +70,8 @@ class BankTransferReceiptSubmissionAuthorizationTest extends AbstractBankTransfe
         Debtor debtor = debtor();
         Long march = invoiceOf(debtor, "80000.00", MARCH_DUE);
 
-        mockMvc.perform(new Submission(null, null, List.of(march), "80000.00").request()).andExpect(status().isForbidden());
-        mockMvc.perform(new Submission(debtor.studentId(), null, List.of(march), "80000.00").request()).andExpect(status().isForbidden());
+        mockMvc.perform(new Submission(null, null, List.of(march), "80000.00").request()).andExpect(status().isUnauthorized());
+        mockMvc.perform(new Submission(debtor.studentId(), null, List.of(march), "80000.00").request()).andExpect(status().isUnauthorized());
 
         assertThat(paymentsOf(debtor.accountId())).isZero();
     }

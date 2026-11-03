@@ -34,10 +34,10 @@ Feature: Perfil propio (GET/PUT /me)
     When method put
     Then status 400
 
-  Scenario: Sin sesión — 403
+  Scenario: Sin sesión — 401
     Given path '/me'
     When method get
-    Then status 403
+    Then status 401
 
   Scenario: Dos personas pueden dejar su DNI vacío — el vacío se guarda como sin DNI
     * def otroAlumnoToken = fixtures.tokenForRole('ALUMNO')
