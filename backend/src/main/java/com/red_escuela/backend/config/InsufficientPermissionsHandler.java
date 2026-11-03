@@ -1,5 +1,6 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,7 @@ import java.io.IOException;
 
 @Component
 public class InsufficientPermissionsHandler implements AccessDeniedHandler {
-    static final String FORBIDDEN_CODE = "FORBIDDEN";
+    static final String FORBIDDEN_CODE = ErrorCodeResponse.FORBIDDEN_CODE;
 
     private final JsonErrorResponseWriter errorWriter;
 
