@@ -1,3 +1,4 @@
+import { newIdempotencyKey } from '@/api/idempotencyKey';
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Clock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -40,9 +41,6 @@ const COPY = {
 
 const TONE_DOT = { success: 'bg-success', warning: 'bg-warning', neutral: 'bg-neutral-ink' };
 
-function newIdempotencyKey() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 export function BankTransferReceiptForm({
   invoices,
