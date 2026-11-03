@@ -249,4 +249,22 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
 
         getAs(stranger, "/course-sections/" + classroom.section().getId() + "/grade-grid").andExpect(status().isForbidden());
     }
+
+    @Test
+    void gradeWeightOutsideZeroToOneIsRejectedWithBadRequestAndNothingIsStored() throws Exception {
+        Classroom classroom = classroom("gridw", "8300001", persistScheme(2, true, null), null);
+
+        for (double weight : new double[] {1.0001, -0.1}) {
+            postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
+                    new CreateGradeItemRequest(GradeItemType.EXAM, 1, weight, LocalDateTime.of(2026, 6, 1, 10, 0),
+                            new BigDecimal("7"), null, null))
+                    .andExpect(status().isBadRequest());
+        }
+        for (double weight : new double[] {0.0, 1.0}) {
+            postJson(classroom.teacher(), "/section-enrollments/" + classroom.enrollment().getId() + "/grade-items",
+                    new CreateGradeItemRequest(GradeItemType.EXAM, 1, weight, LocalDateTime.of(2026, 6, 1, 10, 0),
+                            new BigDecimal("7"), null, null))
+                    .andExpect(status().isCreated());
+        }
+    }
 }

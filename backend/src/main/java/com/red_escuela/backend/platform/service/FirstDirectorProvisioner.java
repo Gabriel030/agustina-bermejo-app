@@ -22,6 +22,8 @@ import java.util.Optional;
 @Service
 public class FirstDirectorProvisioner {
 
+    private static final long PROVISIONING_LOCK_KEY = 7_340_011L;
+
     private final PlatformProvisioningLogRepository provisioningLogRepository;
     private final FeatureChangeReasonValidator reasonValidator;
     private final ProvisioningRequestFingerprint requestFingerprint;
@@ -54,6 +56,7 @@ public class FirstDirectorProvisioner {
     public FirstDirectorProvisioning provisionFirstDirector(FirstDirectorProvisioningCommand command) {
         String reason = reasonValidator.requireValidReason(command.reason());
         String requestHash = requestFingerprint.of(command);
+        provisioningLogRepository.lockProvisioningUntilTransactionEnds(PROVISIONING_LOCK_KEY);
         Optional<FirstDirectorProvisioning> replay = findPreviousProvisioning(command, requestHash);
         if (replay.isPresent()) {
             return replay.get();

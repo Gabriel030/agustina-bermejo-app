@@ -16,6 +16,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
+import com.red_escuela.backend.evaluation.exception.InvalidGradeItemWeightException;
 import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
@@ -74,6 +75,7 @@ public class GradeItemService {
 
     @Transactional
     public GradeItem loadProgramEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
+        requireWeightBetweenZeroAndOne(request);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         if (scheme == null) {
@@ -134,6 +136,7 @@ public class GradeItemService {
 
     @Transactional
     public GradeItem loadCourseEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
+        requireWeightBetweenZeroAndOne(request);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         if (scheme == null) {
@@ -220,6 +223,13 @@ public class GradeItemService {
             throw new NotOwnSectionException(instructorId, examBoardId);
         }
         return examBoard;
+    }
+
+    private void requireWeightBetweenZeroAndOne(CreateGradeItemRequest request) {
+        Double weight = request.weight();
+        if (weight != null && (weight.isNaN() || weight < 0.0 || weight > 1.0)) {
+            throw new InvalidGradeItemWeightException(weight);
+        }
     }
 
     private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {
