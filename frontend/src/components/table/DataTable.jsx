@@ -22,6 +22,9 @@ import { multiSelectFilter } from './multiSelectFilter';
 
 const EXPANDER_COLUMN_ID = 'expander';
 const LOADING_ROWS = 4;
+const STICKY_SHADOW = 'shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]';
+const STICKY_HEAD_CLASS = `sticky left-0 z-20 bg-dialog-bg ${STICKY_SHADOW}`;
+const STICKY_CELL_CLASS = `sticky left-0 z-10 bg-dialog-bg ${STICKY_SHADOW}`;
 
 function ExpandToggle({ row, label }) {
   'use no memo';
@@ -60,7 +63,7 @@ function HeaderCell({ header }) {
     : [];
 
   return (
-    <TableHead aria-sort={ariaSort} className={cn(meta.align === 'right' && 'text-right', meta.headerClassName)}>
+    <TableHead aria-sort={ariaSort} className={cn(meta.align === 'right' && 'text-right', meta.sticky && STICKY_HEAD_CLASS, meta.headerClassName)}>
       <div className={cn('flex items-center gap-1', meta.align === 'right' && 'justify-end')}>
         {column.getCanSort() ? (
           <button
@@ -332,7 +335,10 @@ export function DataTable({
               onClick={onRowClick ? (event) => !isInteractiveTarget(event) && onRowClick(row.original) : undefined}
             >
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className={cn(cell.column.columnDef.meta?.align === 'right' && 'text-right')}>
+                <TableCell
+                  key={cell.id}
+                  className={cn(cell.column.columnDef.meta?.align === 'right' && 'text-right', cell.column.columnDef.meta?.sticky && STICKY_CELL_CLASS)}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
