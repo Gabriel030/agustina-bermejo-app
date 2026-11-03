@@ -26,7 +26,7 @@ class PlatformAdminIsolationTest extends AuthorizationMatrixSupport {
         List<String> notForbidden = new ArrayList<>();
         int checked = 0;
         for (MappedEndpoint endpoint : mappedEndpoints()) {
-            if (publicKeys.contains(endpoint.key()) || isPlatformAdminRoute(endpoint.path())) {
+            if (publicKeys.contains(endpoint.key()) || isPlatformAdminRoute(endpoint.key())) {
                 continue;
             }
             checked++;
@@ -46,13 +46,23 @@ class PlatformAdminIsolationTest extends AuthorizationMatrixSupport {
                 .filter(row -> row.anonymous() != AccessExpectation.PUBLIC)
                 .filter(row -> row.byRole().get(MatrixRole.PLATFORM_ADMIN) == AccessExpectation.ALLOW)
                 .map(AuthorizationMatrixRow::key)
-                .filter(key -> !isPlatformAdminRoute(key.substring(key.indexOf(' ') + 1)))
+                .filter(key -> !isPlatformAdminRoute(key))
                 .toList();
 
         assertThat(allowed).isEmpty();
     }
 
-    private static boolean isPlatformAdminRoute(String path) {
-        return path.equals("/platform") || path.startsWith("/platform/") || path.equals("/me/modules");
+    @Test
+    void platformAdminReadsItsOwnProfile() throws Exception {
+        MappedEndpoint ownProfile = mappedEndpoints().stream()
+                .filter(endpoint -> endpoint.key().equals("GET /me"))
+                .findFirst().orElseThrow();
+
+        assertThat(statusOf(ownProfile, "", MatrixRole.PLATFORM_ADMIN)).isEqualTo(200);
+    }
+
+    private static boolean isPlatformAdminRoute(String key) {
+        String path = key.substring(key.indexOf(' ') + 1);
+        return path.equals("/platform") || path.startsWith("/platform/") || path.equals("/me/modules") || key.equals("GET /me");
     }
 }
