@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -6,7 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DocenteConfiguracionEvaluacion } from '@/features/evaluation';
+import { DocenteConfiguracionEvaluacion, TeacherGradeGrid } from '@/features/evaluation';
 import { useComisionesDictadas } from '@/features/academic-structure';
 import { useConfiguracionComision } from '@/features/evaluation';
 import { comisionCerrada, ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL } from '@/lib/comisiones';
@@ -20,7 +21,11 @@ export function DocenteComisionDetalle() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tipo = searchParams.get('type') === 'COURSE' ? 'COURSE' : 'PROGRAM';
   const esCurso = tipo === 'COURSE';
-  const tab = esCurso ? 'avisos' : (searchParams.get('tab') ?? 'evaluacion');
+  const requestedTab = searchParams.get('tab');
+  const tab = esCurso
+    ? (requestedTab === 'notas' ? 'notas' : 'avisos')
+    : (['evaluacion', 'avisos', 'notas'].includes(requestedTab) ? requestedTab : 'evaluacion');
+  const [gradesDirty, setGradesDirty] = useState(false);
 
   const { data: config, isLoading: cargandoConfig, isError: sinConfig } = useConfiguracionComision(esCurso ? undefined : sectionId);
   const { data: dictadas, isLoading: cargandoDictadas } = useComisionesDictadas();
@@ -75,6 +80,8 @@ export function DocenteComisionDetalle() {
   }
 
   function cambiarTab(nuevoTab) {
+    if (gradesDirty && !window.confirm('Tenés notas sin guardar. Si cambiás de pestaña las perdés.')) return;
+    setGradesDirty(false);
     searchParams.set('tab', nuevoTab);
     setSearchParams(searchParams, { replace: true });
   }
@@ -105,18 +112,17 @@ export function DocenteComisionDetalle() {
         )}
       </div>
 
-      {esCurso ? (
-        <h2 className="font-heading text-[15px] font-semibold text-ink">Avisos</h2>
-      ) : (
-        <Tabs value={tab} onValueChange={cambiarTab}>
-          <TabsList variant="segmented">
-            <TabsTrigger value="evaluacion">Evaluación</TabsTrigger>
-            <TabsTrigger value="avisos">Avisos</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+      <Tabs value={tab} onValueChange={cambiarTab}>
+        <TabsList variant="segmented">
+          {!esCurso && <TabsTrigger value="evaluacion">Evaluación</TabsTrigger>}
+          <TabsTrigger value="avisos">Avisos</TabsTrigger>
+          <TabsTrigger value="notas">Notas</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-      {tab === 'evaluacion' ? (
+      {tab === 'notas' ? (
+        <TeacherGradeGrid sectionId={sectionId} kind={tipo} onDirtyChange={setGradesDirty} />
+      ) : tab === 'evaluacion' ? (
         sinConfig ? (
           <GlassCard className="p-4">
             <EmptyState

@@ -91,7 +91,7 @@ describe('DocenteComisionDetalle', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
-  it('un curso suelto no renderiza la barra de pestañas', async () => {
+  it('un curso suelto ofrece Avisos y Notas pero no Evaluación', async () => {
     server.use(
       http.get(`${API}/me/teaching-sections`, () =>
         HttpResponse.json([{ id: SECTION_ID, type: 'COURSE', subjectName: 'Illustrator', sectionName: 'Turno noche' }]),
@@ -101,7 +101,24 @@ describe('DocenteComisionDetalle', () => {
     montar(`/docente/mis-comisiones/${SECTION_ID}?type=COURSE`);
 
     expect(await screen.findByRole('heading', { name: 'Illustrator · Turno noche' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Avisos', 'Notas']);
+  });
+
+  it('con ?tab=notas muestra la grilla de notas de la comisión de carrera', async () => {
+    mockearConfig();
+    server.use(
+      http.get(`${API}/program-sections/${SECTION_ID}/grade-grid`, () =>
+        HttpResponse.json({
+          sectionId: SECTION_ID,
+          columns: [{ type: 'EXAM', sequenceNumber: 1, date: null }],
+          students: [{ enrollmentId: 3, lastname: 'Rossi', name: 'Camila', dni: '42114673', condition: 'IN_PROGRESS', finalEnabled: false, grades: [] }],
+        }),
+      ),
+    );
+    montar(`/docente/mis-comisiones/${SECTION_ID}?tab=notas`);
+
+    expect(await screen.findByLabelText('Parcial 1 de Rossi, Camila')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Notas' })).toHaveAttribute('data-state', 'active');
   });
 
   it('una comisión cerrada no ofrece acciones sobre los avisos', async () => {
