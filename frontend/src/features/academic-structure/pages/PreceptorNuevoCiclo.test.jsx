@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -173,7 +174,7 @@ describe('PreceptorNuevoCiclo', () => {
     mockExistingCycle();
     server.use(
       http.post(`${API}/academic-offering-cycles/16/sections`, () =>
-        HttpResponse.json({ code: 'SUBJECT_NOT_OPENABLE_FOR_SECTIONS' }, { status: 409 }),
+        HttpResponse.json(errorBody('SUBJECT_NOT_OPENABLE_FOR_SECTIONS'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();
@@ -194,7 +195,7 @@ describe('PreceptorNuevoCiclo', () => {
     mockExistingCycle();
     server.use(
       http.post(`${API}/academic-offering-cycles/16/sections`, () =>
-        HttpResponse.json({ code: 'SECTION_SCHEDULE_CONFLICT' }, { status: 409 }),
+        HttpResponse.json(errorBody('SECTION_SCHEDULE_CONFLICT'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();
@@ -214,7 +215,7 @@ describe('PreceptorNuevoCiclo', () => {
     mockCatalog();
     server.use(
       http.post(`${API}/academic-offering-cycles`, () =>
-        HttpResponse.json({ code: 'CYCLE_ALREADY_IN_PROGRESS' }, { status: 409 }),
+        HttpResponse.json(errorBody('CYCLE_ALREADY_IN_PROGRESS'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();

@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.run.controller;
 import com.red_escuela.backend.billing.run.dto.ManualMonthlyInvoiceIssuanceRequest;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceRunResponse;
 import com.red_escuela.backend.billing.run.usecase.ManualMonthlyInvoiceIssuanceUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ public class ManualMonthlyInvoiceIssuanceController {
         this.issuanceUseCase = issuanceUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MonthlyInvoiceRunResponse issueMonthlyInvoicesManually(@Valid @RequestBody ManualMonthlyInvoiceIssuanceRequest request) {

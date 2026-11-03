@@ -76,6 +76,7 @@ public class GradeItemService {
     @Transactional
     public GradeItem loadProgramEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
         requireWeightBetweenZeroAndOne(request);
+        sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         if (scheme == null) {
@@ -137,6 +138,7 @@ public class GradeItemService {
     @Transactional
     public GradeItem loadCourseEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
         requireWeightBetweenZeroAndOne(request);
+        sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         if (scheme == null) {

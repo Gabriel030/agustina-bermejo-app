@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
+import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { todayIsoDate } from '@/lib/billing';
 import { StudentPaymentsCard } from './StudentPaymentsCard';
@@ -326,7 +327,7 @@ describe('StudentPaymentsCard', () => {
     it('turns the dialog into the blocked state when the server answers PAYMENT_HAS_PENDING_REFUND', async () => {
       const user = userEvent.setup();
       mockChargebackPreview();
-      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json({ code: 'PAYMENT_HAS_PENDING_REFUND', violations: [] }, { status: 409 })));
+      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json(errorBody('PAYMENT_HAS_PENDING_REFUND'), { status: 409 })));
       renderCard();
 
       const dialog = await openChargebackDialog(user);
@@ -357,7 +358,7 @@ describe('StudentPaymentsCard', () => {
     it('shows the field error when the server rejects the bank reference', async () => {
       const user = userEvent.setup();
       mockChargebackPreview();
-      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json({ code: 'CHARGEBACK_REFERENCE_INVALID', violations: [] }, { status: 400 })));
+      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json(errorBody('CHARGEBACK_REFERENCE_INVALID'), { status: 400 })));
       renderCard();
 
       const dialog = await openChargebackDialog(user);
@@ -373,7 +374,7 @@ describe('StudentPaymentsCard', () => {
     it('keeps the dialog open and reports the error when the account has no credit', async () => {
       const user = userEvent.setup();
       mockChargebackPreview();
-      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json({ code: 'INSUFFICIENT_ACCOUNT_CREDIT', violations: [] }, { status: 409 })));
+      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json(errorBody('INSUFFICIENT_ACCOUNT_CREDIT'), { status: 409 })));
       renderCard();
 
       const dialog = await openChargebackDialog(user);
@@ -389,7 +390,7 @@ describe('StudentPaymentsCard', () => {
     it('closes the dialog and refreshes the list when the payment changed state', async () => {
       const user = userEvent.setup();
       mockChargebackPreview();
-      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json({ code: 'ILLEGAL_PAYMENT_STATUS_TRANSITION', violations: [] }, { status: 409 })));
+      server.use(http.post(`${API}/payments/502/chargebacks`, () => HttpResponse.json(errorBody('ILLEGAL_PAYMENT_STATUS_TRANSITION'), { status: 409 })));
       renderCard();
 
       const dialog = await openChargebackDialog(user);
@@ -503,7 +504,7 @@ describe('StudentPaymentsCard', () => {
       const user = userEvent.setup();
       server.use(
         http.post(`${API}/chargebacks/32/reversal/preview`, () => HttpResponse.json(previewOf({ paymentId: 501 }))),
-        http.post(`${API}/chargebacks/32/reversal`, () => HttpResponse.json({ code: 'CHARGEBACK_ALREADY_REVERSED', violations: [] }, { status: 409 })),
+        http.post(`${API}/chargebacks/32/reversal`, () => HttpResponse.json(errorBody('CHARGEBACK_ALREADY_REVERSED'), { status: 409 })),
       );
       renderCard({ payments: [chargedBackPayment] });
 

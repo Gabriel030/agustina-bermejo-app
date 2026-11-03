@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -210,7 +211,7 @@ describe('StudentDiscountsSection', () => {
     mockDiscounts(DISCOUNTS);
     server.use(
       http.post(`${API}/student-discounts/101/revocation`, () =>
-        HttpResponse.json({ code: 'ILLEGAL_STUDENT_DISCOUNT_TRANSITION', violations: [] }, { status: 409 })),
+        HttpResponse.json(errorBody('ILLEGAL_STUDENT_DISCOUNT_TRANSITION'), { status: 409 })),
     );
     const user = userEvent.setup();
     renderSection('director');

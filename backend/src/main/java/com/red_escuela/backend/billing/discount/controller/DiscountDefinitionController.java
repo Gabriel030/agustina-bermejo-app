@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.discount.usecase.FindDiscountDefinitionUs
 import com.red_escuela.backend.billing.discount.usecase.ListDiscountDefinitionsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ValidateDiscountDefinitionUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -70,6 +71,7 @@ public class DiscountDefinitionController {
         return DiscountDefinitionCatalogEntryResponse.from(findUseCase.findDiscountDefinition(id));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
@@ -89,6 +91,7 @@ public class DiscountDefinitionController {
         return new DiscountDefinitionValidationResponse(validateUseCase.validateDiscountDefinition(request.toDraft()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/closure")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({

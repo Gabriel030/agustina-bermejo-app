@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.account.controller;
 
 import com.red_escuela.backend.billing.account.dto.AccountCreditAllocationResponse;
 import com.red_escuela.backend.billing.account.usecase.AllocateAccountCreditUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +17,7 @@ public class CurrentAccountAllocationController {
         this.allocateAccountCreditUseCase = allocateAccountCreditUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/students/{studentId}/current-account/allocations")
     public AccountCreditAllocationResponse allocateCredit(@PathVariable Long studentId) {
         return AccountCreditAllocationResponse.from(allocateAccountCreditUseCase.allocateCreditOfStudentAccounts(studentId));

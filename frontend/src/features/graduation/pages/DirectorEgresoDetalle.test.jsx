@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -100,7 +101,7 @@ describe('DirectorEgresoDetalle', () => {
       graduationBody: () => (decided ? graduation({ status: 'REJECTED', rejectionReason: 'Adeuda materias', decidedAt: '2026-10-01T10:00:00' }) : graduation()),
       approve: () => {
         decided = true;
-        return HttpResponse.json({ code: 'INVALID_GRADUATION_REQUEST_STATE' }, { status: 409 });
+        return HttpResponse.json(errorBody('INVALID_GRADUATION_REQUEST_STATE'), { status: 409 });
       },
     });
     const user = userEvent.setup();
@@ -116,7 +117,7 @@ describe('DirectorEgresoDetalle', () => {
   });
 
   it('explains that the program enrollment is no longer active when the backend blocks the approval', async () => {
-    mockGraduation({ approve: () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_REQUIRED' }, { status: 400 }) });
+    mockGraduation({ approve: () => HttpResponse.json(errorBody('PROGRAM_ENROLLMENT_REQUIRED'), { status: 400 }) });
     const user = userEvent.setup();
     renderDetail();
 
@@ -128,7 +129,7 @@ describe('DirectorEgresoDetalle', () => {
   });
 
   it('explains that the student has unpaid installments when the backend blocks the approval', async () => {
-    mockGraduation({ approve: () => HttpResponse.json({ code: 'PENDING_DEBT' }, { status: 409 }) });
+    mockGraduation({ approve: () => HttpResponse.json(errorBody('PENDING_DEBT'), { status: 409 }) });
     const user = userEvent.setup();
     renderDetail();
 

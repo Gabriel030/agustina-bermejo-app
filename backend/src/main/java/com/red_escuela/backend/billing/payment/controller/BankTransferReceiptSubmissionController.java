@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmission
 import com.red_escuela.backend.billing.payment.dto.BankTransferReceiptSubmissionResponse;
 import com.red_escuela.backend.billing.payment.usecase.SubmitBankTransferReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,6 +40,7 @@ public class BankTransferReceiptSubmissionController {
         this.currentStudentService = currentStudentService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping(value = "/me/bank-transfer-receipts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ALUMNO')")
@@ -62,6 +64,7 @@ public class BankTransferReceiptSubmissionController {
         return BankTransferReceiptSubmissionResponse.from(submitBankTransferReceiptUseCase.submitReceiptOfOwnAccount(studentId, request, idempotencyKey));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping(value = "/students/{studentId}/bank-transfer-receipts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")

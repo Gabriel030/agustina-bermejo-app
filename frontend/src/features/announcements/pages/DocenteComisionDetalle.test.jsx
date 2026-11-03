@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -249,7 +250,7 @@ describe('DocenteComisionDetalle', () => {
     mockearConfig(unaConfig({ status: 'DRAFT', canEdit: true, canSubmit: true, hasFinal: true }));
     server.use(
       http.put(`${API}/me/section-evaluation-configs/${SECTION_ID}`, () =>
-        HttpResponse.json({ code: 'EVALUATION_DATE_ON_HOLIDAY' }, { status: 400 }),
+        HttpResponse.json(errorBody('EVALUATION_DATE_ON_HOLIDAY'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();
