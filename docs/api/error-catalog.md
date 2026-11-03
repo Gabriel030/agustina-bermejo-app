@@ -444,6 +444,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
 | `RATE_LIMIT_EXCEEDED` | sí | `RateLimitExceededException` | identity |
+| `REQUEST_RATE_LIMIT_EXCEEDED` | sí | `RequestRateLimitExceededException` | shared |
 
 ### HTTP 500
 

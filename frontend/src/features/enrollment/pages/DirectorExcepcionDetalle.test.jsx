@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -71,7 +72,7 @@ describe('DirectorExcepcionDetalle', () => {
       ),
       http.post(`${API}/director-approval-requests/9/reject`, () => {
         decided = true;
-        return HttpResponse.json({ code: 'INVALID_DIRECTOR_APPROVAL_REQUEST_STATE' }, { status: 409 });
+        return HttpResponse.json(errorBody('INVALID_DIRECTOR_APPROVAL_REQUEST_STATE'), { status: 409 });
       }),
     );
     const user = userEvent.setup();

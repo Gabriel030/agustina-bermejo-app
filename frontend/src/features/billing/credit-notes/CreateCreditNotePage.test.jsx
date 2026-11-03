@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -265,7 +266,7 @@ describe('Nota de crédito — paso 2 (confirmar)', () => {
   });
 
   it('links to Comprobantes when the installment has a receipt in review', async () => {
-    mockServer({ issue: () => HttpResponse.json({ code: 'PENDING_BANK_TRANSFER_ON_INVOICE', violations: [] }, { status: 409 }) });
+    mockServer({ issue: () => HttpResponse.json(errorBody('PENDING_BANK_TRANSFER_ON_INVOICE'), { status: 409 }) });
     const user = userEvent.setup();
     renderPage();
     await screen.findByRole('button', { name: 'Revisar la nota' });

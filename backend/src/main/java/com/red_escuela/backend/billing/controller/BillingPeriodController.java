@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.dto.BillingPeriodResponse;
 import com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest;
 import com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodUseCase;
 import com.red_escuela.backend.billing.usecase.billingperiod.GetCurrentBillingPeriodUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class BillingPeriodController {
         this.getCurrentBillingPeriodUseCase = getCurrentBillingPeriodUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/billing-periods")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")

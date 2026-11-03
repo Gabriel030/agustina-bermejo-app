@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.run.controller;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceSimulationRequest;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceSimulationResponse;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceSimulationUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ public class MonthlyInvoiceSimulationController {
         this.simulationUseCase = simulationUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MonthlyInvoiceSimulationResponse simulateMonthlyInvoices(@Valid @RequestBody MonthlyInvoiceSimulationRequest request) {

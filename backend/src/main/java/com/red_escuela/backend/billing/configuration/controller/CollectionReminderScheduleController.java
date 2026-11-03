@@ -15,6 +15,7 @@ import com.red_escuela.backend.billing.configuration.usecase.ListReminderSchedul
 import com.red_escuela.backend.billing.configuration.usecase.ProposeReminderScheduleChangeUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ValidateReminderScheduleChangeUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,7 @@ public class CollectionReminderScheduleController {
         return ReminderSchedulePoliciesResponse.from(listPoliciesUseCase.listPolicies());
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{group}/changes")
     public ResponseEntity<?> proposeGroupChange(@PathVariable TeachingGroup group, @Valid @RequestBody ChangeReminderScheduleRequest request) {
         return respond(proposeChangeUseCase.proposeChange(new ReminderScheduleTarget(group, null), request.schedule().toSchedule(), request.effectiveFrom(),
@@ -73,6 +75,7 @@ public class CollectionReminderScheduleController {
         return versionsOf(new ReminderScheduleTarget(group, null));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{group}/exceptions/{targetId}/changes")
     public ResponseEntity<?> proposeExceptionChange(@PathVariable TeachingGroup group, @PathVariable Long targetId,
                                                     @Valid @RequestBody ChangeReminderScheduleRequest request) {
@@ -92,6 +95,7 @@ public class CollectionReminderScheduleController {
         return versionsOf(new ReminderScheduleTarget(group, targetId));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{group}/exceptions/{targetId}/removal")
     public ResponseEntity<?> proposeExceptionRemoval(@PathVariable TeachingGroup group, @PathVariable Long targetId,
                                                      @Valid @RequestBody RemoveReminderScheduleExceptionRequest request) {
