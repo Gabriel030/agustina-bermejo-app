@@ -14,6 +14,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [frontend.md](context/frontend.md) | Convenciones de frontend, flujo de diseño con `ux-advisor`, rutas por rol | vigente |
 | [components.md](context/components.md) | Qué componente usar y cómo listarlos en una spec | vigente |
 | [modules.md](context/modules.md) | Límites entre módulos con Spring Modulith, línea base de violaciones | vigente |
+| [overload-protection.md](context/overload-protection.md) | Rate limit, IP real detrás de proxy, timeouts, pool, límites de entrada y dead letter de la cola de eventos | vigente |
 | [testing.md](context/testing.md) | Mapa de herramientas de test y criterio de qué test escribir | vigente |
 | [debugging.md](context/debugging.md) | Correr todo local y resolver arranques fallidos | vigente |
 | [workflow.md](context/workflow.md) | Git, CI local, commits, PRs, migraciones y backport | vigente |
