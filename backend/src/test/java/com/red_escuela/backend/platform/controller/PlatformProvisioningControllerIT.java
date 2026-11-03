@@ -288,7 +288,7 @@ class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
         for (String role : List.of("ALUMNO", "DOCENTE", "PRECEPTOR", "ADMINISTRATIVO")) {
             mockMvc.perform(get(STATUS_ENDPOINT).header("Authorization", "Bearer " + tokensByRole.get(role))).andExpect(status().isForbidden());
         }
-        mockMvc.perform(get(STATUS_ENDPOINT)).andExpect(status().isForbidden());
+        mockMvc.perform(get(STATUS_ENDPOINT)).andExpect(status().isUnauthorized());
     }
 
     private String platformAdminToken() {
