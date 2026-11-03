@@ -90,7 +90,7 @@ describe('TeacherGradeGrid', () => {
   it('marks a failed cell with a retry and keeps its value', async () => {
     useGrid();
     server.use(
-      http.post(`${API}/section-enrollments/12/grade-items`, () => HttpResponse.json({ code: 'NO_EVALUATION_SCHEME' }, { status: 409 })),
+      http.post(`${API}/section-enrollments/12/grade-items`, () => HttpResponse.json({ code: 'NO_EVALUATION_SCHEME', violations: [] }, { status: 409 })),
     );
     const user = userEvent.setup();
     renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
