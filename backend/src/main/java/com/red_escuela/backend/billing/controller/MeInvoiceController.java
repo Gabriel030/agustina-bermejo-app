@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,6 +66,7 @@ public class MeInvoiceController {
         this.getOwnProgramEnrollmentBillingStatusUseCase = getOwnProgramEnrollmentBillingStatusUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{id}/mp-preference")
     @ResponseStatus(HttpStatus.CREATED)
     public MpPreferenceResponse createMpPreference(@PathVariable Long id) {
@@ -72,6 +74,7 @@ public class MeInvoiceController {
         return createMpPreferenceUseCase.create(id, studentId);
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{id}/bank-transfer-receipts")
     @ResponseStatus(HttpStatus.CREATED)
     public BankTransferReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {

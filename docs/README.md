@@ -46,6 +46,7 @@ El resto de la carpeta son artefactos generados, sin documento `.md`: `component
 | [billing/decision-registry.md](billing/decision-registry.md) | Registro de decisiones D-xxx; entrada obligatoria de specs y tests de billing | vigente (lo valida `BillingDecisionRegistryTest`) |
 | [billing/policy-catalog.md](billing/policy-catalog.md) | Catálogo de validaciones de facturación | generado (`PolicyCatalogTest`) |
 | [billing/mutation-exclusions.md](billing/mutation-exclusions.md) | Mutantes equivalentes excluidos de PIT | vigente |
+| [billing/mirror-mode-endpoint-classification.md](billing/mirror-mode-endpoint-classification.md) | Qué endpoints de billing sirven en MIRROR (lecturas) y cuáles solo en FULL (escrituras) | vigente (lo valida `BillingEndpointModeClassificationTest`) |
 
 ## Pruebas
 

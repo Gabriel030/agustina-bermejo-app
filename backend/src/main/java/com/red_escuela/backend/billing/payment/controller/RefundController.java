@@ -12,6 +12,7 @@ import com.red_escuela.backend.billing.payment.usecase.FailRefundUseCase;
 import com.red_escuela.backend.billing.payment.usecase.ListStudentRefundsUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RequestRefundUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -45,6 +46,7 @@ public class RefundController {
         this.currentStudentService = currentStudentService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/me/refund-requests")
     @PreAuthorize("hasRole('ALUMNO')")
     @ApiResponses({
@@ -56,6 +58,7 @@ public class RefundController {
         return respondTo(requestRefundUseCase.requestOwnRefund(studentId, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/students/{studentId}/refund-requests")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
@@ -67,6 +70,7 @@ public class RefundController {
         return respondTo(requestRefundUseCase.requestRefundOnBehalfOfStudent(studentId, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/refunds/{refundId}/completion")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
@@ -77,6 +81,7 @@ public class RefundController {
         return RefundResponse.from(completeRefundUseCase.completeRefund(refundId, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/refunds/{refundId}/failure")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({
