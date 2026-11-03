@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -54,7 +55,7 @@ describe('GestionPersonal', () => {
   });
 
   it('tells the user when the DNI or email already exists and keeps the form open', async () => {
-    server.use(http.post(`${API}/staff`, () => HttpResponse.json({ code: 'DNI_ALREADY_EXISTS' }, { status: 400 })));
+    server.use(http.post(`${API}/staff`, () => HttpResponse.json(errorBody('DNI_ALREADY_EXISTS'), { status: 400 })));
     const user = userEvent.setup();
     renderWithProviders(<GestionPersonal />);
 

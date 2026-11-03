@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { apiFetch, setAccessToken, setSessionExpiredHandler, RateLimitedError, AuthError } from '@/api/client';
@@ -181,7 +182,7 @@ describe('apiFetch', () => {
   it('expone el code que manda el backend en el cuerpo del error', async () => {
     server.use(
       http.post(`${API}/me/course-enrollments`, () =>
-        HttpResponse.json({ code: 'ALREADY_ENROLLED_IN_COURSE' }, { status: 409 }),
+        HttpResponse.json(errorBody('ALREADY_ENROLLED_IN_COURSE'), { status: 409 }),
       ),
     );
 

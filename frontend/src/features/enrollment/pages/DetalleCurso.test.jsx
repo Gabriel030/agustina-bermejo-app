@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -113,7 +114,7 @@ describe('DetalleCurso', () => {
   it('si el curso tiene la inscripción cerrada lo dice en vez de un error genérico', async () => {
     server.use(
       http.post(`${API}/me/course-enrollments`, () =>
-        HttpResponse.json({ code: 'ADMISSION_WINDOW_CLOSED' }, { status: 400 }),
+        HttpResponse.json(errorBody('ADMISSION_WINDOW_CLOSED'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();

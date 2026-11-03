@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -122,7 +123,7 @@ describe('AlumnoMisCarreras · Egreso', () => {
   });
 
   it('shows an error toast and keeps the request button when the backend rejects the request', async () => {
-    mockEgreso({ post: () => HttpResponse.json({ code: 'ANY', violations: [] }, { status: 409 }) });
+    mockEgreso({ post: () => HttpResponse.json(errorBody('ANY'), { status: 409 }) });
     const user = userEvent.setup();
     renderEgreso();
 
