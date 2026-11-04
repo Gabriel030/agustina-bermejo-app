@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
@@ -153,6 +154,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
             cohort.setCreatedBy(director);
             entityManager.persist(cohort);
             com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(BigDecimal.valueOf(50000)), LocalDate.now().minusDays(1), director.getId());
+            StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
             entityManager.flush();
             return requestUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));
         });

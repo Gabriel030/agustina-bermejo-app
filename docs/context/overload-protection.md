@@ -44,7 +44,7 @@ Memoria: cada limitador guarda como máximo `app.rate-limit.max-tracked-keys` (5
 | Propiedad | Default |
 |---|---|
 | `spring.servlet.multipart.max-file-size` (`MULTIPART_MAX_FILE_SIZE`) | 5MB |
-| `spring.servlet.multipart.max-request-size` (`MULTIPART_MAX_REQUEST_SIZE`) | 6MB |
+| `spring.servlet.multipart.max-request-size` (`MULTIPART_MAX_REQUEST_SIZE`) | 16MB (tres documentos de 5MB más campos; el alta de carrera los envía juntos) |
 | `server.tomcat.max-swallow-size` | 2MB |
 | `server.tomcat.max-http-form-post-size` | 2MB |
 | `server.max-http-request-header-size` | 16KB |

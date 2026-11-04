@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
@@ -256,6 +257,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
             created.setInstitution(entityManager.getReference(Institution.class, career.institutionId()));
             created.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(created);
+            StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, created);
             return created;
         });
 

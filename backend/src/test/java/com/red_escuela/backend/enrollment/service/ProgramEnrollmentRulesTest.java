@@ -90,6 +90,9 @@ class ProgramEnrollmentRulesTest {
     private AttendanceRiskReader attendanceRiskUseCase;
     @Mock
     private EnrollmentDebtGuard enrollmentDebtGuard;
+
+    @Mock
+    private ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard;
     @Mock
     private EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     @Mock
@@ -103,7 +106,7 @@ class ProgramEnrollmentRulesTest {
     void setUp() {
         service = new ProgramEnrollmentService(programEnrollmentRepository, studentFinder, studentEnrollmentEligibility,
                 academicReferenceFinder, programProgressReader, subjectSectionEnrollmentRepository, programCohortRepository,
-                templateRepository, attendanceRiskUseCase, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, CLOCK);
+                templateRepository, attendanceRiskUseCase, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, documentCompletenessGuard, CLOCK);
         student = new Student();
         student.setId(7L);
         program = new Program();

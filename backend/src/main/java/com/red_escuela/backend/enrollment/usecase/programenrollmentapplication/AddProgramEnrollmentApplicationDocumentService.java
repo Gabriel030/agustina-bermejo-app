@@ -1,56 +1,28 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
-import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
-import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
+import com.red_escuela.backend.enrollment.service.ProgramApplicationDocumentRecorder;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
-import com.red_escuela.backend.shared.storage.FileStorageService;
-import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @UseCase
 public class AddProgramEnrollmentApplicationDocumentService implements AddProgramEnrollmentApplicationDocumentUseCase {
 
     private final ProgramEnrollmentApplicationFinder applicationFinder;
-    private final StudentDocumentRepository studentDocumentRepository;
-    private final FileStorageService fileStorageService;
-    private final TransactionBoundFileCleanup transactionBoundFileCleanup;
-    private final Clock clock;
+    private final ProgramApplicationDocumentRecorder documentRecorder;
 
     public AddProgramEnrollmentApplicationDocumentService(ProgramEnrollmentApplicationFinder applicationFinder,
-                                                            StudentDocumentRepository studentDocumentRepository,
-                                                            FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
-                                                            Clock clock) {
+                                                            ProgramApplicationDocumentRecorder documentRecorder) {
         this.applicationFinder = applicationFinder;
-        this.studentDocumentRepository = studentDocumentRepository;
-        this.fileStorageService = fileStorageService;
-        this.transactionBoundFileCleanup = transactionBoundFileCleanup;
-        this.clock = clock;
+        this.documentRecorder = documentRecorder;
     }
 
     @Override
     @Transactional
     public StudentDocument add(AddProgramEnrollmentApplicationDocumentCommand command) {
         ProgramEnrollmentApplication application = applicationFinder.findOrThrow(command.applicationId());
-        Long studentId = application.getStudent().getId();
-
-        studentDocumentRepository.findByStudentIdAndType(studentId, command.type()).ifPresent(existing -> {
-            transactionBoundFileCleanup.deleteAfterCommit(existing.getFilePath());
-            studentDocumentRepository.delete(existing);
-        });
-
-        String relativePath = fileStorageService.store(studentId, command.type().name(), command.file());
-        transactionBoundFileCleanup.deleteIfRolledBack(relativePath);
-
-        StudentDocument document = new StudentDocument();
-        document.setStudent(application.getStudent());
-        document.setType(command.type());
-        document.setFilePath(relativePath);
-        document.setUploadedAt(LocalDateTime.now(clock));
-        return studentDocumentRepository.save(document);
+        return documentRecorder.record(application, command.type(), command.file());
     }
 }

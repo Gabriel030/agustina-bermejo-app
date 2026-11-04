@@ -271,17 +271,31 @@ describe('InscripcionWizard validation with zod', () => {
   });
 
   it('submits a program application with its three documents once the data is valid', async () => {
-    const uploadedTypes = [];
-    let applicationForm;
+    let legacyCalls = 0;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     server.use(
       http.put(`${API}/me`, () => HttpResponse.json({})),
-      http.post(`${API}/me/program-enrollment-applications`, async ({ request }) => {
-        applicationForm = await request.formData();
-        return HttpResponse.json({ id: 77 }, { status: 201 });
-      }),
-      http.post(`${API}/me/program-enrollment-applications/77/documents`, ({ request }) => {
-        uploadedTypes.push(new URL(request.url).searchParams.get('type'));
-        return HttpResponse.json({ id: 1 }, { status: 201 });
+      http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
+        HttpResponse.json(
+          {
+            id: 77,
+            studentId: 1,
+            programId: 5,
+            programName: 'Carrera de prueba',
+            programCohortId: 11,
+            status: 'PENDING',
+            requestedAt: '2026-03-02T10:00:00',
+            decidedAt: null,
+            rejectionReason: null,
+            admissionInvoice: null,
+            programEnrollmentId: 1,
+          },
+          { status: 201 },
+        ),
+      ),
+      http.post(`${API}/me/program-enrollment-applications`, () => {
+        legacyCalls += 1;
+        return HttpResponse.json({ id: 78 }, { status: 201 });
       }),
     );
     const user = userEvent.setup();
@@ -305,9 +319,13 @@ describe('InscripcionWizard validation with zod', () => {
     await user.click(await screen.findByRole('button', { name: 'Sí, confirmar' }));
 
     expect(await screen.findByText('Solicitud enviada', {}, { timeout: 5000 })).toBeInTheDocument();
-    expect(applicationForm.get('programId')).toBe('5');
-    expect(applicationForm.get('cohortId')).toBe('11');
-    expect(uploadedTypes).toEqual(['DNI_FRENTE', 'DNI_DORSO', 'ANALITICO_SECUNDARIO']);
+    const [, options] = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/me/program-enrollment-applications/with-documents'));
+    expect(options.body.get('programId')).toBe('5');
+    expect(options.body.get('cohortId')).toBe('11');
+    expect(options.body.get('dniFront').name).toBe('doc.pdf');
+    expect(options.body.get('dniBack').name).toBe('doc.pdf');
+    expect(options.body.get('academicTranscript').name).toBe('doc.pdf');
+    expect(legacyCalls).toBe(0);
   });
 
   it('does not call the profile endpoint when the stored data was not modified', async () => {
@@ -491,14 +509,11 @@ describe('InscripcionWizard validation with zod', () => {
     expect(screen.getByText(/no tiene cupos disponibles/)).toBeInTheDocument();
   });
 
-  it('explains that the application exists when a document upload fails', async () => {
+  it('explains the file size problem when the single submission is rejected', async () => {
     server.use(
       http.put(`${API}/me`, () => HttpResponse.json({})),
-      http.post(`${API}/me/program-enrollment-applications`, () => HttpResponse.json({ id: 77 }, { status: 201 })),
-      http.post(`${API}/me/program-enrollment-applications/77/documents`, ({ request }) =>
-        new URL(request.url).searchParams.get('type') === 'DNI_DORSO'
-          ? HttpResponse.json(errorBody('FILE_TOO_LARGE'), { status: 400 })
-          : HttpResponse.json({ id: 1 }, { status: 201 }),
+      http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
+        HttpResponse.json(errorBody('MAX_UPLOAD_SIZE_EXCEEDED'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();
@@ -514,7 +529,7 @@ describe('InscripcionWizard validation with zod', () => {
     await user.click(confirmButton);
     await user.click(await screen.findByRole('button', { name: 'Sí, confirmar' }));
 
-    expect(await screen.findByText(/Tu solicitud quedó creada, pero no pudimos subir el documento «DNI — dorso»/)).toBeInTheDocument();
+    expect(await screen.findByText(/Alguno de los archivos es demasiado grande \(máximo 5 MB cada uno\)/)).toBeInTheDocument();
     expect(screen.queryByText('Solicitud enviada')).not.toBeInTheDocument();
   });
 });

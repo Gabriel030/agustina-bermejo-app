@@ -164,6 +164,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REQUEST_FIELD_OUT_OF_RANGE` | no | `RequestFieldOutOfRangeException` | shared |
 | `REQUEST_FIELD_TOO_LONG` | no | `RequestFieldTooLongException` | shared |
 | `REQUEST_LIST_TOO_LARGE` | no | `RequestListTooLargeException` | shared |
+| `REQUIRED_APPLICATION_DOCUMENTS_MISSING` | no | `RequiredApplicationDocumentsMissingException` | enrollment |
 | `RETROACTIVE_EFFECTIVE_DATE` | no | `RetroactiveEffectiveDateException` | billing |
 | `REVOCATION_REASON_REQUIRED` | no | `RevocationReasonRequiredException` | billing |
 | `SCHEDULED_DATE_IN_THE_PAST` | no | `ScheduledDateInThePastException` | announcement |
@@ -299,6 +300,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNUAL_UPFRONT_OF_PROGRAM_MUST_USE_REQUEST_ENDPOINT` | no | `AnnualUpfrontOfProgramMustUseRequestEndpointException` | billing |
 | `ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED` | no | `AnnualUpfrontPlanCannotBeChangedException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_REJECTED` | no | `AnnualUpfrontRequestRejectedException` | billing |
+| `APPLICATION_DOCUMENTS_INCOMPLETE` | no | `ApplicationDocumentsIncompleteException` | enrollment |
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
 | `AUTHORIZATION_PENDING` | no | `AuthorizationPendingException` | billing |
 | `BILLING_CONFIGURATION_FROZEN` | no | `BillingConfigurationFrozenException` | billing |
@@ -597,6 +599,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/invoices/{id}/mp-preference` | `MeInvoiceController#createMpPreference` |
 | POST | `/me/notifications/{id}/read` | `MeNotificationController#markAsRead` |
 | POST | `/me/program-enrollment-applications` | `ProgramEnrollmentApplicationController#request` |
+| POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |
 | POST | `/me/program-enrollment-applications/{id}/documents` | `ProgramEnrollmentApplicationController#addDocument` |
 | POST | `/me/program-enrollments/{id}/graduation-request` | `MeGraduationRequestController#request` |
 | POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |

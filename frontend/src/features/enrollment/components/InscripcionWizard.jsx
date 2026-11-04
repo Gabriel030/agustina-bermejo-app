@@ -18,7 +18,6 @@ import {
   useSolicitarCarrera,
   useInscribirmeCurso,
   useActualizarPerfilPropio,
-  useAgregarDocumentoSolicitudCarrera,
 } from '@/features/enrollment/hooks/useCatalogo';
 import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
 import { BankTransferReceiptFields } from '@/components/billing/BankTransferReceiptFields';
@@ -101,6 +100,10 @@ const MENSAJES_ERROR_INSCRIPCION = {
   ENROLLMENT_FEE_NOT_PAID: 'Primero tenés que pagar la matrícula para poder inscribirte.',
   ENROLLMENT_WINDOW_CLOSED: 'El período de inscripción está cerrado.',
   PROGRAM_ENROLLMENT_REQUIRED: 'Primero tenés que estar inscripto en la carrera.',
+  REQUIRED_APPLICATION_DOCUMENTS_MISSING: 'Faltan documentos. Adjuntá el frente y el dorso del DNI y el analítico del secundario.',
+  UNSUPPORTED_FILE_TYPE: 'Alguno de los archivos no es un PDF, JPG o PNG válido. Revisá los tres documentos y probá de nuevo.',
+  MAX_UPLOAD_SIZE_EXCEEDED: 'Alguno de los archivos es demasiado grande (máximo 5 MB cada uno). Achicá la imagen y probá de nuevo.',
+  STUDENT_NOT_ACTIVE: 'Tu cuenta no está activa. Consultá en Secretaría.',
 };
 
 function pasosDe(tipo) {
@@ -204,7 +207,6 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
   const solicitarCarrera = useSolicitarCarrera();
   const inscribirmeCurso = useInscribirmeCurso();
   const actualizarPerfil = useActualizarPerfilPropio();
-  const agregarDocumento = useAgregarDocumentoSolicitudCarrera();
 
   const cohorteElegida = cohorts?.find((c) => c.id === state.cohortId);
   const montoAPagar =
@@ -288,7 +290,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
 
       const resultado =
         tipo === 'carrera'
-          ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId })
+          ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId, documentos: state.documentos })
           : await inscribirmeCurso.mutateAsync({
               body: buildCourseEnrollmentBody({
                 courseId: target.id,
@@ -303,20 +305,6 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
               }),
               idempotencyKey: claveIdempotencia.current,
             });
-
-      if (tipo === 'carrera') {
-        for (const doc of DOCUMENTOS_CARRERA) {
-          try {
-            await agregarDocumento.mutateAsync({ applicationId: resultado.id, type: doc.tipo, file: state.documentos[doc.tipo] });
-          } catch {
-            dispatch({
-              type: 'ERROR',
-              message: `Tu solicitud quedó creada, pero no pudimos subir el documento «${doc.label}». No la envíes de nuevo: entrá a Mis solicitudes, abrí esta solicitud y volvé a cargar los documentos que falten.`,
-            });
-            return;
-          }
-        }
-      }
 
       dispatch({ type: 'EXITO', estadoInscripcion: tipo === 'curso' ? resultado?.courseEnrollmentStatus : null });
     } catch (err) {

@@ -107,6 +107,17 @@ Feature: Caso de uso — Solicitar alta en carrera
     When method post
     Then status 403
 
+    # Sin los tres documentos el Preceptor no puede aprobar — 409
+    Given path '/program-enrollment-applications', applicationId, 'approve'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method post
+    Then status 409
+    And match response.code == 'APPLICATION_DOCUMENTS_INCOMPLETE'
+
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_FRENTE' }
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_DORSO' }
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'ANALITICO_SECUNDARIO' }
+
     # El Preceptor sí puede — 200, APPROVED
     Given path '/program-enrollment-applications', applicationId, 'approve'
     And header Authorization = 'Bearer ' + preceptorToken
