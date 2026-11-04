@@ -14,7 +14,7 @@ public final class MandatoryNotificationChannels {
     }
 
     public static boolean cannotBeTurnedOff(NotificationEvent event, NotificationChannel channel) {
-        return event == NotificationEvent.PAYMENT_DUE_SOON && channel == NotificationChannel.APP;
+        return event.isMandatoryOn(channel);
     }
 
     public static Map<String, List<String>> channelNamesByEventName() {

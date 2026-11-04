@@ -35,7 +35,7 @@ const ALWAYS_ON_COLLECTION_ROWS = [
   'Resumen mensual tras una baja con deuda',
 ];
 
-const ALWAYS_ON_CAPTION = 'Siempre activo, no se puede apagar';
+const ALWAYS_ON_CAPTION = 'Siempre te lo enviamos';
 const LOCK_TEXT = 'Este aviso es obligatorio: no se puede desactivar.';
 
 function LockedMark({ label }) {

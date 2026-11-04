@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification;
 
+import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
@@ -13,13 +14,18 @@ public class InAppNotificationChannel implements NotificationChannel {
     private static final String ELLIPSIS = "…";
 
     private final NotificationRepository notificationRepository;
+    private final NotificationPreferenceFinder preferenceFinder;
 
-    public InAppNotificationChannel(NotificationRepository notificationRepository) {
+    public InAppNotificationChannel(NotificationRepository notificationRepository, NotificationPreferenceFinder preferenceFinder) {
         this.notificationRepository = notificationRepository;
+        this.preferenceFinder = preferenceFinder;
     }
 
     @Override
     public void send(Person recipient, DomainNotificationEvent event) {
+        if (!recipientWantsInApp(recipient, event)) {
+            return;
+        }
         Notification notification = new Notification();
         notification.setRecipient(recipient);
         notification.setType(event.type());
@@ -28,6 +34,12 @@ public class InAppNotificationChannel implements NotificationChannel {
         notification.setRelatedEntityId(event.relatedEntityId());
         notification.setCreatedAt(ApplicationTime.now());
         notificationRepository.save(notification);
+    }
+
+    private boolean recipientWantsInApp(Person recipient, DomainNotificationEvent event) {
+        return UserPreferenceEventResolver.resolve(event.type())
+                .map(preferenceEvent -> preferenceFinder.isInAppEnabled(recipient.getId(), preferenceEvent))
+                .orElse(true);
     }
 
     public static String abbreviateToColumnLength(String message) {

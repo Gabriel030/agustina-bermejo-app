@@ -86,6 +86,6 @@ describe('NotificationMatrix', () => {
 
     await screen.findByText('Recordatorio antes del vencimiento');
 
-    expect(screen.getAllByText('Siempre activo, no se puede apagar')).toHaveLength(4);
+    expect(screen.getAllByText('Siempre te lo enviamos')).toHaveLength(4);
   });
 });
