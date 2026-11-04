@@ -11,6 +11,9 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +22,7 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -64,6 +68,43 @@ class AttendanceSectionAccessTest {
         access.requireOwnProgramSectionIfInstructorGiven(1L, 2L);
 
         verify(teachingFinder).requireTeaches(SectionKind.PROGRAM, 1L, 2L);
+    }
+
+    @Test
+    void attendanceOwnershipChecksTheProgramSectionOfAProgramAttendance() {
+        SubjectSection section = new SubjectSection();
+        section.setId(7L);
+        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        enrollment.setSubjectSection(section);
+        Attendance attendance = new Attendance();
+        attendance.setProgramSubjectSectionEnrollment(enrollment);
+
+        access.requireOwnSectionOfAttendanceIfInstructorGiven(attendance, 2L);
+
+        verify(teachingFinder).requireTeaches(SectionKind.PROGRAM, 7L, 2L);
+        verify(teachingFinder, never()).requireTeaches(eq(SectionKind.COURSE), any(), any());
+    }
+
+    @Test
+    void attendanceOwnershipChecksTheCourseSectionOfACourseAttendance() {
+        CourseSubjectSection section = new CourseSubjectSection();
+        section.setId(8L);
+        CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
+        enrollment.setCourseSubjectSection(section);
+        Attendance attendance = new Attendance();
+        attendance.setCourseSubjectSectionEnrollment(enrollment);
+
+        access.requireOwnSectionOfAttendanceIfInstructorGiven(attendance, 2L);
+
+        verify(teachingFinder).requireTeaches(SectionKind.COURSE, 8L, 2L);
+        verify(teachingFinder, never()).requireTeaches(eq(SectionKind.PROGRAM), any(), any());
+    }
+
+    @Test
+    void attendanceOwnershipIsSkippedWhenNoInstructorIsGiven() {
+        access.requireOwnSectionOfAttendanceIfInstructorGiven(new Attendance(), null);
+
+        verify(teachingFinder, never()).requireTeaches(any(), any(), any());
     }
 
     @Test

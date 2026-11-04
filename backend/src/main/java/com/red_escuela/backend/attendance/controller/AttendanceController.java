@@ -155,8 +155,9 @@ public class AttendanceController {
     @PostMapping("/attendance/{id}/justify")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public AttendanceResponse justify(@PathVariable Long id, @Valid @RequestBody JustificarAsistenciaRequest request) {
+        request.requireValidLimits();
         return AttendanceResponse.from(
-                justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(id, request.reason(), request.attachmentUrl())));
+                justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(id, resolveInstructorIdIfTeacher(), request.reason(), request.attachmentUrl())));
     }
 
     @PostMapping("/attendance/{id}/approve-justification")

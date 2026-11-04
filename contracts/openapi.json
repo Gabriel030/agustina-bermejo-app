@@ -943,7 +943,10 @@
       "AttendanceRiskResponse" : {
         "properties" : {
           "absencePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "calculable" : {
             "type" : "boolean"
@@ -952,7 +955,10 @@
             "type" : "boolean"
           },
           "maxAbsencePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           }
         },
         "required" : [ "absencePercent", "calculable", "libre", "maxAbsencePercent" ],
@@ -2354,7 +2360,10 @@
             "type" : "integer"
           },
           "maxAbsencePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "name" : {
             "type" : "string"
@@ -2885,7 +2894,10 @@
       "CreateLatePaymentSettingsRequest" : {
         "properties" : {
           "dailyLateFeeRatePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "effectiveFrom" : {
             "format" : "date",
@@ -2964,7 +2976,10 @@
             "type" : "string"
           },
           "entryFeeDiscountPoints" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "intake" : {
             "enum" : [ "FIRST", "SECOND" ],
@@ -3180,7 +3195,10 @@
             "type" : "integer"
           },
           "maxAbsencePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "name" : {
             "minLength" : 1,
@@ -4230,7 +4248,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "code", "requestId", "retryable", "violations" ],
+        "required" : [ "code", "retryable" ],
         "type" : "object"
       },
       "EvaluationSchemeResponse" : {
@@ -4792,7 +4810,10 @@
             "type" : [ "string", "null" ]
           },
           "percent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "reason" : {
             "type" : "string"
@@ -5247,7 +5268,10 @@
       "LatePaymentSettingsResponse" : {
         "properties" : {
           "dailyLateFeeRatePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "effectiveFrom" : {
             "format" : "date",
@@ -5384,7 +5408,10 @@
             "$ref" : "#/components/schemas/Money"
           },
           "percent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "type" : {
             "enum" : [ "PERCENTAGE", "FIXED" ],
@@ -5622,7 +5649,10 @@
             "$ref" : "#/components/schemas/Money"
           },
           "ratePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "type" : {
             "enum" : [ "NOMINAL", "PROPORTIONAL" ],
@@ -6013,7 +6043,10 @@
             "type" : "integer"
           },
           "progressPercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "status" : {
             "type" : "string"
@@ -6722,18 +6755,6 @@
         "required" : [ "amount", "count", "parts" ],
         "type" : "object"
       },
-      "Percentage" : {
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/MetricValue"
-        }, {
-          "properties" : {
-            "fraction" : {
-              "type" : "number"
-            }
-          },
-          "type" : "object"
-        } ]
-      },
       "PersonResponse" : {
         "properties" : {
           "apellido" : {
@@ -7100,7 +7121,10 @@
             "$ref" : "#/components/schemas/Money"
           },
           "marketingDiscountPercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "marketingDiscountType" : {
             "enum" : [ "PERCENTAGE", "FIXED" ],
@@ -7176,7 +7200,10 @@
             "$ref" : "#/components/schemas/Money"
           },
           "marketingDiscountPercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "marketingDiscountType" : {
             "enum" : [ "PERCENTAGE", "FIXED" ],
@@ -7305,7 +7332,10 @@
             "type" : "string"
           },
           "entryFeeDiscountPoints" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "id" : {
             "format" : "int64",
@@ -7726,7 +7756,10 @@
         }, {
           "properties" : {
             "rate" : {
-              "$ref" : "#/components/schemas/Percentage"
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
             }
           },
           "type" : "object"
@@ -8610,7 +8643,10 @@
             "type" : "boolean"
           },
           "attendancePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "dni" : {
             "type" : "string"
@@ -8949,7 +8985,10 @@
               }, {
                 "$ref" : "#/components/schemas/Money"
               }, {
-                "$ref" : "#/components/schemas/Percentage"
+                "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+                "maximum" : 100,
+                "minimum" : 0,
+                "type" : "number"
               } ]
             },
             "type" : "array"
@@ -9367,7 +9406,10 @@
       "StudentHistoryRow" : {
         "properties" : {
           "attendancePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "cellsByDate" : {
             "additionalProperties" : {
@@ -9537,7 +9579,10 @@
       "SubjectAttendanceSummaryResponse" : {
         "properties" : {
           "attendancePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "subjectName" : {
             "type" : "string"
@@ -9597,7 +9642,10 @@
             "type" : "integer"
           },
           "maxAbsencePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "name" : {
             "type" : "string"
@@ -9839,7 +9887,10 @@
       "UpdateEntryFeeDiscountRequest" : {
         "properties" : {
           "discountPoints" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           }
         },
         "type" : "object"
@@ -10050,7 +10101,10 @@
             "type" : "integer"
           },
           "maxAbsencePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
           },
           "name" : {
             "type" : "string"

@@ -44,7 +44,7 @@ const SECTION = {
   termId: 4,
   capacity: 30,
   schedule: 'Lunes 18 a 21',
-  maxAbsencePercent: { fraction: 0.25 },
+  maxAbsencePercent: 25,
   status: 'ACTIVE',
 };
 
