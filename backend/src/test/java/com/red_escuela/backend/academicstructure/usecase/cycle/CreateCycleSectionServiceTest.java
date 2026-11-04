@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
@@ -28,6 +29,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseSubjectSection
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.service.CycleSectionAbsenceLimitAssigner;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
@@ -83,7 +86,8 @@ class CreateCycleSectionServiceTest {
     @BeforeEach
     void setUp() {
         service = new CreateCycleSectionService(cycleRepository, subjectRepository, courseSubjectRepository,
-                subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker);
+                subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker,
+                new CycleSectionAbsenceLimitAssigner());
         term = TermFixtures.newTerm();
         term.setId(2L);
         programCycle = new AcademicOfferingCycle();
@@ -182,6 +186,32 @@ class CreateCycleSectionServiceTest {
     }
 
     @Test
+    void programCycleSectionPersistsTheRequestedMaxAbsencePercent() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
+        persistSubjectSections();
+
+        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 25, null, Percentage.ofPoints(new BigDecimal("25"))));
+
+        var captor = ArgumentCaptor.forClass(SubjectSection.class);
+        verify(subjectSectionRepository).save(captor.capture());
+        assertThat(captor.getValue().getMaxAbsenceRate()).isEqualTo(Percentage.ofPoints(new BigDecimal("25")));
+    }
+
+    @Test
+    void programCycleSectionWithoutMaxAbsencePercentHasNoLimit() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
+        persistSubjectSections();
+
+        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 25, null));
+
+        var captor = ArgumentCaptor.forClass(SubjectSection.class);
+        verify(subjectSectionRepository).save(captor.capture());
+        assertThat(captor.getValue().getMaxAbsenceRate()).isNull();
+    }
+
+    @Test
     void programCycleSectionWithSlotsPersistsEachSlotLinkedToTheSection() {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
@@ -270,6 +300,19 @@ class CreateCycleSectionServiceTest {
                 .isInstanceOf(IllegalStateException.class);
 
         verify(slotRepository, never()).save(any());
+    }
+
+    @Test
+    void courseCycleSectionPersistsTheRequestedMaxAbsencePercent() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
+        when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(new CourseSubject()));
+        persistCourseSections();
+
+        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("Commission B", null, 3L, 18, null, Percentage.ofPoints(new BigDecimal("30"))));
+
+        var captor = ArgumentCaptor.forClass(CourseSubjectSection.class);
+        verify(courseSectionRepository).save(captor.capture());
+        assertThat(captor.getValue().getMaxAbsenceRate()).isEqualTo(Percentage.ofPoints(new BigDecimal("30")));
     }
 
     @Test
