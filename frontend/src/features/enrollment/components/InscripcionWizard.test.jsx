@@ -40,9 +40,9 @@ const PRICING = {
   cuotaMensual: { amount: '500.00', currency: 'ARS' },
 };
 
-function renderWizard(tipo = 'curso') {
+function renderWizard(tipo = 'curso', extraProps = {}) {
   return renderWithProviders(
-    <InscripcionWizard tipo={tipo} target={TARGET} cohorts={COHORTS} pricing={PRICING} volverA="/catalogo" />,
+    <InscripcionWizard tipo={tipo} target={TARGET} cohorts={COHORTS} pricing={PRICING} volverA="/catalogo" {...extraProps} />,
   );
 }
 
@@ -433,5 +433,88 @@ describe('InscripcionWizard validation with zod', () => {
     await user.click(sendButton());
     await waitFor(() => expect(keys).toHaveLength(3));
     expect(keys[2]).not.toBe(keys[0]);
+  });
+
+  it.each([
+    ['ADMISSION_FEE_AWAITING_PAYMENT', /matrícula de ingreso por pagar/],
+    ['CHARGE_REJECTED', /cobro fue rechazado/],
+    ['AMBIGUOUS_SECTION', /más de una comisión por módulo/],
+  ])('shows a specific Spanish message for %s', async (code, expected) => {
+    server.use(
+      http.put(`${API}/me`, () => HttpResponse.json({})),
+      http.post(`${API}/me/course-enrollments`, () => HttpResponse.json(errorBody(code), { status: 409 })),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWizard('curso');
+    await goToPaymentStep(user);
+    await fillReceipt(user, container);
+    await user.click(sendButton());
+
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos completar la inscripción. Probá de nuevo.')).not.toBeInTheDocument();
+  });
+
+  it('tells the student they are on the waitlist when the server answers WAITLISTED', async () => {
+    server.use(
+      http.put(`${API}/me`, () => HttpResponse.json({})),
+      http.post(`${API}/me/course-enrollments`, () => HttpResponse.json({ id: 90, courseEnrollmentStatus: 'WAITLISTED' }, { status: 201 })),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWizard('curso');
+    await goToPaymentStep(user);
+    await fillReceipt(user, container);
+    await user.click(sendButton());
+
+    expect(await screen.findByText(/quedaste en lista de espera/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByText(/vas a quedar inscripto en el curso/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the enrolled wording when the server does not answer WAITLISTED', async () => {
+    server.use(
+      http.put(`${API}/me`, () => HttpResponse.json({})),
+      http.post(`${API}/me/course-enrollments`, () => HttpResponse.json({ id: 90, courseEnrollmentStatus: 'ENROLLED' }, { status: 201 })),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWizard('curso');
+    await goToPaymentStep(user);
+    await fillReceipt(user, container);
+    await user.click(sendButton());
+
+    expect(await screen.findByText(/vas a quedar inscripto en el curso/, {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('warns informatively before sending when the course is full', async () => {
+    const user = userEvent.setup();
+    renderWizard('curso', { cursoLleno: true });
+    await goToPaymentStep(user);
+
+    expect(screen.getByText(/no tiene cupos disponibles/)).toBeInTheDocument();
+  });
+
+  it('explains that the application exists when a document upload fails', async () => {
+    server.use(
+      http.put(`${API}/me`, () => HttpResponse.json({})),
+      http.post(`${API}/me/program-enrollment-applications`, () => HttpResponse.json({ id: 77 }, { status: 201 })),
+      http.post(`${API}/me/program-enrollment-applications/77/documents`, ({ request }) =>
+        new URL(request.url).searchParams.get('type') === 'DNI_DORSO'
+          ? HttpResponse.json(errorBody('FILE_TOO_LARGE'), { status: 400 })
+          : HttpResponse.json({ id: 1 }, { status: 201 }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWizard('carrera');
+    await user.click(screen.getByRole('button', { name: /Cohorte marzo/ }));
+    await fillValidData(user);
+    const file = new File(['%PDF'], 'doc.pdf', { type: 'application/pdf' });
+    for (const input of container.querySelectorAll('input[type="file"]')) {
+      await user.upload(input, file);
+    }
+    const confirmButton = screen.getByRole('button', { name: 'Confirmar solicitud' });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+    await user.click(await screen.findByRole('button', { name: 'Sí, confirmar' }));
+
+    expect(await screen.findByText(/Tu solicitud quedó creada, pero no pudimos subir el documento «DNI — dorso»/)).toBeInTheDocument();
+    expect(screen.queryByText('Solicitud enviada')).not.toBeInTheDocument();
   });
 });

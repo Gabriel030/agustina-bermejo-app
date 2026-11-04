@@ -95,6 +95,12 @@ const MENSAJES_ERROR_INSCRIPCION = {
   INVALID_DOCUMENT_NUMBER: 'El número de documento no tiene un formato válido para el tipo elegido.',
   OUTSTANDING_DEBT_BLOCKS_REENROLLMENT: 'Tenés deuda pendiente. Regularizala antes de inscribirte; si está en un pedido del director, esperá su decisión.',
   PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
+  ADMISSION_FEE_AWAITING_PAYMENT: 'Tu solicitud ya fue aprobada y tiene una matrícula de ingreso por pagar. Revisá Mis facturas.',
+  CHARGE_REJECTED: 'El cobro fue rechazado. Revisá los datos del pago o probá con otro medio.',
+  AMBIGUOUS_SECTION: 'Este curso tiene más de una comisión por módulo y todavía no podés elegir una desde acá. Consultá en Secretaría.',
+  ENROLLMENT_FEE_NOT_PAID: 'Primero tenés que pagar la matrícula para poder inscribirte.',
+  ENROLLMENT_WINDOW_CLOSED: 'El período de inscripción está cerrado.',
+  PROGRAM_ENROLLMENT_REQUIRED: 'Primero tenés que estar inscripto en la carrera.',
 };
 
 function pasosDe(tipo) {
@@ -134,6 +140,7 @@ function estadoInicial({ tipo }) {
     enviando: false,
     error: null,
     exito: false,
+    estadoInscripcion: null,
   };
 }
 
@@ -157,14 +164,14 @@ function reducer(state, action) {
     case 'ERROR':
       return { ...state, enviando: false, error: action.message };
     case 'EXITO':
-      return { ...state, enviando: false, exito: true };
+      return { ...state, enviando: false, exito: true, estadoInscripcion: action.estadoInscripcion ?? null };
     default:
       return state;
   }
 }
 
 // tipo: 'carrera' | 'curso'. target: { id, name }. cohorts/pricing según tipo.
-export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
+export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cursoLleno = false }) {
   const navigate = useNavigate();
   const { usuario, refrescarPerfil } = useAuth();
   const [state, dispatch] = useReducer(reducer, { tipo }, estadoInicial);
@@ -299,11 +306,19 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
       if (tipo === 'carrera') {
         for (const doc of DOCUMENTOS_CARRERA) {
-          await agregarDocumento.mutateAsync({ applicationId: resultado.id, type: doc.tipo, file: state.documentos[doc.tipo] });
+          try {
+            await agregarDocumento.mutateAsync({ applicationId: resultado.id, type: doc.tipo, file: state.documentos[doc.tipo] });
+          } catch {
+            dispatch({
+              type: 'ERROR',
+              message: `Tu solicitud quedó creada, pero no pudimos subir el documento «${doc.label}». No la envíes de nuevo: entrá a Mis solicitudes, abrí esta solicitud y volvé a cargar los documentos que falten.`,
+            });
+            return;
+          }
         }
       }
 
-      dispatch({ type: 'EXITO' });
+      dispatch({ type: 'EXITO', estadoInscripcion: tipo === 'curso' ? resultado?.courseEnrollmentStatus : null });
     } catch (err) {
       const fallo = tipo === 'curso' && !MENSAJES_ERROR_INSCRIPCION[err.code] ? receiptSubmissionFailure(err) : null;
       if (fallo) setErroresDeComprobante(fallo.fieldErrors);
@@ -330,7 +345,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
         <div className="max-w-[420px] text-[13.5px] text-ink-soft">
           {tipo === 'carrera'
             ? `Tu solicitud para ${target.name} quedó en revisión y no se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción. Te avisamos cuando haya novedades.`
-            : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
+            : state.estadoInscripcion === 'WAITLISTED'
+              ? 'Tu comprobante queda en revisión. El curso no tiene cupos disponibles, así que quedaste en lista de espera: te avisamos si se libera un lugar.'
+              : cursoLleno
+                ? 'Tu comprobante queda en revisión. Como el curso estaba completo, si te falta lugar vas a quedar en lista de espera. Te avisamos cuando haya novedades.'
+                : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
         </div>
         <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="gradient" className="mt-2 px-6">
           Ir a mis solicitudes
@@ -561,6 +580,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <div className="font-heading text-xl font-bold text-ink">{formatMoney(montoAPagar) || 'A definir'}</div>
             <div className="mt-1 text-xs text-ink-faint">{tipo === 'carrera' ? 'Matrícula' : 'Primera cuota'}</div>
           </div>
+          {tipo === 'curso' && cursoLleno && (
+            <p className="rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
+              Este curso no tiene cupos disponibles. Si enviás el comprobante, quedás en lista de espera.
+            </p>
+          )}
 
           <div>
             <div className="mb-2 text-xs font-semibold text-ink-soft">Elegí el método de pago</div>

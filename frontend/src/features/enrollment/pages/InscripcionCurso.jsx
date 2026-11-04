@@ -19,6 +19,7 @@ export function InscripcionCurso() {
       tipo="curso"
       target={{ id: curso.id, name: curso.name }}
       pricing={pricing}
+      cursoLleno={curso.full === true}
       volverA={`/catalogo/cursos/${id}`}
     />
   );
