@@ -9,7 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuth } from '@/context/AuthContext';
-import { apiFetch, CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
+import { apiFetch } from '@/api/client';
+import {
+  GOOGLE_REJECTED_MESSAGE,
+  INVALID_CREDENTIALS_MESSAGE,
+  cooldownSecondsFor,
+  messageForAuthError,
+} from '@/features/identity/lib/loginErrors';
+import { useCooldown } from '@/features/identity/lib/useCooldown';
 
 // Épica 1 Fase 2: el botón de Google ya no es decorativo (era un <div
 // aria-disabled> con tooltip "Próximamente"). Cuenta no encontrada (404 de
@@ -24,6 +31,7 @@ export function Login() {
   const [googleIdTokenPendiente, setGoogleIdTokenPendiente] = useState(null);
   const [institutionId, setInstitutionId] = useState(null);
   const [registrandoConGoogle, setRegistrandoConGoogle] = useState(false);
+  const cooldown = useCooldown();
   const { usuario, login, loginWithGoogle, registerWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,11 +67,8 @@ export function Login() {
     try {
       await login(username, password);
     } catch (err) {
-      setError(
-        err instanceof RateLimitedError || err instanceof NetworkError || err instanceof CircuitOpenError
-          ? err.message
-          : 'Usuario o contraseña incorrectos.',
-      );
+      setError(messageForAuthError(err, { fallback: INVALID_CREDENTIALS_MESSAGE }));
+      cooldown.start(cooldownSecondsFor(err));
     } finally {
       setEnviando(false);
     }
@@ -78,10 +83,9 @@ export function Login() {
     } catch (err) {
       if (err.status === 404) {
         setGoogleIdTokenPendiente(idToken);
-      } else if (err instanceof RateLimitedError) {
-        setError(err.message);
       } else {
-        setError('No pudimos iniciar sesión con Google. Probá de nuevo.');
+        setError(messageForAuthError(err, { fallback: GOOGLE_REJECTED_MESSAGE, google: true }));
+        cooldown.start(cooldownSecondsFor(err));
       }
     }
   }
@@ -139,10 +143,10 @@ export function Login() {
             <Button
               type="submit"
               variant="gradient"
-              disabled={enviando}
+              disabled={enviando || cooldown.active}
               className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
             >
-              {enviando ? 'Ingresando…' : 'Ingresar'}
+              {enviando ? 'Ingresando…' : cooldown.active ? `Reintentar en ${cooldown.secondsLeft} s` : 'Ingresar'}
             </Button>
           </motion.div>
 
@@ -180,7 +184,7 @@ export function Login() {
             </div>
           ) : (
             <div className="flex justify-center">
-              <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('No pudimos iniciar sesión con Google. Probá de nuevo.')} width="316" />
+              <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError(GOOGLE_REJECTED_MESSAGE)} width="316" />
             </div>
           )}
         </form>
