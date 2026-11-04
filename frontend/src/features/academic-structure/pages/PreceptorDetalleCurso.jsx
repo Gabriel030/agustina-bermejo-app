@@ -1,5 +1,6 @@
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ChevronLeft, Users, MapPin, Clock } from 'lucide-react';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
+import { ChevronLeft, Users, MapPin, Clock, ClipboardList } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
@@ -30,6 +31,7 @@ function formatHora(t) {
 }
 
 function SeccionDetalle({ ciclo }) {
+  const basePath = useRoleBasePath();
   const { data: secciones, isLoading } = useCicloSecciones(ciclo.id);
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
 
@@ -94,6 +96,14 @@ function SeccionDetalle({ ciclo }) {
               valor={seccion.instructors.find((i) => i.role === 'LEAD')?.name ?? '—'}
             />
           )}
+          <div className="col-span-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`${basePath}/oferta-academica/ciclos/${ciclo.id}/comisiones/${seccion.id}/inscriptos`}>
+                <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
+                Inscriptos
+              </Link>
+            </Button>
+          </div>
           {seccion.pendingApproval && (
             <div className="col-span-2">
               <span className="rounded-full bg-accent-soft px-3 py-1 text-[12px] font-medium text-brand">
@@ -119,6 +129,7 @@ function Campo({ label, valor }) {
 export function PreceptorDetalleCurso() {
   const { cursoId } = useParams();
   const navigate = useNavigate();
+  const basePath = useRoleBasePath();
   const { data: curso, isLoading: loadingCurso } = useCurso(cursoId);
   const { data: ciclos, isLoading: loadingCiclos } = useCiclos({ courseId: cursoId });
 
@@ -139,7 +150,7 @@ export function PreceptorDetalleCurso() {
       <div className="flex flex-col gap-4">
         <div>
           <Link
-            to="/preceptor/oferta-academica?tab=cursos"
+            to={`${basePath}/oferta-academica?tab=cursos`}
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -147,7 +158,7 @@ export function PreceptorDetalleCurso() {
           </Link>
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-xl font-bold text-ink">{curso?.name}</h1>
-            <Button variant="gradient" onClick={() => navigate('/preceptor/oferta-academica/nuevo-ciclo')}>
+            <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
               Iniciar alta de ciclo
             </Button>
           </div>

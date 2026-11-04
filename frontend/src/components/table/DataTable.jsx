@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -48,7 +48,29 @@ function SortIcon({ direction }) {
   return <ChevronsUpDown className="size-3.5 opacity-30" />;
 }
 
-function HeaderCell({ header }) {
+const STICKY_START_CELL = 'sticky left-0 z-20 bg-dialog-bg shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]';
+
+function stickyStartClass(meta, compact) {
+  return compact && meta.stickyStart ? STICKY_START_CELL : undefined;
+}
+
+function useHorizontalOverflow(dependency) {
+  const scrollRef = useRef(null);
+  const [hasMoreToRight, setHasMoreToRight] = useState(false);
+  const measure = useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    setHasMoreToRight(node.scrollWidth - node.clientWidth - node.scrollLeft > 6);
+  }, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure, dependency]);
+  return { scrollRef, hasMoreToRight, measure };
+}
+
+function HeaderCell({ header, compact }) {
   'use no memo';
   const column = header.column;
   const meta = column.columnDef.meta ?? {};
@@ -56,14 +78,26 @@ function HeaderCell({ header }) {
   const sortDirection = column.getIsSorted();
   const ariaSort = sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : undefined;
 
-  const filterOptions = meta.filterable
-    ? Array.from(column.getFacetedUniqueValues().entries())
-        .map(([value, count]) => ({ value, count, label: meta.filterLabel ? meta.filterLabel(value) : String(value) }))
+  const filterColumn = meta.filterColumnId ? header.getContext().table.getColumn(meta.filterColumnId) : column;
+  const filterMeta = filterColumn.columnDef.meta ?? {};
+
+  const filterOptions = filterMeta.filterable
+    ? Array.from(filterColumn.getFacetedUniqueValues().entries())
+        .map(([value, count]) => ({ value, count, label: filterMeta.filterLabel ? filterMeta.filterLabel(value) : String(value) }))
         .sort((a, b) => a.label.localeCompare(b.label, 'es'))
     : [];
 
   return (
-    <TableHead aria-sort={ariaSort} className={cn(meta.align === 'right' && 'text-right', meta.sticky && STICKY_HEAD_CLASS, meta.headerClassName)}>
+    <TableHead
+      aria-sort={ariaSort}
+      className={cn(
+        meta.align === 'right' && 'text-right',
+        meta.sticky && STICKY_HEAD_CLASS,
+        meta.headerClassName,
+        compact && 'bg-dialog-bg',
+        compact && meta.stickyStart && 'sticky left-0 z-30 shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]',
+      )}
+    >
       <div className={cn('flex items-center gap-1', meta.align === 'right' && 'justify-end')}>
         {column.getCanSort() ? (
           <button
@@ -77,12 +111,12 @@ function HeaderCell({ header }) {
         ) : (
           label
         )}
-        {meta.filterable && filterOptions.length > 1 && (
+        {filterMeta.filterable && filterOptions.length > 1 && (
           <ColumnFilter
-            label={meta.filterTitle ?? String(column.columnDef.header)}
+            label={filterMeta.filterTitle ?? String(column.columnDef.header)}
             options={filterOptions}
-            selected={column.getFilterValue()}
-            onChange={(value) => column.setFilterValue(value)}
+            selected={filterColumn.getFilterValue()}
+            onChange={(value) => filterColumn.setFilterValue(value)}
           />
         )}
       </div>
@@ -224,6 +258,8 @@ export function DataTable({
   initialSorting = [],
   minWidth = 640,
   mobileLayout = 'cards',
+  compact = false,
+  initialColumnVisibility = {},
   className,
 }) {
   'use no memo';
@@ -244,11 +280,13 @@ export function DataTable({
       ]
     : columns;
 
+  const overflow = useHorizontalOverflow(data);
+
   const table = useReactTable({
     data: data ?? [],
     columns: allColumns,
     getRowId,
-    initialState: { sorting: initialSorting },
+    initialState: { sorting: initialSorting, columnVisibility: initialColumnVisibility },
     defaultColumn: { filterFn: multiSelectFilter, enableColumnFilter: false },
     getRowCanExpand: () => Boolean(renderExpanded),
     autoResetExpanded: false,
@@ -316,13 +354,17 @@ export function DataTable({
     );
   }
 
-  return (
-    <Table className={className} style={{ minWidth }}>
-      <TableHeader>
+  const tableNode = (
+    <Table
+      className={cn(compact && 'w-max min-w-full border-separate border-spacing-0', className)}
+      containerClassName={compact ? 'overflow-visible' : undefined}
+      style={{ minWidth }}
+    >
+      <TableHeader className={compact ? 'bg-dialog-bg' : undefined}>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header) => (
-              <HeaderCell key={header.id} header={header} />
+              <HeaderCell key={header.id} header={header} compact={compact} />
             ))}
           </TableRow>
         ))}
@@ -331,17 +373,26 @@ export function DataTable({
         {rows.map((row) => (
           <Fragment key={row.id}>
             <TableRow
-              className={cn(onRowClick && 'cursor-pointer')}
+              className={cn(onRowClick && 'cursor-pointer', compact && 'group h-[46px]')}
               onClick={onRowClick ? (event) => !isInteractiveTarget(event) && onRowClick(row.original) : undefined}
             >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  className={cn(cell.column.columnDef.meta?.align === 'right' && 'text-right', cell.column.columnDef.meta?.sticky && STICKY_CELL_CLASS)}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
+              {row.getVisibleCells().map((cell) => {
+                const meta = cell.column.columnDef.meta ?? {};
+                return (
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      meta.align === 'right' && 'text-right',
+                      meta.sticky && STICKY_CELL_CLASS,
+                      compact && 'border-t border-border py-1',
+                      stickyStartClass(meta, compact),
+                      compact && meta.stickyStart && 'group-hover:bg-accent-soft',
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                );
+              })}
             </TableRow>
             {renderExpanded && row.getIsExpanded() && (
               <TableRow className="hover:bg-transparent">
@@ -354,5 +405,29 @@ export function DataTable({
         ))}
       </TableBody>
     </Table>
+  );
+
+  if (!compact) return tableNode;
+
+  return (
+    <div className="relative">
+      <div
+        ref={overflow.scrollRef}
+        onScroll={overflow.measure}
+        className="max-h-[calc(100dvh-13rem)] w-full overflow-auto rounded-xl"
+      >
+        {tableNode}
+      </div>
+      <div
+        aria-hidden="true"
+        data-testid="overflow-indicator"
+        className={cn(
+          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end rounded-r-xl bg-gradient-to-r from-transparent to-dialog-bg pr-1.5 text-ink-soft transition-opacity motion-reduce:transition-none',
+          overflow.hasMoreToRight ? 'opacity-100' : 'opacity-0',
+        )}
+      >
+        <ChevronRight className="size-5" />
+      </div>
+    </div>
   );
 }
