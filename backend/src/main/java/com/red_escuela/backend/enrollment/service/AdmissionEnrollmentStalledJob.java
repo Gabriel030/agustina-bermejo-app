@@ -13,7 +13,7 @@ public class AdmissionEnrollmentStalledJob {
     }
 
     @Scheduled(fixedDelayString = "PT10M", initialDelayString = "PT10M", zone = "${app.timezone}")
-    @SchedulerLock(name = "AdmissionEnrollmentStalledJob", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    @SchedulerLock(name = "AdmissionEnrollmentStalledJob", lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
     public void notifyStalledEnrollments() {
         notifier.notifySecretariatOfStalledEnrollments();
     }

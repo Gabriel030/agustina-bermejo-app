@@ -2,13 +2,13 @@ package com.red_escuela.backend.identity.infrastructure;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
@@ -16,8 +16,10 @@ import java.util.Collections;
 public class GoogleIdTokenService {
     private final GoogleIdTokenVerifier verifier;
 
-    public GoogleIdTokenService(@Value("${google.oauth.client-id}") String clientId) {
-        this.verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
+    public GoogleIdTokenService(@Value("${google.oauth.client-id}") String clientId,
+                                @Value("${google.oauth.http.connect-timeout:5s}") Duration connectTimeout,
+                                @Value("${google.oauth.http.read-timeout:5s}") Duration readTimeout) {
+        this.verifier = new GoogleIdTokenVerifier.Builder(new TimeoutNetHttpTransport(connectTimeout, readTimeout), GsonFactory.getDefaultInstance())
                 .setAudience(Collections.singletonList(clientId))
                 .build();
     }

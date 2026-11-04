@@ -187,7 +187,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
 
     private EmailDeliveryDispatchJob jobWith(EmailDispatchSettingsSource settings, EmailDeliveryChannel channel) {
         EmailDispatchPlanningService planning = new EmailDispatchPlanningService(deliveryRepository, source(), MutableClock.INSTANCE, transactionTemplate);
-        return new EmailDeliveryDispatchJob(deliveryRepository, planning, settings, channel, calendar, MutableClock.INSTANCE);
+        return new EmailDeliveryDispatchJob(deliveryRepository, planning, settings, channel, calendar, MutableClock.INSTANCE, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }
 
     private EmailDeliveryDispatchJob jobWithCap(int cap) {

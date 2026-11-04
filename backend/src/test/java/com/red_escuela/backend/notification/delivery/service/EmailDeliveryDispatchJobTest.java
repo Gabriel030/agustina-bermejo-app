@@ -53,6 +53,7 @@ class EmailDeliveryDispatchJobTest {
     private EmailDispatchSettingsSource settings;
     private BusinessDayCalendar calendar;
     private EmailDeliveryDispatchJob job;
+    private final io.micrometer.core.instrument.simple.SimpleMeterRegistry meterRegistry = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
 
     @BeforeEach
     void setUp() {
@@ -65,7 +66,7 @@ class EmailDeliveryDispatchJobTest {
         when(calendar.isBusinessDay(TUESDAY)).thenReturn(true);
         when(calendar.isBusinessDay(TUESDAY.plusDays(1))).thenReturn(true);
         now.set(Instant.parse("2027-03-09T10:00:00Z"));
-        job = new EmailDeliveryDispatchJob(repository, planning, settings, channel, calendar, clock);
+        job = new EmailDeliveryDispatchJob(repository, planning, settings, channel, calendar, clock, meterRegistry);
     }
 
     private void idsAreReturnedOnce(Long... ids) {
@@ -107,6 +108,7 @@ class EmailDeliveryDispatchJobTest {
 
         assertThat(attempted).isEqualTo(2);
         verify(channel).dispatchDelivery(2L);
+        assertThat(meterRegistry.counter("scheduled.job.failures", "job", "EmailDeliveryDispatchJob", "cause", "IllegalStateException").count()).isEqualTo(1.0);
     }
 
     @Test
