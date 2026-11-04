@@ -177,7 +177,7 @@ class AdmissionApplicationExpirationIT extends AbstractIntegrationTest {
 
     private BankTransferReceipt uploadReceipt(Invoice invoice, ProgramEnrollmentApplication application) {
         return uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
-                new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
+                new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes()));
     }
 
     private ProgramEnrollmentApplicationStatus statusOf(ProgramEnrollmentApplication application) {

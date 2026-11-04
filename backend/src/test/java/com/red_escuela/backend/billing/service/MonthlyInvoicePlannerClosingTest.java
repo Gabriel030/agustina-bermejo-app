@@ -124,7 +124,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     private MockMultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido".getBytes());
+        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido".getBytes());
     }
 
     private EnrollmentFeeObligationStatus feeStatus(Long enrollmentId, int slot) {

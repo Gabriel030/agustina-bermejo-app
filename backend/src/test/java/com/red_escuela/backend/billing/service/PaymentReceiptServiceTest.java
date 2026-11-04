@@ -198,7 +198,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
+        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes());
     }
 
     @Test

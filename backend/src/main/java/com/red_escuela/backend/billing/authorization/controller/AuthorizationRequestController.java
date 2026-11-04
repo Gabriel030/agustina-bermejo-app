@@ -17,6 +17,7 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +46,7 @@ public class AuthorizationRequestController {
         this.getUseCase = getUseCase;
     }
 
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     @GetMapping("/authorization-requests")
     public AuthorizationRequestPageResponse list(@RequestParam(required = false) Set<AuthorizationRequestStatus> status,
                                                  @RequestParam(required = false) Set<BillingOperationType> operationType,
@@ -56,24 +58,28 @@ public class AuthorizationRequestController {
                 new AuthorizationRequestSearch(status, operationType, family, requestedBy, sort, !descending, page, size)));
     }
 
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     @GetMapping("/authorization-requests/{id}")
     public AuthorizationRequestDetailResponse get(@PathVariable Long id) {
         return AuthorizationRequestDetailResponse.from(getUseCase.getAuthorizationRequest(id));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
+    @PreAuthorize("hasRole('DIRECTOR')")
     @PostMapping("/authorization-requests/{id}/approve")
     public AuthorizationRequestResponse approve(@PathVariable Long id, @Valid @RequestBody(required = false) AuthorizationRequestDecisionRequest request) {
         return AuthorizationRequestResponse.from(approveUseCase.approve(id, reasonOf(request)));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
+    @PreAuthorize("hasRole('DIRECTOR')")
     @PostMapping("/authorization-requests/{id}/reject")
     public AuthorizationRequestResponse reject(@PathVariable Long id, @Valid @RequestBody(required = false) AuthorizationRequestDecisionRequest request) {
         return AuthorizationRequestResponse.from(rejectUseCase.reject(id, reasonOf(request)));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     @PostMapping("/authorization-requests/{id}/withdraw")
     public AuthorizationRequestResponse withdraw(@PathVariable Long id) {
         return AuthorizationRequestResponse.from(withdrawUseCase.withdraw(id));

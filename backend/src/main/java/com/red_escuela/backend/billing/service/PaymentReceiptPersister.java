@@ -50,7 +50,7 @@ public class PaymentReceiptPersister {
 
     private void validateOwnership(Invoice invoice, Long studentId) {
         Long ownerId = invoiceRepository.findOwnerStudentIdByInvoiceId(invoice.getId()).orElse(null);
-        if (ownerId != null && !ownerId.equals(studentId)) {
+        if (!studentId.equals(ownerId)) {
             throw new InvoiceNotFoundException(invoice.getId());
         }
     }

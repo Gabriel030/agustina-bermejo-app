@@ -175,7 +175,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido".getBytes());
+        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido".getBytes());
     }
 
     private AdminInvoiceResponse adminInvoice(Student student, Long invoiceId) {

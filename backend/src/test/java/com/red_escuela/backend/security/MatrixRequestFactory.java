@@ -70,7 +70,7 @@ final class MatrixRequestFactory {
                 fileParts.add(name);
             }
         }
-        fileParts.forEach(part -> multipart.file(new MockMultipartFile(part, "matrix.pdf", "application/pdf", new byte[] {1})));
+        fileParts.forEach(part -> multipart.file(new MockMultipartFile(part, "matrix.pdf", "application/pdf", "%PDF-1".getBytes())));
         minimalBodies.multipartTextFieldsFor(endpoint.method(), endpoint.path())
                 .forEach(multipart::param);
         return multipart;

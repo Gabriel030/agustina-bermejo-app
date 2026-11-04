@@ -459,7 +459,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Invoice olderDebt = persistOverdueDebt(application, 10000);
         Person reviewer = persistPreceptor();
         var receipt = uploadPaymentReceiptUseCase.upload(admission.getId(), application.getStudent().getId(),
-                new org.springframework.mock.web.MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes()));
 
         var approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer, PaymentVerification.none());
 
