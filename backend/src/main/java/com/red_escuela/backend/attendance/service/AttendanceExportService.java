@@ -141,39 +141,35 @@ public class AttendanceExportService {
         return new ExportedFile(generatePdf(table), scope + ".pdf", "application/pdf");
     }
 
+    private static final float PDF_MARGIN = 40;
+    private static final float PDF_ROW_HEIGHT = 14;
+    private static final float PDF_FONT_SIZE = 9;
+    private static final float PDF_KEY_COLUMN_WIDTH = 160;
+    private static final float PDF_DATA_COLUMN_WIDTH = 75;
+    private static final float PDF_CELL_PADDING = 3;
+
     private byte[] generatePdf(Table table) {
         try (PDDocument document = new PDDocument()) {
-            PDPage page = new PDPage(PDRectangle.A4);
-            document.addPage(page);
             PDFont fontBold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
             PDFont fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            PDRectangle pageSize = new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth());
+            float availableWidth = pageSize.getWidth() - 2 * PDF_MARGIN;
+            int dataColumnsPerChunk = Math.max(1, (int) ((availableWidth - PDF_KEY_COLUMN_WIDTH) / PDF_DATA_COLUMN_WIDTH));
+            int rowsPerPage = Math.max(1, (int) ((pageSize.getHeight() - 2 * PDF_MARGIN - 46) / PDF_ROW_HEIGHT));
 
-            try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-                float margin = 40;
-                float y = page.getMediaBox().getHeight() - margin;
-
-                content.beginText();
-                content.setFont(fontBold, 14);
-                content.newLineAtOffset(margin, y);
-                content.showText(table.title());
-                content.endText();
-                y -= 30;
-
-                content.beginText();
-                content.setFont(fontBold, 9);
-                content.newLineAtOffset(margin, y);
-                content.showText(String.join("   |   ", table.headers()));
-                content.endText();
-                y -= 16;
-
-                content.beginText();
-                content.setFont(fontRegular, 9);
-                content.newLineAtOffset(margin, y);
-                for (List<String> row : table.rows()) {
-                    content.showText(String.join("   |   ", row));
-                    content.newLineAtOffset(0, -14);
+            List<List<Integer>> columnChunks = splitColumns(table.headers().size(), dataColumnsPerChunk);
+            for (int chunkIndex = 0; chunkIndex < columnChunks.size(); chunkIndex++) {
+                String title = columnChunks.size() > 1
+                        ? table.title() + " (parte " + (chunkIndex + 1) + " de " + columnChunks.size() + ")"
+                        : table.title();
+                List<Integer> columns = columnChunks.get(chunkIndex);
+                int rowCount = table.rows().size();
+                int pageCount = Math.max(1, (rowCount + rowsPerPage - 1) / rowsPerPage);
+                for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+                    int from = pageIndex * rowsPerPage;
+                    int to = Math.min(rowCount, from + rowsPerPage);
+                    drawPdfPage(document, pageSize, fontBold, fontRegular, title, table, columns, from, to);
                 }
-                content.endText();
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -182,6 +178,71 @@ public class AttendanceExportService {
         } catch (IOException e) {
             throw new UncheckedIOException("No se pudo generar el PDF de asistencia", e);
         }
+    }
+
+    private List<List<Integer>> splitColumns(int columnCount, int dataColumnsPerChunk) {
+        List<List<Integer>> chunks = new ArrayList<>();
+        for (int start = 1; start < columnCount || chunks.isEmpty(); start += dataColumnsPerChunk) {
+            List<Integer> columns = new ArrayList<>();
+            columns.add(0);
+            for (int c = start; c < Math.min(columnCount, start + dataColumnsPerChunk); c++) {
+                columns.add(c);
+            }
+            chunks.add(columns);
+        }
+        return chunks;
+    }
+
+    private void drawPdfPage(PDDocument document, PDRectangle pageSize, PDFont fontBold, PDFont fontRegular,
+                             String title, Table table, List<Integer> columns, int fromRow, int toRow)
+            throws IOException {
+        PDPage page = new PDPage(pageSize);
+        document.addPage(page);
+        try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+            float y = pageSize.getHeight() - PDF_MARGIN;
+            drawPdfText(content, fontBold, 14, PDF_MARGIN, y, title);
+            y -= 30;
+            drawPdfRow(content, fontBold, columns, y, column -> table.headers().get(column));
+            y -= PDF_ROW_HEIGHT + 2;
+            for (int r = fromRow; r < toRow; r++) {
+                List<String> row = table.rows().get(r);
+                drawPdfRow(content, fontRegular, columns, y, row::get);
+                y -= PDF_ROW_HEIGHT;
+            }
+        }
+    }
+
+    private void drawPdfRow(PDPageContentStream content, PDFont font, List<Integer> columns, float y,
+                            java.util.function.IntFunction<String> valueOf) throws IOException {
+        float x = PDF_MARGIN;
+        for (int index = 0; index < columns.size(); index++) {
+            int column = columns.get(index);
+            float width = column == 0 ? PDF_KEY_COLUMN_WIDTH : PDF_DATA_COLUMN_WIDTH;
+            drawPdfText(content, font, PDF_FONT_SIZE, x, y,
+                    fitToWidth(font, valueOf.apply(column), width - PDF_CELL_PADDING));
+            x += width;
+        }
+    }
+
+    private void drawPdfText(PDPageContentStream content, PDFont font, float size, float x, float y, String text)
+            throws IOException {
+        content.beginText();
+        content.setFont(font, size);
+        content.newLineAtOffset(x, y);
+        content.showText(text);
+        content.endText();
+    }
+
+    private String fitToWidth(PDFont font, String text, float maxWidth) throws IOException {
+        String value = text == null ? "" : text;
+        if (font.getStringWidth(value) / 1000 * PDF_FONT_SIZE <= maxWidth) {
+            return value;
+        }
+        String trimmed = value;
+        while (!trimmed.isEmpty() && font.getStringWidth(trimmed + "...") / 1000 * PDF_FONT_SIZE > maxWidth) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + "...";
     }
 
     private byte[] generateXlsx(Table table) {
