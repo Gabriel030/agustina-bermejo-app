@@ -221,25 +221,6 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
     @Test
     @Tag("D-002")
-    void creatingATemplateForATermWithoutDatesIsRejected() {
-        Career career = newCareer();
-        Long termId = transactionTemplate.execute(status -> {
-            Term term = TermFixtures.newTerm();
-            term.setYear(2027);
-            term.setDescription("sin fechas");
-            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
-            entityManager.persist(term);
-            return term.getId();
-        });
-        authenticateAsNewPerson();
-
-        assertThatThrownBy(() -> createTemplate.create(career.programId(), termId, 10))
-                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
-                        e -> assertThat(codes(e)).containsExactly("TERM_WITHOUT_DATES"));
-    }
-
-    @Test
-    @Tag("D-002")
     void aTemplateCreatedWithoutConfigurationPersistsTheFirstFeeMonthBeforeTheTermStart() {
         Career career = newCareer();
         Long januaryTermId = transactionTemplate.execute(status -> {

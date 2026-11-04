@@ -390,6 +390,20 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void creatingTermWithoutDatesReturns400WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-term-dates1", "PRECEPTOR");
+        String body = "{\"year\":2062,\"description\":\"Sin fechas\",\"type\":\"FIRST_SEMESTER\","
+                + "\"enrollmentStart\":\"2062-02-01T00:00:00\",\"enrollmentEnd\":\"2062-02-28T00:00:00\"}";
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TERM_DATES_REQUIRED"));
+    }
+
+    @Test
     void creatingTermWithInvertedEnrollmentWindowReturns400() throws Exception {
         String token = tokenWithRole("preceptor-term-window2", "PRECEPTOR");
         String body = "{\"year\":2062,\"description\":\"Invertida\",\"type\":\"FIRST_SEMESTER\","

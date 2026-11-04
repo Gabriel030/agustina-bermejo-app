@@ -152,6 +152,21 @@ Feature: Catálogo — Períodos lectivos (TermController)
     When method put
     Then status 200
 
+  Scenario: Las fechas de inicio y fin del período son obligatorias al crear — 400 con código
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2032, description: 'Karate - Sin fechas', type: 'ANNUAL', enrollmentStart: '2031-12-01T00:00:00', enrollmentEnd: '2032-01-31T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_DATES_REQUIRED'
+
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2032, description: 'Karate - Sin fin', type: 'ANNUAL', startDate: '2032-03-01T00:00:00', enrollmentStart: '2031-12-01T00:00:00', enrollmentEnd: '2032-01-31T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_DATES_REQUIRED'
+
   Scenario: La ventana de inscripción es obligatoria al crear y se valida al editar — 400 con código
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken

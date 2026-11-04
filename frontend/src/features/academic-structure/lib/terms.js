@@ -162,7 +162,12 @@ export function buildTermDiff(today, next) {
 
 export const ENROLLMENT_WINDOW_REQUIRED_MESSAGE = 'La ventana de inscripción es obligatoria: indicá el inicio y el fin.';
 
+export const TERM_DATES_REQUIRED_MESSAGE = 'Las fechas de cursada son obligatorias: indicá el inicio y el fin.';
+
 export function termFieldErrors(error) {
+  if (error?.code === 'TERM_DATES_REQUIRED') {
+    return { startDate: TERM_DATES_REQUIRED_MESSAGE, endDate: TERM_DATES_REQUIRED_MESSAGE };
+  }
   if (error?.code === 'TERM_ENROLLMENT_WINDOW_REQUIRED') {
     return { enrollmentStart: ENROLLMENT_WINDOW_REQUIRED_MESSAGE, enrollmentEnd: ENROLLMENT_WINDOW_REQUIRED_MESSAGE };
   }

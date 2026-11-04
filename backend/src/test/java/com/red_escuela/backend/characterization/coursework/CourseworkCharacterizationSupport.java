@@ -140,8 +140,12 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
-        term.setStartDate(startDate);
-        term.setEndDate(endDate);
+        if (startDate != null) {
+            term.setStartDate(startDate);
+        }
+        if (endDate != null) {
+            term.setEndDate(endDate);
+        }
         entityManager.persist(term);
         return term;
     }

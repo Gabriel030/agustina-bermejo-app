@@ -176,6 +176,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_NOT_REGULAR` | no | `StudentNotRegularException` | evaluation |
 | `SUBJECT_NOT_IN_PROGRAM_PLAN` | no | `SubjectNotInProgramPlanException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
+| `TERM_DATES_REQUIRED` | no | `TermDatesRequiredException` | shared |
 | `TERM_ENROLLMENT_WINDOW_REQUIRED` | no | `TermEnrollmentWindowRequiredException` | shared |
 | `UNKNOWN_AUDIENCE_SEGMENT` | no | `UnknownAudienceSegmentException` | announcement |
 | `UNSUPPORTED_CURRENCY` | no | `UnsupportedCurrencyException` | shared |

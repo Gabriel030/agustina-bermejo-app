@@ -215,6 +215,27 @@ describe('PreceptorPeriodoForm', () => {
     expect(screen.queryByText('Los datos del período no son válidos. Revisá las fechas.')).not.toBeInTheDocument();
   });
 
+  it('shows the server TERM_DATES_REQUIRED error on the course date fields', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/terms`, () => HttpResponse.json([])),
+      http.post(`${API}/terms`, () => HttpResponse.json(errorBody('TERM_DATES_REQUIRED'), { status: 400 })),
+    );
+    renderApp('/preceptor/periodos/nuevo');
+
+    await user.click(await screen.findByRole('combobox'));
+    await user.click(await screen.findByRole('option', { name: 'Intensivo de verano' }));
+    await user.type(screen.getByLabelText('Descripción'), 'Verano');
+    await user.type(screen.getByLabelText('Inicio de cursada'), '2027-01-05');
+    await user.type(screen.getByLabelText('Fin de cursada'), '2027-02-20');
+    await user.type(screen.getByLabelText(/Inicio de inscripción/), '2026-12-01');
+    await user.type(screen.getByLabelText(/Fin de inscripción/), '2026-12-20');
+    await user.click(screen.getByRole('button', { name: 'Crear período' }));
+
+    expect(await screen.findAllByText('Las fechas de cursada son obligatorias: indicá el inicio y el fin.')).toHaveLength(2);
+    expect(screen.queryByText('Los datos del período no son válidos. Revisá las fechas.')).not.toBeInTheDocument();
+  });
+
   it('shows the Hoy, Nuevo and Diferencia review before saving an edit', async () => {
     const user = userEvent.setup();
     let body = null;

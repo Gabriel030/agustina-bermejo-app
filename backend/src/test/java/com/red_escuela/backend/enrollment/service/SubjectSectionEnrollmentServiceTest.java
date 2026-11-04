@@ -126,6 +126,8 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         term.setStatus(StatusType.ACTIVE);
         term.setEnrollmentStart(enrollmentStart != null ? enrollmentStart : TermFixtures.OPEN_WINDOW_START);
         term.setEnrollmentEnd(enrollmentEnd != null ? enrollmentEnd : TermFixtures.OPEN_WINDOW_END);
+        term.setStartDate(term.getEnrollmentStart());
+        term.setEndDate(term.getEnrollmentEnd());
         entityManager.persist(term);
         return term;
     }
