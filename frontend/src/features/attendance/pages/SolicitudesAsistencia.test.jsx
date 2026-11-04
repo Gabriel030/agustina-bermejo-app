@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { SolicitudesAsistencia } from '@/features/attendance/pages/SolicitudesAsistencia';
+
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
 
 const API = 'http://localhost:8080';
 
@@ -88,6 +92,44 @@ describe('SolicitudesAsistencia', () => {
     await userEvent.click(screen.getByRole('tab', { name: /Correcciones/ }));
     expect(screen.getByText('Mateo Giménez')).toBeInTheDocument();
     expect(screen.queryByText('Valentina Suárez')).not.toBeInTheDocument();
+  });
+
+  it('shows how many justifications are displayed out of the total and loads more', async () => {
+    const sizes = [];
+    server.use(
+      http.get(`${API}/attendance/change-requests`, () => HttpResponse.json([])),
+      http.get(`${API}/attendance/justifications`, ({ request }) => {
+        const size = Number(new URL(request.url).searchParams.get('size'));
+        sizes.push(size);
+        const total = size > 100 ? 3 : 150;
+        const items = Array.from({ length: size > 100 ? 3 : 2 }, (_, i) => ({ ...JUSTIFICATION, attendanceId: i + 1 }));
+        return HttpResponse.json({ items, totalElements: total });
+      }),
+    );
+    renderWithProviders(<SolicitudesAsistencia />);
+
+    expect(await screen.findByText('Mostrando 2 de 150 justificaciones')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver más' }));
+
+    expect(await screen.findByText('Mostrando 3 de 3 justificaciones')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver más' })).not.toBeInTheDocument();
+    expect(sizes).toEqual([100, 200]);
+  });
+
+  it('shows a clear error when approving fails', async () => {
+    mockInbox({ corrections: [] });
+    server.use(
+      http.post(`${API}/attendance/:id/approve-justification`, () =>
+        HttpResponse.json(errorBody('CONFLICT'), { status: 409 }),
+      ),
+    );
+    renderWithProviders(<SolicitudesAsistencia />);
+
+    await screen.findByText('Valentina Suárez');
+    await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining('No pudimos aprobar la justificación')));
+    expect(screen.getByText('Valentina Suárez')).toBeInTheDocument();
   });
 
   it('aprobar una justificación llama al endpoint de la inasistencia', async () => {

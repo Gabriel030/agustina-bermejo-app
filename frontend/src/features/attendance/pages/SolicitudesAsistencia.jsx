@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAprobarSolicitud, useRechazarSolicitud, useSolicitudesPendientes } from '@/features/attendance/hooks/useSolicitudesAsistencia';
 import {
+  JUSTIFICATIONS_PAGE_SIZE,
   useAprobarJustificacion,
   useJustificacionesPendientes,
   useRechazarJustificacion,
@@ -42,6 +43,11 @@ async function openJustificationAttachment(attendanceId) {
     preview?.close();
     toast.error('No pudimos abrir el comprobante. Probá de nuevo.');
   }
+}
+
+function actionErrorMessage(action, error) {
+  const detail = error?.message ? ` ${error.message}` : '';
+  return `No pudimos ${action}.${detail} Revisá la lista y probá de nuevo.`;
 }
 
 function toRequestItem(s) {
@@ -128,7 +134,8 @@ function RequestCard({ item, busy, onApprove, onReject }) {
 
 export function SolicitudesAsistencia() {
   const corrections = useSolicitudesPendientes();
-  const justifications = useJustificacionesPendientes();
+  const [justificationSize, setJustificationSize] = useState(JUSTIFICATIONS_PAGE_SIZE);
+  const justifications = useJustificacionesPendientes(justificationSize);
   const approveCorrection = useAprobarSolicitud();
   const rejectCorrection = useRechazarSolicitud();
   const approveJustification = useAprobarJustificacion();
@@ -139,10 +146,12 @@ export function SolicitudesAsistencia() {
 
   const correctionItems = (corrections.data ?? []).map(toRequestItem);
   const justificationItems = (justifications.data?.items ?? []).map(toJustificationItem);
+  const justificationTotal = justifications.data?.totalElements ?? justificationItems.length;
+  const hiddenJustifications = Math.max(0, justificationTotal - justificationItems.length);
   const counts = {
-    all: correctionItems.length + justificationItems.length,
+    all: correctionItems.length + justificationTotal,
     correction: correctionItems.length,
-    justification: justificationItems.length,
+    justification: justificationTotal,
   };
   const visible = {
     all: [...correctionItems, ...justificationItems],
@@ -159,7 +168,7 @@ export function SolicitudesAsistencia() {
       else await approveCorrection.mutateAsync(item.ref);
       toast.success(item.kind === 'justification' ? 'Justificación aprobada' : 'Solicitud aprobada');
     } catch (error) {
-      toast.error(error.message);
+      toast.error(actionErrorMessage(item.kind === 'justification' ? 'aprobar la justificación' : 'aprobar la solicitud', error));
     }
   }
 
@@ -171,7 +180,7 @@ export function SolicitudesAsistencia() {
       setRejecting(null);
       return true;
     } catch (error) {
-      toast.error(error.message);
+      toast.error(actionErrorMessage(rejecting.kind === 'justification' ? 'rechazar la justificación' : 'rechazar la solicitud', error));
       return false;
     }
   }
@@ -210,6 +219,22 @@ export function SolicitudesAsistencia() {
           {visible.map((item) => (
             <RequestCard key={item.key} item={item} busy={busy} onApprove={approve} onReject={setRejecting} />
           ))}
+        </div>
+      )}
+
+      {!isLoading && tab !== 'correction' && justificationTotal > 0 && (
+        <div className="flex flex-col items-center gap-2 text-[12.5px] text-ink-soft" data-testid="justifications-pagination">
+          <span>Mostrando {justificationItems.length} de {justificationTotal} justificaciones</span>
+          {hiddenJustifications > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={justifications.isFetching}
+              onClick={() => setJustificationSize((size) => size + JUSTIFICATIONS_PAGE_SIZE)}
+            >
+              Ver más
+            </Button>
+          )}
         </div>
       )}
 
