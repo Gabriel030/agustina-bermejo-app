@@ -1,12 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
 const PENDING_KEY = ['attendance', 'justifications', 'PENDING'];
 
-export function useJustificacionesPendientes() {
+export const JUSTIFICATIONS_PAGE_SIZE = 100;
+
+export function useJustificacionesPendientes(size = JUSTIFICATIONS_PAGE_SIZE) {
   return useQuery({
-    queryKey: PENDING_KEY,
-    queryFn: () => apiFetch('/attendance/justifications?status=PENDING&page=0&size=100'),
+    queryKey: [...PENDING_KEY, size],
+    queryFn: () => apiFetch(`/attendance/justifications?status=PENDING&page=0&size=${size}`),
+    placeholderData: keepPreviousData,
   });
 }
 
