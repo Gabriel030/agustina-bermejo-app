@@ -62,27 +62,27 @@ public class TermController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public TermResponse create(@Valid @RequestBody CreateTermRequest request) {
         return TermResponse.from(createTermUseCase.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public TermResponse update(@PathVariable Long id, @RequestBody UpdateTermRequest request) {
         return TermResponse.from(updateTermUseCase.update(new UpdateTermCommand(id, request)));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void deactivate(@PathVariable Long id) {
         deactivateTermUseCase.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void reactivate(@PathVariable Long id) {
         activateTermUseCase.activate(id);
     }
@@ -99,21 +99,21 @@ public class TermController {
 
     @PostMapping("/{id}/enrollment/open")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void openEnrollment(@PathVariable Long id) {
         openTermEnrollmentUseCase.open(id);
     }
 
     @PostMapping("/{id}/enrollment/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void closeEnrollment(@PathVariable Long id) {
         closeTermEnrollmentUseCase.close(id);
     }
 
     @PostMapping("/{id}/enrollment/clear-override")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void removeOverride(@PathVariable Long id) {
         clearTermEnrollmentOverrideUseCase.clear(id);
     }

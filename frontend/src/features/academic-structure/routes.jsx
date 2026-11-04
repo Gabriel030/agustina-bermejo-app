@@ -36,8 +36,8 @@ export const routes = {
     { roles: ['preceptor'], path: 'oferta-academica/cursos/:cursoId', element: <PreceptorDetalleCurso /> },
     { roles: ['preceptor'], path: 'oferta-academica/calendario', element: <PreceptorCalendario /> },
     { roles: ['preceptor'], path: 'oferta-academica/nuevo-ciclo', element: <PreceptorNuevoCiclo /> },
-    { roles: ['preceptor'], path: 'periodos', element: <PreceptorPeriodos /> },
-    { roles: ['preceptor'], path: 'periodos/nuevo', element: <PreceptorPeriodoForm /> },
-    { roles: ['preceptor'], path: 'periodos/:termId/editar', element: <PreceptorPeriodoForm /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'periodos', element: <PreceptorPeriodos /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'periodos/nuevo', element: <PreceptorPeriodoForm /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'periodos/:termId/editar', element: <PreceptorPeriodoForm /> },
   ],
 };

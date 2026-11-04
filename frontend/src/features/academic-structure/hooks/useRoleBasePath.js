@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 
-const STAFF_ROLES = ['preceptor', 'administrativo'];
+const STAFF_ROLES = ['preceptor', 'administrativo', 'director'];
 const DEFAULT_ROLE = 'preceptor';
 
 export function useRoleBasePath() {

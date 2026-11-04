@@ -15,4 +15,11 @@ describe('DirectorLayout', () => {
     const links = screen.getAllByRole('link', { name: 'Facturación' });
     expect(links[0]).toHaveAttribute('href', '/director/facturacion');
   });
+
+  it('offers the terms screen in the menu', () => {
+    renderWithProviders(<ThemeProvider><DirectorLayout /></ThemeProvider>, { route: '/director/inicio' });
+
+    const links = screen.getAllByRole('link', { name: 'Períodos' });
+    expect(links[0]).toHaveAttribute('href', '/director/periodos');
+  });
 });

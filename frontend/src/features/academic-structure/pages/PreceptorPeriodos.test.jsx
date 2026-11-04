@@ -35,9 +35,11 @@ const TERMS = [
 function renderApp(route) {
   return renderWithProviders(
     <Routes>
-      <Route path="/preceptor/periodos" element={<PreceptorPeriodos />} />
-      <Route path="/preceptor/periodos/nuevo" element={<PreceptorPeriodoForm />} />
-      <Route path="/preceptor/periodos/:termId/editar" element={<PreceptorPeriodoForm />} />
+      {['preceptor', 'administrativo', 'director'].map((role) => [
+        <Route key={`${role}-list`} path={`/${role}/periodos`} element={<PreceptorPeriodos />} />,
+        <Route key={`${role}-new`} path={`/${role}/periodos/nuevo`} element={<PreceptorPeriodoForm />} />,
+        <Route key={`${role}-edit`} path={`/${role}/periodos/:termId/editar`} element={<PreceptorPeriodoForm />} />,
+      ])}
     </Routes>,
     { route },
   );
@@ -138,6 +140,30 @@ describe('PreceptorPeriodos', () => {
     await user.click(screen.getByRole('button', { name: 'Acciones de Por ventana 2026' }));
     expect(await screen.findByRole('menuitem', { name: 'Abrir inscripción ahora' })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'Quitar apertura manual' })).not.toBeInTheDocument();
+  });
+});
+
+describe.each(['administrativo', 'director'])('PreceptorPeriodos as %s', (role) => {
+  it('keeps the create and edit navigation under the role prefix', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/terms`, () => HttpResponse.json(TERMS)),
+      http.get(`${API}/terms/1`, () => HttpResponse.json(TERMS[0])),
+    );
+    renderApp(`/${role}/periodos`);
+
+    await user.click(await screen.findByRole('button', { name: 'Acciones de Primer cuatrimestre 2027' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Editar período' }));
+    expect(await screen.findByRole('link', { name: /Volver a Períodos/ })).toHaveAttribute('href', `/${role}/periodos`);
+  });
+
+  it('opens the creation form under the role prefix', async () => {
+    const user = userEvent.setup();
+    server.use(http.get(`${API}/terms`, () => HttpResponse.json(TERMS)));
+    renderApp(`/${role}/periodos`);
+
+    await user.click(await screen.findByRole('button', { name: 'Nuevo período' }));
+    expect(await screen.findByRole('link', { name: /Volver a Períodos/ })).toHaveAttribute('href', `/${role}/periodos`);
   });
 });
 
