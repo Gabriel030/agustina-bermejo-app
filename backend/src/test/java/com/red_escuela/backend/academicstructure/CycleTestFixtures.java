@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Classroom;
@@ -58,7 +59,7 @@ public class CycleTestFixtures {
     }
 
     public Term term(int year) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setDescription("Ciclo lectivo " + year + " " + UUID.randomUUID());
         term.setStartDate(LocalDateTime.of(year, 3, 1, 0, 0));

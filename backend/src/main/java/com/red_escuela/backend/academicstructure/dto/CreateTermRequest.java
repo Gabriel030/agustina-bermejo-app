@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.shared.domain.TermEnrollmentWindowRequiredException;
 import com.red_escuela.backend.shared.validation.RequestLimits;
 import com.red_escuela.backend.shared.validation.SelfValidatingRequest;
 import com.red_escuela.backend.academicstructure.domain.TermType;
@@ -14,5 +15,8 @@ public record CreateTermRequest(
         LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) implements SelfValidatingRequest {
     public CreateTermRequest {
         RequestLimits.requireMaxLength("description", description, 255);
+        if (enrollmentStart == null || enrollmentEnd == null) {
+            throw new TermEnrollmentWindowRequiredException();
+        }
     }
 }

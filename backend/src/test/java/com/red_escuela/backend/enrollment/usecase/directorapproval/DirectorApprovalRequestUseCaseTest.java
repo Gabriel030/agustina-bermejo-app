@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
@@ -181,7 +182,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     private Term persistOpenTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-2C");
         term.setStatus(StatusType.ACTIVE);

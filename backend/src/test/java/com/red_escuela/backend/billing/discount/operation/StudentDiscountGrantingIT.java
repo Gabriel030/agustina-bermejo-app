@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.operation;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import com.red_escuela.backend.billing.authorization.domain.IllegalAuthorizationRequestTransitionException;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
@@ -249,7 +250,7 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
             student.setInstitution(institution);
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2027);
             term.setStatus(StatusType.ACTIVE);
             term.setStartDate(LocalDateTime.of(2027, 3, 1, 0, 0));

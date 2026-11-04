@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -99,7 +100,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     private CourseSubject persistCourseSubject(String name) {
-        Term courseTerm = new Term();
+        Term courseTerm = TermFixtures.newTerm();
         courseTerm.setYear(2026);
         courseTerm.setDescription("Term del curso");
         courseTerm.setType(TermType.FIRST_SEMESTER);
@@ -123,7 +124,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     private Term persistSectionTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term de la comisión");
         term.setType(TermType.FIRST_SEMESTER);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.support.PaymentStandingSeed;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
@@ -131,7 +132,7 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026");
         term.setStatus(StatusType.ACTIVE);
@@ -266,7 +267,7 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
     private void persistNextYearTemplate(Fixture fixture) {
         transactionTemplate.executeWithoutResult(tx -> {
             ProgramEnrollment enrollment = entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId());
-            Term nextTerm = new Term();
+            Term nextTerm = TermFixtures.newTerm();
             nextTerm.setYear(2027);
             nextTerm.setDescription("2027");
             nextTerm.setStatus(StatusType.ACTIVE);
@@ -469,7 +470,7 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = transactionTemplate.execute(tx -> {
             Person director = persistPerson("94100121");
             Student student = persistStudent("94100122");
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2026);
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);

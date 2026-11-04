@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -360,7 +361,7 @@ class PromotionControllerIT extends AbstractIntegrationTest {
 
     @Test
     void creatingAPromotionOfACourseScopesItToTheCourse() throws Exception {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2031);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);

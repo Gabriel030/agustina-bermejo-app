@@ -4,7 +4,9 @@ import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.dto.UpdateTermRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
+import com.red_escuela.backend.shared.domain.TermEnrollmentWindowRequiredException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.shared.domain.InvalidDateRangeException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,12 +34,16 @@ class UpdateTermServiceIT extends AbstractIntegrationTest {
     private Term term;
     private LocalDateTime originalStart;
     private LocalDateTime originalEnd;
+    private LocalDateTime originalEnrollmentStart;
+    private LocalDateTime originalEnrollmentEnd;
 
     @BeforeEach
     void seedTerm() {
         term = new CycleTestFixtures(entityManager).term(2040 + (int) (System.nanoTime() % 50));
         originalStart = term.getStartDate();
         originalEnd = term.getEndDate();
+        originalEnrollmentStart = term.getEnrollmentStart();
+        originalEnrollmentEnd = term.getEnrollmentEnd();
         entityManager.flush();
     }
 
@@ -49,8 +55,8 @@ class UpdateTermServiceIT extends AbstractIntegrationTest {
         assertThat(updated.getDescription()).isEqualTo("Nueva descripcion");
         assertThat(updated.getStartDate()).isEqualTo(originalStart);
         assertThat(updated.getEndDate()).isEqualTo(originalEnd);
-        assertThat(updated.getEnrollmentStart()).isNull();
-        assertThat(updated.getEnrollmentEnd()).isNull();
+        assertThat(updated.getEnrollmentStart()).isEqualTo(originalEnrollmentStart);
+        assertThat(updated.getEnrollmentEnd()).isEqualTo(originalEnrollmentEnd);
     }
 
     @Test
@@ -98,5 +104,32 @@ class UpdateTermServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> updateTerm.update(new UpdateTermCommand(987_654_321L,
                 new UpdateTermRequest("x", null, null, null, null))))
                 .isInstanceOf(TermNotFoundException.class);
+    }
+
+    @Test
+    void movingOnlyTheEnrollmentEndKeepsTheEnrollmentStart() {
+        LocalDateTime newEnd = originalEnrollmentEnd.minusDays(3);
+
+        Term updated = updateTerm.update(new UpdateTermCommand(term.getId(),
+                new UpdateTermRequest(null, null, null, null, newEnd)));
+
+        assertThat(updated.getEnrollmentStart()).isEqualTo(originalEnrollmentStart);
+        assertThat(updated.getEnrollmentEnd()).isEqualTo(newEnd);
+    }
+
+    @Test
+    void anEnrollmentEndBeforeTheStoredEnrollmentStartIsRejected() {
+        assertThatThrownBy(() -> updateTerm.update(new UpdateTermCommand(term.getId(),
+                new UpdateTermRequest(null, null, null, null, originalEnrollmentStart.minusDays(1)))))
+                .isInstanceOf(InvalidDateRangeException.class);
+    }
+
+    @Test
+    void aTermWithoutStoredWindowCannotBeUpdatedWithoutProvidingOne() {
+        term.setEnrollmentStart(null);
+
+        assertThatThrownBy(() -> updateTerm.update(new UpdateTermCommand(term.getId(),
+                new UpdateTermRequest("Otra", null, null, null, null))))
+                .isInstanceOf(TermEnrollmentWindowRequiredException.class);
     }
 }

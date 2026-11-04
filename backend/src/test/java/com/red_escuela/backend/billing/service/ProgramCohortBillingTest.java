@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
@@ -160,7 +161,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(int year) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(java.time.LocalDateTime.of(year, 1, 1, 0, 0));

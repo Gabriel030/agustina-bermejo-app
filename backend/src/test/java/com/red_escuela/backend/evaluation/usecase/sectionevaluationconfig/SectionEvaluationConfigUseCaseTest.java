@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
@@ -139,7 +140,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime start, LocalDateTime end) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

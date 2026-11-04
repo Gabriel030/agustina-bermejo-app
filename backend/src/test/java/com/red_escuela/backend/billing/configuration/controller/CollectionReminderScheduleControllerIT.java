@@ -71,7 +71,7 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
         MutableClock.INSTANCE.setDate(TODAY);
         nursingId = insertProgram("Enfermería");
         radiologyId = insertProgram("Radiología");
-        jdbcTemplate.update("insert into term (year_number, status, start_date, end_date) values (2027, true, timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00')");
+        jdbcTemplate.update("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2027, true, timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00')");
         Long termId = jdbcTemplate.queryForObject("select max(id) from term", Long.class);
         firstAidCourseId = jdbcTemplate.queryForObject("insert into course (name, term_id, currency) values ('Primeros Auxilios', ?, 'ARS') returning id", Long.class, termId);
     }

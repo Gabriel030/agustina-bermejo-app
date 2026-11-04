@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.api;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
@@ -36,7 +37,7 @@ class CourseCatalogFinderTest {
     private CourseCatalogFinder finder;
 
     private Course course(Long id, Integer capacity, LocalDateTime registrationStart, LocalDateTime registrationEnd) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setId(5L);
         term.setStartDate(NOW.plusDays(30));
         Course course = new Course();

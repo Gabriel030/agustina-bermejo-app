@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -71,7 +72,7 @@ public abstract class AbstractOverdueContactIT extends AbstractIntegrationTest {
         institution = new Institution();
         institution.setName("Instituto para contactar " + System.nanoTime());
         institution = institutionRepository.save(institution);
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setYear(2027 + (int) (System.nanoTime() % 1000));
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

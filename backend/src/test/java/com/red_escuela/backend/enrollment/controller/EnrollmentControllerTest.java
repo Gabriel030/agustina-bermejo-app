@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -202,12 +203,12 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
-        term.setEnrollmentStart(enrollmentStart);
-        term.setEnrollmentEnd(enrollmentEnd);
+        term.setEnrollmentStart(enrollmentStart != null ? enrollmentStart : TermFixtures.OPEN_WINDOW_START);
+        term.setEnrollmentEnd(enrollmentEnd != null ? enrollmentEnd : TermFixtures.OPEN_WINDOW_END);
         entityManager.persist(term);
         return term;
     }

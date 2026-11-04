@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.enrollmentfee;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -86,7 +87,7 @@ class EnrollmentFeeExemptionServicesTest {
         enrollment.setId(10L);
         enrollment.setProgram(program);
         enrollment.setStudent(student);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setId(3L);
         template = new ProgramYearBillingTemplate();
         template.setId(20L);

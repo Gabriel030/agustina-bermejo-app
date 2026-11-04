@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
@@ -169,7 +170,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
 
     protected Year newYear(Career career, int year, int installments, int feeCount, int firstFeeMonth, Integer secondFeeMonth) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(String.valueOf(year));
             term.setStatus(StatusType.ACTIVE);
@@ -298,7 +299,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
 
     protected Term newCuatrimestre(int year, int startMonth, LocalDate windowOpens, LocalDate windowCloses, TermType type) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(year + "-" + type);
             term.setType(type);

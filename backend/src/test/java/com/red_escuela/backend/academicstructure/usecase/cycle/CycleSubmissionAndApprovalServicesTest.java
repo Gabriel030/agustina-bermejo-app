@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.dto.CycleSectionResponse;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -67,7 +68,7 @@ class CycleSubmissionAndApprovalServicesTest {
 
     @BeforeEach
     void setUp() {
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setId(2L);
         cycle = new AcademicOfferingCycle();
         cycle.setId(CYCLE_ID);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
@@ -110,7 +111,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         program.setTotalCreditsRequired(0);
         program = programRepository.save(program);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(LocalDateTime.of(2026, 1, 1, 0, 0));

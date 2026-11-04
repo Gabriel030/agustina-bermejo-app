@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -132,7 +133,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
     private CourseEnrollment persistCourseEnrollment(String dni, EnrollmentStatus status, EnrollmentPaymentStatus paymentStatus) {
         Student student = persistStudent(dni);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

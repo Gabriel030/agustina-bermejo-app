@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
@@ -146,7 +147,7 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

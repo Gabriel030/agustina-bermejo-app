@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ class TermResponseTest {
 
     @Test
     void termWithoutOverrideExposesNoEnrollmentOverride() {
-        assertThat(TermResponse.from(new Term()).enrollmentOverride()).isNull();
+        assertThat(TermResponse.from(TermFixtures.newTerm()).enrollmentOverride()).isNull();
     }
 
     @Test
@@ -27,7 +28,7 @@ class TermResponseTest {
     }
 
     private static Term termWith(TermEnrollmentOverride override) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         ReflectionTestUtils.setField(term, "enrollmentOverride", override);
         return term;
     }

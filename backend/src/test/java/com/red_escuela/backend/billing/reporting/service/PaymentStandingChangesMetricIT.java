@@ -57,7 +57,7 @@ class PaymentStandingChangesMetricIT extends AbstractMonthlyMetricsIT {
     }
 
     private Long newCourseOf(Currency currency) {
-        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date) values (2021, true, timestamp '2021-03-01 00:00:00', timestamp '2021-12-15 00:00:00') returning id", Long.class);
+        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2021, true, timestamp '2021-03-01 00:00:00', timestamp '2021-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
         termIds.add(termId);
         Long courseId = jdbc.queryForObject("insert into course (name, term_id, currency) values ('Curso de cobranza', ?, ?) returning id", Long.class, termId, currency.name());
         courseIds.add(courseId);

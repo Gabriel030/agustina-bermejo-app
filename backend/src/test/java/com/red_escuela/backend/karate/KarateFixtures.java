@@ -194,7 +194,7 @@ public class KarateFixtures {
         context().getBean(org.springframework.transaction.support.TransactionTemplate.class).executeWithoutResult(status -> {
             var enrollment = context().getBean(ProgramEnrollmentRepository.class).findById(programEnrollmentId)
                     .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
-            var term = new com.red_escuela.backend.academicstructure.entity.Term();
+            var term = com.red_escuela.backend.testsupport.TermFixtures.newTerm();
             term.setYear(2026);
             term.setDescription("Karate plan completo");
             term.setStatus(StatusType.ACTIVE);

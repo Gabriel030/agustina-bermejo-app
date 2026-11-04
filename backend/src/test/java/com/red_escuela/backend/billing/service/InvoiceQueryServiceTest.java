@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
@@ -112,7 +113,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

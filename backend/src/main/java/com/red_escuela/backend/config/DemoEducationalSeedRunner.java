@@ -147,6 +147,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         term.put("type", "ANNUAL");
         term.put("startDate", "2026-03-01T00:00:00");
         term.put("endDate", "2026-12-20T00:00:00");
+        term.put("enrollmentStart", "2026-01-01T00:00:00");
+        term.put("enrollmentEnd", "2026-12-20T00:00:00");
         long termId = api.post(ADMIN, "/terms", term).get("id").asLong();
         api.post(ADMIN, "/terms/" + termId + "/enrollment/open", null);
         return termId;

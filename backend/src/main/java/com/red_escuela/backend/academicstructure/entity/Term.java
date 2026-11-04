@@ -41,10 +41,10 @@ public class Term {
     @Column(name = "status")
     private StatusType status;
 
-    @Column(name = "enrollment_start")
+    @Column(name = "enrollment_start", nullable = false)
     private LocalDateTime enrollmentStart;
 
-    @Column(name = "enrollment_end")
+    @Column(name = "enrollment_end", nullable = false)
     private LocalDateTime enrollmentEnd;
 
     @Enumerated(EnumType.STRING)
