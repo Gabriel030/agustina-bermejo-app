@@ -42,6 +42,10 @@ export function AuthProvider({ children }) {
   }, [limpiarSesion]);
 
   useEffect(() => {
+    if (!localStorage.getItem('refreshToken')) {
+      setCargando(false);
+      return;
+    }
     restoreStoredSession()
       .then((perfil) => {
         if (perfil) setUsuario(perfil);
