@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -95,5 +96,27 @@ describe('AlumnoMisCarreras', () => {
     renderWithProviders(<AlumnoMisCarreras />, { route: '/?tab=plan-de-estudio' });
     expect(await screen.findByText('Correlativas')).toBeInTheDocument();
     expect(screen.queryByText('Hs. semanales')).not.toBeInTheDocument();
+  });
+
+  it('downloads the regular and approved-subjects certificates for the selected program', async () => {
+    mockEnrollment(false);
+    const requested = [];
+    server.use(
+      http.get(`${API}/me/program-enrollments/5/certificates/:kind`, ({ params }) => {
+        requested.push(params.kind);
+        return new HttpResponse(new Uint8Array([37, 80, 68, 70]), {
+          headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="constancia.pdf"' },
+        });
+      }),
+    );
+    URL.createObjectURL = vi.fn(() => 'blob:certificate');
+    URL.revokeObjectURL = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(<AlumnoMisCarreras />);
+
+    await user.click(await screen.findByRole('button', { name: 'Constancia de alumno regular' }));
+    await waitFor(() => expect(requested).toEqual(['regular']));
+    await user.click(screen.getByRole('button', { name: 'Constancia de materias aprobadas' }));
+    await waitFor(() => expect(requested).toEqual(['regular', 'approved-subjects']));
   });
 });
