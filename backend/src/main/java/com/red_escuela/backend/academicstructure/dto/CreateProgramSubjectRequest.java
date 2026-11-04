@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.shared.validation.RequestLimits;
+import com.red_escuela.backend.shared.validation.SelfValidatingRequest;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.SubjectRecurrence;
@@ -14,5 +16,10 @@ public record CreateProgramSubjectRequest(
         @NotNull @Min(0) Integer credits,
         SubjectRecurrence subjectRecurrence,
         Integer sortOrder,
-        Long electiveGroupId) {
+        Long electiveGroupId) implements SelfValidatingRequest {
+    public CreateProgramSubjectRequest {
+        RequestLimits.requireAtMost("credits", credits, 1000);
+        RequestLimits.requireAtMost("curricularYear", curricularYear, 20);
+        RequestLimits.requireAtMost("sortOrder", sortOrder, 10000);
+    }
 }

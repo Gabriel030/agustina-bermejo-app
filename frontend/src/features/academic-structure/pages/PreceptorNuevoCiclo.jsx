@@ -1,4 +1,5 @@
 import { useId, useReducer, useState } from 'react';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, CheckCircle2 } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -73,10 +74,10 @@ function leadInstructorName(section) {
   return section.instructors?.find((i) => i.role === 'LEAD')?.name ?? 'Sin titular';
 }
 
-function cycleDetailPath(tipo, programaId, cursoId) {
+function cycleDetailPath(basePath, tipo, programaId, cursoId) {
   return tipo === 'programa'
-    ? `/preceptor/oferta-academica/carreras/${programaId}`
-    : `/preceptor/oferta-academica/cursos/${cursoId}`;
+    ? `${basePath}/oferta-academica/carreras/${programaId}`
+    : `${basePath}/oferta-academica/cursos/${cursoId}`;
 }
 
 function estadoInicial() {
@@ -179,6 +180,7 @@ function CreatedCyclePeriod({ state, dispatch }) {
 }
 
 function Paso1Periodo({ state, dispatch, onCycleCreated }) {
+  const basePath = useRoleBasePath();
   const { data: terminos, isLoading: loadingTerminos } = useTerminos();
   const { data: programas, isLoading: loadingProgramas } = useProgramas();
   const { data: cursos, isLoading: loadingCursos } = useCursos();
@@ -263,7 +265,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
           {error.alreadyInProgress && (
             <>
               {' '}
-              <Link to={cycleDetailPath(state.tipo, state.programaId, state.cursoId)} className="font-medium underline">
+              <Link to={cycleDetailPath(basePath, state.tipo, state.programaId, state.cursoId)} className="font-medium underline">
                 {state.tipo === 'programa' ? 'Ir a la carrera' : 'Ir al curso'}
               </Link>
             </>
@@ -517,6 +519,7 @@ function Paso2Comisiones({ state, dispatch }) {
 }
 
 function Paso3Resumen({ state, dispatch }) {
+  const basePath = useRoleBasePath();
   const navigate = useNavigate();
   const submitCiclo = useSubmitCiclo();
   const [error, setError] = useState(null);
@@ -526,7 +529,7 @@ function Paso3Resumen({ state, dispatch }) {
   function handleSubmit() {
     setError(null);
     submitCiclo.mutate(state.cicloId, {
-      onSuccess: () => navigate(cycleDetailPath(state.tipo, state.programaId, state.cursoId)),
+      onSuccess: () => navigate(cycleDetailPath(basePath, state.tipo, state.programaId, state.cursoId)),
       onError: (err) => setError(SUBMIT_ERROR_MESSAGES[err.code] ?? 'No se pudo enviar a aprobación. Probá de nuevo.'),
     });
   }
@@ -606,6 +609,7 @@ function CycleWizard({ resumedCycle, onCycleCreated }) {
 }
 
 function ResumedCycleGate({ cycleId, onCycleCreated }) {
+  const basePath = useRoleBasePath();
   const { data: cycle, isLoading, isError } = useCycle(cycleId);
 
   if (isLoading) return <Skeleton className="h-[200px] w-full rounded-2xl" />;
@@ -623,7 +627,7 @@ function ResumedCycleGate({ cycleId, onCycleCreated }) {
           title={NOT_EDITABLE_MESSAGE}
           action={
             <Button variant="outline" asChild>
-              <Link to={cycleDetailPath(cycle.programId ? 'programa' : 'curso', cycle.programId, cycle.courseId)}>
+              <Link to={cycleDetailPath(basePath, cycle.programId ? 'programa' : 'curso', cycle.programId, cycle.courseId)}>
                 Ver el ciclo
               </Link>
             </Button>
@@ -636,6 +640,7 @@ function ResumedCycleGate({ cycleId, onCycleCreated }) {
 }
 
 export function PreceptorNuevoCiclo() {
+  const basePath = useRoleBasePath();
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialCycleId] = useState(() => searchParams.get('cicloId'));
 
@@ -648,7 +653,7 @@ export function PreceptorNuevoCiclo() {
       <div className="flex flex-col gap-5">
         <div>
           <Link
-            to="/preceptor/oferta-academica"
+            to={`${basePath}/oferta-academica`}
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />

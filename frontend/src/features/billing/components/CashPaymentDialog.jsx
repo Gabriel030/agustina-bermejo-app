@@ -11,7 +11,8 @@ import { InfoTip } from '@/components/charts/InfoTip';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate } from '@/lib/billing';
 import { formatMoney } from '@/lib/utils';
-import { AMOUNT_ERROR_MESSAGES, formatAmountEsAr, newIdempotencyKey, parseAmountInput } from './cashAmount';
+import { AMOUNT_ERROR_MESSAGES, formatAmountEsAr, parseAmountInput } from './cashAmount';
+import { newIdempotencyKey } from '@/api/idempotencyKey';
 import { usePreviewCashPayment, useRegisterCashPayment } from '@/hooks/useBilling';
 
 const ADMINISTRATIVE_WINDOW_DAYS = 5;

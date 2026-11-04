@@ -1,3 +1,4 @@
+import { newIdempotencyKey } from '@/api/idempotencyKey';
 import { useReducer, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -256,7 +257,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
   async function enviarSolicitud() {
     setModalConfirmarAbierto(false);
-    claveIdempotencia.current ??= globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    claveIdempotencia.current ??= newIdempotencyKey();
     dispatch({ type: 'ENVIANDO' });
     try {
       const valores = getValues();

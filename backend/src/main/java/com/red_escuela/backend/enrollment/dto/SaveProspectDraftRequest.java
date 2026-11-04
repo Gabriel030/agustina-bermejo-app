@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import com.red_escuela.backend.shared.validation.RequestLimits;
+import com.red_escuela.backend.shared.validation.SelfValidatingRequest;
 import com.red_escuela.backend.shared.domain.DocumentType;
 
 public record SaveProspectDraftRequest(
@@ -11,5 +13,15 @@ public record SaveProspectDraftRequest(
         String city,
         String state,
         String postalCode,
-        String country) {
+        String country) implements SelfValidatingRequest {
+    public SaveProspectDraftRequest {
+        RequestLimits.requireMaxLength("dni", dni, 255);
+        RequestLimits.requireMaxLength("street", street, 255);
+        RequestLimits.requireMaxLength("number", number, 255);
+        RequestLimits.requireMaxLength("floor", floor, 255);
+        RequestLimits.requireMaxLength("city", city, 255);
+        RequestLimits.requireMaxLength("state", state, 255);
+        RequestLimits.requireMaxLength("postalCode", postalCode, 255);
+        RequestLimits.requireMaxLength("country", country, 255);
+    }
 }

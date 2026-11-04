@@ -1,5 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createQueryClient } from '@/api/queryClient';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -8,9 +9,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 // Primera pantalla con fetch + paginación + invalidación real (Épica 7 Fase 3,
 // ver docs/context/frontend.md) — antes no había caso de uso que lo justificara.
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
-});
+const queryClient = createQueryClient();
 
 export function App() {
   return (

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ChevronRight, Plus } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -41,13 +42,14 @@ function BadgeCiclo({ ciclo }) {
 }
 
 function FilaPrograma({ programa, navigate }) {
+  const basePath = useRoleBasePath();
   const { data: ciclos } = useCiclosPorPrograma(programa.id);
   const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
 
   return (
     <button
       type="button"
-      onClick={() => navigate(`/preceptor/oferta-academica/carreras/${programa.id}`)}
+      onClick={() => navigate(`${basePath}/oferta-academica/carreras/${programa.id}`)}
       className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
     >
       <div className="min-w-0">
@@ -63,13 +65,14 @@ function FilaPrograma({ programa, navigate }) {
 }
 
 function FilaCurso({ curso, navigate }) {
+  const basePath = useRoleBasePath();
   const { data: ciclos } = useCiclosPorCurso(curso.id);
   const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
 
   return (
     <button
       type="button"
-      onClick={() => navigate(`/preceptor/oferta-academica/cursos/${curso.id}`)}
+      onClick={() => navigate(`${basePath}/oferta-academica/cursos/${curso.id}`)}
       className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
     >
       <div className="min-w-0">
@@ -99,6 +102,7 @@ function ListaFiltrada({ items, isLoading, renderFila, emptyText }) {
 }
 
 export function PreceptorOfertaAcademica() {
+  const basePath = useRoleBasePath();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabDesdeUrl = searchParams.get('tab');
@@ -127,7 +131,7 @@ export function PreceptorOfertaAcademica() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Oferta académica</h1>
-          <Button variant="gradient" onClick={() => navigate('/preceptor/oferta-academica/nuevo-ciclo')}>
+          <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
             <Plus className="mr-1.5 h-4 w-4" />
             Iniciar alta de ciclo
           </Button>

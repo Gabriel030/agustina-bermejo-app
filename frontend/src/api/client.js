@@ -2,12 +2,17 @@
  * Wrapper fino sobre fetch — no se suma Axios/React Query en esta fase
  * (ver Spec - Fundación técnica y login local, decisión 5).
  */
+import { createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
+export { CircuitOpenError, NetworkError } from '@/api/retryPolicy';
+
 export class RateLimitedError extends Error {
-  constructor() {
-    super('Demasiados intentos, esperá un momento antes de reintentar.');
+  constructor(retryAfterSeconds = null) {
+    super(rateLimitMessage(retryAfterSeconds));
     this.name = 'RateLimitedError';
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -26,6 +31,9 @@ const STATUS_MESSAGES = {
   403: 'No tenés permiso para hacer esto.',
   404: 'No se encontró lo que buscabas.',
   409: 'La operación entra en conflicto con el estado actual.',
+  502: 'El servicio no está disponible por ahora. Probá de nuevo en unos minutos.',
+  503: 'El servicio no está disponible por ahora. Probá de nuevo en unos minutos.',
+  504: 'El servicio no está disponible por ahora. Probá de nuevo en unos minutos.',
 };
 
 function messageForStatus(status) {
@@ -67,6 +75,40 @@ async function rawFetch(path, options) {
   return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
 }
 
+const circuits = new Map();
+let retrySleep;
+let circuitOptions = {};
+
+export function setRetrySleep(sleep) {
+  retrySleep = sleep;
+}
+
+export function setCircuitOptions(options) {
+  circuitOptions = options;
+  circuits.clear();
+}
+
+export function resetCircuits() {
+  circuits.clear();
+}
+
+function circuitForHost() {
+  const host = new URL(API_BASE_URL).host;
+  if (!circuits.has(host)) circuits.set(host, createCircuitBreaker(circuitOptions));
+  return circuits.get(host);
+}
+
+function sendWithRetryPolicy(path, options) {
+  return runWithRetry({
+    send: () => rawFetch(path, options),
+    method: options.method ?? 'GET',
+    hasIdempotencyKey: new Headers(options.headers).has('Idempotency-Key'),
+    signal: options.signal,
+    circuit: circuitForHost(),
+    sleep: retrySleep,
+  });
+}
+
 let refreshInFlight = null;
 let sessionExpiredNotified = false;
 
@@ -105,18 +147,19 @@ function expireSession() {
 
 async function fetchWithAuth(path, options) {
   const tokenSent = accessToken;
-  let response = await rawFetch(path, options);
+  let response = await sendWithRetryPolicy(path, options);
 
   if (response.status === 401 && !path.startsWith('/auth/')) {
     const alreadyRefreshed = accessToken !== null && accessToken !== tokenSent;
     const refreshed = alreadyRefreshed || (await requestSessionRefresh());
     if (!refreshed) expireSession();
-    response = await rawFetch(path, options);
+    response = await sendWithRetryPolicy(path, options);
     if (response.status === 401) expireSession();
   }
 
   if (response.status === 429) {
-    throw new RateLimitedError();
+    const retryAfter = Number(response.headers.get('Retry-After'));
+    throw new RateLimitedError(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : null);
   }
 
   if (!response.ok) {

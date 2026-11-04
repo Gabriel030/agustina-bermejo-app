@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { resetCircuits, setRetrySleep } from '@/api/client';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { PrimerDirector } from './PrimerDirector';
@@ -19,8 +20,10 @@ const provisioned = {
   directorEmail: 'carolina.ledesma@nuevohorizonte.edu.ar',
 };
 
-function failNextRequest() {
-  return vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('Failed to fetch'));
+function failNextRequest(times = 1) {
+  const spy = vi.spyOn(globalThis, 'fetch');
+  for (let attempt = 0; attempt < times; attempt += 1) spy.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  return spy;
 }
 
 async function fillForm(user) {
@@ -38,8 +41,14 @@ async function submitAndConfirm(user) {
 }
 
 describe('PrimerDirector', () => {
+  beforeEach(() => {
+    resetCircuits();
+    setRetrySleep(async () => {});
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
+    setRetrySleep(undefined);
   });
 
   it('showsEachMissingFieldAndDoesNotAskForConfirmationWhenTheFormIsEmpty', async () => {
@@ -158,7 +167,7 @@ describe('PrimerDirector', () => {
     const user = userEvent.setup();
     renderWithProviders(<PrimerDirector />);
     await fillForm(user);
-    const fetchSpy = failNextRequest();
+    const fetchSpy = failNextRequest(3);
 
     await submitAndConfirm(user);
     expect(await screen.findByText('No pudimos confirmar si se creó')).toBeInTheDocument();
@@ -183,7 +192,7 @@ describe('PrimerDirector', () => {
     const user = userEvent.setup();
     renderWithProviders(<PrimerDirector />);
     await fillForm(user);
-    const fetchSpy = failNextRequest();
+    const fetchSpy = failNextRequest(3);
     await submitAndConfirm(user);
     await screen.findByText('No pudimos confirmar si se creó');
     const failedKey = fetchSpy.mock.calls[0][1].headers.get('Idempotency-Key');

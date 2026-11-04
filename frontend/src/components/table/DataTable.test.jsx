@@ -171,4 +171,37 @@ describe('DataTable', () => {
 
     expect(screen.queryByText('Estado')).not.toBeInTheDocument();
   });
+
+  describe('compact layout', () => {
+    const stickyColumns = [{ ...columns[0], meta: { stickyStart: true } }, columns[1]];
+
+    it('pins the first column and keeps rows at 46px', () => {
+      renderTable({ compact: true, columns: stickyColumns });
+
+      const firstCell = screen.getAllByRole('row')[1].querySelector('td');
+      expect(firstCell).toHaveClass('sticky', 'left-0');
+      expect(screen.getAllByRole('row')[1]).toHaveClass('h-[46px]');
+      expect(screen.getAllByRole('columnheader')[0]).toHaveClass('sticky', 'left-0');
+    });
+
+    it('renders the overflow indicator hidden while nothing overflows', () => {
+      renderTable({ compact: true, columns: stickyColumns });
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
+    });
+
+    it('shows the filter of another column from a header through filterColumnId', async () => {
+      const user = userEvent.setup();
+      const linked = [
+        { ...columns[0], meta: { filterColumnId: 'status' } },
+        { ...columns[1], meta: { ...columns[1].meta } },
+      ];
+      renderTable({ columns: linked, initialColumnVisibility: { status: false } });
+
+      await user.click(screen.getByRole('button', { name: 'Filtrar por estado' }));
+      await user.click(await screen.findByRole('checkbox', { name: /Baja/ }));
+
+      expect(bodyNames()).toEqual(['Beta', 'Gamma']);
+    });
+  });
 });

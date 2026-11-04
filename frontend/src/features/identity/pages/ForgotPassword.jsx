@@ -44,7 +44,7 @@ export function ForgotPassword() {
       await apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
       setCodigoPedido(true);
     } catch (err) {
-      setError(err instanceof RateLimitedError ? 'Demasiados intentos, esperá un momento antes de reintentar.' : 'Algo salió mal. Probá de nuevo.');
+      setError(err instanceof RateLimitedError ? err.message : 'Algo salió mal. Probá de nuevo.');
     } finally {
       setEnviando(false);
     }
@@ -69,7 +69,7 @@ export function ForgotPassword() {
     } catch (err) {
       setError(
         err instanceof RateLimitedError
-          ? 'Demasiados intentos, esperá un momento antes de reintentar.'
+          ? err.message
           : 'Código incorrecto o vencido. Pedí uno nuevo si hace falta.',
       );
     } finally {

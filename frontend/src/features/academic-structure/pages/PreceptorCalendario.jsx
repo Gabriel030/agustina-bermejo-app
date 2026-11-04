@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -87,6 +88,7 @@ function PeriodSelect({ termId, onChange }) {
 }
 
 export function PreceptorCalendario() {
+  const basePath = useRoleBasePath();
   const [searchParams, setSearchParams] = useSearchParams();
   const termId = searchParams.get('termId');
   const [diaActivo, setDiaActivo] = useState('MONDAY');
@@ -98,7 +100,7 @@ export function PreceptorCalendario() {
       <div className="flex flex-col gap-4">
         <div>
           <Link
-            to="/preceptor/oferta-academica"
+            to={`${basePath}/oferta-academica`}
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />

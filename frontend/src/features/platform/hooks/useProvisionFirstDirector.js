@@ -1,3 +1,4 @@
+import { newIdempotencyKey } from '@/api/idempotencyKey';
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
@@ -11,7 +12,7 @@ export function useProvisionFirstDirector() {
     mutationFn: (request) => {
       const signature = JSON.stringify(request);
       if (attempt.current.signature !== signature) {
-        attempt.current = { signature, idempotencyKey: crypto.randomUUID() };
+        attempt.current = { signature, idempotencyKey: newIdempotencyKey() };
       }
       return apiFetch('/platform/provisioning/first-director', {
         method: 'POST',
