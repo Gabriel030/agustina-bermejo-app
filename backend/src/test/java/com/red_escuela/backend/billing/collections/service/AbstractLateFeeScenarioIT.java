@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -117,7 +118,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

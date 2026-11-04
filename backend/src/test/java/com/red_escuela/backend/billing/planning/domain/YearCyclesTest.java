@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.domain;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class YearCyclesTest {
 
     private static YearCycle cycle(long id, LocalDateTime start, LocalDateTime end) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(start.getYear());
         term.setStartDate(start);
         term.setEndDate(end);

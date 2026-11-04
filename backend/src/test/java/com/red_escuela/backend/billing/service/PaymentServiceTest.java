@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.support.PaymentStandingSeed;
@@ -113,7 +114,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     }
 
     private CourseEnrollment persistCourseEnrollment(Student student) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

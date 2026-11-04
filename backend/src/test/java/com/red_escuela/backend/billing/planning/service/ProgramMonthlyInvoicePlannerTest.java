@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -31,7 +32,7 @@ class ProgramMonthlyInvoicePlannerTest {
     private final ProgramMonthlyInvoicePlanner planner = new ProgramMonthlyInvoicePlanner();
 
     private static ProgramYearBillingTemplate template(long id, int year, int installments, int count, int first, Integer second) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStartDate(LocalDateTime.of(year, 3, 1, 0, 0));
         term.setEndDate(LocalDateTime.of(year, 12, 31, 23, 59));
@@ -278,7 +279,7 @@ class ProgramMonthlyInvoicePlannerTest {
 
     @Test
     void anUndatedTermUsesItsOwnYearSoTheCapOfASecondYearStartsFromZero() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2027);
         ProgramYearBillingTemplate t = new ProgramYearBillingTemplate();
         t.setId(2L);

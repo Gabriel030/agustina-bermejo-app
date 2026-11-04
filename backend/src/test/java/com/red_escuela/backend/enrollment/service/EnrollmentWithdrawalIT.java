@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -95,7 +96,7 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     private Long newCourseEnrollment(Long studentId, EnrollmentStatus status) {
         return inTransaction(() -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2027);
             term.setDescription("2027-1C " + System.nanoTime());
             term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);

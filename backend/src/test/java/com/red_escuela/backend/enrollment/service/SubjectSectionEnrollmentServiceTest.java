@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
@@ -120,7 +121,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.operation;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
@@ -47,7 +48,7 @@ class AcquireCohortPromotionOnPaymentPlanSelectionIT extends AbstractCohortPromo
     private CourseScenario newCourseScenario() {
         Long studentId = factory.newStudent(offering);
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2027);
             term.setDescription("2027-1C " + System.nanoTime());
             term.setStatus(StatusType.ACTIVE);

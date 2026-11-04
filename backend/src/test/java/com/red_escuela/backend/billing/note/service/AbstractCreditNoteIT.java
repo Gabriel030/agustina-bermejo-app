@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -110,7 +111,7 @@ public abstract class AbstractCreditNoteIT extends AbstractCurrentAccountIT {
     protected Long templateStartingOn(Program program, LocalDate start) {
         Long creatorId = newStaffPerson().getId();
         return inTransaction(() -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(start.getYear());
             term.setStatus(StatusType.ACTIVE);
             term.setStartDate(start.atStartOfDay());

@@ -13,7 +13,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
     * def descripcionPeriodo = 'Karate - Periodo catálogo ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2027-01-01T00:00:00', endDate: '2027-12-31T00:00:00' }
+    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2027-01-01T00:00:00', endDate: '2027-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -120,7 +120,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
     * def descripcionInvertida = 'Karate - Periodo invertido ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANNUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00' }
+    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANNUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 400
     And match response.code == 'INVALID_TERM_DATES'
@@ -148,6 +148,41 @@ Feature: Catálogo — Períodos lectivos (TermController)
 
     Given path '/terms', termId
     And header Authorization = 'Bearer ' + adminToken
-    And request { startDate: '2027-02-01T00:00:00', endDate: '2027-11-30T00:00:00' }
+    And request { startDate: '2027-02-01T00:00:00', endDate: '2027-11-30T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method put
     Then status 200
+
+  Scenario: La ventana de inscripción es obligatoria al crear y se valida al editar — 400 con código
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2031, description: 'Karate - Sin ventana', type: 'ANNUAL', startDate: '2031-01-01T00:00:00', endDate: '2031-12-31T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_ENROLLMENT_WINDOW_REQUIRED'
+
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2031, description: 'Karate - Ventana incompleta', type: 'ANNUAL', startDate: '2031-01-01T00:00:00', endDate: '2031-12-31T00:00:00', enrollmentStart: '2030-12-01T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_ENROLLMENT_WINDOW_REQUIRED'
+
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2031, description: 'Karate - Ventana invertida', type: 'ANNUAL', startDate: '2031-01-01T00:00:00', endDate: '2031-12-31T00:00:00', enrollmentStart: '2030-12-31T00:00:00', enrollmentEnd: '2030-12-01T00:00:00' }
+    When method post
+    Then status 400
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { enrollmentStart: '2026-01-01T00:00:00', enrollmentEnd: '2026-02-01T00:00:00' }
+    When method put
+    Then status 200
+    And match response.enrollmentStart == '2026-01-01T00:00:00'
+    And match response.enrollmentEnd == '2026-02-01T00:00:00'
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { enrollmentEnd: '2025-12-01T00:00:00' }
+    When method put
+    Then status 400

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
@@ -115,7 +116,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

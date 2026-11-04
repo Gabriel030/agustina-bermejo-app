@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.api;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
@@ -59,7 +60,7 @@ class SectionFinderTest {
         var courseSubject = new CourseSubject();
         courseSubject.setId(12L);
         courseSubject.setCourse(course);
-        var term = new Term();
+        var term = TermFixtures.newTerm();
         term.setId(13L);
         var section = new CourseSubjectSection();
         section.setId(6L);
@@ -139,7 +140,7 @@ class SectionFinderTest {
     private SubjectSection programSection(Long id, Long subjectId, Long termId, int capacity) {
         var subject = new Subject();
         subject.setId(subjectId);
-        var term = new Term();
+        var term = TermFixtures.newTerm();
         term.setId(termId);
         var section = new SubjectSection();
         section.setId(id);

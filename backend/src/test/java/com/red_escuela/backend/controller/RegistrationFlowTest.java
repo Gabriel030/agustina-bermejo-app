@@ -1,5 +1,6 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -109,7 +110,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         director.setStatus(StatusType.ACTIVE);
         entityManager.persist(director);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
@@ -135,7 +136,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse(int capacity) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

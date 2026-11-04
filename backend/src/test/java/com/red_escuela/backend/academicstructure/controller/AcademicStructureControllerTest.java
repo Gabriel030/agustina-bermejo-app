@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import java.math.BigDecimal;
 
@@ -319,7 +320,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingCourseWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-curso1", "ADMINISTRATIVO");
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term para curso baja");
         term.setType(TermType.FIRST_SEMESTER);
@@ -374,9 +375,37 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void creatingTermWithoutEnrollmentWindowReturns400WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-term-window1", "PRECEPTOR");
+        String body = "{\"year\":2061,\"description\":\"Sin ventana\",\"type\":\"FIRST_SEMESTER\","
+                + "\"startDate\":\"2061-03-01T00:00:00\",\"endDate\":\"2061-07-15T00:00:00\"}";
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TERM_ENROLLMENT_WINDOW_REQUIRED"));
+    }
+
+    @Test
+    void creatingTermWithInvertedEnrollmentWindowReturns400() throws Exception {
+        String token = tokenWithRole("preceptor-term-window2", "PRECEPTOR");
+        String body = "{\"year\":2062,\"description\":\"Invertida\",\"type\":\"FIRST_SEMESTER\","
+                + "\"startDate\":\"2062-03-01T00:00:00\",\"endDate\":\"2062-07-15T00:00:00\","
+                + "\"enrollmentStart\":\"2062-02-28T00:00:00\",\"enrollmentEnd\":\"2062-02-01T00:00:00\"}";
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
     private Long createTermAs(String token, int year, String type) throws Exception {
         String body = "{\"year\":" + year + ",\"description\":\"Term " + year + "\",\"type\":" + type
-                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\"}";
+                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\",\"enrollmentStart\":\"" + year + "-02-01T00:00:00\",\"enrollmentEnd\":\"" + year + "-02-28T00:00:00\"}";
         String response = mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -388,7 +417,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
     private int createTermStatus(String token, int year, String type) throws Exception {
         String body = "{\"year\":" + year + ",\"description\":\"Term " + year + "\",\"type\":" + type
-                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\"}";
+                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\",\"enrollmentStart\":\"" + year + "-02-01T00:00:00\",\"enrollmentEnd\":\"" + year + "-02-28T00:00:00\"}";
         return mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -442,7 +471,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void deactivatingAndReactivatingTermWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("preceptor-term1", "PRECEPTOR");
         CreateTermRequest request = new CreateTermRequest(
-                2026, "Term Baja", TermType.FIRST_SEMESTER, LocalDateTime.now(), LocalDateTime.now().plusMonths(4), null, null);
+                2026, "Term Baja", TermType.FIRST_SEMESTER, LocalDateTime.now(), LocalDateTime.now().plusMonths(4), LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(1));
         String body = mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -465,7 +494,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingTermWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("alumno-term1", "ALUMNO");
         CreateTermRequest request = new CreateTermRequest(
-                2026, "Term sin permiso", TermType.FIRST_SEMESTER, LocalDateTime.now(), LocalDateTime.now().plusMonths(4), null, null);
+                2026, "Term sin permiso", TermType.FIRST_SEMESTER, LocalDateTime.now(), LocalDateTime.now().plusMonths(4), LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(1));
 
         mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -561,7 +590,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void addingModuleWithAdministrativeRoleReturns201() throws Exception {
         String token = tokenWithRole("admin-coursesubject1", "ADMINISTRATIVO");
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term para módulo");
         term.setType(TermType.FIRST_SEMESTER);
@@ -604,7 +633,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingCourseSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-coursesubject2", "ADMINISTRATIVO");
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term para módulo baja");
         term.setType(TermType.FIRST_SEMESTER);

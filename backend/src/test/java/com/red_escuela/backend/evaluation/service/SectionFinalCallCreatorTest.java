@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.api.SectionScheduleFinder;
 import com.red_escuela.backend.academicstructure.api.SectionSlotView;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -46,7 +47,7 @@ class SectionFinalCallCreatorTest {
         creator = new SectionFinalCallCreator(examBoardService, sectionScheduleFinder);
         Subject subject = new Subject();
         subject.setId(11L);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setId(22L);
         section = new SubjectSection();
         section.setId(33L);

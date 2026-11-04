@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.academicorg;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
@@ -72,7 +73,7 @@ abstract class AcademicOrgCharacterizationSupport extends AbstractIntegrationTes
     }
 
     protected Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

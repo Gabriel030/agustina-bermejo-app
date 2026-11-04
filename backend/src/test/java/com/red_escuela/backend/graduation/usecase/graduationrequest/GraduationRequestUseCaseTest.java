@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
@@ -140,7 +141,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(programSubject);
 
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

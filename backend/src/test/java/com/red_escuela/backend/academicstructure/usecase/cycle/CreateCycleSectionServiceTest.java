@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -83,7 +84,7 @@ class CreateCycleSectionServiceTest {
     void setUp() {
         service = new CreateCycleSectionService(cycleRepository, subjectRepository, courseSubjectRepository,
                 subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker);
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setId(2L);
         programCycle = new AcademicOfferingCycle();
         programCycle.setTerm(term);

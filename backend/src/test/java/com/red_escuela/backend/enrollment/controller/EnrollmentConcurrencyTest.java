@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -148,7 +149,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
         programSubject.setStatus(StatusType.ACTIVE);
         programSubjectRepository.save(programSubject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

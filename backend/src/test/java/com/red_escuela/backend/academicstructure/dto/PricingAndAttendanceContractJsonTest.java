@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -59,7 +60,7 @@ class PricingAndAttendanceContractJsonTest {
 
     @Test
     void courseAndProgramPricesAreMoneyObjects() throws Exception {
-        Course course = Course.builder().name("Curso").term(new Term()).price(new BigDecimal("18000")).currency(Currency.USD).build();
+        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).price(new BigDecimal("18000")).currency(Currency.USD).build();
         Program program = Program.builder().name("Carrera").price(new BigDecimal("45000"))
                 .enrollmentFeeAmount(new BigDecimal("30000")).currency(Currency.ARS).build();
 
@@ -74,7 +75,7 @@ class PricingAndAttendanceContractJsonTest {
 
     @Test
     void courseWithoutPriceSerializesNull() throws Exception {
-        Course course = Course.builder().name("Curso").term(new Term()).build();
+        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).build();
 
         assertThat(json(CourseResponse.from(course)).get("price").isNull()).isTrue();
     }

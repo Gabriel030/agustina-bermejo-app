@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
@@ -115,7 +116,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026");
         term.setStatus(StatusType.ACTIVE);

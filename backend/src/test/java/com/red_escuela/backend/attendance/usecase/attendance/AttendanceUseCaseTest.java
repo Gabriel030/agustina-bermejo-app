@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.usecase.attendance;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
@@ -162,7 +163,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

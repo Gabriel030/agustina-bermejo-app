@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.dto.ModifySectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.Classroom;
@@ -69,7 +70,7 @@ class SectionModificationSpecialistsTest {
 
     @BeforeEach
     void setUp() {
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setId(11L);
         section = new SubjectSection();
         section.setId(SECTION_ID);

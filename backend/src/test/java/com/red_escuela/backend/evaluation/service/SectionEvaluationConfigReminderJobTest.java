@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -90,7 +91,7 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
             subject.setCode(TestSubjectCodes.next());
             subject.setName("MateriaRecordatorio");
             entityManager.persist(subject);
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2099);
             term.setDescription("Ciclo recordatorio");
             term.setStatus(StatusType.ACTIVE);

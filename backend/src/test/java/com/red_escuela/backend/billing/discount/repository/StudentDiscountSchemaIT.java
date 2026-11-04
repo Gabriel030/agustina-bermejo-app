@@ -257,7 +257,7 @@ class StudentDiscountSchemaIT extends AbstractIntegrationTest {
 
     private Long persistCourseEnrollment() {
         return transactionTemplate.execute(status -> {
-            com.red_escuela.backend.academicstructure.entity.Term term = new com.red_escuela.backend.academicstructure.entity.Term();
+            com.red_escuela.backend.academicstructure.entity.Term term = com.red_escuela.backend.testsupport.TermFixtures.newTerm();
             term.setYear(2027);
             term.setDescription("2027-1C " + System.nanoTime());
             term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);

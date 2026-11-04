@@ -1,5 +1,6 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -97,7 +98,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         entityManager.persist(student);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);

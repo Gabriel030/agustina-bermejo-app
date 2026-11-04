@@ -1,5 +1,6 @@
 package com.red_escuela.backend.testsupport.system;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
@@ -220,7 +221,7 @@ public class LoadTestSeedConfiguration {
             subject.setCode(TestSubjectCodes.next());
             subject.setName("Materia de carga " + index);
             entityManager.persist(subject);
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2026);
             term.setDescription("Carga " + index);
             term.setStatus(StatusType.ACTIVE);

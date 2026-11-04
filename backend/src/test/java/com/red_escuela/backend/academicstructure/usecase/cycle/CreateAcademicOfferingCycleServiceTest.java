@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
@@ -58,7 +59,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @BeforeEach
     void setUp() {
         service = new CreateAcademicOfferingCycleService(cycleRepository, termRepository, programRepository, courseRepository, currentPersonService);
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setId(TERM_ID);
         term.setDescription("2026");
         creator = new Person();
@@ -67,7 +68,7 @@ class CreateAcademicOfferingCycleServiceTest {
     }
 
     private AcademicOfferingCycle existingCycle(Long termId, AcademicOfferingCycleStatus status) {
-        var otherTerm = new Term();
+        var otherTerm = TermFixtures.newTerm();
         otherTerm.setId(termId);
         var cycle = new AcademicOfferingCycle();
         cycle.setTerm(otherTerm);

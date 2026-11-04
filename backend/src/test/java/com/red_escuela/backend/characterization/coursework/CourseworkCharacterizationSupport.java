@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -135,7 +136,7 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
     }
 
     protected Term persistTerm(LocalDateTime startDate, LocalDateTime endDate) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

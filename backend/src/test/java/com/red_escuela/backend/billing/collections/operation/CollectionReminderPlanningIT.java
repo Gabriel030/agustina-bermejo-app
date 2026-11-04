@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.operation;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.support.PaymentStandingSeed;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
@@ -128,7 +129,7 @@ class CollectionReminderPlanningIT extends AbstractIntegrationTest {
         institution = new Institution();
         institution.setName("Instituto recordatorios " + System.nanoTime());
         institution = institutionRepository.save(institution);
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setYear(2027 + (int) (System.nanoTime() % 1000));
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);

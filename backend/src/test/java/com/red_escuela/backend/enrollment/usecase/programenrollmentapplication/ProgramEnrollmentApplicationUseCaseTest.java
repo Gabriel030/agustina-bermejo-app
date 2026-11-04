@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
@@ -133,7 +134,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     }
 
     private ProgramCohort persistCohort(Program program, LocalDate admissionStart, LocalDate admissionEnd, Person createdBy) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);

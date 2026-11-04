@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -76,7 +77,7 @@ class CancelledCourseChargeReissueIT extends AbstractIntegrationTest {
             student.setInstitution(institution);
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(YearMonth.now().getYear());
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);

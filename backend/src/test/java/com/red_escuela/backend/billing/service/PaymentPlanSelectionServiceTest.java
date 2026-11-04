@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
@@ -121,7 +122,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse(int durationMonths, BigDecimal price, Person director) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -389,7 +390,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     void generatingMonthlyOutsideTheCourseWindowIsASilentNoOp() {
         Person director = persistPersonBase("DIRVENT" + System.nanoTime());
         YearMonth base = YearMonth.now();
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(base.atDay(1).atStartOfDay());

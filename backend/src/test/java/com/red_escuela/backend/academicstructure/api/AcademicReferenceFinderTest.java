@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.api;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -96,7 +97,7 @@ class AcademicReferenceFinderTest {
 
     @Test
     void findTermReturnsTheStoredTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         when(termRepository.findById(5L)).thenReturn(Optional.of(term));
 
         assertThat(finder.findTerm(5L)).isSameAs(term);
@@ -149,7 +150,7 @@ class AcademicReferenceFinderTest {
 
     @Test
     void findTermsOfProgramReturnsTheTermsOfThatProgram() {
-        List<Term> terms = List.of(new Term(), new Term());
+        List<Term> terms = List.of(TermFixtures.newTerm(), TermFixtures.newTerm());
         when(termRepository.findTermsOfProgram(3L)).thenReturn(terms);
 
         assertThat(finder.findTermsOfProgram(3L)).isEqualTo(terms);

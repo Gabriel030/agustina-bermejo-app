@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.api;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
@@ -403,7 +404,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
     void aDebtOfAWithdrawnCourseEnrollmentBlocksTheGuardToo() {
         Student student = persistStudent("88011005");
         Long courseEnrollmentId = new TransactionTemplate(transactionManager).execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2027);
             term.setDescription("2027-1C " + System.nanoTime());
             term.setStatus(StatusType.ACTIVE);

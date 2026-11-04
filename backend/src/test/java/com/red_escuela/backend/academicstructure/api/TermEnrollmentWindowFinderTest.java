@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.api;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
@@ -28,7 +29,7 @@ class TermEnrollmentWindowFinderTest {
     private TermEnrollmentWindowFinder finder;
 
     private Term termWithWindow(LocalDateTime start, LocalDateTime end, TermEnrollmentOverride override) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setId(7L);
         term.setEnrollmentStart(start);
         term.setEnrollmentEnd(end);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -21,7 +22,7 @@ class CourseEnrollmentWithTransferReceiptIT extends AbstractBankTransferReceiptH
 
     private Course persistPricedCourse() {
         return inTransaction(() -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2027);
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.operation;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -109,7 +110,7 @@ public class IssuingScenarioFactory {
 
     public Long newTemplate(Offering offering, int year) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(String.valueOf(year));
             term.setStatus(StatusType.ACTIVE);

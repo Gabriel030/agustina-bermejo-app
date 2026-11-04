@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -91,7 +92,7 @@ class CoursePaymentPlanScholarshipIT extends AbstractIntegrationTest {
         Person director = personWithRole("DIRECTOR");
         directorId = director.getId();
         Long studentId = factory.newStudent(factory.newProgram(Currency.ARS, 80000, 50000));
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2027);
         term.setDescription("2027-1C " + System.nanoTime());
         term.setStatus(StatusType.ACTIVE);

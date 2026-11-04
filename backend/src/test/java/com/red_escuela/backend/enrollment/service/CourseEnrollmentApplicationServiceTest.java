@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
@@ -122,7 +123,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse(int capacity) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
