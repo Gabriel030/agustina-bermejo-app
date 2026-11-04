@@ -3,6 +3,7 @@ package com.red_escuela.backend.academicstructure.service;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.exception.SectionShiftRequiredException;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,12 @@ public class SectionIdentityAssigner {
         this.codeGenerator = codeGenerator;
         this.shiftSlotGuard = shiftSlotGuard;
         this.slotRepository = slotRepository;
+    }
+
+    public void requireShift(SectionShift shift) {
+        if (shift == null) {
+            throw new SectionShiftRequiredException();
+        }
     }
 
     public void identifyNewSubjectSection(SubjectSection section, SectionShift shift, String description) {

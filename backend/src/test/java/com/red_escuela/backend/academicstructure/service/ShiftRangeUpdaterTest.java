@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.dto.ShiftRangeRequest;
+import com.red_escuela.backend.academicstructure.entity.ShiftRange;
 import com.red_escuela.backend.academicstructure.exception.InvalidShiftRangesException;
 import com.red_escuela.backend.academicstructure.repository.ShiftRangeRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,10 @@ class ShiftRangeUpdaterTest {
     @Test
     void coherentRangesAreSaved() {
         when(shiftRangeRepository.saveAll(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(shiftRangeRepository.findAllByOrderByStartTimeAsc()).thenAnswer(call -> List.of(
+                new ShiftRange(SectionShift.MORNING, LocalTime.of(8, 0), LocalTime.of(12, 30)),
+                new ShiftRange(SectionShift.AFTERNOON, LocalTime.of(13, 30), LocalTime.of(18, 0)),
+                new ShiftRange(SectionShift.EVENING, LocalTime.of(18, 30), LocalTime.of(22, 30))));
 
         var saved = updater.replaceRanges(valid());
 
@@ -57,6 +62,10 @@ class ShiftRangeUpdaterTest {
     @Test
     void touchingRangesWithoutGapAreAccepted() {
         when(shiftRangeRepository.saveAll(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(shiftRangeRepository.findAllByOrderByStartTimeAsc()).thenAnswer(call -> List.of(
+                new ShiftRange(SectionShift.MORNING, LocalTime.of(8, 0), LocalTime.of(12, 30)),
+                new ShiftRange(SectionShift.AFTERNOON, LocalTime.of(13, 30), LocalTime.of(18, 0)),
+                new ShiftRange(SectionShift.EVENING, LocalTime.of(18, 30), LocalTime.of(22, 30))));
 
         var saved = updater.replaceRanges(List.of(
                 range(SectionShift.MORNING, 8, 0, 13, 0),

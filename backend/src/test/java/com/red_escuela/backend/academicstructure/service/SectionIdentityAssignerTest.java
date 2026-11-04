@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.exception.SectionShiftRequiredException;
 import com.red_escuela.backend.academicstructure.exception.SlotOutsideShiftException;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.testsupport.TermFixtures;
@@ -20,6 +21,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -105,5 +107,15 @@ class SectionIdentityAssignerTest {
         assigner.changeCourseSectionShift(section, SectionShift.MORNING);
 
         assertThat(section.getShift()).isEqualTo(SectionShift.MORNING);
+    }
+
+    @Test
+    void missingShiftIsRejectedForNewSections() {
+        assertThatThrownBy(() -> assigner.requireShift(null)).isInstanceOf(SectionShiftRequiredException.class);
+    }
+
+    @Test
+    void presentShiftIsAccepted() {
+        assertThatCode(() -> assigner.requireShift(SectionShift.EVENING)).doesNotThrowAnyException();
     }
 }

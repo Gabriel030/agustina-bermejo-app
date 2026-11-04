@@ -420,12 +420,13 @@ class CreateCycleSectionServiceTest {
     @Test
     void sectionWithoutShiftIsRejectedBeforeAnythingIsSaved() {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+        doThrow(new SectionShiftRequiredException()).when(identityAssigner).requireShift(null);
 
         assertThatThrownBy(() -> service.createSection(CYCLE_ID,
                 new CreateCycleSectionRequest("A", 1L, null, 10, null, null, null, null)))
                 .isInstanceOf(SectionShiftRequiredException.class);
 
-        verifyNoInteractions(subjectSectionRepository, courseSectionRepository, identityAssigner);
+        verifyNoInteractions(subjectSectionRepository, courseSectionRepository);
     }
 
     @Test

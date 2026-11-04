@@ -70,6 +70,36 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
     Then status 400
     And match response.code == 'SECTION_CAPACITY_EXCEEDS_CLASSROOM'
 
+  Scenario: Una comisión nueva sin turno — 400 con código
+    Given path '/academic-offering-cycles', cycleId, 'sections'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { name: 'A', subjectId: '#(subjectId)', capacity: 20, slots: [] }
+    When method post
+    Then status 400
+    And match response.code == 'SECTION_SHIFT_REQUIRED'
+
+  Scenario: Una franja fuera del turno de la comisión — 400 con código
+    Given path '/academic-offering-cycles', cycleId, 'sections'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { name: 'A', subjectId: '#(subjectId)', shift: 'AFTERNOON', capacity: 20, slots: ['#(slot)'] }
+    When method post
+    Then status 400
+    And match response.code == 'SLOT_OUTSIDE_SHIFT'
+
+  Scenario: La comisión creada recibe un identificador por la nomenclatura y conserva su turno
+    Given path '/academic-offering-cycles', cycleId, 'sections'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { name: 'A', subjectId: '#(subjectId)', shift: 'MORNING', description: 'Grupo reducido', capacity: 20, slots: ['#(slot)'] }
+    When method post
+    Then status 201
+
+    Given path '/academic-offering-cycles', cycleId, 'sections'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method get
+    Then status 200
+    And match response[0] contains { shift: 'MORNING', description: 'Grupo reducido' }
+    And match response[0].code == '#regex [A-Z0-9]+-[0-9A-Z]+-01'
+
   Scenario: Un ciclo aprobado no acepta comisiones nuevas ni se reenvía, y su aula figura ocupada
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
@@ -161,10 +191,10 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
     Then status 200
     And match response contains { status: 'REJECTED', rejectionReason: 'Falta la comisión del turno noche' }
 
-    * def eveningSlot = { classroomId: '#(classroomId)', dayOfWeek: 'THURSDAY', startTime: '18:00:00', endTime: '20:00:00' }
+    * def eveningSlot = { classroomId: '#(classroomId)', dayOfWeek: 'THURSDAY', startTime: '19:00:00', endTime: '21:00:00' }
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'Noche', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 20, slots: ['#(eveningSlot)'] }
+    And request { name: 'Noche', subjectId: '#(subjectId)', shift: 'EVENING', capacity: 20, slots: ['#(eveningSlot)'] }
     When method post
     Then status 201
     * def eveningSectionId = response

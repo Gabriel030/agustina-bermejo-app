@@ -63,9 +63,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
         cycle.ensureEditable();
-        if (request.shift() == null) {
-            throw new SectionShiftRequiredException();
-        }
+        identityAssigner.requireShift(request.shift());
         lockRequestedClassrooms(request);
         if (cycle.getProgram() != null) {
             return createSubjectSection(cycle, request);
@@ -129,7 +127,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private void saveSubjectSlots(SubjectSection section, CreateCycleSectionRequest request) {
         if (request.slots() == null) return;
         for (var slotReq : request.slots()) {
-            shiftSlotGuard.ensureInsideShift(section.getShift(), slotReq.startTime(), slotReq.endTime());
+            shiftSlotGuard.ensureInsideShift(request.shift(), slotReq.startTime(), slotReq.endTime());
             var classroom = availableClassroom(section.getTerm(), slotReq, request.capacity());
             var slot = new SectionScheduleSlot();
             slot.setSubjectSection(section);
@@ -144,7 +142,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private void saveCourseSlots(CourseSubjectSection section, CreateCycleSectionRequest request) {
         if (request.slots() == null) return;
         for (var slotReq : request.slots()) {
-            shiftSlotGuard.ensureInsideShift(section.getShift(), slotReq.startTime(), slotReq.endTime());
+            shiftSlotGuard.ensureInsideShift(request.shift(), slotReq.startTime(), slotReq.endTime());
             var classroom = availableClassroom(section.getTerm(), slotReq, request.capacity());
             var slot = new SectionScheduleSlot();
             slot.setCourseSection(section);

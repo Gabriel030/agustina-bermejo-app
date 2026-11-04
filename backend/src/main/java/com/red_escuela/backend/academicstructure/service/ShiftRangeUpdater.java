@@ -28,7 +28,8 @@ public class ShiftRangeUpdater {
                 .toList();
         ensureAllShiftsOnce(proposed);
         ensureCoherent(proposed);
-        return shiftRangeRepository.saveAll(proposed);
+        shiftRangeRepository.saveAll(proposed);
+        return shiftRangeRepository.findAllByOrderByStartTimeAsc();
     }
 
     private void ensureAllShiftsOnce(List<ShiftRange> proposed) {
