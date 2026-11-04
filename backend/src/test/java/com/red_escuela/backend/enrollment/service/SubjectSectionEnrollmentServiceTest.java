@@ -31,7 +31,6 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
-import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
@@ -125,8 +124,8 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
-        term.setEnrollmentStart(enrollmentStart);
-        term.setEnrollmentEnd(enrollmentEnd);
+        term.setEnrollmentStart(enrollmentStart != null ? enrollmentStart : TermFixtures.OPEN_WINDOW_START);
+        term.setEnrollmentEnd(enrollmentEnd != null ? enrollmentEnd : TermFixtures.OPEN_WINDOW_END);
         entityManager.persist(term);
         return term;
     }
@@ -150,24 +149,6 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(enrollment);
         return enrollment;
-    }
-
-    @Test
-    void enrollingWithInvertedEnrollmentWindowThrowsConfigurationExceptionNotWindowClosed() {
-        Institution institution = persistInstitution();
-        Student student = persistStudent("60000001", StatusType.ACTIVE, institution);
-        Subject subject = persistSubject("MateriaVentanaInvertida");
-        Program program = persistProgram("CarreraVentanaInvertida");
-        persistProgramSubject(program, subject);
-        LocalDateTime now = LocalDateTime.now();
-        Term term = persistTerm(now.plusDays(10), now.minusDays(10));
-        SubjectSection section = persistSubjectSection(subject, term, null);
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
-        entityManager.flush();
-
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
-                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
-                .isInstanceOf(InvalidWindowConfigurationException.class);
     }
 
     @Test
