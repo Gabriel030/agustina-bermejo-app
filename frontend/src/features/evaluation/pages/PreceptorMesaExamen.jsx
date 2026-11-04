@@ -25,7 +25,16 @@ const ESTADO_INSCRIPCION = {
 
 const MENSAJES_ERROR_MESA = {
   EXAM_BOARD_NOT_YET_TAKEN: 'Todavía no se tomó el examen: el acta se cierra después de la fecha de la mesa.',
+  EXAM_BOARD_CLOSED: 'La mesa ya está cerrada: no se puede modificar.',
+  EXAM_BOARD_NOT_FOUND: 'No encontramos la mesa. Puede haber sido eliminada; actualizá la pantalla.',
+  EXAM_BOARD_REGISTRATION_NOT_FOUND: 'No encontramos la inscripción. Actualizá la pantalla e intentá de nuevo.',
+  EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE: 'Esta inscripción ya no se puede dar de baja.',
+  INSTRUCTOR_NOT_FOUND: 'No encontramos al docente elegido. Probá con otro.',
 };
+
+function mensajeErrorMesa(e) {
+  return MENSAJES_ERROR_MESA[e.code] ?? e.message;
+}
 
 function iniciales(nombre) {
   return nombre.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -152,6 +161,7 @@ function DetalleMesa({ mesaId }) {
   const soloLectura = mesa.status === 'CLOSED';
   const materia = mesa.subjectName ?? mesa.courseSubjectName ?? 'Materia';
   const inscriptos = (anotados ?? []).filter((a) => a.status !== 'WITHDRAWN').length;
+  const sinNota = (anotados ?? []).filter((a) => a.status === 'REGISTERED').length;
   const ahora = new Date();
   const examenPendiente = ahora < new Date(mesa.examDate);
   const ventanaAbierta = soloLectura
@@ -165,7 +175,7 @@ function DetalleMesa({ mesaId }) {
     try {
       await cerrarActa.mutateAsync();
     } catch (e) {
-      toast.error(MENSAJES_ERROR_MESA[e.code] ?? e.message);
+      toast.error(mensajeErrorMesa(e));
     } finally {
       setConfirmarCierre(false);
       setCerrando(false);
@@ -214,7 +224,7 @@ function DetalleMesa({ mesaId }) {
         <TablaAnotados
           anotados={anotados ?? []}
           soloLectura={soloLectura}
-          onDarDeBaja={(id) => darDeBaja.mutate(id)}
+          onDarDeBaja={(id) => darDeBaja.mutate(id, { onError: (e) => toast.error(mensajeErrorMesa(e)) })}
           dandoDeBaja={darDeBaja.isPending}
         />
       </GlassCard>
@@ -223,7 +233,7 @@ function DetalleMesa({ mesaId }) {
         open={modalTribunal}
         onClose={() => setModalTribunal(false)}
         asignando={asignarTribunal.isPending}
-        onAsignar={(instructorId) => asignarTribunal.mutate(instructorId)}
+        onAsignar={(instructorId) => asignarTribunal.mutate(instructorId, { onError: (e) => toast.error(mensajeErrorMesa(e)) })}
       />
 
       <Dialog open={confirmarCierre} onOpenChange={setConfirmarCierre}>
@@ -231,8 +241,13 @@ function DetalleMesa({ mesaId }) {
           <DialogHeader>
             <DialogTitle>¿Cerrar el acta de esta mesa?</DialogTitle>
             <DialogDescription>
-              Una vez cerrada, la mesa queda de solo lectura: no se puede volver a asignar tribunal ni modificar inscriptos.
+              Una vez cerrada, la mesa queda de solo lectura: no se puede volver a asignar tribunal ni modificar inscriptos. Esta acción no se puede deshacer.
             </DialogDescription>
+          {sinNota > 0 && (
+            <p className="text-sm font-semibold text-danger" role="alert">
+              {sinNota === 1 ? 'Hay 1 alumno anotado sin nota.' : `Hay ${sinNota} alumnos anotados sin nota.`} Revisá la tabla antes de cerrar el acta.
+            </p>
+          )}
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmarCierre(false)}>Volver</Button>

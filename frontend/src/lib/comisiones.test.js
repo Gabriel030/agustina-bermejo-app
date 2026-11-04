@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { agruparComisionesPorFase, diasHastaVencimientoMasProximo, formatearFecha } from '@/lib/comisiones';
+import { agruparComisionesPorFase, diasHastaInicioDeCursadaMasProximo, formatearFecha } from '@/lib/comisiones';
 
 globalThis.process.env.TZ ='America/Argentina/Buenos_Aires';
 
@@ -42,7 +42,7 @@ describe('agruparComisionesPorFase', () => {
   });
 });
 
-describe('diasHastaVencimientoMasProximo', () => {
+describe('diasHastaInicioDeCursadaMasProximo', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 9, 3, 10, 0));
@@ -52,19 +52,19 @@ describe('diasHastaVencimientoMasProximo', () => {
     vi.useRealTimers();
   });
 
-  it('marca como vencido un borrador cuyo ciclo ya empezó', () => {
-    expect(diasHastaVencimientoMasProximo([{ status: 'DRAFT', termStartDate: '2026-03-02T00:00:00' }])).toBe('vencido');
+  it('marca como iniciada un borrador cuyo ciclo ya empezó', () => {
+    expect(diasHastaInicioDeCursadaMasProximo([{ status: 'DRAFT', termStartDate: '2026-03-02T00:00:00' }])).toBe('iniciada');
   });
 
-  it('prioriza el vencimiento futuro más próximo', () => {
+  it('prioriza el inicio futuro más próximo', () => {
     const comisiones = [
       { status: 'DRAFT', termStartDate: '2026-03-02T00:00:00' },
       { status: 'DRAFT', termStartDate: '2026-10-13T00:00:00' },
     ];
-    expect(diasHastaVencimientoMasProximo(comisiones)).toBe(10);
+    expect(diasHastaInicioDeCursadaMasProximo(comisiones)).toBe(10);
   });
 
   it('no cuenta las rechazadas: se pueden reenviar aunque el ciclo haya empezado', () => {
-    expect(diasHastaVencimientoMasProximo([{ status: 'REJECTED', termStartDate: '2026-03-02T00:00:00' }])).toBeNull();
+    expect(diasHastaInicioDeCursadaMasProximo([{ status: 'REJECTED', termStartDate: '2026-03-02T00:00:00' }])).toBeNull();
   });
 });
