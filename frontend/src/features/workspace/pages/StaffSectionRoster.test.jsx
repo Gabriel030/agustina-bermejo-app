@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { StaffSectionRoster } from './StaffSectionRoster';
@@ -40,9 +41,9 @@ const SECTIONS = [
 ];
 
 const ENTRIES = [
-  { enrollmentId: 101, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40.123.456', absenceCount: 7, atRisk: true, attendancePercent: { fraction: 0.708 } },
-  { enrollmentId: 102, studentId: 12, studentName: 'Benítez, Lucía', dni: '41.222.333', absenceCount: 1, atRisk: false, attendancePercent: { fraction: 0.958 } },
-  { enrollmentId: 103, studentId: 13, studentName: 'Cabrera, Julieta', dni: '42.555.666', absenceCount: 0, atRisk: false, attendancePercent: { fraction: 1 } },
+  { enrollmentId: 101, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40.123.456', absenceCount: 7, atRisk: true, attendancePercent: 70.8 },
+  { enrollmentId: 102, studentId: 12, studentName: 'Benítez, Lucía', dni: '41.222.333', absenceCount: 1, atRisk: false, attendancePercent: 95.8 },
+  { enrollmentId: 103, studentId: 13, studentName: 'Cabrera, Julieta', dni: '42.555.666', absenceCount: 0, atRisk: false, attendancePercent: 100 },
 ];
 
 let requestedUrl;
@@ -54,7 +55,7 @@ function mockBackend({ entries = ENTRIES, reportStatus = 200 } = {}) {
     http.get(`${API}/academic-offering-cycles/15/sections`, () => HttpResponse.json(SECTIONS)),
     http.get(`${API}/program-sections/31/attendance/absence-report`, ({ request }) => {
       requestedUrl = new URL(request.url);
-      return reportStatus === 200 ? HttpResponse.json(entries) : HttpResponse.json({ code: 'error' }, { status: reportStatus });
+      return reportStatus === 200 ? HttpResponse.json(entries) : HttpResponse.json(errorBody('error'), { status: reportStatus });
     }),
   );
 }
