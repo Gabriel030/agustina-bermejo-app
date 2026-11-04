@@ -21,6 +21,12 @@ import {
   useAsignarInstructorSeccion,
   useSubmitCiclo,
 } from '@/features/academic-structure/hooks/useCiclos';
+import { AttendanceRegimeField } from '@/features/academic-structure/components/AttendanceRegimeField';
+import {
+  EMPTY_ATTENDANCE_REGIME,
+  attendanceRegimeToPercent,
+  isAttendanceRegimeValid,
+} from '@/features/academic-structure/attendanceRegime';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 
 const PASOS = [
@@ -289,6 +295,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
   const [horaInicio, setHoraInicio] = useState('08:00');
   const [horaFin, setHoraFin] = useState('12:00');
   const [aulaId, setAulaId] = useState('');
+  const [regime, setRegime] = useState(EMPTY_ATTENDANCE_REGIME);
   const [error, setError] = useState(null);
   const [abierto, setAbierto] = useState(false);
 
@@ -318,6 +325,8 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
       capacity: Number(cupo),
       slots: [{ classroomId: Number(aulaId), dayOfWeek: dia, startTime: `${horaInicio}:00`, endTime: `${horaFin}:00` }],
     };
+    const maxAbsencePercent = attendanceRegimeToPercent(regime);
+    if (maxAbsencePercent !== null) sectionBody.maxAbsencePercent = maxAbsencePercent;
     if (subjectId) sectionBody.subjectId = subjectId;
     else sectionBody.courseSubjectId = courseSubjectId;
 
@@ -325,7 +334,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
       onSuccess: (sectionId) => {
         asignarInstructor.mutate({ sectionId, instructorId: Number(instructorId) }, {
           onSuccess: () => {
-            setNombre(''); setCupo(''); setInstructorId(''); setAulaId(''); setAbierto(false);
+            setNombre(''); setCupo(''); setInstructorId(''); setAulaId(''); setRegime(EMPTY_ATTENDANCE_REGIME); setAbierto(false);
           },
           onError: () => setError('Sección creada pero no se pudo asignar el docente. Podés asignarlo después.'),
         });
@@ -422,11 +431,13 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
         </select>
       </div>
 
+      <AttendanceRegimeField value={regime} onChange={setRegime} />
+
       {error && <p className="mt-2 text-[12px] text-danger">{error}</p>}
 
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => { setAbierto(false); setError(null); }}>Cancelar</Button>
-        <Button variant="gradient" size="sm" onClick={handleAgregar} disabled={addSeccion.isPending || asignarInstructor.isPending}>
+        <Button variant="gradient" size="sm" onClick={handleAgregar} disabled={addSeccion.isPending || asignarInstructor.isPending || !isAttendanceRegimeValid(regime)}>
           {addSeccion.isPending || asignarInstructor.isPending ? 'Guardando…' : 'Agregar comisión'}
         </Button>
       </div>
