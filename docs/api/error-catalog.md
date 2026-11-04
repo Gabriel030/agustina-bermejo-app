@@ -372,6 +372,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_STUDENT_DISCOUNT_TRANSITION` | no | `IllegalStudentDiscountTransitionException` | billing |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
+| `INSTRUCTOR_SCHEDULE_CONFLICT` | no | `InstructorScheduleConflictException` | academicstructure |
 | `INSUFFICIENT_ACCOUNT_CREDIT` | no | `InsufficientAccountCreditException` | billing |
 | `INVALID_ATTENDANCE_CHANGE_REQUEST_STATE` | no | `InvalidAttendanceChangeRequestStateException` | attendance |
 | `INVALID_BILLING_MODE_TRANSITION` | no | `InvalidBillingModeTransitionException` | platform |

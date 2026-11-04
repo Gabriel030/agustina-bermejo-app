@@ -72,6 +72,9 @@ public class SectionModificationApprover {
             conflictChecker.checkClassroomAvailabilityIgnoringSlots(
                     section.getTerm(), proposed.getClassroom().getId(), proposed.getDayOfWeek(),
                     proposed.getStartTime(), proposed.getEndTime(), currentIds);
+            conflictChecker.checkSectionInstructorsAvailability(
+                    section.getTerm(), section.getId(), proposed.getDayOfWeek(),
+                    proposed.getStartTime(), proposed.getEndTime(), currentIds);
         }
         slotRepository.deleteAll(current);
         slotRepository.flush();
