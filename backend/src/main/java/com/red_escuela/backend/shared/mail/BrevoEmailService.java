@@ -46,7 +46,7 @@ public class BrevoEmailService implements EmailService {
             helper.setText(buildHtml(institutionName, person.getName(), code), true);
             mailSender.send(message);
             log.info("Código de recuperación enviado a person {}", person.getId());
-        } catch (MessagingException | RuntimeException e) {
+        } catch (MessagingException | RuntimeException e) { if (e instanceof com.red_escuela.backend.shared.exception.CircuitOpenException open) { throw open; }
             log.error("No se pudo enviar el email de recuperación a person {}", person.getId(), e);
             throw new EmailDeliveryException("No se pudo enviar el email de recuperación", e);
         }
@@ -68,7 +68,7 @@ public class BrevoEmailService implements EmailService {
             helper.setText(buildVerificationHtml(institutionName, person.getName(), verificationLink), true);
             mailSender.send(message);
             log.info("Email de verificación enviado a person {}", person.getId());
-        } catch (MessagingException | RuntimeException e) {
+        } catch (MessagingException | RuntimeException e) { if (e instanceof com.red_escuela.backend.shared.exception.CircuitOpenException open) { throw open; }
             log.error("No se pudo enviar el email de verificación a person {}", person.getId(), e);
             throw new EmailDeliveryException("No se pudo enviar el email de verificación", e);
         }
@@ -102,7 +102,7 @@ public class BrevoEmailService implements EmailService {
             helper.setText(htmlBody, true);
             mailSender.send(message);
             log.info("Aviso de cambio de email enviado");
-        } catch (MessagingException | RuntimeException e) {
+        } catch (MessagingException | RuntimeException e) { if (e instanceof com.red_escuela.backend.shared.exception.CircuitOpenException open) { throw open; }
             log.error("No se pudo enviar el aviso de cambio de email", e);
             throw new EmailDeliveryException("No se pudo enviar el aviso de cambio de email", e);
         }

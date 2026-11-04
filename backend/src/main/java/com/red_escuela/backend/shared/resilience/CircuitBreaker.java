@@ -50,6 +50,10 @@ public class CircuitBreaker {
         return name;
     }
 
+    public long rejectedCount() {
+        return (long) rejectedCalls.count();
+    }
+
     public CircuitBreakerState state() {
         synchronized (lock) {
             return state;
