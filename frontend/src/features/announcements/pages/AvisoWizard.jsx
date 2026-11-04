@@ -16,7 +16,7 @@ import { RosterSegmento } from '../components/RosterSegmento';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
 import { useCrearAviso } from '../hooks/useCrearAviso';
-import { aPayload, SPEC_INICIAL, VALORES_INICIALES } from '../lib/formularioDeAviso';
+import { aPayload, mensajeDeErrorDeAviso, SPEC_INICIAL, VALORES_INICIALES } from '../lib/formularioDeAviso';
 
 const PASOS = [
   { key: 'destinatarios', label: 'Destinatarios' },
@@ -74,7 +74,7 @@ export function AvisoWizard() {
       toast.success(programado ? 'Aviso programado' : 'Aviso publicado');
       navigate(volverA);
     } catch (error) {
-      toast.error(error.message ?? 'No pudimos publicar el aviso. Probá de nuevo.');
+      toast.error(mensajeDeErrorDeAviso(error, 'No pudimos publicar el aviso. Probá de nuevo.'));
     }
   }
 

@@ -43,3 +43,25 @@ export function desdeAviso(aviso) {
     expiresAt: aviso.expiresAt,
   };
 }
+
+const MENSAJES_DE_ERROR = {
+  EMPTY_AUDIENCE: 'Ese grupo no tiene ningún alumno hoy. Elegí otro grupo de destinatarios.',
+  SCHEDULED_DATE_IN_THE_PAST: 'La fecha de envío ya pasó. Elegí una fecha y hora futuras.',
+  ANNOUNCEMENT_ALREADY_SENT: 'Este aviso ya se envió, así que no se puede reprogramar.',
+};
+
+export function mensajeDeErrorDeAviso(error, fallback) {
+  return MENSAJES_DE_ERROR[error?.code] ?? fallback;
+}
+
+function pad(value) {
+  return String(value).padStart(2, '0');
+}
+
+export function fechaHoraLocalMinima(ahora = new Date()) {
+  return `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+}
+
+export function fechaLocalMinima(ahora = new Date()) {
+  return fechaHoraLocalMinima(ahora).slice(0, 10);
+}

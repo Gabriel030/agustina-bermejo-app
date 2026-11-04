@@ -5,7 +5,9 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { SeccionDestinatarios } from '../components/SeccionDestinatarios';
 import { SeccionMensaje } from '../components/SeccionMensaje';
@@ -16,7 +18,7 @@ import { useAvisos, useDestinatariosDeAviso } from '../hooks/useAvisos';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
 import { useEditarAviso } from '../hooks/useEditarAviso';
-import { aPayload, desdeAviso, SPEC_INICIAL } from '../lib/formularioDeAviso';
+import { aPayload, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL } from '../lib/formularioDeAviso';
 import { formatearFechaHora } from '@/lib/avisos';
 
 export function AvisoEditar() {
@@ -34,6 +36,7 @@ export function AvisoEditar() {
   const [spec, setSpec] = useState(SPEC_INICIAL);
   const [envioAbierto, setEnvioAbierto] = useState(false);
   const [rosterAbierto, setRosterAbierto] = useState(false);
+  const [confirmarRenotificar, setConfirmarRenotificar] = useState(false);
 
   useEffect(() => {
     if (aviso && valores === null) setValores(desdeAviso(aviso));
@@ -49,6 +52,26 @@ export function AvisoEditar() {
 
   const volverA = `/docente/mis-comisiones/${sectionId}?tab=avisos${esCurso ? '&type=COURSE' : ''}`;
 
+  if (!isLoading && avisos && !aviso) {
+    return (
+      <PageContainer>
+        <h1 className="font-heading text-2xl font-bold text-ink">Editar aviso</h1>
+        <GlassCard className="p-4">
+          <EmptyState
+            icon="🔎"
+            title="No encontramos este aviso"
+            description="Puede que haya sido eliminado o que el enlace sea incorrecto."
+            action={
+              <Button variant="outline" onClick={() => navigate(volverA)}>
+                Volver a los avisos
+              </Button>
+            }
+          />
+        </GlassCard>
+      </PageContainer>
+    );
+  }
+
   if (isLoading || !aviso || !valores) {
     return (
       <PageContainer>
@@ -59,13 +82,14 @@ export function AvisoEditar() {
   }
 
   async function guardar() {
+    setConfirmarRenotificar(false);
     try {
       const payload = aPayload({ valores, spec, esCurso });
       await editarAviso.mutateAsync({ ...payload, audience: programado ? payload.audience : null });
       toast.success(programado ? 'Cambios guardados' : 'Aviso actualizado: les volvió a llegar la notificación');
       navigate(volverA);
     } catch (error) {
-      toast.error(error.message ?? 'No pudimos guardar los cambios. Probá de nuevo.');
+      toast.error(mensajeDeErrorDeAviso(error, 'No pudimos guardar los cambios. Probá de nuevo.'));
     }
   }
 
@@ -121,6 +145,7 @@ export function AvisoEditar() {
           valores={valores}
           onChange={setValores}
           yaEnviadoEl={programado ? null : aviso.sentAt}
+          soloReprogramar={programado}
         />
         <TiraDeConsecuencias
           alcanzados={programado ? preview?.count ?? 0 : destinatarios.data?.length ?? 0}
@@ -140,11 +165,30 @@ export function AvisoEditar() {
           variant="gradient"
           loading={editarAviso.isPending}
           disabled={!valores.title.trim() || !valores.body.trim()}
-          onClick={guardar}
+          onClick={programado ? guardar : () => setConfirmarRenotificar(true)}
         >
           {programado ? 'Guardar cambios' : 'Guardar y volver a notificar'}
         </Button>
       </div>
+
+      <Dialog open={confirmarRenotificar} onOpenChange={setConfirmarRenotificar}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Volver a notificar</DialogTitle>
+            <DialogDescription>
+              Al guardar se volverá a notificar a todos los destinatarios ({destinatarios.data?.length ?? '—'} alumnos).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmarRenotificar(false)}>
+              Seguir editando
+            </Button>
+            <Button type="button" variant="gradient" onClick={guardar}>
+              Guardar y notificar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <RosterSegmento
         abierto={rosterAbierto}
