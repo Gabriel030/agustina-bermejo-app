@@ -52,6 +52,10 @@ public class SectionEnrollmentFinder {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
     }
 
+    public java.util.List<SubjectSectionEnrollment> findProgramEnrollmentsWithSection(java.util.Collection<Long> ids) {
+        return programEnrollmentRepository.findWithSectionByIdIn(ids);
+    }
+
     public CourseSubjectSectionEnrollment findCourseEnrollment(Long id) {
         return courseEnrollmentRepository.findById(id)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));

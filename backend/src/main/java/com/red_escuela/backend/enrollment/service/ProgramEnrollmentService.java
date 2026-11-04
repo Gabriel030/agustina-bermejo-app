@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.identity.api.StudentFinder;
 
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
@@ -190,9 +191,12 @@ public class ProgramEnrollmentService {
     }
 
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
-        return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
+        var enrollments = subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(programEnrollmentId);
+        var risks = calculateProgramEnrollmentAttendanceRiskUseCase.calculateAll(
+                enrollments.stream().map(SubjectSectionEnrollment::getId).toList());
+        return enrollments.stream()
                 .map(enrollment -> {
-                    var riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
+                    var riesgo = risks.get(enrollment.getId());
                     Percentage asistencia = riesgo.absencePercent() == null ? null
                             : Percentage.ofFraction(BigDecimal.ONE.subtract(riesgo.absencePercent().fraction()));
                     return new SubjectAttendanceSummaryResponse(

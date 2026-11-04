@@ -353,9 +353,10 @@ class ProgramEnrollmentRulesTest {
     void attendanceSummaryReportsPresenceAsTheComplementOfAbsenceAndNullWhenNotCalculable() {
         SubjectSectionEnrollment withAbsences = sectionEnrollment(100L, "Matematica");
         SubjectSectionEnrollment withoutData = sectionEnrollment(101L, "Historia");
-        when(subjectSectionEnrollmentRepository.findByProgramEnrollmentId(1L)).thenReturn(List.of(withAbsences, withoutData));
-        when(attendanceRiskUseCase.calculate(100L)).thenReturn(new AttendanceRiskResponse(true, false, Percentage.ofFraction(new BigDecimal("0.25")), null));
-        when(attendanceRiskUseCase.calculate(101L)).thenReturn(new AttendanceRiskResponse(false, false, null, null));
+        when(subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(1L)).thenReturn(List.of(withAbsences, withoutData));
+        when(attendanceRiskUseCase.calculateAll(List.of(100L, 101L))).thenReturn(java.util.Map.of(
+                100L, new AttendanceRiskResponse(true, false, Percentage.ofFraction(new BigDecimal("0.25")), null),
+                101L, new AttendanceRiskResponse(false, false, null, null)));
 
         List<SubjectAttendanceSummaryResponse> summary = service.attendanceSummaryBySubject(1L);
 

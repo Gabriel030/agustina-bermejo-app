@@ -9,6 +9,9 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -34,6 +37,26 @@ public class AttendanceRiskReader {
         long absences = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, AttendanceStatus.absenceStatuses());
         return evaluateRisk(maxAbsenceRate, total, absences);
+    }
+
+    public Map<Long, AttendanceRiskView> readProgramEnrollmentRisks(Collection<Long> enrollmentIds) {
+        Map<Long, AttendanceRiskView> risks = new HashMap<>();
+        if (enrollmentIds.isEmpty()) {
+            return risks;
+        }
+        Map<Long, long[]> countsByEnrollment = new HashMap<>();
+        for (Object[] row : attendanceRepository.countTotalAndAbsencesByProgramEnrollmentIds(
+                enrollmentIds, AttendanceStatus.absenceStatuses())) {
+            countsByEnrollment.put((Long) row[0], new long[]{(Long) row[1], ((Number) row[2]).longValue()});
+        }
+        for (SubjectSectionEnrollment enrollment : sectionEnrollmentFinder.findProgramEnrollmentsWithSection(enrollmentIds)) {
+            Percentage maxAbsenceRate = enrollment.getSubjectSection().getMaxAbsenceRate();
+            long[] counts = countsByEnrollment.getOrDefault(enrollment.getId(), new long[]{0, 0});
+            risks.put(enrollment.getId(), maxAbsenceRate == null
+                    ? evaluateRisk(null, 0, 0)
+                    : evaluateRisk(maxAbsenceRate, counts[0], counts[1]));
+        }
+        return risks;
     }
 
     public AttendanceRiskView readCourseEnrollmentRisk(Long enrollmentId) {

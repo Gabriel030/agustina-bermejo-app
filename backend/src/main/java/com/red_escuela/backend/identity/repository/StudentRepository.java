@@ -2,6 +2,9 @@ package com.red_escuela.backend.identity.repository;
 
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.domain.StatusType;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -13,10 +16,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.LockModeType;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpecificationExecutor<Student> {
+    @Override
+    @EntityGraph(attributePaths = "person")
+    List<Student> findAll(Specification<Student> spec, Sort sort);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Student s where s.id = :id")
     Optional<Student> findByIdForUpdate(@Param("id") Long id);

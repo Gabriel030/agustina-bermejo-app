@@ -18,6 +18,38 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     List<SubjectSectionEnrollment> findByStudentId(Long studentId);
 
+    @Query("""
+            select distinct e from SubjectSectionEnrollment e
+            join fetch e.programEnrollment pe join fetch pe.program
+            join fetch e.subjectSection ss join fetch ss.subject
+            left join fetch ss.instructors i left join fetch i.instructor ins left join fetch ins.person
+            where pe.id = :programEnrollmentId
+            """)
+    List<SubjectSectionEnrollment> findDetailedByProgramEnrollmentId(@Param("programEnrollmentId") Long programEnrollmentId);
+
+    @Query("""
+            select distinct e from SubjectSectionEnrollment e
+            join fetch e.programEnrollment pe join fetch pe.program
+            join fetch e.subjectSection ss join fetch ss.subject
+            left join fetch ss.instructors i left join fetch i.instructor ins left join fetch ins.person
+            where e.student.id = :studentId
+            """)
+    List<SubjectSectionEnrollment> findDetailedByStudentId(@Param("studentId") Long studentId);
+
+    @Query("""
+            select e from SubjectSectionEnrollment e
+            join fetch e.subjectSection ss join fetch ss.subject
+            where e.id in :ids
+            """)
+    List<SubjectSectionEnrollment> findWithSectionByIdIn(@Param("ids") java.util.Collection<Long> ids);
+
+    @Query("""
+            select e from SubjectSectionEnrollment e
+            join fetch e.subjectSection ss join fetch ss.subject
+            where e.programEnrollment.id = :programEnrollmentId
+            """)
+    List<SubjectSectionEnrollment> findWithSectionByProgramEnrollmentId(@Param("programEnrollmentId") Long programEnrollmentId);
+
     List<SubjectSectionEnrollment> findBySubjectSectionIdAndStatusIn(Long subjectSectionId, List<EnrollmentStatus> statuses);
 
     @Query("""

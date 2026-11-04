@@ -41,8 +41,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class SubjectSectionEnrollmentService {
@@ -212,11 +216,27 @@ public class SubjectSectionEnrollmentService {
     }
 
     public List<SubjectSectionEnrollment> listByEnrollment(Long programEnrollmentId) {
-        return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId);
+        return subjectSectionEnrollmentRepository.findDetailedByProgramEnrollmentId(programEnrollmentId);
     }
 
     public List<SubjectSectionEnrollment> listByStudent(Long studentId) {
-        return subjectSectionEnrollmentRepository.findByStudentId(studentId);
+        return subjectSectionEnrollmentRepository.findDetailedByStudentId(studentId);
+    }
+
+    public Map<Long, ProgramSubjectView> resolveCurricularPositions(List<SubjectSectionEnrollment> enrollments) {
+        Map<Long, Map<Long, ProgramSubjectView>> subjectsByProgram = new HashMap<>();
+        Map<Long, ProgramSubjectView> positions = new HashMap<>();
+        for (SubjectSectionEnrollment enrollment : enrollments) {
+            Long programId = enrollment.getProgramEnrollment().getProgram().getId();
+            Map<Long, ProgramSubjectView> subjects = subjectsByProgram.computeIfAbsent(programId, id ->
+                    programCurriculumFinder.findProgramSubjects(id).stream()
+                            .collect(Collectors.toMap(ProgramSubjectView::subjectId, Function.identity(), (a, b) -> a)));
+            ProgramSubjectView view = subjects.get(enrollment.subjectId());
+            if (view != null) {
+                positions.put(enrollment.getId(), view);
+            }
+        }
+        return positions;
     }
 
     public Integer resolveCurricularYear(SubjectSectionEnrollment enrollment) {

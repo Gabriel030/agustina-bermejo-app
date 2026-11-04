@@ -160,11 +160,16 @@ public class MeEnrollmentController {
     @GetMapping("/section-enrollments")
     public List<SectionEnrollmentResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return subjectSectionEnrollmentService.listByStudent(student.getId()).stream()
-                .map(enrollment -> SectionEnrollmentResponse.from(
-                        enrollment,
-                        subjectSectionEnrollmentService.resolveCurricularYear(enrollment),
-                        subjectSectionEnrollmentService.resolveCurricularTerm(enrollment)))
+        var enrollments = subjectSectionEnrollmentService.listByStudent(student.getId());
+        var positions = subjectSectionEnrollmentService.resolveCurricularPositions(enrollments);
+        return enrollments.stream()
+                .map(enrollment -> {
+                    var position = positions.get(enrollment.getId());
+                    return SectionEnrollmentResponse.from(
+                            enrollment,
+                            position == null ? null : position.curricularYear(),
+                            position == null ? null : position.curricularTerm());
+                })
                 .toList();
     }
 
