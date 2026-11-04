@@ -95,7 +95,12 @@ class UpdateAnnouncementRulesTest {
     }
 
     private static UpdateAnnouncementCommand command(String title, String body, LocalDateTime scheduledFor, AudienceSpec spec) {
-        return new UpdateAnnouncementCommand(1L, title, body, null, true, LocalDate.of(2026, 12, 31), scheduledFor, spec);
+        return command(title, body, scheduledFor, spec, false);
+    }
+
+    private static UpdateAnnouncementCommand command(String title, String body, LocalDateTime scheduledFor, AudienceSpec spec,
+                                                     boolean notify) {
+        return new UpdateAnnouncementCommand(1L, title, body, null, true, LocalDate.of(2026, 12, 31), scheduledFor, spec, notify);
     }
 
     private static Student studentWithPerson(long personId) {
@@ -192,7 +197,20 @@ class UpdateAnnouncementRulesTest {
     }
 
     @Test
-    void sentAnnouncementEditRenotifiesTheSameFrozenRecipients() {
+    void sentAnnouncementEditWithoutNotifyDoesNotNotifyAnyone() {
+        Announcement sent = announcement(AnnouncementStatus.SENT);
+        givenInstructorAndAnnouncement(sent);
+        when(announcementRepository.save(sent)).thenReturn(sent);
+
+        Announcement saved = service.update(command("Titulo corregido", null, null, null, false));
+
+        assertThat(saved.getTitle()).isEqualTo("Titulo corregido");
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+        verify(recipientRepository, never()).findByAnnouncementId(any());
+    }
+
+    @Test
+    void sentAnnouncementEditWithNotifyRenotifiesTheSameFrozenRecipients() {
         Announcement sent = announcement(AnnouncementStatus.SENT);
         givenInstructorAndAnnouncement(sent);
         when(announcementRepository.save(sent)).thenReturn(sent);
@@ -200,7 +218,7 @@ class UpdateAnnouncementRulesTest {
                 AnnouncementRecipient.builder().student(studentWithPerson(101L)).build(),
                 AnnouncementRecipient.builder().student(studentWithPerson(102L)).build()));
 
-        Announcement saved = service.update(command("Titulo corregido", null, null, null));
+        Announcement saved = service.update(command("Titulo corregido", null, null, null, true));
 
         assertThat(saved.getTitle()).isEqualTo("Titulo corregido");
         assertThat(saved.getStatus()).isEqualTo(AnnouncementStatus.SENT);

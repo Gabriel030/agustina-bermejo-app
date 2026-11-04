@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Toaster, toast } from 'sonner';
 import { http, HttpResponse } from 'msw';
@@ -107,19 +107,81 @@ describe('AvisoEditar', () => {
     expect(screen.getByText(/Para enviarlo ahora, creá un aviso nuevo/)).toBeInTheDocument();
   });
 
-  it('guardar un aviso enviado pide confirmar la nueva notificación y no guarda sin confirmar', async () => {
+  const NOTIFY_LABEL = 'Notificar el cambio a los destinatarios';
+
+  function savedAnnouncement() {
+    return {
+      id: 10,
+      sectionId: SECTION_ID,
+      sectionType: 'PROGRAM',
+      title: 'Aviso',
+      body: 'Texto',
+      category: 'REMINDER',
+      urgent: false,
+      expiresAt: null,
+      audienceLabel: 'Toda la comisión',
+      status: 'SENT',
+      scheduledFor: null,
+      sentAt: '2026-10-03T10:00:00',
+      createdAt: '2026-10-03T10:00:00',
+      updatedAt: '2026-11-04T10:00:00',
+      createdBy: 'Docente Demo',
+    };
+  }
+
+  it('editar un aviso enviado no notifica por defecto y guarda sin confirmación', async () => {
+    const bodies = [];
+    const user = userEvent.setup();
+    montar([aviso()], {
+      onPut: async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json(savedAnnouncement());
+      },
+    });
+
+    expect(await screen.findByRole('checkbox', { name: NOTIFY_LABEL })).not.toBeChecked();
+    expect(screen.queryByText(/vuelven a recibir/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByText('Volvió a la comisión')).toBeInTheDocument();
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0].notify).toBe(false);
+  });
+
+  it('con la casilla marcada pide confirmar la nueva notificación y no guarda sin confirmar', async () => {
     let guardados = 0;
     const user = userEvent.setup();
     montar([aviso()], {
       onPut: () => {
         guardados += 1;
-        return HttpResponse.json({ id: 10 });
+        return HttpResponse.json(savedAnnouncement());
       },
     });
 
-    await user.click(await screen.findByRole('button', { name: 'Guardar y volver a notificar' }));
+    await user.click(await screen.findByRole('checkbox', { name: NOTIFY_LABEL }));
+    expect(screen.getByText(/vuelven a recibir/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Guardar y notificar' }));
     expect(await screen.findByText(/Al guardar se volverá a notificar a todos los destinatarios/)).toBeInTheDocument();
     expect(guardados).toBe(0);
+  });
+
+  it('confirmar la notificación guarda el aviso con notify verdadero', async () => {
+    const bodies = [];
+    const user = userEvent.setup();
+    montar([aviso()], {
+      onPut: async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json(savedAnnouncement());
+      },
+    });
+
+    await user.click(await screen.findByRole('checkbox', { name: NOTIFY_LABEL }));
+    await user.click(screen.getByRole('button', { name: 'Guardar y notificar' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar y notificar' }));
+
+    expect(await screen.findByText('Volvió a la comisión')).toBeInTheDocument();
+    expect(bodies[0].notify).toBe(true);
   });
 
   it('seguir editando en la confirmación no guarda nada', async () => {
@@ -128,11 +190,12 @@ describe('AvisoEditar', () => {
     montar([aviso()], {
       onPut: () => {
         guardados += 1;
-        return HttpResponse.json({ id: 10 });
+        return HttpResponse.json(savedAnnouncement());
       },
     });
 
-    await user.click(await screen.findByRole('button', { name: 'Guardar y volver a notificar' }));
+    await user.click(await screen.findByRole('checkbox', { name: NOTIFY_LABEL }));
+    await user.click(screen.getByRole('button', { name: 'Guardar y notificar' }));
     await user.click(await screen.findByRole('button', { name: 'Seguir editando' }));
     expect(screen.queryByText(/Al guardar se volverá a notificar/)).not.toBeInTheDocument();
     expect(guardados).toBe(0);

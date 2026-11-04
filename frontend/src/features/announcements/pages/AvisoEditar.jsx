@@ -8,7 +8,9 @@ import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { SeccionDestinatarios } from '../components/SeccionDestinatarios';
 import { SeccionMensaje } from '../components/SeccionMensaje';
 import { EnvioYCaducidad } from '../components/EnvioYCaducidad';
@@ -37,6 +39,7 @@ export function AvisoEditar() {
   const [envioAbierto, setEnvioAbierto] = useState(false);
   const [rosterAbierto, setRosterAbierto] = useState(false);
   const [confirmarRenotificar, setConfirmarRenotificar] = useState(false);
+  const [notificar, setNotificar] = useState(false);
 
   useEffect(() => {
     if (aviso && valores === null) setValores(desdeAviso(aviso));
@@ -85,8 +88,12 @@ export function AvisoEditar() {
     setConfirmarRenotificar(false);
     try {
       const payload = aPayload({ valores, spec, esCurso });
-      await editarAviso.mutateAsync({ ...payload, audience: programado ? payload.audience : null });
-      toast.success(programado ? 'Cambios guardados' : 'Aviso actualizado: les volvió a llegar la notificación');
+      await editarAviso.mutateAsync({
+        ...payload,
+        audience: programado ? payload.audience : null,
+        ...(programado ? {} : { notify: notificar }),
+      });
+      toast.success(notificar ? 'Aviso actualizado: les llegó la notificación del cambio' : 'Cambios guardados');
       navigate(volverA);
     } catch (error) {
       toast.error(mensajeDeErrorDeAviso(error, 'No pudimos guardar los cambios. Probá de nuevo.'));
@@ -147,12 +154,18 @@ export function AvisoEditar() {
           yaEnviadoEl={programado ? null : aviso.sentAt}
           soloReprogramar={programado}
         />
+        {!programado && (
+          <Label className="flex items-center gap-2 font-normal">
+            <Checkbox checked={notificar} onCheckedChange={(value) => setNotificar(value === true)} />
+            Notificar el cambio a los destinatarios
+          </Label>
+        )}
         <TiraDeConsecuencias
           alcanzados={programado ? preview?.count ?? 0 : destinatarios.data?.length ?? 0}
           total={preview?.totalInSection ?? destinatarios.data?.length ?? 0}
           sinCorregir={!!preview?.hasUngradedInstances}
           scheduledFor={valores.cuando === 'programar' ? valores.scheduledFor : null}
-          reNotifica={!programado}
+          reNotifica={!programado && notificar}
         />
       </SeccionMensaje>
 
@@ -165,9 +178,9 @@ export function AvisoEditar() {
           variant="gradient"
           loading={editarAviso.isPending}
           disabled={!valores.title.trim() || !valores.body.trim()}
-          onClick={programado ? guardar : () => setConfirmarRenotificar(true)}
+          onClick={programado || !notificar ? guardar : () => setConfirmarRenotificar(true)}
         >
-          {programado ? 'Guardar cambios' : 'Guardar y volver a notificar'}
+          {notificar ? 'Guardar y notificar' : 'Guardar cambios'}
         </Button>
       </div>
 

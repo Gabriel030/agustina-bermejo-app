@@ -9882,7 +9882,11 @@
       "UpdateAnnouncementRequest" : {
         "properties" : {
           "audience" : {
-            "$ref" : "#/components/schemas/AudienceSpecRequest"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AudienceSpecRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
           "body" : {
             "maxLength" : 1000,
@@ -9895,11 +9899,14 @@
           },
           "expiresAt" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
+          },
+          "notify" : {
+            "type" : "boolean"
           },
           "scheduledFor" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "title" : {
             "maxLength" : 100,
