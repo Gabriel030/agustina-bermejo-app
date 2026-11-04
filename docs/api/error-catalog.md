@@ -137,6 +137,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_SECTION_CHANGE` | no | `InvalidSectionChangeException` | enrollment |
 | `INVALID_SECTION_EVALUATION_CONFIG_TRANSITION` | no | `InvalidSectionEvaluationConfigTransitionException` | evaluation |
 | `INVALID_SECTION_OVERRIDES` | no | `InvalidSectionOverridesException` | enrollment |
+| `INVALID_SHIFT_RANGES` | no | `InvalidShiftRangesException` | academicstructure |
 | `INVALID_STAFF_ROLE` | no | `InvalidStaffRoleException` | identity |
 | `INVALID_STUDENT_DISCOUNT` | no | `InvalidStudentDiscountException` | billing |
 | `INVALID_TERM_DATES` | no | `InvalidTermDatesException` | academicstructure |
@@ -171,7 +172,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SCHEDULED_DATE_IN_THE_PAST` | no | `ScheduledDateInThePastException` | announcement |
 | `SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `ScholarshipOnlyForMonthlyInstallmentsException` | billing |
 | `SECTION_CAPACITY_EXCEEDS_CLASSROOM` | no | `SectionCapacityExceedsClassroomException` | academicstructure |
+| `SECTION_SHIFT_REQUIRED` | no | `SectionShiftRequiredException` | academicstructure |
 | `SEGMENT_NOT_AVAILABLE_FOR_SECTION` | no | `SegmentNotAvailableForSectionException` | announcement |
+| `SLOT_OUTSIDE_SHIFT` | no | `SlotOutsideShiftException` | academicstructure |
 | `STUDENT_CURRENT_ACCOUNT_CURRENCY_MISMATCH` | no | `StudentCurrentAccountCurrencyMismatchException` | billing |
 | `STUDENT_NOT_ACTIVE` | no | `StudentNotActiveException` | identity |
 | `STUDENT_NOT_CONFIRMED` | no | `StudentNotConfirmedException` | identity |
@@ -430,6 +433,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `RUN_ITEM_NOT_RETRYABLE` | no | `RunItemNotRetryableException` | billing |
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
+| `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |

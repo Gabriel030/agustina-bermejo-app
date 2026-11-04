@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -36,8 +37,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
 
-    private static final LocalTime EVENING_START = LocalTime.of(18, 0);
-    private static final LocalTime EVENING_END = LocalTime.of(20, 0);
+    private static final LocalTime EVENING_START = LocalTime.of(19, 0);
+    private static final LocalTime EVENING_END = LocalTime.of(21, 0);
 
     @Autowired
     private CreateCycleSectionUseCase createCycleSection;
@@ -61,7 +62,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
     private CreateCycleSectionRequest eveningSectionRequest(Subject subject, Classroom classroom, int capacity) {
         return new CreateCycleSectionRequest(
                 "A", subject.getId(), null, capacity,
-                List.of(new ScheduleSlotRequest(classroom.getId(), DayOfWeek.MONDAY, EVENING_START, EVENING_END)));
+                List.of(new ScheduleSlotRequest(classroom.getId(), DayOfWeek.MONDAY, EVENING_START, EVENING_END)), null, SectionShift.EVENING, null);
     }
 
     private AcademicOfferingCycle cycleWithLeadSection(Term term, AcademicOfferingCycleStatus status) {

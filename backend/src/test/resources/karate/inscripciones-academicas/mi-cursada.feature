@@ -48,7 +48,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión mi cursada', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
+    And request { name: 'Comisión mi cursada', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
     When method post
     Then status 201
     * def sectionId = response.id

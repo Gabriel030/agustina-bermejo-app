@@ -45,7 +45,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión A', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión A', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -111,7 +111,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectAjenoId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión ajena', termId: '#(termId)', capacity: 10 }
+    And request { name: 'Comisión ajena', shift: 'MORNING', termId: '#(termId)', capacity: 10 }
     When method post
     Then status 201
     * def sectionAjenaId = response.id
@@ -150,7 +150,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectAvanzadaId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión avanzada', termId: '#(termId)', capacity: 10 }
+    And request { name: 'Comisión avanzada', shift: 'MORNING', termId: '#(termId)', capacity: 10 }
     When method post
     Then status 201
     * def sectionAvanzadaId = response.id
@@ -173,7 +173,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión B', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionBId = response.id
@@ -202,7 +202,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión C', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionCId = response.id
@@ -219,7 +219,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectOtraId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión de otra materia', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión de otra materia', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionOtraMateriaId = response.id
@@ -260,7 +260,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión con cupo 1', termId: '#(termId)', capacity: 1 }
+    And request { name: 'Comisión con cupo 1', shift: 'MORNING', termId: '#(termId)', capacity: 1 }
     When method post
     Then status 201
     * def sectionCupoId = response.id
@@ -320,7 +320,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión ciclo cerrado', termId: '#(termCerradoId)', capacity: 10 }
+    And request { name: 'Comisión ciclo cerrado', shift: 'MORNING', termId: '#(termCerradoId)', capacity: 10 }
     When method post
     Then status 201
     * def sectionCerradaId = response.id

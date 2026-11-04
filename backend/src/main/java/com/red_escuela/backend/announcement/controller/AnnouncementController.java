@@ -112,7 +112,8 @@ public class AnnouncementController {
     public AnnouncementResponse update(@PathVariable Long id, @Valid @RequestBody UpdateAnnouncementRequest request) {
         return AnnouncementResponse.from(updateAnnouncement.update(new UpdateAnnouncementCommand(
                 id, request.title(), request.body(), request.category(), request.urgent(), request.expiresAt(),
-                request.scheduledFor(), request.audience() == null ? null : request.audience().toSpec())));
+                request.scheduledFor(), request.audience() == null ? null : request.audience().toSpec(),
+                Boolean.TRUE.equals(request.notifyRecipients()))));
     }
 
     @GetMapping("/announcements/{id}/recipients")

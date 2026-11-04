@@ -45,7 +45,7 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión QA avisos', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión QA avisos', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionId = response.id

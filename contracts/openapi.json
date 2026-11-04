@@ -2351,9 +2351,15 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "code" : {
+            "type" : "string"
+          },
           "courseSubjectId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "description" : {
+            "type" : "string"
           },
           "id" : {
             "format" : "int64",
@@ -2371,6 +2377,10 @@
           "schedule" : {
             "type" : "string"
           },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
+            "type" : "string"
+          },
           "status" : {
             "type" : "string"
           },
@@ -2379,7 +2389,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "courseSubjectId", "id", "maxAbsencePercent", "name", "schedule", "status", "termId" ],
+        "required" : [ "capacity", "code", "courseSubjectId", "description", "id", "maxAbsencePercent", "name", "schedule", "shift", "status", "termId" ],
         "type" : "object"
       },
       "CoveredInvoiceResponse" : {
@@ -2648,6 +2658,11 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "maxAbsencePercent" : {
             "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
             "maximum" : 100,
@@ -2656,6 +2671,10 @@
           },
           "name" : {
             "minLength" : 1,
+            "type" : "string"
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
             "type" : "string"
           },
           "slots" : {
@@ -3196,6 +3215,9 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "description" : {
+            "type" : "string"
+          },
           "evaluationSchemeId" : {
             "format" : "int64",
             "type" : "integer"
@@ -3211,6 +3233,10 @@
             "type" : "string"
           },
           "schedule" : {
+            "type" : "string"
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
             "type" : "string"
           },
           "termId" : {
@@ -3460,6 +3486,12 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "code" : {
+            "type" : [ "string", "null" ]
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -3485,6 +3517,10 @@
             }, {
               "type" : "null"
             } ]
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
+            "type" : [ "string", "null" ]
           },
           "slots" : {
             "items" : {
@@ -9030,6 +9066,38 @@
         "required" : [ "visible" ],
         "type" : "object"
       },
+      "ShiftRangeRequest" : {
+        "properties" : {
+          "endTime" : {
+            "type" : "string"
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
+            "type" : "string"
+          },
+          "startTime" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "endTime", "shift", "startTime" ],
+        "type" : "object"
+      },
+      "ShiftRangeResponse" : {
+        "properties" : {
+          "endTime" : {
+            "type" : "string"
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
+            "type" : "string"
+          },
+          "startTime" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "endTime", "shift", "startTime" ],
+        "type" : "object"
+      },
       "SlotInfo" : {
         "properties" : {
           "classroomId" : {
@@ -9161,9 +9229,17 @@
           "emailVerified" : {
             "type" : "boolean"
           },
+          "failedLoginAttempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "lockedUntil" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "nombre" : {
             "type" : "string"
@@ -9181,7 +9257,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "id", "nombre", "role", "status", "telefono", "username" ],
+        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "failedLoginAttempts", "id", "lockedUntil", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StaffResponse" : {
@@ -9737,6 +9813,12 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -9751,6 +9833,10 @@
             "type" : "string"
           },
           "schedule" : {
+            "type" : "string"
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
             "type" : "string"
           },
           "status" : {
@@ -9768,7 +9854,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "id", "maxAbsencePercent", "name", "schedule", "status", "subjectId", "subjectName", "termId" ],
+        "required" : [ "capacity", "code", "description", "id", "maxAbsencePercent", "name", "schedule", "shift", "status", "subjectId", "subjectName", "termId" ],
         "type" : "object"
       },
       "TeacherGradeGridResponse" : {
@@ -9882,7 +9968,11 @@
       "UpdateAnnouncementRequest" : {
         "properties" : {
           "audience" : {
-            "$ref" : "#/components/schemas/AudienceSpecRequest"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AudienceSpecRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
           "body" : {
             "maxLength" : 1000,
@@ -9895,11 +9985,14 @@
           },
           "expiresAt" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
+          },
+          "notify" : {
+            "type" : "boolean"
           },
           "scheduledFor" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "title" : {
             "maxLength" : 100,
@@ -10199,6 +10292,9 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "description" : {
+            "type" : "string"
+          },
           "evaluationSchemeId" : {
             "format" : "int64",
             "type" : "integer"
@@ -10214,9 +10310,27 @@
           },
           "schedule" : {
             "type" : "string"
+          },
+          "shift" : {
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
+            "type" : "string"
           }
         },
         "required" : [ "capacity", "evaluationSchemeId", "name", "schedule" ],
+        "type" : "object"
+      },
+      "UpdateShiftRangesRequest" : {
+        "properties" : {
+          "ranges" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ShiftRangeRequest"
+            },
+            "maxItems" : 3,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "ranges" ],
         "type" : "object"
       },
       "UpdateStaffRequest" : {
@@ -53462,6 +53576,236 @@
           }
         },
         "tags" : [ "section-evaluation-config-controller" ]
+      }
+    },
+    "/shift-ranges" : {
+      "get" : {
+        "operationId" : "ShiftRange_list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ShiftRangeResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "shift-range-controller" ]
+      },
+      "put" : {
+        "operationId" : "ShiftRange_update",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateShiftRangesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ShiftRangeResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "shift-range-controller" ]
       }
     },
     "/staff" : {

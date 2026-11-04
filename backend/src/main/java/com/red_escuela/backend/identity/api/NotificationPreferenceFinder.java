@@ -18,8 +18,20 @@ public class NotificationPreferenceFinder {
 
     @Transactional(readOnly = true)
     public boolean isPreDueReminderEmailEnabled(Long personId) {
+        return isEnabled(personId, NotificationEvent.PAYMENT_DUE_SOON, NotificationChannel.EMAIL);
+    }
+
+    public boolean isInAppEnabled(Long personId, NotificationEvent event) {
+        return isEnabled(personId, event, NotificationChannel.APP);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEnabled(Long personId, NotificationEvent event, NotificationChannel channel) {
+        if (event.isMandatoryOn(channel)) {
+            return true;
+        }
         return notificationPreferenceRepository
-                .findByPersonIdAndEventAndChannel(personId, NotificationEvent.PAYMENT_DUE_SOON, NotificationChannel.EMAIL)
+                .findByPersonIdAndEventAndChannel(personId, event, channel)
                 .map(NotificationPreference::isEnabled)
                 .orElse(true);
     }

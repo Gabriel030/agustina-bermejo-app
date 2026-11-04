@@ -84,8 +84,8 @@ public class UpdateAnnouncementService implements UpdateAnnouncementUseCase {
         }
 
         Announcement saved = announcementRepository.save(announcement);
-        if (scheduled) {
-            log.info("Aviso programado actualizado: id={}, sale={}, segmento={} — no se notifica a nadie todavía",
+        if (scheduled || !command.notifyRecipients()) {
+            log.info("Aviso actualizado sin notificar: id={}, sale={}, segmento={}",
                     saved.getId(), saved.getScheduledFor(), saved.getAudienceSpec().getKey());
             return saved;
         }

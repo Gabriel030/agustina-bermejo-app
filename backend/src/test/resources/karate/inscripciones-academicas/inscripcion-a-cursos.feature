@@ -40,7 +40,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión única', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión única', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -145,14 +145,14 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión mañana', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión mañana', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionManianaId = response.id
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión tarde', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión tarde', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
 
@@ -249,7 +249,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
 

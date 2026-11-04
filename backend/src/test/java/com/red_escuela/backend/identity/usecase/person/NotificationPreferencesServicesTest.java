@@ -47,6 +47,12 @@ class NotificationPreferencesServicesTest {
     }
 
     @Test
+    void accountCreationCannotBeTurnedOffOnAnyChannel() {
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.ACCOUNT_CREATED, NotificationChannel.APP)).isTrue();
+        assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.ACCOUNT_CREATED, NotificationChannel.EMAIL)).isTrue();
+    }
+
+    @Test
     void everyOtherEventAndChannelPairCanBeTurnedOff() {
         assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.PAYMENT_DUE_SOON, NotificationChannel.EMAIL)).isFalse();
         assertThat(MandatoryNotificationChannels.cannotBeTurnedOff(NotificationEvent.GRADE_POSTED, NotificationChannel.APP)).isFalse();

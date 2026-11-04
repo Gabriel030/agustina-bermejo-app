@@ -19,6 +19,7 @@ import com.red_escuela.backend.identity.usecase.staff.WithdrawStaffUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -93,7 +94,12 @@ public class StaffController {
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StaffRecordResponse getRecord(@PathVariable Long id) {
         var person = getStaffRecordUseCase.getRecord(id);
-        return StaffRecordResponse.from(person, staffRoleAssignmentPolicy.resolveStaffRole(person));
+        return StaffRecordResponse.from(person, staffRoleAssignmentPolicy.resolveStaffRole(person), isDirector());
+    }
+
+    private boolean isDirector() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority()));
     }
 
     @PostMapping("/{id}/withdraw")

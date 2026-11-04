@@ -304,7 +304,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
 
         UpdateAnnouncementCommand command = new UpdateAnnouncementCommand(sent.getId(), "Otro título",
                 "Otro cuerpo", AnnouncementCategory.REMINDER, false, null, null,
-                new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null));
+                new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null), false);
 
         assertThatThrownBy(() -> updateAnnouncement.update(command))
                 .isInstanceOf(CannotChangeAudienceOfSentAnnouncementException.class);
@@ -322,7 +322,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
 
         Announcement updated = updateAnnouncement.update(new UpdateAnnouncementCommand(scheduled.getId(),
                 "Otro título", "Otro cuerpo", AnnouncementCategory.REMINDER, false, null, null,
-                new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null)));
+                new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null), true));
         entityManager.flush();
 
         assertThat(updated.getAudienceLabel()).isEqualTo("Tienen que rendir el final");
