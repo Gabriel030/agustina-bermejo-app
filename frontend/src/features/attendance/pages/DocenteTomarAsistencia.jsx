@@ -38,9 +38,11 @@ const ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION = [
 const CHIP_INACTIVO = 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg/70';
 const ESTADO_POR_VALOR = Object.fromEntries([...ESTADOS, ...ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION].map((e) => [e.value, e]));
 
+const EDITABLE_SAVED_STATUSES = ['PRESENT', 'ABSENT', 'LATE'];
+
 const SAVE_ERROR_MESSAGES = {
   CLASS_ON_HOLIDAY: 'Esa fecha es feriado: no se puede tomar asistencia.',
-  ATTENDANCE_ALREADY_RECORDED: 'Esa asistencia ya estaba guardada. Para corregirla, pedí la modificación desde Historial.',
+  ATTENDANCE_ALREADY_RECORDED: 'Esa asistencia ya estaba guardada. Si la registró otro docente o ya pasó el día, pedí la modificación desde Historial.',
 };
 
 function saveErrorMessage(err) {
@@ -141,6 +143,9 @@ export function TabAsistencia({ type, sectionId }) {
     return resultado;
   }, [historial, lista, classDate]);
   const hayAsistenciaGuardada = Object.keys(estadosGuardados).length > 0;
+  const esClaseDeHoy = classDate === localIsoDate();
+  const puedeCorregirGuardado = (enrollmentId) =>
+    esClaseDeHoy && EDITABLE_SAVED_STATUSES.includes(estadosGuardados[enrollmentId]);
 
   useEffect(() => {
     huboCambiosRef.current = huboCambios;
@@ -280,7 +285,9 @@ export function TabAsistencia({ type, sectionId }) {
 
       {hayAsistenciaGuardada && !claseCancelada && (
         <div className="rounded-xl bg-neutral-bg px-4 py-2 text-[13px] font-medium text-ink-soft">
-          La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.
+          {esClaseDeHoy
+            ? 'Podés corregir la asistencia de hoy.'
+            : 'La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.'}
         </div>
       )}
 
@@ -319,7 +326,7 @@ export function TabAsistencia({ type, sectionId }) {
                 alumno={alumno}
                 estado={estados[alumno.enrollmentId]}
                 onCambiarEstado={cambiarEstado}
-                deshabilitada={claseCancelada || estadosGuardados[alumno.enrollmentId] != null}
+                deshabilitada={claseCancelada || (estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId))}
               />
             ))}
           </div>

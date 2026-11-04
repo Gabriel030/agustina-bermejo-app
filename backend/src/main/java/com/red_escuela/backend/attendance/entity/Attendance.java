@@ -99,4 +99,19 @@ public class Attendance {
         }
         status = newStatus;
     }
+
+    public boolean isRecordableByInstructor() {
+        return status == AttendanceStatus.PRESENT || status == AttendanceStatus.ABSENT || status == AttendanceStatus.LATE;
+    }
+
+    public boolean wasRecordedBy(Instructor instructor) {
+        return recordedBy != null && recordedBy.getId().equals(instructor.getId());
+    }
+
+    public AttendanceStatus correct(AttendanceStatus newStatus) {
+        newStatus.requireRecordableByInstructor();
+        AttendanceStatus previous = status;
+        status = newStatus;
+        return previous;
+    }
 }

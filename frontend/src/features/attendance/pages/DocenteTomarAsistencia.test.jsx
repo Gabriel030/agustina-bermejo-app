@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -15,13 +15,12 @@ const ROSTER = [
   { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, atRisk: false },
 ];
 
-function mockSection({ savedStatusForAna } = {}) {
-  const today = localIsoDate();
+function mockSection({ savedStatusForAna, savedDate = localIsoDate() } = {}) {
   server.use(
     http.get(`${API}/program-sections/5/roster`, () => HttpResponse.json(ROSTER)),
     http.get(`${API}/program-sections/5/attendance/history`, () =>
       HttpResponse.json({
-        rows: savedStatusForAna ? [{ studentId: 1, studentName: 'Ana Gómez', cellsByDate: { [today]: { status: savedStatusForAna } } }] : [],
+        rows: savedStatusForAna ? [{ studentId: 1, studentName: 'Ana Gómez', cellsByDate: { [savedDate]: { status: savedStatusForAna } } }] : [],
       }),
     ),
     http.get(`${API}/program-sections/5/class-sessions/:date`, () => new HttpResponse(null, { status: 404 })),
@@ -44,14 +43,33 @@ describe('TabAsistencia', () => {
     expect(screen.getByDisplayValue(localIsoDate())).toBeInTheDocument();
   });
 
-  it('bloquea a quien ya tiene la asistencia guardada y deja cargar al resto', async () => {
+  it('en un dia anterior bloquea a quien ya tiene la asistencia guardada y deja cargar al resto', async () => {
+    const pastDate = '2020-01-06';
+    mockSection({ savedStatusForAna: 'LATE', savedDate: pastDate });
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    fireEvent.change(screen.getByDisplayValue(localIsoDate()), { target: { value: pastDate } });
+    await screen.findByText(/pedí la modificación desde Historial/);
+    expect(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Ausente' })).toBeDisabled();
+    expect(within(rowOf('Bruno Díaz')).getByRole('button', { name: 'Ausente' })).toBeEnabled();
+  });
+
+  it('el mismo dia permite corregir lo guardado y avisa que se puede corregir', async () => {
     mockSection({ savedStatusForAna: 'LATE' });
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Ana Gómez');
+    expect(screen.getByText('Podés corregir la asistencia de hoy.')).toBeInTheDocument();
+    expect(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Ausente' })).toBeEnabled();
+  });
+
+  it('el mismo dia una asistencia justificada sigue bloqueada', async () => {
+    mockSection({ savedStatusForAna: 'JUSTIFIED' });
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
     expect(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Ausente' })).toBeDisabled();
-    expect(within(rowOf('Bruno Díaz')).getByRole('button', { name: 'Ausente' })).toBeEnabled();
-    expect(screen.getByText(/pedí la modificación desde Historial/)).toBeInTheDocument();
   });
 
   it('el docente no puede marcar Justificada: eso lo resuelve el circuito de justificación', async () => {
