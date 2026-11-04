@@ -47,7 +47,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión QA mesas', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
+    And request { name: 'Comisión QA mesas', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
     When method post
     Then status 201
     * def sectionId = response.id

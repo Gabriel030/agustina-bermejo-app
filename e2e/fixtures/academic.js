@@ -57,6 +57,7 @@ export async function createSection(request, subjectId, { name, capacity, withDe
     termId: term.id,
     schedule: 'Sábados 09:00 a 11:00',
     capacity,
+    shift: 'MORNING',
     evaluationSchemeId: scheme.id,
   });
   if (withDemoTeacher) {

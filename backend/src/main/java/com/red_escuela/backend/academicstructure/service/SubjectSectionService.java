@@ -39,6 +39,7 @@ public class SubjectSectionService {
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
+    private final SectionIdentityAssigner identityAssigner;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -47,7 +48,8 @@ public class SubjectSectionService {
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
             EntityManager entityManager,
-            SectionEvaluationSetupPort evaluationSetupPort) {
+            SectionEvaluationSetupPort evaluationSetupPort,
+            SectionIdentityAssigner identityAssigner) {
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
@@ -55,10 +57,12 @@ public class SubjectSectionService {
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
+        this.identityAssigner = identityAssigner;
     }
 
     @Transactional
     public SubjectSection create(Long subjectId, CreateSectionRequest request) {
+        identityAssigner.requireShift(request.shift());
         Subject subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
         Term term = termRepository.findById(request.termId())
@@ -74,6 +78,7 @@ public class SubjectSectionService {
         section.setMaxAbsenceRate(request.maxAbsencePercent());
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(LocalDateTime.now());
+        identityAssigner.identifyNewSubjectSection(section, request.shift(), request.description());
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
@@ -93,6 +98,12 @@ public class SubjectSectionService {
         }
         if (request.capacity() != null) {
             section.setCapacity(request.capacity());
+        }
+        if (request.description() != null) {
+            section.setDescription(request.description());
+        }
+        if (request.shift() != null) {
+            identityAssigner.changeSubjectSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));

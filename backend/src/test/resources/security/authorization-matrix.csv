@@ -419,3 +419,5 @@ GET,/me/program-enrollments/{id}/annual-upfront-requests,DENY,OWNER,DENY,DENY,DE
 GET,/annual-upfront-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/annual-upfront-requests/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/program-enrollments/{id}/annual-upfront-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/shift-ranges,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+PUT,/shift-ranges,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""ranges"":[{""shift"":""MORNING"",""startTime"":""08:00"",""endTime"":""12:30""},{""shift"":""AFTERNOON"",""startTime"":""13:30"",""endTime"":""18:00""},{""shift"":""EVENING"",""startTime"":""18:30"",""endTime"":""22:30""}]}"

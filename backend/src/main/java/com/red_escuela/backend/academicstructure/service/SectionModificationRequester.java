@@ -30,6 +30,7 @@ public class SectionModificationRequester {
     private final ClassroomRepository classroomRepository;
     private final SectionModificationProposalRepository proposalRepository;
     private final SectionConflictChecker conflictChecker;
+    private final SectionShiftSlotGuard shiftSlotGuard;
     private final Clock clock;
 
     public SectionModificationRequester(
@@ -38,6 +39,7 @@ public class SectionModificationRequester {
             ClassroomRepository classroomRepository,
             SectionModificationProposalRepository proposalRepository,
             SectionConflictChecker conflictChecker,
+            SectionShiftSlotGuard shiftSlotGuard,
             Clock clock
     ) {
         this.sectionRepository = sectionRepository;
@@ -45,6 +47,7 @@ public class SectionModificationRequester {
         this.classroomRepository = classroomRepository;
         this.proposalRepository = proposalRepository;
         this.conflictChecker = conflictChecker;
+        this.shiftSlotGuard = shiftSlotGuard;
         this.clock = clock;
     }
 
@@ -62,6 +65,7 @@ public class SectionModificationRequester {
                     .map(SectionScheduleSlot::getId)
                     .collect(Collectors.toSet());
             for (var slotReq : request.slots()) {
+                shiftSlotGuard.ensureInsideShift(section.getShift(), slotReq.startTime(), slotReq.endTime());
                 var classroom = classroomRepository.findById(slotReq.classroomId())
                         .orElseThrow(() -> new ClassroomNotFoundException(slotReq.classroomId()));
                 classroom.ensureCanHost(section.getCapacity());

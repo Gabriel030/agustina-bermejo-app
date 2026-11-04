@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SectionModificationProposal;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
@@ -20,7 +21,10 @@ public record CycleSectionResponse(
         List<InstructorInfo> instructors,
         List<SlotInfo> slots,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) PendingModificationInfo pendingModification,
-        @Nullable String lastRejectionReason
+        @Nullable String lastRejectionReason,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) SectionShift shift,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String code,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String description
 ) {
     public record InstructorInfo(String name, String role) {}
     public record SlotInfo(String dayOfWeek, String startTime, String endTime, Long classroomId, String classroomName) {}
@@ -51,7 +55,10 @@ public record CycleSectionResponse(
                 instructors,
                 slotInfos,
                 pendingModificationOf(latestProposal),
-                lastRejectionReasonOf(latestProposal));
+                lastRejectionReasonOf(latestProposal),
+                s.getShift(),
+                s.getCode(),
+                s.getDescription());
     }
 
     public static CycleSectionResponse fromCourseSection(CourseSubjectSection s, List<SectionScheduleSlot> slots) {
@@ -78,7 +85,10 @@ public record CycleSectionResponse(
                 instructors,
                 slotInfos,
                 null,
-                null);
+                null,
+                s.getShift(),
+                s.getCode(),
+                s.getDescription());
     }
 
     private static PendingModificationInfo pendingModificationOf(SectionModificationProposal proposal) {
