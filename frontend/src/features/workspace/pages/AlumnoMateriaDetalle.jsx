@@ -23,7 +23,6 @@ const BADGE_ESTADO = {
   APPROVED: { label: 'Aprobada', tone: 'success' },
   FAILED: { label: 'Desaprobada', tone: 'danger' },
   WITHDRAWN: { label: 'De baja', tone: 'neutral' },
-  WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },
 };
 
 // Épica 2 Fase 2 — detalle de una materia en curso: grilla materia/profesor/
