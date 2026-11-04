@@ -65,7 +65,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     # Sin sesión — 401
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 401
 
@@ -73,7 +73,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + alumnoToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 
@@ -88,7 +88,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + otroAlumno.accessToken
     And param type = 'DNI_DORSO'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni-dorso.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni-dorso.pdf', contentType: 'application/pdf' }
     When method post
     Then status 404
 
@@ -188,7 +188,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + alumnoToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 
