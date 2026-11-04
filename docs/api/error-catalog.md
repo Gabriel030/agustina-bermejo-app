@@ -4,7 +4,7 @@
 
 ## Cuerpo estándar
 
-Todo error de la API sale con `{"code": "...", "retryable": true|false, "requestId": "...", "violations": [...]}`. `code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, `requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas. Un `429` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).
+Todo error de la API sale con `{"code": "...", "retryable": true|false, "requestId": "...", "violations": [...]}`. `code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, `requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas. Un `429` o `503` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).
 
 ## Política de reintentos
 
@@ -18,7 +18,8 @@ Todo error de la API sale con `{"code": "...", "retryable": true|false, "request
 | 429 | sí | Límite de tasa; esperar `Retry-After` |
 | 500 | no | Defecto del servidor; repetirlo repite el defecto |
 | 502 | sí | Falla de un servicio externo (por ejemplo Mercado Pago), transitoria |
-| 503, 504 | sí | Reservados: hoy el backend no los emite; si los emite un proxy, se reintentan |
+| 503 | sí | Servicio externo protegido por circuit breaker abierto (`EXTERNAL_SERVICE_UNAVAILABLE`); esperar `Retry-After` |
+| 504 | sí | Reservado: hoy el backend no lo emite; si lo emite un proxy, se reintenta |
 
 Regla del front (decisión del 3-nov-2026): GET, PUT y DELETE reintentables; POST solo con `Idempotency-Key`; máximo 3 intentos con espera exponencial y jitter, solo ante errores de red o 502, 503 y 504.
 
@@ -470,6 +471,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 |---|---|---|---|
 | `MERCADO_PAGO_GATEWAY` | sí | `MercadoPagoGatewayException` | billing |
 | `TRANSACTIONAL_EMAIL_DELIVERY` | sí | `TransactionalEmailDeliveryException` | shared |
+
+### HTTP 503
+
+| Código | Reintentable | Excepción | Módulo |
+|---|---|---|---|
+| `EXTERNAL_SERVICE_UNAVAILABLE` | sí | `CircuitOpenException` | shared |
 
 ## Idempotencia de las escrituras
 

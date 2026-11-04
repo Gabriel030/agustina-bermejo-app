@@ -70,6 +70,11 @@ class GlobalExceptionHandlerTest {
             throw new GatewayDownException();
         }
 
+        @GetMapping("/circuit-open")
+        void circuitOpen() {
+            throw new CircuitOpenException("mercadopago", java.time.Duration.ofSeconds(12));
+        }
+
         @GetMapping("/business-conflict")
         void businessConflict() {
             throw new BusinessConflictException();
@@ -171,6 +176,20 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("GATEWAY_DOWN"))
                 .andExpect(jsonPath("$.retryable").value(true))
                 .andExpect(content().string(not(containsString("jdbc"))));
+    }
+
+    @Test
+    void anOpenCircuitIsARetryableServiceUnavailableWithRetryAfter() throws Exception {
+        mockMvc.perform(get("/circuit-open"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Retry-After", "12"))
+                .andExpect(jsonPath("$.code").value("EXTERNAL_SERVICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.retryable").value(true));
+    }
+
+    @Test
+    void aSubSecondRetryAfterIsRoundedUpToOneSecond() throws Exception {
+        assertThat(Math.max(1, new CircuitOpenException("x", java.time.Duration.ofMillis(300)).retryAfter().toSeconds())).isEqualTo(1);
     }
 
     @Test

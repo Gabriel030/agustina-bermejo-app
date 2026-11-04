@@ -314,7 +314,7 @@ class ErrorCatalogTest {
         out.append("Todo error de la API sale con `{\"code\": \"...\", \"retryable\": true|false, \"requestId\": \"...\", \"violations\": [...]}`. ");
         out.append("`code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, ");
         out.append("`requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas. ");
-        out.append("Un `429` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).\n\n");
+        out.append("Un `429` o `503` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).\n\n");
         out.append("## Política de reintentos\n\n");
         out.append("| HTTP | Reintentable | Por qué |\n|---|---|---|\n");
         out.append("| 400 | no | El pedido es inválido; repetirlo igual falla igual |\n");
@@ -325,7 +325,8 @@ class ErrorCatalogTest {
         out.append("| 429 | sí | Límite de tasa; esperar `Retry-After` |\n");
         out.append("| 500 | no | Defecto del servidor; repetirlo repite el defecto |\n");
         out.append("| 502 | sí | Falla de un servicio externo (por ejemplo Mercado Pago), transitoria |\n");
-        out.append("| 503, 504 | sí | Reservados: hoy el backend no los emite; si los emite un proxy, se reintentan |\n\n");
+        out.append("| 503 | sí | Servicio externo protegido por circuit breaker abierto (`EXTERNAL_SERVICE_UNAVAILABLE`); esperar `Retry-After` |\n");
+        out.append("| 504 | sí | Reservado: hoy el backend no lo emite; si lo emite un proxy, se reintenta |\n\n");
         out.append("Regla del front (decisión del 3-nov-2026): GET, PUT y DELETE reintentables; POST solo con `Idempotency-Key`; máximo 3 intentos con espera exponencial y jitter, solo ante errores de red o 502, 503 y 504.\n\n");
         out.append("## Errores transversales\n\n");
         out.append("| Código | HTTP | Reintentable | Origen | Por qué |\n|---|---|---|---|---|\n");

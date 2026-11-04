@@ -113,6 +113,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorCodeResponse.of(exception));
     }
 
+    @ExceptionHandler(CircuitOpenException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ResponseEntity<ErrorCodeResponse> handleCircuitOpen(CircuitOpenException exception) {
+        long retryAfterSeconds = Math.max(1, exception.retryAfter().toSeconds());
+        log.warn("Servicio externo no disponible {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds))
+                .body(ErrorCodeResponse.of(exception));
+    }
+
     @ExceptionHandler(ExternalServiceException.class)
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public ErrorCodeResponse handleExternalService(ExternalServiceException exception) {
