@@ -16,7 +16,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class TermTypeCatalogMigrationTest {
 
     private static void insertTerm(JdbcTemplate jdbc, int year, String type, String status, String start, String end) {
-        jdbc.update("insert into term (year_number, type, status, start_date, end_date) values (?, ?, ?, "
+        jdbc.update("insert into term (year_number, type, status, enrollment_start, enrollment_end, start_date, end_date) values (?, ?, ?, "
+                + "timestamp '2000-01-01 00:00:00', timestamp '2100-01-01 00:00:00', "
                 + (start == null ? "null" : "timestamp '" + start + "'") + ", "
                 + (end == null ? "null" : "timestamp '" + end + "'") + ")", year, type, status);
     }
@@ -106,7 +107,7 @@ class TermTypeCatalogMigrationTest {
                     .isInstanceOf(DataIntegrityViolationException.class);
             assertThatThrownBy(() -> insertTerm(jdbc, 2051, "1C", "ACTIVE", null, null))
                     .isInstanceOf(DataIntegrityViolationException.class);
-            jdbc.update("insert into term (year_number, status) values (2052, 'ACTIVE')");
+            jdbc.update("insert into term (year_number, status, enrollment_start, enrollment_end) values (2052, 'ACTIVE', timestamp '2000-01-01 00:00:00', timestamp '2100-01-01 00:00:00')");
             assertThat(jdbc.queryForObject("select type from term where year_number = 2052", String.class))
                     .isEqualTo("ANNUAL");
         }
