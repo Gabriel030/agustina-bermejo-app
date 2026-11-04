@@ -93,7 +93,22 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
         HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', dni: '30111222', roles: [] }),
       ),
       http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
-        HttpResponse.json({ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING' }, { status: 201 }),
+        HttpResponse.json(
+          {
+            id: 42,
+            studentId: 9,
+            programId: 1,
+            programName: 'Diseño Gráfico',
+            programCohortId: 1,
+            status: 'PENDING',
+            requestedAt: '2026-03-02T10:00:00',
+            decidedAt: null,
+            rejectionReason: null,
+            admissionInvoice: null,
+            programEnrollmentId: 1,
+          },
+          { status: 201 },
+        ),
       ),
       http.get(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json([{ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),

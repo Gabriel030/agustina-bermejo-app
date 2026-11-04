@@ -2,6 +2,7 @@
 Feature: Subir un documento propio a una solicitud de alta de carrera
 
   Scenario: Subir un documento
+    * url baseUrl
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + alumnoToken
     And param type = tipo

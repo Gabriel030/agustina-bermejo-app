@@ -1,5 +1,6 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.enrollment.service.RequiredApplicationDocumentsGuard;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +67,10 @@ class OverloadProtectionIT extends AbstractIntegrationTest {
     @Test
     void requestSizeAndPageSizeLimitsAreConfigured() {
         assertThat(multipartProperties.getMaxFileSize()).isEqualTo(DataSize.ofMegabytes(5));
-        assertThat(multipartProperties.getMaxRequestSize()).isEqualTo(DataSize.ofMegabytes(6));
+        assertThat(multipartProperties.getMaxRequestSize()).isEqualTo(DataSize.ofMegabytes(10));
+        assertThat(MultipartRequestSizeFilter.DEFAULT_MAX_REQUEST_BYTES).isEqualTo(DataSize.ofMegabytes(6).toBytes());
+        assertThat(MultipartRequestSizeFilter.PROGRAM_APPLICATION_MAX_REQUEST_BYTES).isEqualTo(DataSize.ofMegabytes(10).toBytes());
+        assertThat(RequiredApplicationDocumentsGuard.MAX_DOCUMENT_BYTES).isEqualTo(DataSize.ofMegabytes(3).toBytes());
         assertThat(serverProperties.getTomcat().getMaxSwallowSize()).isEqualTo(DataSize.ofMegabytes(2));
         assertThat(serverProperties.getTomcat().getMaxHttpFormPostSize()).isEqualTo(DataSize.ofMegabytes(2));
         assertThat(springDataWebProperties.getPageable().getMaxPageSize()).isEqualTo(200);
