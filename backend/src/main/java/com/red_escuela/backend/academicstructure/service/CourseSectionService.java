@@ -21,6 +21,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseSubjectReposit
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +41,8 @@ public class CourseSectionService {
     private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
     private final SectionIdentityAssigner identityAssigner;
+    private final SectionConflictChecker conflictChecker;
+    private final SectionScheduleSlotRepository slotRepository;
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
@@ -49,7 +52,9 @@ public class CourseSectionService {
             InstructorRepository instructorRepository,
             EntityManager entityManager,
             SectionEvaluationSetupPort evaluationSetupPort,
-            SectionIdentityAssigner identityAssigner) {
+            SectionIdentityAssigner identityAssigner,
+            SectionConflictChecker conflictChecker,
+            SectionScheduleSlotRepository slotRepository) {
         this.sectionRepository = sectionRepository;
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
@@ -58,6 +63,8 @@ public class CourseSectionService {
         this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
         this.identityAssigner = identityAssigner;
+        this.conflictChecker = conflictChecker;
+        this.slotRepository = slotRepository;
     }
 
     @Transactional
@@ -140,6 +147,8 @@ public class CourseSectionService {
         CourseSubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
+        conflictChecker.checkInstructorAvailability(
+                section.getTerm(), instructor.getId(), slotRepository.findByCourseSectionId(sectionId));
 
         CourseSubjectSectionInstructor assignment = new CourseSubjectSectionInstructor();
         assignment.setSection(section);

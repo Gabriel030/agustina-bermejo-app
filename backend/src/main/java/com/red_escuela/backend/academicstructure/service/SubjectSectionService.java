@@ -17,6 +17,7 @@ import com.red_escuela.backend.academicstructure.exception.SectionNotFoundExcept
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
@@ -40,6 +41,8 @@ public class SubjectSectionService {
     private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
     private final SectionIdentityAssigner identityAssigner;
+    private final SectionConflictChecker conflictChecker;
+    private final SectionScheduleSlotRepository slotRepository;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -49,7 +52,9 @@ public class SubjectSectionService {
             InstructorRepository instructorRepository,
             EntityManager entityManager,
             SectionEvaluationSetupPort evaluationSetupPort,
-            SectionIdentityAssigner identityAssigner) {
+            SectionIdentityAssigner identityAssigner,
+            SectionConflictChecker conflictChecker,
+            SectionScheduleSlotRepository slotRepository) {
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
@@ -58,6 +63,8 @@ public class SubjectSectionService {
         this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
         this.identityAssigner = identityAssigner;
+        this.conflictChecker = conflictChecker;
+        this.slotRepository = slotRepository;
     }
 
     @Transactional
@@ -143,6 +150,8 @@ public class SubjectSectionService {
         SubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
+        conflictChecker.checkInstructorAvailability(
+                section.getTerm(), instructor.getId(), slotRepository.findBySubjectSectionId(sectionId));
 
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);
