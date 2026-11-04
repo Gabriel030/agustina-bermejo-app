@@ -18,6 +18,6 @@ public record CreateGradeItemRequest(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Long examBoardId) implements SelfValidatingRequest {
     public CreateGradeItemRequest {
         RequestLimits.requireMaxLength("comments", comments, 255);
-        RequestLimits.requireBetween("sequenceNumber", sequenceNumber, 0, 1000);
+        RequestLimits.requireAtMost("sequenceNumber", sequenceNumber, 1000);
     }
 }

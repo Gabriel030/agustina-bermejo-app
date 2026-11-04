@@ -9,7 +9,5 @@ public record UpdateTermRequest(
         LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) implements SelfValidatingRequest {
     public UpdateTermRequest {
         RequestLimits.requireMaxLength("description", description, 255);
-        RequestLimits.requireNotAfter("startDate", startDate, "endDate", endDate);
-        RequestLimits.requireNotAfter("enrollmentStart", enrollmentStart, "enrollmentEnd", enrollmentEnd);
     }
 }

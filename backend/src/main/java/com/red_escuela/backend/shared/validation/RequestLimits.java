@@ -1,10 +1,8 @@
 package com.red_escuela.backend.shared.validation;
 
-import com.red_escuela.backend.shared.exception.RequestDateRangeInvalidException;
 import com.red_escuela.backend.shared.exception.RequestFieldOutOfRangeException;
 import com.red_escuela.backend.shared.exception.RequestFieldTooLongException;
 import com.red_escuela.backend.shared.exception.RequestListTooLargeException;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Map;
 
@@ -22,15 +20,9 @@ public final class RequestLimits {
         }
     }
 
-    public static void requireBetween(String field, Integer value, int min, int max) {
-        if (value != null && (value < min || value > max)) {
-            throw new RequestFieldOutOfRangeException("El campo " + field + " debe estar entre " + min + " y " + max);
-        }
-    }
-
-    public static void requireNotAfter(String startField, LocalDateTime start, String endField, LocalDateTime end) {
-        if (start != null && end != null && start.isAfter(end)) {
-            throw new RequestDateRangeInvalidException("El campo " + startField + " no puede ser posterior a " + endField);
+    public static void requireAtMost(String field, Integer value, int max) {
+        if (value != null && value > max) {
+            throw new RequestFieldOutOfRangeException("El campo " + field + " no puede superar " + max);
         }
     }
 

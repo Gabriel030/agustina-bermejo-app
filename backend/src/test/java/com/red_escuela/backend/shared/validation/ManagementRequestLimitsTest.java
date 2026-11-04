@@ -96,16 +96,13 @@ class ManagementRequestLimitsTest {
                 Arguments.of("/echo/create-section", "{\"name\":\"" + LONG_TEXT + "\",\"termId\":1,\"capacity\":10}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/create-section", "{\"name\":\"A\",\"termId\":1,\"capacity\":1000000}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/update-section", "{\"schedule\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
-                Arguments.of("/echo/update-section", "{\"capacity\":-5}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/update-course-subject", "{\"name\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/update-course-subject", "{\"weeklyWorkload\":100000}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/create-elective-group", "{\"name\":\"A\",\"description\":\"" + LONG_DESCRIPTION + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/update-elective-group", "{\"description\":\"" + LONG_DESCRIPTION + "\"}", "REQUEST_FIELD_TOO_LONG"),
-                Arguments.of("/echo/create-term", "{\"year\":2026,\"description\":\"A\",\"type\":\"ANNUAL\",\"startDate\":\"2026-12-01T00:00:00\",\"endDate\":\"2026-03-01T00:00:00\"}", "REQUEST_DATE_RANGE_INVALID"),
-                Arguments.of("/echo/update-term", "{\"startDate\":\"2026-12-01T00:00:00\",\"endDate\":\"2026-03-01T00:00:00\"}", "REQUEST_DATE_RANGE_INVALID"),
-                Arguments.of("/echo/update-term", "{\"enrollmentStart\":\"2026-12-01T00:00:00\",\"enrollmentEnd\":\"2026-03-01T00:00:00\"}", "REQUEST_DATE_RANGE_INVALID"),
                 Arguments.of("/echo/update-term", "{\"description\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
-                Arguments.of("/echo/update-program-subject", "{\"credits\":-1}", "REQUEST_FIELD_OUT_OF_RANGE"),
+                Arguments.of("/echo/update-program-subject", "{\"credits\":1001}", "REQUEST_FIELD_OUT_OF_RANGE"),
+                Arguments.of("/echo/update-program-subject", "{\"curricularYear\":21}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"comments\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"sequenceNumber\":2000000000}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/save-prospect-draft", "{\"street\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
@@ -124,7 +121,6 @@ class ManagementRequestLimitsTest {
     private static Stream<Arguments> validBodies() {
         return Stream.of(
                 Arguments.of("/echo/create-section", "{\"name\":\"" + "x".repeat(255) + "\",\"termId\":1,\"capacity\":10000}"),
-                Arguments.of("/echo/update-term", "{\"startDate\":\"2026-03-01T00:00:00\",\"endDate\":\"2026-03-01T00:00:00\"}"),
                 Arguments.of("/echo/update-elective-group", "{\"description\":\"" + "x".repeat(500) + "\"}"),
                 Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"sequenceNumber\":1000}"));
     }

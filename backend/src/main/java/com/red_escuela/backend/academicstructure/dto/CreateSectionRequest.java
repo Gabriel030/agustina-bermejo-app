@@ -14,7 +14,7 @@ public record CreateSectionRequest(
     public CreateSectionRequest {
         RequestLimits.requireMaxLength("name", name, 255);
         RequestLimits.requireMaxLength("schedule", schedule, 255);
-        RequestLimits.requireBetween("capacity", capacity, 1, 10000);
+        RequestLimits.requireAtMost("capacity", capacity, 10000);
     }
     public CreateSectionRequest(String name, Long termId, String schedule, Integer capacity, Long evaluationSchemeId) {
         this(name, termId, schedule, capacity, evaluationSchemeId, null);

@@ -14,7 +14,5 @@ public record CreateTermRequest(
         LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) implements SelfValidatingRequest {
     public CreateTermRequest {
         RequestLimits.requireMaxLength("description", description, 255);
-        RequestLimits.requireNotAfter("startDate", startDate, "endDate", endDate);
-        RequestLimits.requireNotAfter("enrollmentStart", enrollmentStart, "enrollmentEnd", enrollmentEnd);
     }
 }

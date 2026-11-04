@@ -11,7 +11,7 @@ public record CreateCourseSubjectRequest(
     public CreateCourseSubjectRequest {
         RequestLimits.requireMaxLength("name", name, 255);
         RequestLimits.requireMaxLength("qualificationType", qualificationType, 255);
-        RequestLimits.requireBetween("sortOrder", sortOrder, 0, 10000);
-        RequestLimits.requireBetween("weeklyWorkload", weeklyWorkload, 0, 200);
+        RequestLimits.requireAtMost("sortOrder", sortOrder, 10000);
+        RequestLimits.requireAtMost("weeklyWorkload", weeklyWorkload, 200);
     }
 }

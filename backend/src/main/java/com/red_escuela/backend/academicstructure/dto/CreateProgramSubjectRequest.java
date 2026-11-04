@@ -18,8 +18,8 @@ public record CreateProgramSubjectRequest(
         Integer sortOrder,
         Long electiveGroupId) implements SelfValidatingRequest {
     public CreateProgramSubjectRequest {
-        RequestLimits.requireBetween("credits", credits, 0, 1000);
-        RequestLimits.requireBetween("curricularYear", curricularYear, 1, 20);
-        RequestLimits.requireBetween("sortOrder", sortOrder, 0, 10000);
+        RequestLimits.requireAtMost("credits", credits, 1000);
+        RequestLimits.requireAtMost("curricularYear", curricularYear, 20);
+        RequestLimits.requireAtMost("sortOrder", sortOrder, 10000);
     }
 }
