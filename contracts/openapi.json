@@ -1863,7 +1863,11 @@
             "type" : "string"
           },
           "occupant" : {
-            "$ref" : "#/components/schemas/ClassroomSlotOccupancyResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClassroomSlotOccupancyResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "overlapsInDates" : {
             "type" : [ "boolean", "null" ]
@@ -1950,7 +1954,7 @@
           }
         },
         "required" : [ "dayOfWeek", "endTime", "overlapsInDates", "section", "startTime", "term" ],
-        "type" : "null"
+        "type" : "object"
       },
       "CloseDiscountDefinitionRequest" : {
         "properties" : {
