@@ -15,7 +15,9 @@ import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceed
 import com.red_escuela.backend.academicstructure.exception.SectionModificationAlreadyPendingException;
 import com.red_escuela.backend.academicstructure.exception.SectionModificationNotPendingException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
+import com.red_escuela.backend.academicstructure.exception.SlotOutsideShiftException;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionModificationProposalRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
@@ -64,6 +66,8 @@ class SectionModificationSpecialistsTest {
     private SectionModificationProposalRepository proposalRepository;
     @Mock
     private SectionConflictChecker conflictChecker;
+    @Mock
+    private SectionShiftSlotGuard shiftSlotGuard;
 
     private SubjectSection section;
     private Term term;
@@ -79,7 +83,7 @@ class SectionModificationSpecialistsTest {
     }
 
     private SectionModificationRequester requester() {
-        return new SectionModificationRequester(sectionRepository, slotRepository, classroomRepository, proposalRepository, conflictChecker, CLOCK);
+        return new SectionModificationRequester(sectionRepository, slotRepository, classroomRepository, proposalRepository, conflictChecker, shiftSlotGuard, CLOCK);
     }
 
     private SectionModificationApprover approver() {
@@ -179,6 +183,22 @@ class SectionModificationSpecialistsTest {
                 .isInstanceOf(SectionScheduleConflictException.class);
 
         verify(proposalRepository, never()).save(any());
+    }
+
+    @Test
+    void requestWithASlotOutsideTheSectionShiftIsRejectedAndStoresNothing() {
+        section.setShift(SectionShift.MORNING);
+        when(sectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(section));
+        when(slotRepository.findBySubjectSectionId(SECTION_ID)).thenReturn(List.of());
+        doThrow(new SlotOutsideShiftException(SectionShift.MORNING, LocalTime.of(18, 0), LocalTime.of(22, 0), LocalTime.of(8, 0), LocalTime.of(12, 30)))
+                .when(shiftSlotGuard).ensureInsideShift(SectionShift.MORNING, LocalTime.of(18, 0), LocalTime.of(22, 0));
+        var request = new ModifySectionRequest(List.of(slotRequest(LocalTime.of(18, 0), LocalTime.of(22, 0))));
+
+        assertThatThrownBy(() -> requester().requestModification(SECTION_ID, request))
+                .isInstanceOf(SlotOutsideShiftException.class);
+
+        verify(proposalRepository, never()).save(any());
+        verify(conflictChecker, never()).checkClassroomAvailabilityIgnoringSlots(any(), any(), any(), any(), any(), any());
     }
 
     @Test

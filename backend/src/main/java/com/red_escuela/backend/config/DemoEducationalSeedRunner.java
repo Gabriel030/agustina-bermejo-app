@@ -178,6 +178,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         section.put("termId", termId);
         section.put("schedule", schedule);
         section.put("capacity", 30);
+        section.put("shift", "MORNING");
         section.put("evaluationSchemeId", schemeId);
         long sectionId = api.post(ADMIN, "/subjects/" + subjectId + "/sections", section).get("id").asLong();
         api.post(ADMIN, "/program-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));

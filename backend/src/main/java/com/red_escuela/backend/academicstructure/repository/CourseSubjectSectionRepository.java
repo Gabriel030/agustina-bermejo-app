@@ -14,6 +14,9 @@ import java.util.Optional;
 
 @Repository
 public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubjectSection, Long> {
+
+    boolean existsByCode(String code);
+
     List<CourseSubjectSection> findByCourseSubjectId(Long courseSubjectId);
 
     List<CourseSubjectSection> findByAcademicOfferingCycleId(Long cycleId);

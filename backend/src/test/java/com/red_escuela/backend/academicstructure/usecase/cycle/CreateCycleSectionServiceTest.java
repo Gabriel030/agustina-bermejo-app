@@ -2,7 +2,12 @@ package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.academicstructure.domain.SectionShift;
+import com.red_escuela.backend.academicstructure.exception.SectionShiftRequiredException;
+import com.red_escuela.backend.academicstructure.exception.SlotOutsideShiftException;
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
+import com.red_escuela.backend.academicstructure.service.SectionIdentityAssigner;
+import com.red_escuela.backend.academicstructure.service.SectionShiftSlotGuard;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
@@ -48,9 +53,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -77,6 +85,10 @@ class CreateCycleSectionServiceTest {
     private SectionScheduleSlotRepository slotRepository;
     @Mock
     private SectionConflictChecker conflictChecker;
+    @Mock
+    private SectionIdentityAssigner identityAssigner;
+    @Mock
+    private SectionShiftSlotGuard shiftSlotGuard;
 
     private CreateCycleSectionService service;
     private Term term;
@@ -87,7 +99,7 @@ class CreateCycleSectionServiceTest {
     void setUp() {
         service = new CreateCycleSectionService(cycleRepository, subjectRepository, courseSubjectRepository,
                 subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker,
-                new CycleSectionAbsenceLimitAssigner());
+                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard);
         term = TermFixtures.newTerm();
         term.setId(2L);
         programCycle = new AcademicOfferingCycle();
@@ -134,7 +146,7 @@ class CreateCycleSectionServiceTest {
     void unknownCycleFailsWithCycleNotFound() {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 10, null)))
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("A", 1L, null, 10, null)))
                 .isInstanceOf(CycleNotFoundException.class);
 
         verifyNoInteractions(subjectSectionRepository, courseSectionRepository);
@@ -145,7 +157,7 @@ class CreateCycleSectionServiceTest {
         programCycle.setStatus(AcademicOfferingCycleStatus.PENDING_APPROVAL);
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
 
-        assertThatThrownBy(() -> service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 10, null)))
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("A", 1L, null, 10, null)))
                 .isInstanceOf(CycleNotEditableException.class);
 
         verifyNoInteractions(subjectRepository, subjectSectionRepository);
@@ -156,7 +168,7 @@ class CreateCycleSectionServiceTest {
         courseCycle.setStatus(AcademicOfferingCycleStatus.APPROVED);
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
 
-        assertThatThrownBy(() -> service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", null, 1L, 10, null)))
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("A", null, 1L, 10, null)))
                 .isInstanceOf(CycleNotEditableException.class);
 
         verifyNoInteractions(courseSubjectRepository, courseSectionRepository);
@@ -169,7 +181,7 @@ class CreateCycleSectionServiceTest {
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject));
         persistSubjectSections();
 
-        var id = service.createSection(CYCLE_ID, new CreateCycleSectionRequest("Commission A", 1L, null, 25, null));
+        var id = service.createSection(CYCLE_ID, request("Commission A", 1L, null, 25, null));
 
         assertThat(id).isEqualTo(100L);
         var captor = ArgumentCaptor.forClass(SubjectSection.class);
@@ -191,7 +203,7 @@ class CreateCycleSectionServiceTest {
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
         persistSubjectSections();
 
-        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 25, null, Percentage.ofPoints(new BigDecimal("25"))));
+        service.createSection(CYCLE_ID, request("A", 1L, null, 25, null, Percentage.ofPoints(new BigDecimal("25"))));
 
         var captor = ArgumentCaptor.forClass(SubjectSection.class);
         verify(subjectSectionRepository).save(captor.capture());
@@ -204,7 +216,7 @@ class CreateCycleSectionServiceTest {
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
         persistSubjectSections();
 
-        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 25, null));
+        service.createSection(CYCLE_ID, request("A", 1L, null, 25, null));
 
         var captor = ArgumentCaptor.forClass(SubjectSection.class);
         verify(subjectSectionRepository).save(captor.capture());
@@ -218,7 +230,7 @@ class CreateCycleSectionServiceTest {
         when(classroomRepository.findById(CLASSROOM_ID)).thenReturn(Optional.of(classroom(25)));
         persistSubjectSections();
 
-        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 25,
+        service.createSection(CYCLE_ID, request("A", 1L, null, 25,
                 List.of(slot(DayOfWeek.MONDAY), slot(DayOfWeek.TUESDAY))));
 
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
@@ -241,7 +253,7 @@ class CreateCycleSectionServiceTest {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
         when(subjectRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 10, null)))
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("A", 1L, null, 10, null)))
                 .isInstanceOf(SubjectNotFoundException.class);
 
         verifyNoInteractions(subjectSectionRepository);
@@ -252,7 +264,7 @@ class CreateCycleSectionServiceTest {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.DRAFT)));
 
-        assertThatThrownBy(() -> service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 10, null)))
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("A", 1L, null, 10, null)))
                 .isInstanceOf(SubjectNotOpenableForSectionsException.class);
 
         verifyNoInteractions(subjectSectionRepository);
@@ -266,7 +278,7 @@ class CreateCycleSectionServiceTest {
         persistSubjectSections();
 
         assertThatThrownBy(() -> service.createSection(CYCLE_ID,
-                new CreateCycleSectionRequest("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
+                request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(ClassroomNotFoundException.class);
 
         verify(slotRepository, never()).save(any());
@@ -280,7 +292,7 @@ class CreateCycleSectionServiceTest {
         persistSubjectSections();
 
         assertThatThrownBy(() -> service.createSection(CYCLE_ID,
-                new CreateCycleSectionRequest("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
+                request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(SectionCapacityExceedsClassroomException.class);
 
         verify(slotRepository, never()).save(any());
@@ -296,7 +308,7 @@ class CreateCycleSectionServiceTest {
                 .checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
 
         assertThatThrownBy(() -> service.createSection(CYCLE_ID,
-                new CreateCycleSectionRequest("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
+                request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(IllegalStateException.class);
 
         verify(slotRepository, never()).save(any());
@@ -308,7 +320,7 @@ class CreateCycleSectionServiceTest {
         when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(new CourseSubject()));
         persistCourseSections();
 
-        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("Commission B", null, 3L, 18, null, Percentage.ofPoints(new BigDecimal("30"))));
+        service.createSection(CYCLE_ID, request("Commission B", null, 3L, 18, null, Percentage.ofPoints(new BigDecimal("30"))));
 
         var captor = ArgumentCaptor.forClass(CourseSubjectSection.class);
         verify(courseSectionRepository).save(captor.capture());
@@ -322,7 +334,7 @@ class CreateCycleSectionServiceTest {
         when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(courseSubject));
         persistCourseSections();
 
-        var id = service.createSection(CYCLE_ID, new CreateCycleSectionRequest("Commission B", null, 3L, 18, null));
+        var id = service.createSection(CYCLE_ID, request("Commission B", null, 3L, 18, null));
 
         assertThat(id).isEqualTo(200L);
         var captor = ArgumentCaptor.forClass(CourseSubjectSection.class);
@@ -345,7 +357,7 @@ class CreateCycleSectionServiceTest {
         when(classroomRepository.findById(CLASSROOM_ID)).thenReturn(Optional.of(classroom(18)));
         persistCourseSections();
 
-        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY))));
+        service.createSection(CYCLE_ID, request("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY))));
 
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.FRIDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         var captor = ArgumentCaptor.forClass(SectionScheduleSlot.class);
@@ -363,7 +375,7 @@ class CreateCycleSectionServiceTest {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
         when(courseSubjectRepository.findById(3L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createSection(CYCLE_ID, new CreateCycleSectionRequest("B", null, 3L, 18, null)))
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("B", null, 3L, 18, null)))
                 .isInstanceOf(CourseSubjectNotFoundException.class);
 
         verifyNoInteractions(courseSectionRepository);
@@ -377,7 +389,7 @@ class CreateCycleSectionServiceTest {
         persistCourseSections();
 
         assertThatThrownBy(() -> service.createSection(CYCLE_ID,
-                new CreateCycleSectionRequest("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY)))))
+                request("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY)))))
                 .isInstanceOf(SectionCapacityExceedsClassroomException.class);
 
         verify(slotRepository, never()).save(any());
@@ -391,7 +403,7 @@ class CreateCycleSectionServiceTest {
         persistCourseSections();
 
         assertThatThrownBy(() -> service.createSection(CYCLE_ID,
-                new CreateCycleSectionRequest("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY)))))
+                request("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY)))))
                 .isInstanceOf(ClassroomNotFoundException.class);
     }
 
@@ -402,6 +414,64 @@ class CreateCycleSectionServiceTest {
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
         persistSubjectSections();
 
-        assertThat(service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 10, null))).isEqualTo(100L);
+        assertThat(service.createSection(CYCLE_ID, request("A", 1L, null, 10, null))).isEqualTo(100L);
+    }
+
+    @Test
+    void sectionWithoutShiftIsRejectedBeforeAnythingIsSaved() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID,
+                new CreateCycleSectionRequest("A", 1L, null, 10, null, null, null, null)))
+                .isInstanceOf(SectionShiftRequiredException.class);
+
+        verifyNoInteractions(subjectSectionRepository, courseSectionRepository, identityAssigner);
+    }
+
+    @Test
+    void programSectionIsIdentifiedWithTheRequestedShiftAndDescription() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
+        persistSubjectSections();
+
+        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("A", 1L, null, 10, null, null, SectionShift.EVENING, "Grupo reducido"));
+
+        verify(identityAssigner).identifyNewSubjectSection(any(SubjectSection.class), eq(SectionShift.EVENING), eq("Grupo reducido"));
+    }
+
+    @Test
+    void courseSectionIsIdentifiedWithTheRequestedShift() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
+        when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(new CourseSubject()));
+        persistCourseSections();
+
+        service.createSection(CYCLE_ID, new CreateCycleSectionRequest("B", null, 3L, 10, null, null, SectionShift.AFTERNOON, null));
+
+        verify(identityAssigner).identifyNewCourseSection(any(CourseSubjectSection.class), eq(SectionShift.AFTERNOON), isNull());
+    }
+
+    @Test
+    void slotOutsideTheShiftStopsTheCreationBeforeCheckingTheClassroom() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
+        persistSubjectSections();
+        doAnswer(call -> {
+            ((SubjectSection) call.getArgument(0)).setShift(call.getArgument(1));
+            return null;
+        }).when(identityAssigner).identifyNewSubjectSection(any(SubjectSection.class), any(), any());
+        doThrow(new SlotOutsideShiftException(SectionShift.MORNING, LocalTime.of(8, 0), LocalTime.of(12, 0), LocalTime.of(9, 0), LocalTime.of(12, 30)))
+                .when(shiftSlotGuard).ensureInsideShift(eq(SectionShift.MORNING), any(), any());
+
+        assertThatThrownBy(() -> service.createSection(CYCLE_ID, request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
+                .isInstanceOf(SlotOutsideShiftException.class);
+
+        verify(conflictChecker, never()).checkClassroomAvailability(any(), any(), any(), any(), any());
+        verify(slotRepository, never()).save(any());
+    }
+
+    private static CreateCycleSectionRequest request(String name, Long subjectId, Long courseSubjectId, Integer capacity,
+                                                     List<ScheduleSlotRequest> slots, Percentage... maxAbsence) {
+        return new CreateCycleSectionRequest(name, subjectId, courseSubjectId, capacity, slots,
+                maxAbsence.length == 0 ? null : maxAbsence[0], SectionShift.MORNING, null);
     }
 }

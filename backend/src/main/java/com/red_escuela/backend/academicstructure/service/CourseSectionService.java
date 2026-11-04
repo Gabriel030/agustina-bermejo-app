@@ -39,6 +39,7 @@ public class CourseSectionService {
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
+    private final SectionIdentityAssigner identityAssigner;
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
@@ -47,7 +48,8 @@ public class CourseSectionService {
             CourseSubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
             EntityManager entityManager,
-            SectionEvaluationSetupPort evaluationSetupPort) {
+            SectionEvaluationSetupPort evaluationSetupPort,
+            SectionIdentityAssigner identityAssigner) {
         this.sectionRepository = sectionRepository;
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
@@ -55,6 +57,7 @@ public class CourseSectionService {
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
+        this.identityAssigner = identityAssigner;
     }
 
     @Transactional
@@ -73,6 +76,7 @@ public class CourseSectionService {
         section.setMaxAbsenceRate(request.maxAbsencePercent());
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(LocalDateTime.now());
+        identityAssigner.identifyNewCourseSection(section, request.shift(), request.description());
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
@@ -93,6 +97,12 @@ public class CourseSectionService {
         }
         if (request.capacity() != null) {
             section.setCapacity(request.capacity());
+        }
+        if (request.description() != null) {
+            section.setDescription(request.description());
+        }
+        if (request.shift() != null) {
+            identityAssigner.changeCourseSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));

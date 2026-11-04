@@ -65,7 +65,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
   Scenario: Cupo mayor que la capacidad del aula — 400 con código
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'A', subjectId: '#(subjectId)', capacity: 500, slots: ['#(slot)'] }
+    And request { name: 'A', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 500, slots: ['#(slot)'] }
     When method post
     Then status 400
     And match response.code == 'SECTION_CAPACITY_EXCEEDS_CLASSROOM'
@@ -73,7 +73,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
   Scenario: Un ciclo aprobado no acepta comisiones nuevas ni se reenvía, y su aula figura ocupada
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'A', subjectId: '#(subjectId)', capacity: 20, slots: ['#(slot)'] }
+    And request { name: 'A', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 20, slots: ['#(slot)'] }
     When method post
     Then status 201
     * def sectionId = response
@@ -92,7 +92,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
 
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'B', subjectId: '#(subjectId)', capacity: 20, slots: [] }
+    And request { name: 'B', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 20, slots: [] }
     When method post
     Then status 409
     And match response.code == 'CYCLE_NOT_EDITABLE'
@@ -116,7 +116,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
 
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'C', subjectId: '#(subjectId)', capacity: 20, slots: [] }
+    And request { name: 'C', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 20, slots: [] }
     When method post
     Then status 409
     And match response.code == 'CYCLE_NOT_EDITABLE'
@@ -132,7 +132,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
   Scenario: Un ciclo rechazado muestra el motivo, se corrige y se reenvía
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'A', subjectId: '#(subjectId)', capacity: 20, slots: ['#(slot)'] }
+    And request { name: 'A', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 20, slots: ['#(slot)'] }
     When method post
     Then status 201
     * def sectionId = response
@@ -164,7 +164,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
     * def eveningSlot = { classroomId: '#(classroomId)', dayOfWeek: 'THURSDAY', startTime: '18:00:00', endTime: '20:00:00' }
     Given path '/academic-offering-cycles', cycleId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'Noche', subjectId: '#(subjectId)', capacity: 20, slots: ['#(eveningSlot)'] }
+    And request { name: 'Noche', subjectId: '#(subjectId)', shift: 'MORNING', capacity: 20, slots: ['#(eveningSlot)'] }
     When method post
     Then status 201
     * def eveningSectionId = response

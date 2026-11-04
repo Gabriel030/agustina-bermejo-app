@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
+import com.red_escuela.backend.academicstructure.domain.SectionShift;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
@@ -43,6 +45,8 @@ class CreateCycleSectionConcurrencyIT extends AbstractIntegrationTest {
     @Autowired
     private SectionScheduleSlotRepository slotRepository;
     @Autowired
+    private SubjectSectionRepository subjectSectionRepository;
+    @Autowired
     private EntityManager entityManager;
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -64,7 +68,7 @@ class CreateCycleSectionConcurrencyIT extends AbstractIntegrationTest {
 
     private CreateCycleSectionRequest sectionInSharedClassroom(String name) {
         return new CreateCycleSectionRequest(name, subjectId, null, 20,
-                List.of(new ScheduleSlotRequest(sharedClassroomId, DayOfWeek.MONDAY, START, END)));
+                List.of(new ScheduleSlotRequest(sharedClassroomId, DayOfWeek.MONDAY, START, END)), null, SectionShift.MORNING, null);
     }
 
     private List<Throwable> runSimultaneously(List<Callable<Void>> tasks) throws Exception {
@@ -118,5 +122,33 @@ class CreateCycleSectionConcurrencyIT extends AbstractIntegrationTest {
 
         assertThat(failures).singleElement().isInstanceOf(SectionScheduleConflictException.class);
         assertThat(slotsInSharedClassroom()).hasSize(1);
+    }
+
+    private CreateCycleSectionRequest sectionWithoutSlots(String name) {
+        return new CreateCycleSectionRequest(name, subjectId, null, 20, null, null, SectionShift.MORNING, null);
+    }
+
+    @RepeatedTest(REPETITIONS)
+    void creatingTwoSectionsOfTheSameSubjectAndTermFromTwoThreadsNeverRepeatsTheCode() throws Exception {
+        List<Throwable> failures = runSimultaneously(List.of(
+                () -> {
+                    createSection.createSection(cycleId, sectionWithoutSlots("Comision A"));
+                    return null;
+                },
+                () -> {
+                    createSection.createSection(cycleId, sectionWithoutSlots("Comision B"));
+                    return null;
+                }));
+
+        var codes = new TransactionTemplate(transactionManager).execute(status ->
+                subjectSectionRepository.findAll().stream()
+                        .filter(section -> section.getSubject().getId().equals(subjectId))
+                        .map(section -> section.getCode())
+                        .sorted()
+                        .toList());
+        assertThat(failures).isEmpty();
+        assertThat(codes).hasSize(2).doesNotHaveDuplicates();
+        assertThat(codes.get(0)).endsWith("-01");
+        assertThat(codes.get(1)).endsWith("-02");
     }
 }
