@@ -5,5 +5,11 @@ import jakarta.validation.constraints.Email;
 
 public record UpdateOwnProfileRequest(
         @Email String email, String telefono, String sexo, String dni, DocumentType documentType, String street, String number, String floor,
-        String city, String state, String postalCode, String country) {
+        String city, String state, String postalCode, String country, String currentPassword) {
+
+    public UpdateOwnProfileRequest(String email, String telefono, String sexo, String dni, DocumentType documentType,
+                                   String street, String number, String floor, String city, String state,
+                                   String postalCode, String country) {
+        this(email, telefono, sexo, dni, documentType, street, number, floor, city, state, postalCode, country, null);
+    }
 }

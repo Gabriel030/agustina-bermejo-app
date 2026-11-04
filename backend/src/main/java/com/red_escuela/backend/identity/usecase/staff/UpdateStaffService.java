@@ -6,6 +6,7 @@ import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.identity.service.EmailChangeRequester;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
@@ -14,9 +15,13 @@ public class UpdateStaffService implements UpdateStaffUseCase {
     private final PersonRepository personRepository;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
 
-    public UpdateStaffService(PersonRepository personRepository, StaffRoleAssignmentPolicy staffRoleAssignmentPolicy) {
+    private final EmailChangeRequester emailChangeRequester;
+
+    public UpdateStaffService(PersonRepository personRepository, StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
+                              EmailChangeRequester emailChangeRequester) {
         this.personRepository = personRepository;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
+        this.emailChangeRequester = emailChangeRequester;
     }
 
     @Override
@@ -29,7 +34,7 @@ public class UpdateStaffService implements UpdateStaffUseCase {
 
         UpdateStaffRequest request = command.request();
         if (request.email() != null) {
-            person.setEmail(request.email());
+            emailChangeRequester.requestStaffChange(person, request.email());
         }
         if (request.telefono() != null) {
             person.setPhoneNumber(request.telefono());

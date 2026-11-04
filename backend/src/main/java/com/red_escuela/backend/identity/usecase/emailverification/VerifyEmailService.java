@@ -6,6 +6,8 @@ import com.red_escuela.backend.identity.repository.EmailVerificationTokenReposit
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.service.PendingEmailChangeConfirmer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +20,12 @@ public class VerifyEmailService implements VerifyEmailUseCase {
 
     private final EmailVerificationTokenRepository tokenRepository;
 
-    public VerifyEmailService(EmailVerificationTokenRepository tokenRepository) {
+    private final PendingEmailChangeConfirmer pendingEmailChangeConfirmer;
+
+    public VerifyEmailService(EmailVerificationTokenRepository tokenRepository,
+                              PendingEmailChangeConfirmer pendingEmailChangeConfirmer) {
         this.tokenRepository = tokenRepository;
+        this.pendingEmailChangeConfirmer = pendingEmailChangeConfirmer;
     }
 
     @Override
@@ -37,7 +43,9 @@ public class VerifyEmailService implements VerifyEmailUseCase {
             throw new InvalidEmailVerificationTokenException();
         }
 
-        token.getPerson().setEmailVerified(true);
+        Person person = token.getPerson();
+        pendingEmailChangeConfirmer.confirmIfPending(token);
+        person.setEmailVerified(true);
         tokenRepository.delete(token);
         log.info("Email verificado para person {}", token.getPerson().getId());
     }

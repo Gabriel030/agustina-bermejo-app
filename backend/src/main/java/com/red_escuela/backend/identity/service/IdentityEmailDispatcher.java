@@ -38,4 +38,15 @@ public class IdentityEmailDispatcher {
                         person -> emailService.sendEmailVerification(person, event.verificationLink()),
                         () -> log.warn("Verification email skipped, person not found: personId={}", event.personId())));
     }
+
+    @ApplicationModuleListener
+    public void onEmailChangeRequested(EmailChangeRequestedEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onEmailChangeRequested", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(person -> {
+                    emailService.sendEmailChangeVerification(person.getName(), event.newEmail(), event.verificationLink());
+                    if (event.previousEmail() != null) {
+                        emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail());
+                    }
+                }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
+    }
 }
