@@ -18,6 +18,7 @@ import {
   buildTermPayload,
   emptyTermForm,
   termErrorMessage,
+  termFieldErrors,
   termToForm,
   termTypeLabel,
   validateTermForm,
@@ -25,13 +26,15 @@ import {
 
 const BACK_PATH = '/preceptor/periodos';
 
-function Field({ id, label, error, children }) {
+function Field({ id, label, error, hint, required, children }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
         {label}
+        {required && <span aria-hidden="true" className="ml-0.5 text-danger">*</span>}
       </Label>
       {children}
+      {hint && !error && <p className="text-xs text-ink-faint">{hint}</p>}
       {error && (
         <p role="alert" className="text-xs text-danger">
           {error}
@@ -91,8 +94,19 @@ function TermForm({ initial, term }) {
         toast.success('Período creado. Queda activo.');
         navigate(BACK_PATH);
       },
-      onError: (error) => setSubmitError(termErrorMessage(error, 'No se pudo crear el período. Probá de nuevo.')),
+      onError: (error) => handleError(error, 'No se pudo crear el período. Probá de nuevo.'),
     });
+  }
+
+  function handleError(error, fallback) {
+    const fieldErrors = termFieldErrors(error);
+    if (fieldErrors) {
+      setErrors(fieldErrors);
+      setReviewing(false);
+      setSubmitError(null);
+      return;
+    }
+    setSubmitError(termErrorMessage(error, fallback));
   }
 
   function handleConfirm() {
@@ -103,7 +117,7 @@ function TermForm({ initial, term }) {
           toast.success('Período actualizado.');
           navigate(BACK_PATH);
         },
-        onError: (error) => setSubmitError(termErrorMessage(error, 'No se pudo actualizar el período. Probá de nuevo.')),
+        onError: (error) => handleError(error, 'No se pudo actualizar el período. Probá de nuevo.'),
       },
     );
   }
@@ -181,10 +195,10 @@ function TermForm({ initial, term }) {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="term-enrollment-start" label="Inicio de inscripción" error={errors.enrollmentStart}>
+          <Field id="term-enrollment-start" label="Inicio de inscripción" required hint="Obligatorio: define desde cuándo se puede inscribir." error={errors.enrollmentStart}>
             <Input id="term-enrollment-start" type="date" value={form.enrollmentStart} onChange={(event) => setField('enrollmentStart', event.target.value)} />
           </Field>
-          <Field id="term-enrollment-end" label="Fin de inscripción" error={errors.enrollmentEnd}>
+          <Field id="term-enrollment-end" label="Fin de inscripción" required hint="Obligatorio: define hasta cuándo se puede inscribir." error={errors.enrollmentEnd}>
             <Input id="term-enrollment-end" type="date" value={form.enrollmentEnd} onChange={(event) => setField('enrollmentEnd', event.target.value)} />
           </Field>
         </div>

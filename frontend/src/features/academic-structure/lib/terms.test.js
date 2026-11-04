@@ -5,7 +5,9 @@ import {
   daysBetween,
   formatDayDifference,
   formatTermDate,
+  ENROLLMENT_WINDOW_REQUIRED_MESSAGE,
   termErrorMessage,
+  termFieldErrors,
   validateTermForm,
 } from './terms';
 
@@ -73,6 +75,19 @@ describe('terms diff', () => {
     expect(formatDayDifference(daysBetween('2027-03-02', '2027-03-01'))).toBe('− 1 día');
     expect(formatDayDifference(0)).toBe('Sin cambios');
     expect(formatTermDate('2027-03-01T00:00:00')).toBe('01/03/2027');
+  });
+});
+
+describe('terms field errors', () => {
+  it('maps the missing enrollment window code to both enrollment fields', () => {
+    const errors = termFieldErrors({ status: 400, code: 'TERM_ENROLLMENT_WINDOW_REQUIRED' });
+    expect(Object.keys(errors)).toEqual(['enrollmentStart', 'enrollmentEnd']);
+    expect(errors.enrollmentStart).toBe(ENROLLMENT_WINDOW_REQUIRED_MESSAGE);
+  });
+
+  it('ignores other codes', () => {
+    expect(termFieldErrors({ status: 400, code: 'VALIDATION_FAILED' })).toBeNull();
+    expect(termFieldErrors(undefined)).toBeNull();
   });
 });
 

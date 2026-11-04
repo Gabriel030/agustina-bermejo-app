@@ -162,12 +162,57 @@ describe('PreceptorPeriodoForm', () => {
     await user.type(screen.getByLabelText('Descripción'), 'Verano');
     await user.type(screen.getByLabelText('Inicio de cursada'), '2027-01-05');
     await user.type(screen.getByLabelText('Fin de cursada'), '2027-02-20');
-    await user.type(screen.getByLabelText('Inicio de inscripción'), '2026-12-01');
-    await user.type(screen.getByLabelText('Fin de inscripción'), '2026-12-20');
+    await user.type(screen.getByLabelText(/Inicio de inscripción/), '2026-12-01');
+    await user.type(screen.getByLabelText(/Fin de inscripción/), '2026-12-20');
     await user.click(screen.getByRole('button', { name: 'Crear período' }));
 
     expect(await screen.findByText(/Ya hay un período activo de este año y tipo/)).toBeInTheDocument();
     expect(body).toMatchObject({ type: 'INTENSIVE', description: 'Verano', startDate: '2027-01-05T00:00:00' });
+  });
+
+  it('marks the enrollment window as required and blocks submit without it', async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    server.use(
+      http.get(`${API}/terms`, () => HttpResponse.json([])),
+      http.post(`${API}/terms`, () => {
+        calls += 1;
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    renderApp('/preceptor/periodos/nuevo');
+
+    expect(await screen.findByText(/Obligatorio: define desde cuándo/)).toBeInTheDocument();
+    expect(screen.getByText(/Obligatorio: define hasta cuándo/)).toBeInTheDocument();
+    expect(screen.getAllByText('*')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'Crear período' }));
+    expect(await screen.findByText('El inicio de la inscripción es obligatorio.')).toBeInTheDocument();
+    expect(screen.getByText('El fin de la inscripción es obligatorio.')).toBeInTheDocument();
+    expect(calls).toBe(0);
+  });
+
+  it('shows the server TERM_ENROLLMENT_WINDOW_REQUIRED error on the enrollment fields', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/terms`, () => HttpResponse.json([])),
+      http.post(`${API}/terms`, () =>
+        HttpResponse.json(errorBody('TERM_ENROLLMENT_WINDOW_REQUIRED'), { status: 400 }),
+      ),
+    );
+    renderApp('/preceptor/periodos/nuevo');
+
+    await user.click(await screen.findByRole('combobox'));
+    await user.click(await screen.findByRole('option', { name: 'Intensivo de verano' }));
+    await user.type(screen.getByLabelText('Descripción'), 'Verano');
+    await user.type(screen.getByLabelText('Inicio de cursada'), '2027-01-05');
+    await user.type(screen.getByLabelText('Fin de cursada'), '2027-02-20');
+    await user.type(screen.getByLabelText(/Inicio de inscripción/), '2026-12-01');
+    await user.type(screen.getByLabelText(/Fin de inscripción/), '2026-12-20');
+    await user.click(screen.getByRole('button', { name: 'Crear período' }));
+
+    expect(await screen.findAllByText('La ventana de inscripción es obligatoria: indicá el inicio y el fin.')).toHaveLength(2);
+    expect(screen.queryByText('Los datos del período no son válidos. Revisá las fechas.')).not.toBeInTheDocument();
   });
 
   it('shows the Hoy, Nuevo and Diferencia review before saving an edit', async () => {

@@ -160,6 +160,15 @@ export function buildTermDiff(today, next) {
   });
 }
 
+export const ENROLLMENT_WINDOW_REQUIRED_MESSAGE = 'La ventana de inscripción es obligatoria: indicá el inicio y el fin.';
+
+export function termFieldErrors(error) {
+  if (error?.code === 'TERM_ENROLLMENT_WINDOW_REQUIRED') {
+    return { enrollmentStart: ENROLLMENT_WINDOW_REQUIRED_MESSAGE, enrollmentEnd: ENROLLMENT_WINDOW_REQUIRED_MESSAGE };
+  }
+  return null;
+}
+
 export function termErrorMessage(error, fallback) {
   if (error?.code === 'ACTIVE_TERM_ALREADY_EXISTS') {
     return 'Ya hay un período activo de este año y tipo. Desactivá el anterior o elegí otro tipo o año.';
