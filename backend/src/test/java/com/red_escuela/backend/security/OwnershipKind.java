@@ -8,7 +8,8 @@ enum OwnershipKind {
     COURSE_SECTION_ENROLLMENT("course-section-enrollment", MatrixRole.ALUMNO, 404),
     SECTION_INSTRUCTOR("section-instructor", MatrixRole.DOCENTE, 403),
     ATTENDANCE_SECTION_INSTRUCTOR("attendance-section-instructor", MatrixRole.DOCENTE, 403),
-    ANNUAL_UPFRONT_REQUEST("annual-upfront-request", MatrixRole.ALUMNO, 404);
+    ANNUAL_UPFRONT_REQUEST("annual-upfront-request", MatrixRole.ALUMNO, 404),
+    STAFF_RECORD("staff-record", MatrixRole.DOCENTE, 404);
 
     private final String label;
     private final MatrixRole ownerRole;

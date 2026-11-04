@@ -72,4 +72,18 @@ public interface SectionScheduleSlotRepository extends JpaRepository<SectionSche
     List<SectionScheduleSlot> findBySubjectSectionId(Long subjectSectionId);
 
     List<SectionScheduleSlot> findByCourseSectionId(Long courseSectionId);
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            join fetch s.classroom
+            where s.subjectSection.id in :sectionIds
+            """)
+    List<SectionScheduleSlot> findWithClassroomBySubjectSectionIdIn(@Param("sectionIds") java.util.Collection<Long> sectionIds);
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            join fetch s.classroom
+            where s.courseSection.id in :sectionIds
+            """)
+    List<SectionScheduleSlot> findWithClassroomByCourseSectionIdIn(@Param("sectionIds") java.util.Collection<Long> sectionIds);
 }

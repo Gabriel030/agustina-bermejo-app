@@ -58,6 +58,7 @@ final class OwnershipFixtures {
     private Long sectionId;
     private Long attendanceId;
     private Long annualUpfrontRequestId;
+    private Long instructorPersonId;
 
     OwnershipFixtures(TransactionTemplate transactions, EntityManager entityManager, RoleRepository roleRepository,
                       JwtService jwtService) {
@@ -75,6 +76,7 @@ final class OwnershipFixtures {
             case SECTION_INSTRUCTOR -> sectionId;
             case ATTENDANCE_SECTION_INSTRUCTOR -> attendanceId;
             case ANNUAL_UPFRONT_REQUEST -> annualUpfrontRequestId;
+            case STAFF_RECORD -> instructorPersonId;
         };
     }
 
@@ -175,6 +177,7 @@ final class OwnershipFixtures {
         programEnrollmentId = programEnrollment.getId();
         sectionEnrollmentId = enrollment.getId();
         sectionId = section.getId();
+        instructorPersonId = instructorPerson.getId();
     }
 
     private Long persistCourseSectionEnrollment(Student student, Term term) {
