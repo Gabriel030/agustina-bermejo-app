@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 
 public record StaffResponse(
         Long id, String nombre, String apellido, String dni,
-        String username, String email, String telefono, String role) {
+        String username, String email, String telefono, String role, String status) {
     public static StaffResponse from(Person person, String role) {
         return new StaffResponse(
                 person.getId(),
@@ -14,6 +14,7 @@ public record StaffResponse(
                 person.getUsername(),
                 person.emailValue(),
                 person.getPhoneNumber(),
-                role);
+                role,
+                person.getStatus() == null ? null : person.getStatus().name());
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -172,5 +173,29 @@ class StaffControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("editable2@example.com"))
                 .andExpect(jsonPath("$.dni").value("50999000"));
+    }
+
+    @Test
+    void staffRecordExposesEmailVerificationAndProviderButNoSecrets() throws Exception {
+        String token = tokenWithRole("director.record", "DIRECTOR");
+        Address address = new Address();
+        entityManager.persist(address);
+        Person teacher = new Person();
+        teacher.setUsername("verified.teacher");
+        teacher.setEmail("verified.teacher@example.com");
+        teacher.setAddress(address);
+        teacher.setStatus(StatusType.ACTIVE);
+        teacher.setEmailVerified(true);
+        teacher.getRoles().add(roleRepository.findByName("DOCENTE").orElseThrow());
+        entityManager.persist(teacher);
+        entityManager.flush();
+
+        mockMvc.perform(get("/staff/{id}", teacher.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailVerified").value(true))
+                .andExpect(jsonPath("$.authProvider").value("LOCAL"))
+                .andExpect(jsonPath("$.password").doesNotExist());
+        mockMvc.perform(get("/staff").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.id==" + teacher.getId() + ")].status").value("ACTIVE"));
     }
 }

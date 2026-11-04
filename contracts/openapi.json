@@ -9052,9 +9052,97 @@
         "required" : [ "classroomId", "classroomName", "dayOfWeek", "endTime", "startTime" ],
         "type" : "object"
       },
+      "StaffAssignmentResponse" : {
+        "properties" : {
+          "hoursPerWeek" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "role" : {
+            "enum" : [ "LEAD", "ASSISTANT", "PRACTICAL", "LAB", "GUEST" ],
+            "type" : "string"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          },
+          "sectionStatus" : {
+            "enum" : [ "ACTIVE", "INACTIVE", "DELETED" ],
+            "type" : "string"
+          },
+          "slots" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StaffAssignmentSlotResponse"
+            },
+            "type" : "array"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "termDescription" : {
+            "type" : "string"
+          },
+          "termEndDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "termStartDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "hoursPerWeek", "kind", "role", "sectionId", "sectionName", "sectionStatus", "slots", "subjectName", "termDescription", "termEndDate", "termStartDate" ],
+        "type" : "object"
+      },
+      "StaffAssignmentSlotResponse" : {
+        "properties" : {
+          "classroomName" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "startTime" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "classroomName", "dayOfWeek", "endTime", "startTime" ],
+        "type" : "object"
+      },
+      "StaffAssignmentsResponse" : {
+        "properties" : {
+          "assignments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StaffAssignmentResponse"
+            },
+            "type" : "array"
+          },
+          "totalWeeklyHours" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "assignments", "totalWeeklyHours" ],
+        "type" : "object"
+      },
       "StaffRecordResponse" : {
         "properties" : {
           "apellido" : {
+            "type" : "string"
+          },
+          "authProvider" : {
+            "enum" : [ "LOCAL", "GOOGLE" ],
             "type" : "string"
           },
           "dni" : {
@@ -9066,6 +9154,43 @@
           },
           "domicilio" : {
             "$ref" : "#/components/schemas/AddressResponse"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "telefono" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "id", "nombre", "role", "status", "telefono", "username" ],
+        "type" : "object"
+      },
+      "StaffResponse" : {
+        "properties" : {
+          "apellido" : {
+            "type" : "string"
+          },
+          "dni" : {
+            "type" : "string"
           },
           "email" : {
             "type" : "string"
@@ -9090,38 +9215,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "dni", "documentType", "domicilio", "email", "id", "nombre", "role", "status", "telefono", "username" ],
-        "type" : "object"
-      },
-      "StaffResponse" : {
-        "properties" : {
-          "apellido" : {
-            "type" : "string"
-          },
-          "dni" : {
-            "type" : "string"
-          },
-          "email" : {
-            "type" : "string"
-          },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "nombre" : {
-            "type" : "string"
-          },
-          "role" : {
-            "type" : "string"
-          },
-          "telefono" : {
-            "type" : "string"
-          },
-          "username" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "apellido", "dni", "email", "id", "nombre", "role", "telefono", "username" ],
+        "required" : [ "apellido", "dni", "email", "id", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StatusChangeResponse" : {
@@ -53712,6 +53806,131 @@
           }
         },
         "tags" : [ "staff-controller" ]
+      }
+    },
+    "/staff/{id}/assignments" : {
+      "get" : {
+        "operationId" : "StaffAssignment_list",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "includeClosed",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StaffAssignmentsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "staff-assignment-controller" ]
       }
     },
     "/staff/{id}/reactivate" : {

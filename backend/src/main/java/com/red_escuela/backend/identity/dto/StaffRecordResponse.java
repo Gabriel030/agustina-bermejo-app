@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.dto;
 
+import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.DocumentType;
 
@@ -14,7 +15,9 @@ public record StaffRecordResponse(
         String telefono,
         String role,
         String status,
-        AddressResponse domicilio
+        AddressResponse domicilio,
+        Boolean emailVerified,
+        AuthProvider authProvider
 ) {
     public static StaffRecordResponse from(Person person, String role) {
         return new StaffRecordResponse(
@@ -28,7 +31,9 @@ public record StaffRecordResponse(
                 person.getPhoneNumber(),
                 role,
                 person.getStatus() == null ? null : person.getStatus().name(),
-                person.getAddress() == null ? null : AddressResponse.from(person.getAddress())
+                person.getAddress() == null ? null : AddressResponse.from(person.getAddress()),
+                person.getEmailVerified(),
+                person.getAuthProvider()
         );
     }
 }
