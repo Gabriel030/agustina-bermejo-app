@@ -84,7 +84,7 @@ public class SubjectSectionEnrollmentService {
 
     @Transactional
     public SubjectSectionEnrollment enroll(Long programEnrollmentId, CreateSectionEnrollmentRequest request) {
-        ProgramEnrollment programEnrollment = lockProgramEnrollmentOrThrow(programEnrollmentId);
+        ProgramEnrollment programEnrollment = findProgramEnrollmentOrThrow(programEnrollmentId);
         validateActiveProgramEnrollment(programEnrollment);
         Student student = programEnrollment.getStudent();
         studentEnrollmentEligibility.requireConfirmedAndActive(student);
@@ -92,6 +92,9 @@ public class SubjectSectionEnrollmentService {
         ProgramSectionView section = sectionFinder.findProgramSection(request.sectionId());
         validateEnrollmentWindow(section.termId());
         enrollmentFeeRequirementService.requireForTerm(programEnrollment, academicReferenceFinder.findTerm(section.termId()));
+
+        programEnrollment = lockProgramEnrollmentOrThrow(programEnrollmentId);
+        validateActiveProgramEnrollment(programEnrollment);
 
         Long subjectId = section.subjectId();
         List<SubjectSectionEnrollment> activasMismaMateria = subjectSectionEnrollmentRepository
@@ -268,6 +271,11 @@ public class SubjectSectionEnrollmentService {
     private void lockSectionsInAscendingOrder(Long firstSectionId, Long secondSectionId) {
         sectionFinder.lockProgramSection(Math.min(firstSectionId, secondSectionId));
         sectionFinder.lockProgramSection(Math.max(firstSectionId, secondSectionId));
+    }
+
+    private ProgramEnrollment findProgramEnrollmentOrThrow(Long id) {
+        return programEnrollmentRepository.findById(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
     }
 
     private ProgramEnrollment lockProgramEnrollmentOrThrow(Long id) {
