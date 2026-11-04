@@ -22,7 +22,8 @@ public class ContactChangeRecorder {
 
     public void recordChange(Long personId, Long actorPersonId, ContactChangeType changeType, String oldValue,
                              String newValue) {
-
+        contactChangeLogRepository.save(new ContactChangeLog(personId, actorPersonId, changeType, oldValue, newValue,
+                ApplicationTime.now()));
     }
 
     public boolean hasRecentEmailChange(Long personId) {

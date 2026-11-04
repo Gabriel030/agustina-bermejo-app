@@ -31,6 +31,7 @@ public class PendingEmailChangeConfirmer {
                     throw new EmailAlreadyExistsException(token.getNewEmail());
                 });
         String previousEmail = person.emailValue();
+        person.setEmail(newEmail);
         contactChangeRecorder.recordChange(person.getId(), person.getId(), ContactChangeType.EMAIL_CHANGE_CONFIRMED,
                 previousEmail, newEmail.value());
     }

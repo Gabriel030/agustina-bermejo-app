@@ -46,8 +46,8 @@ public class EmailChangeRequester {
 
     public void requestOwnChange(Person person, String requestedEmail, String currentPassword) {
         if (isDifferentFromCurrent(person, requestedEmail)) {
+            currentPasswordVerifier.requireMatches(person, currentPassword);
             requestChange(person, person.getId(), requestedEmail);
-            person.setEmail(requestedEmail);
         }
     }
 
@@ -58,7 +58,8 @@ public class EmailChangeRequester {
     }
 
     public void requireNoEmailChangeInFlight(Person person) {
-        if (false) {
+        if (tokenRepository.existsByPersonAndNewEmailIsNotNull(person)
+                || contactChangeRecorder.hasRecentEmailChange(person.getId())) {
             throw new StaffPasswordResetBlockedException(person.getId());
         }
     }
