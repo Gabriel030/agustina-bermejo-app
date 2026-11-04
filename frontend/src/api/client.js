@@ -77,9 +77,15 @@ async function rawFetch(path, options) {
 
 const circuits = new Map();
 let retrySleep;
+let circuitOptions = {};
 
 export function setRetrySleep(sleep) {
   retrySleep = sleep;
+}
+
+export function setCircuitOptions(options) {
+  circuitOptions = options;
+  circuits.clear();
 }
 
 export function resetCircuits() {
@@ -88,7 +94,7 @@ export function resetCircuits() {
 
 function circuitForHost() {
   const host = new URL(API_BASE_URL).host;
-  if (!circuits.has(host)) circuits.set(host, createCircuitBreaker());
+  if (!circuits.has(host)) circuits.set(host, createCircuitBreaker(circuitOptions));
   return circuits.get(host);
 }
 

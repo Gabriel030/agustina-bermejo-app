@@ -7,8 +7,8 @@ import {
   CircuitOpenError,
   RateLimitedError,
   apiFetch,
-  resetCircuits,
   setAccessToken,
+  setCircuitOptions,
   setRetrySleep,
 } from '@/api/client';
 import { createQueryClient } from '@/api/queryClient';
@@ -21,7 +21,7 @@ describe('apiFetch retry policy', () => {
   beforeEach(() => {
     setAccessToken(null);
     localStorage.clear();
-    resetCircuits();
+    setCircuitOptions({});
     waits = [];
     setRetrySleep(async (ms) => {
       waits.push(ms);
@@ -185,7 +185,7 @@ describe('apiFetch retry policy', () => {
 describe('React Query does not multiply the client retries', () => {
   beforeEach(() => {
     setAccessToken(null);
-    resetCircuits();
+    setCircuitOptions({});
     setRetrySleep(async () => {});
   });
 
