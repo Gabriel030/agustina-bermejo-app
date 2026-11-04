@@ -5,6 +5,8 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +37,7 @@ class ClassroomSlotOccupancyAssemblerTest {
         CourseSubjectSection section = new CourseSubjectSection();
         section.setId(9L);
         section.setName("Comision A");
+        section.setCode("EXC-A");
         section.setTerm(term);
         section.setCourseSubject(courseSubject);
         SectionScheduleSlot slot = new SectionScheduleSlot();
@@ -54,7 +57,7 @@ class ClassroomSlotOccupancyAssemblerTest {
         assertThat(response.section().kind()).isEqualTo(ClassroomSlotOccupancyResponse.SectionKind.COURSE);
         assertThat(response.section().name()).isEqualTo("Excel");
         assertThat(response.section().sectionName()).isEqualTo("Comision A");
-        assertThat(response.section().code()).isNull();
+        assertThat(response.section().code()).isEqualTo("EXC-A");
     }
 
     @Test
@@ -71,5 +74,28 @@ class ClassroomSlotOccupancyAssemblerTest {
         Term reference = term(2L, LocalDateTime.of(2026, 7, 1, 0, 0), LocalDateTime.of(2026, 12, 15, 0, 0));
 
         assertThat(assembler.assemble(courseSlot(earlier), reference).overlapsInDates()).isTrue();
+    }
+
+    @Test
+    void programSlotIsReportedWithSectionCode() {
+        Term term = term(1L, LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 12, 15, 0, 0));
+        Subject subject = new Subject();
+        subject.setName("Algebra");
+        SubjectSection section = new SubjectSection();
+        section.setId(4L);
+        section.setName("Comision B");
+        section.setCode("ALG-B");
+        section.setTerm(term);
+        section.setSubject(subject);
+        SectionScheduleSlot slot = new SectionScheduleSlot();
+        slot.setSubjectSection(section);
+        slot.setDayOfWeek(DayOfWeek.TUESDAY);
+        slot.setStartTime(LocalTime.of(8, 0));
+        slot.setEndTime(LocalTime.of(10, 0));
+
+        var response = assembler.assemble(slot, term);
+
+        assertThat(response.section().kind()).isEqualTo(ClassroomSlotOccupancyResponse.SectionKind.PROGRAM);
+        assertThat(response.section().code()).isEqualTo("ALG-B");
     }
 }

@@ -18,8 +18,8 @@ public class ClassroomSlotOccupancyAssembler {
         CourseSubjectSection courseSection = slot.getCourseSection();
         Term slotTerm = subjectSection != null ? subjectSection.getTerm() : courseSection.getTerm();
         OccupyingSection section = subjectSection != null
-                ? new OccupyingSection(subjectSection.getId(), null, subjectSection.getSubject().getName(), subjectSection.getName(), SectionKind.PROGRAM)
-                : new OccupyingSection(courseSection.getId(), null, courseSection.getCourseSubject().getCourse().getName(), courseSection.getName(), SectionKind.COURSE);
+                ? new OccupyingSection(subjectSection.getId(), subjectSection.getCode(), subjectSection.getSubject().getName(), subjectSection.getName(), SectionKind.PROGRAM)
+                : new OccupyingSection(courseSection.getId(), courseSection.getCode(), courseSection.getCourseSubject().getCourse().getName(), courseSection.getName(), SectionKind.COURSE);
         OccupyingTerm term = new OccupyingTerm(slotTerm.getId(), slotTerm.getDescription(), slotTerm.getStartDate(), slotTerm.getEndDate());
         return new ClassroomSlotOccupancyResponse(
                 slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), section, term, overlapsInDates(slotTerm, referenceTerm));
