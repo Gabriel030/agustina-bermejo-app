@@ -29,6 +29,7 @@ import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -60,6 +61,8 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
     private static final DeliveryContent IN_APP = DeliveryContent.forInApp("Vence mañana tu cuota de marzo");
     private static final DeliveryContent EMAIL = DeliveryContent.forEmail("Tu cuota vence mañana", "Texto del aviso", "<p>Texto del aviso</p>");
 
+    @Autowired
+    private CircuitBreakerFactory circuitBreakerFactory;
     @Autowired
     private NotificationDeliveryService deliveryService;
     @Autowired
@@ -327,7 +330,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             sends.incrementAndGet();
             throw new TransactionalEmailDeliveryException("proveedor caido", null);
         };
-        EmailDeliveryChannel failingChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, failing);
+        EmailDeliveryChannel failingChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, failing, circuitBreakerFactory);
 
         assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> failingChannel.dispatchDelivery(id))).doesNotThrowAnyException();
         NotificationDelivery afterFirst = deliveryRepository.findById(id).orElseThrow();
@@ -350,6 +353,70 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
     @Test
     @Tag("c09")
     @Tag("D-184")
+    void anOpenMailCircuitLeavesTheDeliveryQueuedWithoutConsumingAttemptsAndSendsOnceItCloses() {
+        Person student = persistPerson(true);
+        String key = uniqueKey();
+        deliveryService.enqueue(request(student, key, false));
+        Long id = deliveryOf(key, DeliveryChannel.EMAIL).getId();
+        java.util.concurrent.atomic.AtomicReference<java.time.Instant> now = new java.util.concurrent.atomic.AtomicReference<>(java.time.Instant.parse("2026-11-04T12:00:00Z"));
+        java.time.Clock movable = new java.time.Clock() {
+            @Override
+            public java.time.ZoneId getZone() {
+                return java.time.ZoneOffset.UTC;
+            }
+
+            @Override
+            public java.time.Clock withZone(java.time.ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public java.time.Instant instant() {
+                return now.get();
+            }
+        };
+        org.springframework.mock.env.MockEnvironment environment = new org.springframework.mock.env.MockEnvironment()
+                .withProperty("resilience.default.enabled", "true")
+                .withProperty("resilience.default.window", "1")
+                .withProperty("resilience.default.failure-threshold", "1")
+                .withProperty("resilience.default.wait-open", "30s");
+        CircuitBreakerFactory enabledFactory = new CircuitBreakerFactory(environment, movable, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        AtomicInteger sends = new AtomicInteger();
+        java.util.concurrent.atomic.AtomicBoolean providerDown = new java.util.concurrent.atomic.AtomicBoolean(true);
+        TransactionalEmailGateway gateway = (TransactionalEmail email) -> {
+            sends.incrementAndGet();
+            if (providerDown.get()) {
+                throw new TransactionalEmailDeliveryException("proveedor caido", null);
+            }
+            return new com.red_escuela.backend.shared.mail.EmailDeliveryReceipt("provider-1", false);
+        };
+        EmailDeliveryChannel channel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gateway, enabledFactory);
+
+        transactionTemplate.executeWithoutResult(status -> channel.dispatchDelivery(id));
+        assertThat(deliveryRepository.findById(id).orElseThrow().getAttempts()).isEqualTo(1);
+        assertThat(sends.get()).isEqualTo(1);
+
+        transactionTemplate.executeWithoutResult(status -> channel.dispatchDelivery(id));
+        transactionTemplate.executeWithoutResult(status -> channel.dispatchDelivery(id));
+        transactionTemplate.executeWithoutResult(status -> channel.dispatchDelivery(id));
+
+        NotificationDelivery deferred = deliveryRepository.findById(id).orElseThrow();
+        assertThat(deferred.getStatus()).isEqualTo(DeliveryStatus.QUEUED);
+        assertThat(deferred.getAttempts()).isEqualTo(1);
+        assertThat(sends.get()).isEqualTo(1);
+
+        providerDown.set(false);
+        now.set(now.get().plusSeconds(31));
+        transactionTemplate.executeWithoutResult(status -> channel.dispatchDelivery(id));
+
+        NotificationDelivery sent = deliveryRepository.findById(id).orElseThrow();
+        assertThat(sent.getStatus()).isEqualTo(DeliveryStatus.SENT);
+        assertThat(sends.get()).isEqualTo(2);
+    }
+
+    @Test
+    @Tag("c09")
+    @Tag("D-184")
     void aDeliveryThatFailedOnceIsSentByTheNextAttempt() {
         Person student = persistPerson(true);
         String key = uniqueKey();
@@ -362,7 +429,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel flakyChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, flaky);
+        EmailDeliveryChannel flakyChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, flaky, circuitBreakerFactory);
 
         transactionTemplate.executeWithoutResult(status -> flakyChannel.dispatchDelivery(id));
         transactionTemplate.executeWithoutResult(status -> flakyChannel.dispatchDelivery(id));
@@ -461,7 +528,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         TransactionalEmailGateway broken = (TransactionalEmail email) -> {
             throw new IllegalStateException("503 del proveedor");
         };
-        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, broken);
+        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, broken, circuitBreakerFactory);
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> brokenChannel.dispatchDelivery(id))).doesNotThrowAnyException();
@@ -511,7 +578,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gated);
+        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, personContactFinder, preferenceQuery, emailDeliveryPolicySet, gated, circuitBreakerFactory);
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));

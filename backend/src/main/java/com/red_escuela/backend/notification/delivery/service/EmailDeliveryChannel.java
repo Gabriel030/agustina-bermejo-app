@@ -12,7 +12,11 @@ import com.red_escuela.backend.notification.delivery.exception.NotificationDeliv
 import com.red_escuela.backend.notification.delivery.policy.EmailDeliveryContext;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
+import com.red_escuela.backend.shared.exception.CircuitOpenException;
 import com.red_escuela.backend.shared.mail.EmailDeliveryReceipt;
+import com.red_escuela.backend.shared.mail.MailCircuit;
+import com.red_escuela.backend.shared.resilience.CircuitBreaker;
+import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
 import com.red_escuela.backend.shared.mail.MaskedEmailAddress;
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
 import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
@@ -37,10 +41,13 @@ public class EmailDeliveryChannel {
     private final NotificationPreferenceFinder notificationPreferenceQuery;
     private final PolicySet<EmailDeliveryContext> emailDeliveryPolicySet;
     private final TransactionalEmailGateway gateway;
+    private final CircuitBreaker mailBreaker;
 
     public EmailDeliveryChannel(NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
                                 NotificationPreferenceFinder notificationPreferenceQuery,
-                                PolicySet<EmailDeliveryContext> emailDeliveryPolicySet, TransactionalEmailGateway gateway) {
+                                PolicySet<EmailDeliveryContext> emailDeliveryPolicySet, TransactionalEmailGateway gateway,
+                                CircuitBreakerFactory circuitBreakerFactory) {
+        this.mailBreaker = circuitBreakerFactory.breakerNamed(MailCircuit.NAME);
         this.deliveryRepository = deliveryRepository;
         this.personContactFinder = personContactFinder;
         this.notificationPreferenceQuery = notificationPreferenceQuery;
@@ -91,7 +98,10 @@ public class EmailDeliveryChannel {
         TransactionalEmail email = new TransactionalEmail(recipient.get().address(), delivery.getSubject(), delivery.getBodyText(), delivery.getBodyHtml());
         EmailDeliveryReceipt receipt = null;
         try {
-            receipt = gateway.send(email);
+            receipt = mailBreaker.execute(() -> gateway.send(email), MailCircuit::countsAsProviderFailure);
+        } catch (CircuitOpenException open) {
+            log.warn("Circuito de mail abierto, la entrega queda sin consumir intentos dedup={}", delivery.getDedupKey());
+            return;
         } catch (RuntimeException failure) {
             log.warn("El proveedor de mail fallo dedup={} causa={}", delivery.getDedupKey(), failure.getClass().getSimpleName());
         }

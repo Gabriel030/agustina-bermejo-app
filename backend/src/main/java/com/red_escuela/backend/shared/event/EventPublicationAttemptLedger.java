@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongSupplier;
 
 public class EventPublicationAttemptLedger {
     private static final Logger log = LoggerFactory.getLogger(EventPublicationAttemptLedger.class);
@@ -32,12 +33,27 @@ public class EventPublicationAttemptLedger {
               set attempts = event_publication_attempt.attempts + 1, last_attempt_at = now()
             """;
 
+    private static final String COUNT_ATTEMPTS_EXCEPT_DEFERRED = COUNT_ATTEMPTS.replace(
+            "where completion_date is null and",
+            "where completion_date is null and listener_id not like ? and");
+
     private final JdbcTemplate jdbcTemplate;
     private final int maxAttempts;
+    private final LongSupplier circuitRejections;
+    private final String circuitGuardedListenerPrefix;
+    private long rejectionsAtLastCount;
 
     public EventPublicationAttemptLedger(JdbcTemplate jdbcTemplate, int maxAttempts) {
+        this(jdbcTemplate, maxAttempts, () -> 0L, "");
+    }
+
+    public EventPublicationAttemptLedger(JdbcTemplate jdbcTemplate, int maxAttempts,
+                                         LongSupplier circuitRejections, String circuitGuardedListenerPrefix) {
         this.jdbcTemplate = jdbcTemplate;
         this.maxAttempts = maxAttempts;
+        this.circuitRejections = circuitRejections;
+        this.circuitGuardedListenerPrefix = circuitGuardedListenerPrefix;
+        this.rejectionsAtLastCount = circuitRejections.getAsLong();
     }
 
     public void moveExhaustedPublicationsToDeadLetter() {
@@ -54,6 +70,14 @@ public class EventPublicationAttemptLedger {
     }
 
     public void countAttemptsOfPendingPublications() {
+        long rejections = circuitRejections.getAsLong();
+        boolean deferredByOpenCircuit = rejections > rejectionsAtLastCount;
+        rejectionsAtLastCount = rejections;
+        if (deferredByOpenCircuit && !circuitGuardedListenerPrefix.isEmpty()) {
+            jdbcTemplate.update(COUNT_ATTEMPTS_EXCEPT_DEFERRED, circuitGuardedListenerPrefix + "%",
+                    EventPublicationResubmissionJob.MINIMUM_AGE.toSeconds());
+            return;
+        }
         jdbcTemplate.update(COUNT_ATTEMPTS, EventPublicationResubmissionJob.MINIMUM_AGE.toSeconds());
     }
 
