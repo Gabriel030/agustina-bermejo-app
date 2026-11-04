@@ -1,4 +1,4 @@
-import { BellRing, CalendarClock, Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2, CheckCircle2, Tag, BookMarked } from 'lucide-react';
+import { BellRing, CalendarClock, Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2, CheckCircle2, Tag } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
 
 const ITEMS = [
@@ -13,7 +13,6 @@ const ITEMS = [
   { to: '/administrativo/financiero', label: 'Financiero', icon: BarChart2 },
   { to: '/administrativo/constancias', label: 'Constancias', icon: FileText },
   { to: '/administrativo/solicitudes-de-asistencia', label: 'Solicitudes de asistencia', icon: CalendarCheck },
-  { to: '/administrativo/oferta-academica', label: 'Oferta académica', icon: BookMarked },
   { to: '/administrativo/gestion-academica', label: 'Banco de materias', icon: BookOpen },
 ];
 
