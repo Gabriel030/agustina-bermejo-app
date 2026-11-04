@@ -217,9 +217,7 @@ class AttendanceExportServiceTest {
 
     private static final class BoundsStripper extends PDFTextStripper {
         float maxX;
-        float minY = Float.MAX_VALUE;
-        float pageWidth;
-        float pageHeight;
+        float maxY;
 
         BoundsStripper() throws IOException {
         }
@@ -228,7 +226,7 @@ class AttendanceExportServiceTest {
         protected void writeString(String text, List<TextPosition> positions) throws IOException {
             for (TextPosition position : positions) {
                 maxX = Math.max(maxX, position.getX() + position.getWidth());
-                minY = Math.min(minY, position.getY());
+                maxY = Math.max(maxY, position.getY());
             }
             super.writeString(text, positions);
         }
@@ -249,28 +247,13 @@ class AttendanceExportServiceTest {
             assertThat(text).contains("Alumno300", "Alumno001", FIRST_DAY.plusDays(BIG_DATES - 1).toString(),
                     "% Asistencia", "parte 1 de", "parte 6 de 6");
             assertThat(stripper.maxX).isLessThanOrEqualTo(pageWidth - 20);
-            assertThat(stripper.minY).isLessThan(pageHeight);
+            assertThat(stripper.maxY).isLessThanOrEqualTo(pageHeight - 20);
             for (int page = 1; page <= document.getNumberOfPages(); page++) {
                 PDFTextStripper pageStripper = new PDFTextStripper();
                 pageStripper.setStartPage(page);
                 pageStripper.setEndPage(page);
                 assertThat(pageStripper.getText(document)).contains("Alumno ");
             }
-        }
-    }
-
-    @Test
-    void largePdfRowsStayInsideThePageHeight() throws IOException {
-        when(programHistory.get(new GetProgramSectionAttendanceHistoryCommand(SECTION_ID, null))).thenReturn(bigHistory());
-
-        ExportedFile file = service().exportProgramSection(SECTION_ID, null, "history", "pdf", null);
-
-        try (PDDocument document = Loader.loadPDF(file.content())) {
-            float pageHeight = document.getPage(0).getMediaBox().getHeight();
-            BoundsStripper stripper = new BoundsStripper();
-            stripper.getText(document);
-            assertThat(stripper.minY).isGreaterThanOrEqualTo(20f);
-            assertThat(stripper.minY).isLessThan(pageHeight);
         }
     }
 }
