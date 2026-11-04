@@ -46,7 +46,7 @@ describe('DocenteMisComisiones', () => {
     expect(await screen.findByText('Bandeja de aprobación')).toBeInTheDocument();
     expect(within(tarjeta('Comisiones y cursos este período')).getByText('4')).toBeInTheDocument();
     expect(within(tarjeta('Pendientes de completar/aprobar')).getByText('2')).toBeInTheDocument();
-    expect(within(tarjeta('Días para el vencimiento más próximo')).getByText('Vencido')).toBeInTheDocument();
+    expect(within(tarjeta('Días para el inicio de cursada')).getByText('Ya empezó')).toBeInTheDocument();
     const cerradas = screen.getByText('Cerradas').closest('div').parentElement;
     expect(within(cerradas).getByText(/Pedagogía/)).toBeInTheDocument();
   });
@@ -60,7 +60,19 @@ describe('DocenteMisComisiones', () => {
     renderWithProviders(<DocenteMisComisiones />);
 
     expect(await screen.findByText('No pudimos cargar tus comisiones')).toBeInTheDocument();
-    expect(screen.queryByText('Todavía no tenés comisiones asignadas')).not.toBeInTheDocument();
+    expect(screen.queryByText('Todavía no tenés comisiones para mostrar')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
+  it('si no hay comisiones explica que aparecen cuando el ciclo se aprueba', async () => {
+    server.use(
+      http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
+      http.get(`${API}/me/teaching-sections`, () => HttpResponse.json([])),
+    );
+
+    renderWithProviders(<DocenteMisComisiones />);
+
+    expect(await screen.findByText('Todavía no tenés comisiones para mostrar')).toBeInTheDocument();
+    expect(screen.getByText(/el ciclo se aprueba/)).toBeInTheDocument();
   });
 });
