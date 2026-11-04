@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
+import { sameEmail } from '@/features/identity/emailChange';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPending }) {
+  const [confirming, setConfirming] = useState(false);
   const [form, setForm] = useState({ email: '', telefono: '', street: '', number: '', floor: '', city: '', state: '', postalCode: '', country: '' });
 
   useEffect(() => {
@@ -20,6 +23,7 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
         country: legajo.domicilio?.country ?? '',
       });
     }
+    setConfirming(false);
   }, [legajo, open]);
 
   function set(field) {
@@ -30,7 +34,13 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
     onClose();
   }
 
+  const emailChanged = Boolean(legajo?.email) && !sameEmail(form.email, legajo.email);
+
   function handleConfirmar() {
+    if (emailChanged && !confirming) {
+      setConfirming(true);
+      return;
+    }
     onConfirmar({
       email: form.email || undefined,
       telefono: form.telefono || undefined,
@@ -41,7 +51,7 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
       state: form.state || undefined,
       postalCode: form.postalCode || undefined,
       country: form.country || undefined,
-    });
+    }, emailChanged ? form.email.trim() : null);
   }
 
   return (
@@ -51,6 +61,14 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
           <DialogTitle>Editar datos de contacto</DialogTitle>
         </DialogHeader>
 
+        {confirming ? (
+          <div className="flex flex-col gap-3">
+            <ChangeDiffTable rows={[{ key: 'email', label: 'Email', today: legajo.email, next: form.email.trim() }]} />
+            <p className="text-[13px] text-ink-soft">
+              {legajo.nombre} recibe un enlace a la casilla nueva y sigue ingresando con la actual hasta confirmarlo. Su reseteo de contraseña queda bloqueado 24 h.
+            </p>
+          </div>
+        ) : (
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -89,13 +107,14 @@ export function EditarPersonalModal({ open, onClose, legajo, onConfirmar, isPend
             </div>
           </div>
         </div>
+        )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isPending}>
-            Cancelar
+          <Button variant="outline" onClick={confirming ? () => setConfirming(false) : handleClose} disabled={isPending}>
+            {confirming ? 'Volver a editar' : 'Cancelar'}
           </Button>
           <Button variant="gradient" onClick={handleConfirmar} disabled={isPending}>
-            {isPending ? 'Guardando...' : 'Guardar cambios'}
+            {isPending ? 'Guardando...' : confirming ? 'Confirmar y enviar enlace' : 'Guardar cambios'}
           </Button>
         </DialogFooter>
       </DialogContent>

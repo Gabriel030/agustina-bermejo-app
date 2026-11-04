@@ -14,6 +14,7 @@ import { DarDeBajaPersonalModal } from '@/features/identity/components/DarDeBaja
 import { ReactivarPersonalModal } from '@/features/identity/components/ReactivarPersonalModal';
 import { ResetPasswordModal } from '@/features/identity/components/ResetPasswordModal';
 import { EditarPersonalModal } from '@/features/identity/components/EditarPersonalModal';
+import { confirmationDeadlineLabel } from '@/features/identity/emailChange';
 import { canManageStaffRole } from '@/features/identity/staffRoles';
 
 function staffActionErrorMessage(err, fallback) {
@@ -51,6 +52,8 @@ export function LegajoPersonal() {
   const [reactivarOpen, setReactivarOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [editarOpen, setEditarOpen] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState(null);
+  const [resetBlocked, setResetBlocked] = useState(false);
 
   const puedeAccionar = !!legajo && canManageStaffRole(usuario?.roles, legajo.role);
 
@@ -87,6 +90,7 @@ export function LegajoPersonal() {
                   {badge && (
                     <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
                   )}
+                  {pendingEmail && <StatusPill tone="warning">Cambio de email enviado a confirmar</StatusPill>}
                 </div>
                 {puedeAccionar && (
                   <Button variant="outline" size="sm" onClick={() => setEditarOpen(true)}>
@@ -94,6 +98,12 @@ export function LegajoPersonal() {
                   </Button>
                 )}
               </div>
+
+              {pendingEmail && (
+                <div role="status" className="rounded-xl bg-warning-bg px-3 py-2.5 text-[12.5px] text-warning">
+                  Enviamos un enlace de confirmación a <b>{pendingEmail.email}</b>. Hasta que {legajo.nombre} lo confirme, sigue usando el email actual. Vence en 48 h ({pendingEmail.deadline}).
+                </div>
+              )}
 
               <div className="flex flex-col gap-6">
                 <div>
@@ -135,6 +145,11 @@ export function LegajoPersonal() {
                           Resetear contraseña
                         </Button>
                       </div>
+                      {resetBlocked && (
+                        <div role="alert" className="bg-danger-bg px-4 py-3 text-[12.5px] text-danger">
+                          No se puede resetear la contraseña: hay un cambio de email pendiente o reciente. Probá de nuevo pasadas 24 horas.
+                        </div>
+                      )}
 
                       {puedeGestionarBaja && (
                         <div className="flex items-center justify-between gap-4 px-4 py-3">
@@ -211,7 +226,12 @@ export function LegajoPersonal() {
         email={legajo?.email}
         onConfirmar={() =>
           resetMutation.mutateAsync().catch((err) => {
-            toast.error(staffActionErrorMessage(err, 'No se pudo enviar el link. Intentá de nuevo.'));
+            if (err?.code === 'STAFF_PASSWORD_RESET_BLOCKED') {
+              setResetBlocked(true);
+              setResetOpen(false);
+            } else {
+              toast.error(staffActionErrorMessage(err, 'No se pudo enviar el link. Intentá de nuevo.'));
+            }
             throw err;
           })
         }
@@ -222,11 +242,16 @@ export function LegajoPersonal() {
         open={editarOpen}
         onClose={() => setEditarOpen(false)}
         legajo={legajo}
-        onConfirmar={(data) =>
+        onConfirmar={(data, emailChange) =>
           editarMutation.mutate(data, {
             onSuccess: () => {
               setEditarOpen(false);
-              toast.success('Datos de contacto actualizados');
+              if (emailChange) {
+                setPendingEmail({ email: emailChange, deadline: confirmationDeadlineLabel() });
+                toast.success(`Enviamos el enlace de confirmación a ${emailChange}`);
+              } else {
+                toast.success('Datos de contacto actualizados');
+              }
             },
             onError: (err) =>
               toast.error(
