@@ -40,6 +40,6 @@ public class ListStaffService implements ListStaffUseCase {
                 .and(PersonSpecifications.withStatus(effectiveStatus))
                 .and(PersonSpecifications.withSearch(command.search()));
 
-        return personRepository.findAll(spec, Sort.by("lastname", "name"));
+        return personRepository.findAllWithRoles(spec, Sort.by("lastname", "name"));
     }
 }

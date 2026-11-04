@@ -160,12 +160,7 @@ public class MeEnrollmentController {
     @GetMapping("/section-enrollments")
     public List<SectionEnrollmentResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return subjectSectionEnrollmentService.listByStudent(student.getId()).stream()
-                .map(enrollment -> SectionEnrollmentResponse.from(
-                        enrollment,
-                        subjectSectionEnrollmentService.resolveCurricularYear(enrollment),
-                        subjectSectionEnrollmentService.resolveCurricularTerm(enrollment)))
-                .toList();
+        return subjectSectionEnrollmentService.listByStudent(student.getId());
     }
 
     private void requireOwner(ProgramEnrollment enrollment, Student student) {

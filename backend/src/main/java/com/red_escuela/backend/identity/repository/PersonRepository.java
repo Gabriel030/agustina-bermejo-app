@@ -23,6 +23,15 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
     @Query("select distinct p from Person p left join fetch p.roles where p.id in :personIds")
     List<Person> findAllWithRolesByIdIn(@Param("personIds") Collection<Long> personIds);
 
+    default List<Person> findAllWithRoles(
+            org.springframework.data.jpa.domain.Specification<Person> spec, org.springframework.data.domain.Sort sort) {
+        List<Person> people = findAll(spec, sort);
+        if (!people.isEmpty()) {
+            findAllWithRolesByIdIn(people.stream().map(Person::getId).toList());
+        }
+        return people;
+    }
+
     Optional<Person> findByEmail(EmailAddress email);
 
     Optional<Person> findByDocumentTypeAndDni(DocumentType documentType, String dni);

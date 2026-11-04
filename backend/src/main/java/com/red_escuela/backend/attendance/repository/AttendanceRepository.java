@@ -78,6 +78,17 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     Optional<Attendance> findByCourseSubjectSectionEnrollmentIdAndClassDate(Long enrollmentId, LocalDate classDate);
 
+    @Query("""
+            select a.programSubjectSectionEnrollment.id, count(a),
+                   coalesce(sum(case when a.status in :absenceStatuses then 1 else 0 end), 0)
+            from Attendance a
+            where a.programSubjectSectionEnrollment.id in :enrollmentIds
+            group by a.programSubjectSectionEnrollment.id
+            """)
+    List<Object[]> countTotalAndAbsencesByProgramEnrollmentIds(
+            @Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
+            @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses);
+
     long countByProgramSubjectSectionEnrollmentId(Long enrollmentId);
 
     long countByCourseSubjectSectionEnrollmentId(Long enrollmentId);
