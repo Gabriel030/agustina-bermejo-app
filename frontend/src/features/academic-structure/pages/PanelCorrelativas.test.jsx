@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -55,7 +56,7 @@ describe('PanelCorrelativas', () => {
   });
 
   it('explains why the backend rejected the prerequisite', async () => {
-    mockPanel({ onPrerequisite: () => HttpResponse.json({ code: 'CIRCULAR_PREREQUISITE' }, { status: 400 }) });
+    mockPanel({ onPrerequisite: () => HttpResponse.json(errorBody('CIRCULAR_PREREQUISITE'), { status: 400 }) });
     const user = userEvent.setup();
     mount();
 

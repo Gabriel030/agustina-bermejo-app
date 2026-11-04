@@ -23,7 +23,7 @@ function mockAttendance(records) {
   server.use(
     http.get(`${API}/me/section-enrollments/5/attendance`, () => HttpResponse.json(records)),
     http.get(`${API}/me/section-enrollments/5/attendance/risk`, () =>
-      HttpResponse.json({ calculable: false, libre: false, absencePercent: { fraction: 0.5 }, maxAbsencePercent: { fraction: 0.25 } }),
+      HttpResponse.json({ calculable: false, libre: false, absencePercent: 50, maxAbsencePercent: 25 }),
     ),
   );
 }

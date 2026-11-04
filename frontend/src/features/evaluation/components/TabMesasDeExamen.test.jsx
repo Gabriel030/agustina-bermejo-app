@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -13,7 +14,7 @@ describe('LlamadosDisponibles', () => {
     server.use(
       http.get(`${API}/me/exam-boards`, () => HttpResponse.json([{ id: 1, examDate: '2026-12-01T09:00:00', classroom: null }])),
       http.post(`${API}/me/exam-board-registrations`, () =>
-        HttpResponse.json({ code: 'STUDENT_FREE_BY_ABSENCES' }, { status: 409 }),
+        HttpResponse.json(errorBody('STUDENT_FREE_BY_ABSENCES'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();

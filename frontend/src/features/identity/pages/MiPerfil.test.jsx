@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -86,7 +87,7 @@ describe('MiPerfil — foto de perfil', () => {
   it('tells the user when the server rejects the photo', async () => {
     mockProfileEndpoints();
     server.use(
-      http.post(`${API}/me/avatar`, () => HttpResponse.json({ code: 'UNSUPPORTED_FILE_TYPE' }, { status: 400 })),
+      http.post(`${API}/me/avatar`, () => HttpResponse.json(errorBody('UNSUPPORTED_FILE_TYPE'), { status: 400 })),
     );
     const user = userEvent.setup();
     renderProfile();
@@ -111,7 +112,7 @@ describe('MiPerfil — cambiar contraseña', () => {
   it('says the current password is wrong instead of a generic error', async () => {
     mockProfileEndpoints();
     server.use(
-      http.put(`${API}/me/password`, () => HttpResponse.json({ code: 'INVALID_CURRENT_PASSWORD' }, { status: 400 })),
+      http.put(`${API}/me/password`, () => HttpResponse.json(errorBody('INVALID_CURRENT_PASSWORD'), { status: 400 })),
     );
     const user = userEvent.setup();
     renderProfile();
@@ -124,7 +125,7 @@ describe('MiPerfil — cambiar contraseña', () => {
   it('explains the password policy when the new password does not meet it', async () => {
     mockProfileEndpoints();
     server.use(
-      http.put(`${API}/me/password`, () => HttpResponse.json({ code: 'INVALID_PASSWORD_POLICY' }, { status: 400 })),
+      http.put(`${API}/me/password`, () => HttpResponse.json(errorBody('INVALID_PASSWORD_POLICY'), { status: 400 })),
     );
     const user = userEvent.setup();
     renderProfile();

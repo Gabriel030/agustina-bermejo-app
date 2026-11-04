@@ -7,6 +7,7 @@ import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundExc
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -34,6 +35,16 @@ public class SectionEnrollmentFinder {
                                    CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockProgramEnrollment(Long id) {
+        programEnrollmentRepository.findByIdForUpdate(id).orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockCourseEnrollment(Long id) {
+        courseEnrollmentRepository.findByIdForUpdate(id).orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
     }
 
     public SubjectSectionEnrollment findProgramEnrollment(Long id) {
