@@ -102,7 +102,8 @@ const MENSAJES_ERROR_INSCRIPCION = {
   PROGRAM_ENROLLMENT_REQUIRED: 'Primero tenés que estar inscripto en la carrera.',
   REQUIRED_APPLICATION_DOCUMENTS_MISSING: 'Faltan documentos. Adjuntá el frente y el dorso del DNI y el analítico del secundario.',
   UNSUPPORTED_FILE_TYPE: 'Alguno de los archivos no es un PDF, JPG o PNG válido. Revisá los tres documentos y probá de nuevo.',
-  MAX_UPLOAD_SIZE_EXCEEDED: 'Alguno de los archivos es demasiado grande (máximo 5 MB cada uno). Achicá la imagen y probá de nuevo.',
+  MAX_UPLOAD_SIZE_EXCEEDED: 'Los archivos juntos son demasiado pesados (máximo 10 MB en total). Achicá las imágenes y probá de nuevo.',
+  APPLICATION_DOCUMENT_TOO_LARGE: 'Alguno de los archivos es demasiado grande (máximo 3 MB cada uno). Achicá la imagen y probá de nuevo.',
   STUDENT_NOT_ACTIVE: 'Tu cuenta no está activa. Consultá en Secretaría.',
 };
 

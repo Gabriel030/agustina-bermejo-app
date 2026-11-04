@@ -513,7 +513,7 @@ describe('InscripcionWizard validation with zod', () => {
     server.use(
       http.put(`${API}/me`, () => HttpResponse.json({})),
       http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
-        HttpResponse.json(errorBody('MAX_UPLOAD_SIZE_EXCEEDED'), { status: 400 }),
+        HttpResponse.json(errorBody('APPLICATION_DOCUMENT_TOO_LARGE'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();
@@ -529,7 +529,7 @@ describe('InscripcionWizard validation with zod', () => {
     await user.click(confirmButton);
     await user.click(await screen.findByRole('button', { name: 'Sí, confirmar' }));
 
-    expect(await screen.findByText(/Alguno de los archivos es demasiado grande \(máximo 5 MB cada uno\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/Alguno de los archivos es demasiado grande \(máximo 3 MB cada uno\)/)).toBeInTheDocument();
     expect(screen.queryByText('Solicitud enviada')).not.toBeInTheDocument();
   });
 });

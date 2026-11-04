@@ -44,13 +44,13 @@ Memoria: cada limitador guarda como máximo `app.rate-limit.max-tracked-keys` (5
 | Propiedad | Default |
 |---|---|
 | `spring.servlet.multipart.max-file-size` (`MULTIPART_MAX_FILE_SIZE`) | 5MB |
-| `spring.servlet.multipart.max-request-size` (`MULTIPART_MAX_REQUEST_SIZE`) | 16MB (tres documentos de 5MB más campos; el alta de carrera los envía juntos) |
+| `spring.servlet.multipart.max-request-size` (`MULTIPART_MAX_REQUEST_SIZE`) | 10MB (techo de Spring; ver `MultipartRequestSizeFilter`) |
 | `server.tomcat.max-swallow-size` | 2MB |
 | `server.tomcat.max-http-form-post-size` | 2MB |
 | `server.max-http-request-header-size` | 16KB |
 | `spring.data.web.pageable.max-page-size` (`MAX_PAGE_SIZE`) | 200 |
 
-Un archivo mayor al límite responde `400 MAX_UPLOAD_SIZE_EXCEEDED`. Los endpoints que reciben `page` y `size` a mano acotan el tamaño en su servicio (`MAX_PAGE_SIZE`); la propiedad de Spring cubre los que usen `Pageable` como parámetro.
+Un archivo mayor al límite responde `400 MAX_UPLOAD_SIZE_EXCEEDED`. Spring solo admite un límite global de multipart, así que `MultipartRequestSizeFilter` aplica el tope por ruta usando `Content-Length`: 6 MB por solicitud multipart en todo el sistema y 10 MB en `POST /me/program-enrollment-applications/with-documents` (tres documentos, máximo 3 MB cada uno: `400 APPLICATION_DOCUMENT_TOO_LARGE`). Los endpoints que reciben `page` y `size` a mano acotan el tamaño en su servicio (`MAX_PAGE_SIZE`); la propiedad de Spring cubre los que usen `Pageable` como parámetro.
 
 ## Cola de eventos de Modulith
 

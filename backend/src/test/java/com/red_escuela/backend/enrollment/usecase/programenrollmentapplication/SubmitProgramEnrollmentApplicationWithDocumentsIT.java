@@ -233,6 +233,18 @@ class SubmitProgramEnrollmentApplicationWithDocumentsIT extends AbstractIntegrat
     }
 
     @Test
+    void aFileOverThreeMegabytesIsRejectedBeforeAnythingIsPersisted() {
+        byte[] oversized = new byte[3 * 1024 * 1024 + 1];
+        System.arraycopy(PDF, 0, oversized, 0, PDF.length);
+
+        assertThatThrownBy(() -> useCase.submit(command(documents(oversized))))
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.ApplicationDocumentTooLargeException.class);
+
+        assertThat(applications()).isZero();
+        assertThat(filesOnDisk()).isZero();
+    }
+
+    @Test
     void anEmptyFileCountsAsMissing() {
         Map<DocumentType, MultipartFile> withEmptyOne = documents(PDF);
         withEmptyOne.put(DocumentType.DNI_DORSO, new MockMultipartFile("dniBack", "dorso.pdf", "application/pdf", new byte[0]));

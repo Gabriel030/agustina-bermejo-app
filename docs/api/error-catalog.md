@@ -52,6 +52,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `AMBIGUOUS_SECTION` | no | `AmbiguousSectionException` | enrollment |
 | `ANNUAL_UPFRONT_IDEMPOTENCY_KEY_INVALID` | no | `AnnualUpfrontIdempotencyKeyInvalidException` | billing |
 | `ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED` | no | `AnnualUpfrontTermsNotAcceptedException` | billing |
+| `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
