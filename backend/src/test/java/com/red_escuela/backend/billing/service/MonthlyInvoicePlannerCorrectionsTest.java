@@ -55,11 +55,13 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
                 entityManager.find(ProgramEnrollment.class, enrollmentId), EnrollmentFeeRequirementScope.CERTIFICATE));
     }
 
-    private Year newUndatedYear(Career career, int year, int installments) {
+    private Year newMarchToDecemberYear(Career career, int year, int installments) {
         return transactionTemplate.execute(status -> {
             Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(String.valueOf(year));
+            term.setStartDate(java.time.LocalDateTime.of(year, 3, 1, 0, 0));
+            term.setEndDate(java.time.LocalDateTime.of(year, 12, 15, 0, 0));
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
@@ -122,10 +124,10 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     @Test
     @Tag("D-001")
-    void undatedTermsBillFromMarchAndTheCapCountsOnlyThatYear() {
+    void termsStartingInMarchBillFromMarchAndTheCapCountsOnlyThatYear() {
         Career career = newCareer();
-        Year y26 = newUndatedYear(career, 2026, 3);
-        Year y27 = newUndatedYear(career, 2027, 3);
+        Year y26 = newMarchToDecemberYear(career, 2026, 3);
+        Year y27 = newMarchToDecemberYear(career, 2027, 3);
         Long cohort = newCohort(y26, CohortIntake.FIRST, date(2026, 3, 1));
         today(date(2026, 1, 5));
         Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 5));

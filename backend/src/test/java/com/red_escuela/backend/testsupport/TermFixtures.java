@@ -14,6 +14,8 @@ public final class TermFixtures {
 
     public static Term newTerm() {
         Term term = new Term();
+        term.setStartDate(OPEN_WINDOW_START);
+        term.setEndDate(OPEN_WINDOW_END);
         term.defineEnrollmentWindow(OPEN_WINDOW_START, OPEN_WINDOW_END);
         return term;
     }

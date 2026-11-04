@@ -6,6 +6,7 @@ import {
   formatDayDifference,
   formatTermDate,
   ENROLLMENT_WINDOW_REQUIRED_MESSAGE,
+  TERM_DATES_REQUIRED_MESSAGE,
   termErrorMessage,
   termFieldErrors,
   validateTermForm,
@@ -83,6 +84,12 @@ describe('terms field errors', () => {
     const errors = termFieldErrors({ status: 400, code: 'TERM_ENROLLMENT_WINDOW_REQUIRED' });
     expect(Object.keys(errors)).toEqual(['enrollmentStart', 'enrollmentEnd']);
     expect(errors.enrollmentStart).toBe(ENROLLMENT_WINDOW_REQUIRED_MESSAGE);
+  });
+
+  it('maps the missing term dates code to both date fields', () => {
+    const errors = termFieldErrors({ status: 400, code: 'TERM_DATES_REQUIRED' });
+    expect(Object.keys(errors)).toEqual(['startDate', 'endDate']);
+    expect(errors.startDate).toBe(TERM_DATES_REQUIRED_MESSAGE);
   });
 
   it('ignores other codes', () => {

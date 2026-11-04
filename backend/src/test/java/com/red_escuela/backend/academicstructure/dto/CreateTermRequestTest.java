@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.academicstructure.domain.TermType;
+import com.red_escuela.backend.shared.domain.TermDatesRequiredException;
 import com.red_escuela.backend.shared.domain.TermEnrollmentWindowRequiredException;
 import org.junit.jupiter.api.Test;
 
@@ -38,5 +39,23 @@ class CreateTermRequestTest {
     @Test
     void requestWithoutAnyEnrollmentBoundaryIsRejected() {
         assertThatThrownBy(() -> requestWith(null, null)).isInstanceOf(TermEnrollmentWindowRequiredException.class);
+    }
+
+    @Test
+    void requestWithoutStartDateIsRejected() {
+        assertThatThrownBy(() -> new CreateTermRequest(2027, "Primer cuatrimestre", TermType.FIRST_SEMESTER, null, END, OPENS, CLOSES))
+                .isInstanceOf(TermDatesRequiredException.class);
+    }
+
+    @Test
+    void requestWithoutEndDateIsRejected() {
+        assertThatThrownBy(() -> new CreateTermRequest(2027, "Primer cuatrimestre", TermType.FIRST_SEMESTER, START, null, OPENS, CLOSES))
+                .isInstanceOf(TermDatesRequiredException.class);
+    }
+
+    @Test
+    void requestWithoutAnyDateIsRejectedWithDatesError() {
+        assertThatThrownBy(() -> new CreateTermRequest(2027, "Primer cuatrimestre", TermType.FIRST_SEMESTER, null, null, null, null))
+                .isInstanceOf(TermDatesRequiredException.class);
     }
 }

@@ -107,7 +107,7 @@ class TermTypeCatalogMigrationTest {
                     .isInstanceOf(DataIntegrityViolationException.class);
             assertThatThrownBy(() -> insertTerm(jdbc, 2051, "1C", "ACTIVE", null, null))
                     .isInstanceOf(DataIntegrityViolationException.class);
-            jdbc.update("insert into term (year_number, status, enrollment_start, enrollment_end) values (2052, 'ACTIVE', timestamp '2000-01-01 00:00:00', timestamp '2100-01-01 00:00:00')");
+            jdbc.update("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2052, 'ACTIVE', timestamp '2052-03-01 00:00:00', timestamp '2052-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2100-01-01 00:00:00')");
             assertThat(jdbc.queryForObject("select type from term where year_number = 2052", String.class))
                     .isEqualTo("ANNUAL");
         }
