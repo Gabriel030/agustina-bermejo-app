@@ -1,3 +1,4 @@
+import { newIdempotencyKey } from '@/api/idempotencyKey';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, Info } from 'lucide-react';
@@ -36,9 +37,6 @@ const RESULT_ROW = {
   uncovered: { note: 'Sigue pendiente: el monto no la cubre completa', pill: { tone: 'neutral', label: 'Pendiente' } },
 };
 
-function newIdempotencyKey() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;

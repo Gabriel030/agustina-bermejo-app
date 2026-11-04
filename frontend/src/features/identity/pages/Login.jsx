@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuth } from '@/context/AuthContext';
-import { apiFetch, RateLimitedError } from '@/api/client';
+import { apiFetch, CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
 
 // Épica 1 Fase 2: el botón de Google ya no es decorativo (era un <div
 // aria-disabled> con tooltip "Próximamente"). Cuenta no encontrada (404 de
@@ -60,8 +60,8 @@ export function Login() {
       await login(username, password);
     } catch (err) {
       setError(
-        err instanceof RateLimitedError
-          ? 'Demasiados intentos, esperá un momento antes de reintentar.'
+        err instanceof RateLimitedError || err instanceof NetworkError || err instanceof CircuitOpenError
+          ? err.message
           : 'Usuario o contraseña incorrectos.',
       );
     } finally {
@@ -79,7 +79,7 @@ export function Login() {
       if (err.status === 404) {
         setGoogleIdTokenPendiente(idToken);
       } else if (err instanceof RateLimitedError) {
-        setError('Demasiados intentos, esperá un momento antes de reintentar.');
+        setError(err.message);
       } else {
         setError('No pudimos iniciar sesión con Google. Probá de nuevo.');
       }

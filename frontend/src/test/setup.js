@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { server } from './mocks/server';
+import { resetCircuits, setCircuitOptions, setRetrySleep } from '../api/client';
 import { warmUpContract } from './contract/validateAgainstContract';
 import { formatContractDeviations, takeContractDeviations } from './contract/withContract';
 
@@ -60,10 +61,13 @@ globalThis.ResizeObserver =
 beforeAll(() => {
   warmUpContract();
   server.listen({ onUnhandledRequest: 'error' });
+  setRetrySleep(() => Promise.resolve());
+  setCircuitOptions({ threshold: Number.POSITIVE_INFINITY });
 });
 afterEach(() => {
   cleanup();
   server.resetHandlers();
+  resetCircuits();
   localStorage.clear();
   const deviations = takeContractDeviations();
   if (deviations.length > 0) {
