@@ -26,7 +26,11 @@ const EVENT_LABELS = {
   INSTITUTIONAL_NOTICE: 'Aviso institucional',
 };
 
-const GENERAL_EVENTS = Object.keys(EVENT_LABELS).filter((event) => event !== COLLECTION_EVENT);
+const UNEMITTED_EVENTS = ['ACCOUNT_CREATED', 'GRADE_POSTED', 'INVOICE_GENERATED', 'EXAM_BOARD_REGISTERED'];
+
+const GENERAL_EVENTS = Object.keys(EVENT_LABELS).filter(
+  (event) => event !== COLLECTION_EVENT && !UNEMITTED_EVENTS.includes(event),
+);
 
 const ALWAYS_ON_COLLECTION_ROWS = [
   'Cuota vencida',

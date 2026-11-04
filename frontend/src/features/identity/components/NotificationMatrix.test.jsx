@@ -33,12 +33,22 @@ describe('NotificationMatrix', () => {
   });
 
   it('locks whatever the server reports as mandatory instead of a fixed list', async () => {
-    mockPreferences({ preferences: {}, mandatoryChannels: { GRADE_POSTED: ['EMAIL'], PAYMENT_DUE_SOON: [] } });
+    mockPreferences({ preferences: {}, mandatoryChannels: { INSTITUTIONAL_NOTICE: ['EMAIL'], PAYMENT_DUE_SOON: [] } });
     renderWithProviders(<NotificationMatrix />);
 
-    await screen.findByText('Nota publicada');
-    expect(screen.getByRole('button', { name: /Nota publicada — Por email/ })).toBeInTheDocument();
+    await screen.findByText('Aviso institucional');
+    expect(screen.getByRole('button', { name: /Aviso institucional — Por email/ })).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: /Recordatorio antes del vencimiento — En la app/ })).toBeInTheDocument();
+  });
+
+  it('does not list notifications that no process emits', async () => {
+    mockPreferences({ preferences: {}, mandatoryChannels: { ACCOUNT_CREATED: ['APP', 'EMAIL'] } });
+    renderWithProviders(<NotificationMatrix />);
+
+    await screen.findByText('Aviso institucional');
+    for (const label of ['Cuenta creada', 'Nota publicada', 'Factura generada', 'Mesa de examen registrada']) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
   });
 
   it('saves only after confirming and sends the email switch turned off', async () => {
