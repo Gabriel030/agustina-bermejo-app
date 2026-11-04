@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.api.AttendanceProofSubmitter;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
+import com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.RejectAttendanceJustificationRequest;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
@@ -219,5 +220,73 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
         entityManager.clear();
         assertThat(entityManager.find(Attendance.class, attendanceId).getJustificationRejectionReason()).isNull();
         assertThat(entityManager.find(Attendance.class, attendanceId).getJustificationRejectedAt()).isNull();
+    }
+
+    private long recordedAbsence(Classroom classroom, int day) throws Exception {
+        CargarAsistenciaRequest request = new CargarAsistenciaRequest(
+                LocalDate.of(2026, 3, day), List.of(new AttendanceEntry(classroom.enrollment().getId(), AttendanceStatus.ABSENT)), null, null);
+        return bodyOf(postJson(classroom.teacher(), "/program-sections/" + classroom.section().getId() + "/attendance", request)
+                .andExpect(status().isCreated())).get(0).get("id").asLong();
+    }
+
+    private AttendanceStatus storedStatus(long attendanceId) {
+        entityManager.flush();
+        entityManager.clear();
+        return entityManager.find(Attendance.class, attendanceId).getStatus();
+    }
+
+    @Test
+    void anInstructorOfAnotherSectionCannotJustifyAnAbsenceAndItStaysAbsent() throws Exception {
+        Classroom classroom = classroom("jus10", "7700010");
+        Classroom other = classroom("jus10b", "7700011");
+        long attendanceId = recordedAbsence(classroom, 2);
+
+        postJson(other.teacher(), "/attendance/" + attendanceId + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+                .andExpect(status().isForbidden());
+
+        assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
+    }
+
+    @Test
+    void theOwnInstructorPreceptorAndAdministrativeCanJustifyAndTheStudentCannot() throws Exception {
+        Classroom classroom = classroom("jus11", "7700012");
+        Person preceptor = persistPerson("jus11.preceptor", "77000127", "PRECEPTOR");
+        Person administrative = persistPerson("jus11.admin", "77000128", "ADMINISTRATIVO");
+        long byTeacher = recordedAbsence(classroom, 2);
+        long byPreceptor = recordedAbsence(classroom, 3);
+        long byAdministrative = recordedAbsence(classroom, 4);
+        long byStudent = recordedAbsence(classroom, 5);
+
+        postJson(classroom.student(), "/attendance/" + byStudent + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+                .andExpect(status().isForbidden());
+        postJson(classroom.teacher(), "/attendance/" + byTeacher + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("JUSTIFIED"));
+        postJson(preceptor, "/attendance/" + byPreceptor + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+                .andExpect(status().isOk());
+        postJson(administrative, "/attendance/" + byAdministrative + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+                .andExpect(status().isOk());
+
+        assertThat(storedStatus(byStudent)).isEqualTo(AttendanceStatus.ABSENT);
+        assertThat(storedStatus(byTeacher)).isEqualTo(AttendanceStatus.JUSTIFIED);
+        assertThat(storedStatus(byPreceptor)).isEqualTo(AttendanceStatus.JUSTIFIED);
+        assertThat(storedStatus(byAdministrative)).isEqualTo(AttendanceStatus.JUSTIFIED);
+    }
+
+    @Test
+    void justifyRejectsOversizedReasonsAndAttachmentKeysThatAreNotStoredProofs() throws Exception {
+        Classroom classroom = classroom("jus12", "7700013");
+        Person preceptor = persistPerson("jus12.preceptor", "77000137", "PRECEPTOR");
+        long attendanceId = recordedAbsence(classroom, 2);
+        String path = "/attendance/" + attendanceId + "/justify";
+
+        postJson(preceptor, path, new JustificarAsistenciaRequest("x".repeat(501), null)).andExpect(status().isBadRequest());
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "../../etc/passwd")).andExpect(status().isBadRequest());
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/../../x.pdf")).andExpect(status().isBadRequest());
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_" + "a".repeat(300) + ".pdf"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_3f2c-ab.pdf"))
+                .andExpect(status().isOk());
     }
 }

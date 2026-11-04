@@ -28,6 +28,20 @@ export function LegajoAlumno() {
 
   const [bajaOpen, setBajaOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get('view') === 'financiero' ? 'financiero' : 'datos-personales');
+  const [enrollmentKey, setEnrollmentKey] = useState(null);
+  const [sectionEnrollmentId, setSectionEnrollmentId] = useState(null);
+
+  function handleEnrollmentChange(key) {
+    setEnrollmentKey(key);
+    setSectionEnrollmentId(null);
+  }
+
+  function handleViewGrades(key, sectionId) {
+    setEnrollmentKey(key);
+    setSectionEnrollmentId(sectionId);
+    setActiveTab('evaluacion');
+  }
 
   const withdrawMutation = useWithdrawStudent(id);
   const resetMutation = useResetStudentPassword(id);
@@ -60,7 +74,7 @@ export function LegajoAlumno() {
             </div>
           )}
 
-          <Tabs defaultValue={searchParams.get('view') === 'financiero' ? 'financiero' : 'datos-personales'}>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList variant="segmented" className="w-full">
               <TabsTrigger value="datos-personales" className="flex-1">
                 Datos personales
@@ -86,10 +100,21 @@ export function LegajoAlumno() {
               />
             </TabsContent>
             <TabsContent value="academico" className="mt-4">
-              <AcademicoTab />
+              <AcademicoTab
+                studentId={id}
+                enrollmentKey={enrollmentKey}
+                onEnrollmentChange={handleEnrollmentChange}
+                onViewGrades={handleViewGrades}
+              />
             </TabsContent>
             <TabsContent value="evaluacion" className="mt-4">
-              <EvaluacionTab />
+              <EvaluacionTab
+                studentId={id}
+                enrollmentKey={enrollmentKey}
+                onEnrollmentChange={handleEnrollmentChange}
+                sectionEnrollmentId={sectionEnrollmentId}
+                onSectionChange={setSectionEnrollmentId}
+              />
             </TabsContent>
             <TabsContent value="financiero" className="mt-4">
               <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} roleBase={rolBase} />

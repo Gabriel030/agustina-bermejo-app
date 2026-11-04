@@ -2,6 +2,7 @@ package com.red_escuela.backend.shared.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.slf4j.MDC;
 
 import java.util.List;
@@ -10,8 +11,8 @@ import java.util.Locale;
 public record ErrorCodeResponse(
         String code,
         boolean retryable,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String requestId,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<PolicyViolation> violations) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_NULL) String requestId,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_EMPTY) List<PolicyViolation> violations) {
     public static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
     public static final String UNAUTHENTICATED_CODE = "UNAUTHENTICATED";
     public static final String TOKEN_EXPIRED_CODE = "TOKEN_EXPIRED";
