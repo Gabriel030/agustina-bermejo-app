@@ -46,14 +46,14 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión A', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
+    And request { name: 'Comisión A', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
     When method post
     Then status 201
     * def sectionAId = response.id
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
+    And request { name: 'Comisión B', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
     When method post
     Then status 201
     * def sectionBId = response.id

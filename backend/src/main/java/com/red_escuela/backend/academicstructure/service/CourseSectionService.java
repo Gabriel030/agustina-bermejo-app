@@ -62,6 +62,7 @@ public class CourseSectionService {
 
     @Transactional
     public CourseSubjectSection create(Long courseSubjectId, CreateSectionRequest request) {
+        identityAssigner.requireShift(request.shift());
         CourseSubject courseSubject = courseSubjectRepository.findById(courseSubjectId)
                 .orElseThrow(() -> new CourseSubjectNotFoundException(courseSubjectId));
         Term term = termRepository.findById(request.termId())

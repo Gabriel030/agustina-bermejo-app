@@ -225,7 +225,7 @@ Feature: Catálogo — Cursos (CourseController)
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión única', termId: '#(termId)', capacity: 1 }
+    And request { name: 'Comisión única', shift: 'MORNING', termId: '#(termId)', capacity: 1 }
     When method post
     Then status 201
 

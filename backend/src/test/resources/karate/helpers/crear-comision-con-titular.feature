@@ -13,7 +13,7 @@ Feature: Helper — crea un ciclo con fechas dadas, una comisión de la materia 
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión QA config', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
+    And request { name: 'Comisión QA config', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
     When method post
     Then status 201
     * def sectionId = response.id

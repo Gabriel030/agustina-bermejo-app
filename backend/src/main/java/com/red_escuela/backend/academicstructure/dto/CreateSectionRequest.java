@@ -21,10 +21,10 @@ public record CreateSectionRequest(
         RequestLimits.requireAtMost("capacity", capacity, 10000);
     }
     public CreateSectionRequest(String name, Long termId, String schedule, Integer capacity, Long evaluationSchemeId, Percentage maxAbsencePercent) {
-        this(name, termId, schedule, capacity, evaluationSchemeId, maxAbsencePercent, null, null);
+        this(name, termId, schedule, capacity, evaluationSchemeId, maxAbsencePercent, SectionShift.MORNING, null);
     }
 
     public CreateSectionRequest(String name, Long termId, String schedule, Integer capacity, Long evaluationSchemeId) {
-        this(name, termId, schedule, capacity, evaluationSchemeId, null, null, null);
+        this(name, termId, schedule, capacity, evaluationSchemeId, null, SectionShift.MORNING, null);
     }
 }
