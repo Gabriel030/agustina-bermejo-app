@@ -2,14 +2,11 @@ package com.red_escuela.backend.identity.usecase.person;
 
 import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
-import com.red_escuela.backend.shared.domain.DocumentNumber;
-import com.red_escuela.backend.shared.domain.DocumentType;
-import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.identity.service.OwnDocumentChanger;
+import com.red_escuela.backend.identity.service.EmailChangeRequester;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
@@ -18,9 +15,16 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
     private final PersonRepository personRepository;
     private final CurrentPersonService currentPersonService;
 
-    public UpdateOwnProfileService(PersonRepository personRepository, CurrentPersonService currentPersonService) {
+    private final EmailChangeRequester emailChangeRequester;
+    private final OwnDocumentChanger ownDocumentChanger;
+
+    public UpdateOwnProfileService(PersonRepository personRepository, CurrentPersonService currentPersonService,
+                                   EmailChangeRequester emailChangeRequester,
+                                   OwnDocumentChanger ownDocumentChanger) {
         this.personRepository = personRepository;
         this.currentPersonService = currentPersonService;
+        this.emailChangeRequester = emailChangeRequester;
+        this.ownDocumentChanger = ownDocumentChanger;
     }
 
     @Override
@@ -29,13 +33,7 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
         Person person = currentPersonService.resolveCurrentPerson();
 
         if (request.email() != null) {
-            EmailAddress newEmail = EmailAddress.of(request.email());
-            personRepository.findByEmail(newEmail)
-                    .filter(owner -> !owner.getId().equals(person.getId()))
-                    .ifPresent(owner -> {
-                        throw new EmailAlreadyExistsException(request.email());
-                    });
-            person.setEmail(newEmail);
+            emailChangeRequester.requestOwnChange(person, request.email(), request.currentPassword());
         }
         if (request.telefono() != null) {
             person.setPhoneNumber(request.telefono());
@@ -44,14 +42,7 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
             person.setSex(request.sexo());
         }
         if (request.dni() != null && !request.dni().isBlank()) {
-            DocumentNumber document = DocumentNumber.of(
-                    request.documentType() == null ? DocumentType.DNI : request.documentType(), request.dni());
-            personRepository.findByDocumentTypeAndDni(document.type(), document.value())
-                    .filter(owner -> !owner.getId().equals(person.getId()))
-                    .ifPresent(owner -> {
-                        throw new DniAlreadyExistsException(document.type(), document.value());
-                    });
-            person.changeDocument(document.type(), document.value());
+            ownDocumentChanger.changeDocument(person, request.documentType(), request.dni(), request.currentPassword());
         }
 
         var address = person.getAddress();

@@ -33,6 +33,7 @@ final class StaffTestFixtures {
         CurrentPersonService currentPersonService = mock(CurrentPersonService.class);
         when(currentPersonService.resolveCurrentPerson())
                 .thenReturn(personWithRoles(1L, StatusType.ACTIVE, actorRole));
-        return new StaffRoleAssignmentPolicy(currentPersonService);
+        return new StaffRoleAssignmentPolicy(currentPersonService,
+                mock(com.red_escuela.backend.identity.service.EmailChangeRequester.class));
     }
 }

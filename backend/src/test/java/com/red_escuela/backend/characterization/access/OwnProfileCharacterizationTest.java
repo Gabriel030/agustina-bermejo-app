@@ -30,7 +30,7 @@ class OwnProfileCharacterizationTest extends AccessCharacterizationSupport {
     void ownProfileEditIsVisibleInTheNextGetAndTheDniIsAlsoEditable() throws Exception {
         Person person = persistPerson("access.profile1", "70000041", "ALUMNO");
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest("nuevo.mail@example.com", "1155556666",
-                null, "99999999", null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
+                null, "99999999", null, "Calle Nueva", "10", null, "Ciudad", null, null, null, PASSWORD);
 
         mockMvc.perform(put("/me")
                         .header("Authorization", bearer(person))
@@ -40,7 +40,7 @@ class OwnProfileCharacterizationTest extends AccessCharacterizationSupport {
 
         mockMvc.perform(get("/me").header("Authorization", bearer(person)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("nuevo.mail@example.com"))
+                .andExpect(jsonPath("$.email").value("access.profile1@example.com"))
                 .andExpect(jsonPath("$.dni").value("99999999"));
     }
 

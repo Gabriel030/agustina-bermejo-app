@@ -23,8 +23,15 @@ public class StaffRoleAssignmentPolicy {
 
     private final CurrentPersonService currentPersonService;
 
-    public StaffRoleAssignmentPolicy(CurrentPersonService currentPersonService) {
+    private final EmailChangeRequester emailChangeRequester;
+
+    public StaffRoleAssignmentPolicy(CurrentPersonService currentPersonService, EmailChangeRequester emailChangeRequester) {
         this.currentPersonService = currentPersonService;
+        this.emailChangeRequester = emailChangeRequester;
+    }
+
+    public void requireNoEmailChangeInFlight(Person target) {
+        emailChangeRequester.requireNoEmailChangeInFlight(target);
     }
 
     public void requireCanAssign(String targetRole) {
