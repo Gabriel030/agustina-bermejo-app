@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -31,6 +31,9 @@ function mockSection({ savedStatusForAna } = {}) {
 function rowOf(name) {
   return screen.getByText(name).closest('div.rounded-2xl');
 }
+
+const draftKey = () => `attendanceDraft:PROGRAM:5:${localIsoDate()}`;
+
 
 describe('TabAsistencia', () => {
   it('abre en la fecha de hoy según el reloj local', async () => {
@@ -81,5 +84,74 @@ describe('TabAsistencia', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
 
     expect(await screen.findByText('Esa fecha es feriado: no se puede tomar asistencia.')).toBeInTheDocument();
+  });
+  it('keeps what was loaded when the submit fails, tells the cause and allows retrying', async () => {
+    mockSection();
+    let calls = 0;
+    server.use(
+      http.post(`${API}/program-sections/5/attendance`, () => {
+        calls += 1;
+        return calls === 1 ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) : new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    await user.click(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Ausente' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
+
+    expect(await screen.findByText(/El servicio no está disponible por ahora/)).toBeInTheDocument();
+    expect(screen.getByText('1 / 2 procesados')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar asistencia' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
+    await screen.findByText('✓ Asistencia guardada', {}, { timeout: 2000 }).catch(() => null);
+    expect(calls).toBe(2);
+    expect(localStorage.getItem(draftKey())).toBeNull();
+  });
+
+  it('stores a local draft and recovers it after reloading', async () => {
+    mockSection();
+    const user = userEvent.setup();
+    const first = renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    await user.click(within(rowOf('Bruno Díaz')).getByRole('button', { name: 'Tarde' }));
+    expect(localStorage.getItem(draftKey())).not.toBeNull();
+    first.unmount();
+
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+    await screen.findByText('Ana Gómez');
+    expect(await screen.findByText('Recuperamos tu asistencia sin enviar.')).toBeInTheDocument();
+    expect(screen.getByText('1 / 2 procesados')).toBeInTheDocument();
+    expect(screen.getByText('● Cambios sin guardar')).toBeInTheDocument();
+  });
+
+  it('does not recover an expired draft', async () => {
+    mockSection();
+    localStorage.setItem(
+      draftKey(),
+      JSON.stringify({ estados: { 12: 'LATE' }, topic: '', observations: '', savedAt: Date.now() - 13 * 60 * 60 * 1000 }),
+    );
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    expect(screen.queryByText('Recuperamos tu asistencia sin enviar.')).not.toBeInTheDocument();
+    expect(screen.getByText('0 / 2 procesados')).toBeInTheDocument();
+  });
+
+  it('clears the draft after a successful submit', async () => {
+    mockSection();
+    server.use(http.post(`${API}/program-sections/5/attendance`, () => new HttpResponse(null, { status: 204 })));
+    const user = userEvent.setup();
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    await user.click(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Presente' }));
+    expect(localStorage.getItem(draftKey())).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
+    await screen.findByText('Todavía no se tomó asistencia esta fecha').catch(() => null);
+    await vi.waitFor(() => expect(localStorage.getItem(draftKey())).toBeNull());
   });
 });
