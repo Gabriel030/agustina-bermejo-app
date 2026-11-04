@@ -1,11 +1,13 @@
 package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.ClassroomAvailabilityResponse;
+import com.red_escuela.backend.academicstructure.dto.ClassroomOccupancyResponse;
 import com.red_escuela.backend.academicstructure.dto.ClassroomResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateClassroomRequest;
 import com.red_escuela.backend.academicstructure.usecase.classroom.CreateClassroomUseCase;
 import com.red_escuela.backend.academicstructure.usecase.classroom.DeactivateClassroomUseCase;
 import com.red_escuela.backend.academicstructure.usecase.classroom.GetClassroomAvailabilityUseCase;
+import com.red_escuela.backend.academicstructure.usecase.classroom.GetClassroomOccupancyUseCase;
 import com.red_escuela.backend.academicstructure.usecase.classroom.ListClassroomsUseCase;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -30,13 +33,16 @@ public class ClassroomController {
     private final ListClassroomsUseCase listClassrooms;
     private final DeactivateClassroomUseCase deactivateClassroom;
     private final GetClassroomAvailabilityUseCase getAvailability;
+    private final GetClassroomOccupancyUseCase getOccupancy;
 
     public ClassroomController(
             CreateClassroomUseCase createClassroom,
             ListClassroomsUseCase listClassrooms,
             DeactivateClassroomUseCase deactivateClassroom,
-            GetClassroomAvailabilityUseCase getAvailability
+            GetClassroomAvailabilityUseCase getAvailability,
+            GetClassroomOccupancyUseCase getOccupancy
     ) {
+        this.getOccupancy = getOccupancy;
         this.createClassroom = createClassroom;
         this.listClassrooms = listClassrooms;
         this.deactivateClassroom = deactivateClassroom;
@@ -69,8 +75,20 @@ public class ClassroomController {
             @PathVariable Long id,
             @RequestParam DayOfWeek dayOfWeek,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
+            @RequestParam(required = false) Integer seats
     ) {
-        return getAvailability.getAvailability(id, dayOfWeek, startTime, endTime);
+        return getAvailability.getAvailability(id, dayOfWeek, startTime, endTime, seats);
+    }
+
+    @GetMapping("/classrooms/{id}/occupancy")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public ClassroomOccupancyResponse occupancy(
+            @PathVariable Long id,
+            @RequestParam Long termId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        return getOccupancy.getOccupancy(id, termId, from, to);
     }
 }
