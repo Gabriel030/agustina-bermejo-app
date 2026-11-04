@@ -152,6 +152,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def sinFactura = response.filter(function(x){ return x.id == applicationId })[0]
     And match sinFactura.admissionInvoice == null
 
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_FRENTE' }
     * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_DORSO' }
     * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'ANALITICO_SECUNDARIO' }
 
