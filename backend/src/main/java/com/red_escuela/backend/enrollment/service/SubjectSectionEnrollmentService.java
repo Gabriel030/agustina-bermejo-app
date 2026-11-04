@@ -93,6 +93,9 @@ public class SubjectSectionEnrollmentService {
         validateEnrollmentWindow(section.termId());
         enrollmentFeeRequirementService.requireForTerm(programEnrollment, academicReferenceFinder.findTerm(section.termId()));
 
+        programEnrollment = lockProgramEnrollmentOrThrow(programEnrollmentId);
+        validateActiveProgramEnrollment(programEnrollment);
+
         Long subjectId = section.subjectId();
         List<SubjectSectionEnrollment> activasMismaMateria = subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
@@ -142,6 +145,7 @@ public class SubjectSectionEnrollmentService {
 
     @Transactional
     public void withdraw(Long id) {
+        sectionFinder.lockProgramSection(findSubjectSectionIdOrThrow(id));
         SubjectSectionEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
@@ -155,6 +159,8 @@ public class SubjectSectionEnrollmentService {
 
     @Transactional
     public SubjectSectionEnrollment changeSection(Long id, ChangeSectionRequest request) {
+        lockProgramEnrollmentOrThrow(findProgramEnrollmentIdOrThrow(id));
+        lockSectionsInAscendingOrder(findSubjectSectionIdOrThrow(id), request.newSectionId());
         SubjectSectionEnrollment origen = findOrThrow(id);
         if (origen.getStatus() != EnrollmentStatus.ENROLLED && origen.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
@@ -233,6 +239,10 @@ public class SubjectSectionEnrollmentService {
 
     private void promoteNextFromWaitlist(Long sectionId) {
         sectionFinder.lockProgramSection(sectionId);
+        ProgramSectionView section = sectionFinder.findProgramSection(sectionId);
+        if (countOccupiedSeats(sectionId) >= capacityOf(section)) {
+            return;
+        }
         subjectSectionEnrollmentRepository
                 .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {
@@ -243,12 +253,44 @@ public class SubjectSectionEnrollmentService {
 
     private EnrollmentStatus calculateStatusByCapacity(ProgramSectionView section) {
         sectionFinder.lockProgramSection(section.id());
-        int ocupadas = subjectSectionEnrollmentRepository
-                .findBySubjectSectionIdAndStatusIn(section.id(),
+        return countOccupiedSeats(section.id()) < capacityOf(section)
+                ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
+    private int countOccupiedSeats(Long sectionId) {
+        return subjectSectionEnrollmentRepository
+                .findBySubjectSectionIdAndStatusIn(sectionId,
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
                 .size();
-        return section.capacity() == null || ocupadas < section.capacity()
-                ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
+    private int capacityOf(ProgramSectionView section) {
+        return section.capacity() == null ? Integer.MAX_VALUE : section.capacity();
+    }
+
+    private void lockSectionsInAscendingOrder(Long firstSectionId, Long secondSectionId) {
+        sectionFinder.lockProgramSection(Math.min(firstSectionId, secondSectionId));
+        sectionFinder.lockProgramSection(Math.max(firstSectionId, secondSectionId));
+    }
+
+    private ProgramEnrollment findProgramEnrollmentOrThrow(Long id) {
+        return programEnrollmentRepository.findById(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
+    }
+
+    private ProgramEnrollment lockProgramEnrollmentOrThrow(Long id) {
+        return programEnrollmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
+    }
+
+    private Long findProgramEnrollmentIdOrThrow(Long sectionEnrollmentId) {
+        return subjectSectionEnrollmentRepository.findProgramEnrollmentIdById(sectionEnrollmentId)
+                .orElseThrow(() -> new SectionEnrollmentNotFoundException(sectionEnrollmentId));
+    }
+
+    private Long findSubjectSectionIdOrThrow(Long sectionEnrollmentId) {
+        return subjectSectionEnrollmentRepository.findSubjectSectionIdById(sectionEnrollmentId)
+                .orElseThrow(() -> new SectionEnrollmentNotFoundException(sectionEnrollmentId));
     }
 
     private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId) {
@@ -298,11 +340,6 @@ public class SubjectSectionEnrollmentService {
         if (!window.open()) {
             throw new EnrollmentWindowClosedException("Fuera de la ventana de inscripción del Term " + termId);
         }
-    }
-
-    private ProgramEnrollment findProgramEnrollmentOrThrow(Long id) {
-        return programEnrollmentRepository.findById(id)
-                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
     }
 
     private SubjectSectionEnrollment findOrThrow(Long id) {
