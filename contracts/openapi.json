@@ -9161,9 +9161,17 @@
           "emailVerified" : {
             "type" : "boolean"
           },
+          "failedLoginAttempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "lockedUntil" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "nombre" : {
             "type" : "string"
@@ -9181,7 +9189,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "id", "nombre", "role", "status", "telefono", "username" ],
+        "required" : [ "apellido", "authProvider", "dni", "documentType", "domicilio", "email", "emailVerified", "failedLoginAttempts", "id", "lockedUntil", "nombre", "role", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StaffResponse" : {
