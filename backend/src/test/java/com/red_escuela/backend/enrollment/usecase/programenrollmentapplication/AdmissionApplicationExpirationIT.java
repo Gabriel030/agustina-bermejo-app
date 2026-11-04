@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
@@ -134,6 +135,7 @@ class AdmissionApplicationExpirationIT extends AbstractIntegrationTest {
             student.setInstitution(institution);
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
+            StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
             Program program = new Program();
             program.setName("Carrera " + System.nanoTime());
             program.setTotalYears(3);

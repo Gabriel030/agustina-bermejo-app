@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 
@@ -41,6 +42,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import com.red_escuela.backend.enrollment.entity.DocumentType;
+import com.red_escuela.backend.enrollment.exception.ApplicationDocumentsIncompleteException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -168,8 +171,46 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
+        StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
         entityManager.flush();
         return requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));
+    }
+
+    private ProgramEnrollmentApplication requestApplicationWithoutDocuments(String dni, DocumentType omitted) {
+        ProgramEnrollmentApplication application = requestApplication(dni);
+        Long studentId = application.getStudent().getId();
+        entityManager.flush();
+        entityManager.createQuery("delete from StudentDocument d where d.student.id = :id and d.type = :type")
+                .setParameter("id", studentId).setParameter("type", omitted).executeUpdate();
+        entityManager.clear();
+        return application;
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingWithoutOneRequiredDocumentIsRejectedAndKeepsTheApplicationPending() {
+        ProgramEnrollmentApplication application = requestApplicationWithoutDocuments("81000040", DocumentType.DNI_DORSO);
+        Person preceptor = persistPreceptor();
+
+        assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor)))
+                .isInstanceOf(ApplicationDocumentsIncompleteException.class)
+                .hasMessageContaining("DNI_DORSO");
+
+        assertThat(admissionInvoicesOf(entityManager.find(ProgramEnrollmentApplication.class, application.getId()).getStudent())).isZero();
+        assertThat(entityManager.find(ProgramEnrollmentApplication.class, application.getId()).getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingWithoutAnyDocumentIsRejected() {
+        ProgramEnrollmentApplication application = requestApplication("81000041");
+        entityManager.flush();
+        entityManager.createQuery("delete from StudentDocument d where d.student.id = :id").setParameter("id", application.getStudent().getId()).executeUpdate();
+        entityManager.clear();
+        Person preceptor = persistPreceptor();
+
+        assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor)))
+                .isInstanceOf(ApplicationDocumentsIncompleteException.class);
     }
 
     private Person persistPreceptor() {
@@ -295,6 +336,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Program program = persistProgram("Sin Precio " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
+        StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
         entityManager.flush();
         ProgramEnrollmentApplication application = requestProgramEnrollmentApplicationUseCase.request(
                 new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));

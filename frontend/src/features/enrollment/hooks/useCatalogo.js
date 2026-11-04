@@ -56,14 +56,21 @@ export function useMisSolicitudesCurso() {
   return useQuery({ queryKey: ['mis-solicitudes-curso'], queryFn: () => apiFetch('/me/course-enrollment-applications') });
 }
 
+const PARTES_DOCUMENTOS_CARRERA = {
+  DNI_FRENTE: 'dniFront',
+  DNI_DORSO: 'dniBack',
+  ANALITICO_SECUNDARIO: 'academicTranscript',
+};
+
 export function useSolicitarCarrera() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ programId, cohortId }) => {
+    mutationFn: ({ programId, cohortId, documentos }) => {
       const formData = new FormData();
       formData.append('programId', programId);
       formData.append('cohortId', cohortId);
-      return apiFetch('/me/program-enrollment-applications', { method: 'POST', body: formData });
+      Object.entries(PARTES_DOCUMENTOS_CARRERA).forEach(([tipo, parte]) => formData.append(parte, documentos[tipo]));
+      return apiFetch('/me/program-enrollment-applications/with-documents', { method: 'POST', body: formData });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-carrera'] }),
   });

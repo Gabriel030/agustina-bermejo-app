@@ -206,6 +206,16 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 "sofia.ramirez." + sufijo, "Test1234", institutionId);
     }
 
+    private void uploadRequiredDocuments(Long applicationId, String accessToken) throws Exception {
+        for (String type : new String[] {"DNI_FRENTE", "DNI_DORSO", "ANALITICO_SECUNDARIO"}) {
+            mockMvc.perform(multipart("/me/program-enrollment-applications/" + applicationId + "/documents")
+                            .file(new MockMultipartFile("file", type + ".pdf", "application/pdf", "%PDF-1.4 test".getBytes()))
+                            .param("type", type)
+                            .header("Authorization", "Bearer " + accessToken))
+                    .andExpect(status().isCreated());
+        }
+    }
+
     private void giveDni(String suffix) {
         entityManager.flush();
         entityManager.createQuery("update Person p set p.dni = :dni where p.username = :username")
@@ -301,6 +311,8 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isConflict());
+
+        uploadRequiredDocuments(applicationId, accessToken);
 
         String tokenPreceptor = preceptorToken();
         mockMvc.perform(post("/program-enrollment-applications/" + applicationId + "/approve")

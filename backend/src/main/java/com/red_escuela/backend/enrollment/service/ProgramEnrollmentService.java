@@ -60,6 +60,7 @@ public class ProgramEnrollmentService {
     private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
+    private final ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard;
     private final Clock clock;
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
@@ -74,6 +75,7 @@ public class ProgramEnrollmentService {
             EnrollmentDebtGuard enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
+            ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard,
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentFinder = studentFinder;
@@ -87,6 +89,7 @@ public class ProgramEnrollmentService {
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
+        this.documentCompletenessGuard = documentCompletenessGuard;
         this.clock = clock;
     }
 
@@ -242,6 +245,7 @@ public class ProgramEnrollmentService {
 
     public void validateStudentCanEnrollInProgram(Student student, Program program) {
         studentEnrollmentEligibility.requireConfirmedAndActive(student);
+        documentCompletenessGuard.requireAllRequiredDocuments(student.getId());
         boolean alreadyEnrolled = !programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED)).isEmpty();
         if (alreadyEnrolled) {

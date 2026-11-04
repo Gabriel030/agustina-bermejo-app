@@ -71,6 +71,24 @@ export const handlers = [
   http.post(`${API}/me/program-enrollment-applications`, () =>
     HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
   ),
+  http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
+    HttpResponse.json(
+      {
+        id: 1,
+        studentId: 1,
+        programId: 1,
+        programName: 'Carrera de prueba',
+        programCohortId: 1,
+        status: 'PENDING',
+        requestedAt: '2026-03-02T10:00:00',
+        decidedAt: null,
+        rejectionReason: null,
+        admissionInvoice: null,
+        programEnrollmentId: 1,
+      },
+      { status: 201 },
+    ),
+  ),
   http.post(`${API}/me/program-enrollment-applications/:id/documents`, () => new HttpResponse(null, { status: 201 })),
   http.get(`${API}/me/course-enrollment-applications`, () => HttpResponse.json([])),
   http.post(`${API}/me/course-enrollments`, () =>
