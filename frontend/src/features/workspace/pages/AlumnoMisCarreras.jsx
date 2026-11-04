@@ -105,7 +105,7 @@ export function AlumnoMisCarreras() {
             {graduated && <StatusPill tone="success">Carrera finalizada</StatusPill>}
             {progreso && !graduated && (
               <StatusPill tone={progreso.esRegular ? 'success' : 'neutral'}>
-                {progreso.esRegular ? 'Alumno regular' : 'No estás cursando'}
+                {progreso.esRegular ? 'Inscripción activa' : 'Sin inscripción activa'}
               </StatusPill>
             )}
           </div>
