@@ -23,6 +23,8 @@ public record ErrorCodeResponse(
     public static final String DATA_INTEGRITY_VIOLATION_CODE = "DATA_INTEGRITY_VIOLATION";
     public static final String CONCURRENT_MODIFICATION_CODE = "CONCURRENT_MODIFICATION";
 
+    public static final String EXTERNAL_SERVICE_UNAVAILABLE_CODE = "EXTERNAL_SERVICE_UNAVAILABLE";
+
     private static final String EXCEPTION_SUFFIX = "Exception";
     private static final String REQUEST_ID_KEY = "requestId";
 
@@ -35,6 +37,9 @@ public record ErrorCodeResponse(
     }
 
     public static String codeOf(Class<?> exceptionType) {
+        if (CircuitOpenException.class.isAssignableFrom(exceptionType)) {
+            return EXTERNAL_SERVICE_UNAVAILABLE_CODE;
+        }
         String name = exceptionType.getSimpleName();
         if (name.endsWith(EXCEPTION_SUFFIX)) {
             name = name.substring(0, name.length() - EXCEPTION_SUFFIX.length());
