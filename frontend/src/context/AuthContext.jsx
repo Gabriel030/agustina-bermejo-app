@@ -3,6 +3,29 @@ import { apiFetch, setAccessToken, setSessionExpiredHandler } from '@/api/client
 
 const AuthContext = createContext(null);
 
+let storedSessionRestoration = null;
+
+export function restoreStoredSession() {
+  if (!storedSessionRestoration) {
+    storedSessionRestoration = loadStoredSession().finally(() => {
+      storedSessionRestoration = null;
+    });
+  }
+  return storedSessionRestoration;
+}
+
+async function loadStoredSession() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return null;
+  const tokens = await apiFetch('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
+  });
+  setAccessToken(tokens.accessToken);
+  localStorage.setItem('refreshToken', tokens.refreshToken);
+  return apiFetch('/me');
+}
+
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -18,31 +41,13 @@ export function AuthProvider({ children }) {
     setSessionExpiredHandler(limpiarSesion);
   }, [limpiarSesion]);
 
-  // Al montar: si hay refreshToken guardado, se intenta retomar la sesión antes de
-  // mostrar cualquier pantalla protegida (ver decisión 4 de la spec).
   useEffect(() => {
-    async function restaurarSesion() {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        setCargando(false);
-        return;
-      }
-      try {
-        const tokens = await apiFetch('/auth/refresh', {
-          method: 'POST',
-          body: JSON.stringify({ refreshToken }),
-        });
-        setAccessToken(tokens.accessToken);
-        localStorage.setItem('refreshToken', tokens.refreshToken);
-        const perfil = await apiFetch('/me');
-        setUsuario(perfil);
-      } catch {
-        limpiarSesion();
-      } finally {
-        setCargando(false);
-      }
-    }
-    restaurarSesion();
+    restoreStoredSession()
+      .then((perfil) => {
+        if (perfil) setUsuario(perfil);
+      })
+      .catch(limpiarSesion)
+      .finally(() => setCargando(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
