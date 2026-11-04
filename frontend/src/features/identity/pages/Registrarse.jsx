@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/api/client';
+import { messageForAuthError } from '@/features/identity/lib/loginErrors';
 
 const PASSWORD_MIN_LENGTH = 8;
 // Mismo criterio que auth.password.require-letter-and-digit/require-uppercase del
@@ -73,9 +74,9 @@ export function Registrarse() {
       await register({ nombre, apellido, email, username: email, password, institutionId });
     } catch (err) {
       setError(
-        err.message === 'La operación entra en conflicto con el estado actual.'
+        err.code === 'EMAIL_ALREADY_EXISTS'
           ? 'Ese email ya está registrado.'
-          : 'No pudimos crear tu cuenta. Revisá los datos e intentá de nuevo.',
+          : messageForAuthError(err, { fallback: 'No pudimos crear tu cuenta. Revisá los datos e intentá de nuevo.' }),
       );
     } finally {
       setEnviando(false);

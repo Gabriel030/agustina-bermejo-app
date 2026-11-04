@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
+import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { Registrarse } from '@/features/identity/pages/Registrarse';
@@ -44,7 +45,7 @@ describe('Registrarse', () => {
   });
 
   it('muestra "Ese email ya está registrado." cuando el backend devuelve 409', async () => {
-    server.use(http.post(`${API}/auth/register`, () => new HttpResponse(null, { status: 409 })));
+    server.use(http.post(`${API}/auth/register`, () => HttpResponse.json(errorBody('EMAIL_ALREADY_EXISTS'), { status: 409 })));
     const user = userEvent.setup();
     renderRegistrarse();
 
