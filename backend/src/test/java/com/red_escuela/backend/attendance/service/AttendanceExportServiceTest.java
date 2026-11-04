@@ -13,6 +13,10 @@ import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAt
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryUseCase;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.text.TextPosition;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
@@ -191,5 +195,65 @@ class AttendanceExportServiceTest {
 
         verifyNoInteractions(programHistory, courseHistory, programReport, courseReport);
         verify(programHistory, never()).get(org.mockito.ArgumentMatchers.any());
+    }
+
+    private static final int BIG_STUDENTS = 300;
+    private static final int BIG_DATES = 40;
+
+    private static AttendanceHistoryResponse bigHistory() {
+        List<LocalDate> dates = new java.util.ArrayList<>();
+        for (int d = 0; d < BIG_DATES; d++) {
+            dates.add(FIRST_DAY.plusDays(d));
+        }
+        List<AttendanceHistoryResponse.StudentHistoryRow> rows = new java.util.ArrayList<>();
+        for (int s = 1; s <= BIG_STUDENTS; s++) {
+            Map<LocalDate, AttendanceHistoryResponse.HistoryCell> cells = new java.util.HashMap<>();
+            dates.forEach(date -> cells.put(date, new AttendanceHistoryResponse.HistoryCell(1L, "PRESENT")));
+            rows.add(new AttendanceHistoryResponse.StudentHistoryRow(
+                    (long) s, "Alumno%03d".formatted(s), cells, Percentage.ratio(1, 2).orElseThrow()));
+        }
+        return new AttendanceHistoryResponse(dates, rows);
+    }
+
+    private static final class BoundsStripper extends PDFTextStripper {
+        float maxX;
+        float maxY;
+
+        BoundsStripper() throws IOException {
+        }
+
+        @Override
+        protected void writeString(String text, List<TextPosition> positions) throws IOException {
+            for (TextPosition position : positions) {
+                maxX = Math.max(maxX, position.getX() + position.getWidth());
+                maxY = Math.max(maxY, position.getY());
+            }
+            super.writeString(text, positions);
+        }
+    }
+
+    @Test
+    void largePdfHistorySplitsIntoPagesAndKeepsEveryRowAndDate() throws IOException {
+        when(programHistory.get(new GetProgramSectionAttendanceHistoryCommand(SECTION_ID, null))).thenReturn(bigHistory());
+
+        ExportedFile file = service().exportProgramSection(SECTION_ID, null, "history", "pdf", null);
+
+        try (PDDocument document = Loader.loadPDF(file.content())) {
+            assertThat(document.getNumberOfPages()).isGreaterThan(10);
+            BoundsStripper stripper = new BoundsStripper();
+            String text = stripper.getText(document);
+            float pageWidth = document.getPage(0).getMediaBox().getWidth();
+            float pageHeight = document.getPage(0).getMediaBox().getHeight();
+            assertThat(text).contains("Alumno300", "Alumno001", FIRST_DAY.plusDays(BIG_DATES - 1).toString(),
+                    "% Asistencia", "parte 1 de", "parte 6 de 6");
+            assertThat(stripper.maxX).isLessThanOrEqualTo(pageWidth - 20);
+            assertThat(stripper.maxY).isLessThanOrEqualTo(pageHeight - 20);
+            for (int page = 1; page <= document.getNumberOfPages(); page++) {
+                PDFTextStripper pageStripper = new PDFTextStripper();
+                pageStripper.setStartPage(page);
+                pageStripper.setEndPage(page);
+                assertThat(pageStripper.getText(document)).contains("Alumno ");
+            }
+        }
     }
 }
