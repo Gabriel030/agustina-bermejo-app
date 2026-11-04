@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.authorization.usecase.ListAuthorizationRe
 import com.red_escuela.backend.billing.authorization.usecase.RejectAuthorizationRequestUseCase;
 import com.red_escuela.backend.billing.authorization.usecase.WithdrawAuthorizationRequestUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,16 +61,19 @@ public class AuthorizationRequestController {
         return AuthorizationRequestDetailResponse.from(getUseCase.getAuthorizationRequest(id));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/authorization-requests/{id}/approve")
     public AuthorizationRequestResponse approve(@PathVariable Long id, @Valid @RequestBody(required = false) AuthorizationRequestDecisionRequest request) {
         return AuthorizationRequestResponse.from(approveUseCase.approve(id, reasonOf(request)));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/authorization-requests/{id}/reject")
     public AuthorizationRequestResponse reject(@PathVariable Long id, @Valid @RequestBody(required = false) AuthorizationRequestDecisionRequest request) {
         return AuthorizationRequestResponse.from(rejectUseCase.reject(id, reasonOf(request)));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/authorization-requests/{id}/withdraw")
     public AuthorizationRequestResponse withdraw(@PathVariable Long id) {
         return AuthorizationRequestResponse.from(withdrawUseCase.withdraw(id));

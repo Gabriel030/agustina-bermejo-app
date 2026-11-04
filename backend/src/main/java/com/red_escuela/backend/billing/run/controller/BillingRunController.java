@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.run.dto.NightlyBillingExecutionResponse;
 import com.red_escuela.backend.billing.run.dto.NightlyBillingRunResponse;
 import com.red_escuela.backend.billing.run.usecase.BillingRunExecutionUseCase;
 import com.red_escuela.backend.billing.run.usecase.BillingRunQueryUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,7 @@ public class BillingRunController {
         return queryUseCase.listNightlyBillingRuns(from, to);
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/executions")
     @PreAuthorize("hasRole('DIRECTOR')")
     public ResponseEntity<NightlyBillingExecutionResponse> executeTodaysNightlyRun() {

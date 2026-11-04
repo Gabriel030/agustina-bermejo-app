@@ -22,6 +22,9 @@ import { multiSelectFilter } from './multiSelectFilter';
 
 const EXPANDER_COLUMN_ID = 'expander';
 const LOADING_ROWS = 4;
+const STICKY_SHADOW = 'shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]';
+const STICKY_HEAD_CLASS = `sticky left-0 z-20 bg-dialog-bg ${STICKY_SHADOW}`;
+const STICKY_CELL_CLASS = `sticky left-0 z-10 bg-dialog-bg ${STICKY_SHADOW}`;
 
 function ExpandToggle({ row, label }) {
   'use no memo';
@@ -89,6 +92,7 @@ function HeaderCell({ header, compact }) {
       aria-sort={ariaSort}
       className={cn(
         meta.align === 'right' && 'text-right',
+        meta.sticky && STICKY_HEAD_CLASS,
         meta.headerClassName,
         compact && 'bg-dialog-bg',
         compact && meta.stickyStart && 'sticky left-0 z-30 shadow-[6px_0_8px_-6px_oklch(30%_0.05_260/0.25)]',
@@ -379,6 +383,7 @@ export function DataTable({
                     key={cell.id}
                     className={cn(
                       meta.align === 'right' && 'text-right',
+                      meta.sticky && STICKY_CELL_CLASS,
                       compact && 'border-t border-border py-1',
                       stickyStartClass(meta, compact),
                       compact && meta.stickyStart && 'group-hover:bg-accent-soft',

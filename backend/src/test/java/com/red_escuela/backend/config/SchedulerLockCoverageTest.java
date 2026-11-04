@@ -19,7 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SchedulerLockCoverageTest {
 
     private static final Set<String> PER_INSTANCE_JOBS = Set.of(
-            "com.red_escuela.backend.identity.infrastructure.LoginRateLimiter#evictIdleClients");
+            "com.red_escuela.backend.identity.infrastructure.LoginRateLimiter#evictIdleClients",
+            "com.red_escuela.backend.config.RequestRateLimitFilter#evictIdleClients");
 
     @Test
     void everyScheduledMethodDeclaresASchedulerLockWithAUniqueName() throws ClassNotFoundException {

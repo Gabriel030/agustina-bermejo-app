@@ -119,6 +119,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
 | `INVALID_ISSUANCE_SETTINGS` | no | `InvalidIssuanceSettingsException` | billing |
+| `INVALID_JUSTIFICATION_INPUT` | no | `InvalidJustificationInputException` | attendance |
 | `INVALID_LATE_PAYMENT_SETTINGS` | no | `InvalidLatePaymentSettingsException` | billing |
 | `INVALID_MARKETING_DISCOUNT` | no | `InvalidMarketingDiscountException` | billing |
 | `INVALID_MONTH_RANGE` | no | `InvalidMonthRangeException` | billing |
@@ -444,6 +445,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
 | `RATE_LIMIT_EXCEEDED` | sí | `RateLimitExceededException` | identity |
+| `REQUEST_RATE_LIMIT_EXCEEDED` | sí | `RequestRateLimitExceededException` | shared |
 
 ### HTTP 500
 

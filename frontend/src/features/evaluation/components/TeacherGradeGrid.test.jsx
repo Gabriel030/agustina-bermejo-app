@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -90,7 +91,7 @@ describe('TeacherGradeGrid', () => {
   it('marks a failed cell with a retry and keeps its value', async () => {
     useGrid();
     server.use(
-      http.post(`${API}/section-enrollments/12/grade-items`, () => HttpResponse.json({ code: 'NO_EVALUATION_SCHEME', violations: [] }, { status: 409 })),
+      http.post(`${API}/section-enrollments/12/grade-items`, () => HttpResponse.json(errorBody('NO_EVALUATION_SCHEME'), { status: 409 })),
     );
     const user = userEvent.setup();
     renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);

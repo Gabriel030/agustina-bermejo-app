@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.payment.dto.RevokeBankTransferApprovalReq
 import com.red_escuela.backend.billing.payment.usecase.RegisterChargebackUseCase;
 import com.red_escuela.backend.billing.payment.usecase.ReverseChargebackUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RevokeBankTransferApprovalUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -32,6 +33,7 @@ public class PaymentReversalController {
         this.reverseChargebackUseCase = reverseChargebackUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/payments/{paymentId}/approval-revocation")
     @PreAuthorize("hasRole('DIRECTOR')")
     @ApiResponses({
@@ -42,6 +44,7 @@ public class PaymentReversalController {
         return PaymentReversalResponse.from(revokeBankTransferApprovalUseCase.revokeBankTransferApproval(paymentId, request.reason()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/payments/{paymentId}/chargebacks")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
@@ -53,6 +56,7 @@ public class PaymentReversalController {
         return PaymentReversalResponse.from(registerChargebackUseCase.registerChargeback(paymentId, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/chargebacks/{chargebackId}/reversal")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     @ApiResponses({

@@ -14,6 +14,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [frontend.md](context/frontend.md) | Convenciones de frontend, flujo de diseño con `ux-advisor`, rutas por rol | vigente |
 | [components.md](context/components.md) | Qué componente usar y cómo listarlos en una spec | vigente |
 | [modules.md](context/modules.md) | Límites entre módulos con Spring Modulith, línea base de violaciones | vigente |
+| [overload-protection.md](context/overload-protection.md) | Rate limit, IP real detrás de proxy, timeouts, pool, límites de entrada y dead letter de la cola de eventos | vigente |
 | [testing.md](context/testing.md) | Mapa de herramientas de test y criterio de qué test escribir | vigente |
 | [debugging.md](context/debugging.md) | Correr todo local y resolver arranques fallidos | vigente |
 | [workflow.md](context/workflow.md) | Git, CI local, commits, PRs, migraciones y backport | vigente |
@@ -46,6 +47,7 @@ El resto de la carpeta son artefactos generados, sin documento `.md`: `component
 | [billing/decision-registry.md](billing/decision-registry.md) | Registro de decisiones D-xxx; entrada obligatoria de specs y tests de billing | vigente (lo valida `BillingDecisionRegistryTest`) |
 | [billing/policy-catalog.md](billing/policy-catalog.md) | Catálogo de validaciones de facturación | generado (`PolicyCatalogTest`) |
 | [billing/mutation-exclusions.md](billing/mutation-exclusions.md) | Mutantes equivalentes excluidos de PIT | vigente |
+| [billing/mirror-mode-endpoint-classification.md](billing/mirror-mode-endpoint-classification.md) | Qué endpoints de billing sirven en MIRROR (lecturas) y cuáles solo en FULL (escrituras) | vigente (lo valida `BillingEndpointModeClassificationTest`) |
 
 ## API (`docs/api/`)
 
