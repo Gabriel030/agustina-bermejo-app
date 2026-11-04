@@ -17,9 +17,4 @@ public class CalculateProgramEnrollmentAttendanceRiskService implements Calculat
     public AttendanceRiskResponse calculate(Long enrollmentId) {
         return riskCalculator.calculateForProgramEnrollment(enrollmentId);
     }
-
-    @Override
-    public java.util.Map<Long, AttendanceRiskResponse> calculateAll(java.util.Collection<Long> enrollmentIds) {
-        return riskCalculator.calculateForProgramEnrollments(enrollmentIds);
-    }
 }

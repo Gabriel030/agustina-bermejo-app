@@ -40,6 +40,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -219,11 +221,21 @@ public class SubjectSectionEnrollmentService {
         return subjectSectionEnrollmentRepository.findDetailedByProgramEnrollmentId(programEnrollmentId);
     }
 
-    public List<SubjectSectionEnrollment> listByStudent(Long studentId) {
-        return subjectSectionEnrollmentRepository.findDetailedByStudentId(studentId);
+    public List<SectionEnrollmentResponse> listByStudent(Long studentId) {
+        List<SubjectSectionEnrollment> enrollments = subjectSectionEnrollmentRepository.findDetailedByStudentId(studentId);
+        Map<Long, ProgramSubjectView> positions = resolveCurricularPositions(enrollments);
+        return enrollments.stream()
+                .map(enrollment -> {
+                    ProgramSubjectView position = positions.get(enrollment.getId());
+                    return SectionEnrollmentResponse.from(
+                            enrollment,
+                            position == null ? null : position.curricularYear(),
+                            position == null ? null : position.curricularTerm());
+                })
+                .toList();
     }
 
-    public Map<Long, ProgramSubjectView> resolveCurricularPositions(List<SubjectSectionEnrollment> enrollments) {
+    private Map<Long, ProgramSubjectView> resolveCurricularPositions(List<SubjectSectionEnrollment> enrollments) {
         Map<Long, Map<Long, ProgramSubjectView>> subjectsByProgram = new HashMap<>();
         Map<Long, ProgramSubjectView> positions = new HashMap<>();
         for (SubjectSectionEnrollment enrollment : enrollments) {

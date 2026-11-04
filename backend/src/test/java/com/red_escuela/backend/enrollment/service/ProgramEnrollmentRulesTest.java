@@ -4,8 +4,8 @@ import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
-import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
+import com.red_escuela.backend.attendance.api.AttendanceRiskView;
+import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -87,7 +87,7 @@ class ProgramEnrollmentRulesTest {
     @Mock
     private ProgramYearBillingTemplateRepository templateRepository;
     @Mock
-    private CalculateProgramEnrollmentAttendanceRiskUseCase attendanceRiskUseCase;
+    private AttendanceRiskReader attendanceRiskUseCase;
     @Mock
     private EnrollmentDebtGuard enrollmentDebtGuard;
     @Mock
@@ -354,9 +354,9 @@ class ProgramEnrollmentRulesTest {
         SubjectSectionEnrollment withAbsences = sectionEnrollment(100L, "Matematica");
         SubjectSectionEnrollment withoutData = sectionEnrollment(101L, "Historia");
         when(subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(1L)).thenReturn(List.of(withAbsences, withoutData));
-        when(attendanceRiskUseCase.calculateAll(List.of(100L, 101L))).thenReturn(java.util.Map.of(
-                100L, new AttendanceRiskResponse(true, false, Percentage.ofFraction(new BigDecimal("0.25")), null),
-                101L, new AttendanceRiskResponse(false, false, null, null)));
+        when(attendanceRiskUseCase.readProgramEnrollmentRisks(List.of(100L, 101L))).thenReturn(java.util.Map.of(
+                100L, new AttendanceRiskView(true, false, Percentage.ofFraction(new BigDecimal("0.25")), null),
+                101L, new AttendanceRiskView(false, false, null, null)));
 
         List<SubjectAttendanceSummaryResponse> summary = service.attendanceSummaryBySubject(1L);
 

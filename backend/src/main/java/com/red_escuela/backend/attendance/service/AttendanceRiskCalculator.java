@@ -19,13 +19,6 @@ public class AttendanceRiskCalculator {
         return toResponse(attendanceRiskReader.readProgramEnrollmentRisk(enrollmentId));
     }
 
-    public java.util.Map<Long, AttendanceRiskResponse> calculateForProgramEnrollments(java.util.Collection<Long> enrollmentIds) {
-        java.util.Map<Long, AttendanceRiskResponse> responses = new java.util.HashMap<>();
-        attendanceRiskReader.readProgramEnrollmentRisks(enrollmentIds)
-                .forEach((id, view) -> responses.put(id, toResponse(view)));
-        return responses;
-    }
-
     public AttendanceRiskResponse calculateForCourseEnrollment(Long enrollmentId) {
         return toResponse(attendanceRiskReader.readCourseEnrollmentRisk(enrollmentId));
     }

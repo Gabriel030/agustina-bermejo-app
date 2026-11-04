@@ -44,7 +44,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
-import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
+import com.red_escuela.backend.attendance.api.AttendanceRiskReader;
 
 @Service
 public class ProgramEnrollmentService {
@@ -56,7 +56,7 @@ public class ProgramEnrollmentService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
-    private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
+    private final AttendanceRiskReader attendanceRiskReader;
     private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
@@ -70,7 +70,7 @@ public class ProgramEnrollmentService {
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
+            AttendanceRiskReader attendanceRiskReader,
             EnrollmentDebtGuard enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
@@ -83,7 +83,7 @@ public class ProgramEnrollmentService {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
-        this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
+        this.attendanceRiskReader = attendanceRiskReader;
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -192,7 +192,7 @@ public class ProgramEnrollmentService {
 
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         var enrollments = subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(programEnrollmentId);
-        var risks = calculateProgramEnrollmentAttendanceRiskUseCase.calculateAll(
+        var risks = attendanceRiskReader.readProgramEnrollmentRisks(
                 enrollments.stream().map(SubjectSectionEnrollment::getId).toList());
         return enrollments.stream()
                 .map(enrollment -> {
