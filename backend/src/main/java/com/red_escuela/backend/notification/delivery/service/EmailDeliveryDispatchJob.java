@@ -6,6 +6,8 @@ import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSettings;
 import com.red_escuela.backend.notification.delivery.domain.EmailDispatchWindow;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
+import com.red_escuela.backend.shared.scheduling.ScheduledJobFailureCounter;
+import io.micrometer.core.instrument.MeterRegistry;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,20 +33,22 @@ public class EmailDeliveryDispatchJob {
     private final EmailDeliveryChannel emailChannel;
     private final BusinessDayCalendar businessDayCalendar;
     private final Clock clock;
+    private final ScheduledJobFailureCounter failureCounter;
 
     public EmailDeliveryDispatchJob(NotificationDeliveryRepository deliveryRepository, EmailDispatchPlanningService planningService,
                                     EmailDispatchSettingsSource settingsSource, EmailDeliveryChannel emailChannel, BusinessDayCalendar businessDayCalendar,
-                                    Clock clock) {
+                                    Clock clock, MeterRegistry meterRegistry) {
         this.deliveryRepository = deliveryRepository;
         this.planningService = planningService;
         this.settingsSource = settingsSource;
         this.emailChannel = emailChannel;
         this.businessDayCalendar = businessDayCalendar;
         this.clock = clock;
+        this.failureCounter = new ScheduledJobFailureCounter(meterRegistry);
     }
 
     @Scheduled(cron = "0 */10 9-11 * * MON-FRI", zone = "${app.timezone}")
-    @SchedulerLock(name = "EmailDeliveryDispatchJob", lockAtMostFor = "PT9M", lockAtLeastFor = "PT1M")
+    @SchedulerLock(name = "EmailDeliveryDispatchJob", lockAtMostFor = "PT20M", lockAtLeastFor = "PT1M")
     public void run() {
         dispatchDueEmails();
     }
@@ -92,6 +96,7 @@ public class EmailDeliveryDispatchJob {
         try {
             emailChannel.dispatchDelivery(id);
         } catch (RuntimeException failure) {
+            failureCounter.record("EmailDeliveryDispatchJob", failure);
             log.warn("Fallo el despacho de la entrega {} causa={}", id, failure.getClass().getSimpleName());
         }
     }
