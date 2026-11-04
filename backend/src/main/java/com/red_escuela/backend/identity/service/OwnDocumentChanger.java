@@ -28,7 +28,10 @@ public class OwnDocumentChanger {
         if (unchanged) {
             return;
         }
-        currentPasswordVerifier.requireMatches(person, currentPassword);
+        boolean documentAlreadyLoaded = person.getDni() != null && !person.getDni().isBlank();
+        if (documentAlreadyLoaded) {
+            currentPasswordVerifier.requireMatches(person, currentPassword);
+        }
         personRepository.findByDocumentTypeAndDni(document.type(), document.value())
                 .filter(owner -> !owner.getId().equals(person.getId()))
                 .ifPresent(owner -> {

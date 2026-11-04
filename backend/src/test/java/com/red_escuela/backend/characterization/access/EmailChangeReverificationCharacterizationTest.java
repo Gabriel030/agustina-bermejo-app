@@ -240,4 +240,27 @@ class EmailChangeReverificationCharacterizationTest extends AccessCharacterizati
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
     }
+
+    @Test
+    void firstTimeDocumentLoadNeedsNoPassword() throws Exception {
+        Person person = persistPerson("access.emailchg12", "70000216", "ALUMNO");
+        person.setDni(null);
+        entityManager.flush();
+        entityManager.clear();
+
+        updateOwnProfile(person, null, "70009998", null).andExpect(status().isOk());
+
+        assertThat(reload(person).getDni()).isEqualTo("70009998");
+    }
+
+    @Test
+    void changingAnExistingDocumentWithoutPasswordIsRejected() throws Exception {
+        Person person = persistPerson("access.emailchg13", "70000217", "ALUMNO");
+
+        updateOwnProfile(person, null, "70009997", null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"));
+
+        assertThat(reload(person).getDni()).isEqualTo("70000217");
+    }
 }
