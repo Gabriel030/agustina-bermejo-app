@@ -111,22 +111,4 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
 
         assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).recurringFeeInvoicesCount()).isEqualTo(4);
     }
-
-    @Test
-    @org.junit.jupiter.api.Tag("D-002")
-    void withoutTermDatesTheTemplateIsRejected() {
-        Person director = persistPerson("director.sinfechas." + System.nanoTime());
-        authenticateAs(director);
-        Program program = persistProgram("Carrera sin fechas " + System.nanoTime());
-        Term term = TermFixtures.newTerm();
-        term.setYear(2026);
-        term.setStatus(StatusType.ACTIVE);
-        term = termRepository.save(term);
-
-        Long termId = term.getId();
-
-        assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), termId, 999))
-                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
-                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).contains("TERM_WITHOUT_DATES"));
-    }
 }

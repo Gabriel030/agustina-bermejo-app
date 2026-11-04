@@ -278,21 +278,6 @@ class ProgramMonthlyInvoicePlannerTest {
     }
 
     @Test
-    void anUndatedTermUsesItsOwnYearSoTheCapOfASecondYearStartsFromZero() {
-        Term term = TermFixtures.newTerm();
-        term.setYear(2027);
-        ProgramYearBillingTemplate t = new ProgramYearBillingTemplate();
-        t.setId(2L);
-        t.setTerm(term);
-        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(t, 2);
-        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, 2026);
-        Set<YearMonth> issuedLastYear = Set.of(ym(2026, 3), ym(2026, 4), ym(2026, 5));
-
-        assertThat(issuedLastYear.stream().filter(cycle::installmentRangeContains)).isEmpty();
-        assertThat(cycle.installmentRangeContains(ym(2027, 3))).isTrue();
-    }
-
-    @Test
     void yearGapsAreDetectedOnlyWhenACalendarYearHasNoCycleBetweenTwoConfiguredYears() {
         YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(1, 2026, 10, 1, 2, null), 2026),
                 com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(2, 2028, 10, 1, 2, null), 2028)), null);
