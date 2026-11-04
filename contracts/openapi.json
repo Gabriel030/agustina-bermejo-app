@@ -9918,6 +9918,9 @@
           "country" : {
             "type" : "string"
           },
+          "currentPassword" : {
+            "type" : "string"
+          },
           "dni" : {
             "type" : "string"
           },
