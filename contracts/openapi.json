@@ -1851,15 +1851,60 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "capacityShortfall" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
           "name" : {
             "type" : "string"
+          },
+          "occupant" : {
+            "$ref" : "#/components/schemas/ClassroomSlotOccupancyResponse"
+          },
+          "overlapsInDates" : {
+            "type" : [ "boolean", "null" ]
           }
         },
         "required" : [ "available", "capacity", "id", "name" ],
+        "type" : "object"
+      },
+      "ClassroomOccupancyResponse" : {
+        "properties" : {
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "classroomId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "classroomName" : {
+            "type" : "string"
+          },
+          "from" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "slots" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClassroomSlotOccupancyResponse"
+            },
+            "type" : "array"
+          },
+          "termId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "to" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "capacity", "classroomId", "classroomName", "from", "slots", "termId", "to" ],
         "type" : "object"
       },
       "ClassroomResponse" : {
@@ -1881,6 +1926,31 @@
         },
         "required" : [ "capacity", "id", "name", "status" ],
         "type" : "object"
+      },
+      "ClassroomSlotOccupancyResponse" : {
+        "properties" : {
+          "dayOfWeek" : {
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "overlapsInDates" : {
+            "type" : "boolean"
+          },
+          "section" : {
+            "$ref" : "#/components/schemas/OccupyingSection"
+          },
+          "startTime" : {
+            "type" : "string"
+          },
+          "term" : {
+            "$ref" : "#/components/schemas/OccupyingTerm"
+          }
+        },
+        "required" : [ "dayOfWeek", "endTime", "overlapsInDates", "section", "startTime", "term" ],
+        "type" : "null"
       },
       "CloseDiscountDefinitionRequest" : {
         "properties" : {
@@ -6342,6 +6412,50 @@
           }
         },
         "required" : [ "createdAt", "id", "message", "read", "relatedEntityId", "relatedEntityType", "type" ],
+        "type" : "object"
+      },
+      "OccupyingSection" : {
+        "properties" : {
+          "code" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "sectionName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "kind", "name", "sectionName" ],
+        "type" : "object"
+      },
+      "OccupyingTerm" : {
+        "properties" : {
+          "endDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "endDate", "id", "name", "startDate" ],
         "type" : "object"
       },
       "OverdueContactPageResponse" : {
@@ -18474,6 +18588,147 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "classroom-controller" ]
+      }
+    },
+    "/classrooms/{id}/occupancy" : {
+      "get" : {
+        "operationId" : "Classroom_occupancy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "termId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClassroomOccupancyResponse"
+                }
+              }
+            },
+            "description" : "OK"
           },
           "400" : {
             "content" : {
@@ -60606,6 +60861,14 @@
           "required" : true,
           "schema" : {
             "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "seats",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         } ],
         "responses" : {

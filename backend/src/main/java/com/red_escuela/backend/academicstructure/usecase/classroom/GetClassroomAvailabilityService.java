@@ -18,7 +18,7 @@ public class GetClassroomAvailabilityService implements GetClassroomAvailability
     }
 
     @Override
-    public List<ClassroomAvailabilityResponse> getAvailability(Long termId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
-        return availabilityReader.readAvailability(termId, dayOfWeek, startTime, endTime);
+    public List<ClassroomAvailabilityResponse> getAvailability(Long termId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Integer seats) {
+        return availabilityReader.readAvailability(termId, dayOfWeek, startTime, endTime, seats);
     }
 }

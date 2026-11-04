@@ -7,5 +7,5 @@ import java.time.LocalTime;
 import java.util.List;
 
 public interface GetClassroomAvailabilityUseCase {
-    List<ClassroomAvailabilityResponse> getAvailability(Long termId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime);
+    List<ClassroomAvailabilityResponse> getAvailability(Long termId, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime, Integer seats);
 }
