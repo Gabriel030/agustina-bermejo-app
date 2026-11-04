@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CertificateActions } from '@/features/workspace/components/CertificateActions';
 import { TabMaterias } from '@/features/workspace/components/TabMaterias';
 import { TabPlanDeEstudio } from '@/features/workspace/components/TabPlanDeEstudio';
 import { TabNotas } from '@/features/evaluation';
@@ -115,6 +116,7 @@ export function AlumnoMisCarreras() {
             según cuántas carreras tenga el alumno (decisión de producto). En la URL
             (?carrera=) para que el breadcrumb pueda volver acá sin perder la carrera elegida. */}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <CertificateActions key={`certificates-${matricula.id}`} carreraId={matricula.id} />
           {tab === 'egreso' && <GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
           <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
             <SelectTrigger>
