@@ -170,7 +170,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("actualizado@example.com"))
+                .andExpect(jsonPath("$.email").value("editable2@example.com"))
                 .andExpect(jsonPath("$.dni").value("50999000"));
     }
 }

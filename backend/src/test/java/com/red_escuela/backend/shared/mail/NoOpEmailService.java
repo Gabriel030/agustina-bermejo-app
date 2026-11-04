@@ -15,4 +15,12 @@ public class NoOpEmailService implements EmailService {
     @Override
     public void sendEmailVerification(Person person, String verificationLink) {
     }
+
+    @Override
+    public void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink) {
+    }
+
+    @Override
+    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
+    }
 }

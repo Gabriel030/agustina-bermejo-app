@@ -7,4 +7,8 @@ public interface EmailService {
     void sendPasswordResetCode(Person person, String code);
 
     void sendEmailVerification(Person person, String verificationLink);
+
+    void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink);
+
+    void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail);
 }

@@ -43,6 +43,7 @@ class StaffRoleAssignmentPolicyPlatformAdminTest {
         actor.getRoles().add(role);
         CurrentPersonService currentPersonService = mock(CurrentPersonService.class);
         when(currentPersonService.resolveCurrentPerson()).thenReturn(actor);
-        return new StaffRoleAssignmentPolicy(currentPersonService);
+        return new StaffRoleAssignmentPolicy(currentPersonService,
+                org.mockito.Mockito.mock(com.red_escuela.backend.identity.service.EmailChangeRequester.class));
     }
 }

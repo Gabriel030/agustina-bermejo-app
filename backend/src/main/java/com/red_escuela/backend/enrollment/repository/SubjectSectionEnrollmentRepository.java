@@ -41,4 +41,10 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from SubjectSectionEnrollment e where e.id = :id")
     Optional<SubjectSectionEnrollment> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("select e.programEnrollment.id from SubjectSectionEnrollment e where e.id = :id")
+    Optional<Long> findProgramEnrollmentIdById(@Param("id") Long id);
+
+    @Query("select e.subjectSection.id from SubjectSectionEnrollment e where e.id = :id")
+    Optional<Long> findSubjectSectionIdById(@Param("id") Long id);
 }

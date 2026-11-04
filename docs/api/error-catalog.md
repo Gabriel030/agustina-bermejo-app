@@ -428,6 +428,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
+| `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |

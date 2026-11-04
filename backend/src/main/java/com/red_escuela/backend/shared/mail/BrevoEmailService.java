@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 @Service
 @Profile("!test")
@@ -70,6 +71,40 @@ public class BrevoEmailService implements EmailService {
         } catch (MessagingException | RuntimeException e) {
             log.error("No se pudo enviar el email de verificación a person {}", person.getId(), e);
             throw new EmailDeliveryException("No se pudo enviar el email de verificación", e);
+        }
+    }
+
+    @Override
+    public void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
+                + "<p>Se pidió usar esta dirección como email de tu cuenta. Confirmala con el botón de abajo. El link es válido por 48 horas.</p>"
+                + "<p><a href=\"" + HtmlUtils.htmlEscape(verificationLink) + "\">Confirmar nuevo email</a></p>"
+                + "<p>Si no fuiste vos, podés ignorar este email: no se cambia nada hasta que confirmes.</p>";
+        sendChangeMessage(newEmail, "Confirmá tu nuevo email", body);
+    }
+
+    @Override
+    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
+                + "<p>Se pidió cambiar el email de tu cuenta a " + HtmlUtils.htmlEscape(newEmail)
+                + ". El cambio recién se aplica cuando se confirma desde esa dirección; hasta entonces seguís usando este email.</p>"
+                + "<p>Si no fuiste vos, avisá a la institución y cambiá tu contraseña.</p>";
+        sendChangeMessage(previousEmail, "Se pidió cambiar el email de tu cuenta", body);
+    }
+
+    private void sendChangeMessage(String recipient, String subject, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(recipient);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+            log.info("Aviso de cambio de email enviado");
+        } catch (MessagingException | RuntimeException e) {
+            log.error("No se pudo enviar el aviso de cambio de email", e);
+            throw new EmailDeliveryException("No se pudo enviar el aviso de cambio de email", e);
         }
     }
 

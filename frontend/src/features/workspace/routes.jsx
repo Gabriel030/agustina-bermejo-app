@@ -9,7 +9,7 @@ export const routes = {
   role: [
     { roles: ['alumno'], path: 'inicio', element: <AlumnoInicio /> },
     { roles: ['docente'], path: 'mis-comisiones', element: <DocenteMisComisiones /> },
-    { roles: ['preceptor', 'administrativo'], path: 'oferta-academica/ciclos/:cycleId/comisiones/:sectionId/inscriptos', element: <StaffSectionRoster /> },
+    { roles: ['preceptor'], path: 'oferta-academica/ciclos/:cycleId/comisiones/:sectionId/inscriptos', element: <StaffSectionRoster /> },
     { roles: ['director'], path: 'aprobaciones', element: <DirectorAprobaciones /> },
   ],
 };

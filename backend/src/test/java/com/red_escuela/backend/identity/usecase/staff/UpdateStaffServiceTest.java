@@ -26,9 +26,11 @@ class UpdateStaffServiceTest {
     private static final Long TARGET_ID = 80L;
 
     private final PersonRepository personRepository = mock(PersonRepository.class);
+    private final com.red_escuela.backend.identity.service.EmailChangeRequester emailChangeRequester =
+            mock(com.red_escuela.backend.identity.service.EmailChangeRequester.class);
 
     private UpdateStaffService serviceActingAs(String actorRole) {
-        return new UpdateStaffService(personRepository, policyActingAs(actorRole));
+        return new UpdateStaffService(personRepository, policyActingAs(actorRole), emailChangeRequester);
     }
 
     private Person target(String... roles) {
@@ -55,10 +57,12 @@ class UpdateStaffServiceTest {
     void administrativeUpdatesEveryFieldOfATeacher() {
         Person teacher = target("DOCENTE");
         var request = new UpdateStaffRequest("new@example.com", "222", "Otra", "9", "3", "Villa", "Cordoba", "5000", "UY");
+        String emailBefore = teacher.emailValue();
 
         StaffUseCaseResult result = serviceActingAs("ADMINISTRATIVO").update(new UpdateStaffCommand(TARGET_ID, request));
 
-        assertThat(teacher.emailValue()).isEqualTo("new@example.com");
+        assertThat(teacher.emailValue()).isEqualTo(emailBefore);
+        verify(emailChangeRequester).requestStaffChange(teacher, "new@example.com");
         assertThat(teacher.getPhoneNumber()).isEqualTo("222");
         Address address = teacher.getAddress();
         assertThat(address.getStreet()).isEqualTo("Otra");
