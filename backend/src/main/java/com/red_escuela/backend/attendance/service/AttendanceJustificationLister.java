@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AttendanceJustificationLister {
 
-    static final int MAX_PAGE_SIZE = 100;
+    static final int MAX_PAGE_SIZE = 500;
 
     private final AttendanceRepository attendanceRepository;
 
