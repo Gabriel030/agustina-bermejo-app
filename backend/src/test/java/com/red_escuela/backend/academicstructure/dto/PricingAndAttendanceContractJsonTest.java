@@ -12,6 +12,7 @@ import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.domain.InvalidPercentageException;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @JsonTest
 class PricingAndAttendanceContractJsonTest {
@@ -42,6 +44,28 @@ class PricingAndAttendanceContractJsonTest {
         assertThat(node.has("porcentajeAusentismo")).isFalse();
         assertThat(node.has("maxAbsencePercentage")).isFalse();
         assertThat(node.get("libre").asBoolean()).isFalse();
+    }
+
+    @Test
+    void cycleSectionRequestReadsMaxAbsencePercentInPoints() throws Exception {
+        var request = objectMapper.readValue(
+                "{\"name\":\"A\",\"subjectId\":1,\"capacity\":20,\"maxAbsencePercent\":25}", CreateCycleSectionRequest.class);
+
+        assertThat(request.maxAbsencePercent()).isEqualTo(Percentage.ofPoints(new BigDecimal("25")));
+    }
+
+    @Test
+    void cycleSectionRequestWithoutMaxAbsencePercentLeavesItNull() throws Exception {
+        var request = objectMapper.readValue("{\"name\":\"A\",\"subjectId\":1,\"capacity\":20}", CreateCycleSectionRequest.class);
+
+        assertThat(request.maxAbsencePercent()).isNull();
+    }
+
+    @Test
+    void cycleSectionRequestRejectsMaxAbsencePercentAbove100() {
+        assertThatThrownBy(() -> objectMapper.readValue(
+                "{\"name\":\"A\",\"subjectId\":1,\"capacity\":20,\"maxAbsencePercent\":120}", CreateCycleSectionRequest.class))
+                .hasRootCauseInstanceOf(InvalidPercentageException.class);
     }
 
     @Test

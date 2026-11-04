@@ -2648,6 +2648,12 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "maxAbsencePercent" : {
+            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
+          },
           "name" : {
             "minLength" : 1,
             "type" : "string"
