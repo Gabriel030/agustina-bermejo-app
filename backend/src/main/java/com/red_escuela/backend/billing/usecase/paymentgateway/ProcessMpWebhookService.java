@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
+import com.red_escuela.backend.shared.logging.LogSanitizer;
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
@@ -36,19 +37,19 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
         try {
             signatureVerifier.verify(xSignature, xRequestId, mpPaymentId);
         } catch (InvalidMpWebhookSignatureException e) {
-            log.warn("Webhook de Mercado Pago rechazado por firma inválida: pagoMp={}", mpPaymentId);
+            log.warn("Webhook de Mercado Pago rechazado por firma inválida: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
             throw e;
         }
 
         registrationPort.lockMercadoPagoPaymentUntilTransactionEnds(mpPaymentId);
         if (registrationPort.isMercadoPagoPaymentRegistered(mpPaymentId)) {
-            log.warn("Webhook de Mercado Pago ignorado, el pago ya estaba acreditado: pagoMp={}", mpPaymentId);
+            log.warn("Webhook de Mercado Pago ignorado, el pago ya estaba acreditado: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
             return;
         }
 
         Optional<MercadoPagoApprovedPayment> approved = mercadoPagoPaymentFetcher.fetchApproved(mpPaymentId);
         if (approved.isEmpty()) {
-            log.info("Webhook de Mercado Pago ignorado, el pago no está aprobado: pagoMp={}", mpPaymentId);
+            log.info("Webhook de Mercado Pago ignorado, el pago no está aprobado: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
             return;
         }
 

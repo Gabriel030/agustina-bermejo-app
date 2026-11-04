@@ -25,7 +25,7 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     # 2. Sin sesión no se puede agregar documentación — 401
     Given path '/prospects', studentId, 'documents'
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 401
 
@@ -41,7 +41,7 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     Given path '/prospects', studentId, 'documents'
     And header Authorization = 'Bearer ' + preceptorToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 
@@ -49,7 +49,7 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     Given path '/prospects', studentId, 'documents'
     And header Authorization = 'Bearer ' + preceptorToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'version 2', filename: 'dni-v2.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 version 2', filename: 'dni-v2.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 

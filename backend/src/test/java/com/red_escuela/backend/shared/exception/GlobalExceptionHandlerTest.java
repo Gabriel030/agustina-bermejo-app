@@ -52,6 +52,12 @@ class GlobalExceptionHandlerTest {
         }
     }
 
+    static class ForgedConflictException extends ConflictException {
+        ForgedConflictException() {
+            super("bad value\nWARN forged entry");
+        }
+    }
+
     @RestController
     static class ThrowingController {
         @GetMapping("/rate-limited")
@@ -94,6 +100,11 @@ class GlobalExceptionHandlerTest {
             throw new DataIntegrityViolationException("duplicate key value violates unique constraint uk_person_email");
         }
 
+        @GetMapping("/forged-conflict")
+        void forgedConflict() {
+            throw new ForgedConflictException();
+        }
+
         @GetMapping("/optimistic-lock")
         void optimisticLock() {
             throw new ObjectOptimisticLockingFailureException("Invoice", 7L);
@@ -128,6 +139,13 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/data-integrity")).andExpect(status().isConflict());
 
         assertThat(output).contains("uk_person_email");
+    }
+
+    @Test
+    void lineBreaksInAnExceptionMessageCannotForgeALogLine(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/forged-conflict")).andExpect(status().isConflict());
+
+        assertThat(output).contains("bad value_WARN forged entry").doesNotContain("\nWARN forged entry");
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.exception;
 
+import com.red_escuela.backend.shared.logging.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -77,7 +78,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorCodeResponse handleIllegalArgument(IllegalArgumentException exception) {
-        log.warn("Argumento inválido [{}]: {}", correlation(), exception.getMessage(), exception);
+        log.warn("Argumento inválido [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
         return ErrorCodeResponse.of(exception);
     }
 
@@ -93,7 +94,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleConflict(ConflictException exception) {
         ErrorCodeResponse response = ErrorCodeResponse.of(exception);
-        log.warn("Conflicto {} [{}]: {} violaciones={}", response.code(), correlation(), exception.getMessage(), response.violations().stream().map(v -> v.code()).toList());
+        log.warn("Conflicto {} [{}]: {} violaciones={}", response.code(), correlation(), LogSanitizer.sanitize(exception.getMessage()), response.violations().stream().map(v -> v.code()).toList());
         return response;
     }
 
@@ -116,7 +117,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public ErrorCodeResponse handleExternalService(ExternalServiceException exception) {
         log.error("Falla de servicio externo {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(),
-                exception.getMessage(), exception);
+                LogSanitizer.sanitize(exception.getMessage()), exception);
         return ErrorCodeResponse.of(exception);
     }
 
@@ -124,7 +125,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorCodeResponse handleDataIntegrityBroken(DataIntegrityBrokenException exception) {
         log.error("Integridad de datos rota {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(),
-                exception.getMessage(), exception);
+                LogSanitizer.sanitize(exception.getMessage()), exception);
         return new ErrorCodeResponse(ErrorCodeResponse.INTERNAL_ERROR_CODE);
     }
 
@@ -132,7 +133,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleIllegalState(IllegalStateException exception) {
         ErrorCodeResponse response = ErrorCodeResponse.of(exception);
-        log.warn("Conflicto de estado {} [{}]: {}", response.code(), correlation(), exception.getMessage(), exception);
+        log.warn("Conflicto de estado {} [{}]: {}", response.code(), correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
         return response;
     }
 
@@ -140,14 +141,14 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleDataIntegrityViolation(DataIntegrityViolationException exception) {
         log.warn("Violación de integridad de datos [{}]: {}", correlation(),
-                exception.getMostSpecificCause().getMessage(), exception);
+                LogSanitizer.sanitize(exception.getMostSpecificCause().getMessage()), exception);
         return new ErrorCodeResponse(ErrorCodeResponse.DATA_INTEGRITY_VIOLATION_CODE);
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException exception) {
-        log.warn("Conflicto de concurrencia (optimistic lock) [{}]: {}", correlation(), exception.getMessage(),
+        log.warn("Conflicto de concurrencia (optimistic lock) [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()),
                 exception);
         return new ErrorCodeResponse(ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE);
     }
@@ -161,7 +162,7 @@ public class GlobalExceptionHandler {
                 || AnnotatedElementUtils.hasAnnotation(exception.getClass(), ResponseStatus.class)) {
             throw exception;
         }
-        log.error("Error inesperado [{}]: {}", correlation(), exception.getMessage(), exception);
+        log.error("Error inesperado [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
         return new ErrorCodeResponse(ErrorCodeResponse.INTERNAL_ERROR_CODE);
     }
 

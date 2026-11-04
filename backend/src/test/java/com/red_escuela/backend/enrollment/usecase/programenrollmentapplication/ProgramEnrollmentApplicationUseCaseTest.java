@@ -334,7 +334,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         var receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
-                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", "%PDF-1.4".getBytes()));
         entityManager.flush();
 
         approvePaymentReceiptUseCase.approve(receipt.getId(), preceptor, PaymentVerification.none());
@@ -416,7 +416,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId).admissionInvoice().receiptStatus()).isNull();
 
         uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
-                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", "%PDF-1.4".getBytes()));
         entityManager.flush();
 
         ProgramEnrollmentApplicationResponse response = ProgramEnrollmentApplicationResponse.from(application,

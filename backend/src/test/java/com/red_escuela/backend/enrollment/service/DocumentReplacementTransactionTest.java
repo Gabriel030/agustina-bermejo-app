@@ -85,7 +85,7 @@ class DocumentReplacementTransactionTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile pdf(String content) {
-        return new MockMultipartFile("file", "dni.pdf", "application/pdf", content.getBytes());
+        return new MockMultipartFile("file", "dni.pdf", "application/pdf", ("%PDF-1.4 " + content).getBytes());
     }
 
     private String upload(String content) {

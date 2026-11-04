@@ -215,7 +215,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     void rejectedAvatarUploadKeepsThePreviousPhoto() throws Exception {
         Person owner = persistPersonWithRole("avatar1", "60121212", "ALUMNO");
         String token = jwtService.generateAccessToken(owner);
-        byte[] previousPhoto = new byte[] {1, 2, 3, 4};
+        byte[] previousPhoto = new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 1};
 
         mockMvc.perform(multipart("/me/avatar")
                         .file(new MockMultipartFile("file", "foto.png", "image/png", previousPhoto))

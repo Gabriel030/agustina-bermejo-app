@@ -32,6 +32,7 @@ public class FileStorageService {
         if (extension == null) {
             throw new UnsupportedFileTypeException(declaredContentType(file));
         }
+        requireSignatureOf(extension, file);
 
         Path studentDirectory = uploadsDirectory.resolve("students").resolve(studentId.toString());
         try {
@@ -51,12 +52,23 @@ public class FileStorageService {
             case "image/png" -> "png";
             default -> throw new UnsupportedFileTypeException(declaredContentType(file));
         };
+        requireSignatureOf(extension, file);
         Path dir = uploadsDirectory.resolve("avatars");
         try (InputStream content = file.getInputStream()) {
             Files.createDirectories(dir);
             Path dest = dir.resolve(personId + "_" + UUID.randomUUID() + "." + extension);
             Files.copy(content, dest, StandardCopyOption.REPLACE_EXISTING);
             return uploadsDirectory.relativize(dest).toString();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void requireSignatureOf(String extension, MultipartFile file) {
+        try (InputStream content = file.getInputStream()) {
+            if (!UploadedFileSignature.matches(extension, content)) {
+                throw new UnsupportedFileTypeException(declaredContentType(file));
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -85,6 +97,7 @@ public class FileStorageService {
             case "image/png" -> "png";
             default -> throw new UnsupportedFileTypeException(declaredContentType(file));
         };
+        requireSignatureOf(extension, file);
         Path dir = uploadsDirectory.resolve("payment-gateway");
         try {
             Files.createDirectories(dir);

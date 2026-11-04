@@ -60,7 +60,7 @@ public class LegacyCourseRequestSeeder {
         application.setInvoiceId(invoice.getId());
         if (withReceipt) {
             application.setPaymentReceipt(uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId,
-                    new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes())));
+                    new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes())));
         }
         return applicationRepository.save(application);
     }

@@ -154,7 +154,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
 
         assertThat(first.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
-        var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
+        var second = uploadPaymentReceiptUseCase.upload(invoiceId, student.getId(), new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes()));
         approvePaymentReceiptUseCase.approve(second.getId(), admin, PaymentVerification.none());
 
         awaitEnrollments(student, 1);
