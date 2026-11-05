@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.mail.EmailService;
+import com.red_escuela.backend.shared.mail.MailRecipient;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -75,11 +77,11 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
         PasswordResetCodeIssuedEvent event = PasswordResetCodeIssuedEvent.issuedFor(personId, "123456");
 
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
-        verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), eq("123456"));
+        verify(emailService, timeout(5000)).sendPasswordResetCode(any(MailRecipient.class), anyString(), eq("123456"));
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
 
         await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() -> incompletePublicationsOf(event.eventId()) == 0);
-        verify(emailService, times(1)).sendPasswordResetCode(any(Person.class), eq("123456"));
+        verify(emailService, times(1)).sendPasswordResetCode(any(MailRecipient.class), anyString(), eq("123456"));
     }
 
     @Test
@@ -88,10 +90,10 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
         EmailVerificationIssuedEvent event = EmailVerificationIssuedEvent.issuedFor(personId, "https://example.test/verify");
 
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
-        verify(emailService, timeout(5000)).sendEmailVerification(any(Person.class), eq("https://example.test/verify"));
+        verify(emailService, timeout(5000)).sendEmailVerification(any(MailRecipient.class), anyString(), eq("https://example.test/verify"));
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
 
         await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() -> incompletePublicationsOf(event.eventId()) == 0);
-        verify(emailService, times(1)).sendEmailVerification(any(Person.class), eq("https://example.test/verify"));
+        verify(emailService, times(1)).sendEmailVerification(any(MailRecipient.class), anyString(), eq("https://example.test/verify"));
     }
 }

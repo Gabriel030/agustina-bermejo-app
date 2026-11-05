@@ -13,6 +13,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.mail.EmailDeliveryException;
 import com.red_escuela.backend.shared.mail.EmailService;
+import com.red_escuela.backend.shared.mail.MailRecipient;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -122,17 +123,17 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     @Tag("D-178")
     @Tag("D-183")
     void aListenerFailureDoesNotRollBackTheBusinessTransactionAndTheRegistryRedeliversIt() {
-        doThrow(new EmailDeliveryException("smtp down", new RuntimeException())).doNothing().when(emailService).sendPasswordResetCode(any(), anyString());
+        doThrow(new EmailDeliveryException("smtp down", new RuntimeException())).doNothing().when(emailService).sendPasswordResetCode(any(), anyString(), anyString());
 
         transactionTemplate.executeWithoutResult(status -> requestPasswordResetUseCase.requestReset(email));
 
-        verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, timeout(5000)).sendPasswordResetCode(any(MailRecipient.class), anyString(), anyString());
         await().until(() -> incompletePublications() == 1);
         assertThat(jdbcTemplate.queryForObject("select count(*) from password_reset_token where person_id = ?", Long.class, personId)).isEqualTo(1);
 
         incompleteEventPublications.resubmitIncompletePublications(this::belongsToThisPerson);
 
-        verify(emailService, timeout(5000).times(2)).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, timeout(5000).times(2)).sendPasswordResetCode(any(MailRecipient.class), anyString(), anyString());
         await().until(() -> allPublications() == 0);
     }
 
@@ -141,13 +142,13 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     @Tag("D-183")
     void resubmittingACompletedPublicationDoesNotDeliverTheEventAgain() {
         transactionTemplate.executeWithoutResult(status -> requestPasswordResetUseCase.requestReset(email));
-        verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, timeout(5000)).sendPasswordResetCode(any(MailRecipient.class), anyString(), anyString());
         await().until(() -> allPublications() == 0);
 
         incompleteEventPublications.resubmitIncompletePublications(this::belongsToThisPerson);
 
         await().during(Duration.ofSeconds(1)).until(() -> allPublications() == 0);
-        verify(emailService, times(1)).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, times(1)).sendPasswordResetCode(any(MailRecipient.class), anyString(), anyString());
     }
 
     @Test

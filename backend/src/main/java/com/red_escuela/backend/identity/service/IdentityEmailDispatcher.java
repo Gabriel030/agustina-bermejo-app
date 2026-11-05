@@ -1,9 +1,11 @@
 package com.red_escuela.backend.identity.service;
 
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.mail.EmailService;
+import com.red_escuela.backend.shared.mail.MailRecipient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -16,18 +18,21 @@ public class IdentityEmailDispatcher {
     private final EmailService emailService;
     private final PersonRepository personRepository;
     private final ProcessedEffectGuard effectGuard;
+    private final InstitutionNameResolver institutionNameResolver;
 
-    public IdentityEmailDispatcher(EmailService emailService, PersonRepository personRepository, ProcessedEffectGuard effectGuard) {
+    public IdentityEmailDispatcher(EmailService emailService, PersonRepository personRepository, ProcessedEffectGuard effectGuard,
+            InstitutionNameResolver institutionNameResolver) {
         this.emailService = emailService;
         this.personRepository = personRepository;
         this.effectGuard = effectGuard;
+        this.institutionNameResolver = institutionNameResolver;
     }
 
     @ApplicationModuleListener
     public void onPasswordResetCodeIssued(PasswordResetCodeIssuedEvent event) {
         effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onPasswordResetCodeIssued", () ->
                 personRepository.findById(event.personId()).ifPresentOrElse(
-                        person -> emailService.sendPasswordResetCode(person, event.code()),
+                        person -> emailService.sendPasswordResetCode(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.code()),
                         () -> log.warn("Password reset email skipped, person not found: personId={}", event.personId())));
     }
 
@@ -35,7 +40,7 @@ public class IdentityEmailDispatcher {
     public void onEmailVerificationIssued(EmailVerificationIssuedEvent event) {
         effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onEmailVerificationIssued", () ->
                 personRepository.findById(event.personId()).ifPresentOrElse(
-                        person -> emailService.sendEmailVerification(person, event.verificationLink()),
+                        person -> emailService.sendEmailVerification(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.verificationLink()),
                         () -> log.warn("Verification email skipped, person not found: personId={}", event.personId())));
     }
 
@@ -48,5 +53,9 @@ public class IdentityEmailDispatcher {
                         emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail());
                     }
                 }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
+    }
+
+    private MailRecipient recipientOf(Person person) {
+        return new MailRecipient(person.getId(), person.getName(), person.emailValue());
     }
 }
