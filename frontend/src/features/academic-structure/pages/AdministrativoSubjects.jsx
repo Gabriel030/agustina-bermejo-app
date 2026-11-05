@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
 import { usePrograms, useSetProgramCatalogVisibility } from '@/features/academic-structure/hooks/usePrograms';
 import { useCourses, useSetCourseCatalogVisibility } from '@/features/academic-structure/hooks/useCourses';
@@ -86,7 +87,7 @@ function SubjectRow({ subject, navigate }) {
 }
 
 function SubjectList({ status, search, navigate }) {
-  const { data, isLoading, isError } = useSubjects(status);
+  const { data, isLoading, isError, refetch } = useSubjects(status);
 
   const filtered = (data ?? []).filter((s) => {
     if (!search) return true;
@@ -95,7 +96,7 @@ function SubjectList({ status, search, navigate }) {
   });
 
   if (isLoading) return <Skeleton rows={5} />;
-  if (isError) return <EmptyState title="Error al cargar materias" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="las materias" bare />;
   if (!filtered.length)
     return (
       <EmptyState
@@ -193,7 +194,7 @@ function PublishedProgramRow({ program, onRetire, isRetiring }) {
 }
 
 function PublishedProgramList({ navigate }) {
-  const { data, isLoading, isError } = usePrograms();
+  const { data, isLoading, isError, refetch } = usePrograms();
   const retireProgram = useSetProgramCatalogVisibility();
 
   const published = (data ?? []).filter((p) => p.visibleInCatalog);
@@ -207,7 +208,7 @@ function PublishedProgramList({ navigate }) {
   }
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar carreras" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="las carreras" bare />;
   if (!published.length)
     return (
       <EmptyState
@@ -260,7 +261,7 @@ function PublishedCourseRow({ course, onRetire, isRetiring }) {
 }
 
 function PublishedCourseList({ navigate }) {
-  const { data, isLoading, isError } = useCourses();
+  const { data, isLoading, isError, refetch } = useCourses();
   const retireCourse = useSetCourseCatalogVisibility();
 
   const published = (data ?? []).filter((c) => c.visibleInCatalog);
@@ -274,7 +275,7 @@ function PublishedCourseList({ navigate }) {
   }
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar cursos" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="los cursos" bare />;
   if (!published.length)
     return (
       <EmptyState
@@ -303,7 +304,7 @@ function PublishedCourseList({ navigate }) {
 }
 
 function CourseList({ search, navigate }) {
-  const { data, isLoading, isError } = useCourses();
+  const { data, isLoading, isError, refetch } = useCourses();
 
   const filtered = (data ?? []).filter((c) => {
     if (!search) return true;
@@ -311,7 +312,7 @@ function CourseList({ search, navigate }) {
   });
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar cursos" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="los cursos" bare />;
   if (!filtered.length)
     return (
       <EmptyState
@@ -338,7 +339,7 @@ function CourseList({ search, navigate }) {
 }
 
 function ProgramList({ search, navigate }) {
-  const { data, isLoading, isError } = usePrograms();
+  const { data, isLoading, isError, refetch } = usePrograms();
 
   const filtered = (data ?? []).filter((p) => {
     if (!search) return true;
@@ -346,7 +347,7 @@ function ProgramList({ search, navigate }) {
   });
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar carreras" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="las carreras" bare />;
   if (!filtered.length)
     return (
       <EmptyState

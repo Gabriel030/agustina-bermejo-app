@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -53,5 +54,23 @@ describe('TabMisSolicitudes', () => {
 
     expect(await screen.findByText('Inscripto')).toBeInTheDocument();
     expect(screen.queryByText('Confirmando inscripción')).not.toBeInTheDocument();
+  });
+
+  it('muestra el error de carga con Reintentar y recupera la lista al reintentar', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () => {
+        calls += 1;
+        return calls === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json([]);
+      }),
+      http.get(`${API}/me/course-enrollment-applications`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<TabMisSolicitudes />);
+
+    expect(await screen.findByText('No pudimos cargar tus solicitudes')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Todavía no tenés solicitudes')).toBeInTheDocument();
   });
 });
