@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.note.domain;
 import com.red_escuela.backend.billing.operation.DirectorApprovable;
 import com.red_escuela.backend.billing.operation.InvoiceTargetedRequest;
 import com.red_escuela.backend.billing.operation.ResumedFromAuthorizationRequest;
-import com.red_escuela.backend.billing.payment.operation.IdempotencyKeyed;
+import com.red_escuela.backend.billing.operation.IdempotencyKeyed;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 
 import java.time.LocalDate;

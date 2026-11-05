@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.operation.IdempotencyKeyed;
 import com.red_escuela.backend.billing.payment.service.IdempotencyRecordService;
 import com.red_escuela.backend.billing.payment.service.StoredIdempotentResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,16 +16,15 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.PreProcessingHandler;
 import com.red_escuela.backend.billing.operation.PreProcessingResult;
 import com.red_escuela.backend.billing.operation.PriorAuthorization;
-import com.red_escuela.backend.billing.payment.domain.CashPaymentLimits;
+import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyCheck;
 import com.red_escuela.backend.billing.payment.exception.IdempotencyKeyInvalidException;
-import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
+import com.red_escuela.backend.shared.domain.policy.PolicySet;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PreProcessingHandler<C> {
@@ -35,16 +35,20 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
     private final ObjectMapper canonicalMapper;
     private final StoredResultMapping resultMapping;
     private final boolean optionalKeyBeforeValidation;
+    private final PolicySet<IdempotencyKeyCheck> keyFormatPolicies;
 
     public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType) {
-        this(recordService, objectMapper, responseType, null);
+        this(recordService, objectMapper, responseType, null, null);
     }
 
-    public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, StoredResultMapping resultMapping) {
-        this(recordService, objectMapper, null, resultMapping);
+    public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, StoredResultMapping resultMapping,
+                                 PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
+        this(recordService, objectMapper, null, resultMapping, keyFormatPolicies);
     }
 
-    private IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType, StoredResultMapping resultMapping) {
+    private IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType, StoredResultMapping resultMapping,
+                                  PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
+        this.keyFormatPolicies = keyFormatPolicies;
         this.recordService = recordService;
         this.canonicalMapper = objectMapper.copy()
                 .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
@@ -107,9 +111,7 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
         if (key == null) {
             return true;
         }
-        if (key.isBlank() || key.length() > CashPaymentLimits.MAX_IDEMPOTENCY_KEY_LENGTH) {
-            throw new IdempotencyKeyInvalidException(List.of(new PolicyViolation("IDEMPOTENCY_KEY_INVALID", "La clave de idempotencia tiene hasta 100 caracteres y no puede estar vacía.")));
-        }
+        keyFormatPolicies.evaluateRulesUntilFirstViolation(new IdempotencyKeyCheck(key)).throwIfDenied(IdempotencyKeyInvalidException::new);
         return false;
     }
 

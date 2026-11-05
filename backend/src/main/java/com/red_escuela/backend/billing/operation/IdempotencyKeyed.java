@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.payment.operation;
+package com.red_escuela.backend.billing.operation;
 
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 

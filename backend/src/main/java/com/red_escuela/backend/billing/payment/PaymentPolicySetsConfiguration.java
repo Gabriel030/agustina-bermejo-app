@@ -36,7 +36,9 @@ import com.red_escuela.backend.billing.payment.policy.PaymentGatewayAvailability
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityContext;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityPolicy;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyReuseConsistencyPolicy;
+import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyCheck;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyReuseContext;
+import com.red_escuela.backend.billing.payment.policy.ProvidedIdempotencyKeyFormatPolicy;
 import com.red_escuela.backend.billing.payment.policy.ChargebackDateWithinPaymentLifePolicy;
 import com.red_escuela.backend.billing.payment.policy.ChargebackIsForTheFullAmountPolicy;
 import com.red_escuela.backend.billing.payment.policy.ChargebackReferenceRequiredPolicy;
@@ -121,6 +123,11 @@ public class PaymentPolicySetsConfiguration {
     @Bean
     public PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet() {
         return PolicySet.named("BANK_TRANSFER_RECEIPT_PROTECTION", List.of(new ReceiptUploadedByDueDatePolicy()));
+    }
+
+    @Bean
+    public PolicySet<IdempotencyKeyCheck> providedIdempotencyKeyFormatPolicySet() {
+        return PolicySet.named("PROVIDED_IDEMPOTENCY_KEY_FORMAT", List.of(new ProvidedIdempotencyKeyFormatPolicy()));
     }
 
     @Bean

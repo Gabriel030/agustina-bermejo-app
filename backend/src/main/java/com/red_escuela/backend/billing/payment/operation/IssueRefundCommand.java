@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.operation.IdempotencyKeyed;
 import com.red_escuela.backend.billing.operation.DirectorApprovable;
 import com.red_escuela.backend.billing.operation.ResumedFromAuthorizationRequest;
 import com.red_escuela.backend.billing.payment.domain.RefundDestination;
