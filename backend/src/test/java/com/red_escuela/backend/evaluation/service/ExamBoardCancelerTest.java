@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.service;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
@@ -55,11 +56,11 @@ class ExamBoardCancelerTest extends ExamBoardChangeFixture {
         entityManager.flush();
         entityManager.refresh(examBoard);
 
-        ExamBoard canceled = canceler.cancel(examBoard.getId(), "Falta de quórum");
+        ExamBoardResponse canceled = canceler.cancel(examBoard.getId(), "Falta de quórum");
 
-        assertThat(canceled.getStatus()).isEqualTo(ExamBoardStatus.CANCELED);
-        assertThat(canceled.getCancelReason()).isEqualTo("Falta de quórum");
-        assertThat(canceled.getCanceledAt()).isNotNull();
+        assertThat(canceled.status()).isEqualTo("CANCELED");
+        assertThat(canceled.cancelReason()).isEqualTo("Falta de quórum");
+        assertThat(canceled.canceledAt()).isNotNull();
         assertThat(first.getStatus()).isEqualTo(ExamBoardRegistrationStatus.WITHDRAWN);
         assertThat(second.getStatus()).isEqualTo(ExamBoardRegistrationStatus.WITHDRAWN);
         assertThat(applicationEvents.stream(ExamBoardCanceledEvent.class)).singleElement().satisfies(event -> {

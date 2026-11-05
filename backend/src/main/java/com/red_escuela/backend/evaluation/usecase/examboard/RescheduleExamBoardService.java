@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.examboard;
 
-import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.service.ExamBoardRescheduler;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -14,7 +14,7 @@ public class RescheduleExamBoardService implements RescheduleExamBoardUseCase {
     }
 
     @Override
-    public ExamBoard reschedule(RescheduleExamBoardCommand command) {
+    public ExamBoardResponse reschedule(RescheduleExamBoardCommand command) {
         return rescheduler.reschedule(command.examBoardId(), command.request());
     }
 }

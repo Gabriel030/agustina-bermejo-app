@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.examboard;
 
-import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.service.ExamBoardCanceler;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -14,7 +14,7 @@ public class CancelExamBoardService implements CancelExamBoardUseCase {
     }
 
     @Override
-    public ExamBoard cancel(CancelExamBoardCommand command) {
+    public ExamBoardResponse cancel(CancelExamBoardCommand command) {
         return canceler.cancel(command.examBoardId(), command.reason());
     }
 }

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.examboard;
 
-import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 
 public interface RescheduleExamBoardUseCase {
-    ExamBoard reschedule(RescheduleExamBoardCommand command);
+    ExamBoardResponse reschedule(RescheduleExamBoardCommand command);
 }

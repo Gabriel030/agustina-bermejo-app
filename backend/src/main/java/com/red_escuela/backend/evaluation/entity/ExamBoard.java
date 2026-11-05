@@ -9,7 +9,6 @@ import java.util.List;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 
 @Getter
@@ -76,7 +75,6 @@ public class ExamBoard {
     }
 
     public void reschedule(LocalDateTime newExamDate, LocalDateTime newRegistrationStart, LocalDateTime newRegistrationEnd, String newClassroom) {
-        requireScheduled();
         rescheduledFrom = examDate;
         examDate = newExamDate;
         registrationStart = newRegistrationStart;
@@ -85,16 +83,9 @@ public class ExamBoard {
     }
 
     public void cancel(LocalDateTime now, String reason) {
-        requireScheduled();
         status = ExamBoardStatus.CANCELED;
         canceledAt = now;
         cancelReason = reason;
-    }
-
-    private void requireScheduled() {
-        if (status != ExamBoardStatus.SCHEDULED) {
-            throw new ExamBoardClosedException(id);
-        }
     }
 
     @PrePersist

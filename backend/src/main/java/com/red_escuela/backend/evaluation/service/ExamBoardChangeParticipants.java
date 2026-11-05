@@ -4,6 +4,8 @@ import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
+import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
+import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardHasGradesException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
@@ -21,6 +23,12 @@ public class ExamBoardChangeParticipants {
     public ExamBoardChangeParticipants(ExamBoardRegistrationRepository registrationRepository, GradeItemRepository gradeItemRepository) {
         this.registrationRepository = registrationRepository;
         this.gradeItemRepository = gradeItemRepository;
+    }
+
+    public void requireScheduled(ExamBoard examBoard) {
+        if (examBoard.getStatus() != ExamBoardStatus.SCHEDULED) {
+            throw new ExamBoardClosedException(examBoard.getId());
+        }
     }
 
     public void requireNoGrades(Long examBoardId) {

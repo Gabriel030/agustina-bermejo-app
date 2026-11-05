@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
@@ -31,10 +32,11 @@ public class ExamBoardCanceler {
     }
 
     @Transactional
-    public ExamBoard cancel(Long examBoardId, String reason) {
+    public ExamBoardResponse cancel(Long examBoardId, String reason) {
         ExamBoard examBoard = examBoardRepository.findById(examBoardId).orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
-        examBoard.cancel(ApplicationTime.now(), reason);
+        participants.requireScheduled(examBoard);
         participants.requireNoGrades(examBoardId);
+        examBoard.cancel(ApplicationTime.now(), reason);
         List<ExamBoardRegistration> registered = participants.registeredOf(examBoardId);
         List<Long> studentPersonIds = participants.studentPersonIdsOf(registered);
         registered.forEach(registration -> registration.setStatus(ExamBoardRegistrationStatus.WITHDRAWN));
@@ -42,6 +44,6 @@ public class ExamBoardCanceler {
         ExamBoard saved = examBoardRepository.save(examBoard);
         eventPublisher.publishEvent(ExamBoardCanceledEvent.canceledFor(examBoardId, participants.subjectNameOf(saved), saved.getExamDate(),
                 studentPersonIds, participants.tribunalPersonIdsOf(saved), reason));
-        return saved;
+        return ExamBoardResponse.from(saved);
     }
 }

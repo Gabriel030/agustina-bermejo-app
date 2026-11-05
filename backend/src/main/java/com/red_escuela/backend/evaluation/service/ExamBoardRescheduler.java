@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
 import com.red_escuela.backend.academicstructure.api.HolidayFinder;
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.events.ExamBoardRescheduledEvent;
@@ -30,18 +31,19 @@ public class ExamBoardRescheduler {
     }
 
     @Transactional
-    public ExamBoard reschedule(Long examBoardId, RescheduleExamBoardRequest request) {
+    public ExamBoardResponse reschedule(Long examBoardId, RescheduleExamBoardRequest request) {
         ExamBoard examBoard = examBoardRepository.findById(examBoardId).orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
         if (holidayFinder.isHoliday(request.examDate().toLocalDate())) {
             throw new ExamDateOnHolidayException(request.examDate().toLocalDate());
         }
+        participants.requireScheduled(examBoard);
         LocalDateTime oldExamDate = examBoard.getExamDate();
-        examBoard.reschedule(request.examDate(), request.registrationStart(), request.registrationEnd(), request.classroom());
         participants.requireNoGrades(examBoardId);
+        examBoard.reschedule(request.examDate(), request.registrationStart(), request.registrationEnd(), request.classroom());
         ExamBoard saved = examBoardRepository.save(examBoard);
         eventPublisher.publishEvent(ExamBoardRescheduledEvent.rescheduledFor(examBoardId, participants.subjectNameOf(saved), oldExamDate,
                 saved.getExamDate(), saved.getClassroom(),
                 participants.studentPersonIdsOf(participants.registeredOf(examBoardId)), participants.tribunalPersonIdsOf(saved)));
-        return saved;
+        return ExamBoardResponse.from(saved);
     }
 }

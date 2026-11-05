@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
@@ -62,11 +63,11 @@ class ExamBoardReschedulerTest extends ExamBoardChangeFixture {
         entityManager.flush();
         entityManager.refresh(examBoard);
 
-        ExamBoard rescheduled = rescheduler.reschedule(examBoard.getId(), requestFor(NEW_DATE));
+        ExamBoardResponse rescheduled = rescheduler.reschedule(examBoard.getId(), requestFor(NEW_DATE));
 
-        assertThat(rescheduled.getExamDate()).isEqualTo(NEW_DATE);
-        assertThat(rescheduled.getRescheduledFrom()).isEqualTo(OLD_DATE);
-        assertThat(rescheduled.getClassroom()).isEqualTo("Aula 7");
+        assertThat(rescheduled.examDate()).isEqualTo(NEW_DATE);
+        assertThat(rescheduled.rescheduledFrom()).isEqualTo(OLD_DATE);
+        assertThat(rescheduled.classroom()).isEqualTo("Aula 7");
         assertThat(registration.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
         assertThat(applicationEvents.stream(ExamBoardRescheduledEvent.class)).singleElement().satisfies(event -> {
             assertThat(event.oldExamDate()).isEqualTo(OLD_DATE);
