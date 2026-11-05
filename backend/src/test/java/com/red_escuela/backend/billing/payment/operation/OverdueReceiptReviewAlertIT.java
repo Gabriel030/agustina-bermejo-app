@@ -77,7 +77,7 @@ class OverdueReceiptReviewAlertIT extends AbstractBankTransferReceiptHttpIT {
     }
 
     private void holidayOn(LocalDate date) {
-        jdbc.update("insert into holiday (date, description) values (?, 'test holiday')", date);
+        jdbc.update("insert into holiday (date, name, type) values (?, 'test holiday', 'NATIONAL')", date);
         insertedHolidays.add(date);
     }
 

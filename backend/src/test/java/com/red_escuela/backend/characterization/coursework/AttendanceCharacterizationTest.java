@@ -98,7 +98,7 @@ class AttendanceCharacterizationTest extends CourseworkCharacterizationSupport {
     void attendanceCannotBeLoadedOnAHolidayNorByRolesOtherThanTeacher() throws Exception {
         Classroom classroom = classroom("att5", "7500006");
         Person preceptor = persistPerson("att5.preceptor", "75000067", "PRECEPTOR");
-        entityManager.createNativeQuery("insert into holiday (date, description) values ('2026-05-25', 'Feriado') on conflict (date) do nothing")
+        entityManager.createNativeQuery("insert into holiday (date, name, type) values ('2026-05-25', 'Feriado', 'NATIONAL') on conflict (date) do nothing")
                 .executeUpdate();
         String path = "/program-sections/" + classroom.section().getId() + "/attendance";
 
