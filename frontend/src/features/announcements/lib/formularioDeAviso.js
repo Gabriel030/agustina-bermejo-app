@@ -44,6 +44,22 @@ export function desdeAviso(aviso) {
   };
 }
 
+export function cambiosQueMerecenAviso(original, actual) {
+  const cambios = [];
+  if (original.title.trim() !== actual.title.trim()) cambios.push('el título');
+  if (original.urgent !== actual.urgent) cambios.push('la urgencia');
+  if ((caducidadAFecha(original) ?? null) !== (caducidadAFecha(actual) ?? null)) cambios.push('la caducidad');
+  const envioOriginal = original.cuando === 'programar' ? original.scheduledFor : null;
+  const envioActual = actual.cuando === 'programar' ? actual.scheduledFor : null;
+  if ((envioOriginal ?? null) !== (envioActual ?? null)) cambios.push('el envío programado');
+  return cambios;
+}
+
+export function unirCambios(cambios) {
+  if (cambios.length <= 1) return cambios.join('');
+  return `${cambios.slice(0, -1).join(', ')} y ${cambios[cambios.length - 1]}`;
+}
+
 const MENSAJES_DE_ERROR = {
   EMPTY_AUDIENCE: 'Ese grupo no tiene ningún alumno hoy. Elegí otro grupo de destinatarios.',
   SCHEDULED_DATE_IN_THE_PAST: 'La fecha de envío ya pasó. Elegí una fecha y hora futuras.',
