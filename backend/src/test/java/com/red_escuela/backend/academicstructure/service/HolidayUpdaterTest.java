@@ -55,7 +55,7 @@ class HolidayUpdaterTest {
         HolidayResponse response = updater.update(ID,
                 new UpdateHolidayRequest(NEW_DATE, "Puente", HolidayType.BRIDGE, null));
 
-        assertThat(response).isEqualTo(new HolidayResponse(ID, NEW_DATE, "Puente", HolidayType.BRIDGE, null));
+        assertThat(response).isEqualTo(new HolidayResponse(ID, NEW_DATE, "Puente", HolidayType.BRIDGE, ""));
     }
 
     @Test

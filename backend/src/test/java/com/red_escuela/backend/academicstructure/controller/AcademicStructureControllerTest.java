@@ -551,7 +551,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Renombrado"))
                 .andExpect(jsonPath("$.type").value("BRIDGE"))
-                .andExpect(jsonPath("$.description").doesNotExist());
+                .andExpect(jsonPath("$.description").value(""));
     }
 
     @Test
