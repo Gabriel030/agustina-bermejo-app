@@ -1,74 +1,67 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSolicitudBadge';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { apiFetch } from '@/api/client';
+import { useMisSolicitudesCarrera, useMyDocuments } from '@/features/enrollment/hooks/useCatalogo';
 import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { CircleCheck, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stepper } from '@/components/Stepper';
 import { applicationProgress } from '@/lib/applicationProgress';
+import { DOCUMENT_ACCEPT, documentUploadErrorMessage, validateDocumentFile } from '@/lib/applicationDocumentUpload';
 import { formatFecha, formatMoney } from '@/lib/utils';
 
-// DocumentType del backend (entity.DocumentType) — mismos 3 tipos que pide el
-// wizard de inscripción (InscripcionWizard.jsx): DNI frente/dorso, analítico.
 const TIPOS_DOCUMENTO = [
   { type: 'DNI_FRENTE', label: 'DNI — frente' },
   { type: 'DNI_DORSO', label: 'DNI — dorso' },
   { type: 'ANALITICO_SECUNDARIO', label: 'Analítico del secundario' },
 ];
 
-// Mapeo 1:1 a Detalle de solicitud.dc.html.
-//
-// No existe GET /me/program-enrollment-applications/{id} (solo la lista) ni
-// ningún GET que devuelva los documentos ya subidos de una solicitud — ver
-// "Deuda técnica y gaps de QA" entrada 9. Por eso:
-// 1. El detalle se resuelve buscando por id dentro de la misma lista que ya
-//    usa MisSolicitudes.jsx (GET /me/program-enrollment-applications), no
-//    hay endpoint de detalle propio.
-// 2. El estado "subido" de cada documento vive solo en memoria de este
-//    componente (subidosEnSesion) — no sobrevive un reload. El backend sí
-//    guarda el archivo; la UI simplemente no tiene de dónde leerlo de vuelta.
+const MY_APPLICATIONS_PATH = '/catalogo?tab=mis-solicitudes';
+
+function documentStatusText({ fileName, previousUploadDate, documentsFailed }) {
+  if (fileName) return `${fileName} · subido`;
+  if (previousUploadDate) return `Subido el ${formatFecha(previousUploadDate)}`;
+  if (documentsFailed) return 'No pudimos verificar si ya lo subiste';
+  return 'Sin subir todavía';
+}
+
 export function DetalleSolicitud() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const originState = paymentOriginState(`/mis-solicitudes/${id}`, 'Volver a tu solicitud');
-  const [solicitud, setSolicitud] = useState(null);
-  const [noEncontrada, setNoEncontrada] = useState(false);
-  const [errorCarga, setErrorCarga] = useState(false);
+  const applications = useMisSolicitudesCarrera();
+  const documents = useMyDocuments();
   const [subidosEnSesion, setSubidosEnSesion] = useState({});
-  const [previousDocuments, setPreviousDocuments] = useState({});
   const [subiendo, setSubiendo] = useState(null);
   const [errorSubida, setErrorSubida] = useState(null);
+  const [uploadAnnouncement, setUploadAnnouncement] = useState('');
   const fileInputRefs = useRef({});
 
-  useEffect(() => {
-    apiFetch('/me/program-enrollment-applications')
-      .then((solicitudes) => {
-        const propia = solicitudes.find((s) => String(s.id) === id);
-        if (!propia) {
-          setNoEncontrada(true);
-          return;
-        }
-        setSolicitud(propia);
-      })
-      .catch(() => setErrorCarga(true));
-    apiFetch('/me/documents')
-      .then((documents) =>
-        setPreviousDocuments(Object.fromEntries((documents ?? []).map((studentDocument) => [studentDocument.type, studentDocument.uploadedAt]))),
-      )
-      .catch(() => setPreviousDocuments({}));
-  }, [id]);
+  const solicitud = applications.data?.find((application) => String(application.id) === id) ?? null;
+  const previousDocuments = Object.fromEntries((documents.data ?? []).map((studentDocument) => [studentDocument.type, studentDocument.uploadedAt]));
 
   function elegirArchivo(type) {
     fileInputRefs.current[type]?.click();
   }
 
-  async function subirArchivo(type, file) {
+  async function subirArchivo(type, label, input) {
+    const file = input.files?.[0];
+    input.value = '';
     if (!file) return;
+    setUploadAnnouncement('');
+    const validationMessage = validateDocumentFile(file);
+    if (validationMessage) {
+      setErrorSubida(validationMessage);
+      return;
+    }
     setSubiendo(type);
     setErrorSubida(null);
     try {
@@ -79,29 +72,39 @@ export function DetalleSolicitud() {
         body: formData,
       });
       setSubidosEnSesion((prev) => ({ ...prev, [type]: file.name }));
-    } catch {
-      setErrorSubida('No pudimos subir el archivo. Probá de nuevo.');
+      setUploadAnnouncement(`${label}: ${file.name} subido`);
+      queryClient.invalidateQueries({ queryKey: ['me-documents'] });
+    } catch (error) {
+      setErrorSubida(documentUploadErrorMessage(error));
     } finally {
       setSubiendo(null);
     }
   }
 
-  if (errorCarga) {
+  if (applications.isError) {
     return (
       <PageContainer>
-        <GlassCard className="p-6 text-sm text-danger">No pudimos cargar la solicitud. Probá recargar la página.</GlassCard>
+        <LoadErrorState
+          error={applications.error}
+          onRetry={() => applications.refetch()}
+          resource="la solicitud"
+          backTo={MY_APPLICATIONS_PATH}
+          backLabel="Mis solicitudes"
+        />
       </PageContainer>
     );
   }
 
-  if (noEncontrada) {
+  if (applications.isSuccess && !solicitud) {
     return (
-      <GlassCard className="flex flex-1 flex-col items-center justify-center gap-2 p-12 text-center">
-        <div className="font-heading text-xl font-semibold text-ink">Solicitud no encontrada</div>
-        <button type="button" onClick={() => navigate('/mis-solicitudes')} className="text-sm font-semibold text-primary">
-          Volver a Mis solicitudes
-        </button>
-      </GlassCard>
+      <PageContainer>
+        <GlassCard className="flex flex-1 flex-col items-center justify-center gap-2 p-12 text-center">
+          <h1 className="font-heading text-xl font-semibold text-ink">Solicitud no encontrada</h1>
+          <Link to={MY_APPLICATIONS_PATH} className="text-sm font-semibold text-primary">
+            Volver a Mis solicitudes
+          </Link>
+        </GlassCard>
+      </PageContainer>
     );
   }
 
@@ -115,30 +118,25 @@ export function DetalleSolicitud() {
     );
   }
 
-  return (
-    <PageContainer>
-      <button
-        type="button"
-        onClick={() => navigate('/mis-solicitudes')}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
-      >
-        ← Mis solicitudes
-      </button>
+  const invoice = solicitud.admissionInvoice;
+  const rejectionText = solicitud.rejectionReason?.trim() || 'No se indicó un motivo; consultá con Secretaría.';
 
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="font-heading text-2xl font-bold tracking-tight text-ink">{solicitud.programName}</div>
-          <div className="mt-1 text-[13px] text-ink-faint">Solicitada el {formatFecha(solicitud.requestedAt)}</div>
-        </div>
-        <EstadoSolicitudBadge solicitud={solicitud} />
-      </div>
+  return (
+    <PageContainer
+      title={solicitud.programName}
+      description={`Solicitada el ${formatFecha(solicitud.requestedAt)}`}
+      action={<EstadoSolicitudBadge solicitud={solicitud} />}
+    >
+      <Link to={MY_APPLICATIONS_PATH} className="-mt-3 flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+        <span aria-hidden="true">←</span> Mis solicitudes
+      </Link>
 
       <Stepper {...applicationProgress(solicitud)} />
 
       {solicitud.status === 'REJECTED' && (
         <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-[13px] text-danger">
           <div>
-            <span className="font-bold">Solicitud rechazada.</span> {solicitud.rejectionReason}
+            <span className="font-bold">Solicitud rechazada.</span> {rejectionText}
           </div>
           <div>Podés volver a solicitar el ingreso a {solicitud.programName} cuando corrijas lo indicado.</div>
           <Button variant="outline" className="w-fit" onClick={() => navigate(`/catalogo/carreras/${solicitud.programId}`)}>
@@ -159,57 +157,63 @@ export function DetalleSolicitud() {
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && !solicitud.admissionInvoice && (
+      {solicitud.status === 'APPROVED' && !invoice && (
         <GlassCard className="bg-neutral-bg p-5 text-[13px] text-ink-soft">
           <span className="font-bold text-ink">Solicitud aprobada.</span> Consultá con Secretaría el pago de la matrícula de ingreso.
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && solicitud.programEnrollmentId && (
+      {solicitud.status === 'APPROVED' && invoice?.paymentStatus === 'PAID' && solicitud.programEnrollmentId && (
         <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
           <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso: tu inscripción a la carrera está confirmada.
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && !solicitud.programEnrollmentId && (
+      {solicitud.status === 'APPROVED' && invoice?.paymentStatus === 'PAID' && !solicitud.programEnrollmentId && (
         <GlassCard className="bg-warning-bg p-5 text-[13px] text-warning">
           <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso. Estamos confirmando tu inscripción en {solicitud.programName}.
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice && solicitud.admissionInvoice.paymentStatus !== 'PAID' && (
+      {solicitud.status === 'APPROVED' && invoice && invoice.paymentStatus !== 'PAID' && (
         <GlassCard className="flex flex-col gap-3 p-5">
           <div className="text-[13px] text-ink-soft">
             <span className="font-bold text-ink">Solicitud aprobada.</span> Cuando confirmemos el pago, tu inscripción a la carrera queda confirmada.
           </div>
+          {invoice.paymentStatus === 'OVERDUE' && (
+            <div className="rounded-xl bg-warning-bg px-4 py-3 text-[13px] text-warning">
+              <span className="font-bold">La matrícula está vencida.</span> Pagala antes de que cierre la admisión: si cierra sin el pago, la solicitud
+              vence y la factura se anula.
+            </div>
+          )}
           <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-3">
             <div>
               <div className="text-xs text-ink-faint">Matrícula de ingreso</div>
-              <div className="font-heading text-lg font-bold text-ink">{formatMoney(solicitud.admissionInvoice.total)}</div>
+              <div className="font-heading text-lg font-bold text-ink">{formatMoney(invoice.total)}</div>
               <div className="text-xs text-ink-faint">
-                {solicitud.admissionInvoice.paymentStatus === 'OVERDUE' ? 'Venció' : 'Vence'} el {formatFecha(solicitud.admissionInvoice.dueDate)}
+                {invoice.paymentStatus === 'OVERDUE' ? 'Venció' : 'Vence'} el {formatFecha(invoice.dueDate)}
               </div>
             </div>
-            {solicitud.admissionInvoice.receiptStatus === 'PENDING_REVIEW' ? (
+            {invoice.receiptStatus === 'PENDING_REVIEW' ? (
               <div className="flex flex-col items-end gap-1.5">
                 <StatusPill tone="warning">Pago en revisión</StatusPill>
                 <button
                   type="button"
-                  onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/transferencia`, { state: originState })}
+                  onClick={() => navigate(`/alumno/pagos/${invoice.id}/transferencia`, { state: originState })}
                   className="text-[12.5px] font-semibold text-primary"
                 >
                   Ver estado del pago
                 </button>
               </div>
             ) : (
-              <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/seleccion`, { state: originState })}>
+              <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${invoice.id}/seleccion`, { state: originState })}>
                 Pagar matrícula
               </Button>
             )}
           </div>
-          {solicitud.admissionInvoice.receiptStatus === 'PENDING_REVIEW' && (
+          {invoice.receiptStatus === 'PENDING_REVIEW' && (
             <div className="text-xs text-ink-faint">
-              Subiste el comprobante el {formatFecha(solicitud.admissionInvoice.receiptUploadedAt)}; cuando lo aprobemos tu inscripción queda confirmada.
+              Subiste el comprobante el {formatFecha(invoice.receiptUploadedAt)}; cuando lo aprobemos tu inscripción queda confirmada.
             </div>
           )}
         </GlassCard>
@@ -222,41 +226,66 @@ export function DetalleSolicitud() {
             a tener un plazo para pagarla. Te avisamos por notificación cuando haya novedades.
           </GlassCard>
 
-          <div className="font-heading text-[15px] font-semibold text-ink-soft">Documentos de tu solicitud</div>
+          <h2 className="font-heading text-[15px] font-semibold text-ink-soft">Documentos de tu solicitud</h2>
 
-          {errorSubida && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{errorSubida}</div>}
+          {documents.isError && (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
+              No pudimos ver los documentos que ya subiste.
+              <Button type="button" variant="outline" size="sm" onClick={() => documents.refetch()}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          {errorSubida && (
+            <div role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
+              {errorSubida}
+            </div>
+          )}
+
+          <div role="status" className="sr-only">
+            {uploadAnnouncement}
+          </div>
 
           <GlassCard className="flex flex-col p-1">
             {TIPOS_DOCUMENTO.map(({ type, label }) => {
-              const nombreArchivo = subidosEnSesion[type];
+              const fileName = subidosEnSesion[type];
               const previousUploadDate = previousDocuments[type];
-              const uploaded = Boolean(nombreArchivo || previousUploadDate);
+              const uploaded = Boolean(fileName || previousUploadDate);
               return (
                 <div key={type} className="flex items-center justify-between border-b border-border px-4 py-4 last:border-b-0">
                   <div className="flex items-center gap-3.5">
                     <div
                       className={`flex h-9 w-9 items-center justify-center rounded-xl ${uploaded ? 'bg-success-bg' : 'bg-neutral-bg'}`}
                     >
-                      {uploaded ? <CircleCheck size={18} className="text-success" /> : <Plus size={18} className="text-ink-faint" />}
+                      {uploaded ? (
+                        <CircleCheck size={18} className="text-success" aria-hidden="true" />
+                      ) : (
+                        <Plus size={18} className="text-ink-faint" aria-hidden="true" />
+                      )}
                     </div>
                     <div>
                       <div className="text-[13.5px] font-bold text-ink">{label}</div>
                       <div className={`text-xs ${uploaded ? 'text-success' : 'text-ink-faint'}`}>
-                        {nombreArchivo
-                          ? `${nombreArchivo} · subido`
-                          : previousUploadDate
-                            ? `Subido el ${formatFecha(previousUploadDate)}`
-                            : 'Sin subir todavía'}
+                        {documentStatusText({ fileName, previousUploadDate, documentsFailed: documents.isError })}
                       </div>
                     </div>
                   </div>
                   <input
                     ref={(el) => (fileInputRefs.current[type] = el)}
                     type="file"
+                    accept={DOCUMENT_ACCEPT}
+                    aria-label={`Archivo de ${label}`}
                     className="hidden"
-                    onChange={(e) => subirArchivo(type, e.target.files?.[0])}
+                    onChange={(e) => subirArchivo(type, label, e.target)}
                   />
-                  <Button type="button" variant="outline" loading={subiendo === type} onClick={() => elegirArchivo(type)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    loading={subiendo === type}
+                    aria-label={`${uploaded ? 'Reemplazar' : 'Subir archivo de'} ${label}`}
+                    onClick={() => elegirArchivo(type)}
+                  >
                     {uploaded ? 'Reemplazar' : 'Subir archivo'}
                   </Button>
                 </div>

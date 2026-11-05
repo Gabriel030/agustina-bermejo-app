@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.service;
 
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;

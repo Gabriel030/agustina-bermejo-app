@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.usecase.emailverification;
+package com.red_escuela.backend.identity.api;
 
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
@@ -6,23 +6,23 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.service.EmailVerificationIssuedEvent;
-import org.springframework.context.ApplicationEventPublisher;
-import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.Base64;
 
-@UseCase
-public class SendEmailVerificationService implements SendEmailVerificationUseCase {
+@Component
+public class EmailVerificationSender {
 
-    private static final Logger log = LoggerFactory.getLogger(SendEmailVerificationService.class);
+    private static final Logger log = LoggerFactory.getLogger(EmailVerificationSender.class);
     private static final long EXPIRATION_HOURS = 48;
 
     private final StudentRepository studentRepository;
@@ -31,7 +31,7 @@ public class SendEmailVerificationService implements SendEmailVerificationUseCas
     private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public SendEmailVerificationService(
+    public EmailVerificationSender(
             StudentRepository studentRepository,
             EmailVerificationTokenRepository tokenRepository,
             ApplicationEventPublisher eventPublisher,
@@ -42,9 +42,8 @@ public class SendEmailVerificationService implements SendEmailVerificationUseCas
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
-    @Override
     @Transactional
-    public void sendVerification(Long studentId) {
+    public void sendVerificationToStudent(Long studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         Person person = student.getPerson();
