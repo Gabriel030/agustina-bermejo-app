@@ -12,7 +12,8 @@ public enum NotificationEvent {
     INVOICE_GENERATED,
     PAYMENT_DUE_SOON(NotificationChannel.APP),
     EXAM_BOARD_REGISTERED,
-    INSTITUTIONAL_NOTICE;
+    INSTITUTIONAL_NOTICE,
+    HOLIDAY_CALENDAR_REMINDER;
 
     private final Set<NotificationChannel> mandatoryChannels;
 

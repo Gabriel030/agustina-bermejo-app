@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/Skeleton';
+import { useAuth } from '@/context/AuthContext';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -24,12 +25,15 @@ const EVENT_LABELS = {
   INVOICE_GENERATED: 'Factura generada',
   EXAM_BOARD_REGISTERED: 'Mesa de examen registrada',
   INSTITUTIONAL_NOTICE: 'Aviso institucional',
+  HOLIDAY_CALENDAR_REMINDER: 'Aviso de feriados por cargar',
 };
 
 const UNEMITTED_EVENTS = ['ACCOUNT_CREATED', 'GRADE_POSTED', 'INVOICE_GENERATED', 'EXAM_BOARD_REGISTERED'];
 
+const ADMINISTRATIVE_EVENTS = ['HOLIDAY_CALENDAR_REMINDER'];
+
 const GENERAL_EVENTS = Object.keys(EVENT_LABELS).filter(
-  (event) => event !== COLLECTION_EVENT && !UNEMITTED_EVENTS.includes(event),
+  (event) => event !== COLLECTION_EVENT && !UNEMITTED_EVENTS.includes(event) && !ADMINISTRATIVE_EVENTS.includes(event),
 );
 
 const ALWAYS_ON_COLLECTION_ROWS = [
@@ -98,6 +102,7 @@ function SectionRow({ title }) {
 }
 
 export function NotificationMatrix() {
+  const { roles } = useAuth();
   const { data, isLoading } = usePreferenciasNotificaciones();
   const update = useActualizarPreferenciasNotificaciones();
   const [pending, setPending] = useState(null);
@@ -182,6 +187,7 @@ export function NotificationMatrix() {
             ))}
             <SectionRow title="General" />
             {GENERAL_EVENTS.map(renderRow)}
+            {roles.includes('ADMINISTRATIVO') && ADMINISTRATIVE_EVENTS.map(renderRow)}
           </TableBody>
         </Table>
       </div>

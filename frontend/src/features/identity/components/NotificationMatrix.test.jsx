@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,6 +7,9 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { NotificationMatrix } from './NotificationMatrix';
 
 const API = 'http://localhost:8080';
+
+const auth = vi.hoisted(() => ({ roles: ['ALUMNO'] }));
+vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ roles: auth.roles }) }));
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
@@ -22,6 +25,10 @@ function mockPreferences(body, onSave) {
 }
 
 describe('NotificationMatrix', () => {
+  beforeEach(() => {
+    auth.roles = ['ALUMNO'];
+  });
+
   it('shows the collection block with the mandatory channel locked and the email switch free', async () => {
     mockPreferences({ preferences: {}, mandatoryChannels: { PAYMENT_DUE_SOON: ['APP'] } });
     renderWithProviders(<NotificationMatrix />);
@@ -49,6 +56,19 @@ describe('NotificationMatrix', () => {
     for (const label of ['Cuenta creada', 'Nota publicada', 'Factura generada', 'Mesa de examen registrada']) {
       expect(screen.queryByText(label)).not.toBeInTheDocument();
     }
+  });
+
+  it('shows the holiday reminder only to administrative staff', async () => {
+    mockPreferences({ preferences: {}, mandatoryChannels: {} });
+    const { unmount } = renderWithProviders(<NotificationMatrix />);
+    await screen.findByText('Aviso institucional');
+    expect(screen.queryByText('Aviso de feriados por cargar')).not.toBeInTheDocument();
+    unmount();
+
+    auth.roles = ['ADMINISTRATIVO'];
+    renderWithProviders(<NotificationMatrix />);
+    expect(await screen.findByText('Aviso de feriados por cargar')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Aviso de feriados por cargar — En la app: activado' })).toBeEnabled();
   });
 
   it('saves only after confirming and sends the email switch turned off', async () => {
