@@ -1,8 +1,7 @@
 package com.red_escuela.backend.service;
 import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.shared.mail.EmailService;
-import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
-
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
 import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;

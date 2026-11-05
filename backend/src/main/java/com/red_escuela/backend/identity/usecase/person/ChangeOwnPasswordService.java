@@ -6,6 +6,7 @@ import com.red_escuela.backend.identity.exception.InvalidCurrentPasswordExceptio
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.identity.service.PasswordPolicyValidator;
+import com.red_escuela.backend.identity.service.SessionRevoker;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,18 +18,18 @@ public class ChangeOwnPasswordService implements ChangeOwnPasswordUseCase {
     private final CurrentPersonService currentPersonService;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
-    private final RevokeAllSessionsUseCase revokeAllSessionsUseCase;
+    private final SessionRevoker sessionRevoker;
 
     public ChangeOwnPasswordService(PersonRepository personRepository,
                                     CurrentPersonService currentPersonService,
                                     PasswordEncoder passwordEncoder,
                                     PasswordPolicyValidator passwordPolicyValidator,
-                                    RevokeAllSessionsUseCase revokeAllSessionsUseCase) {
+                                    SessionRevoker sessionRevoker) {
         this.personRepository = personRepository;
         this.currentPersonService = currentPersonService;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
-        this.revokeAllSessionsUseCase = revokeAllSessionsUseCase;
+        this.sessionRevoker = sessionRevoker;
     }
 
     @Override
@@ -45,6 +46,6 @@ public class ChangeOwnPasswordService implements ChangeOwnPasswordUseCase {
         person.setPassword(passwordEncoder.encode(request.newPassword()));
         personRepository.save(person);
 
-        revokeAllSessionsUseCase.revokeAll(person);
+        sessionRevoker.revokeAllSessions(person);
     }
 }

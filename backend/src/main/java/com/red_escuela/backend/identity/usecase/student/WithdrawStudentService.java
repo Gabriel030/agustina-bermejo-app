@@ -4,7 +4,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
+import com.red_escuela.backend.identity.service.SessionRevoker;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,11 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class WithdrawStudentService implements WithdrawStudentUseCase {
 
     private final StudentRepository studentRepository;
-    private final RevokeAllSessionsUseCase revokeAllSessionsUseCase;
+    private final SessionRevoker sessionRevoker;
 
-    public WithdrawStudentService(StudentRepository studentRepository, RevokeAllSessionsUseCase revokeAllSessionsUseCase) {
+    public WithdrawStudentService(StudentRepository studentRepository, SessionRevoker sessionRevoker) {
         this.studentRepository = studentRepository;
-        this.revokeAllSessionsUseCase = revokeAllSessionsUseCase;
+        this.sessionRevoker = sessionRevoker;
     }
 
     @Override
@@ -28,6 +28,6 @@ public class WithdrawStudentService implements WithdrawStudentUseCase {
         student.setWithdrawalReason(command.request().reason());
         student.setWithdrawalDetail(command.request().detail());
         studentRepository.save(student);
-        revokeAllSessionsUseCase.revokeAll(student.getPerson());
+        sessionRevoker.revokeAllSessions(student.getPerson());
     }
 }
