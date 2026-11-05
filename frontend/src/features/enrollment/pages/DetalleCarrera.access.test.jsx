@@ -67,6 +67,30 @@ describe('DetalleCarrera access by role and status', () => {
     expect(screen.queryByRole('button', { name: 'Inscribirme' })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['inactive', { status: 'INACTIVE' }],
+    ['hidden', { visibleInCatalog: false }],
+  ])('staff%sProgramShowsHiddenNoticeWithFullDetail', async (_label, override) => {
+    signInAs(['DIRECTOR']);
+    server.use(
+      http.get(`${API}/programs/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Carrera de prueba', totalYears: 3, status: 'ACTIVE', visibleInCatalog: true, ...override }),
+      ),
+    );
+    renderDetail();
+
+    expect(await screen.findByText('Programa no visible en el catálogo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Carrera de prueba' })).toBeInTheDocument();
+  });
+
+  it('staffListedProgramShowsNoHiddenNotice', async () => {
+    signInAs(['DIRECTOR']);
+    renderDetail();
+
+    expect(await screen.findByText('Vista previa del catálogo')).toBeInTheDocument();
+    expect(screen.queryByText('Programa no visible en el catálogo')).not.toBeInTheDocument();
+  });
+
   it('studentWithPendingApplicationSeesLinkToIt', async () => {
     signInAs(['ALUMNO']);
     server.use(
@@ -115,5 +139,6 @@ describe('DetalleCarrera access by role and status', () => {
 
     expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Inscribirme' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Programa no visible en el catálogo')).not.toBeInTheDocument();
   });
 });

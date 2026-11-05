@@ -105,6 +105,20 @@ describe('AppRouter', () => {
     expect(screen.queryByText('constancias')).not.toBeInTheDocument();
   });
 
+  it('lets a director reach the certificates section', async () => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json({ id: 6, nombre: 'Dora', apellido: 'Dir', email: 'dora@demo.test', roles: ['DIRECTOR'] }),
+      ),
+    );
+    renderApp('/director/constancias');
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByText('Constancias')).toBeInTheDocument();
+    expect(screen.getByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
+  });
+
   it('does not let a director open the platform screens', async () => {
     server.use(
       http.get(`${API}/me`, () =>

@@ -52,6 +52,22 @@ describe('DetalleCurso access by role and status', () => {
     expect(screen.queryByRole('button', { name: 'Inscribirme' })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['inactive', { status: 'INACTIVE' }],
+    ['hidden', { visibleInCatalog: false }],
+  ])('staff%sCourseShowsHiddenNoticeWithFullDetail', async (_label, override) => {
+    signInAs(['PRECEPTOR']);
+    server.use(
+      http.get(`${API}/courses/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Curso de prueba', status: 'ACTIVE', visibleInCatalog: true, registrationOpen: true, ...override }),
+      ),
+    );
+    renderDetail();
+
+    expect(await screen.findByText('Curso no visible en el catálogo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Curso de prueba' })).toBeInTheDocument();
+  });
+
   it('studentAlreadyEnrolledSeesLinkToMyCourses', async () => {
     signInAs(['ALUMNO']);
     server.use(
@@ -86,5 +102,6 @@ describe('DetalleCurso access by role and status', () => {
     renderDetail();
 
     expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
+    expect(screen.queryByText('Curso no visible en el catálogo')).not.toBeInTheDocument();
   });
 });

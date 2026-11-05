@@ -66,6 +66,7 @@ export function DetalleCarrera() {
   return (
     <CatalogDetailLayout
       backTo={CATALOG_PATH}
+      hiddenNotice={viewer.state === 'PREVIEW' && !isListedInCatalog(programa) ? 'Programa no visible en el catálogo' : null}
       title={programa.name}
       summary={programSummary(programa)}
       action={

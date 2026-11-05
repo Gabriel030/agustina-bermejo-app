@@ -24,7 +24,7 @@ export const ROLE_CONFIG = {
   },
   director: {
     Layout: DirectorLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'facturacion', 'descuentos', 'recordatorios-de-pago', 'corridas-de-facturacion', 'emision-mensual', 'financiero'],
+    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'facturacion', 'descuentos', 'recordatorios-de-pago', 'corridas-de-facturacion', 'emision-mensual', 'financiero', 'constancias'],
   },
   platform_admin: {
     Layout: PlatformLayout,
