@@ -19,6 +19,7 @@ import {
 } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { PanelModulo } from './PanelModulo';
+import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
 
 const STATUS_CONFIG = {
   ACTIVE: { label: 'Activo', tone: 'success' },
@@ -81,6 +82,7 @@ export function CursoDetalle() {
   const setCatalogVisibility = useSetCourseCatalogVisibility();
 
   const [panelOpen, setPanelOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const term = (terminos ?? []).find((t) => String(t.id) === String(course?.termId));
 
@@ -93,6 +95,7 @@ export function CursoDetalle() {
           ? 'El curso ahora aparece en el catálogo de inscripciones'
           : 'El curso fue retirado del catálogo. Los alumnos actuales no se ven afectados.'
       );
+      setConfirmAction(null);
     } catch {
       toast.error('No se pudo cambiar la visibilidad en el catálogo.');
     }
@@ -104,6 +107,7 @@ export function CursoDetalle() {
       if (isActive) {
         await deactivateCourse.mutateAsync(id);
         toast.success('Curso desactivado');
+        setConfirmAction(null);
       } else {
         await activateCourse.mutateAsync(id);
         toast.success('Curso activado');
@@ -183,7 +187,7 @@ export function CursoDetalle() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleToggleStatus}
+                onClick={() => (isActive ? setConfirmAction('deactivate') : handleToggleStatus())}
                 loading={deactivateCourse.isPending || activateCourse.isPending}
                 className={isActive ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
               >
@@ -214,7 +218,7 @@ export function CursoDetalle() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleToggleCatalog}
+              onClick={() => (course.visibleInCatalog ? setConfirmAction('retire') : handleToggleCatalog())}
               loading={setCatalogVisibility.isPending}
               className={course.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
             >
@@ -276,6 +280,26 @@ export function CursoDetalle() {
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         courseId={id}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'deactivate'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Desactivar curso"
+        description="El curso va a quedar inactivo. Podés volver a activarlo más adelante."
+        confirmLabel="Desactivar"
+        pending={deactivateCourse.isPending}
+        onConfirm={handleToggleStatus}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'retire'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Retirar del catálogo"
+        description="El curso deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados."
+        confirmLabel="Retirar"
+        pending={setCatalogVisibility.isPending}
+        onConfirm={handleToggleCatalog}
       />
     </PageContainer>
   );
