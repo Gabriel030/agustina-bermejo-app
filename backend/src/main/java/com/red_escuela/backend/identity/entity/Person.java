@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -96,6 +97,9 @@ public class Person {
 
     @Column(name = "avatar_path", length = 500)
     private String avatarPath;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
 
     @Column(name = "email_verified")
     private Boolean emailVerified;

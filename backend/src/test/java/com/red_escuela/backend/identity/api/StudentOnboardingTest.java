@@ -66,7 +66,7 @@ class StudentOnboardingTest {
         when(studentRepository.save(any(Student.class))).thenAnswer(call -> call.getArgument(0));
 
         StudentOnboardingSummary summary = studentOnboarding.registerProspect(
-                new NewProspect("Ana", "Paz", "ana@example.com", "1122", 7L));
+                new NewProspect("Ana", "Paz", "ana@example.com", "1122", 7L, null));
 
         assertThat(summary.onboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
         assertThat(summary.email()).isEqualTo("ana@example.com");
@@ -74,10 +74,38 @@ class StudentOnboardingTest {
     }
 
     @Test
+    void registerProspectStoresRegisteredAtAndActor() {
+        Person person = personWithAddress();
+        when(institutionRepository.findById(7L)).thenReturn(Optional.of(new Institution()));
+        when(basePersonCreator.createBasePerson("Ana", "Paz", "ana@example.com")).thenReturn(person);
+        when(studentRepository.save(any(Student.class))).thenAnswer(call -> call.getArgument(0));
+
+        StudentOnboardingSummary summary = studentOnboarding.registerProspect(
+                new NewProspect("Ana", "Paz", "ana@example.com", "1122", 7L, 55L));
+
+        assertThat(summary.registeredAt()).isNotNull();
+        assertThat(summary.registeredByPersonId()).isEqualTo(55L);
+    }
+
+    @Test
+    void registerProspectBySelfRegistrationLeavesActorNull() {
+        Person person = personWithAddress();
+        when(institutionRepository.findById(7L)).thenReturn(Optional.of(new Institution()));
+        when(basePersonCreator.createBasePerson("Ana", "Paz", "ana@example.com")).thenReturn(person);
+        when(studentRepository.save(any(Student.class))).thenAnswer(call -> call.getArgument(0));
+
+        StudentOnboardingSummary summary = studentOnboarding.registerProspect(
+                new NewProspect("Ana", "Paz", "ana@example.com", "1122", 7L, null));
+
+        assertThat(summary.registeredAt()).isNotNull();
+        assertThat(summary.registeredByPersonId()).isNull();
+    }
+
+    @Test
     void registerProspectRejectsAnUnknownInstitution() {
         when(institutionRepository.findById(7L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> studentOnboarding.registerProspect(new NewProspect("Ana", "Paz", "a@b.com", null, 7L)))
+        assertThatThrownBy(() -> studentOnboarding.registerProspect(new NewProspect("Ana", "Paz", "a@b.com", null, 7L, null)))
                 .isInstanceOf(InstitutionNotFoundException.class);
         verify(studentRepository, never()).save(any());
     }

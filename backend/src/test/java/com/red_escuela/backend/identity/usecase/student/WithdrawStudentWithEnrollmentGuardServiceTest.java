@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.student;
 
+import com.red_escuela.backend.identity.domain.StudentStatusChangeRecorder;
 import com.red_escuela.backend.identity.domain.StudentWithdrawalGuard;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.identity.entity.WithdrawalReason;
@@ -21,17 +22,19 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class WithdrawStudentWithEnrollmentGuardServiceTest {
 
     private final StudentWithdrawalGuard guard = mock(StudentWithdrawalGuard.class);
+    private final StudentStatusChangeRecorder recorder = mock(StudentStatusChangeRecorder.class);
     private final WithdrawStudentService delegate = mock(WithdrawStudentService.class);
-    private final WithdrawStudentWithEnrollmentGuardService service = new WithdrawStudentWithEnrollmentGuardService(guard, delegate);
+    private final WithdrawStudentWithEnrollmentGuardService service = new WithdrawStudentWithEnrollmentGuardService(guard, delegate, recorder);
     private final WithdrawStudentCommand command = new WithdrawStudentCommand(7L, new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "x"));
 
     @Test
     void theStudentIsLockedAndCheckedBeforeTheFileIsWithdrawn() {
         service.withdraw(command);
 
-        InOrder order = inOrder(guard, delegate);
+        InOrder order = inOrder(guard, delegate, recorder);
         order.verify(guard).lockStudentAndRequireWithdrawable(7L);
         order.verify(delegate).withdraw(command);
+        order.verify(recorder).recordWithdrawal(7L);
     }
 
     @Test
@@ -40,6 +43,6 @@ class WithdrawStudentWithEnrollmentGuardServiceTest {
 
         assertThatThrownBy(() -> service.withdraw(command)).isInstanceOf(StudentHasActiveEnrollmentsException.class);
 
-        verifyNoInteractions(delegate);
+        verifyNoInteractions(delegate, recorder);
     }
 }

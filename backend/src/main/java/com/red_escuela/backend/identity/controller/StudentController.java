@@ -14,6 +14,7 @@ import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,14 +48,15 @@ public class StudentController {
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus,
             @RequestParam(required = false) String search) {
+        boolean seesWithdrawalReason = seesWithdrawalReason();
         return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus, search))
-                .stream().map(StudentResponse::from).toList();
+                .stream().map(student -> StudentResponse.from(student, seesWithdrawalReason)).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StudentRecordResponse getRecord(@PathVariable Long id) {
-        return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id));
+        return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id), seesWithdrawalReason());
     }
 
     @PostMapping("/{id}/withdraw")
@@ -69,5 +71,11 @@ public class StudentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void resetPassword(@PathVariable Long id) {
         resetStudentPasswordUseCase.resetPassword(id);
+    }
+
+    private boolean seesWithdrawalReason() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority())
+                        || "ROLE_ADMINISTRATIVO".equals(authority.getAuthority()));
     }
 }
