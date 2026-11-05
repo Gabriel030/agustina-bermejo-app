@@ -87,7 +87,7 @@ describe('AppRouter', () => {
     await signIn(userEvent.setup());
 
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
-    expect(screen.queryByText(/todavía no está implementada/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
   });
 
   it('shows a readable title instead of the slug on a placeholder reached by URL', async () => {
@@ -101,6 +101,7 @@ describe('AppRouter', () => {
     await signIn(userEvent.setup());
 
     expect(await screen.findByText('Constancias')).toBeInTheDocument();
+    expect(screen.getByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
     expect(screen.queryByText('constancias')).not.toBeInTheDocument();
   });
 
