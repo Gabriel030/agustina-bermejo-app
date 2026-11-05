@@ -43,6 +43,11 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED).toBe('warning');
   });
 
+  it('etiqueta y da tono al aviso de feriados faltantes', () => {
+    expect(TIPO_NOTIFICACION_LABEL.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('Faltan los feriados del año que viene');
+    expect(TONO_NOTIFICACION.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('warning');
+  });
+
   it('todo tipo con etiqueta tiene tono', () => {
     Object.keys(TIPO_NOTIFICACION_LABEL).forEach((tipo) => {
       expect(TONO_NOTIFICACION[tipo], tipo).toBeDefined();

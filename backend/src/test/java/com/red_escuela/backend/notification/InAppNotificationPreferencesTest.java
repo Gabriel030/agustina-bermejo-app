@@ -27,7 +27,7 @@ class InAppNotificationPreferencesTest {
     private static final Set<NotificationType> USER_CONFIGURABLE = EnumSet.of(
             NotificationType.ANNOUNCEMENT_PUBLISHED, NotificationType.ANNOUNCEMENT_UPDATED,
             NotificationType.COURSE_WAITLIST_EXPIRED, NotificationType.PROGRAM_APPLICATION_APPROVED,
-            NotificationType.COLLECTION_REMINDER);
+            NotificationType.COLLECTION_REMINDER, NotificationType.HOLIDAYS_MISSING_FOR_NEXT_YEAR);
 
     private final NotificationRepository repository = mock(NotificationRepository.class);
     private final NotificationPreferenceFinder finder = mock(NotificationPreferenceFinder.class);
