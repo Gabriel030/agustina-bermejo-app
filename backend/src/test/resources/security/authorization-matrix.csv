@@ -149,8 +149,8 @@ POST,/graduation-requests/{id}/approve,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/graduation-requests/{id}/reject,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/graduation-requests/{id}/verify-debt,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
 GET,/holidays,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/holidays,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
-PUT,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
+POST,/holidays,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""date"":""2026-01-15"",""name"":""x"",""type"":""NATIONAL""}"
+PUT,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""date"":""2026-01-15"",""name"":""x"",""type"":""NATIONAL""}"
 DELETE,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
 GET,/institutions,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/instructors,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,

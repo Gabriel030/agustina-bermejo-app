@@ -135,7 +135,7 @@ class EmailDeliveryDispatchJobIT extends AbstractIntegrationTest {
         Long onSaturday = queueMailFor(saturday);
         Long onSunday = queueMailFor(sunday);
         Long onHoliday = queueMailFor(holiday);
-        jdbc.update("insert into holiday (date, description) values (?, 'Feriado de prueba')", holiday);
+        jdbc.update("insert into holiday (date, name, type) values (?, 'Feriado de prueba', 'NATIONAL')", holiday);
         try {
             at(saturday, 10, 0);
             job.dispatchDueEmails();

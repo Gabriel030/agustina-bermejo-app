@@ -116,7 +116,7 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
     @Tag("D-268")
     @Tag("D-321")
     void ageInTheQueueSkipsWeekendsAndHolidays() throws Exception {
-        jdbc.update("insert into holiday (date, description) values (?, 'test holiday')", MONDAY.plusDays(1));
+        jdbc.update("insert into holiday (date, name, type) values (?, 'test holiday', 'NATIONAL')", MONDAY.plusDays(1));
         insertedHolidays.add(MONDAY.plusDays(1));
         clockAt(MONDAY, 10);
         Debtor debtor = debtor();
