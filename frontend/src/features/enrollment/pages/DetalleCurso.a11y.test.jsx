@@ -66,6 +66,6 @@ describe('DetalleCurso accessibility and block errors', () => {
 
     expect(await screen.findByText('No pudimos cargar el curso')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver a el catálogo' })).toHaveAttribute('href', '/catalogo?tab=cursos');
+    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=cursos');
   });
 });

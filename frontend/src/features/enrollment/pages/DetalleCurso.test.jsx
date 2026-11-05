@@ -176,7 +176,7 @@ describe('DetalleCurso', () => {
     renderDetalle('9999');
 
     expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver a el catálogo' })).toHaveAttribute('href', '/catalogo?tab=cursos');
+    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=cursos');
   });
 
   it('the payment step shows the bank account the applicant has to transfer to', async () => {

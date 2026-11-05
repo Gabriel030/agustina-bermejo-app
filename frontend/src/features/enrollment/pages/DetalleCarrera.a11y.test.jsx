@@ -99,7 +99,7 @@ describe('DetalleCarrera accessibility and block errors', () => {
 
     expect(await screen.findByText('No pudimos cargar la carrera')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver a el catálogo' })).toHaveAttribute('href', '/catalogo?tab=carreras');
+    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=carreras');
     expect(await axe(container)).toHaveNoViolations();
   });
 

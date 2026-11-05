@@ -113,7 +113,7 @@ describe('DetalleCarrera', () => {
     renderDetalle('9999');
 
     expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver a el catálogo' })).toHaveAttribute('href', '/catalogo?tab=carreras');
+    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=carreras');
   });
 
   it('Inscribirme navega a una página propia, no abre un modal', async () => {
