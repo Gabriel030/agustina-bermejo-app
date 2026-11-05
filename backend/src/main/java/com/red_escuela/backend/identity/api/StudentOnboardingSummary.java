@@ -2,6 +2,7 @@ package com.red_escuela.backend.identity.api;
 
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import java.time.LocalDateTime;
 
 public record StudentOnboardingSummary(
         Long studentId,
@@ -13,7 +14,9 @@ public record StudentOnboardingSummary(
         String email,
         StudentOnboardingStatus onboardingStatus,
         String personStatus,
-        Boolean emailVerified) {
+        Boolean emailVerified,
+        LocalDateTime registeredAt,
+        Long registeredByPersonId) {
 
     static StudentOnboardingSummary of(Student student) {
         var person = student.getPerson();
@@ -27,6 +30,8 @@ public record StudentOnboardingSummary(
                 person.emailValue(),
                 student.getOnboardingStatus(),
                 person.getStatus() == null ? null : person.getStatus().name(),
-                person.getEmailVerified());
+                person.getEmailVerified(),
+                student.getRegisteredAt(),
+                student.getRegisteredByPersonId());
     }
 }

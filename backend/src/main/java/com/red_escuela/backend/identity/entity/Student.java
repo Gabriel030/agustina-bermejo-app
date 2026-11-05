@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @NamedInterface("model")
@@ -49,4 +50,13 @@ public class Student {
 
     @Column(name = "withdrawal_detail")
     private String withdrawalDetail;
+
+    @Column(name = "registered_at")
+    private LocalDateTime registeredAt;
+
+    @Column(name = "registered_by_person_id")
+    private Long registeredByPersonId;
+
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
 }

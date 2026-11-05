@@ -158,6 +158,32 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void directorAndAdministrativeSeeWithdrawalReasonAndPreceptorDoesNot() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(
+                "42555666", "42555666", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
+        student.setWithdrawalReason(WithdrawalReason.ABANDONO);
+        student.setWithdrawalDetail("detalle");
+        entityManager.flush();
+        String directorToken = tokenWithRole("director.motivo", "DIRECTOR");
+        String administrativeToken = tokenWithRole("administrativo.motivo", "ADMINISTRATIVO");
+        String preceptorToken = tokenWithRole("preceptor.motivo", "PRECEPTOR");
+
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + directorToken))
+                .andExpect(jsonPath("$[0].withdrawalReason").value("ABANDONO"));
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(jsonPath("$[0].withdrawalReason").value("ABANDONO"));
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + preceptorToken))
+                .andExpect(jsonPath("$[0].withdrawalReason").doesNotExist());
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(jsonPath("$.motivoBaja").value("ABANDONO"))
+                .andExpect(jsonPath("$.detalleBaja").value("detalle"));
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + preceptorToken))
+                .andExpect(jsonPath("$.motivoBaja").doesNotExist())
+                .andExpect(jsonPath("$.detalleBaja").doesNotExist());
+    }
+
+    @Test
     void preceptorCannotWithdrawAStudentFile() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
