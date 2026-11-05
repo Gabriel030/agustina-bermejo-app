@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface ListAnnouncementRecipientsUseCase {
 
-    List<AnnouncementRecipientResponse> list(Long announcementId);
+    List<AnnouncementRecipientResponse> list(ListAnnouncementRecipientsCommand command);
 }

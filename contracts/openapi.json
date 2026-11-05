@@ -478,12 +478,16 @@
           "name" : {
             "type" : "string"
           },
+          "readAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "studentId" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "file", "name", "studentId" ],
+        "required" : [ "file", "name", "readAt", "studentId" ],
         "type" : "object"
       },
       "AnnouncementResponse" : {
@@ -510,6 +514,14 @@
             "type" : [ "string", "null" ]
           },
           "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "readCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "recipientCount" : {
             "format" : "int64",
             "type" : "integer"
           },
@@ -544,7 +556,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "audienceLabel", "body", "category", "createdAt", "createdBy", "expiresAt", "id", "scheduledFor", "sectionId", "sectionType", "sentAt", "status", "title", "updatedAt", "urgent" ],
+        "required" : [ "audienceLabel", "body", "category", "createdAt", "createdBy", "expiresAt", "id", "readCount", "recipientCount", "scheduledFor", "sectionId", "sectionType", "sentAt", "status", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
       "AnnualUpfrontQuoteResponse" : {
@@ -32623,6 +32635,116 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-announcement-controller" ]
+      }
+    },
+    "/me/announcements/{id}/read" : {
+      "post" : {
+        "operationId" : "MeAnnouncement_markRead",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           },
           "400" : {
             "content" : {

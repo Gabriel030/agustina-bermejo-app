@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.controller;
 
+import com.red_escuela.backend.announcement.dto.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.dto.AnnouncementResponse;
 import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
 import com.red_escuela.backend.announcement.dto.AnnouncementRecipientResponse;
@@ -7,10 +8,13 @@ import com.red_escuela.backend.announcement.dto.AudienceSegmentResponse;
 import com.red_escuela.backend.announcement.dto.AudienceSpecRequest;
 import com.red_escuela.backend.announcement.dto.CreateAnnouncementRequest;
 import com.red_escuela.backend.announcement.dto.UpdateAnnouncementRequest;
+import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.SectionType;
+import com.red_escuela.backend.announcement.usecase.announcement.CountAnnouncementReadsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementUseCase;
+import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListSectionAnnouncementsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand;
@@ -21,6 +25,7 @@ import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceUseC
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +35,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @PreAuthorize("hasRole('DOCENTE')")
@@ -43,6 +50,7 @@ public class AnnouncementController {
     private final ListAudienceSegmentsUseCase listAudienceSegments;
     private final PreviewAudienceUseCase previewAudience;
     private final ListAnnouncementRecipientsUseCase listAnnouncementRecipients;
+    private final CountAnnouncementReadsUseCase countAnnouncementReads;
 
     public AnnouncementController(CreateAnnouncementUseCase createAnnouncement,
                                   UpdateAnnouncementUseCase updateAnnouncement,
@@ -50,7 +58,8 @@ public class AnnouncementController {
                                   ListSectionAnnouncementsUseCase listSectionAnnouncements,
                                   ListAudienceSegmentsUseCase listAudienceSegments,
                                   PreviewAudienceUseCase previewAudience,
-                                  ListAnnouncementRecipientsUseCase listAnnouncementRecipients) {
+                                  ListAnnouncementRecipientsUseCase listAnnouncementRecipients,
+                                  CountAnnouncementReadsUseCase countAnnouncementReads) {
         this.createAnnouncement = createAnnouncement;
         this.updateAnnouncement = updateAnnouncement;
         this.deleteAnnouncement = deleteAnnouncement;
@@ -58,32 +67,31 @@ public class AnnouncementController {
         this.listAudienceSegments = listAudienceSegments;
         this.previewAudience = previewAudience;
         this.listAnnouncementRecipients = listAnnouncementRecipients;
+        this.countAnnouncementReads = countAnnouncementReads;
     }
 
     @PostMapping("/subject-sections/{sectionId}/announcements")
     @ResponseStatus(HttpStatus.CREATED)
     public AnnouncementResponse createForSubjectSection(@PathVariable Long sectionId,
                                                         @Valid @RequestBody CreateAnnouncementRequest request) {
-        return AnnouncementResponse.from(createAnnouncement.create(toCommand(SectionType.PROGRAM, sectionId, request)));
+        return toResponse(createAnnouncement.create(toCommand(SectionType.PROGRAM, sectionId, request)));
     }
 
     @PostMapping("/course-sections/{sectionId}/announcements")
     @ResponseStatus(HttpStatus.CREATED)
     public AnnouncementResponse createForCourseSection(@PathVariable Long sectionId,
                                                        @Valid @RequestBody CreateAnnouncementRequest request) {
-        return AnnouncementResponse.from(createAnnouncement.create(toCommand(SectionType.COURSE, sectionId, request)));
+        return toResponse(createAnnouncement.create(toCommand(SectionType.COURSE, sectionId, request)));
     }
 
     @GetMapping("/subject-sections/{sectionId}/announcements")
     public List<AnnouncementResponse> listForSubjectSection(@PathVariable Long sectionId) {
-        return listSectionAnnouncements.list(SectionType.PROGRAM, sectionId).stream()
-                .map(AnnouncementResponse::from).toList();
+        return toResponses(listSectionAnnouncements.list(SectionType.PROGRAM, sectionId));
     }
 
     @GetMapping("/course-sections/{sectionId}/announcements")
     public List<AnnouncementResponse> listForCourseSection(@PathVariable Long sectionId) {
-        return listSectionAnnouncements.list(SectionType.COURSE, sectionId).stream()
-                .map(AnnouncementResponse::from).toList();
+        return toResponses(listSectionAnnouncements.list(SectionType.COURSE, sectionId));
     }
 
     @GetMapping("/subject-sections/{sectionId}/audience-segments")
@@ -110,21 +118,40 @@ public class AnnouncementController {
 
     @PutMapping("/announcements/{id}")
     public AnnouncementResponse update(@PathVariable Long id, @Valid @RequestBody UpdateAnnouncementRequest request) {
-        return AnnouncementResponse.from(updateAnnouncement.update(new UpdateAnnouncementCommand(
+        return toResponse(updateAnnouncement.update(new UpdateAnnouncementCommand(
                 id, request.title(), request.body(), request.category(), request.urgent(), request.expiresAt(),
                 request.scheduledFor(), request.audience() == null ? null : request.audience().toSpec(),
                 Boolean.TRUE.equals(request.notifyRecipients()))));
     }
 
     @GetMapping("/announcements/{id}/recipients")
+    @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'DIRECTOR')")
     public List<AnnouncementRecipientResponse> recipients(@PathVariable Long id) {
-        return listAnnouncementRecipients.list(id);
+        return listAnnouncementRecipients.list(new ListAnnouncementRecipientsCommand(id, isInstructor()));
     }
 
     @DeleteMapping("/announcements/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         deleteAnnouncement.delete(id);
+    }
+
+    private boolean isInstructor() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCENTE"));
+    }
+
+    private AnnouncementResponse toResponse(Announcement announcement) {
+        return toResponses(List.of(announcement)).get(0);
+    }
+
+    private List<AnnouncementResponse> toResponses(List<Announcement> announcements) {
+        Collection<Long> ids = announcements.stream().map(Announcement::getId).toList();
+        Map<Long, AnnouncementReadCount> counts = countAnnouncementReads.countsOf(ids);
+        return announcements.stream()
+                .map(announcement -> AnnouncementResponse.from(announcement,
+                        counts.getOrDefault(announcement.getId(), AnnouncementReadCount.EMPTY)))
+                .toList();
     }
 
     private CreateAnnouncementCommand toCommand(SectionType type, Long sectionId, CreateAnnouncementRequest request) {

@@ -26,14 +26,17 @@ public class ListAnnouncementRecipientsService implements ListAnnouncementRecipi
     }
 
     @Override
-    public List<AnnouncementRecipientResponse> list(Long announcementId) {
-        Announcement announcement = announcementRepository.findById(announcementId)
-                .orElseThrow(() -> new AnnouncementNotFoundException(announcementId));
+    public List<AnnouncementRecipientResponse> list(ListAnnouncementRecipientsCommand command) {
+        Announcement announcement = announcementRepository.findById(command.announcementId())
+                .orElseThrow(() -> new AnnouncementNotFoundException(command.announcementId()));
 
-        sectionMembership.requireCurrentInstructorOf(announcement.getSectionType(), announcement.getSectionId());
+        if (command.instructorView()) {
+            sectionMembership.requireCurrentInstructorOf(announcement.getSectionType(), announcement.getSectionId());
+        }
 
-        return recipientReader.listRecipients(announcementId).stream()
-                .map(recipient -> new AnnouncementRecipientResponse(recipient.studentId(), recipient.file(), recipient.fullName()))
+        return recipientReader.listRecipients(command.announcementId()).stream()
+                .map(recipient -> new AnnouncementRecipientResponse(recipient.studentId(), recipient.file(), recipient.fullName(),
+                        command.instructorView() ? null : recipient.readAt()))
                 .toList();
     }
 }
