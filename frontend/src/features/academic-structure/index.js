@@ -4,5 +4,5 @@ export { useCourses } from './hooks/useCourses';
 export { useProgramCohorts } from './hooks/useCohorts';
 export { useCycle, useCicloSecciones } from './hooks/useCiclos';
 export { useRoleBasePath } from './hooks/useRoleBasePath';
-export { FormField } from './components/FormField';
+export { FormField, SelectField } from './components/FormField';
 export { fieldProps } from './lib/offeringForm';

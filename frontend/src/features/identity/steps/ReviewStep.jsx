@@ -1,5 +1,5 @@
 import { documentLabel } from '@/lib/documentType';
-import { missingDocumentsSummary } from '@/features/identity/lib/studentRegistration';
+import { isMinor, missingDocumentsSummary, SEX_OPTIONS } from '@/features/identity/lib/studentRegistration';
 
 function Row({ label, value }) {
   return (
@@ -11,7 +11,9 @@ function Row({ label, value }) {
 }
 
 export function ReviewStep({ values, missingDocuments }) {
-  const { nombre, apellido, email, telefono, documentType, dni, street, number, floor, city, state, postalCode, country } = values;
+  const { nombre, apellido, email, telefono, documentType, dni, street, number, floor, city, state, postalCode, country, birthDate, sex, nationality, guardianName, guardianDni, guardianRelationship, guardianPhone, guardianEmail, emergencyName, emergencyRelationship, emergencyPhone } = values;
+  const minor = isMinor(birthDate);
+  const sexLabel = SEX_OPTIONS.find((o) => o.value === sex && o.value)?.label;
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Revisar y confirmar</h2>
@@ -25,11 +27,22 @@ export function ReviewStep({ values, missingDocuments }) {
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
         <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Datos personales</p>
         <Row label={documentLabel(documentType)} value={dni} />
+        {birthDate && <Row label="Fecha de nacimiento" value={birthDate.split('-').reverse().join('/')} />}
+        {sexLabel && <Row label="Sexo" value={sexLabel} />}
+        {nationality && <Row label="Nacionalidad" value={nationality} />}
         <Row label="Domicilio" value={[street, number, floor].filter(Boolean).join(' ')} />
         <Row label="Ciudad" value={[city, state].filter(Boolean).join(', ')} />
         {postalCode && <Row label="Código postal" value={postalCode} />}
         {country && <Row label="País" value={country} />}
       </div>
+      {minor && (
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Responsables</p>
+          <Row label="Tutor" value={`${guardianName} · ${guardianRelationship} · DNI ${guardianDni}`} />
+          <Row label="Contacto del tutor" value={[guardianPhone, guardianEmail].filter(Boolean).join(' · ')} />
+          <Row label="Emergencia" value={`${emergencyName} · ${emergencyRelationship} · ${emergencyPhone}`} />
+        </div>
+      )}
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
         <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Documentación</p>
         <p className="text-[13px] text-ink">{missingDocumentsSummary(missingDocuments)}</p>

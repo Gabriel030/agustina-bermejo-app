@@ -1,8 +1,10 @@
 import { Controller } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { DocumentField } from '@/components/DocumentField';
+import { FormField, SelectField, fieldProps } from '@/features/academic-structure';
+import { SEX_OPTIONS, ageOn, todayIso } from '@/features/identity/lib/studentRegistration';
 
-export function DatosConfirmacionStep({ register, control, errors, values, onChange, isLoading }) {
+export function DatosConfirmacionStep({ register, control, errors, values, onChange, isLoading, birthDate }) {
   function field(name) {
     if (register) return register(name);
     return {
@@ -12,10 +14,40 @@ export function DatosConfirmacionStep({ register, control, errors, values, onCha
   }
 
   const err = (name) => errors?.[name]?.message;
+  const age = ageOn(birthDate);
+  const minor = age !== null && age < 18 && age >= 0;
 
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Datos de confirmación</h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <FormField id="birthDate" label="Fecha de nacimiento" required error={err('birthDate')}>
+          <Input
+            type="date"
+            max={todayIso()}
+            {...field('birthDate')}
+            {...fieldProps('birthDate', err('birthDate'), true)}
+            disabled={isLoading}
+          />
+        </FormField>
+        <Controller
+          control={control}
+          name="sex"
+          render={({ field: sex }) => (
+            <SelectField id="sex" label="Sexo" value={sex.value ?? ''} onChange={sex.onChange} options={SEX_OPTIONS} disabled={isLoading} />
+          )}
+        />
+        <FormField id="nationality" label="Nacionalidad" error={err('nationality')}>
+          <Input {...field('nationality')} {...fieldProps('nationality', err('nationality'))} placeholder="Argentina" disabled={isLoading} />
+        </FormField>
+      </div>
+      <div aria-live="polite">
+        {minor && (
+          <p className="rounded-lg border border-accent/30 bg-accent-soft p-3 text-[13px] text-ink">
+            Es menor de 18 años ({age}). En el próximo paso vas a cargar el tutor y un contacto de emergencia; son obligatorios.
+          </p>
+        )}
+      </div>
       <div className="flex flex-col gap-1">
         <label className="text-[13px] font-medium text-ink">Documento <span className="text-danger">*</span></label>
         <Controller
