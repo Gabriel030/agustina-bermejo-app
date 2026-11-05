@@ -55,6 +55,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
             for (var slot : slotRepository.findBySubjectSectionId(section.getId())) {
                 conflictChecker.checkClassroomAvailability(cycle.getTerm(),
                         slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
+                conflictChecker.checkSubjectSlotInstructorsAvailability(cycle, section, slot);
             }
         }
 
@@ -63,6 +64,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
             for (var slot : slotRepository.findByCourseSectionId(section.getId())) {
                 conflictChecker.checkClassroomAvailability(cycle.getTerm(),
                         slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
+                conflictChecker.checkCourseSlotInstructorsAvailability(cycle, section, slot);
             }
         }
 

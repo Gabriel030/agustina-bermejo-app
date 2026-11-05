@@ -555,6 +555,35 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void administrativeAndDirectorRolesCanManageTerms() throws Exception {
+        String administrativeToken = tokenWithRole("administrativo-term-manage1", "ADMINISTRATIVO");
+        String directorToken = tokenWithRole("director-term-manage1", "DIRECTOR");
+
+        assertThat(createTermStatus(administrativeToken, 2066, "\"FIRST_SEMESTER\"")).isEqualTo(201);
+        Long directorTermId = createTermAs(directorToken, 2067, "\"ANNUAL\"");
+
+        mockMvc.perform(post("/terms/{id}/deactivate", directorTermId).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/terms/{id}/activate", directorTermId).header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/terms").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void studentAndTeacherRolesCannotManageTerms() throws Exception {
+        String studentToken = tokenWithRole("alumno-term-manage2", "ALUMNO");
+        String teacherToken = tokenWithRole("docente-term-manage2", "DOCENTE");
+        String preceptorToken = tokenWithRole("preceptor-term-manage2", "PRECEPTOR");
+        Long termId = createTermAs(preceptorToken, 2068, "\"ANNUAL\"");
+
+        assertThat(createTermStatus(studentToken, 2069, "\"ANNUAL\"")).isEqualTo(403);
+        assertThat(createTermStatus(teacherToken, 2069, "\"ANNUAL\"")).isEqualTo(403);
+        mockMvc.perform(post("/terms/{id}/deactivate", termId).header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void aDeactivatedTermDoesNotCountForUniquenessButReactivatingItWhileAnotherIsActiveReturns409() throws Exception {
         String token = tokenWithRole("preceptor-term-type4", "PRECEPTOR");
         Long first = createTermAs(token, 2065, "\"ANNUAL\"");

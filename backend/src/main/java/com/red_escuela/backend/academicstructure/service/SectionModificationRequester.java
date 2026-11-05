@@ -71,6 +71,8 @@ public class SectionModificationRequester {
                 classroom.ensureCanHost(section.getCapacity());
                 conflictChecker.checkClassroomAvailabilityIgnoringSlots(
                         section.getTerm(), slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime(), currentSlotIds);
+                conflictChecker.checkSectionInstructorsAvailability(
+                        section.getTerm(), sectionId, slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime(), currentSlotIds);
                 var proposed = new ProposedSlot(classroom, slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
                 ensureNoOverlapWith(proposedSlots, proposed);
                 proposedSlots.add(proposed);

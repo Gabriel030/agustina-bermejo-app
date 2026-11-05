@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TermDiffTable } from '@/features/academic-structure/components/TermDiffTable';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { useAllTerms, useCreateTerm, useUpdateTerm } from '@/features/academic-structure/hooks/useTerms';
 import {
   TERM_TYPE_OPTIONS,
@@ -24,7 +25,6 @@ import {
   validateTermForm,
 } from '@/features/academic-structure/lib/terms';
 
-const BACK_PATH = '/preceptor/periodos';
 
 function Field({ id, label, error, hint, required, children }) {
   return (
@@ -45,8 +45,9 @@ function Field({ id, label, error, hint, required, children }) {
 }
 
 function BackLink() {
+  const backPath = `${useRoleBasePath()}/periodos`;
   return (
-    <Link to={BACK_PATH} className="-mt-4 flex items-center gap-1 text-xs text-ink-faint hover:text-ink">
+    <Link to={backPath} className="-mt-4 flex items-center gap-1 text-xs text-ink-faint hover:text-ink">
       <ChevronLeft className="h-3.5 w-3.5" />
       Volver a Períodos
     </Link>
@@ -64,6 +65,7 @@ function SubmitError({ message }) {
 
 function TermForm({ initial, term }) {
   const navigate = useNavigate();
+  const backPath = `${useRoleBasePath()}/periodos`;
   const editing = Boolean(term);
   const termId = term?.id;
   const createTerm = useCreateTerm();
@@ -92,7 +94,7 @@ function TermForm({ initial, term }) {
     createTerm.mutate(buildTermPayload(form, { editing }), {
       onSuccess: () => {
         toast.success('Período creado. Queda activo.');
-        navigate(BACK_PATH);
+        navigate(backPath);
       },
       onError: (error) => handleError(error, 'No se pudo crear el período. Probá de nuevo.'),
     });
@@ -115,7 +117,7 @@ function TermForm({ initial, term }) {
       {
         onSuccess: () => {
           toast.success('Período actualizado.');
-          navigate(BACK_PATH);
+          navigate(backPath);
         },
         onError: (error) => handleError(error, 'No se pudo actualizar el período. Probá de nuevo.'),
       },
@@ -204,7 +206,7 @@ function TermForm({ initial, term }) {
         </div>
         <SubmitError message={submitError} />
         <div className="flex flex-wrap justify-between gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate(BACK_PATH)}>
+          <Button type="button" variant="outline" onClick={() => navigate(backPath)}>
             Cancelar
           </Button>
           <Button type="submit" variant="gradient" disabled={isPending}>

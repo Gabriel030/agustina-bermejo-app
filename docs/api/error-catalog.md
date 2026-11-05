@@ -249,6 +249,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GOOGLE_ACCOUNT_NOT_LINKED` | no | `GoogleAccountNotLinkedException` | identity |
 | `GRADE_ITEM_NOT_FOUND` | no | `GradeItemNotFoundException` | evaluation |
 | `GRADUATION_REQUEST_NOT_FOUND` | no | `GraduationRequestNotFoundException` | graduation |
+| `HOLIDAY_NOT_FOUND` | no | `HolidayNotFoundException` | academicstructure |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
 | `INVOICE_NOT_FOUND` | no | `InvoiceNotFoundException` | billing |
@@ -355,6 +356,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
+| `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
+| `HOLIDAY_ALREADY_EXISTS` | no | `HolidayAlreadyExistsException` | academicstructure |
 | `IDEMPOTENCY_KEY_CONFLICT` | no | `IdempotencyKeyConflictException` | billing |
 | `IDEMPOTENCY_KEY_REUSED` | no | `IdempotencyKeyReusedException` | platform |
 | `ILLEGAL_ANNUAL_UPFRONT_REQUEST_TRANSITION` | no | `IllegalAnnualUpfrontRequestTransitionException` | billing |
@@ -372,6 +375,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_STUDENT_DISCOUNT_TRANSITION` | no | `IllegalStudentDiscountTransitionException` | billing |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
+| `INSTRUCTOR_SCHEDULE_CONFLICT` | no | `InstructorScheduleConflictException` | academicstructure |
 | `INSUFFICIENT_ACCOUNT_CREDIT` | no | `InsufficientAccountCreditException` | billing |
 | `INVALID_ATTENDANCE_CHANGE_REQUEST_STATE` | no | `InvalidAttendanceChangeRequestStateException` | attendance |
 | `INVALID_BILLING_MODE_TRANSITION` | no | `InvalidBillingModeTransitionException` | platform |
@@ -593,6 +597,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
+| POST | `/holidays` | `HolidayController#create` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |

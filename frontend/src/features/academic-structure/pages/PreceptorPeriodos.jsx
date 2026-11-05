@@ -9,6 +9,7 @@ import { DataTable } from '@/components/table/DataTable';
 import { Button } from '@/components/ui/button';
 import { TermActionDialog } from '@/features/academic-structure/components/TermActionDialog';
 import { TermRowMenu } from '@/features/academic-structure/components/TermRowMenu';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { useAllTerms } from '@/features/academic-structure/hooks/useTerms';
 import {
   TERM_STATUS_LABELS,
@@ -100,6 +101,7 @@ function enrollmentMode(term) {
 
 export function PreceptorPeriodos() {
   const navigate = useNavigate();
+  const basePath = useRoleBasePath();
   const { data: terms, isLoading, isError, refetch } = useAllTerms();
   const [pending, setPending] = useState(null);
 
@@ -111,17 +113,17 @@ export function PreceptorPeriodos() {
   const columns = useMemo(
     () =>
       buildColumns(
-        (term) => navigate(`/preceptor/periodos/${term.id}/editar`),
+        (term) => navigate(`${basePath}/periodos/${term.id}/editar`),
         (term, action) => setPending({ term, action }),
       ),
-    [navigate],
+    [navigate, basePath],
   );
 
   return (
     <PageContainer
       title="Períodos lectivos"
       description="Calendario de cursada e inscripción"
-      action={<CreateTermButton onClick={() => navigate('/preceptor/periodos/nuevo')} />}
+      action={<CreateTermButton onClick={() => navigate(`${basePath}/periodos/nuevo`)} />}
     >
       <GlassCard className="overflow-x-auto p-0">
         <DataTable
@@ -137,7 +139,7 @@ export function PreceptorPeriodos() {
             <EmptyState
               title="Todavía no hay períodos lectivos"
               description="Creá el primero para poder abrir la inscripción y armar las comisiones."
-              action={<CreateTermButton variant="outline" onClick={() => navigate('/preceptor/periodos/nuevo')} />}
+              action={<CreateTermButton variant="outline" onClick={() => navigate(`${basePath}/periodos/nuevo`)} />}
             />
           }
         />

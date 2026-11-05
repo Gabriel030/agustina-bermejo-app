@@ -15,6 +15,8 @@ import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.academicstructure.entity.Holiday;
+import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.repository.EvaluationSchemeTestRepository;
 import com.red_escuela.backend.identity.repository.InstitutionRepository;
@@ -42,6 +44,19 @@ public class KarateFixtures {
                             + "KarateSpringContext.set(applicationContext) en un @BeforeEach.");
         }
         return context;
+    }
+
+    public static int yearWithHolidays() {
+        HolidayRepository holidayRepository = context().getBean(HolidayRepository.class);
+        int year = 3000 + (int) Math.abs(System.nanoTime() % 1000000);
+        while (holidayRepository.existsByDate(java.time.LocalDate.of(year, 1, 1))) {
+            year++;
+        }
+        Holiday holiday = new Holiday();
+        holiday.setDate(java.time.LocalDate.of(year, 1, 1));
+        holiday.setDescription("Año Nuevo");
+        holidayRepository.save(holiday);
+        return year;
     }
 
     public static Long createInstitution() {

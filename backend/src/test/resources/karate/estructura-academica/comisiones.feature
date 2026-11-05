@@ -18,7 +18,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreTerm = 'Ciclo QA ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -95,7 +95,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreTermSeccion = 'Ciclo QA sección ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: '#(java.lang.Math.abs(java.lang.System.nanoTime() % 1000000000))', description: '#(nombreTermSeccion)', type: 'ANNUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTermSeccion)', type: 'ANNUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termSeccionId = response.id
