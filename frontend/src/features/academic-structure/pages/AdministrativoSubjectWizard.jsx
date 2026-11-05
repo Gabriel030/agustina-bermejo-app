@@ -1,10 +1,11 @@
 import { useReducer } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
+import { EmptyState } from '@/components/EmptyState';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,10 +118,10 @@ function stepperApprovalStatus(approvalStatus) {
   return null;
 }
 
-function FieldGroup({ label, required, children, hint }) {
+function FieldGroup({ label, required, children, hint, htmlFor }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-semibold text-ink">
+      <label htmlFor={htmlFor} className="text-[13px] font-semibold text-ink">
         {label}
         {required && <span className="ml-1 text-danger">*</span>}
       </label>
@@ -151,10 +152,12 @@ function Step1Identificacion({ state, dispatch }) {
       <div className="grid grid-cols-2 gap-4">
         <FieldGroup
           label="Código"
+          htmlFor="subject-code"
           required
           hint={codeLocked ? 'El código no se puede cambiar una vez aprobada la materia' : 'Máximo 4 caracteres'}
         >
           <Input
+            id="subject-code"
             disabled={codeLocked}
             value={state.code}
             onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'code', value: e.target.value.toUpperCase().slice(0, 4) })}
@@ -164,16 +167,18 @@ function Step1Identificacion({ state, dispatch }) {
         </FieldGroup>
         <div />
       </div>
-      <FieldGroup label="Nombre" required>
+      <FieldGroup label="Nombre" htmlFor="subject-name" required>
         <Input
+          id="subject-name"
           value={state.name}
           onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'name', value: e.target.value })}
           placeholder="Matemática I"
         />
       </FieldGroup>
       <div className="grid grid-cols-2 gap-4">
-        <FieldGroup label="Horas semanales teóricas" required hint="Al menos un tipo de horas es obligatorio">
+        <FieldGroup label="Horas semanales teóricas" htmlFor="subject-weekly-hours" required hint="Al menos un tipo de horas es obligatorio">
           <Input
+            id="subject-weekly-hours"
             type="number"
             min="0"
             value={state.weeklyHours}
@@ -181,8 +186,9 @@ function Step1Identificacion({ state, dispatch }) {
             placeholder="3"
           />
         </FieldGroup>
-        <FieldGroup label="Horas semanales prácticas">
+        <FieldGroup label="Horas semanales prácticas" htmlFor="subject-weekly-hours-lab">
           <Input
+            id="subject-weekly-hours-lab"
             type="number"
             min="0"
             value={state.weeklyHoursLab}
@@ -198,8 +204,9 @@ function Step1Identificacion({ state, dispatch }) {
 function Step2DetalleProgramatico({ state, dispatch }) {
   return (
     <div className="flex flex-col gap-5">
-      <FieldGroup label="Descripción" hint="Breve descripción del contenido y objetivos de la materia">
+      <FieldGroup label="Descripción" htmlFor="subject-description" hint="Breve descripción del contenido y objetivos de la materia">
         <Textarea
+          id="subject-description"
           value={state.description}
           onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'description', value: e.target.value })}
           placeholder="Esta materia introduce los conceptos fundamentales de…"
@@ -213,12 +220,12 @@ function Step2DetalleProgramatico({ state, dispatch }) {
 function Step3DictadoEvaluacion({ state, dispatch }) {
   return (
     <div className="flex flex-col gap-5">
-      <FieldGroup label="Modalidad de calificación" required>
+      <FieldGroup label="Modalidad de calificación" htmlFor="subject-grade-mode" required>
         <Select
           value={state.gradeMode}
           onValueChange={(v) => dispatch({ type: 'UPDATE_FIELD', field: 'gradeMode', value: v })}
         >
-          <SelectTrigger>
+          <SelectTrigger id="subject-grade-mode">
             <SelectValue placeholder="Seleccioná una modalidad" />
           </SelectTrigger>
           <SelectContent>
@@ -227,8 +234,9 @@ function Step3DictadoEvaluacion({ state, dispatch }) {
           </SelectContent>
         </Select>
       </FieldGroup>
-      <FieldGroup label="Intentos máximos de examen final" hint="Si lo dejás vacío, el final regular tiene un solo intento.">
+      <FieldGroup label="Intentos máximos de examen final" htmlFor="subject-max-attempts" hint="Si lo dejás vacío, el final regular tiene un solo intento.">
         <Input
+          id="subject-max-attempts"
           type="number"
           min="1"
           value={state.maxFinalExamAttempts}
@@ -465,10 +473,41 @@ function WizardForm({ isEdit, existingSubject }) {
   );
 }
 
+const SUBJECT_BANK = '/administrativo/gestion-academica';
+
+function SubjectLoadFailure({ notFound, onRetry }) {
+  return (
+    <PageContainer title="Editar materia">
+      <GlassCard className="flex flex-1 flex-col p-12">
+        <EmptyState
+          title={notFound ? 'Esta materia no existe o ya no está disponible' : 'No pudimos cargar la materia'}
+          description={
+            notFound
+              ? 'Revisá el enlace o volvé al banco de materias.'
+              : 'Revisá tu conexión e intentá de nuevo.'
+          }
+          action={
+            <div className="flex gap-3">
+              {!notFound && (
+                <Button variant="gradient" onClick={onRetry}>
+                  Reintentar
+                </Button>
+              )}
+              <Button asChild variant="outline">
+                <Link to={SUBJECT_BANK}>Volver al banco de materias</Link>
+              </Button>
+            </div>
+          }
+        />
+      </GlassCard>
+    </PageContainer>
+  );
+}
+
 export function AdministrativoSubjectWizard() {
   const { id } = useParams();
   const isEdit = !!id;
-  const { data: existingSubject, isLoading } = useSubject(id);
+  const { data: existingSubject, isLoading, isError, error, refetch } = useSubject(id);
 
   if (isEdit && isLoading) {
     return (
@@ -478,6 +517,10 @@ export function AdministrativoSubjectWizard() {
         </GlassCard>
       </PageContainer>
     );
+  }
+
+  if (isEdit && (isError || !existingSubject)) {
+    return <SubjectLoadFailure notFound={error?.status === 404} onRetry={() => refetch()} />;
   }
 
   return <WizardForm isEdit={isEdit} existingSubject={existingSubject} />;
