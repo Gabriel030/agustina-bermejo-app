@@ -26,7 +26,8 @@ public record AnnouncementResponse(
         LocalDateTime createdAt,
         @Schema(nullable = true) LocalDateTime updatedAt,
         long recipientCount,
-        long readCount) {
+        long readCount,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean readTracked) {
 
     public static AnnouncementResponse from(Announcement announcement, long recipientCount, long readCount) {
         return new AnnouncementResponse(
@@ -46,6 +47,7 @@ public record AnnouncementResponse(
                 announcement.getCreatedAt(),
                 announcement.getUpdatedAt(),
                 recipientCount,
-                readCount);
+                readCount,
+                announcement.isReadTracked());
     }
 }

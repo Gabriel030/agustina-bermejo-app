@@ -21,6 +21,20 @@ public interface AnnouncementRecipientRepository extends JpaRepository<Announcem
         long getReadCount();
     }
 
+    interface ReadTime {
+
+        Long getAnnouncementId();
+
+        LocalDateTime getReadAt();
+    }
+
+    @Query("""
+            select r.announcement.id as announcementId, r.readAt as readAt
+            from AnnouncementRecipient r
+            where r.student.id = :studentId and r.announcement.id in :ids and r.readAt is not null
+            """)
+    List<ReadTime> findReadTimes(@Param("studentId") Long studentId, @Param("ids") Collection<Long> ids);
+
     List<AnnouncementRecipient> findByAnnouncementId(Long announcementId);
 
     boolean existsByAnnouncementIdAndStudentId(Long announcementId, Long studentId);

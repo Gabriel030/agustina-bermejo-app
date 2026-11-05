@@ -12,6 +12,7 @@ import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundExcept
 import com.red_escuela.backend.announcement.service.AnnouncementReadCounter;
 import com.red_escuela.backend.announcement.service.AnnouncementReadCounter.ReadCount;
 import com.red_escuela.backend.announcement.service.AnnouncementReadReceiptReader;
+import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import com.red_escuela.backend.announcement.service.AnnouncementReadRecorder;
 import com.red_escuela.backend.announcement.service.AnnouncementRecipientReader;
 import com.red_escuela.backend.announcement.service.AnnouncementRenotifier;
@@ -53,6 +54,8 @@ class AnnouncementReadReceiptIT extends AbstractIntegrationTest {
     private AnnouncementRenotifier renotifier;
     @Autowired
     private AnnouncementReadReceiptReader receiptReader;
+    @Autowired
+    private AnnouncementRecipientRepository recipientRepository;
 
     private Long sentId;
     private Long scheduledId;
@@ -192,5 +195,20 @@ class AnnouncementReadReceiptIT extends AbstractIntegrationTest {
     @Test
     void answersNotFoundWhenStaffAsksForAnAnnouncementThatDoesNotExist() {
         assertThatThrownBy(() -> receiptReader.listReceipts(-1L)).isInstanceOf(AnnouncementNotFoundException.class);
+    }
+
+    @Test
+    void findsOnlyTheReadTimesOfTheGivenStudent() {
+        readRecorder.recordRead(sentId, readerId);
+
+        assertThat(recipientRepository.findReadTimes(readerId, List.of(sentId, scheduledId)))
+                .extracting(AnnouncementRecipientRepository.ReadTime::getAnnouncementId)
+                .containsExactly(sentId);
+        assertThat(recipientRepository.findReadTimes(otherRecipientId, List.of(sentId, scheduledId))).isEmpty();
+    }
+
+    @Test
+    void announcementsPersistedByTheApplicationAreTrackedForReads() {
+        assertThat(jdbcTemplate.queryForObject("select read_tracked from announcement where id = ?", Boolean.class, sentId)).isTrue();
     }
 }

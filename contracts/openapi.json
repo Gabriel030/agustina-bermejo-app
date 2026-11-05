@@ -521,6 +521,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "readTracked" : {
+            "type" : "boolean"
+          },
           "recipientCount" : {
             "format" : "int64",
             "type" : "integer"
@@ -6377,6 +6380,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "readAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "subjectName" : {
             "type" : "string"
           },
@@ -6394,7 +6401,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "body", "category", "createdAt", "id", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
+        "required" : [ "body", "category", "createdAt", "id", "readAt", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
       "MyCourseEnrollmentResponse" : {
