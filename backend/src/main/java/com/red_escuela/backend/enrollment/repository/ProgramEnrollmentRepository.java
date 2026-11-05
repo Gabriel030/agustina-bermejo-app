@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.repository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,10 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
 
     List<ProgramEnrollment> findByStudentId(Long studentId);
+
+    @EntityGraph(attributePaths = {"student", "student.person", "program"})
+    @Query("select e from ProgramEnrollment e where e.id in :ids")
+    List<ProgramEnrollment> findAllWithStudentAndProgramByIdIn(@Param("ids") Collection<Long> ids);
 
     @Query("select e.id from ProgramEnrollment e where e.id in :ids and e.program.teachingMode = com.red_escuela.backend.academicstructure.entity.TeachingMode.ONLINE")
     List<Long> findIdsOfOnlineOnlyEnrollments(@Param("ids") Collection<Long> ids);

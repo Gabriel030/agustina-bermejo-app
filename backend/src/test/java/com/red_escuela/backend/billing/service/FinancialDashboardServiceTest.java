@@ -140,7 +140,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.OVERDUE, YearMonth.now().minusMonths(2));
         persistInvoice(enrollment, ars(8000), InvoicePaymentStatus.PAID, YearMonth.now().minusMonths(3));
 
-        DebtorSummaryResponse debtor = listDebtorsUseCase.list("DEBT_AMOUNT").stream()
+        DebtorSummaryResponse debtor = listDebtorsUseCase.list("DEBT_AMOUNT", 0, 100).items().stream()
                 .filter(summary -> summary.studentId().equals(student.getId()))
                 .findFirst().orElseThrow();
 
