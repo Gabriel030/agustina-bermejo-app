@@ -1,11 +1,9 @@
 import { useRef } from 'react';
 import { Upload, CheckCircle2, FileText } from 'lucide-react';
 
-const TIPOS = [
-  { key: 'DNI_FRENTE', label: 'DNI frente' },
-  { key: 'DNI_DORSO', label: 'DNI dorso' },
-  { key: 'ANALITICO_SECUNDARIO', label: 'Analítico secundario' },
-];
+import { DOCUMENT_LABELS } from '@/features/identity/lib/studentRegistration';
+
+const TIPOS = Object.entries(DOCUMENT_LABELS).map(([key, label]) => ({ key, label }));
 
 export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading, errorValidacion }) {
   const subidos = TIPOS.filter(({ key }) => !!documentosSubidos?.[key]).length;
@@ -14,7 +12,7 @@ export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading,
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Documentos</h2>
       <p className="text-[13px] text-muted-foreground">
-        Subí los documentos del alumno para continuar.{' '}
+        Son opcionales: si faltan, el alumno queda con documentación pendiente y podés cargarlos después.{' '}
         <span className="text-ink-soft">{subidos}/{TIPOS.length} subidos</span>
       </p>
       <div className="flex flex-col gap-3">
