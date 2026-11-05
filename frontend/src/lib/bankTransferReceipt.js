@@ -1,6 +1,6 @@
 import { formatMoney, invoiceTitle, isInvoicePayable } from '@/lib/billing';
 import { moneyValue } from '@/lib/utils';
-import { parseAmountInput as cashParseAmountInput } from '@/features/billing/components/cashAmount';
+import { parseAmountInput as cashParseAmountInput } from '@/lib/cashAmount';
 
 export const CBU_PATTERN = /^\d{22}$/;
 export const ALIAS_PATTERN = /^[a-zA-Z0-9.-]{6,20}$/;
