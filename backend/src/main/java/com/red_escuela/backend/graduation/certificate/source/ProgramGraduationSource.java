@@ -42,8 +42,7 @@ public class ProgramGraduationSource implements GraduationSource {
     public CertificateSnapshot snapshotOf(Long enrollmentId) {
         ProgramEnrollment enrollment = programEnrollmentFinder.requireById(enrollmentId);
         return snapshotFactory.create(enrollment.getStudent(), "la carrera", enrollment.getProgram().getName(),
-                enrollment.getProgram().getLevel() == null ? null : enrollment.getProgram().getLevel().name(),
-                enrollment.getProgram().getTotalHoursRequired(), enrollment.getCompletionDate().toLocalDate());
+                null, enrollment.getProgram().getTotalHoursRequired(), enrollment.getCompletionDate().toLocalDate());
     }
 
     @Override
