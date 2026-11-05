@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.repository;
 
+import com.red_escuela.backend.shared.persistence.LikePatterns;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -57,12 +58,12 @@ public final class StudentSpecifications {
     }
 
     private static Predicate matchesAnyField(CriteriaBuilder cb, Join<Student, Person> person, String term) {
-        String lowered = "%" + term.toLowerCase(Locale.ROOT) + "%";
+        String lowered = LikePatterns.contains(term.toLowerCase(Locale.ROOT));
         Expression<String> pattern = cb.function("unaccent", String.class, cb.literal(lowered));
         return cb.or(
-                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("name"))), pattern),
-                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("lastname"))), pattern),
-                cb.like(cb.lower(person.get("dni")), cb.literal(lowered)),
-                cb.like(cb.lower(person.get("file")), cb.literal(lowered)));
+                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("name"))), pattern, LikePatterns.ESCAPE_CHARACTER),
+                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("lastname"))), pattern, LikePatterns.ESCAPE_CHARACTER),
+                cb.like(cb.lower(person.get("dni")), cb.literal(lowered), LikePatterns.ESCAPE_CHARACTER),
+                cb.like(cb.lower(person.get("file")), cb.literal(lowered), LikePatterns.ESCAPE_CHARACTER));
     }
 }

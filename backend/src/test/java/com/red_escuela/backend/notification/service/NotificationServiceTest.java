@@ -6,7 +6,7 @@ import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
+import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,13 +82,22 @@ class NotificationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void markAsReadOnSomeoneElsesNotificationFails() {
+    void markingAnotherUsersNotificationReturnsSameNotFoundAsMissing() {
         Person destinatario = persistPerson("91000004");
         Person otraPersona = persistPerson("91000005");
         Notification notification = persistNotification(destinatario);
         entityManager.flush();
 
         assertThatThrownBy(() -> notificationService.markAsRead(notification.getId(), otraPersona.getId()))
-                .isInstanceOf(NotOwnNotificationException.class);
+                .isInstanceOf(NotificationNotFoundException.class);
+    }
+
+    @Test
+    void markingMissingNotificationFailsWithTheSameException() {
+        Person destinatario = persistPerson("91000006");
+        entityManager.flush();
+
+        assertThatThrownBy(() -> notificationService.markAsRead(987654321L, destinatario.getId()))
+                .isInstanceOf(NotificationNotFoundException.class);
     }
 }

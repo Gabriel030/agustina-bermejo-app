@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.repository;
 
+import com.red_escuela.backend.shared.persistence.LikePatterns;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.criteria.JoinType;
@@ -28,12 +29,12 @@ public final class PersonSpecifications {
     public static Specification<Person> withSearch(String q) {
         return (root, query, cb) -> {
             if (q == null || q.isBlank()) return cb.conjunction();
-            var pattern = "%" + q.toLowerCase() + "%";
+            var pattern = LikePatterns.contains(q.toLowerCase());
             var unaccentedPattern = cb.function("unaccent", String.class, cb.literal(pattern));
             return cb.or(
-                    cb.like(cb.function("unaccent", String.class, cb.lower(root.get("name"))), unaccentedPattern),
-                    cb.like(cb.function("unaccent", String.class, cb.lower(root.get("lastname"))), unaccentedPattern),
-                    cb.like(cb.lower(root.get("dni")), pattern)
+                    cb.like(cb.function("unaccent", String.class, cb.lower(root.get("name"))), unaccentedPattern, LikePatterns.ESCAPE_CHARACTER),
+                    cb.like(cb.function("unaccent", String.class, cb.lower(root.get("lastname"))), unaccentedPattern, LikePatterns.ESCAPE_CHARACTER),
+                    cb.like(cb.lower(root.get("dni")), pattern, LikePatterns.ESCAPE_CHARACTER)
             );
         };
     }

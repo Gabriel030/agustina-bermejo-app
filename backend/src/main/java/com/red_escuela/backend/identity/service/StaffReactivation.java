@@ -35,7 +35,7 @@ public class StaffReactivation {
                 .filter(StaffRoleAssignmentPolicy.STAFF_ROLES::contains)
                 .findFirst()
                 .orElseThrow(() -> new PersonNotFoundException(personId));
-        staffRoleAssignmentPolicy.requireCanAssign(staffRole);
+        staffRoleAssignmentPolicy.requireManageableOrNotFound(personId, staffRole);
         if (person.getStatus() != StatusType.INACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El miembro del personal no está dado de baja");
         }

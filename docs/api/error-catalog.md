@@ -209,7 +209,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
 | `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
-| `NOT_OWN_NOTIFICATION` | no | `NotOwnNotificationException` | notification |
 | `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
 | `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |

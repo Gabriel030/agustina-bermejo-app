@@ -2,7 +2,6 @@ package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
-import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.SessionRevoker;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -95,7 +94,7 @@ class WithdrawStaffServiceTest {
         Person administrative = target(StatusType.ACTIVE, "ADMINISTRATIVO");
 
         assertThatThrownBy(() -> serviceActingAs("ADMINISTRATIVO").withdraw(TARGET_ID))
-                .isInstanceOf(RoleNotAssignableByActorException.class);
+                .isInstanceOf(PersonNotFoundException.class);
         assertThat(administrative.getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(personRepository, never()).save(any());
         verify(sessionRevoker, never()).revokeAllSessions(any());
@@ -106,7 +105,7 @@ class WithdrawStaffServiceTest {
         target(StatusType.ACTIVE, "DOCENTE");
 
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").withdraw(TARGET_ID))
-                .isInstanceOf(RoleNotAssignableByActorException.class);
+                .isInstanceOf(PersonNotFoundException.class);
         verify(sessionRevoker, never()).revokeAllSessions(any());
     }
 
@@ -115,7 +114,7 @@ class WithdrawStaffServiceTest {
         target(StatusType.ACTIVE, "PRECEPTOR");
 
         assertThatThrownBy(() -> serviceActingAs("DOCENTE").withdraw(TARGET_ID))
-                .isInstanceOf(RoleNotAssignableByActorException.class);
+                .isInstanceOf(PersonNotFoundException.class);
     }
 
     @Test
