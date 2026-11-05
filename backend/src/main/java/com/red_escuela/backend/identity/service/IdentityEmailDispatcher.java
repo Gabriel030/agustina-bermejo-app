@@ -32,7 +32,13 @@ public class IdentityEmailDispatcher {
     public void onPasswordResetCodeIssued(PasswordResetCodeIssuedEvent event) {
         effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onPasswordResetCodeIssued", () ->
                 personRepository.findById(event.personId()).ifPresentOrElse(
-                        person -> emailService.sendPasswordResetCode(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.code()),
+                        person -> {
+                            if (hasNoEmail(person)) {
+                                log.warn("Password reset email skipped, person has no email: personId={}", event.personId());
+                                return;
+                            }
+                            emailService.sendPasswordResetCode(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.code());
+                        },
                         () -> log.warn("Password reset email skipped, person not found: personId={}", event.personId())));
     }
 
@@ -40,7 +46,13 @@ public class IdentityEmailDispatcher {
     public void onEmailVerificationIssued(EmailVerificationIssuedEvent event) {
         effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onEmailVerificationIssued", () ->
                 personRepository.findById(event.personId()).ifPresentOrElse(
-                        person -> emailService.sendEmailVerification(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.verificationLink()),
+                        person -> {
+                            if (hasNoEmail(person)) {
+                                log.warn("Verification email skipped, person has no email: personId={}", event.personId());
+                                return;
+                            }
+                            emailService.sendEmailVerification(recipientOf(person), institutionNameResolver.resolveInstitutionName(), event.verificationLink());
+                        },
                         () -> log.warn("Verification email skipped, person not found: personId={}", event.personId())));
     }
 
@@ -53,6 +65,11 @@ public class IdentityEmailDispatcher {
                         emailService.sendEmailChangeNotice(person.getName(), event.previousEmail(), event.newEmail());
                     }
                 }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
+    }
+
+    private boolean hasNoEmail(Person person) {
+        String email = person.emailValue();
+        return email == null || email.isBlank();
     }
 
     private MailRecipient recipientOf(Person person) {

@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IdentityEmailDispatcherRecipientTest {
@@ -52,6 +53,22 @@ class IdentityEmailDispatcherRecipientTest {
     @Test
     void fallsBackToEmailLocalPartWhenNameAndUsernameAreMissing() {
         assertThat(recipientFor("  ", null, "ana.lopez@example.com").name()).isEqualTo("ana.lopez");
+    }
+
+    @Test
+    void skipsSendingWhenEmailIsMissing() {
+        for (String email : new String[] {null, " "}) {
+            Person person = mock(Person.class);
+            when(person.emailValue()).thenReturn(email);
+            when(personRepository.findById(8L)).thenReturn(Optional.of(person));
+
+            dispatcher.onPasswordResetCodeIssued(
+                    new PasswordResetCodeIssuedEvent(UUID.randomUUID(), "corr", Instant.now(), 8L, "123456"));
+            dispatcher.onEmailVerificationIssued(
+                    new EmailVerificationIssuedEvent(UUID.randomUUID(), "corr", Instant.now(), 8L, "https://example.test/verify"));
+        }
+
+        verifyNoInteractions(emailService);
     }
 
     private MailRecipient recipientFor(String name, String username, String email) {
