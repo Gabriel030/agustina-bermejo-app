@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { localIsoDate } from '@/lib/calendario';
 import { attendancePercentToPoints } from '@/lib/attendancePercent';
+import { StatusPill } from '@/components/StatusPill';
+import { attendanceRisk } from '@/features/attendance/lib/attendanceRisk';
 import { clearAttendanceDraft, loadAttendanceDraft, saveAttendanceDraft } from '@/features/attendance/lib/attendanceDraft';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -80,14 +82,23 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
   const config = estado ? ESTADO_POR_VALOR[estado] : null;
   const sumaAusenciaHoy = ESTADOS_QUE_CUENTAN_COMO_AUSENCIA.includes(estado);
   const inasistenciasAMostrar = alumno.absenceCount + (sumaAusenciaHoy ? 1 : 0);
+  const riesgo = attendanceRisk(alumno, inasistenciasAMostrar);
   return (
     <div className={`flex flex-col gap-2 rounded-2xl p-3 sm:flex-row sm:items-center sm:justify-between ${config?.filaClass ?? 'bg-neutral-bg/40'} ${deshabilitada ? 'opacity-50' : ''}`}>
       <div className="min-w-0 flex-1">
         <div className="font-heading text-[14px] font-semibold text-ink">{alumno.studentName}</div>
-        {alumno.atRisk && <div className="text-[12px] text-danger">⚠ en riesgo de libre</div>}
-      </div>
-      <div className={`w-24 shrink-0 text-center text-[12.5px] font-bold ${sumaAusenciaHoy ? 'text-danger' : 'text-ink-faint'}`}>
-        {inasistenciasAMostrar} inasist.
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+          <span className={`text-[12px] font-semibold tabular-nums ${riesgo.level === 'danger' ? 'text-danger' : riesgo.level === 'warning' ? 'text-warning-ink' : 'text-ink-faint'}`}>
+            {riesgo.text}
+          </span>
+          {riesgo.pill && (
+            <span title={riesgo.hint}>
+              <StatusPill tone={riesgo.level} className="px-2 py-0.5">
+                {riesgo.pill}
+              </StatusPill>
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex shrink-0 flex-wrap gap-1.5">
         {ESTADOS.map((e) => (
