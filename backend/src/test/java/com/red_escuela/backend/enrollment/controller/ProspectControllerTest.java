@@ -23,7 +23,7 @@ import com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand;
 import com.red_escuela.backend.identity.usecase.auth.ResetPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
 import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
-import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;

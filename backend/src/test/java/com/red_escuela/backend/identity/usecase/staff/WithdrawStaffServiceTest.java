@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
+import com.red_escuela.backend.identity.service.SessionRevoker;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -27,10 +27,10 @@ class WithdrawStaffServiceTest {
     private static final Long TARGET_ID = 60L;
 
     private final PersonRepository personRepository = mock(PersonRepository.class);
-    private final RevokeAllSessionsUseCase revokeAllSessionsUseCase = mock(RevokeAllSessionsUseCase.class);
+    private final SessionRevoker sessionRevoker = mock(SessionRevoker.class);
 
     private WithdrawStaffService serviceActingAs(String actorRole) {
-        return new WithdrawStaffService(personRepository, policyActingAs(actorRole), revokeAllSessionsUseCase);
+        return new WithdrawStaffService(personRepository, policyActingAs(actorRole), sessionRevoker);
     }
 
     private Person target(StatusType status, String... roles) {
@@ -46,9 +46,9 @@ class WithdrawStaffServiceTest {
         serviceActingAs("ADMINISTRATIVO").withdraw(TARGET_ID);
 
         assertThat(teacher.getStatus()).isEqualTo(StatusType.INACTIVE);
-        InOrder order = inOrder(personRepository, revokeAllSessionsUseCase);
+        InOrder order = inOrder(personRepository, sessionRevoker);
         order.verify(personRepository).save(teacher);
-        order.verify(revokeAllSessionsUseCase).revokeAll(teacher);
+        order.verify(sessionRevoker).revokeAllSessions(teacher);
     }
 
     @Test
@@ -67,7 +67,7 @@ class WithdrawStaffServiceTest {
         serviceActingAs("DIRECTOR").withdraw(TARGET_ID);
 
         assertThat(administrative.getStatus()).isEqualTo(StatusType.INACTIVE);
-        verify(revokeAllSessionsUseCase).revokeAll(administrative);
+        verify(sessionRevoker).revokeAllSessions(administrative);
     }
 
     @Test
@@ -77,7 +77,7 @@ class WithdrawStaffServiceTest {
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").withdraw(TARGET_ID))
                 .isInstanceOf(PersonNotFoundException.class);
         verify(personRepository, never()).save(any());
-        verify(revokeAllSessionsUseCase, never()).revokeAll(any());
+        verify(sessionRevoker, never()).revokeAllSessions(any());
     }
 
     @Test
@@ -87,7 +87,7 @@ class WithdrawStaffServiceTest {
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").withdraw(TARGET_ID))
                 .isInstanceOf(PersonNotFoundException.class);
         assertThat(student.getStatus()).isEqualTo(StatusType.ACTIVE);
-        verify(revokeAllSessionsUseCase, never()).revokeAll(any());
+        verify(sessionRevoker, never()).revokeAllSessions(any());
     }
 
     @Test
@@ -98,7 +98,7 @@ class WithdrawStaffServiceTest {
                 .isInstanceOf(RoleNotAssignableByActorException.class);
         assertThat(administrative.getStatus()).isEqualTo(StatusType.ACTIVE);
         verify(personRepository, never()).save(any());
-        verify(revokeAllSessionsUseCase, never()).revokeAll(any());
+        verify(sessionRevoker, never()).revokeAllSessions(any());
     }
 
     @Test
@@ -107,7 +107,7 @@ class WithdrawStaffServiceTest {
 
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").withdraw(TARGET_ID))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
-        verify(revokeAllSessionsUseCase, never()).revokeAll(any());
+        verify(sessionRevoker, never()).revokeAllSessions(any());
     }
 
     @Test
@@ -125,6 +125,6 @@ class WithdrawStaffServiceTest {
         serviceActingAs("ADMINISTRATIVO").withdraw(TARGET_ID);
 
         assertThat(teacher.getStatus()).isEqualTo(StatusType.INACTIVE);
-        verify(revokeAllSessionsUseCase).revokeAll(teacher);
+        verify(sessionRevoker).revokeAllSessions(teacher);
     }
 }

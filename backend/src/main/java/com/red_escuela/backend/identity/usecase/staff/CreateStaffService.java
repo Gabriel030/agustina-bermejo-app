@@ -10,7 +10,7 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.identity.service.StaffInstructorProfileCreator;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
-import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
+import com.red_escuela.backend.identity.service.PasswordResetCodeRequester;
 import com.red_escuela.backend.identity.exception.RoleNotFoundException;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,18 +23,18 @@ public class CreateStaffService implements CreateStaffUseCase {
     private final RoleRepository roleRepository;
     private final PersonFactory personFactory;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
-    private final RequestPasswordResetUseCase requestPasswordResetUseCase;
+    private final PasswordResetCodeRequester passwordResetCodeRequester;
 
     public CreateStaffService(PersonRepository personRepository, StaffInstructorProfileCreator staffInstructorProfileCreator,
                                RoleRepository roleRepository, PersonFactory personFactory,
                                StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
-                               RequestPasswordResetUseCase requestPasswordResetUseCase) {
+                               PasswordResetCodeRequester passwordResetCodeRequester) {
         this.personRepository = personRepository;
         this.staffInstructorProfileCreator = staffInstructorProfileCreator;
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
-        this.requestPasswordResetUseCase = requestPasswordResetUseCase;
+        this.passwordResetCodeRequester = passwordResetCodeRequester;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class CreateStaffService implements CreateStaffUseCase {
             staffInstructorProfileCreator.createInstructorProfileFor(person);
         }
 
-        requestPasswordResetUseCase.requestReset(person.emailValue());
+        passwordResetCodeRequester.requestPasswordResetCode(person.emailValue());
 
         return new StaffUseCaseResult(person, requestedRole);
     }

@@ -92,7 +92,6 @@ com.red_escuela.backend.identity.usecase.auth.ResetPasswordService.reset(com.red
 com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeService.verify(com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.emailverification.VerifyEmailService.verify(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.ChangeOwnPasswordService.changePassword(com.red_escuela.backend.identity.dto.ChangePasswordRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsService.revokeAll(com.red_escuela.backend.identity.entity.Person) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.RevokeSessionByIdService.revokeById(java.lang.Long, com.red_escuela.backend.identity.entity.Person) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.UpdateNotificationPreferencesService.updatePreferences(com.red_escuela.backend.identity.dto.UpdateNotificationPreferencesRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileService.updateOwnProfile(com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest) declares @Transactional
