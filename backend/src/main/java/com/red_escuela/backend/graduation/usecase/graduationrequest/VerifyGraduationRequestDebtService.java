@@ -1,11 +1,14 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.billing.api.StudentDebtView;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.events.GraduationRequestDebtBlockedEvent;
 import com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent;
+import com.red_escuela.backend.graduation.service.GraduationDebtBlockPublisher;
 import com.red_escuela.backend.graduation.service.GraduationDebtGate;
 import com.red_escuela.backend.graduation.service.GraduationDecisionRecorder;
 import com.red_escuela.backend.graduation.service.GraduationRequestFinder;
@@ -21,17 +24,20 @@ public class VerifyGraduationRequestDebtService implements VerifyGraduationReque
     private final InvoiceQueryService invoiceQueryService;
     private final GraduationDecisionRecorder graduationDecisionRecorder;
     private final ApplicationEventPublisher eventPublisher;
+    private final GraduationDebtBlockPublisher graduationDebtBlockPublisher;
 
     public VerifyGraduationRequestDebtService(GraduationRequestFinder graduationRequestFinder,
                                                GraduationDebtGate graduationDebtGate,
                                                InvoiceQueryService invoiceQueryService,
                                                GraduationDecisionRecorder graduationDecisionRecorder,
-                                               ApplicationEventPublisher eventPublisher) {
+                                               ApplicationEventPublisher eventPublisher,
+                                               GraduationDebtBlockPublisher graduationDebtBlockPublisher) {
         this.graduationRequestFinder = graduationRequestFinder;
         this.graduationDebtGate = graduationDebtGate;
         this.invoiceQueryService = invoiceQueryService;
         this.graduationDecisionRecorder = graduationDecisionRecorder;
         this.eventPublisher = eventPublisher;
+        this.graduationDebtBlockPublisher = graduationDebtBlockPublisher;
     }
 
     @Override
@@ -44,7 +50,9 @@ public class VerifyGraduationRequestDebtService implements VerifyGraduationReque
 
         Long studentId = request.getProgramEnrollment().getStudent().getId();
         if (graduationDebtGate.mustCheckDebt() && invoiceQueryService.hasDebt(studentId)) {
-            throw new PendingDebtException(studentId);
+            StudentDebtView debt = invoiceQueryService.debtOf(studentId);
+            graduationDebtBlockPublisher.publishDebtBlocked(GraduationRequestDebtBlockedEvent.blockedFor(request, debt.totalDue(), debt.installmentCount()));
+            throw new PendingDebtException(studentId, debt.totalDue(), debt.installmentCount());
         }
 
         GraduationRequest saved = graduationDecisionRecorder.recordVerification(request);

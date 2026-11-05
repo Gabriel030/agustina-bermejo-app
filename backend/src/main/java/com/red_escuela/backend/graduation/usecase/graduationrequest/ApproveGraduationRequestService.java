@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.billing.api.StudentDebtView;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
@@ -42,7 +43,8 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
         GraduationRequest request = graduationRequestFinder.findOrThrow(graduationRequestId);
         Long studentId = graduationRequestApprover.requireApprovableAndFindStudentId(request);
         if (graduationDebtGate.mustCheckDebt() && invoiceQueryService.hasDebt(studentId)) {
-            throw new PendingDebtException(studentId);
+            StudentDebtView debt = invoiceQueryService.debtOf(studentId);
+            throw new PendingDebtException(studentId, debt.totalDue(), debt.installmentCount());
         }
 
         graduationDecisionRecorder.recordApproval(request);

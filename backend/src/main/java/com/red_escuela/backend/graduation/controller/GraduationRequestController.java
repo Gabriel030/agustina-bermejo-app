@@ -9,6 +9,8 @@ import com.red_escuela.backend.graduation.usecase.graduationrequest.ListGraduati
 import com.red_escuela.backend.graduation.usecase.graduationrequest.ListGraduationRequestsByStatusUseCase;
 import com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationRequestCommand;
 import com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationRequestUseCase;
+import com.red_escuela.backend.graduation.dto.GraduationDebtSummaryResponse;
+import com.red_escuela.backend.graduation.usecase.graduationrequest.GetGraduationRequestDebtSummaryUseCase;
 import com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyGraduationRequestDebtUseCase;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import java.util.List;
 public class GraduationRequestController {
 
     private final VerifyGraduationRequestDebtUseCase verifyGraduationRequestDebtUseCase;
+    private final GetGraduationRequestDebtSummaryUseCase getGraduationRequestDebtSummaryUseCase;
     private final ApproveGraduationRequestUseCase approveGraduationRequestUseCase;
     private final RejectGraduationRequestUseCase rejectGraduationRequestUseCase;
     private final ListGraduationRequestsByProgramEnrollmentUseCase listGraduationRequestsByProgramEnrollmentUseCase;
@@ -33,12 +36,14 @@ public class GraduationRequestController {
 
     public GraduationRequestController(
             VerifyGraduationRequestDebtUseCase verifyGraduationRequestDebtUseCase,
+            GetGraduationRequestDebtSummaryUseCase getGraduationRequestDebtSummaryUseCase,
             ApproveGraduationRequestUseCase approveGraduationRequestUseCase,
             RejectGraduationRequestUseCase rejectGraduationRequestUseCase,
             ListGraduationRequestsByProgramEnrollmentUseCase listGraduationRequestsByProgramEnrollmentUseCase,
             ListGraduationRequestsByStatusUseCase listGraduationRequestsByStatusUseCase,
             GetGraduationRequestUseCase getGraduationRequestUseCase) {
         this.verifyGraduationRequestDebtUseCase = verifyGraduationRequestDebtUseCase;
+        this.getGraduationRequestDebtSummaryUseCase = getGraduationRequestDebtSummaryUseCase;
         this.approveGraduationRequestUseCase = approveGraduationRequestUseCase;
         this.rejectGraduationRequestUseCase = rejectGraduationRequestUseCase;
         this.listGraduationRequestsByProgramEnrollmentUseCase = listGraduationRequestsByProgramEnrollmentUseCase;
@@ -50,6 +55,12 @@ public class GraduationRequestController {
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public GraduationRequestResponse verifyDebt(@PathVariable Long id) {
         return GraduationRequestResponse.from(verifyGraduationRequestDebtUseCase.verify(id));
+    }
+
+    @GetMapping("/graduation-requests/{id}/debt-summary")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public GraduationDebtSummaryResponse debtSummary(@PathVariable Long id) {
+        return GraduationDebtSummaryResponse.from(getGraduationRequestDebtSummaryUseCase.get(id));
     }
 
     @PostMapping("/graduation-requests/{id}/approve")

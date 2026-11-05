@@ -29,6 +29,7 @@ class GraduationDebtGateUseCasesTest {
     private final InvoiceQueryService invoiceQueryService = Mockito.mock(InvoiceQueryService.class);
     private final GraduationDecisionRecorder decisionRecorder = Mockito.mock(GraduationDecisionRecorder.class);
     private final ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+    private final com.red_escuela.backend.graduation.service.GraduationDebtBlockPublisher debtBlockPublisher = Mockito.mock(com.red_escuela.backend.graduation.service.GraduationDebtBlockPublisher.class);
     private GraduationRequest request;
 
     @BeforeEach
@@ -52,10 +53,17 @@ class GraduationDebtGateUseCasesTest {
         });
         Mockito.when(approver.requireApprovableAndFindStudentId(request)).thenReturn(STUDENT_ID);
         Mockito.when(invoiceQueryService.hasDebt(STUDENT_ID)).thenReturn(true);
+        Mockito.when(invoiceQueryService.debtOf(STUDENT_ID)).thenReturn(new com.red_escuela.backend.billing.api.StudentDebtView(
+                com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("33000.00"), com.red_escuela.backend.shared.domain.Currency.ARS),
+                java.util.List.of(
+                        new com.red_escuela.backend.billing.api.StudentDebtInstallmentView(java.time.YearMonth.of(2026, 3), java.time.LocalDate.of(2026, 3, 10),
+                                com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("15000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), "OVERDUE"),
+                        new com.red_escuela.backend.billing.api.StudentDebtInstallmentView(java.time.YearMonth.of(2026, 4), java.time.LocalDate.of(2026, 4, 10),
+                                com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("18000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), "OVERDUE"))));
     }
 
     private VerifyGraduationRequestDebtService verifyService() {
-        return new VerifyGraduationRequestDebtService(finder, debtGate, invoiceQueryService, decisionRecorder, eventPublisher);
+        return new VerifyGraduationRequestDebtService(finder, debtGate, invoiceQueryService, decisionRecorder, eventPublisher, debtBlockPublisher);
     }
 
     private ApproveGraduationRequestService approveService() {
@@ -87,7 +95,20 @@ class GraduationDebtGateUseCasesTest {
         Mockito.when(debtGate.mustCheckDebt()).thenReturn(true);
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> verifyService().verify(REQUEST_ID))
-                .isInstanceOf(com.red_escuela.backend.billing.exception.PendingDebtException.class);
+                .isInstanceOf(com.red_escuela.backend.billing.exception.PendingDebtException.class)
+                .satisfies(error -> org.assertj.core.api.Assertions.assertThat(((com.red_escuela.backend.billing.exception.PendingDebtException) error).details())
+                        .containsEntry("totalDue", new java.math.BigDecimal("33000.00")).containsEntry("installmentCount", 2));
         assertThat(request.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
+        Mockito.verify(debtBlockPublisher).publishDebtBlocked(Mockito.argThat(event -> event.requestId().equals(REQUEST_ID) && event.installmentCount() == 2));
+    }
+
+    @Test
+    void verifyingWithoutDebtDoesNotPublishTheDebtBlockedEvent() {
+        Mockito.when(debtGate.mustCheckDebt()).thenReturn(true);
+        Mockito.when(invoiceQueryService.hasDebt(STUDENT_ID)).thenReturn(false);
+
+        verifyService().verify(REQUEST_ID);
+
+        Mockito.verifyNoInteractions(debtBlockPublisher);
     }
 }
