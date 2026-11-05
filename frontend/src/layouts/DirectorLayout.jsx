@@ -1,6 +1,6 @@
 import { BellRing, CalendarClock, CalendarRange, Home, CheckCircle2, ClipboardCheck, Users, UserCog, BarChart2, BookOpen, Receipt, Tag, FileText } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
-import { visibleMenuItems } from '@/routes/menuAccess';
+import { useVisibleMenuItems } from '@/routes/useVisibleMenuItems';
 
 const ITEMS = [
   { to: '/director/inicio', label: 'Inicio', icon: Home },
@@ -19,5 +19,6 @@ const ITEMS = [
 ];
 
 export function DirectorLayout() {
-  return <RoleShell titulo="Director" items={visibleMenuItems('director', ITEMS)} />;
+  const items = useVisibleMenuItems('director', ITEMS);
+  return <RoleShell titulo="Director" items={items} />;
 }

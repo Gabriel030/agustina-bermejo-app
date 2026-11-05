@@ -62,6 +62,7 @@ describe('Financiero access by role', () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/inicio');
 
     const nav = (await screen.findAllByRole('navigation'))[0];
+    await within(nav).findByRole('link', { name: 'Facturación' });
     const labels = within(nav).getAllByRole('link').map((link) => link.textContent.trim());
     expect(labels).toContain('Facturación');
     expect(labels).toContain('Financiero');

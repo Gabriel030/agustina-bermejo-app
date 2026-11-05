@@ -102,5 +102,19 @@ export const handlers = [
   http.get(`${API}/payment-config`, () =>
     HttpResponse.json({ bankAlias: null, bankCbu: null, accountHolder: null, qrImageUrl: null, mpEnabled: false }),
   ),
+  http.get(`${API}/me/modules`, () =>
+    HttpResponse.json({
+      billing: { mode: 'FULL' },
+      fiscalInvoicing: { enabled: false },
+      analytics: { enabled: false },
+      paymentMethods: [
+        { code: 'CASH', available: true },
+        { code: 'BANK_TRANSFER', available: true },
+        { code: 'GATEWAY', available: false },
+      ],
+      billingNotifications: { enabled: false },
+      externalBilling: { enabled: false },
+    }),
+  ),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
 ];
