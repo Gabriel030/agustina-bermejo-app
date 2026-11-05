@@ -52,7 +52,6 @@ com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationReq
 com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyGraduationRequestDebtService.verify(java.lang.Long) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.LoginService.login(com.red_escuela.backend.identity.usecase.auth.LoginCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.LoginWithGoogleService.login(java.lang.String) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.RefreshTokenService.refresh(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RegisterService.register(com.red_escuela.backend.identity.dto.RegisterRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService.register(com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.ResetPasswordService.reset(com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand) declares @Transactional
