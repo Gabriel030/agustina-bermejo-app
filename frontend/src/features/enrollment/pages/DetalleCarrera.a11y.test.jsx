@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -19,9 +19,21 @@ function renderDetail() {
   );
 }
 
+function signInAs(roles) {
+  localStorage.setItem('refreshToken', 'refresh-1');
+  server.use(
+    http.post(`${API}/auth/refresh`, () =>
+      HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+    ),
+    http.get(`${API}/me`, () => HttpResponse.json({ id: 1, username: 'user', roles })),
+  );
+}
+
 function plan(subjects) {
   return http.get(`${API}/programs/1/subjects`, () => HttpResponse.json(subjects));
 }
+
+afterEach(() => localStorage.clear());
 
 describe('DetalleCarrera accessibility and block errors', () => {
   it('loadedProgramHasNoAxeViolationsAndASingleHeading', async () => {
@@ -116,5 +128,18 @@ describe('DetalleCarrera accessibility and block errors', () => {
     expect(screen.getByText('8 créditos')).toBeInTheDocument();
     const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
     expect(headings).toEqual(['Año 1', 'Sin año asignado']);
+  });
+
+  it('hiddenProgramNoticeForStaffHasNoAxeViolations', async () => {
+    signInAs(['DIRECTOR']);
+    server.use(
+      http.get(`${API}/programs/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Carrera de prueba', totalYears: 3, status: 'ACTIVE', visibleInCatalog: false }),
+      ),
+    );
+    const { container } = renderDetail();
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Programa no visible en el catálogo');
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

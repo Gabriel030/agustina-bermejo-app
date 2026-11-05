@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -17,6 +17,18 @@ function renderDetail() {
     { route: '/catalogo/cursos/1', withAuth: true },
   );
 }
+
+function signInAs(roles) {
+  localStorage.setItem('refreshToken', 'refresh-1');
+  server.use(
+    http.post(`${API}/auth/refresh`, () =>
+      HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+    ),
+    http.get(`${API}/me`, () => HttpResponse.json({ id: 1, username: 'user', roles })),
+  );
+}
+
+afterEach(() => localStorage.clear());
 
 describe('DetalleCurso accessibility and block errors', () => {
   it('loadedCourseHasNoAxeViolationsAndASingleHeading', async () => {
@@ -67,5 +79,18 @@ describe('DetalleCurso accessibility and block errors', () => {
     expect(await screen.findByText('No pudimos cargar el curso')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=cursos');
+  });
+
+  it('hiddenCourseNoticeForStaffHasNoAxeViolations', async () => {
+    signInAs(['PRECEPTOR']);
+    server.use(
+      http.get(`${API}/courses/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Curso de prueba', status: 'ACTIVE', visibleInCatalog: false, registrationOpen: true }),
+      ),
+    );
+    const { container } = renderDetail();
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Curso no visible en el catálogo');
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
