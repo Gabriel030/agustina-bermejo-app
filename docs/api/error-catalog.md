@@ -4,7 +4,7 @@
 
 ## Cuerpo estándar
 
-Todo error de la API sale con `{"code": "...", "retryable": true|false, "requestId": "...", "violations": [...]}`. `code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, `requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas. Un `429` o `503` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).
+Todo error de la API sale con `{"code": "...", "retryable": true|false, "requestId": "...", "violations": [...], "details": {...}}`. `code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, `requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas y `details` (opcional, aditivo) trae datos estables del error: `PENDING_DEBT` informa `totalDue` (monto adeudado) e `installmentCount` (cuotas pendientes). Un `429` o `503` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).
 
 ## Política de reintentos
 

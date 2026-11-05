@@ -7,6 +7,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,13 +48,19 @@ function SummaryRow({ label, children }) {
   );
 }
 
-function CreditNoteSummary({ draft, creditBalance, onCancelInstead }) {
+function CreditNoteSummary({ draft, creditBalance, creditQuery, onCancelInstead }) {
   const total = fromCents(draft.totalCents, draft.currency);
   const creditTodayCents = toCents(creditBalance?.unallocatedCredit);
   return (
     <div className="flex flex-col gap-3">
       <SummaryRow label="Efecto">{draft.paid ? 'Crédito a favor' : 'Reduce la deuda'}</SummaryRow>
-      {draft.paid ? (
+      {draft.paid && !creditBalance ? (
+        creditQuery.isError ? (
+          <LoadErrorState bare resource="el crédito a favor" onRetry={() => creditQuery.refetch()} />
+        ) : (
+          <Skeleton className="h-10 w-full" aria-label="Cargando el crédito a favor" />
+        )
+      ) : draft.paid ? (
         <>
           <SummaryRow label="Crédito a favor hoy">{formatMoney(fromCents(creditTodayCents, draft.currency))}</SummaryRow>
           <SummaryRow label="Crédito a favor después">
@@ -97,7 +104,8 @@ export function CreateCreditNotePage() {
 
   const overviewQuery = useAdminBillingOverview(studentId);
   const { data: student } = useStudentHeader(studentId);
-  const { data: creditBalance } = useStudentCreditBalance(studentId);
+  const creditQuery = useStudentCreditBalance(studentId);
+  const creditBalance = creditQuery.data;
   const mutation = useIssueCreditNote();
 
   const [step, setStep] = useState('amounts');
@@ -150,6 +158,7 @@ export function CreateCreditNotePage() {
   const draft = creditNoteDraftOf(invoice, form);
   const statusLabel = invoiceStatusInfo(invoice.paymentStatus).label;
   const executesImmediately = isDirector;
+  const creditPending = draft.paid && !creditBalance;
   const total = fromCents(draft.totalCents, draft.currency);
 
   function updateAmount(lineNumber, value) {
@@ -173,7 +182,7 @@ export function CreateCreditNotePage() {
   }
 
   async function handleSubmit() {
-    if (draft.blocked || mutation.isPending) return;
+    if (draft.blocked || creditPending || mutation.isPending) return;
     setServerError(null);
     try {
       const result = await mutation.mutateAsync({ invoiceId: invoice.id, payload: draft.payload });
@@ -255,7 +264,7 @@ export function CreateCreditNotePage() {
 
           <GlassCard className="flex h-fit flex-col gap-4 p-5 lg:sticky lg:top-4">
             <h2 className="font-heading text-base font-semibold text-ink">Resumen</h2>
-            <CreditNoteSummary draft={draft} creditBalance={creditBalance} onCancelInstead={handleCancelInstead} />
+            <CreditNoteSummary draft={draft} creditBalance={creditBalance} creditQuery={creditQuery} onCancelInstead={handleCancelInstead} />
             {!executesImmediately && (
               <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-bg px-3 py-2 text-sm text-ink">
                 <Info className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
@@ -267,7 +276,11 @@ export function CreateCreditNotePage() {
       ) : (
         <GlassCard className="flex flex-col gap-5 p-5">
           <h2 className="font-heading text-base font-semibold text-ink">Así queda la cuota</h2>
-          <AmountDiffTable rows={rows} unchanged={[{ key: 'status', label: 'Estado de la cuota', value: statusLabel }]} />
+          {creditPending ? (
+            <LoadErrorState bare resource="el crédito a favor" onRetry={() => creditQuery.refetch()} />
+          ) : (
+            <AmountDiffTable rows={rows} unchanged={[{ key: 'status', label: 'Estado de la cuota', value: statusLabel }]} />
+          )}
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-semibold text-ink">Renglones acreditados</span>
@@ -322,7 +335,7 @@ export function CreateCreditNotePage() {
             <Button asChild variant="outline">
               <Link to={backPath}>Cancelar</Link>
             </Button>
-            <Button type="button" variant="gradient" disabled={draft.blocked} onClick={() => setStep('confirm')}>
+            <Button type="button" variant="gradient" disabled={draft.blocked || creditPending} onClick={() => setStep('confirm')}>
               Revisar la nota
             </Button>
           </>
@@ -331,7 +344,7 @@ export function CreateCreditNotePage() {
             <Button type="button" variant="outline" onClick={() => setStep('amounts')} disabled={mutation.isPending}>
               Volver a editar
             </Button>
-            <Button type="button" variant="gradient" loading={mutation.isPending} onClick={handleSubmit}>
+            <Button type="button" variant="gradient" loading={mutation.isPending} disabled={creditPending} onClick={handleSubmit}>
               {confirmLabel}
             </Button>
           </>

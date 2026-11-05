@@ -1,19 +1,12 @@
+import { parseAmountInput as parseCashAmount } from '../components/cashAmount';
+
 export const ACCOUNT_MAX_LENGTH = 50;
 export const HOLDER_MAX_LENGTH = 120;
 export const PREVIEW_DEBOUNCE_MS = 400;
 
-const AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/;
-const MAX_AMOUNT_CENTS = 999999999999;
-
 export function parseAmountInput(text) {
-  const normalized = String(text ?? '')
-    .replace(/[\s$]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
-  if (!AMOUNT_PATTERN.test(normalized)) return null;
-  const cents = Math.round(Number(normalized) * 100);
-  if (cents <= 0 || cents > MAX_AMOUNT_CENTS) return null;
-  return (cents / 100).toFixed(2);
+  const parsed = parseCashAmount(text);
+  return parsed.value ?? null;
 }
 
 export function toCents(money) {
