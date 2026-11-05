@@ -28,7 +28,7 @@ public record AnnouncementResponse(
         long recipientCount,
         long readCount) {
 
-    public static AnnouncementResponse from(Announcement announcement, AnnouncementReadCount readCount) {
+    public static AnnouncementResponse from(Announcement announcement, long recipientCount, long readCount) {
         return new AnnouncementResponse(
                 announcement.getId(),
                 announcement.getSectionType(),
@@ -45,7 +45,7 @@ public record AnnouncementResponse(
                 announcement.getCreatedBy().getName() + " " + announcement.getCreatedBy().getLastname(),
                 announcement.getCreatedAt(),
                 announcement.getUpdatedAt(),
-                readCount.recipientCount(),
-                readCount.readCount());
+                recipientCount,
+                readCount);
     }
 }

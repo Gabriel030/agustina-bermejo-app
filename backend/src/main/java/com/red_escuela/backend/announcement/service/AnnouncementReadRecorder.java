@@ -12,11 +12,20 @@ import java.time.LocalDateTime;
 public class AnnouncementReadRecorder {
 
     private final AnnouncementRecipientRepository recipientRepository;
+    private final AnnouncementViewer announcementViewer;
     private final Clock clock;
 
-    public AnnouncementReadRecorder(AnnouncementRecipientRepository recipientRepository, Clock clock) {
+    public AnnouncementReadRecorder(AnnouncementRecipientRepository recipientRepository,
+                                    AnnouncementViewer announcementViewer, Clock clock) {
         this.recipientRepository = recipientRepository;
+        this.announcementViewer = announcementViewer;
         this.clock = clock;
+    }
+
+    public void recordReadByCurrentStudent(Long announcementId) {
+        Long studentId = announcementViewer.currentStudentId()
+                .orElseThrow(() -> new AnnouncementNotFoundException(announcementId));
+        recordRead(announcementId, studentId);
     }
 
     @Transactional

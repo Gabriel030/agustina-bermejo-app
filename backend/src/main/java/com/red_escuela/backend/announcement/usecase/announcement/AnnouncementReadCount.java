@@ -1,4 +1,4 @@
-package com.red_escuela.backend.announcement.dto;
+package com.red_escuela.backend.announcement.usecase.announcement;
 
 public record AnnouncementReadCount(long recipientCount, long readCount) {
 

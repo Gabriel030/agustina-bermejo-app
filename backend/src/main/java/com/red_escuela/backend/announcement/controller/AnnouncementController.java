@@ -1,6 +1,5 @@
 package com.red_escuela.backend.announcement.controller;
 
-import com.red_escuela.backend.announcement.dto.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.dto.AnnouncementResponse;
 import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
 import com.red_escuela.backend.announcement.dto.AnnouncementRecipientResponse;
@@ -10,11 +9,12 @@ import com.red_escuela.backend.announcement.dto.CreateAnnouncementRequest;
 import com.red_escuela.backend.announcement.dto.UpdateAnnouncementRequest;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.SectionType;
+import com.red_escuela.backend.announcement.usecase.announcement.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.usecase.announcement.CountAnnouncementReadsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementUseCase;
-import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsCommand;
+import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementReadReceiptsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListSectionAnnouncementsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand;
@@ -50,6 +50,7 @@ public class AnnouncementController {
     private final ListAudienceSegmentsUseCase listAudienceSegments;
     private final PreviewAudienceUseCase previewAudience;
     private final ListAnnouncementRecipientsUseCase listAnnouncementRecipients;
+    private final ListAnnouncementReadReceiptsUseCase listAnnouncementReadReceipts;
     private final CountAnnouncementReadsUseCase countAnnouncementReads;
 
     public AnnouncementController(CreateAnnouncementUseCase createAnnouncement,
@@ -59,6 +60,7 @@ public class AnnouncementController {
                                   ListAudienceSegmentsUseCase listAudienceSegments,
                                   PreviewAudienceUseCase previewAudience,
                                   ListAnnouncementRecipientsUseCase listAnnouncementRecipients,
+                                  ListAnnouncementReadReceiptsUseCase listAnnouncementReadReceipts,
                                   CountAnnouncementReadsUseCase countAnnouncementReads) {
         this.createAnnouncement = createAnnouncement;
         this.updateAnnouncement = updateAnnouncement;
@@ -67,6 +69,7 @@ public class AnnouncementController {
         this.listAudienceSegments = listAudienceSegments;
         this.previewAudience = previewAudience;
         this.listAnnouncementRecipients = listAnnouncementRecipients;
+        this.listAnnouncementReadReceipts = listAnnouncementReadReceipts;
         this.countAnnouncementReads = countAnnouncementReads;
     }
 
@@ -127,7 +130,7 @@ public class AnnouncementController {
     @GetMapping("/announcements/{id}/recipients")
     @PreAuthorize("hasAnyRole('DOCENTE', 'PRECEPTOR', 'DIRECTOR')")
     public List<AnnouncementRecipientResponse> recipients(@PathVariable Long id) {
-        return listAnnouncementRecipients.list(new ListAnnouncementRecipientsCommand(id, isInstructor()));
+        return isInstructor() ? listAnnouncementRecipients.list(id) : listAnnouncementReadReceipts.list(id);
     }
 
     @DeleteMapping("/announcements/{id}")
@@ -149,8 +152,10 @@ public class AnnouncementController {
         Collection<Long> ids = announcements.stream().map(Announcement::getId).toList();
         Map<Long, AnnouncementReadCount> counts = countAnnouncementReads.countsOf(ids);
         return announcements.stream()
-                .map(announcement -> AnnouncementResponse.from(announcement,
-                        counts.getOrDefault(announcement.getId(), AnnouncementReadCount.EMPTY)))
+                .map(announcement -> {
+                    AnnouncementReadCount count = counts.getOrDefault(announcement.getId(), AnnouncementReadCount.EMPTY);
+                    return AnnouncementResponse.from(announcement, count.recipientCount(), count.readCount());
+                })
                 .toList();
     }
 

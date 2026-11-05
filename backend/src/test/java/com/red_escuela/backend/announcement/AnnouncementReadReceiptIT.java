@@ -3,7 +3,6 @@ package com.red_escuela.backend.announcement;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.announcement.dto.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
@@ -11,7 +10,10 @@ import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
 import com.red_escuela.backend.announcement.service.AnnouncementReadCounter;
+import com.red_escuela.backend.announcement.service.AnnouncementReadCounter.ReadCount;
+import com.red_escuela.backend.announcement.service.AnnouncementReadReceiptReader;
 import com.red_escuela.backend.announcement.service.AnnouncementReadRecorder;
+import com.red_escuela.backend.announcement.service.AnnouncementRecipientReader;
 import com.red_escuela.backend.announcement.service.AnnouncementRenotifier;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -49,6 +51,8 @@ class AnnouncementReadReceiptIT extends AbstractIntegrationTest {
     private AnnouncementReadCounter readCounter;
     @Autowired
     private AnnouncementRenotifier renotifier;
+    @Autowired
+    private AnnouncementReadReceiptReader receiptReader;
 
     private Long sentId;
     private Long scheduledId;
@@ -159,8 +163,8 @@ class AnnouncementReadReceiptIT extends AbstractIntegrationTest {
         readRecorder.recordRead(sentId, readerId);
 
         assertThat(readCounter.countsOf(List.of(sentId, scheduledId)))
-                .containsEntry(sentId, new AnnouncementReadCount(2, 1))
-                .containsEntry(scheduledId, new AnnouncementReadCount(2, 0));
+                .containsEntry(sentId, new ReadCount(2, 1))
+                .containsEntry(scheduledId, new ReadCount(2, 0));
     }
 
     @Test
@@ -172,5 +176,21 @@ class AnnouncementReadReceiptIT extends AbstractIntegrationTest {
                 renotifier.renotifyFrozenRecipients(entityManager.find(Announcement.class, sentId)));
 
         assertThat(readAtOf(sentId, readerId)).isEqualTo(firstRead);
+    }
+
+    @Test
+    void listsTheReadTimeOfEachRecipientForStaff() {
+        readRecorder.recordRead(sentId, readerId);
+
+        assertThat(receiptReader.listReceipts(sentId))
+                .extracting(AnnouncementRecipientReader.RecipientSummary::studentId, AnnouncementRecipientReader.RecipientSummary::readAt)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(readerId, readAtOf(sentId, readerId)),
+                        org.assertj.core.groups.Tuple.tuple(otherRecipientId, null));
+    }
+
+    @Test
+    void answersNotFoundWhenStaffAsksForAnAnnouncementThatDoesNotExist() {
+        assertThatThrownBy(() -> receiptReader.listReceipts(-1L)).isInstanceOf(AnnouncementNotFoundException.class);
     }
 }

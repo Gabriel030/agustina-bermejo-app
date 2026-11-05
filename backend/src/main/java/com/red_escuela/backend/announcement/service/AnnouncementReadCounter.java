@@ -1,6 +1,5 @@
 package com.red_escuela.backend.announcement.service;
 
-import com.red_escuela.backend.announcement.dto.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +11,9 @@ import java.util.Map;
 @Service
 public class AnnouncementReadCounter {
 
+    public record ReadCount(long recipientCount, long readCount) {
+    }
+
     private final AnnouncementRecipientRepository recipientRepository;
 
     public AnnouncementReadCounter(AnnouncementRecipientRepository recipientRepository) {
@@ -19,13 +21,13 @@ public class AnnouncementReadCounter {
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, AnnouncementReadCount> countsOf(Collection<Long> announcementIds) {
-        Map<Long, AnnouncementReadCount> counts = new HashMap<>();
+    public Map<Long, ReadCount> countsOf(Collection<Long> announcementIds) {
+        Map<Long, ReadCount> counts = new HashMap<>();
         if (announcementIds.isEmpty()) {
             return counts;
         }
         recipientRepository.countReadByAnnouncementIds(announcementIds).forEach(row ->
-                counts.put(row.getAnnouncementId(), new AnnouncementReadCount(row.getTotal(), row.getReadCount())));
+                counts.put(row.getAnnouncementId(), new ReadCount(row.getTotal(), row.getReadCount())));
         return counts;
     }
 }
