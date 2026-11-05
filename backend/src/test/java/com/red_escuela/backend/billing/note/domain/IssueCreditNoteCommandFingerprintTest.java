@@ -10,7 +10,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Tag("D-092")
+@Tag("D-216")
 class IssueCreditNoteCommandFingerprintTest {
 
     private static IssueCreditNoteCommand command(String amount, CreditNoteDestination destination, boolean director, Long authorizationRequestId) {

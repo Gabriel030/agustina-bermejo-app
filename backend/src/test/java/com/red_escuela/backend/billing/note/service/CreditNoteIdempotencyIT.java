@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-@Tag("D-092")
-@Tag("D-127")
+@Tag("D-216")
 @SlowTest(reason = "Retries credit note requests sequentially and from two real threads against the database")
 class CreditNoteIdempotencyIT extends AbstractCreditNoteIT {
 
