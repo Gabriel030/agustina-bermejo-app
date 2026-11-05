@@ -41,7 +41,7 @@ Cuando el repo vuelva a tener minutos facturables, rige lo siguiente: GitHub Act
 | Área tocada | Comandos (desde la raíz) |
 |---|---|
 | Backend | `cd backend && ./mvnw clean verify` (Java 21; necesita Docker por Testcontainers) |
-| Frontend | `cd frontend && npm ci && npm run lint && npm run build && npm run test` (Node 22, como el CI) |
+| Frontend | `cd frontend && npm ci && npm run lint && npm run build:check && npm run test` (Node 22, como el CI) |
 | Solo docs/`.md` | Ninguno, pero verificar que los links y comandos citados existan |
 
 Reglas:

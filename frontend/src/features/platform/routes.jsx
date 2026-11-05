@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
-import { PrimerDirector } from '@/features/platform/pages/PrimerDirector';
+import { lazyPage } from '@/routes/lazyPage';
+const PrimerDirector = lazyPage(() => import('@/features/platform/pages/PrimerDirector'), 'PrimerDirector');
 
 export const routes = {
   public: [],

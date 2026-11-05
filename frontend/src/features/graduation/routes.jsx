@@ -1,5 +1,6 @@
-import { DirectorAprobacionesEgresos } from '@/features/graduation/pages/DirectorAprobacionesEgresos';
-import { DirectorEgresoDetalle } from '@/features/graduation/pages/DirectorEgresoDetalle';
+import { lazyPage } from '@/routes/lazyPage';
+const DirectorAprobacionesEgresos = lazyPage(() => import('@/features/graduation/pages/DirectorAprobacionesEgresos'), 'DirectorAprobacionesEgresos');
+const DirectorEgresoDetalle = lazyPage(() => import('@/features/graduation/pages/DirectorEgresoDetalle'), 'DirectorEgresoDetalle');
 
 export const routes = {
   public: [],

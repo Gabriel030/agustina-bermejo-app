@@ -1,7 +1,8 @@
-import { PreceptorMesaExamen } from '@/features/evaluation/pages/PreceptorMesaExamen';
-import { DirectorAprobacionesConfigEvaluacion } from '@/features/evaluation/pages/DirectorAprobacionesConfigEvaluacion';
-import { DirectorEsquemasEvaluacion } from '@/features/evaluation/pages/DirectorEsquemasEvaluacion';
-import { DirectorRevisarConfiguracion } from '@/features/evaluation/pages/DirectorRevisarConfiguracion';
+import { lazyPage } from '@/routes/lazyPage';
+const PreceptorMesaExamen = lazyPage(() => import('@/features/evaluation/pages/PreceptorMesaExamen'), 'PreceptorMesaExamen');
+const DirectorAprobacionesConfigEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorAprobacionesConfigEvaluacion'), 'DirectorAprobacionesConfigEvaluacion');
+const DirectorEsquemasEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorEsquemasEvaluacion'), 'DirectorEsquemasEvaluacion');
+const DirectorRevisarConfiguracion = lazyPage(() => import('@/features/evaluation/pages/DirectorRevisarConfiguracion'), 'DirectorRevisarConfiguracion');
 
 export const routes = {
   public: [],

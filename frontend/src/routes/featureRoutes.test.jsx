@@ -37,6 +37,13 @@ describe('feature routes', () => {
     },
   );
 
+  it('resolvesEveryLazyExport', async () => {
+    const lazyRoutes = declaredRoutes.filter((route) => typeof route.element.type.preload === 'function');
+    expect(lazyRoutes.length).toBeGreaterThan(50);
+    const resolved = await Promise.all(lazyRoutes.map((route) => route.element.type.preload()));
+    resolved.forEach((component) => expect(typeof component).toBe('function'));
+  }, 120000);
+
   it('only targets roles that have a layout', () => {
     ROLE_ROUTES.forEach((route) => {
       route.roles.forEach((role) => expect(Object.keys(ROLE_CONFIG)).toContain(role));

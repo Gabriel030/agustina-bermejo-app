@@ -1,5 +1,6 @@
-import { DocenteTomarAsistencia } from '@/features/attendance/pages/DocenteTomarAsistencia';
-import { SolicitudesAsistencia } from '@/features/attendance/pages/SolicitudesAsistencia';
+import { lazyPage } from '@/routes/lazyPage';
+const DocenteTomarAsistencia = lazyPage(() => import('@/features/attendance/pages/DocenteTomarAsistencia'), 'DocenteTomarAsistencia');
+const SolicitudesAsistencia = lazyPage(() => import('@/features/attendance/pages/SolicitudesAsistencia'), 'SolicitudesAsistencia');
 
 export const routes = {
   public: [],
