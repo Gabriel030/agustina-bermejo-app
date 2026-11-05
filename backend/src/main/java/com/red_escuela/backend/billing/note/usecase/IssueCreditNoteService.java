@@ -23,7 +23,7 @@ public class IssueCreditNoteService implements IssueCreditNoteUseCase {
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BillingOperationOutcome<CreditNote> issueOrRequestCreditNote(Long invoiceId, CreateCreditNoteRequest request) {
-        return pipeline.runOperation(operation, commandFactory.buildCommandForCurrentUser(invoiceId, request.reason(), request.justification(), request.toLineAmounts()));
+    public BillingOperationOutcome<CreditNote> issueOrRequestCreditNote(Long invoiceId, CreateCreditNoteRequest request, String idempotencyKey) {
+        return pipeline.runOperation(operation, commandFactory.buildCommandForCurrentUser(invoiceId, request.reason(), request.justification(), request.toLineAmounts(), idempotencyKey));
     }
 }

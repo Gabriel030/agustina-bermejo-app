@@ -15,6 +15,9 @@ public interface CreditNoteRepository extends Repository<CreditNote, Long> {
 
     Optional<CreditNote> findById(Long id);
 
+    @Query("select n from CreditNote n left join fetch n.lines where n.id = :id")
+    Optional<CreditNote> findWithLinesById(@Param("id") Long id);
+
     @Query("""
             select distinct n from CreditNote n left join fetch n.lines
             where n.studentCurrentAccountId in (select a.id from StudentCurrentAccount a where a.studentId = :studentId)

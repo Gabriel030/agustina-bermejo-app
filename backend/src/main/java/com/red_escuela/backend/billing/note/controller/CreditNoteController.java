@@ -11,6 +11,8 @@ import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -42,8 +45,13 @@ public class CreditNoteController {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{invoiceId}/credit-notes")
-    public ResponseEntity<?> issueOrRequestCreditNote(@PathVariable Long invoiceId, @Valid @RequestBody CreateCreditNoteRequest request) {
-        BillingOperationOutcome<CreditNote> outcome = issueCreditNoteUseCase.issueOrRequestCreditNote(invoiceId, request);
+    @ApiResponses({
+            @ApiResponse(responseCode = "400", description = "IDEMPOTENCY_KEY_INVALID: la clave está vacía o tiene más de 100 caracteres"),
+            @ApiResponse(responseCode = "409", description = "IDEMPOTENCY_KEY_CONFLICT: la misma clave se usó con otro pedido")})
+    public ResponseEntity<?> issueOrRequestCreditNote(@PathVariable Long invoiceId,
+                                                       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                                                       @Valid @RequestBody CreateCreditNoteRequest request) {
+        BillingOperationOutcome<CreditNote> outcome = issueCreditNoteUseCase.issueOrRequestCreditNote(invoiceId, request, idempotencyKey);
         return switch (outcome) {
             case BillingOperationOutcome.Processed<CreditNote> processed -> ResponseEntity.status(HttpStatus.CREATED).body(CreditNoteResponse.from(processed.result()));
             case BillingOperationOutcome.AwaitingAuthorization<CreditNote> awaiting ->
