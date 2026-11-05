@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const html = readFileSync('index.html', 'utf8');
 
 describe('index.html CSP', () => {
   it('declares a Content-Security-Policy meta tag', () => {
