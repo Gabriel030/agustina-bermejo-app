@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountLabels;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountWithUsage;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ public class LabeledStudentDiscountReader {
         this.labelReader = labelReader;
     }
 
+    @Transactional(readOnly = true)
     public List<LabeledStudentDiscount> readLabeled(List<StudentDiscount> discounts, boolean withStudentNames) {
         Map<Long, StudentDiscountLabels> labels = labelReader.readLabelsOf(discounts, withStudentNames);
         List<StudentDiscountWithUsage> withUsage = usageReader.readUsageOf(discounts);

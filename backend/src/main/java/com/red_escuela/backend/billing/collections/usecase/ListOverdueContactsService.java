@@ -14,7 +14,6 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -35,7 +34,6 @@ public class ListOverdueContactsService implements ListOverdueContactsUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public OverdueContactPageResponse listOverdueContacts(int page, int size, OverdueContactFilter filter) {
         int boundedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);

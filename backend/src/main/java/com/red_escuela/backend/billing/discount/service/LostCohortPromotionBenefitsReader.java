@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitResponse
 import com.red_escuela.backend.billing.discount.dto.LostPromotionBenefitsSlice;
 import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -46,6 +47,7 @@ public class LostCohortPromotionBenefitsReader {
         this.clock = clock;
     }
 
+    @Transactional(readOnly = true)
     public LostPromotionBenefitsSlice readLostBenefitsSlice(LostBenefitFilter filter, Integer page, Integer size) {
         List<LostPromotionBenefitResponse> all = readLostBenefits(filter);
         if (page == null && size == null) {

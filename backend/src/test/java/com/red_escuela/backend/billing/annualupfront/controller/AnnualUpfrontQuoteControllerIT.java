@@ -26,6 +26,7 @@ import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
 import com.red_escuela.backend.billing.support.PriceFixtures;
+import com.red_escuela.backend.billing.annualupfront.usecase.QuoteAnnualUpfrontUseCase;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.entity.Person;
@@ -41,6 +42,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -89,6 +92,8 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
     @Autowired
     private InvoiceNumberGenerator numberGenerator;
+    @Autowired
+    private QuoteAnnualUpfrontUseCase quoteUseCase;
 
     private final List<Long> createdDefinitionIds = new ArrayList<>();
 
@@ -162,6 +167,17 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
             draft.submitDraftForPayment(LocalDateTime.of(2027, 2, 12, 10, 0), ACTOR);
             return invoiceRepository.saveAndFlush(draft).getId();
         });
+    }
+
+    @Test
+    void quoteUseCaseReturnsResolvedEligibilityOutsideAnyTransaction() {
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 2, 10, 12, 0));
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("staff", null, "ROLE_DIRECTOR"));
+        try {
+            assertThat(quoteUseCase.quoteAnnualUpfrontForStaff(learner.programEnrollmentId()).eligible()).isTrue();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test

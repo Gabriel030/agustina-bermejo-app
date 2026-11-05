@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.identity.api.StudentExistenceChecker;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class StudentDiscountsOfStudentReader {
         this.labeledReader = labeledReader;
     }
 
+    @Transactional(readOnly = true)
     public List<LabeledStudentDiscount> readDiscountsOfExistingStudent(Long studentId) {
         students.requireExistingStudent(studentId);
         return labeledReader.readLabeled(repository.findByStudentIdOrderByIdDesc(studentId), true);

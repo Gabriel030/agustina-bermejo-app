@@ -9,6 +9,9 @@ import com.red_escuela.backend.billing.collections.domain.EnrollmentSuspensionRu
 import com.red_escuela.backend.billing.collections.dto.EnrollmentPaymentStatusChangeResponse;
 import com.red_escuela.backend.billing.collections.exception.EnrollmentPaymentStandingNotFoundException;
 import com.red_escuela.backend.billing.collections.operation.EnrollmentPaymentStandingStep;
+import com.red_escuela.backend.billing.collections.usecase.GetEnrollmentPaymentStandingUseCase;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -72,6 +75,8 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
     private EnrollmentPaymentStandingQuery standingQuery;
     @Autowired
     private EnrollmentPaymentStandingReader reader;
+    @Autowired
+    private GetEnrollmentPaymentStandingUseCase standingUseCase;
     @Autowired
     private BillingOperationPipeline pipeline;
     @Autowired
@@ -608,6 +613,22 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         assertThat(reader.readHistory(EnrollmentKind.COURSE, enrollment.getId())).extracting(EnrollmentPaymentStatusChangeResponse::event)
                 .containsExactly("STANDING_OPENED", "OVERDUE_DEBT_DETECTED");
         assertThatThrownBy(() -> reader.readStanding(EnrollmentKind.PROGRAM, enrollment.getId() + 1_000_000)).isInstanceOf(EnrollmentPaymentStandingNotFoundException.class);
+    }
+
+    @Test
+    @Tag("D-122")
+    void standingUseCaseReturnsResolvedStandingAndHistoryOutsideAnyTransaction() {
+        arrange(YEAR);
+        overdueInstallmentDueOn(d(YEAR, 5, 10));
+        evaluate(d(YEAR, 5, 20));
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("staff", null, "ROLE_DIRECTOR"));
+        try {
+            assertThat(standingUseCase.getStandingOfEnrollment(EnrollmentKind.COURSE, enrollment.getId()).status()).isEqualTo("OVERDUE");
+            assertThat(standingUseCase.listStatusChangesOfEnrollment(EnrollmentKind.COURSE, enrollment.getId())).extracting(EnrollmentPaymentStatusChangeResponse::event)
+                    .containsExactly("STANDING_OPENED", "OVERDUE_DEBT_DETECTED");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test

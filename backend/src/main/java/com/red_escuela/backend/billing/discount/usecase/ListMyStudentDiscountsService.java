@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.service.CurrentStudentDiscountReader;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,7 +16,6 @@ public class ListMyStudentDiscountsService implements ListMyStudentDiscountsUseC
     }
 
     @Override
-    @Transactional(readOnly = true)
     @PreAuthorize("hasRole('ALUMNO')")
     public List<LabeledStudentDiscount> listMyStudentDiscounts() {
         return currentStudentDiscountReader.readDiscountsOfCurrentStudent();
