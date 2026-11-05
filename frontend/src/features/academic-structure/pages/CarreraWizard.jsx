@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateProgram } from '@/features/academic-structure/hooks/usePrograms';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
 import { FormField, SelectField } from '@/features/academic-structure/components/FormField';
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
 import {
   countErrors,
   describeSaveError,
@@ -31,17 +33,11 @@ const LEVEL_OPTIONS = [
   { value: 'DIPLOMA', label: 'Diplomatura' },
 ];
 
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
-];
-
 function estadoInicial() {
   return {
     paso: 'datos',
     pasosVisitados: ['datos'],
+    showErrors: false,
     name: '',
     totalYears: '',
     level: '',
@@ -61,6 +57,8 @@ function reducer(state, action) {
   switch (action.type) {
     case 'SET':
       return { ...state, [action.campo]: action.valor };
+    case 'SHOW_ERRORS':
+      return { ...state, showErrors: true };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso, pasosVisitados: visitado(state, action.paso) };
     default:
@@ -68,15 +66,21 @@ function reducer(state, action) {
   }
 }
 
+function visibleBasicErrors(state) {
+  const found = validateProgramFields(state, { requireCredits: false });
+  return Object.fromEntries(
+    Object.entries({ name: found.name, totalYears: found.totalYears }).filter(([, v]) => v),
+  );
+}
+
 function Paso1Datos({ state, dispatch }) {
-  const [errors, setErrors] = useState({});
+  const errors = state.showErrors ? visibleBasicErrors(state) : {};
 
   function handleContinuar() {
-    const found = validateProgramFields(state, { requireCredits: false });
-    const visible = { name: found.name, totalYears: found.totalYears };
-    const cleaned = Object.fromEntries(Object.entries(visible).filter(([, v]) => v));
-    setErrors(cleaned);
-    if (countErrors(cleaned) > 0) return;
+    if (countErrors(visibleBasicErrors(state)) > 0) {
+      dispatch({ type: 'SHOW_ERRORS' });
+      return;
+    }
     dispatch({ type: 'IR_A_PASO', paso: 'contenido' });
   }
 
@@ -232,8 +236,31 @@ function Paso2Contenido({ state, dispatch }) {
   );
 }
 
+const FIELD_KEYS = [
+  'name',
+  'totalYears',
+  'level',
+  'teachingMode',
+  'totalCreditsRequired',
+  'totalHoursRequired',
+  'graduationProfile',
+  'admissionRequirements',
+];
+
 export function CarreraWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
+  const initial = estadoInicial();
+  const dirty = FIELD_KEYS.some((key) => state[key] !== initial[key]);
+  const { guardDialog } = useUnsavedChangesGuard(dirty);
+
+  function handleStepClick(paso) {
+    if (paso !== 'datos' && countErrors(visibleBasicErrors(state)) > 0) {
+      dispatch({ type: 'IR_A_PASO', paso: 'datos' });
+      dispatch({ type: 'SHOW_ERRORS' });
+      return;
+    }
+    dispatch({ type: 'IR_A_PASO', paso });
+  }
 
   return (
     <PageContainer>
@@ -253,11 +280,12 @@ export function CarreraWizard() {
           pasos={PASOS}
           pasoActual={state.paso}
           pasosVisitados={state.pasosVisitados}
-          onStepClick={(key) => dispatch({ type: 'IR_A_PASO', paso: key })}
+          onStepClick={handleStepClick}
         />
 
         {state.paso === 'datos' && <Paso1Datos state={state} dispatch={dispatch} />}
         {state.paso === 'contenido' && <Paso2Contenido state={state} dispatch={dispatch} />}
+        {guardDialog}
       </div>
     </PageContainer>
   );
