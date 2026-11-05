@@ -52,7 +52,7 @@ jobs:
     if: needs.decide.outputs.run == 'true'
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.decide.outputs.sha }}
 
