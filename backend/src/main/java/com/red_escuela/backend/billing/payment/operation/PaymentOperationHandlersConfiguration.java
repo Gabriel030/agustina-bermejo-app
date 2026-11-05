@@ -31,7 +31,7 @@ public class PaymentOperationHandlersConfiguration {
                                                        ObjectMapper objectMapper, RefundRepository refunds) {
         StoredResultMapping storedParts = new StoredResultMapping(
                 parts -> Map.of(REFUND_REQUEST_ID_FIELD, ((List<Refund>) parts).get(0).getRefundRequestId()),
-                stored -> refunds.findByRefundRequestIdOrderByIdAsc(stored.get(REFUND_REQUEST_ID_FIELD).asLong()));
+                body -> refunds.findByRefundRequestIdOrderByIdAsc(StoredResultMapping.storedId(objectMapper, body, REFUND_REQUEST_ID_FIELD)));
         return new OperationPreHandlers(BillingOperationType.ISSUE_REFUND,
                 List.of(new IdempotencyKeyHandler<IssueRefundCommand>(recordService, objectMapper, storedParts), directorAuthorizationHandler));
     }

@@ -50,7 +50,7 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
                 .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
                 .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         this.optionalKeyBeforeValidation = resultMapping != null;
-        this.resultMapping = resultMapping != null ? resultMapping : new StoredResultMapping(result -> result, node -> readJson(node.toString(), responseType));
+        this.resultMapping = resultMapping != null ? resultMapping : new StoredResultMapping(result -> result, body -> readJson(body, responseType));
     }
 
     @Override
@@ -96,7 +96,7 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
         if (replayable.status() == IdempotencyRecordService.AWAITING_AUTHORIZATION_STATUS) {
             return new BillingOperationOutcome.AwaitingAuthorization<>(readJson(replayable.body(), JsonNode.class).get(AUTHORIZATION_REQUEST_ID_FIELD).asLong());
         }
-        return new BillingOperationOutcome.Processed<>(resultMapping.fromStored().apply(readJson(replayable.body(), JsonNode.class)));
+        return new BillingOperationOutcome.Processed<>(resultMapping.fromStored().apply(replayable.body()));
     }
 
     private boolean isSkipped(C context) {

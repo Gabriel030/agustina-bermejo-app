@@ -48,7 +48,7 @@ public class CreditNoteOperationHandlersConfiguration {
     public OperationPreHandlers issueCreditNotePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler, IdempotencyRecordService recordService,
                                                            ObjectMapper objectMapper, CreditNoteRepository creditNotes) {
         StoredResultMapping storedNote = new StoredResultMapping(note -> Map.of(CREDIT_NOTE_ID_FIELD, ((CreditNote) note).getId()),
-                stored -> creditNotes.findWithLinesById(stored.get(CREDIT_NOTE_ID_FIELD).asLong()).orElseThrow());
+                body -> creditNotes.findWithLinesById(StoredResultMapping.storedId(objectMapper, body, CREDIT_NOTE_ID_FIELD)).orElseThrow());
         return new OperationPreHandlers(BillingOperationType.ISSUE_CREDIT_NOTE,
                 List.of(new IdempotencyKeyHandler<IssueCreditNoteCommand>(recordService, objectMapper, storedNote), directorAuthorizationHandler));
     }
