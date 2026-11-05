@@ -56,6 +56,17 @@ public class IdentityEmailDispatcher {
     }
 
     private MailRecipient recipientOf(Person person) {
-        return new MailRecipient(person.getId(), person.getName(), person.emailValue());
+        String email = person.emailValue();
+        return new MailRecipient(person.getId(), displayNameOf(person, email), email);
+    }
+
+    private String displayNameOf(Person person, String email) {
+        if (person.getName() != null && !person.getName().isBlank()) {
+            return person.getName();
+        }
+        if (person.getUsername() != null && !person.getUsername().isBlank()) {
+            return person.getUsername();
+        }
+        return email == null ? "" : email.split("@", 2)[0];
     }
 }
