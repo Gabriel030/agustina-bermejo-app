@@ -117,7 +117,7 @@ class StudentOnboardingTest {
         person.getAddress().setStreet("Vieja");
         when(studentRepository.findById(1L)).thenReturn(Optional.of(studentWith(person, StudentOnboardingStatus.PROSPECTO)));
 
-        studentOnboarding.saveProspectDraft(1L, new ProspectDraft(null, null, "Nueva", null, null, null, null, null, null));
+        studentOnboarding.saveProspectDraft(1L, new ProspectDraft(null, null, "Nueva", null, null, null, null, null, null, null, null, null, null, null));
 
         assertThat(person.getAddress().getStreet()).isEqualTo("Nueva");
         assertThat(person.getAddress().getCity()).isEqualTo("Rosario");
@@ -130,7 +130,7 @@ class StudentOnboardingTest {
         when(studentRepository.saveAndFlush(student)).thenThrow(new DataIntegrityViolationException("dup"));
 
         assertThatThrownBy(() -> studentOnboarding.saveProspectDraft(1L,
-                new ProspectDraft("12345678", DocumentType.DNI, null, null, null, null, null, null, null)))
+                new ProspectDraft("12345678", DocumentType.DNI, null, null, null, null, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(DniAlreadyExistsException.class);
     }
 
@@ -139,7 +139,7 @@ class StudentOnboardingTest {
         when(studentRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> studentOnboarding.saveProspectDraft(1L,
-                new ProspectDraft(null, null, null, null, null, null, null, null, null)))
+                new ProspectDraft(null, null, null, null, null, null, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(StudentNotFoundException.class);
     }
 
@@ -150,7 +150,7 @@ class StudentOnboardingTest {
         when(studentRepository.findById(1L)).thenReturn(Optional.of(student));
 
         StudentOnboardingSummary summary = studentOnboarding.confirmProspect(1L,
-                new ConfirmedProspect("12345678", DocumentType.DNI, "Calle", "1", null, "Rosario", null, null, null));
+                new ConfirmedProspect("12345678", DocumentType.DNI, "Calle", "1", null, "Rosario", null, null, null, java.time.LocalDate.of(2000, 1, 1), null, null, null, null));
 
         assertThat(summary.onboardingStatus()).isEqualTo(StudentOnboardingStatus.CONFIRMADO);
         assertThat(person.getUsername()).isEqualTo("12345678");
@@ -165,7 +165,7 @@ class StudentOnboardingTest {
         when(studentRepository.findById(1L)).thenReturn(Optional.of(student));
 
         assertThatThrownBy(() -> studentOnboarding.confirmProspect(1L,
-                new ConfirmedProspect("1", DocumentType.DNI, "c", null, null, "r", null, null, null)))
+                new ConfirmedProspect("1", DocumentType.DNI, "c", null, null, "r", null, null, null, java.time.LocalDate.of(2000, 1, 1), null, null, null, null)))
                 .isInstanceOf(ProspectAlreadyConfirmedException.class);
         verify(studentRoleGranter, never()).grantStudentRoleIfMissing(any());
     }
@@ -177,7 +177,7 @@ class StudentOnboardingTest {
         when(studentRepository.saveAndFlush(student)).thenThrow(new DataIntegrityViolationException("dup"));
 
         assertThatThrownBy(() -> studentOnboarding.confirmProspect(1L,
-                new ConfirmedProspect("12345678", DocumentType.DNI, "c", null, null, "r", null, null, null)))
+                new ConfirmedProspect("12345678", DocumentType.DNI, "c", null, null, "r", null, null, null, java.time.LocalDate.of(2000, 1, 1), null, null, null, null)))
                 .isInstanceOf(DniAlreadyExistsException.class);
     }
 }

@@ -2182,6 +2182,10 @@
       },
       "ConfirmProspectRequest" : {
         "properties" : {
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "city" : {
             "minLength" : 1,
             "type" : "string"
@@ -2197,13 +2201,29 @@
             "enum" : [ "DNI", "PASSPORT", "OTHER" ],
             "type" : "string"
           },
+          "emergencyContact" : {
+            "$ref" : "#/components/schemas/EmergencyContactRequest"
+          },
           "floor" : {
+            "type" : "string"
+          },
+          "guardian" : {
+            "$ref" : "#/components/schemas/GuardianRequest"
+          },
+          "nationality" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "number" : {
             "type" : "string"
           },
           "postalCode" : {
+            "type" : "string"
+          },
+          "sex" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "state" : {
@@ -4208,6 +4228,57 @@
         "required" : [ "description", "id", "name" ],
         "type" : "object"
       },
+      "EmergencyContactDraftRequest" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "EmergencyContactRequest" : {
+        "properties" : {
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 40,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "relationship" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "EmergencyContactResponse" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "phone", "relationship" ],
+        "type" : "object"
+      },
       "EnabledFlag" : {
         "properties" : {
           "enabled" : {
@@ -5191,6 +5262,80 @@
           }
         },
         "required" : [ "effectiveFrom", "group", "hasOpenProposal", "noticeCount", "versionId" ],
+        "type" : "object"
+      },
+      "GuardianDraftRequest" : {
+        "properties" : {
+          "documentNumber" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "email", "fullName", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "GuardianRequest" : {
+        "properties" : {
+          "documentNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 40,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "relationship" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "email", "fullName", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "GuardianResponse" : {
+        "properties" : {
+          "documentNumber" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "email", "fullName", "phone", "relationship" ],
         "type" : "object"
       },
       "HistoryCell" : {
@@ -9323,6 +9468,10 @@
       },
       "SaveProspectDraftRequest" : {
         "properties" : {
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "city" : {
             "type" : "string"
           },
@@ -9336,13 +9485,25 @@
             "enum" : [ "DNI", "PASSPORT", "OTHER" ],
             "type" : "string"
           },
+          "emergencyContact" : {
+            "$ref" : "#/components/schemas/EmergencyContactDraftRequest"
+          },
           "floor" : {
+            "type" : "string"
+          },
+          "guardian" : {
+            "$ref" : "#/components/schemas/GuardianDraftRequest"
+          },
+          "nationality" : {
             "type" : "string"
           },
           "number" : {
             "type" : "string"
           },
           "postalCode" : {
+            "type" : "string"
+          },
+          "sex" : {
             "type" : "string"
           },
           "state" : {
@@ -10307,12 +10468,21 @@
           "emailVerified" : {
             "type" : "boolean"
           },
+          "emergencyContact" : {
+            "$ref" : "#/components/schemas/EmergencyContactResponse"
+          },
+          "guardian" : {
+            "$ref" : "#/components/schemas/GuardianResponse"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
           "legajo" : {
             "type" : "string"
+          },
+          "minor" : {
+            "type" : "boolean"
           },
           "motivoBaja" : {
             "type" : "string"

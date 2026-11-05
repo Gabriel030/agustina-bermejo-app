@@ -109,7 +109,7 @@ class ProspectServiceTest {
         when(summary.email()).thenReturn("ana@test.com");
         when(studentOnboarding.confirmProspect(any(Long.class), any(ConfirmedProspect.class))).thenReturn(summary);
 
-        service.confirm(5L, new ConfirmProspectRequest("123", null, "Calle", null, null, "Ciudad", null, null, null));
+        service.confirm(5L, new ConfirmProspectRequest("123", null, "Calle", null, null, "Ciudad", null, null, null, java.time.LocalDate.of(2000, 1, 1), null, null, null, null));
 
         verify(passwordResetCodeIssuer).issuePasswordResetCode("ana@test.com");
     }
