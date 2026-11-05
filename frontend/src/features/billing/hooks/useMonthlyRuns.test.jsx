@@ -127,6 +127,6 @@ describe('useIssueMonthlyRunManually', () => {
       await result.current.mutateAsync({ period: '2026-10', simulationRunId: 5 }).catch(() => {});
     });
 
-    expect(result.current.error.code).toBe('NIGHTLY_BILLING_NOT_COMPLETED');
+    await waitFor(() => expect(result.current.error?.code).toBe('NIGHTLY_BILLING_NOT_COMPLETED'));
   });
 });
