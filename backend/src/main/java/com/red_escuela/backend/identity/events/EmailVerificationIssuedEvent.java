@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.events;
 
 import com.red_escuela.backend.shared.event.CorrelationIds;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
