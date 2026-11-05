@@ -22,6 +22,7 @@ import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
 import { useEditarAviso } from '../hooks/useEditarAviso';
 import { aPayload, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL } from '../lib/formularioDeAviso';
 import { formatearFechaHora } from '@/lib/avisos';
+import { LoadErrorState } from '@/components/LoadErrorState';
 
 export function AvisoEditar() {
   const { sectionId, avisoId } = useParams();
@@ -30,7 +31,7 @@ export function AvisoEditar() {
   const tipo = searchParams.get('type') === 'COURSE' ? 'COURSE' : 'PROGRAM';
   const esCurso = tipo === 'COURSE';
 
-  const { data: avisos, isLoading } = useAvisos(sectionId, tipo);
+  const { data: avisos, isLoading, isError, error, refetch } = useAvisos(sectionId, tipo);
   const aviso = (avisos ?? []).find((a) => String(a.id) === avisoId);
   const programado = aviso?.status === 'SCHEDULED';
 
@@ -54,6 +55,15 @@ export function AvisoEditar() {
   const editarAviso = useEditarAviso(sectionId, tipo, avisoId);
 
   const volverA = `/docente/mis-comisiones/${sectionId}?tab=avisos${esCurso ? '&type=COURSE' : ''}`;
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <h1 className="font-heading text-2xl font-bold text-ink">Editar aviso</h1>
+        <LoadErrorState error={error} onRetry={refetch} resource="el aviso" backTo={volverA} backLabel="los avisos" />
+      </PageContainer>
+    );
+  }
 
   if (!isLoading && avisos && !aviso) {
     return (

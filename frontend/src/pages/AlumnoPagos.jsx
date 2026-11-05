@@ -5,6 +5,8 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
@@ -33,11 +35,23 @@ export function AlumnoPagos() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') === 'descuentos' ? 'descuentos' : 'cuotas';
 
-  const { data: cursos, isLoading: cargandoCursos } = useMisCursos();
-  const { data: carreras, isLoading: cargandoCarreras } = useMisMatriculaciones();
-  const { data: standings } = useEnrollmentPaymentStatus();
+  const { data: cursos, isLoading: cargandoCursos, isError: cursosFallaron, refetch: recargarCursos } = useMisCursos();
+  const {
+    data: carreras,
+    isLoading: cargandoCarreras,
+    isError: carrerasFallaron,
+    refetch: recargarCarreras,
+  } = useMisMatriculaciones();
+  const { data: standings, isError: standingsFallaron, refetch: recargarStandings } = useEnrollmentPaymentStatus();
 
   const cargando = cargandoCursos || cargandoCarreras;
+  const inscripcionesFallaron = cursosFallaron || carrerasFallaron;
+
+  function recargarTodo() {
+    if (cursosFallaron) recargarCursos();
+    if (carrerasFallaron) recargarCarreras();
+    if (standingsFallaron) recargarStandings();
+  }
 
   function findStanding(enrollmentType, id) {
     return standings?.find((s) => s.enrollmentType === enrollmentType && s.enrollmentId === id)?.paymentStatus ?? null;
@@ -110,13 +124,26 @@ export function AlumnoPagos() {
             </div>
           )}
 
-          {!cargando && enrollments.length === 0 && (
+          {!cargando && inscripcionesFallaron && (
+            <LoadErrorState onRetry={recargarTodo} resource="tus inscripciones" bare />
+          )}
+
+          {!cargando && !inscripcionesFallaron && standingsFallaron && (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm text-ink">
+              <span>No pudimos cargar el estado de tus pagos, así que no podemos mostrarte si tenés deuda.</span>
+              <Button variant="outline" size="sm" onClick={recargarTodo}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          {!cargando && !inscripcionesFallaron && enrollments.length === 0 && (
             <p className="px-5 py-10 text-center text-sm text-ink-faint">
               {busqueda ? 'No hay resultados para esa búsqueda.' : 'No tenés inscripciones activas.'}
             </p>
           )}
 
-          {!cargando && enrollments.length > 0 && (
+          {!cargando && !inscripcionesFallaron && enrollments.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>

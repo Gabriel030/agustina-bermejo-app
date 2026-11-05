@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { useCurso } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hooks/useCiclos';
@@ -32,10 +33,11 @@ function formatHora(t) {
 
 function SeccionDetalle({ ciclo }) {
   const basePath = useRoleBasePath();
-  const { data: secciones, isLoading } = useCicloSecciones(ciclo.id);
+  const { data: secciones, isLoading, isError, error, refetch } = useCicloSecciones(ciclo.id);
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
 
   if (isLoading) return <Skeleton className="h-[120px] w-full rounded-2xl" />;
+  if (isError) return <LoadErrorState error={error} onRetry={refetch} resource="la comisión" />;
 
   const seccion = secciones?.[0];
 
@@ -130,8 +132,20 @@ export function PreceptorDetalleCurso() {
   const { cursoId } = useParams();
   const navigate = useNavigate();
   const basePath = useRoleBasePath();
-  const { data: curso, isLoading: loadingCurso } = useCurso(cursoId);
-  const { data: ciclos, isLoading: loadingCiclos } = useCiclos({ courseId: cursoId });
+  const {
+    data: curso,
+    isLoading: loadingCurso,
+    isError: cursoFailed,
+    error: cursoError,
+    refetch: refetchCurso,
+  } = useCurso(cursoId);
+  const {
+    data: ciclos,
+    isLoading: loadingCiclos,
+    isError: ciclosFailed,
+    error: ciclosError,
+    refetch: refetchCiclos,
+  } = useCiclos({ courseId: cursoId });
 
   const cicloActivo = (ciclos ?? []).find(
     (c) => c.status === 'DRAFT' || c.status === 'PENDING_APPROVAL' || c.status === 'APPROVED'
@@ -141,6 +155,20 @@ export function PreceptorDetalleCurso() {
     return (
       <PageContainer>
         <Skeleton className="h-8 w-48 rounded-xl" />
+      </PageContainer>
+    );
+  }
+
+  if (cursoFailed) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={cursoError}
+          onRetry={refetchCurso}
+          resource="el curso"
+          backTo={`${basePath}/oferta-academica?tab=cursos`}
+          backLabel="la oferta académica"
+        />
       </PageContainer>
     );
   }
@@ -167,6 +195,8 @@ export function PreceptorDetalleCurso() {
 
         {loadingCiclos ? (
           <Skeleton className="h-[200px] w-full rounded-2xl" />
+        ) : ciclosFailed ? (
+          <LoadErrorState error={ciclosError} onRetry={refetchCiclos} resource="los ciclos" />
         ) : !cicloActivo ? (
           <GlassCard className="p-6">
             <EmptyState title="No hay ningún ciclo activo para este curso." />

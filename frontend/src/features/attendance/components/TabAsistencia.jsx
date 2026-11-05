@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMisInscripciones } from '@/features/enrollment';
@@ -40,7 +41,7 @@ const ESTADO_PILL = {
 //   (listado de clases + riesgo) solo se paga para la materia que el alumno
 //   realmente abre, no para todas las que están en curso.
 export function TabAsistencia({ carreraId }) {
-  const { data: inscripciones, isLoading } = useMisInscripciones();
+  const { data: inscripciones, isLoading, isError, error, refetch } = useMisInscripciones();
   const [subTab, setSubTab] = useState('en-curso');
   const [expandidoId, setExpandidoId] = useState(null);
 
@@ -73,6 +74,8 @@ export function TabAsistencia({ carreraId }) {
           <Skeleton className="h-16" />
           <Skeleton className="h-16" />
         </div>
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="tus materias" bare />
       ) : lista.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8">
           <EmptyState

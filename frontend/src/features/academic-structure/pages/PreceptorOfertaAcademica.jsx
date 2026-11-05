@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useProgramas, useCursos } from '@/hooks/useCatalogo';
 import { useCiclos } from '@/features/academic-structure/hooks/useCiclos';
 import { formatCourseDuration } from '@/lib/courseDuration';
@@ -35,7 +36,8 @@ function useCiclosPorCurso(courseId) {
   return useCiclos({ courseId });
 }
 
-function BadgeCiclo({ ciclo }) {
+function BadgeCiclo({ ciclo, failed = false }) {
+  if (failed) return <StatusPill tone="neutral">Ciclo no disponible</StatusPill>;
   if (!ciclo) return null;
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
   return <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>;
@@ -43,7 +45,7 @@ function BadgeCiclo({ ciclo }) {
 
 function FilaPrograma({ programa, navigate }) {
   const basePath = useRoleBasePath();
-  const { data: ciclos } = useCiclosPorPrograma(programa.id);
+  const { data: ciclos, isError: ciclosFailed } = useCiclosPorPrograma(programa.id);
   const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
 
   return (
@@ -57,7 +59,7 @@ function FilaPrograma({ programa, navigate }) {
         <span className="text-[12px] text-ink-faint">{programa.totalYears} {programa.totalYears === 1 ? 'año' : 'años'}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <BadgeCiclo ciclo={cicloActivo} />
+        <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
     </button>
@@ -66,7 +68,7 @@ function FilaPrograma({ programa, navigate }) {
 
 function FilaCurso({ curso, navigate }) {
   const basePath = useRoleBasePath();
-  const { data: ciclos } = useCiclosPorCurso(curso.id);
+  const { data: ciclos, isError: ciclosFailed } = useCiclosPorCurso(curso.id);
   const cicloActivo = ciclos?.find((c) => c.status === 'APPROVED' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT');
 
   return (
@@ -80,14 +82,14 @@ function FilaCurso({ curso, navigate }) {
         <span className="text-[12px] text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <BadgeCiclo ciclo={cicloActivo} />
+        <BadgeCiclo ciclo={cicloActivo} failed={ciclosFailed} />
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
     </button>
   );
 }
 
-function ListaFiltrada({ items, isLoading, renderFila, emptyText }) {
+function ListaFiltrada({ items, isLoading, isError, error, onRetry, resource, renderFila, emptyText }) {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-1">
@@ -97,6 +99,7 @@ function ListaFiltrada({ items, isLoading, renderFila, emptyText }) {
       </div>
     );
   }
+  if (isError) return <LoadErrorState error={error} onRetry={onRetry} resource={resource} bare />;
   if (!items?.length) return <EmptyState title={emptyText} className="py-8" />;
   return <div className="flex flex-col gap-1">{items.map(renderFila)}</div>;
 }
@@ -116,8 +119,8 @@ export function PreceptorOfertaAcademica() {
     setSearchParams((prev) => { prev.set('tab', tab); return prev; }, { replace: true });
   }
 
-  const { data: programas, isLoading: loadingProgramas } = useProgramas();
-  const { data: cursos, isLoading: loadingCursos } = useCursos();
+  const { data: programas, isLoading: loadingProgramas, isError: programasFailed, error: programasError, refetch: refetchProgramas } = useProgramas();
+  const { data: cursos, isLoading: loadingCursos, isError: cursosFailed, error: cursosError, refetch: refetchCursos } = useCursos();
 
   const programasFiltrados = (programas ?? []).filter((p) =>
     p.name.toLowerCase().includes(busqueda.toLowerCase())
@@ -161,6 +164,10 @@ export function PreceptorOfertaAcademica() {
               <ListaFiltrada
                 items={programasFiltrados}
                 isLoading={loadingProgramas}
+                isError={programasFailed}
+                error={programasError}
+                onRetry={refetchProgramas}
+                resource="las carreras"
                 emptyText="No se encontraron carreras."
                 renderFila={(p) => <FilaPrograma key={p.id} programa={p} navigate={navigate} />}
               />
@@ -170,6 +177,10 @@ export function PreceptorOfertaAcademica() {
               <ListaFiltrada
                 items={cursosFiltrados}
                 isLoading={loadingCursos}
+                isError={cursosFailed}
+                error={cursosError}
+                onRetry={refetchCursos}
+                resource="los cursos"
                 emptyText="No se encontraron cursos."
                 renderFila={(c) => <FilaCurso key={c.id} curso={c} navigate={navigate} />}
               />
