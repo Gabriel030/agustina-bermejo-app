@@ -503,6 +503,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | StudyPlanNotCompletedPolicy | PLAN_COMPLETED | D-038 |
 | 4 | PaymentPlanChosenPolicy | NO_PAYMENT_PLAN | D-050 |
 
+## Momento PROVIDED_IDEMPOTENCY_KEY_FORMAT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ProvidedIdempotencyKeyFormatPolicy | IDEMPOTENCY_KEY_INVALID | D-136 |
+
 ## Momento RECEIPT_APPROVAL
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -940,7 +946,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 ## Operación ISSUE_CREDIT_NOTE
 
 - Validaciones (momentos): CREDIT_NOTE_ISSUING
-- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Pre-procesamiento (en orden): IdempotencyKeyHandler, DirectorAuthorizationHandler
 - Eventos que publica: CreditNoteIssuedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
 - Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
@@ -972,7 +978,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 ## Operación ISSUE_REFUND
 
 - Validaciones (momentos): REFUND_REQUEST_FORMAT, REFUND_AVAILABILITY, REFUND_DESTINATION
-- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Pre-procesamiento (en orden): IdempotencyKeyHandler, DirectorAuthorizationHandler
 - Eventos que publica: RefundApprovedEvent
 - Post-procesamiento de RefundApprovedEvent: —
 

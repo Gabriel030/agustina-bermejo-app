@@ -516,12 +516,15 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | Método | Ruta | Handler |
 |---|---|---|
 | POST | `/course-enrollments/{id}/invoices/ad-hoc` | `CourseEnrollmentController#createAdHocInvoice` |
+| POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/me/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitOwnReceipt` |
 | POST | `/me/course-enrollments` | `MeEnrollmentController#enrollInCourse` |
+| POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
 | POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
 | POST | `/students/{studentId}/cash-payments` | `StudentPaymentController#registerCashPayment` |
+| POST | `/students/{studentId}/refund-requests` | `RefundController#requestRefundOnBehalfOfStudent` |
 
 ### Idempotency-Key no
 
@@ -612,7 +615,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/holidays` | `HolidayController#create` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
-| POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/late-payment-settings` | `LatePaymentSettingsController#create` |
 | POST | `/me/annual-upfront-requests/{id}/discard` | `AnnualUpfrontRequestController#discardAnnualUpfrontRequest` |
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
@@ -626,7 +628,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |
 | POST | `/me/program-enrollment-applications/{id}/documents` | `ProgramEnrollmentApplicationController#addDocument` |
 | POST | `/me/program-enrollments/{id}/graduation-request` | `MeGraduationRequestController#request` |
-| POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/me/refund-requests/preview` | `RefundPreviewController#previewOwnRefund` |
 | POST | `/me/section-enrollments` | `MeEnrollmentController#enroll` |
 | POST | `/me/section-enrollments/{id}/change-section` | `MeEnrollmentController#changeMySection` |
@@ -695,7 +696,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/students/{id}/withdraw` | `StudentController#withdraw` |
 | POST | `/students/{studentId}/cash-payments/preview` | `StudentPaymentController#previewCashPayment` |
 | POST | `/students/{studentId}/current-account/allocations` | `CurrentAccountAllocationController#allocateCredit` |
-| POST | `/students/{studentId}/refund-requests` | `RefundController#requestRefundOnBehalfOfStudent` |
 | POST | `/students/{studentId}/refund-requests/preview` | `RefundPreviewController#previewRefundOnBehalfOfStudent` |
 | POST | `/subject-sections/{id}/modification-request` | `AcademicOfferingCycleController#requestSectionModification` |
 | POST | `/subject-sections/{id}/modification-request/approve` | `AcademicOfferingCycleController#approveSectionModification` |

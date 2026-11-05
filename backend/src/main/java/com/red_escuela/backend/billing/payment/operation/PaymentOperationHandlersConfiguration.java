@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmiss
 import com.red_escuela.backend.billing.payment.domain.CashPaymentRegistrationResult;
 import com.red_escuela.backend.billing.note.domain.CreditNote;
 import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
-import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
+import com.red_escuela.backend.billing.note.service.StoredCreditNoteLoader;
 import com.red_escuela.backend.billing.payment.domain.Refund;
 import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyCheck;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -33,9 +33,9 @@ public class PaymentOperationHandlersConfiguration {
 
     @Bean
     public OperationPreHandlers issueCreditNotePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler, IdempotencyRecordService recordService,
-                                                           ObjectMapper objectMapper, CreditNoteRepository creditNotes, PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
+                                                           ObjectMapper objectMapper, StoredCreditNoteLoader creditNotes, PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
         StoredResultMapping storedNote = new StoredResultMapping(note -> Map.of(CREDIT_NOTE_ID_FIELD, ((CreditNote) note).getId()),
-                body -> creditNotes.findWithLinesById(StoredResultMapping.storedId(objectMapper, body, CREDIT_NOTE_ID_FIELD)).orElseThrow());
+                body -> creditNotes.loadCreditNoteWithLines(StoredResultMapping.storedId(objectMapper, body, CREDIT_NOTE_ID_FIELD)));
         return new OperationPreHandlers(BillingOperationType.ISSUE_CREDIT_NOTE,
                 List.of(new IdempotencyKeyHandler<IssueCreditNoteCommand>(recordService, objectMapper, storedNote, keyFormatPolicies), directorAuthorizationHandler));
     }

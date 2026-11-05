@@ -36,11 +36,6 @@ import java.util.List;
 public class CreditNoteOperationHandlersConfiguration {
 
     @Bean
-    public OperationPreHandlers issueCreditNotePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
-        return new OperationPreHandlers(BillingOperationType.ISSUE_CREDIT_NOTE, List.of(directorAuthorizationHandler));
-    }
-
-    @Bean
     public OperationPreHandlers cancelInvoicePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
         return new OperationPreHandlers(BillingOperationType.CANCEL_INVOICE, List.of(directorAuthorizationHandler));
     }

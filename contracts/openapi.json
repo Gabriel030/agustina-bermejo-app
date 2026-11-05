@@ -32081,6 +32081,13 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
@@ -32111,7 +32118,7 @@
                 }
               }
             },
-            "description" : "Bad Request"
+            "description" : "IDEMPOTENCY_KEY_INVALID: la clave está vacía o tiene más de 100 caracteres"
           },
           "401" : {
             "content" : {
@@ -32151,7 +32158,7 @@
                 }
               }
             },
-            "description" : "Conflict"
+            "description" : "IDEMPOTENCY_KEY_CONFLICT: la misma clave se usó con otro pedido"
           },
           "429" : {
             "content" : {
@@ -39241,6 +39248,14 @@
       },
       "post" : {
         "operationId" : "Refund_requestOwnRefund",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -39270,7 +39285,7 @@
                 }
               }
             },
-            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"
+            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED, IDEMPOTENCY_KEY_INVALID"
           },
           "401" : {
             "content" : {
@@ -39310,7 +39325,7 @@
                 }
               }
             },
-            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT"
+            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264), REFUND_EXCEEDS_AVAILABLE_AMOUNT o IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido)"
           },
           "429" : {
             "content" : {
@@ -60083,6 +60098,13 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
@@ -60123,7 +60145,7 @@
                 }
               }
             },
-            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"
+            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED, IDEMPOTENCY_KEY_INVALID"
           },
           "401" : {
             "content" : {
@@ -60163,7 +60185,7 @@
                 }
               }
             },
-            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT"
+            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264), REFUND_EXCEEDS_AVAILABLE_AMOUNT o IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido)"
           },
           "429" : {
             "content" : {
