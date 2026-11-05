@@ -127,6 +127,31 @@ describe('RequestRefundPage', () => {
     expect(screen.queryByLabelText('Monto')).not.toBeInTheDocument();
   });
 
+  it('sends 80,50 when the user types 80.5 with a dot decimal', async () => {
+    const received = [];
+    mockPreview(previewResponse(), (body) => received.push(body));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+
+    await fillForm(user, { amount: '80.5' });
+
+    await waitFor(() => expect(received.at(-1)?.amount).toEqual(money('80.50')));
+  });
+
+  it('fills the amount with the maximum refundable when asked', async () => {
+    const received = [];
+    mockPreview(previewResponse(), (body) => received.push(body));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+
+    await user.click(screen.getByRole('button', { name: 'Usar el máximo' }));
+
+    expect(screen.getByLabelText('Monto')).toHaveValue('80.000,00');
+    await waitFor(() => expect(received.at(-1)?.amount).toEqual(money('80000.00')));
+  });
+
   it('shows the split calculated by the backend after the debounce', async () => {
     const received = [];
     mockPreview(previewResponse(), (body) => received.push(body));
