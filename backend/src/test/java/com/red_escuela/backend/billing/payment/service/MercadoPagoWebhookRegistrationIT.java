@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.payment.service;
 
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;

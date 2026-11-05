@@ -195,6 +195,16 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-173")
+    void billingUseCasesMayDependOnSubdomainServicesButNotOnSubdomainExceptions() {
+        String billingFixtures = ArchitectureRules.ROOT + ".architecture.fixture.billing";
+        assertThatThrownBy(() -> ArchitectureRules.useCasesDependOnlyOnPortsRepositoriesAndPolicies(billingFixtures).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UseCaseUsingSubdomainExceptionFixture")
+                .hasMessageNotContaining("UseCaseUsingSubdomainServiceFixture");
+    }
+
+    @Test
     @Tag("D-051")
     @Tag("D-173")
     void subdomainsDoNotUseOtherSubdomainRepositories() {

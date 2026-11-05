@@ -165,7 +165,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceFetching(com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher fetcher, MpWebhookSignatureVerifier verifier) {
-        return new ProcessMpWebhookService(new com.red_escuela.backend.billing.service.MercadoPagoWebhookRegistration(registrationPort, fetcher, verifier));
+        return new ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort, fetcher, verifier));
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {

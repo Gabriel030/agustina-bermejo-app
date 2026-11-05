@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
-import com.red_escuela.backend.billing.service.MercadoPagoWebhookRegistration;
+import com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

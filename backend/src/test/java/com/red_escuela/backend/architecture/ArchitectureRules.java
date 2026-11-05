@@ -25,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -228,12 +230,16 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule useCasesDependOnlyOnPortsRepositoriesAndPolicies(String subdomain) {
+        List<String> allowedPackages = new ArrayList<>(List.of(
+                subdomain + ".repository..", subdomain + ".policy..", subdomain + ".domain..", subdomain + ".service..",
+                subdomain + ".dto..", subdomain + ".usecase..", subdomain + ".events..", ROOT + ".shared..", ROOT + ".billing.operation..",
+                "java..", "org.springframework..", "jakarta.transaction..", "org.slf4j.."));
+        if (subdomain.endsWith(".billing")) {
+            allowedPackages.add(subdomain + ".*.service..");
+        }
         return classes()
                 .that().resideInAPackage(subdomain + ".usecase..")
-                .should().onlyDependOnClassesThat().resideInAnyPackage(
-                        subdomain + ".repository..", subdomain + ".policy..", subdomain + ".domain..", subdomain + ".service..",
-                        subdomain + ".dto..", subdomain + ".usecase..", subdomain + ".events..", ROOT + ".shared..", ROOT + ".billing.operation..",
-                        "java..", "org.springframework..", "jakarta.transaction..", "org.slf4j..")
+                .should().onlyDependOnClassesThat().resideInAnyPackage(allowedPackages.toArray(String[]::new))
                 .allowEmptyShould(true)
                 .because("a use case orchestrates ports, repositories and policies of its own subdomain");
     }

@@ -319,7 +319,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     private Long mercadoPagoPays(Long invoiceId, long amount) {
         String mpPaymentId = "mp-" + System.nanoTime();
-        ProcessMpWebhookService service = new ProcessMpWebhookService(new com.red_escuela.backend.billing.service.MercadoPagoWebhookRegistration(registrationPort,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
                 id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(amount)), 1)),
                 new MpWebhookSignatureVerifier("", true)));
         service.process("", "request-" + System.nanoTime(), mpPaymentId);
