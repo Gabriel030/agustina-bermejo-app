@@ -351,6 +351,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ENROLLMENT_FEE_EXEMPTION_NOT_NEEDED` | no | `EnrollmentFeeExemptionNotNeededException` | enrollment |
 | `EVALUATION_SCHEME_IN_USE` | no | `EvaluationSchemeInUseException` | evaluation |
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
+| `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
@@ -592,8 +593,10 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/evaluation-schemes` | `EvaluationSchemeController#create` |
 | POST | `/exam-board-registrations/{id}/withdraw` | `ExamBoardRegistrationController#withdraw` |
 | POST | `/exam-boards` | `ExamBoardController#create` |
+| POST | `/exam-boards/{id}/cancel` | `ExamBoardChangeController#cancel` |
 | POST | `/exam-boards/{id}/close` | `ExamBoardController#close` |
 | POST | `/exam-boards/{id}/registrations` | `ExamBoardRegistrationController#register` |
+| POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |

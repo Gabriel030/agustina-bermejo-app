@@ -11,7 +11,8 @@ import com.red_escuela.backend.academicstructure.dto.InstructorSummaryResponse;
 public record ExamBoardResponse(
         Long id, Long subjectId, String subjectName, Long courseSubjectId, String courseSubjectName, Long termId,
         LocalDateTime examDate, @Schema(nullable = true) LocalDateTime registrationStart, @Schema(nullable = true) LocalDateTime registrationEnd,
-        @Schema(nullable = true) String classroom, String status, List<Long> tribunalInstructorIds, List<InstructorSummaryResponse> tribunal) {
+        @Schema(nullable = true) String classroom, String status, List<Long> tribunalInstructorIds, List<InstructorSummaryResponse> tribunal,
+        @Schema(nullable = true) LocalDateTime canceledAt, @Schema(nullable = true) String cancelReason, @Schema(nullable = true) LocalDateTime rescheduledFrom) {
 
     public static ExamBoardResponse from(ExamBoard examBoard) {
         List<ExamBoardInstructor> asignaciones = examBoard.getTribunal() == null ? List.of() : examBoard.getTribunal();
@@ -31,6 +32,9 @@ public record ExamBoardResponse(
                 examBoard.getClassroom(),
                 examBoard.getStatus().name(),
                 tribunalIds,
-                tribunal);
+                tribunal,
+                examBoard.getCanceledAt(),
+                examBoard.getCancelReason(),
+                examBoard.getRescheduledFrom());
     }
 }

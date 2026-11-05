@@ -137,9 +137,11 @@ POST,/exam-board-registrations/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DEN
 GET,/exam-boards,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards/{id},DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards/{id}/registrations,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards/{id}/registrations,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
+POST,/exam-boards/{id}/reschedule,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/tribunal,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/financial-dashboard,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/financial-dashboard/debtors,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,

@@ -1563,6 +1563,17 @@
         "required" : [ "code", "message" ],
         "type" : "object"
       },
+      "CancelExamBoardRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "CancelInvoiceRequest" : {
         "properties" : {
           "justification" : {
@@ -4497,6 +4508,13 @@
       },
       "ExamBoardResponse" : {
         "properties" : {
+          "cancelReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "canceledAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "classroom" : {
             "type" : [ "string", "null" ]
           },
@@ -4520,6 +4538,10 @@
             "type" : [ "string", "null" ]
           },
           "registrationStart" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "rescheduledFrom" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
           },
@@ -4551,7 +4573,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "classroom", "courseSubjectId", "courseSubjectName", "examDate", "id", "registrationEnd", "registrationStart", "status", "subjectId", "subjectName", "termId", "tribunal", "tribunalInstructorIds" ],
+        "required" : [ "cancelReason", "canceledAt", "classroom", "courseSubjectId", "courseSubjectName", "examDate", "id", "registrationEnd", "registrationStart", "rescheduledFrom", "status", "subjectId", "subjectName", "termId", "tribunal", "tribunalInstructorIds" ],
         "type" : "object"
       },
       "ExceptionPolicy" : {
@@ -8821,6 +8843,29 @@
           }
         },
         "required" : [ "amount", "destinationAccount", "destinationHolder" ],
+        "type" : "object"
+      },
+      "RescheduleExamBoardRequest" : {
+        "properties" : {
+          "classroom" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "examDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "registrationEnd" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "registrationStart" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "classroom", "examDate", "registrationEnd", "registrationStart" ],
         "type" : "object"
       },
       "ResetPasswordRequest" : {
@@ -28209,7 +28254,7 @@
           "name" : "status",
           "required" : false,
           "schema" : {
-            "enum" : [ "SCHEDULED", "CLOSED" ],
+            "enum" : [ "SCHEDULED", "CLOSED", "CANCELED" ],
             "type" : "string"
           }
         } ],
@@ -28552,6 +28597,133 @@
           }
         },
         "tags" : [ "exam-board-controller" ]
+      }
+    },
+    "/exam-boards/{id}/cancel" : {
+      "post" : {
+        "operationId" : "ExamBoardChange_cancel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelExamBoardRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExamBoardResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-board-change-controller" ]
       }
     },
     "/exam-boards/{id}/close" : {
@@ -28907,6 +29079,133 @@
           }
         },
         "tags" : [ "exam-board-registration-controller" ]
+      }
+    },
+    "/exam-boards/{id}/reschedule" : {
+      "post" : {
+        "operationId" : "ExamBoardChange_reschedule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RescheduleExamBoardRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExamBoardResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "exam-board-change-controller" ]
       }
     },
     "/exam-boards/{id}/tribunal" : {
