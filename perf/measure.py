@@ -1,8 +1,10 @@
-import json, os, statistics, subprocess, sys, time, urllib.request, urllib.error
+import json, os, re, statistics, subprocess, sys, time, urllib.request, urllib.error
 
 BASE = os.environ.get("PERF_BASE", "http://localhost:8461")
 CONTAINER = os.environ.get("PERF_PG", "perf-a0-pg")
 RUNS = int(os.environ.get("PERF_RUNS", "50"))
+BUDGET_PATH = os.environ.get("PERF_BUDGET", "perf/budget.json")
+LATEST_PATH = os.environ.get("PERF_LATEST", "perf/out/latest.json")
 PASSWORD = "Test1234"
 SECTION = 14011
 ENROLLMENT = 20001
@@ -78,7 +80,20 @@ def query_count(path, token):
     return int(psql("select coalesce(sum(calls),0) from pg_stat_statements where query not ilike '%pg_stat_statements%'") or 0)
 
 
+def endpoint_key(path):
+    return re.sub(r"/\d+(?=/|$)", "/{id}", path.split("?")[0])
+
+
+def load_budget():
+    try:
+        return json.load(open(BUDGET_PATH))
+    except FileNotFoundError:
+        return {}
+
+
 def main():
+    budget = load_budget()
+    latest = {}
     tokens = {}
     login_times = []
     for role, user in USERS.items():
@@ -94,8 +109,14 @@ def main():
             status, size, ms = get(path, token)
             times.append(ms)
         results.append({"role": role, "name": name, "path": path, "status": status, "size": size, "p50": pct(times, 50), "p95": pct(times, 95), "p99": pct(times, 99), "queries": query_count(path, token)})
-        print(json.dumps(results[-1]), flush=True)
+        key = endpoint_key(path)
+        if key not in latest:
+            row = results[-1]
+            latest[key] = {"role": role, "p50": round(row["p50"], 1), "p95": round(row["p95"], 1), "p99": round(row["p99"], 1), "queries": row["queries"], "bytes": row["size"]}
+        print(json.dumps({**results[-1], "budget": budget.get(key)}), flush=True)
     json.dump(results, open(os.environ.get("PERF_OUT", "results.json"), "w"), indent=1)
+    os.makedirs(os.path.dirname(LATEST_PATH) or ".", exist_ok=True)
+    json.dump(latest, open(LATEST_PATH, "w"), indent=1)
 
 
 if __name__ == "__main__":

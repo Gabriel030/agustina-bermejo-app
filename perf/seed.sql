@@ -1,4 +1,5 @@
 \set ON_ERROR_STOP on
+create extension if not exists pg_stat_statements;
 BEGIN;
 INSERT INTO term (id, year_number, start_date, end_date, description, type, status, enrollment_start, enrollment_end, enrollment_override)
 SELECT 100+g, 2022+g, make_date(2022+g,3,1), make_date(2022+g,12,20), 'Ciclo '||(2022+g), 'ANNUAL', 'INACTIVE', make_date(2022+g,1,1), make_date(2022+g,12,20), 'OPEN'
