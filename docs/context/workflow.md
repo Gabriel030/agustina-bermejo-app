@@ -86,3 +86,11 @@ Solo el usuario abre PRs contra `master`. Hay dos caminos:
 ## 7. CI de GitHub (costo)
 
 `ci.yml` corre en PRs y en push a `develop`/`master`, cancela corridas viejas del mismo PR y **no corre si el cambio es solo `.md` o `docs/`**. Si se activan checks requeridos en la protección de rama, revisar que el filtro de paths no deje el check "omitido" y bloquee el merge de PRs de docs.
+
+### Seguridad de dependencias y secretos
+
+- `.github/dependabot.yml` abre PRs semanales contra `develop` para Maven, npm y GitHub Actions (máx. 5 abiertos por ecosistema).
+- `security-nightly.yml` (07:00 UTC y `workflow_dispatch`) corre `dependency-check` (falla con CVSS >= 7, usa el secreto `NVD_API_KEY`), `npm run audit:prod` (falla con severidad alta; `audit:all` es informativo) y `gitleaks` sobre todo el historial.
+- `ci.yml` suma `secret-scan-pr`: gitleaks sobre los commits de cada PR. La configuración es `.gitleaks.toml` (permite solo la contraseña demo `Test1234`).
+- Local: `cd backend && ./mvnw -B -ntp -Pdependency-check verify -DskipTests` (lento sin `NVD_API_KEY`), `cd frontend && npm run audit:prod`, `docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --config /repo/.gitleaks.toml --no-banner`.
+- `ProductionProfileHardeningIT` verifica que sin perfil `local`/`demo` no hay seeds, Swagger ni `simulated-emails`, y que el actuator no expone `env`/`heapdump`.
