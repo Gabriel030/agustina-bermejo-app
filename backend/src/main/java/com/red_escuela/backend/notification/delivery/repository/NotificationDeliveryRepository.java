@@ -36,10 +36,11 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
 
     @Query("""
             select d.id from NotificationDelivery d
-            where d.channel = :channel and d.status in :statuses and d.scheduledFor = :scheduledFor
+            where d.channel = :channel and d.category = :category and d.status in :statuses and d.scheduledFor = :scheduledFor
               and (d.notBefore is null or d.notBefore <= :now) and d.id > :afterId
             order by d.id""")
-    List<Long> findDispatchableIds(@Param("channel") DeliveryChannel channel, @Param("statuses") List<DeliveryStatus> statuses,
+    List<Long> findDispatchableIds(@Param("channel") DeliveryChannel channel, @Param("category") DeliveryCategory category,
+                                   @Param("statuses") List<DeliveryStatus> statuses,
                                    @Param("scheduledFor") LocalDate scheduledFor, @Param("now") Instant now,
                                    @Param("afterId") Long afterId, Pageable pageable);
 
@@ -47,10 +48,11 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = SKIP_LOCKED_TIMEOUT))
     @Query("""
             select d from NotificationDelivery d
-            where d.channel = :channel and d.status in :statuses and d.scheduledFor = :scheduledFor
+            where d.channel = :channel and d.category = :category and d.status in :statuses and d.scheduledFor = :scheduledFor
               and (d.notBefore is null or d.notBefore <= :now)
             order by d.priority, d.id""")
-    List<NotificationDelivery> lockDispatchableByPriority(@Param("channel") DeliveryChannel channel, @Param("statuses") List<DeliveryStatus> statuses,
+    List<NotificationDelivery> lockDispatchableByPriority(@Param("channel") DeliveryChannel channel, @Param("category") DeliveryCategory category,
+                                                          @Param("statuses") List<DeliveryStatus> statuses,
                                                           @Param("scheduledFor") LocalDate scheduledFor, @Param("now") Instant now);
 
     @Query("""

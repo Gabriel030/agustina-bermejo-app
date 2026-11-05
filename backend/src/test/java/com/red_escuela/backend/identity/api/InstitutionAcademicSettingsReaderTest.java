@@ -21,7 +21,7 @@ class InstitutionAcademicSettingsReaderTest {
 
         assertThat(reader.read()).isEqualTo(InstitutionAcademicSettings.DEFAULTS);
         assertThat(InstitutionAcademicSettings.DEFAULTS)
-                .isEqualTo(new InstitutionAcademicSettings(5, 15));
+                .isEqualTo(new InstitutionAcademicSettings(5, 15, false));
     }
 
     @Test
@@ -29,9 +29,10 @@ class InstitutionAcademicSettingsReaderTest {
         Institution institution = new Institution();
         institution.setJustificationDeadlineBusinessDays(3);
         institution.setEvaluationConfigDueDays(30);
+        institution.setAnnouncementEmailEnabled(true);
         when(repository.findAll()).thenReturn(List.of(institution));
 
-        assertThat(reader.read()).isEqualTo(new InstitutionAcademicSettings(3, 30));
+        assertThat(reader.read()).isEqualTo(new InstitutionAcademicSettings(3, 30, true));
     }
 
     @Test
@@ -39,7 +40,7 @@ class InstitutionAcademicSettingsReaderTest {
         Institution institution = new Institution();
 
         assertThat(new InstitutionAcademicSettings(
-                institution.getJustificationDeadlineBusinessDays(), institution.getEvaluationConfigDueDays()))
+                institution.getJustificationDeadlineBusinessDays(), institution.getEvaluationConfigDueDays(), institution.isAnnouncementEmailEnabled()))
                 .isEqualTo(InstitutionAcademicSettings.DEFAULTS);
     }
 }
