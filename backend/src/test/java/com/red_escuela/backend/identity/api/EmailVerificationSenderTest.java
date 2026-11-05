@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.service.EmailVerificationIssuedEvent;
+import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
