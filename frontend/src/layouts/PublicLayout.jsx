@@ -1,6 +1,7 @@
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { SkipToContent } from "@/components/SkipToContent";
+import { SystemBar } from "@/pwa/SystemBar";
 
 // Login/Registrarse/NoAutorizado no cuelgan de RoleShell (no hay sidebar/rol
 // todavía) así que no heredaban su fade de transición entre pantallas — mismo
@@ -13,6 +14,7 @@ export function PublicLayout() {
   return (
     <>
       <SkipToContent />
+      <SystemBar />
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
