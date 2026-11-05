@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.entity.NotificationPreference;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.NotificationPreferenceRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.domain.EmittedNotificationEvents;
 import com.red_escuela.backend.identity.domain.MandatoryNotificationChannels;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -69,10 +70,10 @@ class NotificationPreferencesServicesTest {
         NotificationPreferencesResponse response = getService.getPreferences();
 
         assertThat(response.mandatoryChannels().get("PAYMENT_DUE_SOON")).containsExactly("APP");
-        assertThat(response.mandatoryChannels().get("GRADE_POSTED")).isEmpty();
-        assertThat(response.mandatoryChannels()).hasSameSizeAs(NotificationEvent.values());
+        assertThat(response.mandatoryChannels().get("EXAM_BOARD_REGISTERED")).isEmpty();
+        assertThat(response.mandatoryChannels()).hasSameSizeAs(EmittedNotificationEvents.visible());
         assertThat(response.preferences().get("PAYMENT_DUE_SOON")).containsEntry("APP", true).containsEntry("EMAIL", false);
-        assertThat(response.preferences().get("GRADE_POSTED")).containsEntry("APP", true).containsEntry("EMAIL", true);
+        assertThat(response.preferences().get("EXAM_BOARD_REGISTERED")).containsEntry("APP", true).containsEntry("EMAIL", true);
     }
 
     @Test
@@ -98,6 +99,27 @@ class NotificationPreferencesServicesTest {
         updateService.updatePreferences(new UpdateNotificationPreferencesRequest(Map.of("PAYMENT_DUE_SOON", Map.of("APP", true))));
 
         verify(repository).delete(legacy);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void doesNotReturnUnemittedEvents() {
+        when(currentPerson.resolveCurrentPerson()).thenReturn(person);
+        when(repository.findByPerson(person)).thenReturn(List.of());
+
+        NotificationPreferencesResponse response = getService.getPreferences();
+
+        assertThat(response.preferences().keySet()).containsExactlyInAnyOrderElementsOf(EmittedNotificationEvents.visible().stream().map(Enum::name).toList());
+        assertThat(response.mandatoryChannels().keySet()).doesNotContain("ACCOUNT_CREATED", "GRADE_POSTED", "INVOICE_GENERATED");
+    }
+
+    @Test
+    void ignoresIncomingValuesForUnemittedEvents() {
+        when(currentPerson.resolveCurrentPerson()).thenReturn(person);
+        when(repository.findByPersonAndEventAndChannel(any(), any(), any())).thenReturn(Optional.empty());
+
+        updateService.updatePreferences(new UpdateNotificationPreferencesRequest(Map.of("GRADE_POSTED", Map.of("APP", false, "EMAIL", false))));
+
         verify(repository, never()).save(any());
     }
 }
