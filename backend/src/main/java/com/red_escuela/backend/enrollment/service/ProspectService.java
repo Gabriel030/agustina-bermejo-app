@@ -3,6 +3,12 @@ import java.time.Clock;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
+import com.red_escuela.backend.enrollment.dto.EmergencyContactDraftRequest;
+import com.red_escuela.backend.enrollment.dto.EmergencyContactRequest;
+import com.red_escuela.backend.enrollment.dto.GuardianDraftRequest;
+import com.red_escuela.backend.enrollment.dto.GuardianRequest;
+import com.red_escuela.backend.identity.api.EmergencyContact;
+import com.red_escuela.backend.identity.api.GuardianContact;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
@@ -98,7 +104,9 @@ public class ProspectService {
     public void saveDraft(Long studentId, SaveProspectDraftRequest request) {
         studentOnboarding.saveProspectDraft(studentId, new ProspectDraft(
                 request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
-                request.city(), request.state(), request.postalCode(), request.country()));
+                request.city(), request.state(), request.postalCode(), request.country(),
+                request.birthDate(), request.sex(), request.nationality(),
+                toGuardian(request.guardian()), toEmergencyContact(request.emergencyContact())));
     }
 
     public void sendVerification(Long studentId) {
@@ -136,11 +144,33 @@ public class ProspectService {
     public StudentOnboardingSummary confirm(Long studentId, ConfirmProspectRequest request) {
         StudentOnboardingSummary confirmed = studentOnboarding.confirmProspect(studentId, new ConfirmedProspect(
                 request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
-                request.city(), request.state(), request.postalCode(), request.country()));
+                request.city(), request.state(), request.postalCode(), request.country(),
+                request.birthDate(), request.sex(), request.nationality(),
+                toGuardian(request.guardian()), toEmergencyContact(request.emergencyContact())));
 
         passwordResetCodeIssuer.issuePasswordResetCode(confirmed.email());
 
         return confirmed;
+    }
+
+    private static GuardianContact toGuardian(GuardianRequest guardian) {
+        return guardian == null ? null : new GuardianContact(guardian.fullName(), guardian.documentNumber(),
+                guardian.relationship(), guardian.phone(), guardian.email());
+    }
+
+    private static EmergencyContact toEmergencyContact(EmergencyContactRequest emergencyContact) {
+        return emergencyContact == null ? null : new EmergencyContact(emergencyContact.name(),
+                emergencyContact.relationship(), emergencyContact.phone());
+    }
+
+    private static GuardianContact toGuardian(GuardianDraftRequest guardian) {
+        return guardian == null ? null : new GuardianContact(guardian.fullName(), guardian.documentNumber(),
+                guardian.relationship(), guardian.phone(), guardian.email());
+    }
+
+    private static EmergencyContact toEmergencyContact(EmergencyContactDraftRequest emergencyContact) {
+        return emergencyContact == null ? null : new EmergencyContact(emergencyContact.name(),
+                emergencyContact.relationship(), emergencyContact.phone());
     }
 
     private Student findStudentOrThrow(Long studentId) {

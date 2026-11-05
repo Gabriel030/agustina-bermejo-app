@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.api;
 
 import com.red_escuela.backend.shared.domain.DocumentType;
+import java.time.LocalDate;
 
 public record ProspectDraft(
         String dni,
@@ -11,5 +12,10 @@ public record ProspectDraft(
         String city,
         String state,
         String postalCode,
-        String country) {
+        String country,
+        LocalDate birthDate,
+        String sex,
+        String nationality,
+        GuardianContact guardian,
+        EmergencyContact emergencyContact) {
 }

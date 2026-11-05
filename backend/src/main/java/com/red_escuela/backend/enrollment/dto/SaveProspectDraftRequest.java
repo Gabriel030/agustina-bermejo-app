@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.dto;
 import com.red_escuela.backend.shared.validation.RequestLimits;
 import com.red_escuela.backend.shared.validation.SelfValidatingRequest;
 import com.red_escuela.backend.shared.domain.DocumentType;
+import java.time.LocalDate;
 
 public record SaveProspectDraftRequest(
         String dni,
@@ -13,7 +14,12 @@ public record SaveProspectDraftRequest(
         String city,
         String state,
         String postalCode,
-        String country) implements SelfValidatingRequest {
+        String country,
+        LocalDate birthDate,
+        String sex,
+        String nationality,
+        GuardianDraftRequest guardian,
+        EmergencyContactDraftRequest emergencyContact) implements SelfValidatingRequest {
     public SaveProspectDraftRequest {
         RequestLimits.requireMaxLength("dni", dni, 255);
         RequestLimits.requireMaxLength("street", street, 255);
@@ -23,5 +29,7 @@ public record SaveProspectDraftRequest(
         RequestLimits.requireMaxLength("state", state, 255);
         RequestLimits.requireMaxLength("postalCode", postalCode, 255);
         RequestLimits.requireMaxLength("country", country, 255);
+        RequestLimits.requireMaxLength("sex", sex, 255);
+        RequestLimits.requireMaxLength("nationality", nationality, 255);
     }
 }
