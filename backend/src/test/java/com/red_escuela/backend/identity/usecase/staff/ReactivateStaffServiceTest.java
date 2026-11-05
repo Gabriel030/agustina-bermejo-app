@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.staff;
 
+import com.red_escuela.backend.identity.service.StaffReactivation;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
@@ -28,7 +29,7 @@ class ReactivateStaffServiceTest {
     private final PersonRepository personRepository = mock(PersonRepository.class);
 
     private ReactivateStaffService serviceActingAs(String actorRole) {
-        return new ReactivateStaffService(personRepository, policyActingAs(actorRole));
+        return new ReactivateStaffService(new StaffReactivation(personRepository, policyActingAs(actorRole)));
     }
 
     private Person target(StatusType status, String... roles) {
