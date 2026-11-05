@@ -11,7 +11,7 @@ export function Placeholder({ titulo }) {
   return (
     <PageContainer>
       <GlassCard className="flex flex-1 flex-col p-12">
-        <EmptyState title={titulo} description="Esta pantalla todavía no está implementada — es parte de una fase posterior del roadmap." />
+        <EmptyState title={titulo} description="Próximamente vas a poder gestionar esta sección desde acá." />
       </GlassCard>
     </PageContainer>
   );
