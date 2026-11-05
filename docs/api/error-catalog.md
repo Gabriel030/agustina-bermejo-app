@@ -164,6 +164,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REFUND_FAILURE_REASON_INVALID` | no | `RefundFailureReasonInvalidException` | billing |
 | `REJECTION_REASON_REQUIRED` | no | `RejectionReasonRequiredException` | billing |
 | `REQUEST_FIELD_OUT_OF_RANGE` | no | `RequestFieldOutOfRangeException` | shared |
+| `REQUEST_FIELD_REQUIRED` | no | `RequestFieldRequiredException` | shared |
 | `REQUEST_FIELD_TOO_LONG` | no | `RequestFieldTooLongException` | shared |
 | `REQUEST_LIST_TOO_LARGE` | no | `RequestListTooLargeException` | shared |
 | `REQUIRED_APPLICATION_DOCUMENTS_MISSING` | no | `RequiredApplicationDocumentsMissingException` | enrollment |

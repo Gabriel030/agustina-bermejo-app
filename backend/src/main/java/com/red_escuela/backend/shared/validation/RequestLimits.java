@@ -1,6 +1,7 @@
 package com.red_escuela.backend.shared.validation;
 
 import com.red_escuela.backend.shared.exception.RequestFieldOutOfRangeException;
+import com.red_escuela.backend.shared.exception.RequestFieldRequiredException;
 import com.red_escuela.backend.shared.exception.RequestFieldTooLongException;
 import com.red_escuela.backend.shared.exception.RequestListTooLargeException;
 import java.util.Collection;
@@ -12,6 +13,18 @@ public final class RequestLimits {
     public static final int MAX_COLLECTION_SIZE = 100;
 
     private RequestLimits() {
+    }
+
+    public static void requireText(String field, String value) {
+        if (value == null || value.isBlank()) {
+            throw new RequestFieldRequiredException("El campo " + field + " es obligatorio");
+        }
+    }
+
+    public static void requireValue(String field, Object value) {
+        if (value == null) {
+            throw new RequestFieldRequiredException("El campo " + field + " es obligatorio");
+        }
     }
 
     public static void requireMaxLength(String field, String value, int max) {
