@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class RequestRateLimitFilterTest {
 
     private final RequestRateLimitFilter filter = new RequestRateLimitFilter(
-            new JsonErrorResponseWriter(new ObjectMapper()), Clock.systemUTC(), 1000, 2, 2, 2, 2, 2, 2, 3, 3, 1, 1);
+            new JsonErrorResponseWriter(new ObjectMapper()), Clock.systemUTC(), 1000, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 1, 1);
 
     @AfterEach
     void clearContext() {
@@ -58,6 +58,29 @@ class RequestRateLimitFilterTest {
     @Test
     void publicProspectCreationIsLimitedPerIp() throws Exception {
         assertLimited("POST", "/prospects");
+    }
+
+    @Test
+    void staffProspectsLimiterBlocksAfterCapacityPerUser() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(7L, null, java.util.List.of()));
+
+        assertThat(call("POST", "/prospects/by-staff", "10.0.0.1").getStatus()).isEqualTo(200);
+        assertThat(call("POST", "/prospects/by-staff", "10.0.0.1").getStatus()).isEqualTo(200);
+        MockHttpServletResponse limited = call("POST", "/prospects/by-staff", "10.0.0.1");
+        assertThat(limited.getStatus()).isEqualTo(429);
+        assertThat(limited.getHeader("Retry-After")).isNotNull();
+        assertThat(call("PUT", "/me", "10.0.0.1").getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void staffProspectsLimiterDoesNotShareBucketBetweenUsers() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(7L, null, java.util.List.of()));
+        call("POST", "/prospects/by-staff", "10.0.0.1");
+        call("POST", "/prospects/by-staff", "10.0.0.1");
+        assertThat(call("POST", "/prospects/by-staff", "10.0.0.1").getStatus()).isEqualTo(429);
+
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(8L, null, java.util.List.of()));
+        assertThat(call("POST", "/prospects/by-staff", "10.0.0.1").getStatus()).isEqualTo(200);
     }
 
     @Test

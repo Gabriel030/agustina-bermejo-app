@@ -2,6 +2,7 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
+import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
 import com.red_escuela.backend.enrollment.dto.ProspectResponse;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
@@ -40,9 +41,22 @@ public class ProspectController {
         return ProspectResponse.from(prospectService.createProspect(request));
     }
 
+    @PostMapping("/by-staff")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public ProspectResponse createProspectByStaff(@Valid @RequestBody CreateProspectRequest request) {
+        return ProspectResponse.from(prospectService.createProspectByStaff(request));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public List<ProspectListItemResponse> listProspects() {
+        return prospectService.listProspects();
+    }
+
     @PostMapping("/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StudentDocumentResponse addDocument(
             @PathVariable Long id,
             @RequestParam DocumentType type,
@@ -51,27 +65,27 @@ public class ProspectController {
     }
 
     @GetMapping("/{id}/documents")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<StudentDocumentResponse> listDocuments(@PathVariable Long id) {
         return prospectService.listDocuments(id).stream().map(StudentDocumentResponse::from).toList();
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void saveDraft(@PathVariable Long id, @RequestBody SaveProspectDraftRequest request) {
         prospectService.saveDraft(id, request);
     }
 
     @PostMapping("/{id}/confirm")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public ProspectResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
         return ProspectResponse.from(prospectService.confirm(id, request));
     }
 
     @PostMapping("/{id}/send-verification")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void sendVerification(@PathVariable Long id) {
         prospectService.sendVerification(id);
     }
