@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.HolidaysNotLoadedForYearException;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,31 @@ class HolidayYearGuardTest {
     @Test
     void pastYearsAreNotChecked() {
         assertThatCode(() -> guard.ensureHolidaysLoaded(2025)).doesNotThrowAnyException();
+
+        verifyNoInteractions(holidayRepository);
+    }
+
+    @Test
+    void termOfAYearWithoutHolidaysIsRejected() {
+        var term = new Term();
+        term.setYear(2027);
+        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(false);
+
+        assertThatThrownBy(() -> guard.ensureHolidaysLoadedForTerm(term)).isInstanceOf(HolidaysNotLoadedForYearException.class);
+    }
+
+    @Test
+    void termOfAYearWithHolidaysIsAccepted() {
+        var term = new Term();
+        term.setYear(2027);
+        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(true);
+
+        assertThatCode(() -> guard.ensureHolidaysLoadedForTerm(term)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void termWithoutYearIsNotChecked() {
+        assertThatCode(() -> guard.ensureHolidaysLoadedForTerm(new Term())).doesNotThrowAnyException();
 
         verifyNoInteractions(holidayRepository);
     }
