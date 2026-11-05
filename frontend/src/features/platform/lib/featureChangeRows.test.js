@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeRows, isSameState, toChangeRequest } from './featureChangeRows';
+import { changeRows, describeState, isSameState, requiresPreview, toChangeRequest } from './featureChangeRows';
 
 describe('featureChangeRows', () => {
   it('omitsTheModeForFeaturesWithoutOne', () => {
@@ -20,5 +20,20 @@ describe('featureChangeRows', () => {
   it('comparesTheComparedFieldPerFeatureKind', () => {
     expect(isSameState('BILLING', { mode: 'FULL', enabled: true }, { mode: 'FULL' })).toBe(true);
     expect(isSameState('ANALYTICS', { enabled: true }, { enabled: false })).toBe(false);
+  });
+
+  it('addsThePreviewTokenOnlyWhenPresent', () => {
+    expect(toChangeRequest('BILLING', { mode: 'MIRROR' }, 'motivo', 'tok')).toEqual({ enabled: true, mode: 'MIRROR', reason: 'motivo', previewConfirmationToken: 'tok' });
+  });
+
+  it('requiresPreviewOnlyWhenLeavingCompleteBilling', () => {
+    expect(requiresPreview('BILLING', { mode: 'FULL' }, { mode: 'OFF' })).toBe(true);
+    expect(requiresPreview('BILLING', { mode: 'MIRROR' }, { mode: 'OFF' })).toBe(false);
+    expect(requiresPreview('ANALYTICS', { enabled: true }, { enabled: false })).toBe(false);
+  });
+
+  it('describesTheStateByFeatureKind', () => {
+    expect(describeState('BILLING', { mode: 'FULL', enabled: true })).toBe('Completa');
+    expect(describeState('ANALYTICS', { mode: 'OFF', enabled: true })).toBe('Habilitado');
   });
 });

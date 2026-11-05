@@ -2,7 +2,7 @@ export const STALE_FEATURE_VERSION = 'STALE_FEATURE_VERSION';
 
 const MESSAGE_BY_CODE = {
   FEATURE_ALREADY_IN_REQUESTED_STATE: 'Este módulo ya estaba en ese estado.',
-  INVALID_BILLING_MODE_TRANSITION: 'Ese cambio de modo no está permitido todavía. Requiere un paso previo que aún no está disponible.',
+  INVALID_BILLING_MODE_TRANSITION: 'Ese cambio de modo no está permitido. Volvé a empezar el cambio.',
   INVALID_TRANSITION_CONFIRMATION: 'La verificación previa venció. Volvé a empezar el cambio.',
   FEATURE_CHANGE_REASON_INVALID: 'El motivo debe tener entre 5 y 500 caracteres.',
   FEATURE_VALUE_INVALID: 'El valor pedido no es válido para este módulo.',
