@@ -90,3 +90,18 @@ describe('AlumnoMisCursos', () => {
     expect(await screen.findByText('Todavía no terminaste ningún curso')).toBeInTheDocument();
   });
 });
+
+describe('AlumnoMisCursos — load failure', () => {
+  it('shows the error state and reloads the courses on retry', async () => {
+    server.use(http.get(`${API}/me/course-enrollments`, () => new HttpResponse(null, { status: 500 })));
+    const user = userEvent.setup();
+    renderWithProviders(<AlumnoMisCursos />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar tus cursos');
+    respondWith([enrollment({})]);
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Excel Avanzado')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

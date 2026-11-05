@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Toaster, toast } from 'sonner';
 import { http, HttpResponse } from 'msw';
@@ -199,5 +199,30 @@ describe('AvisoEditar', () => {
     await user.click(await screen.findByRole('button', { name: 'Seguir editando' }));
     expect(screen.queryByText(/Al guardar se volverá a notificar/)).not.toBeInTheDocument();
     expect(guardados).toBe(0);
+  });
+});
+
+describe('AvisoEditar — load failure', () => {
+  it('shows the error state with a way back and reloads the announcement on retry', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/subject-sections/${SECTION_ID}/announcements`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/docente/mis-comisiones/:sectionId/avisos/:avisoId/editar" element={<AvisoEditar />} />
+      </Routes>,
+      { route: `/docente/mis-comisiones/${SECTION_ID}/avisos/10/editar` },
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar el aviso');
+    expect(screen.getByRole('link', { name: /Volver a los avisos/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(calls).toBe(2));
   });
 });

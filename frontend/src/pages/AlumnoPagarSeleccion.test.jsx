@@ -89,3 +89,45 @@ describe('AlumnoPagarSeleccion', () => {
     expect(screen.getByText('Próximamente')).toBeInTheDocument();
   });
 });
+
+describe('AlumnoPagarSeleccion — load failure', () => {
+  function renderPage() {
+    return renderWithProviders(
+      <Routes>
+        <Route path="/alumno/pagos/:invoiceId/seleccion" element={<AlumnoPagarSeleccion />} />
+      </Routes>,
+      { route: '/alumno/pagos/61/seleccion' },
+    );
+  }
+
+  it('shows the error state when the installment fails to load and reloads it on retry', async () => {
+    server.use(
+      http.get(`${API}/me/invoices/61/price-breakdown`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API}/payment-config`, () => HttpResponse.json({ ...bankConfig, mpEnabled: true })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar la cuota');
+    server.use(http.get(`${API}/me/invoices/61/price-breakdown`, () => HttpResponse.json(baseBreakdown)));
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Cuota mensual · sep 2026')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows the error state when the payment methods fail to load and reloads them on retry', async () => {
+    server.use(
+      http.get(`${API}/me/invoices/61/price-breakdown`, () => HttpResponse.json(baseBreakdown)),
+      http.get(`${API}/payment-config`, () => new HttpResponse(null, { status: 500 })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar los medios de pago');
+    server.use(http.get(`${API}/payment-config`, () => HttpResponse.json({ ...bankConfig, mpEnabled: true })));
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Transferencia bancaria')).toBeInTheDocument();
+  });
+});
