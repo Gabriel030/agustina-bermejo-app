@@ -710,7 +710,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
 
         assertThatThrownBy(() -> requestAttendanceChangeUseCase.request(new RequestAttendanceChangeCommand(
-                attendance.getId(), instructor[0], new CreateAttendanceChangeRequestRequest(AttendanceStatus.JUSTIFIED, "trajo certificado"))))
+                attendance.getId(), instructor[0].getId(), new CreateAttendanceChangeRequestRequest(AttendanceStatus.JUSTIFIED, "trajo certificado"))))
                 .isInstanceOf(AttendanceStatusNotRecordableException.class);
     }
 

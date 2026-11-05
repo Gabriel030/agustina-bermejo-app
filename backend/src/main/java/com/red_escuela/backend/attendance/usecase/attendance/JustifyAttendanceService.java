@@ -5,12 +5,10 @@ import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceFinder;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.attendance.service.AttendanceJustificationRecorder;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
-import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 
 
@@ -20,15 +18,15 @@ public class JustifyAttendanceService implements JustifyAttendanceUseCase {
     private final AttendanceRepository attendanceRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final AttendanceFinder attendanceFinder;
-    private final CurrentPersonService currentPersonService;
+    private final AttendanceJustificationRecorder justificationRecorder;
 
     public JustifyAttendanceService(AttendanceRepository attendanceRepository,
                                      AttendanceFinder attendanceFinder,
-                                     CurrentPersonService currentPersonService,
+                                     AttendanceJustificationRecorder justificationRecorder,
                                      ApplicationEventPublisher eventPublisher) {
         this.attendanceRepository = attendanceRepository;
         this.attendanceFinder = attendanceFinder;
-        this.currentPersonService = currentPersonService;
+        this.justificationRecorder = justificationRecorder;
         this.eventPublisher = eventPublisher;
     }
 
@@ -40,13 +38,9 @@ public class JustifyAttendanceService implements JustifyAttendanceUseCase {
             throw new CannotJustifyException(
                     "La asistencia " + command.attendanceId() + " no está ABSENT, no se puede justificar");
         }
-        Person justifiedBy = currentPersonService.resolveCurrentPerson();
-
-        attendance.setStatus(AttendanceStatus.JUSTIFIED);
+        justificationRecorder.markJustifiedByCurrentActor(attendance);
         attendance.setJustificationReason(command.reason());
         attendance.setJustificationAttachmentUrl(command.attachmentUrl());
-        attendance.setJustifiedBy(justifiedBy);
-        attendance.setJustifiedAt(ApplicationTime.now());
         Attendance saved = attendanceRepository.save(attendance);
         eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved));
         return saved;

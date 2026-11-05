@@ -22,6 +22,8 @@ import com.red_escuela.backend.attendance.service.AttendanceFinder;
 import com.red_escuela.backend.attendance.service.AttendanceHistoryBuilder;
 import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import com.red_escuela.backend.attendance.service.AttendanceSectionAccess;
+import com.red_escuela.backend.attendance.service.ClassSessionCanceller;
+import com.red_escuela.backend.attendance.service.SectionAttendanceLoader;
 import com.red_escuela.backend.attendance.service.ClassSessionUpserter;
 import com.red_escuela.backend.attendance.service.SectionAttendanceRecorder;
 import com.red_escuela.backend.attendance.service.SectionRosterBuilder;
@@ -68,9 +70,9 @@ class CourseSectionAttendanceServicesTest {
     private static final LocalDate CLASS_DAY = LocalDate.of(2025, 9, 15);
 
     private final LoadCourseSectionAttendanceService loadService = new LoadCourseSectionAttendanceService(
-            attendanceRecorder, sectionAccess, classSessionUpserter, eventPublisher);
+            new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter), eventPublisher);
     private final CancelCourseSectionClassSessionService cancelService = new CancelCourseSectionClassSessionService(
-            classSessionRepository, sectionAccess, classSessionUpserter);
+            new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter));
     private final GetCourseSectionAbsenceReportService absenceReportService =
             new GetCourseSectionAbsenceReportService(sectionAccess, rosterBuilder);
     private final GetCourseSectionAttendanceHistoryService historyService =
