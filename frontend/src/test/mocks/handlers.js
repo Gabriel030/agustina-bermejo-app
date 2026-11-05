@@ -68,6 +68,7 @@ export const handlers = [
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
   http.post(`${API}/me/program-enrollment-applications`, () =>
     HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
   ),
