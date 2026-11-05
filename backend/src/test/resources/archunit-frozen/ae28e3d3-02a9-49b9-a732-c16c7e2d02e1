@@ -11,13 +11,8 @@ com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassS
 com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceService.justify(com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceService.load(com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceCommand) declares @Transactional
-com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofService.submit(com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.RejectAttendanceChangeRequestService.reject(java.lang.Long) declares @Transactional
-com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeService.request(com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeCommand) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.ClosePromotionByLegacyContractService.closePromotion(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyContractService.createForCourse(java.lang.Long, com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyContractService.createForProgram(java.lang.Long, com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodService.create(com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateProgramCohortRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService.create(java.lang.Long, java.lang.Long, java.lang.Integer, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
@@ -32,11 +27,8 @@ com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnro
 com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusService.get(java.lang.Long, java.lang.Long) declares @Transactional
 com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusService.get(java.lang.Long, java.lang.Long) declares @Transactional
 com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewService.get(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService.process(java.lang.String, java.lang.String, java.lang.String) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentgateway.UpdatePaymentGatewayConfigService.update(com.red_escuela.backend.billing.dto.UpdatePaymentGatewayConfigRequest, com.red_escuela.backend.identity.entity.Person) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentgateway.UploadQrImageService.upload(org.springframework.web.multipart.MultipartFile, com.red_escuela.backend.identity.entity.Person) declares @Transactional
-com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.directorapproval.RequestDirectorApprovalService.request(com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest) declares @Transactional
