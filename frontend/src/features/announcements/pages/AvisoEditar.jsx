@@ -20,7 +20,7 @@ import { useAvisos, useDestinatariosDeAviso } from '../hooks/useAvisos';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
 import { useEditarAviso } from '../hooks/useEditarAviso';
-import { aPayload, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL } from '../lib/formularioDeAviso';
+import { aPayload, cambiosQueMerecenAviso, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL, unirCambios } from '../lib/formularioDeAviso';
 import { formatearFechaHora } from '@/lib/avisos';
 import { LoadErrorState } from '@/components/LoadErrorState';
 
@@ -40,7 +40,7 @@ export function AvisoEditar() {
   const [envioAbierto, setEnvioAbierto] = useState(false);
   const [rosterAbierto, setRosterAbierto] = useState(false);
   const [confirmarRenotificar, setConfirmarRenotificar] = useState(false);
-  const [notificar, setNotificar] = useState(false);
+  const [notificarManual, setNotificarManual] = useState(null);
 
   useEffect(() => {
     if (aviso && valores === null) setValores(desdeAviso(aviso));
@@ -53,6 +53,15 @@ export function AvisoEditar() {
   const { data: preview, recalculando } = usePreviewDeAudiencia(sectionId, tipo, programado ? spec : SPEC_INICIAL);
   const destinatarios = useDestinatariosDeAviso(programado ? undefined : avisoId);
   const editarAviso = useEditarAviso(sectionId, tipo, avisoId);
+
+  const cambios = aviso && valores ? cambiosQueMerecenAviso(desdeAviso(aviso), valores) : [];
+  const notificar = notificarManual ?? cambios.length > 0;
+  const motivoDeCasilla =
+    notificarManual !== null
+      ? `Elegiste ${notificarManual ? 'avisar' : 'no avisar'} a mano.`
+      : cambios.length > 0
+        ? `Se tildó solo porque cambiaste ${unirCambios(cambios)}.`
+        : 'Viene destildada: los cambios de texto o categoría no generan notificación.';
 
   const volverA = `/docente/mis-comisiones/${sectionId}?tab=avisos${esCurso ? '&type=COURSE' : ''}`;
 
@@ -103,7 +112,7 @@ export function AvisoEditar() {
         audience: programado ? payload.audience : null,
         ...(programado ? {} : { notify: notificar }),
       });
-      toast.success(notificar ? 'Aviso actualizado: les llegó la notificación del cambio' : 'Cambios guardados');
+      toast.success(notificar && !programado ? 'Aviso actualizado: les llegó la notificación del cambio' : 'Cambios guardados');
       navigate(volverA);
     } catch (error) {
       toast.error(mensajeDeErrorDeAviso(error, 'No pudimos guardar los cambios. Probá de nuevo.'));
@@ -134,7 +143,7 @@ export function AvisoEditar() {
       ) : (
         <GlassCard className="flex flex-col gap-3 p-5">
           <h2 className="font-heading text-[15px] font-semibold text-ink">Destinatarios</h2>
-          <Input readOnly className="cursor-default" value={aviso.audienceLabel} />
+          <Input readOnly aria-label="Destinatarios" className="cursor-default" value={aviso.audienceLabel} />
           <span className="text-[11.5px] text-ink-faint">
             {esCurso
               ? 'Un curso suelto no tiene esquema de evaluación, así que el aviso le llega a todo el curso.'
@@ -165,10 +174,23 @@ export function AvisoEditar() {
           soloReprogramar={programado}
         />
         {!programado && (
-          <Label className="flex items-center gap-2 font-normal">
-            <Checkbox checked={notificar} onCheckedChange={(value) => setNotificar(value === true)} />
-            Notificar el cambio a los destinatarios
-          </Label>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="avisar-cambio"
+              className="mt-0.5"
+              aria-describedby="avisar-cambio-motivo"
+              checked={notificar}
+              onCheckedChange={(value) => setNotificarManual(value === true)}
+            />
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="avisar-cambio" className="font-normal">
+                Avisar a los alumnos de este cambio
+              </Label>
+              <span id="avisar-cambio-motivo" className="text-[11.5px] text-ink-faint">
+                {motivoDeCasilla}
+              </span>
+            </div>
+          </div>
         )}
         <TiraDeConsecuencias
           alcanzados={programado ? preview?.count ?? 0 : destinatarios.data?.length ?? 0}
@@ -176,6 +198,7 @@ export function AvisoEditar() {
           sinCorregir={!!preview?.hasUngradedInstances}
           scheduledFor={valores.cuando === 'programar' ? valores.scheduledFor : null}
           reNotifica={!programado && notificar}
+          sinNotificar={!programado && !notificar}
         />
       </SeccionMensaje>
 
@@ -190,7 +213,7 @@ export function AvisoEditar() {
           disabled={!valores.title.trim() || !valores.body.trim()}
           onClick={programado || !notificar ? guardar : () => setConfirmarRenotificar(true)}
         >
-          {notificar ? 'Guardar y notificar' : 'Guardar cambios'}
+          {notificar && !programado ? 'Guardar y avisar' : 'Guardar cambios'}
         </Button>
       </div>
 
@@ -207,7 +230,7 @@ export function AvisoEditar() {
               Seguir editando
             </Button>
             <Button type="button" variant="gradient" onClick={guardar}>
-              Guardar y notificar
+              Guardar y avisar
             </Button>
           </DialogFooter>
         </DialogContent>

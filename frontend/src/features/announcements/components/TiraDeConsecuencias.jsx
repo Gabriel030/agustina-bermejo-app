@@ -1,4 +1,4 @@
-import { Bell, Clock, Eye, TriangleAlert } from 'lucide-react';
+import { Bell, Clock, Eye, Info, TriangleAlert } from 'lucide-react';
 import { fechaEnPalabras, textoDeAlcance } from '@/lib/avisos';
 
 function Linea({ icono: Icono, children }) {
@@ -10,7 +10,7 @@ function Linea({ icono: Icono, children }) {
   );
 }
 
-export function TiraDeConsecuencias({ alcanzados, total, sinCorregir, scheduledFor, reNotifica }) {
+export function TiraDeConsecuencias({ alcanzados, total, sinCorregir, scheduledFor, reNotifica, sinNotificar }) {
   return (
     <div className="flex flex-col gap-2 rounded-2xl bg-neutral-bg/55 px-4 py-3">
       {total > 0 && (
@@ -33,6 +33,12 @@ export function TiraDeConsecuencias({ alcanzados, total, sinCorregir, scheduledF
         <Linea icono={Bell}>
           Al guardar, <span className="font-bold text-ink">los mismos destinatarios</span> vuelven a recibir la
           notificación.
+        </Linea>
+      )}
+      {sinNotificar && (
+        <Linea icono={Info}>
+          <span className="font-bold text-ink">Nadie recibe una notificación.</span> Los alumnos ven el cambio cuando
+          vuelvan a abrir el aviso.
         </Linea>
       )}
     </div>
