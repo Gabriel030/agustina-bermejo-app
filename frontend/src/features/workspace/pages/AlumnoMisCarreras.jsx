@@ -6,6 +6,7 @@ import { Stagger } from '@/components/Stagger';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,7 +30,13 @@ import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
 // Materias, no hace falta duplicarla acá.
 export function AlumnoMisCarreras() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: matriculaciones, isLoading: cargandoMatriculaciones } = useMisMatriculaciones();
+  const {
+    data: matriculaciones,
+    isLoading: cargandoMatriculaciones,
+    isError: matriculacionesFallaron,
+    error: errorMatriculaciones,
+    refetch: recargarMatriculaciones,
+  } = useMisMatriculaciones();
 
   const activas = (matriculaciones ?? [])
     .filter((m) => m.status !== 'WITHDRAWN')
@@ -75,6 +82,14 @@ export function AlumnoMisCarreras() {
           <Skeleton className="h-20" />
         </div>
         <Skeleton className="h-64" />
+      </PageContainer>
+    );
+  }
+
+  if (matriculacionesFallaron) {
+    return (
+      <PageContainer>
+        <LoadErrorState error={errorMatriculaciones} onRetry={recargarMatriculaciones} resource="tus carreras" />
       </PageContainer>
     );
   }
