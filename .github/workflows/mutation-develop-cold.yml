@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload the verified tree
         if: steps.decide.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cold-verified-tree
           path: verified
@@ -114,7 +114,7 @@ jobs:
 
       - name: Upload the PIT report
         if: steps.decide.outputs.run == 'true' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pit-report-cold
           path: backend/target/pit-reports
