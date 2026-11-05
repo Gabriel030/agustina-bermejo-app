@@ -67,6 +67,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|docente|mis-comisiones|DocenteMisComisiones",
   "role|docente|tomar-asistencia|DocenteTomarAsistencia",
   "role|platform_admin|inicio|Navigate",
+  "role|platform_admin|modulos|ModulosPlataforma",
   "role|platform_admin|primer-director|PrimerDirector",
   "role|preceptor,administrativo,director|alumnos/:id|LegajoAlumno",
   "role|preceptor,administrativo,director|alumnos/nuevo|NuevoAlumno",
