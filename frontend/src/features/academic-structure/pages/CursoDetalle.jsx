@@ -19,7 +19,7 @@ import {
 } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { PanelModulo } from './PanelModulo';
-import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 
 const STATUS_CONFIG = {

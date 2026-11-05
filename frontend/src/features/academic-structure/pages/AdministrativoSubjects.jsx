@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, ChevronRight, Globe, GlobeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';

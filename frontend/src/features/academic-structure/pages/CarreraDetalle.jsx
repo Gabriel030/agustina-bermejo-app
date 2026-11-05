@@ -23,7 +23,7 @@ import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
 import { AniosLectivosSection } from '@/features/academic-structure/components/AniosLectivosSection';
 import { CohortesSection } from '@/features/academic-structure/components/CohortesSection';
-import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 
 const CATEGORY_LABELS = {

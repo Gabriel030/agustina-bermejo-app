@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 
 function findInternalAnchor(event) {
   if (event.defaultPrevented || event.button !== 0) return null;
