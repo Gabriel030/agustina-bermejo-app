@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.service;
 
+import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
@@ -41,6 +42,14 @@ public class StaffRoleAssignmentPolicy {
                 .anyMatch(actorRole -> CREATABLE_ROLES_BY_ROLE.getOrDefault(actorRole, Set.of()).contains(targetRole));
         if (!autorizado) {
             throw new RoleNotAssignableByActorException(targetRole);
+        }
+    }
+
+    public void requireManageableOrNotFound(Long personId, String targetRole) {
+        try {
+            requireCanAssign(targetRole);
+        } catch (RoleNotAssignableByActorException exception) {
+            throw new PersonNotFoundException(personId);
         }
     }
 

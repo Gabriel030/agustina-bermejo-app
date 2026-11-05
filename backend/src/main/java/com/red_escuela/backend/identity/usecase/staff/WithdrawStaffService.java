@@ -35,7 +35,7 @@ public class WithdrawStaffService implements WithdrawStaffUseCase {
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new PersonNotFoundException(personId));
         String staffRole = staffRole(person);
-        staffRoleAssignmentPolicy.requireCanAssign(staffRole);
+        staffRoleAssignmentPolicy.requireManageableOrNotFound(personId, staffRole);
         person.setStatus(StatusType.INACTIVE);
         personRepository.save(person);
         sessionRevoker.revokeAllSessions(person);
