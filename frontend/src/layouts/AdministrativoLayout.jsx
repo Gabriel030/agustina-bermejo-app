@@ -1,23 +1,8 @@
-import { BellRing, CalendarClock, CalendarRange, CalendarDays, Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2, CheckCircle2, Tag } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { menuItemsFor } from '@/routes/roleMenu';
 import { useVisibleMenuItems } from '@/routes/useVisibleMenuItems';
 
-const ITEMS = [
-  { to: '/administrativo/inicio', label: 'Inicio', icon: Home },
-  { to: '/administrativo/alumnos', label: 'Alumnos', icon: Users },
-  { to: '/administrativo/personal', label: 'Personal', icon: UserCog },
-  { to: '/administrativo/facturacion', label: 'Facturación', icon: Receipt },
-  { to: '/administrativo/descuentos', label: 'Descuentos', icon: Tag },
-  { to: '/administrativo/recordatorios-de-pago', label: 'Recordatorios de pago', icon: BellRing },
-  { to: '/administrativo/emision-mensual', label: 'Emisión mensual', icon: CalendarClock },
-  { to: '/administrativo/aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 },
-  { to: '/administrativo/financiero', label: 'Financiero', icon: BarChart2 },
-  { to: '/administrativo/constancias', label: 'Constancias', icon: FileText },
-  { to: '/administrativo/solicitudes-de-asistencia', label: 'Solicitudes de asistencia', icon: CalendarCheck },
-  { to: '/administrativo/gestion-academica', label: 'Banco de materias', icon: BookOpen },
-  { to: '/administrativo/periodos', label: 'Períodos', icon: CalendarRange },
-  { to: '/administrativo/feriados', label: 'Feriados', icon: CalendarDays },
-];
+const ITEMS = menuItemsFor('administrativo');
 
 export function AdministrativoLayout() {
   const items = useVisibleMenuItems('administrativo', ITEMS);

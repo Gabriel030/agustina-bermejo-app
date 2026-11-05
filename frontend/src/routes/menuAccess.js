@@ -1,33 +1,8 @@
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { isBillingPath } from '@/routes/moduleGating';
+import { pageLabels } from '@/routes/roleMenu';
 
-const PAGE_LABELS = {
-  inicio: 'Inicio',
-  'mis-cursos': 'Mis cursos',
-  'mis-carreras': 'Mis carreras',
-  pagos: 'Pagos',
-  opciones: 'Opciones',
-  'mis-comisiones': 'Mis comisiones',
-  'tomar-asistencia': 'Tomar asistencia',
-  alumnos: 'Alumnos',
-  personal: 'Personal',
-  'oferta-academica': 'Oferta académica',
-  'mesas-de-examen': 'Mesas de examen',
-  'solicitudes-de-asistencia': 'Solicitudes de asistencia',
-  periodos: 'Períodos',
-  facturacion: 'Facturación',
-  descuentos: 'Descuentos',
-  'recordatorios-de-pago': 'Recordatorios de pago',
-  'corridas-de-facturacion': 'Corridas de facturación',
-  'emision-mensual': 'Emisión mensual',
-  aprobaciones: 'Aprobaciones',
-  financiero: 'Financiero',
-  constancias: 'Constancias',
-  'gestion-academica': 'Banco de materias',
-  feriados: 'Feriados',
-  'esquemas-evaluacion': 'Esquemas de evaluación',
-  'primer-director': 'Primer director',
-};
+const PAGE_LABELS = pageLabels();
 
 export function pageLabel(slug) {
   if (PAGE_LABELS[slug]) return PAGE_LABELS[slug];
