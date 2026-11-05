@@ -21,6 +21,9 @@ public class PendingDebtException extends ConflictException implements ReportsEr
 
     @Override
     public Map<String, Object> details() {
+        if (totalDue == null) {
+            return Map.of();
+        }
         return Map.of(TOTAL_DUE_KEY, totalDue.amount(), INSTALLMENT_COUNT_KEY, installmentCount);
     }
 }

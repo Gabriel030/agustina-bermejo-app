@@ -25,14 +25,15 @@ public class GraduationDebtChecker {
     }
 
     public void requireNoDebt(Long studentId) {
-        if (graduationDebtGate.mustCheckDebt() && invoiceQueryService.hasDebt(studentId)) {
-            throw pendingDebtOf(studentId, invoiceQueryService.debtOf(studentId));
+        StudentDebtView debt = currentDebtOf(studentId);
+        if (debt.installmentCount() > 0) {
+            throw pendingDebtOf(studentId, debt);
         }
     }
 
     public void requireNoDebtNotifying(GraduationRequest request, Long studentId) {
-        if (graduationDebtGate.mustCheckDebt() && invoiceQueryService.hasDebt(studentId)) {
-            StudentDebtView debt = invoiceQueryService.debtOf(studentId);
+        StudentDebtView debt = currentDebtOf(studentId);
+        if (debt.installmentCount() > 0) {
             graduationDebtBlockPublisher.publishDebtBlocked(GraduationRequestDebtBlockedEvent.blockedFor(request, debt.totalDue(), debt.installmentCount()));
             throw pendingDebtOf(studentId, debt);
         }
@@ -44,7 +45,14 @@ public class GraduationDebtChecker {
         if (!graduationDebtGate.mustCheckDebt()) {
             return new GraduationDebtSummary(false, StudentDebtView.none());
         }
-        return new GraduationDebtSummary(true, invoiceQueryService.debtOf(request.getProgramEnrollment().getStudent().getId()));
+        return new GraduationDebtSummary(true, currentDebtOf(request.getProgramEnrollment().getStudent().getId()));
+    }
+
+    private StudentDebtView currentDebtOf(Long studentId) {
+        if (!graduationDebtGate.mustCheckDebt() || !invoiceQueryService.hasDebt(studentId)) {
+            return StudentDebtView.none();
+        }
+        return invoiceQueryService.debtOf(studentId);
     }
 
     private PendingDebtException pendingDebtOf(Long studentId, StudentDebtView debt) {
