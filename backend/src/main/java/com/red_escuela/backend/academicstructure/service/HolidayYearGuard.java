@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.HolidaysNotLoadedForYearException;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,12 @@ public class HolidayYearGuard {
     public HolidayYearGuard(HolidayRepository holidayRepository, Clock clock) {
         this.holidayRepository = holidayRepository;
         this.clock = clock;
+    }
+
+    public void ensureHolidaysLoadedForTerm(Term term) {
+        if (term.getYear() != null) {
+            ensureHolidaysLoaded(term.getYear());
+        }
     }
 
     public void ensureHolidaysLoaded(int year) {

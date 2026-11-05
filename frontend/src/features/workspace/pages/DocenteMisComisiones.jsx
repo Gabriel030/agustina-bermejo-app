@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useComisionesDictadas } from '@/features/academic-structure';
 import { useMisComisiones } from '@/features/evaluation';
-import { agruparComisionesPorFase, diasHastaInicioDeCursadaMasProximo, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
+import { agruparComisionesPorFase, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
 
 function FilaComision({ comision }) {
   const esCurso = comision.type === 'COURSE';
@@ -125,8 +125,6 @@ export function DocenteMisComisiones() {
   const lista = unificarComisiones(configs ?? [], dictadas ?? []);
   const { bandejaDeAprobacion, enCurso, cerradas } = agruparComisionesPorFase(lista);
   const vigentes = lista.filter((c) => !cerradas.includes(c));
-  const diasInicio = diasHastaInicioDeCursadaMasProximo(vigentes);
-  const iniciada = diasInicio === 'iniciada';
 
   return (
     <PageContainer>
@@ -135,17 +133,12 @@ export function DocenteMisComisiones() {
         <p className="mt-0.5 text-sm text-ink-soft">Evaluación, mesas y avisos de tus comisiones</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Comisiones y cursos este período">
           <div className="font-heading text-2xl font-bold text-ink">{vigentes.length}</div>
         </StatCard>
         <StatCard label="Pendientes de completar/aprobar">
           <div className="font-heading text-2xl font-bold text-ink">{bandejaDeAprobacion.length}</div>
-        </StatCard>
-        <StatCard label="Días para el inicio de cursada">
-          <div className={`font-heading text-2xl font-bold ${iniciada || (diasInicio !== null && diasInicio <= 5) ? 'text-danger' : 'text-ink'}`}>
-            {iniciada ? 'Ya empezó' : (diasInicio ?? '—')}
-          </div>
         </StatCard>
       </div>
 

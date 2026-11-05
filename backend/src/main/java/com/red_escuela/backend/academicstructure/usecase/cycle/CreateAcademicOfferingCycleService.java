@@ -12,12 +12,10 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleSta
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleDrafter;
+import com.red_escuela.backend.academicstructure.service.HolidayYearGuard;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @UseCase
 public class CreateAcademicOfferingCycleService implements CreateAcademicOfferingCycleUseCase {
@@ -26,20 +24,23 @@ public class CreateAcademicOfferingCycleService implements CreateAcademicOfferin
     private final TermRepository termRepository;
     private final ProgramRepository programRepository;
     private final CourseRepository courseRepository;
-    private final CurrentPersonService currentPersonService;
+    private final AcademicOfferingCycleDrafter cycleDrafter;
+    private final HolidayYearGuard holidayYearGuard;
 
     public CreateAcademicOfferingCycleService(
             AcademicOfferingCycleRepository cycleRepository,
             TermRepository termRepository,
             ProgramRepository programRepository,
             CourseRepository courseRepository,
-            CurrentPersonService currentPersonService
+            AcademicOfferingCycleDrafter cycleDrafter,
+            HolidayYearGuard holidayYearGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.termRepository = termRepository;
         this.programRepository = programRepository;
         this.courseRepository = courseRepository;
-        this.currentPersonService = currentPersonService;
+        this.cycleDrafter = cycleDrafter;
+        this.holidayYearGuard = holidayYearGuard;
     }
 
     @Override
@@ -48,10 +49,9 @@ public class CreateAcademicOfferingCycleService implements CreateAcademicOfferin
         var term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 
-        var cycle = new AcademicOfferingCycle();
-        cycle.setTerm(term);
-        cycle.setCreatedBy(currentPersonService.resolveCurrentPerson());
-        cycle.setCreatedAt(LocalDateTime.now());
+        holidayYearGuard.ensureHolidaysLoadedForTerm(term);
+
+        var cycle = cycleDrafter.draftFor(term);
 
         if (request.programId() != null) {
             var program = programRepository.findById(request.programId())

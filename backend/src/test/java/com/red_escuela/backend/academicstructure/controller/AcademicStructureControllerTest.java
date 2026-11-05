@@ -321,6 +321,26 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void creatingCycleForTermOfAYearWithoutHolidaysReturns409WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-cycle-noholidays", "PRECEPTOR");
+        Term term = TermFixtures.newTerm();
+        term.setYear(2077);
+        term.setDescription("Term sin feriados");
+        term.setType(TermType.FIRST_SEMESTER);
+        term.setStartDate(LocalDateTime.of(2077, 3, 1, 0, 0));
+        term.setEndDate(LocalDateTime.of(2077, 7, 1, 0, 0));
+        entityManager.persist(term);
+        entityManager.flush();
+
+        mockMvc.perform(post("/academic-offering-cycles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"courseId\":1,\"termId\":" + term.getId() + "}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("HOLIDAYS_NOT_LOADED_FOR_YEAR"));
+    }
+
+    @Test
     void deactivatingAndReactivatingCourseWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-curso1", "ADMINISTRATIVO");
         Term term = TermFixtures.newTerm();

@@ -16,7 +16,9 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.academicstructure.exception.HolidaysNotLoadedForYearException;
+import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleDrafter;
+import com.red_escuela.backend.academicstructure.service.HolidayYearGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,12 +26,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,7 +54,9 @@ class CreateAcademicOfferingCycleServiceTest {
     @Mock
     private CourseRepository courseRepository;
     @Mock
-    private CurrentPersonService currentPersonService;
+    private AcademicOfferingCycleDrafter cycleDrafter;
+    @Mock
+    private HolidayYearGuard holidayYearGuard;
 
     private CreateAcademicOfferingCycleService service;
     private Term term;
@@ -58,7 +64,7 @@ class CreateAcademicOfferingCycleServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CreateAcademicOfferingCycleService(cycleRepository, termRepository, programRepository, courseRepository, currentPersonService);
+        service = new CreateAcademicOfferingCycleService(cycleRepository, termRepository, programRepository, courseRepository, cycleDrafter, holidayYearGuard);
         term = TermFixtures.newTerm();
         term.setId(TERM_ID);
         term.setDescription("2026");
@@ -76,9 +82,19 @@ class CreateAcademicOfferingCycleServiceTest {
         return cycle;
     }
 
+    private void stubDraft() {
+        when(cycleDrafter.draftFor(term)).thenAnswer(invocation -> {
+            var draft = new AcademicOfferingCycle();
+            draft.setTerm(term);
+            draft.setCreatedBy(creator);
+            draft.setCreatedAt(LocalDateTime.of(2026, 3, 1, 10, 0));
+            return draft;
+        });
+    }
+
     private void stubTermAndPersistence() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(cycleRepository.save(any(AcademicOfferingCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -116,7 +132,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @Test
     void programCycleWithUnknownProgramFailsWithProgramNotFound() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(programRepository.findById(PROGRAM_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID)))
@@ -128,7 +144,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @Test
     void programWithADraftCycleInTheSameTermCannotOpenAnotherOne() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(programRepository.findById(PROGRAM_ID)).thenReturn(Optional.of(Program.builder().id(PROGRAM_ID).build()));
         when(cycleRepository.findByProgramIdOrderByCreatedAtDesc(PROGRAM_ID))
                 .thenReturn(List.of(existingCycle(TERM_ID, AcademicOfferingCycleStatus.DRAFT)));
@@ -142,7 +158,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @Test
     void programWithAPendingApprovalCycleInTheSameTermCannotOpenAnotherOne() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(programRepository.findById(PROGRAM_ID)).thenReturn(Optional.of(Program.builder().id(PROGRAM_ID).build()));
         when(cycleRepository.findByProgramIdOrderByCreatedAtDesc(PROGRAM_ID))
                 .thenReturn(List.of(existingCycle(TERM_ID, AcademicOfferingCycleStatus.PENDING_APPROVAL)));
@@ -191,7 +207,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @Test
     void courseCycleWithUnknownCourseFailsWithCourseNotFound() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(courseRepository.findById(COURSE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(null, COURSE_ID, TERM_ID)))
@@ -203,7 +219,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @Test
     void courseWithADraftCycleInTheSameTermCannotOpenAnotherOne() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(courseRepository.findById(COURSE_ID)).thenReturn(Optional.of(new Course()));
         when(cycleRepository.findByCourseIdOrderByCreatedAtDesc(COURSE_ID))
                 .thenReturn(List.of(existingCycle(TERM_ID, AcademicOfferingCycleStatus.DRAFT)));
@@ -217,7 +233,7 @@ class CreateAcademicOfferingCycleServiceTest {
     @Test
     void courseWithAPendingApprovalCycleInTheSameTermCannotOpenAnotherOne() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(creator);
+        stubDraft();
         when(courseRepository.findById(COURSE_ID)).thenReturn(Optional.of(new Course()));
         when(cycleRepository.findByCourseIdOrderByCreatedAtDesc(COURSE_ID))
                 .thenReturn(List.of(existingCycle(TERM_ID, AcademicOfferingCycleStatus.PENDING_APPROVAL)));
@@ -239,6 +255,31 @@ class CreateAcademicOfferingCycleServiceTest {
 
         service.create(new CreateAcademicOfferingCycleRequest(null, COURSE_ID, TERM_ID));
 
+        verify(cycleRepository).save(any(AcademicOfferingCycle.class));
+    }
+
+    @Test
+    void termOfAYearWithoutLoadedHolidaysBlocksTheCycleBeforeAnyLookupOrSave() {
+        when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
+        doThrow(new HolidaysNotLoadedForYearException(2077)).when(holidayYearGuard).ensureHolidaysLoadedForTerm(term);
+
+        assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID)))
+                .isInstanceOf(HolidaysNotLoadedForYearException.class);
+
+        verify(cycleDrafter, never()).draftFor(any());
+        verify(programRepository, never()).findById(any());
+        verify(cycleRepository, never()).save(any());
+    }
+
+    @Test
+    void termIsCheckedAgainstTheHolidayGuardAndTheCycleIsCreated() {
+        stubTermAndPersistence();
+        when(programRepository.findById(PROGRAM_ID)).thenReturn(Optional.of(Program.builder().id(PROGRAM_ID).build()));
+        when(cycleRepository.findByProgramIdOrderByCreatedAtDesc(PROGRAM_ID)).thenReturn(List.of());
+
+        service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID));
+
+        verify(holidayYearGuard).ensureHolidaysLoadedForTerm(term);
         verify(cycleRepository).save(any(AcademicOfferingCycle.class));
     }
 }
