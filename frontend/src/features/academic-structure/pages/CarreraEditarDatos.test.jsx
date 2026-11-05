@@ -59,3 +59,46 @@ describe('CarreraEditarDatos', () => {
     });
   });
 });
+
+describe('CarreraEditarDatos load failure', () => {
+  it('does not mount the form nor allow saving when the program fails to load, and retries', async () => {
+    let puts = 0;
+    let fail = true;
+    server.use(
+      http.get(`${API}/programs/9`, () => (fail ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(PROGRAM))),
+      http.put(`${API}/programs/9`, () => {
+        puts += 1;
+        return HttpResponse.json(PROGRAM);
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/administrativo/gestion-academica/carreras/:id/editar" element={<CarreraEditarDatos />} />
+      </Routes>,
+      { route: '/administrativo/gestion-academica/carreras/9/editar' },
+    );
+
+    await screen.findByText('No pudimos cargar la carrera');
+    expect(screen.queryByRole('button', { name: 'Guardar cambios' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(puts).toBe(0);
+
+    fail = false;
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await screen.findByDisplayValue('Enfermería');
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeInTheDocument();
+  });
+
+  it('shows not found without retry when the program does not exist', async () => {
+    server.use(http.get(`${API}/programs/9`, () => new HttpResponse(null, { status: 404 })));
+    renderWithProviders(
+      <Routes>
+        <Route path="/administrativo/gestion-academica/carreras/:id/editar" element={<CarreraEditarDatos />} />
+      </Routes>,
+      { route: '/administrativo/gestion-academica/carreras/9/editar' },
+    );
+    await screen.findByText('No encontramos lo que buscabas');
+    expect(screen.queryByRole('button', { name: 'Guardar cambios' })).not.toBeInTheDocument();
+  });
+});
