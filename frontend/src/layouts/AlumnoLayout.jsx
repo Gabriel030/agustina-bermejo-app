@@ -1,5 +1,6 @@
 import { Home, BookOpen, GraduationCap, LayoutGrid, Settings, CreditCard } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { visibleMenuItems } from '@/routes/menuAccess';
 
 // Notas, Asistencia y Mesas de examen dejaron de ser ítems de nav de primer
 // nivel (Épica 2 Fase 2, pedido explícito del usuario: "menos botones en el
@@ -20,5 +21,5 @@ const ITEMS = [
 ];
 
 export function AlumnoLayout() {
-  return <RoleShell titulo="Alumno" items={ITEMS} />;
+  return <RoleShell titulo="Alumno" items={visibleMenuItems('alumno', ITEMS)} />;
 }

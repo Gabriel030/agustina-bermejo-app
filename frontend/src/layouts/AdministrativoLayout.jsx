@@ -1,5 +1,6 @@
 import { BellRing, CalendarClock, CalendarRange, CalendarDays, Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2, CheckCircle2, Tag } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { visibleMenuItems } from '@/routes/menuAccess';
 
 const ITEMS = [
   { to: '/administrativo/inicio', label: 'Inicio', icon: Home },
@@ -19,5 +20,5 @@ const ITEMS = [
 ];
 
 export function AdministrativoLayout() {
-  return <RoleShell titulo="Administrativo" items={ITEMS} />;
+  return <RoleShell titulo="Administrativo" items={visibleMenuItems('administrativo', ITEMS)} />;
 }
