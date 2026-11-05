@@ -62,3 +62,11 @@ export function groupSubjectsByYear(subjects) {
       items,
     }));
 }
+
+export function isListedInCatalog(item) {
+  return (item.status == null || item.status === 'ACTIVE') && item.visibleInCatalog !== false;
+}
+
+export function subjectTag(subject) {
+  return subject.category === 'ELECTIVE' ? 'Optativa' : null;
+}

@@ -2,7 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { useCurso, useCursoPricing, useCursoTemario } from '@/features/enrollment/hooks/useCatalogo';
 import { formatMoney } from '@/lib/utils';
-import { courseSummary, formatWeeklyWorkload } from '@/lib/catalog';
+import { courseSummary, formatWeeklyWorkload, isListedInCatalog } from '@/lib/catalog';
+import { useCourseViewerStatus } from '@/features/enrollment/hooks/useCatalogViewer';
 import { CatalogBlock } from '@/features/enrollment/components/CatalogBlock';
 import { CatalogItemList } from '@/features/enrollment/components/CatalogItemList';
 import {
@@ -10,6 +11,7 @@ import {
   CatalogDetailLoadError,
   CatalogDetailLoading,
   CatalogEnrollAction,
+  CatalogViewerAction,
 } from '@/features/enrollment/components/CatalogDetailLayout';
 
 const CATALOG_PATH = '/catalogo?tab=cursos';
@@ -29,6 +31,7 @@ export function DetalleCurso() {
   const courseQuery = useCurso(id);
   const pricingQuery = useCursoPricing(id);
   const syllabusQuery = useCursoTemario(id);
+  const viewer = useCourseViewerStatus(id);
   const curso = courseQuery.data;
 
   if (courseQuery.isError) {
@@ -41,8 +44,17 @@ export function DetalleCurso() {
       />
     );
   }
-  if (courseQuery.isLoading || !curso) {
+  if (courseQuery.isLoading || !curso || viewer.loading) {
     return <CatalogDetailLoading />;
+  }
+  if (viewer.canApply && !isListedInCatalog(curso)) {
+    return (
+      <CatalogDetailLoadError
+        error={{ status: 404 }}
+        resource="el curso"
+        backTo={CATALOG_PATH}
+      />
+    );
   }
 
   const reason = enrollmentReason(curso);
@@ -53,11 +65,26 @@ export function DetalleCurso() {
       title={curso.name}
       summary={courseSummary(curso)}
       action={
-        <CatalogEnrollAction
-          onEnroll={() => navigate(`/catalogo/cursos/${id}/inscribirme`)}
-          disabled={!curso.registrationOpen}
-          reason={reason.text}
-          reasonTone={reason.tone}
+        <CatalogViewerAction
+          viewer={viewer}
+          previewText="Vista previa del catálogo"
+          notices={{
+            ENROLLED: { text: 'Ya estás inscripto en este curso.', to: '/alumno/mis-cursos', linkLabel: 'Ir a Mis cursos' },
+            WAITLISTED: { text: 'Estás en la lista de espera de este curso.', to: '/alumno/mis-cursos', linkLabel: 'Ir a Mis cursos' },
+            PENDING_APPLICATION: {
+              text: 'Tu comprobante de pago de este curso está en revisión.',
+              to: '/catalogo?tab=mis-solicitudes',
+              linkLabel: 'Ver mis solicitudes',
+            },
+          }}
+          enrollAction={
+            <CatalogEnrollAction
+              onEnroll={() => navigate(`/catalogo/cursos/${id}/inscribirme`)}
+              disabled={!curso.registrationOpen}
+              reason={reason.text}
+              reasonTone={reason.tone}
+            />
+          }
         />
       }
     >
