@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.red_escuela.backend.identity.domain.LegalAge;
+import com.red_escuela.backend.identity.policy.LegalAge;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.DocumentType;

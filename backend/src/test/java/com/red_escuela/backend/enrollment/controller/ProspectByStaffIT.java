@@ -220,14 +220,15 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void confirmingWithoutBirthDateIsRejectedByValidation() throws Exception {
+    void confirmingWithoutBirthDateIsRejectedAsBirthDateRequired() throws Exception {
         Long studentId = createByStaff("nobirth-" + UUID.randomUUID() + "@example.com");
 
         mockMvc.perform(post("/prospects/{id}/confirm", studentId)
                         .header("Authorization", "Bearer " + directorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"dni\":\"30111222\",\"street\":\"Mitre\",\"city\":\"Rosario\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BIRTH_DATE_REQUIRED"));
     }
 
     @Test

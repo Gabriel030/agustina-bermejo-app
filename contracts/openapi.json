@@ -2219,7 +2219,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "birthDate", "city", "country", "dni", "documentType", "emergencyContact", "floor", "guardian", "nationality", "number", "postalCode", "sex", "state", "street" ],
+        "required" : [ "city", "country", "dni", "documentType", "floor", "number", "postalCode", "state", "street" ],
         "type" : "object"
       },
       "CorequisiteResponse" : {
@@ -9494,7 +9494,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "birthDate", "city", "country", "dni", "documentType", "emergencyContact", "floor", "guardian", "nationality", "number", "postalCode", "sex", "state", "street" ],
+        "required" : [ "city", "country", "dni", "documentType", "floor", "number", "postalCode", "state", "street" ],
         "type" : "object"
       },
       "ScheduleSlotRequest" : {

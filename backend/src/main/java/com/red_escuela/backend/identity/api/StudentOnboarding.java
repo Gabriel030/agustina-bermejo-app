@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.api;
 
 import com.red_escuela.backend.shared.time.ApplicationTime;
-import com.red_escuela.backend.identity.domain.LegalAge;
+import com.red_escuela.backend.identity.policy.LegalAge;
 import com.red_escuela.backend.identity.exception.BirthDateRequiredException;
 import com.red_escuela.backend.identity.exception.GuardianRequiredForMinorException;
 import com.red_escuela.backend.shared.domain.DocumentNumber;

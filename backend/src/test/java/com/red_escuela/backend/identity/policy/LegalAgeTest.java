@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.domain;
+package com.red_escuela.backend.identity.policy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
