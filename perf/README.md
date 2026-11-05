@@ -13,7 +13,7 @@ docker compose -f perf/docker-compose.perf.yml up -d
 2. Backend con el perfil `perf` (`local,demo` crea el esquema por Flyway y los usuarios `*.demo`). Desde `backend/`:
 
 ```
-JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES_ACTIVE=local,demo,perf SERVER_PORT=8461 DB_URL=jdbc:postgresql://localhost:5461/perf ./mvnw -q spring-boot:run
+ACTUATOR_USER=perf ACTUATOR_PASSWORD=perf JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES_ACTIVE=local,demo,perf SERVER_PORT=8461 DB_URL=jdbc:postgresql://localhost:5461/perf ./mvnw -q spring-boot:run
 ```
 
 3. Con el backend ya arrancado (el seed necesita las tablas y los datos demo), cargar el seed ampliado una sola vez:
@@ -32,13 +32,15 @@ python3 perf/measure.py && python3 perf/check_budget.py
 
 ## Pool Hikari y percentiles
 
+El actuator exige credenciales (sin `ACTUATOR_USER` y `ACTUATOR_PASSWORD` al arrancar responde 401), por eso el paso 2 las define.
+
 ```
-curl -s localhost:8461/actuator/metrics/hikaricp.connections.pending
-curl -s localhost:8461/actuator/metrics/hikaricp.connections.active
-curl -s localhost:8461/actuator/prometheus | grep http_server_requests_seconds
+curl -s -u perf:perf localhost:8461/actuator/metrics/hikaricp.connections.pending
+curl -s -u perf:perf localhost:8461/actuator/metrics/hikaricp.connections.active
+curl -s -u perf:perf localhost:8461/actuator/prometheus | grep http_server_requests_seconds_bucket
 ```
 
-Si `ACTUATOR_USER` y `ACTUATOR_PASSWORD` estan seteadas, pasar `-u "$ACTUATOR_USER:$ACTUATOR_PASSWORD"`.
+Con el histograma activo, Prometheus exporta buckets de `http_server_requests_seconds`: p50, p95 y p99 se calculan con `histogram_quantile` sobre esos buckets; no aparecen como series `quantile` ni en `/actuator/metrics`.
 
 ## Consultas lentas
 
