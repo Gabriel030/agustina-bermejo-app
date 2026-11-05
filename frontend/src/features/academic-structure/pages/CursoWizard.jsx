@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useCreateCourse } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
 import { FormField, SelectField } from '@/features/academic-structure/components/FormField';
 import {
   countErrors,
@@ -19,23 +20,18 @@ import {
   validateCourseBasics,
   validateCourseDetail,
 } from '@/features/academic-structure/lib/offeringForm';
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
 
 const PASOS = [
   { key: 'datos', label: 'Datos básicos' },
   { key: 'detalle', label: 'Detalle' },
 ];
 
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
-];
-
 function estadoInicial() {
   return {
     paso: 'datos',
     pasosVisitados: ['datos'],
+    showErrors: false,
     name: '',
     termId: '',
     capacity: '',
@@ -56,6 +52,8 @@ function reducer(state, action) {
   switch (action.type) {
     case 'SET':
       return { ...state, [action.campo]: action.valor };
+    case 'SHOW_ERRORS':
+      return { ...state, showErrors: true };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso, pasosVisitados: visitado(state, action.paso) };
     default:
@@ -65,7 +63,7 @@ function reducer(state, action) {
 
 function Paso1Datos({ state, dispatch }) {
   const { data: terminos, isLoading: loadingTerms, isError: termsFailed, error: termsError, refetch: refetchTerms } = useTerminos();
-  const [errors, setErrors] = useState({});
+  const errors = state.showErrors ? validateCourseBasics(state) : {};
 
   const termOptions = [
     { value: '', label: 'Seleccionar período…' },
@@ -76,9 +74,10 @@ function Paso1Datos({ state, dispatch }) {
   ];
 
   function handleContinuar() {
-    const found = validateCourseBasics(state);
-    setErrors(found);
-    if (countErrors(found) > 0) return;
+    if (countErrors(validateCourseBasics(state)) > 0) {
+      dispatch({ type: 'SHOW_ERRORS' });
+      return;
+    }
     dispatch({ type: 'IR_A_PASO', paso: 'detalle' });
   }
 
@@ -251,8 +250,32 @@ function Paso2Detalle({ state, dispatch }) {
   );
 }
 
+const FIELD_KEYS = [
+  'name',
+  'termId',
+  'capacity',
+  'price',
+  'teachingMode',
+  'schedule',
+  'durationMonths',
+  'registrationStart',
+  'registrationEnd',
+];
+
 export function CursoWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
+  const initial = estadoInicial();
+  const dirty = FIELD_KEYS.some((key) => state[key] !== initial[key]);
+  const { guardDialog } = useUnsavedChangesGuard(dirty);
+
+  function handleStepClick(paso) {
+    if (paso !== 'datos' && countErrors(validateCourseBasics(state)) > 0) {
+      dispatch({ type: 'IR_A_PASO', paso: 'datos' });
+      dispatch({ type: 'SHOW_ERRORS' });
+      return;
+    }
+    dispatch({ type: 'IR_A_PASO', paso });
+  }
 
   return (
     <PageContainer>
@@ -272,11 +295,12 @@ export function CursoWizard() {
           pasos={PASOS}
           pasoActual={state.paso}
           pasosVisitados={state.pasosVisitados}
-          onStepClick={(key) => dispatch({ type: 'IR_A_PASO', paso: key })}
+          onStepClick={handleStepClick}
         />
 
         {state.paso === 'datos' && <Paso1Datos state={state} dispatch={dispatch} />}
         {state.paso === 'detalle' && <Paso2Detalle state={state} dispatch={dispatch} />}
+        {guardDialog}
       </div>
     </PageContainer>
   );

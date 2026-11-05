@@ -19,13 +19,8 @@ import {
   validateCourseBasics,
   validateCourseDetail,
 } from '@/features/academic-structure/lib/offeringForm';
-
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
-];
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
 
 function isoToDatetimeLocal(iso) {
   if (!iso) return '';
@@ -73,6 +68,17 @@ function CursoEditarDatosForm({ id, course }) {
   const [registrationEnd, setRegistrationEnd] = useState(isoToDatetimeLocal(course.registrationEnd));
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
+
+  const dirty =
+    name !== (course.name ?? '') ||
+    capacity !== (course.capacity?.toString() ?? '') ||
+    price !== (course.price ? String(moneyValue(course.price)) : '') ||
+    teachingMode !== (course.teachingMode ?? '') ||
+    schedule !== (course.schedule ?? '') ||
+    durationMonths !== (course.durationMonths?.toString() ?? '') ||
+    registrationStart !== isoToDatetimeLocal(course.registrationStart) ||
+    registrationEnd !== isoToDatetimeLocal(course.registrationEnd);
+  const { requestNavigation, guardDialog } = useUnsavedChangesGuard(dirty);
 
   async function handleGuardar() {
     const found = {
@@ -209,7 +215,7 @@ function CursoEditarDatosForm({ id, course }) {
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
-              onClick={() => navigate(`/administrativo/gestion-academica/cursos/${id}`)}
+              onClick={() => requestNavigation(`/administrativo/gestion-academica/cursos/${id}`)}
             >
               Cancelar
             </Button>
@@ -218,6 +224,7 @@ function CursoEditarDatosForm({ id, course }) {
             </Button>
           </div>
         </GlassCard>
+        {guardDialog}
       </div>
     </PageContainer>
   );
