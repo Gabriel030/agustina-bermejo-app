@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.DocumentType;
@@ -25,10 +26,10 @@ public record StudentRecordResponse(
         AddressResponse domicilio,
         String motivoBaja,
         String detalleBaja,
-        Boolean emailVerified,
-        LocalDate birthDate,
-        LocalDateTime registeredAt,
-        LocalDateTime withdrawnAt) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean emailVerified,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate birthDate,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime registeredAt,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime withdrawnAt) {
 
     public static StudentRecordResponse from(Student student, boolean includeWithdrawalReason) {
         var p = student.getPerson();

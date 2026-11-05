@@ -9961,7 +9961,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "birthDate", "detalleBaja", "dni", "documentType", "domicilio", "email", "emailVerified", "id", "legajo", "motivoBaja", "nacionalidad", "nombre", "onboardingStatus", "personId", "registeredAt", "sexo", "status", "telefono", "username", "withdrawnAt" ],
+        "required" : [ "apellido", "detalleBaja", "dni", "documentType", "domicilio", "email", "id", "legajo", "motivoBaja", "nacionalidad", "nombre", "onboardingStatus", "personId", "sexo", "status", "telefono", "username" ],
         "type" : "object"
       },
       "StudentResponse" : {
@@ -10014,7 +10014,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "dni", "email", "emailVerified", "hasAvatar", "id", "nombre", "onboardingStatus", "personId", "registeredAt", "status", "username", "withdrawalReason", "withdrawnAt" ],
+        "required" : [ "apellido", "dni", "email", "emailVerified", "id", "nombre", "onboardingStatus", "personId", "status", "username" ],
         "type" : "object"
       },
       "SubjectAttendanceSummaryResponse" : {
