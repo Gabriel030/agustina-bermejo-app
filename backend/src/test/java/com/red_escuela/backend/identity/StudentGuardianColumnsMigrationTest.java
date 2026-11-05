@@ -18,7 +18,7 @@ class StudentGuardianColumnsMigrationTest {
 
     @Test
     void existingStudentsKeepTheirRowsWithNullGuardianData() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("183")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("184")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.execute("alter table student disable trigger all");
             jdbc.update("insert into student (person_id, institution_id) values (1, 1)");
@@ -35,7 +35,7 @@ class StudentGuardianColumnsMigrationTest {
 
     @Test
     void guardianColumnsAcceptTheMaximumLengthsOfTheRequests() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("183")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("184")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.execute("alter table student disable trigger all");
             jdbc.update("insert into student (person_id, institution_id) values (1, 1)");
