@@ -5,6 +5,7 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { TopHeader } from '@/components/TopHeader';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
+import { SkipToContent } from '@/components/SkipToContent';
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
 // Lo que varía por rol (título, ítems de nav) lo define cada *Layout.jsx.
@@ -30,6 +31,7 @@ export function RoleShell({ titulo, items }) {
     // colapsa a un menú hamburguesa (MobileMenu, drawer lateral) en pantallas chicas,
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
     <div className="flex h-screen flex-col gap-5 overflow-hidden p-5 lg:flex-row">
+      <SkipToContent />
       <MeshBackground />
       <Sidebar titulo={titulo} items={items} />
       {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
@@ -45,7 +47,7 @@ export function RoleShell({ titulo, items }) {
             empuja todo el layout más allá del viewport en mobile, rompiendo
             la regla de "nunca scroll horizontal del body". Encontrado
             verificando Catálogo en 495px de ancho. */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <main id="main-content" tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-y-auto focus:outline-none">
           {/* Breadcrumb: vive acá (no en cada página) porque es el único lugar que
               todas las rutas de rol comparten — ver useBreadcrumb.js para el mapeo
               ruta→items. No forma parte de la animación de entrada/salida de abajo

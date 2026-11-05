@@ -75,7 +75,7 @@ export function MobileMenu({ titulo, items }) {
         <button
           type="button"
           aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink backdrop-blur-[28px] backdrop-saturate-[1.6] lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink backdrop-blur-[28px] backdrop-saturate-[1.6] lg:hidden"
         >
           <HamburgerIcon open={open} />
         </button>
