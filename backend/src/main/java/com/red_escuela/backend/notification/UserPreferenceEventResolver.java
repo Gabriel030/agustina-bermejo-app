@@ -13,6 +13,7 @@ public final class UserPreferenceEventResolver {
     public static Optional<NotificationEvent> resolve(NotificationType type) {
         return switch (type) {
             case ANNOUNCEMENT_PUBLISHED, ANNOUNCEMENT_UPDATED -> Optional.of(NotificationEvent.INSTITUTIONAL_NOTICE);
+            case EXAM_BOARD_RESCHEDULED, EXAM_BOARD_CANCELED -> Optional.of(NotificationEvent.EXAM_BOARD_REGISTERED);
             case COURSE_WAITLIST_EXPIRED, PROGRAM_APPLICATION_APPROVED -> Optional.of(NotificationEvent.SUBJECT_ENROLLMENT);
             case COLLECTION_REMINDER -> Optional.of(NotificationEvent.PAYMENT_DUE_SOON);
             case HOLIDAYS_MISSING_FOR_NEXT_YEAR -> Optional.of(NotificationEvent.HOLIDAY_CALENDAR_REMINDER);

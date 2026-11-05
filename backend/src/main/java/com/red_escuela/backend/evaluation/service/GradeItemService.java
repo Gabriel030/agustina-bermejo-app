@@ -218,7 +218,7 @@ public class GradeItemService {
         }
         ExamBoard examBoard = examBoardRepository.findById(examBoardId)
                 .orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
-        if (examBoard.getStatus() == com.red_escuela.backend.evaluation.entity.ExamBoardStatus.CLOSED) {
+        if (examBoard.getStatus() != com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED) {
             throw new ExamBoardClosedException(examBoardId);
         }
         if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {

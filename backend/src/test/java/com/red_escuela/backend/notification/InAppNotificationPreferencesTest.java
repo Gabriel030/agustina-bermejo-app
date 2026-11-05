@@ -26,6 +26,7 @@ class InAppNotificationPreferencesTest {
 
     private static final Set<NotificationType> USER_CONFIGURABLE = EnumSet.of(
             NotificationType.ANNOUNCEMENT_PUBLISHED, NotificationType.ANNOUNCEMENT_UPDATED,
+            NotificationType.EXAM_BOARD_RESCHEDULED, NotificationType.EXAM_BOARD_CANCELED,
             NotificationType.COURSE_WAITLIST_EXPIRED, NotificationType.PROGRAM_APPLICATION_APPROVED,
             NotificationType.COLLECTION_REMINDER, NotificationType.HOLIDAYS_MISSING_FOR_NEXT_YEAR);
 
@@ -60,6 +61,8 @@ class InAppNotificationPreferencesTest {
     void announcementsEnrollmentsAndRemindersMapToTheirMatrixEvent() {
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.ANNOUNCEMENT_PUBLISHED)).contains(NotificationEvent.INSTITUTIONAL_NOTICE);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.ANNOUNCEMENT_UPDATED)).contains(NotificationEvent.INSTITUTIONAL_NOTICE);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.EXAM_BOARD_RESCHEDULED)).contains(NotificationEvent.EXAM_BOARD_REGISTERED);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.EXAM_BOARD_CANCELED)).contains(NotificationEvent.EXAM_BOARD_REGISTERED);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.COURSE_WAITLIST_EXPIRED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.PROGRAM_APPLICATION_APPROVED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.COLLECTION_REMINDER)).contains(NotificationEvent.PAYMENT_DUE_SOON);
