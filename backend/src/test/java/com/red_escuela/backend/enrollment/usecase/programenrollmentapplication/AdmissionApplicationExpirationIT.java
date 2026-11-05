@@ -137,6 +137,7 @@ class AdmissionApplicationExpirationIT extends AbstractIntegrationTest {
             entityManager.persist(student);
             StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
             Program program = new Program();
+            program.setVisibleInCatalog(true);
             program.setName("Carrera " + System.nanoTime());
             program.setTotalYears(3);
             program.setTotalCreditsRequired(0);

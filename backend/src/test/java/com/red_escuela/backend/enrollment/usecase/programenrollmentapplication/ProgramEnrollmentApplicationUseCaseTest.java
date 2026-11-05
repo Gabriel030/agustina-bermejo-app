@@ -129,6 +129,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     private Program persistProgram(String nombre) {
         Program program = new Program();
+        program.setVisibleInCatalog(true);
         program.setName(nombre);
         program.setTotalYears(3);
         program.setTotalCreditsRequired(0);
