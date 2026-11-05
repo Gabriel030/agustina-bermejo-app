@@ -156,4 +156,78 @@ describe('AdministrativoSubjectWizard', () => {
       expect(toastMock.error).toHaveBeenCalledWith('Ya existe una materia con ese código o ese nombre.'),
     );
   });
+
+  it('shows a not-found state and never creates a subject when the subject to edit does not exist', async () => {
+    const posts = [];
+    server.use(
+      http.get(`${API}/subjects/99`, () => HttpResponse.json(errorBody('SUBJECT_NOT_FOUND'), { status: 404 })),
+      http.post(`${API}/subjects`, async ({ request }) => {
+        posts.push(await request.json());
+        return HttpResponse.json(subject({ id: 10 }), { status: 201 });
+      }),
+    );
+    mount('/administrativo/gestion-academica/99');
+
+    expect(await screen.findByText('Esta materia no existe o ya no está disponible')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('MAT1')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver al banco de materias' })).toHaveAttribute(
+      'href',
+      '/administrativo/gestion-academica',
+    );
+    expect(posts).toHaveLength(0);
+  });
+
+  it('offers to retry on a server error and loads the subject once it answers', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/subjects/5`, () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json(errorBody('INTERNAL_ERROR', { retryable: true }), { status: 500 })
+          : HttpResponse.json(subject());
+      }),
+    );
+    const user = userEvent.setup();
+    mount('/administrativo/gestion-academica/5');
+
+    expect(await screen.findByText('No pudimos cargar la materia')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('MAT1')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByDisplayValue('ANAT')).toBeInTheDocument();
+  });
+
+  it('shows a loading skeleton and no form while the subject is loading', async () => {
+    server.use(http.get(`${API}/subjects/5`, async () => new Promise(() => {})));
+    mount('/administrativo/gestion-academica/5');
+
+    expect(await screen.findByRole('heading', { name: 'Editar materia' })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('MAT1')).not.toBeInTheDocument();
+  });
+
+  it('shows a pending subject as pending approval and blocks saving', async () => {
+    server.use(http.get(`${API}/subjects/5`, () => HttpResponse.json(subject({ status: 'PENDING_APPROVAL' }))));
+    const user = userEvent.setup();
+    mount('/administrativo/gestion-academica/5');
+
+    await goToTeachingStep(user);
+
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+  });
+
+  it('shows an inactive subject with its code locked', async () => {
+    server.use(http.get(`${API}/subjects/5`, () => HttpResponse.json(subject({ status: 'INACTIVE' }))));
+    mount('/administrativo/gestion-academica/5');
+
+    expect(await screen.findByDisplayValue('ANAT')).toBeDisabled();
+  });
+
+  it('associates each label with its field', async () => {
+    mount('/administrativo/gestion-academica/nueva');
+
+    expect(await screen.findByLabelText(/Código/)).toBe(screen.getByPlaceholderText('MAT1'));
+    expect(screen.getByLabelText(/Nombre/)).toBe(screen.getByPlaceholderText('Matemática I'));
+    expect(screen.getByLabelText(/Horas semanales teóricas/)).toBe(screen.getByPlaceholderText('3'));
+  });
 });
