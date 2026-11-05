@@ -7,6 +7,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useCreateCourse } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 
@@ -86,7 +87,7 @@ function CampoSelect({ label, value, onChange, options, required }) {
 }
 
 function Paso1Datos({ state, dispatch }) {
-  const { data: terminos, isLoading: loadingTerms } = useTerminos();
+  const { data: terminos, isLoading: loadingTerms, isError: termsFailed, error: termsError, refetch: refetchTerms } = useTerminos();
   const [error, setError] = useState(null);
 
   const termOptions = [
@@ -127,17 +128,21 @@ function Paso1Datos({ state, dispatch }) {
         />
       </div>
 
-      <CampoSelect
-        label={
-          <span>
-            Período académico <span className="text-danger">*</span>
-          </span>
-        }
-        value={state.termId}
-        onChange={(v) => dispatch({ type: 'SET', campo: 'termId', valor: v })}
-        options={loadingTerms ? [{ value: '', label: 'Cargando…' }] : termOptions}
-        required
-      />
+      {termsFailed ? (
+        <LoadErrorState error={termsError} onRetry={refetchTerms} resource="los períodos académicos" bare />
+      ) : (
+        <CampoSelect
+          label={
+            <span>
+              Período académico <span className="text-danger">*</span>
+            </span>
+          }
+          value={state.termId}
+          onChange={(v) => dispatch({ type: 'SET', campo: 'termId', valor: v })}
+          options={loadingTerms ? [{ value: '', label: 'Cargando…' }] : termOptions}
+          required
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">

@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Paginador } from '@/components/Paginador';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -59,6 +60,8 @@ export function TabPlanDeEstudio({ carreraId }) {
     setPage,
     totalPages,
     cargando,
+    fallo,
+    recargar,
     estado,
     cambiarEstado,
     anio,
@@ -127,6 +130,12 @@ export function TabPlanDeEstudio({ carreraId }) {
                     <Skeleton className="h-10" />
                     <Skeleton className="h-10" />
                   </div>
+                </TableCell>
+              </TableRow>
+            ) : fallo ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <LoadErrorState onRetry={recargar} resource="el plan de estudio" bare />
                 </TableCell>
               </TableRow>
             ) : pagina.length === 0 ? (

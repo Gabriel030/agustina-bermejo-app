@@ -5,7 +5,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { BandejaTramites } from '@/components/director/BandejaTramites';
 import { useEgresosPendientes, useHistorialEgresos } from '@/features/graduation/hooks/useGraduation';
 import { formatearFecha } from '@/lib/comisiones';
-import { ESTADO_TRAMITE_LABEL } from '@/lib/aprobaciones';
+import { ageLabel, ESTADO_TRAMITE_LABEL } from '@/lib/aprobaciones';
 
 function Fila({ g, esHistorial }) {
   const pill = ESTADO_TRAMITE_LABEL[g.status] ?? { label: g.status, tone: 'neutral' };
@@ -17,18 +17,14 @@ function Fila({ g, esHistorial }) {
       <div>
         <div className="font-heading text-[14px] font-semibold text-ink">{g.studentName} · {g.programName}</div>
         <div className="mt-0.5 text-[12px] text-ink-faint">
-          {esHistorial ? `Decidido ${formatearFecha(g.decidedAt) ?? '—'}` : `Solicitado ${formatearFecha(g.requestedAt) ?? '—'}`}
+          {esHistorial ? `Decidido ${formatearFecha(g.decidedAt) ?? '—'}` : `Solicitado ${formatearFecha(g.requestedAt) ?? '—'} · ${ageLabel(g.requestedAt) ?? ''}`}
         </div>
         {g.status === 'REJECTED' && g.rejectionReason && (
           <div className="mt-0.5 text-[12px] font-semibold text-danger">Motivo: &ldquo;{g.rejectionReason}&rdquo;</div>
         )}
       </div>
       <div className="flex items-center gap-3">
-        {esHistorial ? (
-          <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
-        ) : (
-          <StatusPill tone="warning">Pendiente de revisión</StatusPill>
-        )}
+        <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
     </Link>

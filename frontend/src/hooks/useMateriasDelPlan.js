@@ -11,13 +11,28 @@ const ESTADO_SIN_PLAN = { APPROVED: 'aprobada', REGULAR: 'regular', FAILED: 'des
 // en-curso/aprobada/disponible/bloqueada, extraída acá para no duplicar la lógica
 // entre las tres pestañas de Mis carreras (Épica 2 Fase 2).
 export function useMateriasDelPlan(carreraSeleccionada) {
-  const { data: matriculaciones, isLoading: cargandoMatriculaciones } = useMisMatriculaciones();
-  const { data: inscripciones, isLoading: cargandoInscripciones } = useMisInscripciones();
+  const {
+    data: matriculaciones,
+    isLoading: cargandoMatriculaciones,
+    isError: fallaronMatriculaciones,
+    refetch: recargarMatriculaciones,
+  } = useMisMatriculaciones();
+  const {
+    data: inscripciones,
+    isLoading: cargandoInscripciones,
+    isError: fallaronInscripciones,
+    refetch: recargarInscripciones,
+  } = useMisInscripciones();
 
   const activas = (matriculaciones ?? []).filter((m) => m.status !== 'WITHDRAWN');
   const matricula = activas.find((m) => m.id === carreraSeleccionada);
 
-  const { data: planDeEstudio, isLoading: cargandoPlan } = useProgramaPlanDeEstudio(matricula?.programId);
+  const {
+    data: planDeEstudio,
+    isLoading: cargandoPlan,
+    isError: fallaElPlan,
+    refetch: recargarPlan,
+  } = useProgramaPlanDeEstudio(matricula?.programId);
 
   const filas = useMemo(() => {
     const todasLasInscripciones = inscripciones ?? [];
@@ -65,5 +80,11 @@ export function useMateriasDelPlan(carreraSeleccionada) {
     activas,
     matricula,
     cargando: cargandoMatriculaciones || cargandoInscripciones || (!!matricula && cargandoPlan),
+    fallo: fallaronMatriculaciones || fallaronInscripciones || (!!matricula && fallaElPlan),
+    recargar: () => {
+      if (fallaronMatriculaciones) recargarMatriculaciones();
+      if (fallaronInscripciones) recargarInscripciones();
+      if (fallaElPlan) recargarPlan();
+    },
   };
 }

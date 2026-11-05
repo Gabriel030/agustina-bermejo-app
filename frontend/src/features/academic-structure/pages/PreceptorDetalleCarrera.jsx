@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { usePrograma } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hooks/useCiclos';
@@ -87,7 +88,7 @@ function PanelCiclo({ ciclo }) {
   const basePath = useRoleBasePath();
   const navigate = useNavigate();
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
-  const { data: secciones, isLoading } = useCicloSecciones(ciclo.id);
+  const { data: secciones, isLoading, isError, error, refetch } = useCicloSecciones(ciclo.id);
 
   return (
     <GlassCard className="flex flex-col gap-4 p-4">
@@ -118,6 +119,8 @@ function PanelCiclo({ ciclo }) {
         <div className="flex flex-col gap-2">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)}
         </div>
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="las comisiones" bare />
       ) : !secciones?.length ? (
         <EmptyState title="Este ciclo aún no tiene comisiones." className="py-6" />
       ) : (
@@ -133,8 +136,20 @@ export function PreceptorDetalleCarrera() {
   const basePath = useRoleBasePath();
   const { programaId } = useParams();
   const navigate = useNavigate();
-  const { data: programa, isLoading: loadingPrograma } = usePrograma(programaId);
-  const { data: ciclos, isLoading: loadingCiclos } = useCiclos({ programId: programaId });
+  const {
+    data: programa,
+    isLoading: loadingPrograma,
+    isError: programaFailed,
+    error: programaError,
+    refetch: refetchPrograma,
+  } = usePrograma(programaId);
+  const {
+    data: ciclos,
+    isLoading: loadingCiclos,
+    isError: ciclosFailed,
+    error: ciclosError,
+    refetch: refetchCiclos,
+  } = useCiclos({ programId: programaId });
   const [verAnteriores, setVerAnteriores] = useState(false);
 
   const ciclosActivos = (ciclos ?? []).filter(
@@ -149,6 +164,20 @@ export function PreceptorDetalleCarrera() {
     return (
       <PageContainer>
         <Skeleton className="h-8 w-48 rounded-xl" />
+      </PageContainer>
+    );
+  }
+
+  if (programaFailed) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={programaError}
+          onRetry={refetchPrograma}
+          resource="la carrera"
+          backTo={`${basePath}/oferta-academica?tab=carreras`}
+          backLabel="la oferta académica"
+        />
       </PageContainer>
     );
   }
@@ -196,6 +225,8 @@ export function PreceptorDetalleCarrera() {
           <div className="flex flex-col gap-3">
             <Skeleton className="h-[200px] w-full rounded-2xl" />
           </div>
+        ) : ciclosFailed ? (
+          <LoadErrorState error={ciclosError} onRetry={refetchCiclos} resource="los ciclos" />
         ) : !ciclosMostrados.length ? (
           <GlassCard className="p-6">
             <EmptyState

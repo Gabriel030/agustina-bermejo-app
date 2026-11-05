@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { CalendarioConfiguracion } from '@/features/evaluation/components/CalendarioConfiguracion';
 import {
@@ -71,7 +72,7 @@ function CampoFecha({ label, value, onChange, disabled, error, min, max }) {
 
 export function DocenteConfiguracionEvaluacion() {
   const { sectionId } = useParams();
-  const { data: config, isLoading } = useConfiguracionComision(sectionId);
+  const { data: config, isLoading, isError, error: loadError, refetch } = useConfiguracionComision(sectionId);
   const { data: feriados } = useHolidays();
   const guardarBorrador = useGuardarBorradorComision(sectionId);
   const enviarAAprobacion = useEnviarComisionAAprobacion(sectionId);
@@ -95,6 +96,10 @@ export function DocenteConfiguracionEvaluacion() {
       });
     }
   }, [config]);
+
+  if (isError) {
+    return <LoadErrorState error={loadError} onRetry={refetch} resource="la configuración de evaluación" />;
+  }
 
   if (isLoading || !form) {
     return (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, MapPin } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,7 +35,7 @@ const REGISTRATION_ERROR_MESSAGES = {
 };
 
 export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscripciones }) {
-  const { data: mesas, isLoading } = useMesasDisponibles(subjectId);
+  const { data: mesas, isLoading, isError, error, refetch } = useMesasDisponibles(subjectId);
   const inscribirme = useInscribirmeAMesa();
   const darmeDeBaja = useDarmeDeBajaDeMesa();
   const [registrationError, setRegistrationError] = useState(null);
@@ -43,6 +44,14 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
     return (
       <div className="flex flex-col gap-2 border-t border-border p-4">
         <Skeleton className="h-12" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="border-t border-border p-4">
+        <LoadErrorState error={error} onRetry={refetch} resource="los llamados" bare />
       </div>
     );
   }
@@ -136,13 +145,28 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
 // propias del alumno; ambos endpoints se agregaron para esto (GET /me/exam-boards?subjectId=,
 // GET /me/exam-board-registrations).
 export function TabMesasDeExamen({ carreraId }) {
-  const { data: inscripciones, isLoading: cargandoInscripciones } = useMisInscripciones();
-  const { data: misMesas, isLoading: cargandoMesas } = useMisInscripcionesAMesas();
+  const {
+    data: inscripciones,
+    isLoading: cargandoInscripciones,
+    isError: inscripcionesFallaron,
+    refetch: recargarInscripciones,
+  } = useMisInscripciones();
+  const {
+    data: misMesas,
+    isLoading: cargandoMesas,
+    isError: mesasFallaron,
+    refetch: recargarMesas,
+  } = useMisInscripcionesAMesas();
   const darmeDeBaja = useDarmeDeBajaDeMesa();
   const [subTab, setSubTab] = useState('para-rendir');
   const [expandidoId, setExpandidoId] = useState(null);
 
   const regulares = (inscripciones ?? []).filter((i) => (!carreraId || i.programEnrollmentId === carreraId) && i.status === 'REGULAR');
+
+  function recargarTodo() {
+    if (inscripcionesFallaron) recargarInscripciones();
+    if (mesasFallaron) recargarMesas();
+  }
 
   function toggleFila(id) {
     setExpandidoId((actual) => (actual === id ? null : id));
@@ -163,6 +187,8 @@ export function TabMesasDeExamen({ carreraId }) {
           <div className="flex flex-col gap-2">
             <Skeleton className="h-16" />
           </div>
+        ) : inscripcionesFallaron || mesasFallaron ? (
+          <LoadErrorState onRetry={recargarTodo} resource="tus mesas de examen" bare />
         ) : regulares.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-8">
             <EmptyState
@@ -208,6 +234,8 @@ export function TabMesasDeExamen({ carreraId }) {
         <div className="flex flex-col gap-2">
           <Skeleton className="h-16" />
         </div>
+      ) : mesasFallaron ? (
+        <LoadErrorState onRetry={recargarMesas} resource="tus inscripciones a mesas" bare />
       ) : !misMesas || misMesas.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8">
           <EmptyState title="Todavía no te inscribiste a ninguna mesa" description="Cuando te inscribas a un llamado, lo vas a ver acá." />

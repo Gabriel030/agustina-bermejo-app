@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import {
   usePrerequisites,
   useAddPrerequisite,
@@ -37,7 +38,7 @@ const COREQUISITE_ERROR_MESSAGES = {
 };
 
 function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
-  const { data: planSubjects, isLoading } = useProgramSubjects(programId, 'ACTIVE');
+  const { data: planSubjects, isLoading, isError, error, refetch } = useProgramSubjects(programId, 'ACTIVE');
   const [search, setSearch] = useState('');
 
   if (selected) {
@@ -67,6 +68,7 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
     <div className="flex flex-col gap-2">
       <Input placeholder="Buscar materia del plan…" value={search} onChange={(e) => setSearch(e.target.value)} />
       {isLoading && <Skeleton rows={2} />}
+      {isError && <LoadErrorState error={error} onRetry={refetch} resource="las materias del plan" bare />}
       <div className="flex max-h-56 flex-col divide-y divide-neutral-bg overflow-y-auto">
         {candidates.map((ps) => (
           <button
@@ -79,7 +81,7 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
             <span className="text-[13.5px] font-medium text-ink">{ps.subjectName}</span>
           </button>
         ))}
-        {!isLoading && candidates.length === 0 && (
+        {!isLoading && !isError && candidates.length === 0 && (
           <p className="py-3 text-center text-[13px] text-ink-faint">No hay otras materias en el plan que coincidan.</p>
         )}
       </div>
@@ -232,8 +234,14 @@ function FormAgregarCorequisito({ programId, programSubjectId, onCancel }) {
 }
 
 export function PanelCorrelativas({ open, onClose, programId, programSubjectId, subjectName }) {
-  const { data: prerequisites, isLoading } = usePrerequisites(programSubjectId);
-  const { data: corequisites, isLoading: loadingCorequisites } = useCorequisites(programSubjectId);
+  const { data: prerequisites, isLoading, isError, error, refetch } = usePrerequisites(programSubjectId);
+  const {
+    data: corequisites,
+    isLoading: loadingCorequisites,
+    isError: corequisitesFailed,
+    error: corequisitesError,
+    refetch: refetchCorequisites,
+  } = useCorequisites(programSubjectId);
   const removePrerequisite = useRemovePrerequisite();
   const removeCorequisite = useRemoveCorequisite();
   const [showForm, setShowForm] = useState(false);
@@ -283,11 +291,13 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
 
         {isLoading && <Skeleton rows={3} />}
 
-        {!isLoading && (prerequisites ?? []).length === 0 && !showForm && (
+        {isError && <LoadErrorState error={error} onRetry={refetch} resource="las correlativas" bare />}
+
+        {!isLoading && !isError && (prerequisites ?? []).length === 0 && !showForm && (
           <p className="text-[13px] text-ink-faint">Sin correlativas definidas.</p>
         )}
 
-        {!isLoading && (prerequisites ?? []).length > 0 && (
+        {!isLoading && !isError && (prerequisites ?? []).length > 0 && (
           <div className="flex flex-col divide-y divide-neutral-bg">
             {prerequisites.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-3 py-2">
@@ -323,7 +333,7 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
             onCancel={() => setShowForm(false)}
           />
         ) : (
-          <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="self-start">
+          <Button variant="outline" size="sm" disabled={isError} onClick={() => setShowForm(true)} className="self-start">
             + Agregar correlativa
           </Button>
         )}
@@ -337,11 +347,15 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
 
         {loadingCorequisites && <Skeleton rows={2} />}
 
-        {!loadingCorequisites && (corequisites ?? []).length === 0 && !showCoreqForm && (
+        {corequisitesFailed && (
+          <LoadErrorState error={corequisitesError} onRetry={refetchCorequisites} resource="los co-requisitos" bare />
+        )}
+
+        {!loadingCorequisites && !corequisitesFailed && (corequisites ?? []).length === 0 && !showCoreqForm && (
           <p className="text-[13px] text-ink-faint">Sin co-requisitos definidos.</p>
         )}
 
-        {!loadingCorequisites && (corequisites ?? []).length > 0 && (
+        {!loadingCorequisites && !corequisitesFailed && (corequisites ?? []).length > 0 && (
           <div className="flex flex-col divide-y divide-neutral-bg">
             {corequisites.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 py-2">
@@ -373,7 +387,7 @@ export function PanelCorrelativas({ open, onClose, programId, programSubjectId, 
             onCancel={() => setShowCoreqForm(false)}
           />
         ) : (
-          <Button variant="outline" size="sm" onClick={() => setShowCoreqForm(true)} className="self-start">
+          <Button variant="outline" size="sm" disabled={corequisitesFailed} onClick={() => setShowCoreqForm(true)} className="self-start">
             + Agregar co-requisito
           </Button>
         )}

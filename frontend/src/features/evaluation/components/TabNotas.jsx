@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Paginador } from '@/components/Paginador';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -32,7 +33,7 @@ const ESTADO_PILL = {
 // "navegar a un detalle" generaba una navegación confusa. Mismos filtros
 // (estado, año) que TabMaterias — pedido explícito del usuario.
 export function TabNotas({ carreraId }) {
-  const { pagina, page, setPage, totalPages, cargando, estado, cambiarEstado, anio, cambiarAnio, anios, toggleOrden, estadoDe, hayOrdenExplicito } =
+  const { pagina, page, setPage, totalPages, cargando, fallo, recargar, estado, cambiarEstado, anio, cambiarAnio, anios, toggleOrden, estadoDe, hayOrdenExplicito } =
     useGrillaDeMaterias(carreraId);
 
   // Solo las filas con una inscripción real tienen grade-items que pedir —
@@ -96,6 +97,12 @@ export function TabNotas({ carreraId }) {
                     <Skeleton className="h-10" />
                     <Skeleton className="h-10" />
                   </div>
+                </TableCell>
+              </TableRow>
+            ) : fallo ? (
+              <TableRow>
+                <TableCell colSpan={COLUMNAS_NOTAS.length + 4}>
+                  <LoadErrorState onRetry={recargar} resource="tus notas" bare />
                 </TableCell>
               </TableRow>
             ) : pagina.length === 0 ? (
