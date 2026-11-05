@@ -83,6 +83,7 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
             entityManager.persist(address);
             Person person = new Person();
             person.setUsername(email);
+            person.setName("Ana");
             person.setEmail(email);
             person.setAuthProvider(AuthProvider.LOCAL);
             person.setAddress(address);

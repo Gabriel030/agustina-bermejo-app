@@ -62,6 +62,7 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
             entityManager.persist(address);
             Person person = new Person();
             person.setUsername(username);
+            person.setName("Ana");
             person.setEmail(username + "@example.com");
             person.setAuthProvider(AuthProvider.LOCAL);
             person.setAddress(address);
