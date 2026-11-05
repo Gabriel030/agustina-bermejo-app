@@ -1,52 +1,20 @@
 package com.red_escuela.backend.identity.usecase.emailverification;
 
-import com.red_escuela.backend.identity.entity.EmailVerificationToken;
-import com.red_escuela.backend.shared.exception.InvalidEmailVerificationTokenException;
-import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
-import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.identity.service.EmailVerificationConfirmation;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
-import com.red_escuela.backend.shared.time.ApplicationTime;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.PendingEmailChangeConfirmer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
 public class VerifyEmailService implements VerifyEmailUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(VerifyEmailService.class);
+    private final EmailVerificationConfirmation emailVerificationConfirmation;
 
-    private final EmailVerificationTokenRepository tokenRepository;
-
-    private final PendingEmailChangeConfirmer pendingEmailChangeConfirmer;
-
-    public VerifyEmailService(EmailVerificationTokenRepository tokenRepository,
-                              PendingEmailChangeConfirmer pendingEmailChangeConfirmer) {
-        this.tokenRepository = tokenRepository;
-        this.pendingEmailChangeConfirmer = pendingEmailChangeConfirmer;
+    public VerifyEmailService(EmailVerificationConfirmation emailVerificationConfirmation) {
+        this.emailVerificationConfirmation = emailVerificationConfirmation;
     }
 
     @Override
-    @Transactional
     public void verify(String clearToken) {
-        String hash = TokenHashUtil.sha256Hex(clearToken);
-        EmailVerificationToken token = tokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> {
-                    log.warn("Token de verificación de email no encontrado");
-                    return new InvalidEmailVerificationTokenException();
-                });
-
-        if (token.getExpiresAt().isBefore(ApplicationTime.now())) {
-            log.warn("Token de verificación de email expirado para person {}", token.getPerson().getId());
-            throw new InvalidEmailVerificationTokenException();
-        }
-
-        Person person = token.getPerson();
-        pendingEmailChangeConfirmer.confirmIfPending(token);
-        person.setEmailVerified(true);
-        tokenRepository.delete(token);
-        log.info("Email verificado para person {}", token.getPerson().getId());
+        emailVerificationConfirmation.confirmByTokenHash(TokenHashUtil.sha256Hex(clearToken));
     }
 }

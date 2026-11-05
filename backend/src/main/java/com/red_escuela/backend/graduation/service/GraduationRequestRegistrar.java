@@ -10,6 +10,7 @@ import com.red_escuela.backend.graduation.events.GraduationRequestedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ public class GraduationRequestRegistrar {
         this.clock = clock;
     }
 
+    @Transactional
     public GraduationRequest registerRequest(Long programEnrollmentId) {
         if (!graduationEligibilityChecker.isEligibleToGraduate(programEnrollmentId)) {
             throw new NotEligibleForGraduationException(programEnrollmentId);

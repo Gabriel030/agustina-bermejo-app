@@ -4,6 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
+import com.red_escuela.backend.identity.service.SessionRevoker;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -21,7 +22,7 @@ class RevokeSessionByIdServiceTest {
     private static final Long SESSION_ID = 9L;
 
     private final RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
-    private final RevokeSessionByIdService service = new RevokeSessionByIdService(refreshTokenRepository);
+    private final RevokeSessionByIdService service = new RevokeSessionByIdService(new SessionRevoker(refreshTokenRepository));
 
     private Person person(Long id) {
         Person person = new Person();
