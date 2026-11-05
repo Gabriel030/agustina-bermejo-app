@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionCatalog
 import com.red_escuela.backend.billing.discount.exception.DiscountDefinitionNotFoundException;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -23,10 +24,12 @@ public class DiscountDefinitionCatalogEntryAssembler {
         this.clock = clock;
     }
 
+    @Transactional(readOnly = true)
     public DiscountDefinitionCatalogEntry findCatalogEntry(Long discountDefinitionId) {
         return repository.findById(discountDefinitionId).map(this::assembleCatalogEntry).orElseThrow(() -> new DiscountDefinitionNotFoundException(discountDefinitionId));
     }
 
+    @Transactional(readOnly = true)
     public DiscountDefinitionCatalogEntry assembleCatalogEntry(DiscountDefinition definition) {
         LocalDate today = LocalDate.now(clock);
         long placesUsed = usageReader.countPlacesUsed(definition.getId());

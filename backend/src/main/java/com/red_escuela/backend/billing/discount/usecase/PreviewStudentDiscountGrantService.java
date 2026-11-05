@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantReque
 import com.red_escuela.backend.billing.discount.service.StudentDiscountOperationRunner;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class PreviewStudentDiscountGrantService implements PreviewStudentDiscountGrantUseCase {
@@ -17,7 +16,6 @@ public class PreviewStudentDiscountGrantService implements PreviewStudentDiscoun
     }
 
     @Override
-    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public StudentDiscountGrantPreview previewStudentDiscountGrant(EnrollmentReference enrollment, StudentDiscountGrantRequest request) {
         return operationRunner.previewGrant(enrollment, request);

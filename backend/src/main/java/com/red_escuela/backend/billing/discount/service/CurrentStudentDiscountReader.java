@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class CurrentStudentDiscountReader {
         this.currentStudentService = currentStudentService;
     }
 
+    @Transactional(readOnly = true)
     public List<LabeledStudentDiscount> readDiscountsOfCurrentStudent() {
         return labeledReader.readLabeled(repository.findByStudentIdOrderByIdDesc(currentStudentService.resolveCurrentStudent().getId()), false);
     }

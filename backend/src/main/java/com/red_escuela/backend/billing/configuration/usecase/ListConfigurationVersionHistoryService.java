@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,7 +17,6 @@ public class ListConfigurationVersionHistoryService implements ListConfiguration
     }
 
     @Override
-    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<ConfigurationVersion> listVersionHistory(ConfigurationTopic topic) {
         return repository.findByScopeAndTopicKeyOrderByEffectiveFromDescIdDesc(topic.scope(), topic.key());

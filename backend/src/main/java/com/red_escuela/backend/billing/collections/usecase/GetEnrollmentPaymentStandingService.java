@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.collections.dto.EnrollmentPaymentStatusCh
 import com.red_escuela.backend.billing.collections.service.EnrollmentPaymentStandingReader;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,14 +19,12 @@ public class GetEnrollmentPaymentStandingService implements GetEnrollmentPayment
     }
 
     @Override
-    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR', 'PRECEPTOR')")
     public EnrollmentPaymentStandingResponse getStandingOfEnrollment(EnrollmentKind kind, Long enrollmentId) {
         return reader.readStanding(kind, enrollmentId);
     }
 
     @Override
-    @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<EnrollmentPaymentStatusChangeResponse> listStatusChangesOfEnrollment(EnrollmentKind kind, Long enrollmentId) {
         return reader.readHistory(kind, enrollmentId);

@@ -23,24 +23,9 @@ com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofServi
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.ApproveAttendanceChangeRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.RejectAttendanceChangeRequestService.reject(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeService.request(com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeCommand) declares @Transactional
-com.red_escuela.backend.billing.annualupfront.usecase.QuoteAnnualUpfrontService.quoteAnnualUpfrontForCurrentStudent(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.annualupfront.usecase.QuoteAnnualUpfrontService.quoteAnnualUpfrontForStaff(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.collections.usecase.GetEnrollmentPaymentStandingService.getStandingOfEnrollment(com.red_escuela.backend.billing.collections.domain.EnrollmentKind, java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.collections.usecase.GetEnrollmentPaymentStandingService.listStatusChangesOfEnrollment(com.red_escuela.backend.billing.collections.domain.EnrollmentKind, java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.collections.usecase.ListOverdueContactsService.listOverdueContacts(int, int, com.red_escuela.backend.billing.collections.domain.OverdueContactFilter) declares @Transactional
-com.red_escuela.backend.billing.configuration.usecase.ListConfigurationVersionHistoryService.listVersionHistory(com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic) declares @Transactional
 com.red_escuela.backend.billing.discount.usecase.ClosePromotionByLegacyContractService.closePromotion(java.lang.Long) declares @Transactional
 com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyContractService.createForCourse(java.lang.Long, com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest) declares @Transactional
 com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyContractService.createForProgram(java.lang.Long, com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.FindDiscountDefinitionService.findDiscountDefinition(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.FindLostCohortPromotionBenefitsService.findLostBenefits(com.red_escuela.backend.billing.discount.domain.LostBenefitFilter, java.lang.Integer, java.lang.Integer) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.ListActivePromotionsByLegacyContractService.listActivePromotions() declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.ListDiscountDefinitionsService.listDiscountDefinitions(com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType, com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStatus, com.red_escuela.backend.billing.discount.domain.CohortPromotionStatus) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.ListMyStudentDiscountsService.listMyStudentDiscounts() declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.ListStudentDiscountsOfStudentService.listStudentDiscountsOfStudent(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.ListStudentDiscountsService.listStudentDiscounts(com.red_escuela.backend.billing.discount.domain.EnrollmentReference) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.PreviewStudentDiscountGrantService.previewStudentDiscountGrant(com.red_escuela.backend.billing.discount.domain.EnrollmentReference, com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest) declares @Transactional
-com.red_escuela.backend.billing.discount.usecase.SearchStudentDiscountsService.searchStudentDiscounts(com.red_escuela.backend.billing.discount.domain.StudentDiscountSearch, int, int) declares @Transactional
 com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentService.listCreditNotesOfStudent(java.lang.Long) declares @Transactional
 com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipService.listCreditNotesOfStudentWithAuthorship(java.lang.Long) declares @Transactional
 com.red_escuela.backend.billing.note.usecase.PreviewInvoiceCancellationService.previewInvoiceCancellation(java.lang.Long, com.red_escuela.backend.billing.note.dto.CancelInvoiceRequest) declares @Transactional

@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -49,6 +50,7 @@ public class PromotionContractTranslator {
         return toDrafts(request, null, courseId);
     }
 
+    @Transactional(readOnly = true)
     public List<PromotionResponse> toResponses(List<DiscountDefinition> definitions) {
         List<List<DiscountDefinition>> groups = groupsOf(definitions);
         Set<Long> personIds = new HashSet<>();
