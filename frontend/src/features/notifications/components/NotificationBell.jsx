@@ -51,7 +51,7 @@ export function NotificationBell() {
         <button
           type="button"
           aria-label={noLeidas > 0 ? `Notificaciones, ${noLeidas} sin leer` : 'Notificaciones'}
-          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink-faint transition-transform hover:scale-105"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink-faint transition-transform hover:scale-105"
         >
           <Bell aria-hidden="true" className="h-[17px] w-[17px]" />
           {noLeidas > 0 && (

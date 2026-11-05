@@ -25,7 +25,7 @@ export function TopHeader({ titulo, items }) {
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           {usuario && (
-            <Link to="/perfil" className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80">
+            <Link to="/perfil" className="flex min-h-11 items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80">
               <div className="h-9 w-9 overflow-hidden rounded-xl">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
