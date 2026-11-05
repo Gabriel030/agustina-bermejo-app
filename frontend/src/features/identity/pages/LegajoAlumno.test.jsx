@@ -50,4 +50,50 @@ describe('LegajoAlumno — load failure', () => {
     expect(screen.getByRole('tab', { name: 'Datos personales' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  it('shows the minor indicator, the guardian and the emergency contact in the personal data tab', async () => {
+    server.use(
+      http.get(`${API}/students/9`, () =>
+        HttpResponse.json({
+          ...STUDENT,
+          birthDate: '2011-03-04',
+          minor: true,
+          guardian: { fullName: 'Marta Gómez', documentNumber: '20111222', relationship: 'Madre', phone: '3511234567', email: 'marta@demo.test' },
+          emergencyContact: { name: 'Raúl Gómez', relationship: 'Padre', phone: '3517654321' },
+        }),
+      ),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: '/preceptor/alumnos/9' },
+    );
+
+    expect(await screen.findByText('Menor de edad')).toBeInTheDocument();
+    expect(screen.getByText('Tutor')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Marta Gómez')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('20111222')).toBeInTheDocument();
+    expect(screen.getByText('Contacto de emergencia')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Raúl Gómez')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('04/03/2011')).toBeInTheDocument();
+  });
+
+  it('hides the guardian sections for an adult without guardian', async () => {
+    server.use(
+      http.get(`${API}/students/9`, () => HttpResponse.json({ ...STUDENT, minor: false, guardian: null, emergencyContact: null })),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/:rol/alumnos/:id" element={<LegajoAlumno />} />
+      </Routes>,
+      { route: '/preceptor/alumnos/9' },
+    );
+
+    await screen.findByText('Pérez, Lucía');
+    expect(screen.queryByText('Menor de edad')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tutor')).not.toBeInTheDocument();
+  });
 });

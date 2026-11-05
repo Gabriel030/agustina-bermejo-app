@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { validateDocument } from '@/lib/documentType';
@@ -13,12 +13,19 @@ import { useAuth } from '@/context/AuthContext';
 import { DatosBasicosStep } from '@/features/identity/steps/DatosBasicosStep';
 import { DocumentosStep } from '@/features/identity/steps/DocumentosStep';
 import { DatosConfirmacionStep } from '@/features/identity/steps/DatosConfirmacionStep';
+import { GuardianStep } from '@/features/identity/steps/GuardianStep';
 import { ReviewStep } from '@/features/identity/steps/ReviewStep';
 import { RegistrationDoneStep } from '@/features/identity/steps/RegistrationDoneStep';
 import {
   DOCUMENT_LABELS,
+  GUARDIANS_STEP,
+  GUARDIAN_DOCUMENT_PATTERN,
   REGISTRATION_STEPS,
   buildProspectDraft,
+  isMinor,
+  normalizeGuardianDocument,
+  registrationSteps,
+  todayIso,
   describeRegistrationError,
 } from '@/features/identity/lib/studentRegistration';
 import { useCrearProspecto, useSubirDocumentoProspecto, useGuardarBorradorProspecto, useConfirmarAlta } from '@/features/identity/hooks/useProspectos';
@@ -37,14 +44,51 @@ const schema = z.object({
   state: z.string().optional(),
   postalCode: z.string().optional(),
   country: z.string().optional(),
+  birthDate: z.string().min(1, 'Requerido'),
+  sex: z.string().optional(),
+  nationality: z.string().max(255, 'Máximo 255 caracteres').optional(),
+  guardianName: z.string().optional(),
+  guardianDni: z.string().optional(),
+  guardianRelationship: z.string().optional(),
+  guardianPhone: z.string().optional(),
+  guardianEmail: z.string().optional(),
+  emergencyName: z.string().optional(),
+  emergencyRelationship: z.string().optional(),
+  emergencyPhone: z.string().optional(),
 }).superRefine((valores, ctx) => {
   const mensaje = validateDocument(valores.documentType, valores.dni);
   if (mensaje) ctx.addIssue({ code: 'custom', path: ['dni'], message: mensaje });
+  if (valores.birthDate && valores.birthDate > todayIso()) {
+    ctx.addIssue({ code: 'custom', path: ['birthDate'], message: 'La fecha no puede ser futura' });
+  }
+  if (!isMinor(valores.birthDate)) return;
+  const required = ['guardianName', 'guardianDni', 'guardianRelationship', 'guardianPhone', 'emergencyName', 'emergencyRelationship', 'emergencyPhone'];
+  required.forEach((name) => {
+    if (!valores[name]?.trim()) ctx.addIssue({ code: 'custom', path: [name], message: 'Requerido' });
+  });
+  if (valores.guardianDni?.trim() && !GUARDIAN_DOCUMENT_PATTERN.test(normalizeGuardianDocument(valores.guardianDni))) {
+    ctx.addIssue({ code: 'custom', path: ['guardianDni'], message: 'El DNI del tutor debe tener 7 u 8 dígitos' });
+  }
+  if (valores.guardianEmail?.trim() && !z.string().email().safeParse(valores.guardianEmail.trim()).success) {
+    ctx.addIssue({ code: 'custom', path: ['guardianEmail'], message: 'Email inválido' });
+  }
 });
+
+const GUARDIAN_FIELDS = [
+  'guardianName',
+  'guardianDni',
+  'guardianRelationship',
+  'guardianPhone',
+  'guardianEmail',
+  'emergencyName',
+  'emergencyRelationship',
+  'emergencyPhone',
+];
 
 const CAMPOS_POR_PASO = {
   0: ['nombre', 'apellido', 'email'],
-  2: ['dni', 'street', 'city'],
+  2: ['dni', 'street', 'city', 'birthDate', 'nationality'],
+  [GUARDIANS_STEP]: GUARDIAN_FIELDS,
 };
 
 const LAST_STEP = REGISTRATION_STEPS.length - 1;
@@ -72,7 +116,10 @@ function RegistrationWizard({ onRegisterAnother }) {
     getValues,
     setError,
     formState: { errors },
-  } = useForm({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { documentType: 'DNI', dni: '' } });
+  } = useForm({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { documentType: 'DNI', dni: '', birthDate: '', sex: '', guardianRelationship: '', emergencyRelationship: '' } });
+  const values = useWatch({ control });
+  const birthDate = values.birthDate;
+  const minor = isMinor(birthDate);
 
   const isMutating = crearProspecto.isPending || guardarBorrador.isPending || confirmarAlta.isPending;
   const missingDocuments = Object.keys(DOCUMENT_LABELS).filter((type) => !documentos[type]);
@@ -117,11 +164,11 @@ function RegistrationWizard({ onRegisterAnother }) {
     );
   }
 
-  function saveDraft() {
+  function saveDraft(next) {
     guardarBorrador.mutate(
       { studentId, datos: buildProspectDraft(getValues()) },
       {
-        onSuccess: () => goTo(REVIEW_STEP),
+        onSuccess: () => goTo(next),
         onError: (err) => showFailure(err, 'No se pudo guardar el borrador. Intentá de nuevo.'),
       }
     );
@@ -147,7 +194,11 @@ function RegistrationWizard({ onRegisterAnother }) {
       return;
     }
     if (currentStep === 2) {
-      saveDraft();
+      saveDraft(minor ? GUARDIANS_STEP : REVIEW_STEP);
+      return;
+    }
+    if (currentStep === GUARDIANS_STEP) {
+      saveDraft(REVIEW_STEP);
       return;
     }
     if (currentStep === REVIEW_STEP) {
@@ -159,10 +210,9 @@ function RegistrationWizard({ onRegisterAnother }) {
 
   function retroceder() {
     if (currentStep === 0) navigate(-1);
+    else if (currentStep === REVIEW_STEP && !minor) goTo(GUARDIANS_STEP - 1);
     else goTo(currentStep - 1);
   }
-
-  const values = getValues();
 
   return (
     <PageContainer>
@@ -173,10 +223,10 @@ function RegistrationWizard({ onRegisterAnother }) {
 
       <GlassCard className="p-6 flex flex-col gap-6">
         <Stepper
-          pasos={REGISTRATION_STEPS}
+          pasos={registrationSteps(minor)}
           pasoActual={String(currentStep)}
           pasosVisitados={pasosVisitados}
-          onStepClick={isMutating || currentStep === LAST_STEP ? undefined : (key) => goTo(Number(key))}
+          onStepClick={isMutating || currentStep === LAST_STEP ? undefined : (key) => (Number(key) === GUARDIANS_STEP && !minor ? undefined : goTo(Number(key)))}
         />
 
         <form onSubmit={(e) => e.preventDefault()}>
@@ -186,7 +236,17 @@ function RegistrationWizard({ onRegisterAnother }) {
           {currentStep === 1 && (
             <DocumentosStep documentosSubidos={documentos} onFileSelected={handleFileSelected} isUploading={subirDocumento.isPending} />
           )}
-          {currentStep === 2 && <DatosConfirmacionStep register={register} control={control} errors={errors} isLoading={isMutating} />}
+          {currentStep === 2 && <DatosConfirmacionStep register={register} control={control} errors={errors} isLoading={isMutating} birthDate={birthDate} />}
+          {currentStep === GUARDIANS_STEP && (
+            <GuardianStep
+              register={register}
+              control={control}
+              errors={errors}
+              isLoading={isMutating}
+              fullName={`${values.nombre} ${values.apellido}`}
+              birthDate={birthDate}
+            />
+          )}
           {currentStep === REVIEW_STEP && <ReviewStep values={values} missingDocuments={missingDocuments} />}
           {currentStep === LAST_STEP && (
             <RegistrationDoneStep

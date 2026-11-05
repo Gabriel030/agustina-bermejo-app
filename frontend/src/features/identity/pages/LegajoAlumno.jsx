@@ -72,6 +72,7 @@ export function LegajoAlumno() {
               {badge && (
                 <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
               )}
+              {legajo.minor && <StatusPill tone="accent">Menor de edad</StatusPill>}
             </div>
           )}
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
 import { axe } from '@/test/axe';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -54,7 +54,20 @@ async function fillBasicData(user, email = 'qa9@demo.test') {
   await user.type(screen.getByPlaceholderText('juan.perez@email.com'), email);
 }
 
-async function fillPersonalData(user, dni = '40111666') {
+function setBirthDate(value) {
+  fireEvent.change(screen.getByLabelText(/Fecha de nacimiento/), { target: { value } });
+}
+
+function isoYearsAgo(years, dayOffset = 0) {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - years);
+  date.setDate(date.getDate() + dayOffset);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+async function fillPersonalData(user, dni = '40111666', birthDate = '1990-05-10') {
+  setBirthDate(birthDate);
   await user.type(await screen.findByPlaceholderText('12345678'), dni);
   await user.type(screen.getByPlaceholderText('Av. Corrientes'), 'Calle 1');
   await user.type(screen.getByPlaceholderText('Buenos Aires'), 'Córdoba');
@@ -289,7 +302,7 @@ describe('NuevoAlumno', () => {
     expect(screen.getByRole('combobox', { name: 'Tipo de documento' })).toHaveTextContent('DNI');
 
     await user.click(screen.getByRole('button', { name: 'Siguiente' }));
-    expect(await screen.findAllByText('Requerido')).toHaveLength(3);
+    expect(await screen.findAllByText('Requerido')).toHaveLength(4);
 
     await user.type(screen.getByPlaceholderText('12345678'), 'AB12');
     await user.type(screen.getByPlaceholderText('Av. Corrientes'), 'Calle 1');
@@ -320,6 +333,9 @@ describe('NuevoAlumno', () => {
     await screen.findByRole('heading', { name: 'Alta confirmada' });
 
     const expected = {
+      birthDate: '1990-05-10',
+      sex: null,
+      nationality: null,
       documentType: 'DNI',
       dni: '40111666',
       street: 'Calle 1',
@@ -343,5 +359,124 @@ describe('NuevoAlumno', () => {
     await goToReviewStep(user);
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Revisar y confirmar' })).toBeInTheDocument());
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  describe('minors', () => {
+    async function fillAndAdvance(user, birthDate) {
+      await goToPersonalDataStep(user);
+      await fillPersonalData(user, '40111666', birthDate);
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+    }
+
+    async function fillGuardians(user) {
+      await user.type(screen.getByLabelText(/^Nombre y apellido/, { selector: '#guardianName' }), 'Marta Gómez');
+      await user.type(screen.getByLabelText(/^DNI/), '20.111.222');
+      await user.selectOptions(document.getElementById('guardianRelationship'), 'Madre');
+      await user.type(document.getElementById('guardianPhone'), '3511234567');
+      await user.type(document.getElementById('emergencyName'), 'Raúl Gómez');
+      await user.selectOptions(document.getElementById('emergencyRelationship'), 'Padre');
+      await user.type(document.getElementById('emergencyPhone'), '3517654321');
+    }
+
+    it('skips the guardians step for an adult and sends no guardian data', async () => {
+      let draft;
+      mockOnboarding({ onDraft: async ({ request }) => { draft = await request.json(); return new HttpResponse(null, { status: 204 }); } });
+      const user = userEvent.setup();
+      renderWithProviders(<NuevoAlumno />);
+      await fillAndAdvance(user, isoYearsAgo(18));
+
+      expect(await screen.findByRole('heading', { name: 'Revisar y confirmar' })).toBeInTheDocument();
+      expect(draft).not.toHaveProperty('guardian');
+      expect(draft).not.toHaveProperty('emergencyContact');
+      await user.click(screen.getByRole('button', { name: 'Atrás' }));
+      expect(await screen.findByRole('heading', { name: 'Datos de confirmación' })).toBeInTheDocument();
+    });
+
+    it('turns a person into a minor the day before the 18th birthday and announces it', async () => {
+      mockOnboarding();
+      const user = userEvent.setup();
+      renderWithProviders(<NuevoAlumno />);
+      await goToPersonalDataStep(user);
+
+      setBirthDate(isoYearsAgo(18, 1));
+      expect(await screen.findByText(/Es menor de 18 años \(17\)/)).toBeInTheDocument();
+    });
+
+    it('requires the guardians, validates the guardian document and sends them with the draft and the confirmation', async () => {
+      let draft;
+      let confirmed;
+      mockOnboarding({
+        onDraft: async ({ request }) => { draft = await request.json(); return new HttpResponse(null, { status: 204 }); },
+        onConfirm: async ({ request }) => {
+          confirmed = await request.json();
+          return HttpResponse.json(prospectResponse({ dni: '40111666', onboardingStatus: 'CONFIRMADO' }));
+        },
+      });
+      const user = userEvent.setup();
+      renderWithProviders(<NuevoAlumno />);
+      await fillAndAdvance(user, isoYearsAgo(15));
+      await screen.findByRole('heading', { name: 'Responsables' });
+
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+      expect(await screen.findAllByText('Requerido')).toHaveLength(7);
+
+      await fillGuardians(user);
+      const guardianDni = screen.getByLabelText(/^DNI/);
+      await user.clear(guardianDni);
+      await user.type(guardianDni, '123');
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+      expect(await screen.findByText('El DNI del tutor debe tener 7 u 8 dígitos')).toBeInTheDocument();
+
+      await user.clear(guardianDni);
+      await user.type(guardianDni, '20.111.222');
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+      await screen.findByRole('heading', { name: 'Revisar y confirmar' });
+      expect(await screen.findByText(/Marta Gómez · Madre · DNI 20.111.222/, {}, { timeout: 4000 })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Confirmar alta' }));
+      await screen.findByRole('heading', { name: 'Alta confirmada' });
+
+      const guardians = {
+        guardian: { fullName: 'Marta Gómez', documentNumber: '20111222', relationship: 'Madre', phone: '3511234567', email: null },
+        emergencyContact: { name: 'Raúl Gómez', relationship: 'Padre', phone: '3517654321' },
+      };
+      expect(draft).toMatchObject(guardians);
+      expect(confirmed).toMatchObject(guardians);
+    });
+
+    it('shows BIRTH_DATE_REQUIRED under the birth date field', async () => {
+      mockOnboarding({ onDraft: () => HttpResponse.json(errorBody('BIRTH_DATE_REQUIRED'), { status: 400 }) });
+      const user = userEvent.setup();
+      renderWithProviders(<NuevoAlumno />);
+      await fillAndAdvance(user, '1990-05-10');
+
+      const message = await screen.findByText('Ingresá la fecha de nacimiento.');
+      expect(message).toHaveAttribute('role', 'alert');
+      expect(screen.getByLabelText(/Fecha de nacimiento/)).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('shows GUARDIAN_REQUIRED_FOR_MINOR in the guardians step', async () => {
+      mockOnboarding({ onConfirm: () => HttpResponse.json(errorBody('GUARDIAN_REQUIRED_FOR_MINOR'), { status: 400 }) });
+      const user = userEvent.setup();
+      renderWithProviders(<NuevoAlumno />);
+      await fillAndAdvance(user, isoYearsAgo(15));
+      await screen.findByRole('heading', { name: 'Responsables' });
+      await fillGuardians(user);
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+      await screen.findByRole('heading', { name: 'Revisar y confirmar' });
+      await user.click(screen.getByRole('button', { name: 'Confirmar alta' }));
+
+      expect(await screen.findByText(/completá los datos del tutor y del contacto de emergencia/)).toHaveAttribute('role', 'alert');
+      expect(screen.getByRole('heading', { name: 'Responsables' })).toBeInTheDocument();
+    });
+
+    it('has no accessibility violations on the guardians step', async () => {
+      mockOnboarding();
+      const user = userEvent.setup();
+      const { container } = renderWithProviders(<NuevoAlumno />);
+      await fillAndAdvance(user, isoYearsAgo(15));
+      await screen.findByRole('heading', { name: 'Responsables' });
+      expect(await axe(container)).toHaveNoViolations();
+    });
   });
 });
