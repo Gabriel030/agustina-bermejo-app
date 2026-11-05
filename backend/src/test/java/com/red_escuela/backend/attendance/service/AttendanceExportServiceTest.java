@@ -2,15 +2,7 @@ package com.red_escuela.backend.attendance.service;
 
 import com.red_escuela.backend.attendance.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
-import com.red_escuela.backend.attendance.service.AttendanceExportService.ExportedFile;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAbsenceReportCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAbsenceReportUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAttendanceHistoryCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAttendanceHistoryUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAbsenceReportCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAbsenceReportUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryUseCase;
+import com.red_escuela.backend.attendance.dto.ExportedAttendanceFile;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.apache.pdfbox.Loader;
@@ -32,7 +24,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -48,16 +39,14 @@ class AttendanceExportServiceTest {
     private static final String PDF_TYPE = "application/pdf";
 
     @Mock
-    private GetProgramSectionAttendanceHistoryUseCase programHistory;
+    private AttendanceSectionAccess sectionAccess;
     @Mock
-    private GetCourseSectionAttendanceHistoryUseCase courseHistory;
+    private AttendanceHistoryBuilder historyBuilder;
     @Mock
-    private GetProgramSectionAbsenceReportUseCase programReport;
-    @Mock
-    private GetCourseSectionAbsenceReportUseCase courseReport;
+    private SectionRosterBuilder rosterBuilder;
 
     private AttendanceExportService service() {
-        return new AttendanceExportService(programHistory, courseHistory, programReport, courseReport);
+        return new AttendanceExportService(sectionAccess, historyBuilder, rosterBuilder);
     }
 
     private static AttendanceHistoryResponse history() {
@@ -68,13 +57,17 @@ class AttendanceExportServiceTest {
         return new AttendanceHistoryResponse(List.of(FIRST_DAY, SECOND_DAY), List.of(ana, beto));
     }
 
+    private static List<RosterEntryResponse> rawRoster() {
+        return List.of(new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false));
+    }
+
     private static List<RosterEntryResponse> report() {
         return List.of(
                 new RosterEntryResponse(1L, 1L, "Ana Perez", "30111222", 4, Percentage.ratio(2, 3).orElseThrow(), true),
                 new RosterEntryResponse(2L, 2L, "Beto Gomez", null, 0, null, false));
     }
 
-    private static List<List<String>> sheetRows(ExportedFile file) throws IOException {
+    private static List<List<String>> sheetRows(ExportedAttendanceFile file) throws IOException {
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(file.content()))) {
             Sheet sheet = workbook.getSheetAt(0);
             List<List<String>> rows = new java.util.ArrayList<>();
@@ -87,7 +80,7 @@ class AttendanceExportServiceTest {
         }
     }
 
-    private static String sheetName(ExportedFile file) throws IOException {
+    private static String sheetName(ExportedAttendanceFile file) throws IOException {
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(file.content()))) {
             return workbook.getSheetName(0);
         }
@@ -95,9 +88,9 @@ class AttendanceExportServiceTest {
 
     @Test
     void programHistoryExportsOneColumnPerClassDateAndTheRoundedPercentage() throws IOException {
-        when(programHistory.get(new GetProgramSectionAttendanceHistoryCommand(SECTION_ID, INSTRUCTOR_ID))).thenReturn(history());
+        when(historyBuilder.buildForProgramSection(SECTION_ID)).thenReturn(history());
 
-        ExportedFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "history", XLSX, null);
+        ExportedAttendanceFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "history", XLSX, null);
 
         assertThat(file.filename()).isEqualTo("history.xlsx");
         assertThat(file.contentType()).isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -106,25 +99,47 @@ class AttendanceExportServiceTest {
                 List.of("Alumno", "2026-05-04", "2026-05-11", "% Asistencia"),
                 List.of("Ana Perez", "PRESENT", "-", "33%"),
                 List.of("Beto Gomez", "-", "-", "-"));
-        verifyNoInteractions(programReport);
+        verifyNoInteractions(rosterBuilder);
     }
 
     @Test
-    void courseHistoryExportsThroughTheCourseUseCaseOnly() throws IOException {
-        when(courseHistory.get(new GetCourseSectionAttendanceHistoryCommand(SECTION_ID, null))).thenReturn(history());
+    void programExportChecksTheInstructorOwnsTheSection() throws IOException {
+        when(historyBuilder.buildForProgramSection(SECTION_ID)).thenReturn(history());
 
-        ExportedFile file = service().exportCourseSection(SECTION_ID, null, "history", "XLSX", null);
+        ExportedAttendanceFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "history", XLSX, null);
+
+        verify(sectionAccess).requireProgramSectionExists(SECTION_ID);
+        verify(sectionAccess).requireOwnProgramSectionIfInstructorGiven(SECTION_ID, INSTRUCTOR_ID);
+        assertThat(sheetRows(file)).hasSize(3);
+    }
+
+    @Test
+    void courseExportChecksTheInstructorOwnsTheSection() throws IOException {
+        when(historyBuilder.buildForCourseSection(SECTION_ID)).thenReturn(history());
+
+        ExportedAttendanceFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "history", XLSX, null);
+
+        verify(sectionAccess).requireCourseSectionExists(SECTION_ID);
+        verify(sectionAccess).requireOwnCourseSectionIfInstructorGiven(SECTION_ID, INSTRUCTOR_ID);
+        assertThat(sheetRows(file)).hasSize(3);
+    }
+
+    @Test
+    void courseHistoryExportsThroughTheCourseHistoryOnly() throws IOException {
+        when(historyBuilder.buildForCourseSection(SECTION_ID)).thenReturn(history());
+
+        ExportedAttendanceFile file = service().exportCourseSection(SECTION_ID, null, "history", "XLSX", null);
 
         assertThat(file.filename()).isEqualTo("history.xlsx");
         assertThat(sheetRows(file)).hasSize(3);
-        verifyNoInteractions(programHistory);
+        verifyNoInteractions(rosterBuilder);
     }
 
     @Test
     void classScopeExportsTheStatusOfEachStudentOnTheRequestedDate() throws IOException {
-        when(programHistory.get(new GetProgramSectionAttendanceHistoryCommand(SECTION_ID, INSTRUCTOR_ID))).thenReturn(history());
+        when(historyBuilder.buildForProgramSection(SECTION_ID)).thenReturn(history());
 
-        ExportedFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "class", XLSX, FIRST_DAY);
+        ExportedAttendanceFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "class", XLSX, FIRST_DAY);
 
         assertThat(sheetName(file)).isEqualTo("Asistencia · 2026-05-04");
         assertThat(sheetRows(file)).containsExactly(
@@ -135,42 +150,44 @@ class AttendanceExportServiceTest {
 
     @Test
     void classScopeWithoutDateDefaultsToToday() throws IOException {
-        when(courseHistory.get(new GetCourseSectionAttendanceHistoryCommand(SECTION_ID, INSTRUCTOR_ID))).thenReturn(history());
+        when(historyBuilder.buildForCourseSection(SECTION_ID)).thenReturn(history());
 
-        ExportedFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "class", XLSX, null);
+        ExportedAttendanceFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "class", XLSX, null);
 
         assertThat(sheetName(file)).isEqualTo("Asistencia · " + ApplicationTime.today());
     }
 
     @Test
     void absenceReportExportsDniAbsencesAndDashesForMissingValues() throws IOException {
-        when(programReport.get(new GetProgramSectionAbsenceReportCommand(SECTION_ID, INSTRUCTOR_ID, null))).thenReturn(report());
+        when(rosterBuilder.buildForProgramSection(SECTION_ID)).thenReturn(rawRoster());
+        when(rosterBuilder.sortByAbsences(rawRoster(), null)).thenReturn(report());
 
-        ExportedFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "absence-report", XLSX, null);
+        ExportedAttendanceFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "absence-report", XLSX, null);
 
         assertThat(file.filename()).isEqualTo("absence-report.xlsx");
         assertThat(sheetRows(file)).containsExactly(
                 List.of("Alumno", "DNI", "Ausencias", "% Asistencia"),
                 List.of("Ana Perez", "30111222", "4", "67%"),
                 List.of("Beto Gomez", "-", "0", "-"));
-        verifyNoInteractions(programHistory);
+        verifyNoInteractions(historyBuilder);
     }
 
     @Test
-    void courseAbsenceReportUsesTheCourseReportUseCase() throws IOException {
-        when(courseReport.get(new GetCourseSectionAbsenceReportCommand(SECTION_ID, INSTRUCTOR_ID, null))).thenReturn(report());
+    void courseAbsenceReportUsesTheCourseRoster() throws IOException {
+        when(rosterBuilder.buildForCourseSection(SECTION_ID)).thenReturn(rawRoster());
+        when(rosterBuilder.sortByAbsences(rawRoster(), null)).thenReturn(report());
 
-        ExportedFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "absence-report", XLSX, null);
+        ExportedAttendanceFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "absence-report", XLSX, null);
 
         assertThat(sheetRows(file)).hasSize(3);
-        verifyNoInteractions(courseHistory);
+        verifyNoInteractions(historyBuilder);
     }
 
     @Test
     void anyFormatOtherThanXlsxProducesAPdfDocument() {
-        when(programHistory.get(new GetProgramSectionAttendanceHistoryCommand(SECTION_ID, INSTRUCTOR_ID))).thenReturn(history());
+        when(historyBuilder.buildForProgramSection(SECTION_ID)).thenReturn(history());
 
-        ExportedFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "history", "pdf", null);
+        ExportedAttendanceFile file = service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "history", "pdf", null);
 
         assertThat(file.filename()).isEqualTo("history.pdf");
         assertThat(file.contentType()).isEqualTo(PDF_TYPE);
@@ -179,22 +196,22 @@ class AttendanceExportServiceTest {
 
     @Test
     void absenceReportAsPdfIsAlsoAValidPdf() {
-        when(courseReport.get(new GetCourseSectionAbsenceReportCommand(SECTION_ID, INSTRUCTOR_ID, null))).thenReturn(report());
+        when(rosterBuilder.buildForCourseSection(SECTION_ID)).thenReturn(rawRoster());
+        when(rosterBuilder.sortByAbsences(rawRoster(), null)).thenReturn(report());
 
-        ExportedFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "absence-report", "anything", null);
+        ExportedAttendanceFile file = service().exportCourseSection(SECTION_ID, INSTRUCTOR_ID, "absence-report", "anything", null);
 
         assertThat(file.contentType()).isEqualTo(PDF_TYPE);
         assertThat(file.content().length).isGreaterThan(100);
     }
 
     @Test
-    void unknownScopeIsRejectedWithoutReadingAnyData() {
+    void unknownScopeIsRejectedBeforeBuildingAnything() {
         assertThatThrownBy(() -> service().exportProgramSection(SECTION_ID, INSTRUCTOR_ID, "weekly", XLSX, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("weekly");
 
-        verifyNoInteractions(programHistory, courseHistory, programReport, courseReport);
-        verify(programHistory, never()).get(org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(sectionAccess, historyBuilder, rosterBuilder);
     }
 
     private static final int BIG_STUDENTS = 300;
@@ -234,9 +251,9 @@ class AttendanceExportServiceTest {
 
     @Test
     void largePdfHistorySplitsIntoPagesAndKeepsEveryRowAndDate() throws IOException {
-        when(programHistory.get(new GetProgramSectionAttendanceHistoryCommand(SECTION_ID, null))).thenReturn(bigHistory());
+        when(historyBuilder.buildForProgramSection(SECTION_ID)).thenReturn(bigHistory());
 
-        ExportedFile file = service().exportProgramSection(SECTION_ID, null, "history", "pdf", null);
+        ExportedAttendanceFile file = service().exportProgramSection(SECTION_ID, null, "history", "pdf", null);
 
         try (PDDocument document = Loader.loadPDF(file.content())) {
             assertThat(document.getNumberOfPages()).isGreaterThan(10);

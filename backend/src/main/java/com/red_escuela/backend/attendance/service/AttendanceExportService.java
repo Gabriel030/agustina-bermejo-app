@@ -1,15 +1,8 @@
 package com.red_escuela.backend.attendance.service;
 
 import com.red_escuela.backend.attendance.dto.AttendanceHistoryResponse;
+import com.red_escuela.backend.attendance.dto.ExportedAttendanceFile;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAbsenceReportCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAbsenceReportUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAttendanceHistoryCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAttendanceHistoryUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAbsenceReportCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAbsenceReportUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryUseCase;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -36,41 +29,47 @@ import java.util.List;
 @Service
 public class AttendanceExportService {
 
-    public record ExportedFile(byte[] content, String filename, String contentType) {
+    private final AttendanceSectionAccess sectionAccess;
+    private final AttendanceHistoryBuilder historyBuilder;
+    private final SectionRosterBuilder rosterBuilder;
+
+    public AttendanceExportService(AttendanceSectionAccess sectionAccess,
+                                    AttendanceHistoryBuilder historyBuilder,
+                                    SectionRosterBuilder rosterBuilder) {
+        this.sectionAccess = sectionAccess;
+        this.historyBuilder = historyBuilder;
+        this.rosterBuilder = rosterBuilder;
     }
 
-    private final GetProgramSectionAttendanceHistoryUseCase getProgramSectionAttendanceHistoryUseCase;
-    private final GetCourseSectionAttendanceHistoryUseCase getCourseSectionAttendanceHistoryUseCase;
-    private final GetProgramSectionAbsenceReportUseCase getProgramSectionAbsenceReportUseCase;
-    private final GetCourseSectionAbsenceReportUseCase getCourseSectionAbsenceReportUseCase;
-
-    public AttendanceExportService(GetProgramSectionAttendanceHistoryUseCase getProgramSectionAttendanceHistoryUseCase,
-                                    GetCourseSectionAttendanceHistoryUseCase getCourseSectionAttendanceHistoryUseCase,
-                                    GetProgramSectionAbsenceReportUseCase getProgramSectionAbsenceReportUseCase,
-                                    GetCourseSectionAbsenceReportUseCase getCourseSectionAbsenceReportUseCase) {
-        this.getProgramSectionAttendanceHistoryUseCase = getProgramSectionAttendanceHistoryUseCase;
-        this.getCourseSectionAttendanceHistoryUseCase = getCourseSectionAttendanceHistoryUseCase;
-        this.getProgramSectionAbsenceReportUseCase = getProgramSectionAbsenceReportUseCase;
-        this.getCourseSectionAbsenceReportUseCase = getCourseSectionAbsenceReportUseCase;
-    }
-
-    public ExportedFile exportProgramSection(
+    public ExportedAttendanceFile exportProgramSection(
             Long sectionId, Long instructorIdIfDocente, String scope, String format, LocalDate classDate) {
         Table table = buildTable(scope, classDate,
-                () -> getProgramSectionAttendanceHistoryUseCase.get(
-                        new GetProgramSectionAttendanceHistoryCommand(sectionId, instructorIdIfDocente)),
-                () -> getProgramSectionAbsenceReportUseCase.get(
-                        new GetProgramSectionAbsenceReportCommand(sectionId, instructorIdIfDocente, null)));
+                () -> {
+                    sectionAccess.requireProgramSectionExists(sectionId);
+                    sectionAccess.requireOwnProgramSectionIfInstructorGiven(sectionId, instructorIdIfDocente);
+                    return historyBuilder.buildForProgramSection(sectionId);
+                },
+                () -> {
+                    sectionAccess.requireProgramSectionExists(sectionId);
+                    sectionAccess.requireOwnProgramSectionIfInstructorGiven(sectionId, instructorIdIfDocente);
+                    return rosterBuilder.sortByAbsences(rosterBuilder.buildForProgramSection(sectionId), null);
+                });
         return generate(table, scope, format);
     }
 
-    public ExportedFile exportCourseSection(
+    public ExportedAttendanceFile exportCourseSection(
             Long sectionId, Long instructorIdIfDocente, String scope, String format, LocalDate classDate) {
         Table table = buildTable(scope, classDate,
-                () -> getCourseSectionAttendanceHistoryUseCase.get(
-                        new GetCourseSectionAttendanceHistoryCommand(sectionId, instructorIdIfDocente)),
-                () -> getCourseSectionAbsenceReportUseCase.get(
-                        new GetCourseSectionAbsenceReportCommand(sectionId, instructorIdIfDocente, null)));
+                () -> {
+                    sectionAccess.requireCourseSectionExists(sectionId);
+                    sectionAccess.requireOwnCourseSectionIfInstructorGiven(sectionId, instructorIdIfDocente);
+                    return historyBuilder.buildForCourseSection(sectionId);
+                },
+                () -> {
+                    sectionAccess.requireCourseSectionExists(sectionId);
+                    sectionAccess.requireOwnCourseSectionIfInstructorGiven(sectionId, instructorIdIfDocente);
+                    return rosterBuilder.sortByAbsences(rosterBuilder.buildForCourseSection(sectionId), null);
+                });
         return generate(table, scope, format);
     }
 
@@ -133,12 +132,12 @@ public class AttendanceExportService {
         return new Table("Reporte de ausencias", headers, rows);
     }
 
-    private ExportedFile generate(Table table, String scope, String format) {
+    private ExportedAttendanceFile generate(Table table, String scope, String format) {
         if ("xlsx".equalsIgnoreCase(format)) {
-            return new ExportedFile(generateXlsx(table), scope + ".xlsx",
+            return new ExportedAttendanceFile(generateXlsx(table), scope + ".xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
-        return new ExportedFile(generatePdf(table), scope + ".pdf", "application/pdf");
+        return new ExportedAttendanceFile(generatePdf(table), scope + ".pdf", "application/pdf");
     }
 
     private static final float PDF_MARGIN = 40;
