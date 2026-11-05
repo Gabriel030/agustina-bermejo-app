@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.HolidayType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,13 @@ public class Holiday {
     @Column(name = "date", nullable = false, unique = true)
     private LocalDate date;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 30)
+    private HolidayType type;
+
+    @Column(name = "description")
     private String description;
 }

@@ -15,6 +15,7 @@ const PreceptorDetalleCurso = lazyPage(() => import('@/features/academic-structu
 const PreceptorCalendario = lazyPage(() => import('@/features/academic-structure/pages/PreceptorCalendario'), 'PreceptorCalendario');
 const PreceptorPeriodos = lazyPage(() => import('@/features/academic-structure/pages/PreceptorPeriodos'), 'PreceptorPeriodos');
 const PreceptorPeriodoForm = lazyPage(() => import('@/features/academic-structure/pages/PreceptorPeriodoForm'), 'PreceptorPeriodoForm');
+const AdministrativoHolidays = lazyPage(() => import('@/features/academic-structure/pages/AdministrativoHolidays'), 'AdministrativoHolidays');
 const PreceptorNuevoCiclo = lazyPage(() => import('@/features/academic-structure/pages/PreceptorNuevoCiclo'), 'PreceptorNuevoCiclo');
 
 export const routes = {
@@ -30,6 +31,7 @@ export const routes = {
     { roles: ['administrativo'], path: 'gestion-academica/cursos/nueva', element: <CursoWizard /> },
     { roles: ['administrativo'], path: 'gestion-academica/cursos/:id', element: <CursoDetalle /> },
     { roles: ['administrativo'], path: 'gestion-academica/cursos/:id/editar', element: <CursoEditarDatos /> },
+    { roles: ['administrativo'], path: 'feriados', element: <AdministrativoHolidays /> },
     { roles: ['director'], path: 'gestion-academica', element: <DirectorSubjectReview /> },
     { roles: ['director'], path: 'financiero/anios-lectivos', element: <DirectorAniosLectivos /> },
     { roles: ['preceptor'], path: 'oferta-academica', element: <PreceptorOfertaAcademica /> },

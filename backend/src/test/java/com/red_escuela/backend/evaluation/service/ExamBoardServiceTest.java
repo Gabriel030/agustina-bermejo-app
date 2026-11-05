@@ -136,7 +136,8 @@ class ExamBoardServiceTest extends AbstractIntegrationTest {
     void creatingAnExamBoardOnAHolidayFails() {
         Holiday holiday = new Holiday();
         holiday.setDate(LocalDate.of(2099, 11, 20));
-        holiday.setDescription("Feriado de prueba");
+        holiday.setName("Feriado de prueba");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
         Subject subject = persistSubject("MateriaMesaEnFeriado");
         Term term = persistTerm();

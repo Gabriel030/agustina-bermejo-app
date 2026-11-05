@@ -603,7 +603,8 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = enrollInNewSection("80000031", "80000032", "MateriaFeriado", instructor);
         Holiday holiday = new Holiday();
         holiday.setDate(CLASS_DAY);
-        holiday.setDescription("Feriado de prueba");
+        holiday.setName("Feriado de prueba");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
         entityManager.flush();
 

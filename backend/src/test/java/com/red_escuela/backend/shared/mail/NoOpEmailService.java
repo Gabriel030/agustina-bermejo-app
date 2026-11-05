@@ -1,6 +1,5 @@
 package com.red_escuela.backend.shared.mail;
 
-import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -9,11 +8,11 @@ import org.springframework.stereotype.Service;
 public class NoOpEmailService implements EmailService {
 
     @Override
-    public void sendPasswordResetCode(Person person, String code) {
+    public void sendPasswordResetCode(MailRecipient recipient, String institutionName, String code) {
     }
 
     @Override
-    public void sendEmailVerification(Person person, String verificationLink) {
+    public void sendEmailVerification(MailRecipient recipient, String institutionName, String verificationLink) {
     }
 
     @Override

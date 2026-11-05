@@ -24,6 +24,8 @@ public class HolidayCreator {
         }
         Holiday holiday = new Holiday();
         holiday.setDate(request.date());
+        holiday.setName(request.name());
+        holiday.setType(request.type());
         holiday.setDescription(request.description());
         return HolidayResponse.from(holidayRepository.save(holiday));
     }

@@ -53,7 +53,7 @@ class PendingReceiptProtectionCapIT extends AbstractLateFeeScenarioIT {
     }
 
     private void holidayOn(LocalDate day) {
-        jdbc.update("insert into holiday (date, description) values (?, 'test holiday')", day);
+        jdbc.update("insert into holiday (date, name, type) values (?, 'test holiday', 'NATIONAL')", day);
         insertedHolidays.add(day);
     }
 

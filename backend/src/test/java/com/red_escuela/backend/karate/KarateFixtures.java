@@ -54,7 +54,8 @@ public class KarateFixtures {
         }
         Holiday holiday = new Holiday();
         holiday.setDate(java.time.LocalDate.of(year, 1, 1));
-        holiday.setDescription("Año Nuevo");
+        holiday.setName("Año Nuevo");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         holidayRepository.save(holiday);
         return year;
     }

@@ -149,7 +149,8 @@ POST,/graduation-requests/{id}/approve,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/graduation-requests/{id}/reject,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/graduation-requests/{id}/verify-debt,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
 GET,/holidays,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/holidays,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
+POST,/holidays,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""date"":""2026-01-15"",""name"":""x"",""type"":""NATIONAL""}"
+PUT,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""date"":""2026-01-15"",""name"":""x"",""type"":""NATIONAL""}"
 DELETE,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
 GET,/institutions,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/instructors,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
@@ -426,3 +427,4 @@ GET,/annual-upfront-requests/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/program-enrollments/{id}/annual-upfront-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/shift-ranges,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/shift-ranges,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""ranges"":[{""shift"":""MORNING"",""startTime"":""08:00"",""endTime"":""12:30""},{""shift"":""AFTERNOON"",""startTime"":""13:30"",""endTime"":""18:00""},{""shift"":""EVENING"",""startTime"":""18:30"",""endTime"":""22:30""}]}"
+GET,/regular-certificates/eligibility,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
