@@ -1,27 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useProspectosList() {
+export function useStaffProspects() {
   return useQuery({
-    queryKey: ['students'],
+    queryKey: ['prospects'],
     queryFn: () => apiFetch('/prospects'),
   });
 }
 
 export function useCrearProspecto() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ nombre, apellido, email, telefono }) => {
       const institutions = await apiFetch('/institutions');
       const institutionId = institutions[0]?.id;
-      return apiFetch('/prospects', {
+      return apiFetch('/prospects/by-staff', {
         method: 'POST',
-        body: JSON.stringify({ nombre, apellido, email, telefono, institutionId }),
+        body: JSON.stringify({ nombre, apellido, email, telefono: telefono ?? '', institutionId }),
       });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
     },
   });
 }
 
 export function useSubirDocumentoProspecto() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ studentId, type, file }) => {
       const form = new FormData();
@@ -30,6 +35,9 @@ export function useSubirDocumentoProspecto() {
         method: 'POST',
         body: form,
       });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
     },
   });
 }
@@ -59,6 +67,8 @@ export function useConfirmarAlta() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['alumnos'] });
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
     },
   });
 }

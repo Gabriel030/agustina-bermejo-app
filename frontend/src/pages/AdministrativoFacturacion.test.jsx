@@ -8,6 +8,8 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { invoiceFixture, money } from '@/test/fixtures/invoices';
+import { receiptFixture, receiptInstallmentFixture } from '@/test/fixtures/receipts';
+import { axe } from '@/test/axe';
 
 const API = 'http://localhost:8080';
 
@@ -33,21 +35,7 @@ function daysAgoIso(days) {
   return isoOf(date);
 }
 
-const pendingReceipt = {
-  id: 7,
-  invoiceId: 61,
-  filePath: 'students/2/comprobantes_1.pdf',
-  status: 'PENDING_REVIEW',
-  uploadedAt: '2026-10-02T10:00:00',
-  studentName: 'Martina Acosta',
-  studentDni: '28016166',
-  invoicePeriod: '2026-09',
-  invoiceFeeType: 'MONTHLY_INSTALLMENT',
-  productName: 'Profesorado de Educación Inicial',
-  declaredAmount: { amount: '45000.00', currency: 'ARS' },
-  operationNumber: 'OP-889',
-  transferDate: '2026-10-01',
-};
+const pendingReceipt = receiptFixture();
 
 function creditBalance(available = '0.00') {
   return {
@@ -169,7 +157,7 @@ describe('AdministrativoFacturacion — comprobantes', () => {
 
   it('shows the declared amount and operation and asks for confirmation before approving', async () => {
     let approvals = 0;
-    server.use(http.post(`${API}/bank-transfer-receipts/7/approve`, () => { approvals += 1; return HttpResponse.json({}); }));
+    server.use(http.post(`${API}/bank-transfer-receipts/7/approve`, () => { approvals += 1; return HttpResponse.json(receiptFixture({ status: 'REJECTED' })); }));
     const user = userEvent.setup();
     renderPage();
     await openReceiptsTab(user);
@@ -183,6 +171,96 @@ describe('AdministrativoFacturacion — comprobantes', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
     await vi.waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(approvals).toBe(0);
+  });
+
+  it('lists the installments each receipt covers with total and pending amounts', async () => {
+    const user = userEvent.setup();
+    renderPage('/', [
+      receiptFixture({
+        invoices: [
+          receiptInstallmentFixture({ invoiceId: 61, period: '2026-09', total: '45000.00', outstanding: '45000.00' }),
+          receiptInstallmentFixture({ invoiceId: 62, period: '2026-10', total: '45000.00', outstanding: '30000.00' }),
+        ],
+      }),
+    ]);
+    await openReceiptsTab(user);
+
+    const list = screen.getByRole('list', { name: 'Cuotas que cubre el comprobante' });
+    const items = within(list).getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent(/45\.000,00.*pendiente al enviar.*45\.000,00/);
+    expect(items[1]).toHaveTextContent(/pendiente al enviar.*30\.000,00/);
+  });
+
+  it('does not render an installments list when the receipt has none', async () => {
+    const user = userEvent.setup();
+    renderPage('/', [receiptFixture({ invoices: [] })]);
+    await openReceiptsTab(user);
+
+    expect(screen.queryByRole('list', { name: 'Cuotas que cubre el comprobante' })).not.toBeInTheDocument();
+  });
+
+  it('requires a reason before rejecting and never calls the endpoint without it', async () => {
+    let rejections = 0;
+    server.use(http.post(`${API}/bank-transfer-receipts/7/reject`, () => { rejections += 1; return HttpResponse.json(receiptFixture({ status: 'REJECTED' })); }));
+    const user = userEvent.setup();
+    renderPage();
+    await openReceiptsTab(user);
+
+    await user.click(screen.getByRole('button', { name: /Rechazar/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Rechazar' }));
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('El motivo del rechazo es obligatorio.');
+    expect(rejections).toBe(0);
+  });
+
+  it('rejects with the trimmed reason, closes the dialog and confirms with a toast', async () => {
+    let body = null;
+    server.use(http.post(`${API}/bank-transfer-receipts/7/reject`, async ({ request }) => { body = await request.json(); return HttpResponse.json(receiptFixture({ status: 'REJECTED' })); }));
+    const user = userEvent.setup();
+    renderPage();
+    await openReceiptsTab(user);
+
+    await user.click(screen.getByRole('button', { name: /Rechazar/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByRole('textbox'), '  Monto no coincide  ');
+    await user.click(within(dialog).getByRole('button', { name: 'Rechazar' }));
+
+    expect(await screen.findByText('Comprobante rechazado.')).toBeInTheDocument();
+    expect(body).toEqual({ rejectionReason: 'Monto no coincide' });
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('keeps the dialog and the typed reason and shows a translated message when the receipt was already reviewed', async () => {
+    server.use(
+      http.post(`${API}/bank-transfer-receipts/7/reject`, () =>
+        HttpResponse.json(errorBody('PAYMENT_RECEIPT_ALREADY_REVIEWED'), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await openReceiptsTab(user);
+
+    await user.click(screen.getByRole('button', { name: /Rechazar/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByRole('textbox'), 'Duplicado');
+    await user.click(within(dialog).getByRole('button', { name: 'Rechazar' }));
+
+    expect(await screen.findByText('Este comprobante ya fue revisado. Actualizá la bandeja.')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('textbox')).toHaveValue('Duplicado');
+  });
+
+  it('has no axe violations in the receipts inbox with installments and the rejection dialog open', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    await openReceiptsTab(user);
+    expect(await axe(container)).toHaveNoViolations();
+
+    await user.click(screen.getByRole('button', { name: /Rechazar/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await axe(dialog)).toHaveNoViolations();
   });
 
   it('shows a retryable error instead of "Sin comprobantes pendientes" when the list fails', async () => {

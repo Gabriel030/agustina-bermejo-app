@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useAlumnos({ status, onboardingStatus, search } = {}) {
+export function useAlumnos({ status, onboardingStatus, search, enabled = true } = {}) {
   return useQuery({
     queryKey: ['alumnos', { status, onboardingStatus, search }],
     queryFn: () => {
@@ -13,5 +13,6 @@ export function useAlumnos({ status, onboardingStatus, search } = {}) {
       return apiFetch(`/students${qs ? `?${qs}` : ''}`);
     },
     staleTime: 30_000,
+    enabled,
   });
 }

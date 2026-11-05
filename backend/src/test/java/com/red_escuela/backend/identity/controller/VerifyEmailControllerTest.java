@@ -185,13 +185,29 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
         CreateProspectRequest request = new CreateProspectRequest(
                 "Luis", "García", "luis.garcia.ver@example.com", null, institutionId);
 
-        mockMvc.perform(post("/prospects")
+        mockMvc.perform(post("/prospects/by-staff")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
         assertThat(verificationTokensOf("luis.garcia.ver@example.com")).isEmpty();
+    }
+
+    @Test
+    void crearProspectoPublicoPorEndpointAbiertoComoPreceptorGeneraTokenDeVerificacion() throws Exception {
+        Long institutionId = persistInstitution();
+        String token = tokenWithRole("preceptor.ver1b", "PRECEPTOR");
+        CreateProspectRequest request = new CreateProspectRequest(
+                "Luis", "García", "luis.garcia.pub@example.com", null, institutionId);
+
+        mockMvc.perform(post("/prospects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        assertThat(verificationTokensOf("luis.garcia.pub@example.com")).hasSize(1);
     }
 
     @Test
