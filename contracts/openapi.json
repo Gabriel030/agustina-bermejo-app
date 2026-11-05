@@ -9848,6 +9848,10 @@
           "apellido" : {
             "type" : "string"
           },
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "detalleBaja" : {
             "type" : "string"
           },
@@ -9863,6 +9867,9 @@
           },
           "email" : {
             "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
           },
           "id" : {
             "format" : "int64",
@@ -9888,6 +9895,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "sexo" : {
             "type" : "string"
           },
@@ -9899,9 +9910,13 @@
           },
           "username" : {
             "type" : "string"
+          },
+          "withdrawnAt" : {
+            "format" : "date-time",
+            "type" : "string"
           }
         },
-        "required" : [ "apellido", "detalleBaja", "dni", "documentType", "domicilio", "email", "id", "legajo", "motivoBaja", "nacionalidad", "nombre", "onboardingStatus", "personId", "sexo", "status", "telefono", "username" ],
+        "required" : [ "apellido", "birthDate", "detalleBaja", "dni", "documentType", "domicilio", "email", "emailVerified", "id", "legajo", "motivoBaja", "nacionalidad", "nombre", "onboardingStatus", "personId", "registeredAt", "sexo", "status", "telefono", "username", "withdrawnAt" ],
         "type" : "object"
       },
       "StudentResponse" : {
@@ -9916,6 +9931,9 @@
             "type" : "string"
           },
           "emailVerified" : {
+            "type" : "boolean"
+          },
+          "hasAvatar" : {
             "type" : "boolean"
           },
           "id" : {
@@ -9933,14 +9951,25 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "status" : {
             "type" : "string"
           },
           "username" : {
             "type" : "string"
+          },
+          "withdrawalReason" : {
+            "type" : "string"
+          },
+          "withdrawnAt" : {
+            "format" : "date-time",
+            "type" : "string"
           }
         },
-        "required" : [ "apellido", "dni", "email", "emailVerified", "id", "nombre", "onboardingStatus", "personId", "status", "username" ],
+        "required" : [ "apellido", "dni", "email", "emailVerified", "hasAvatar", "id", "nombre", "onboardingStatus", "personId", "registeredAt", "status", "username", "withdrawalReason", "withdrawnAt" ],
         "type" : "object"
       },
       "SubjectAttendanceSummaryResponse" : {
