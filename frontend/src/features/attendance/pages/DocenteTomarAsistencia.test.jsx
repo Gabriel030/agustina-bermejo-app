@@ -11,8 +11,8 @@ import { localIsoDate } from '@/lib/calendario';
 const API = 'http://localhost:8080';
 
 const ROSTER = [
-  { enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 0, atRisk: false },
-  { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, atRisk: false },
+  { enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 0, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 3 },
+  { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 2 },
 ];
 
 function mockSection({ savedStatusForAna, savedDate = localIsoDate() } = {}) {
@@ -195,7 +195,36 @@ describe('TabAsistencia', () => {
     renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Ana Gómez');
-    expect(within(rowOf('Ana Gómez')).getByText('0 inasist.')).toBeInTheDocument();
+    expect(within(rowOf('Ana Gómez')).getByText('0 de 3 faltas permitidas')).toBeInTheDocument();
+  });
+
+  it('tentative absence moves a student to the limit and then over the maximum', async () => {
+    mockSection();
+    const user = userEvent.setup();
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    expect(within(rowOf('Bruno Díaz')).getByText('1 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Bruno Díaz')).queryByText('Queda 1 falta')).not.toBeInTheDocument();
+
+    await user.click(within(rowOf('Bruno Díaz')).getByRole('button', { name: 'Ausente' }));
+
+    expect(within(rowOf('Bruno Díaz')).getByText('2 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(within(rowOf('Bruno Díaz')).getByText('Queda 1 falta')).toBeInTheDocument();
+  });
+
+  it('shows only the absence count when the backend sends no allowance', async () => {
+    server.use(
+      http.get(`${API}/program-sections/5/roster`, () =>
+        HttpResponse.json([{ enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 2, atRisk: false }]),
+      ),
+      http.get(`${API}/program-sections/5/attendance/history`, () => HttpResponse.json({ rows: [] })),
+      http.get(`${API}/program-sections/5/class-sessions/:date`, () => new HttpResponse(null, { status: 404 })),
+    );
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    expect(within(rowOf('Ana Gómez')).getByText('2 faltas')).toBeInTheDocument();
   });
 
   it('si la fecha es feriado lo dice en vez de un error genérico', async () => {

@@ -92,7 +92,7 @@ describe('DocenteComisionDetalle', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
-  it('un curso suelto ofrece Avisos y Notas pero no Evaluación', async () => {
+  it('un curso suelto ofrece Avisos, Alumnos y Notas pero no Evaluación', async () => {
     server.use(
       http.get(`${API}/me/teaching-sections`, () =>
         HttpResponse.json([{ id: SECTION_ID, type: 'COURSE', subjectName: 'Illustrator', sectionName: 'Turno noche' }]),
@@ -102,7 +102,24 @@ describe('DocenteComisionDetalle', () => {
     montar(`/docente/mis-comisiones/${SECTION_ID}?type=COURSE`);
 
     expect(await screen.findByRole('heading', { name: 'Illustrator · Turno noche' })).toBeInTheDocument();
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Avisos', 'Notas']);
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Avisos', 'Alumnos', 'Notas']);
+  });
+
+  it('con ?tab=alumnos muestra los alumnos con su riesgo de faltas', async () => {
+    mockearConfig();
+    server.use(
+      http.get(`${API}/program-sections/${SECTION_ID}/roster`, () =>
+        HttpResponse.json([
+          { enrollmentId: 1, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40111222', absenceCount: 3, attendancePercent: 75, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 0 },
+        ]),
+      ),
+    );
+    montar(`/docente/mis-comisiones/${SECTION_ID}?tab=alumnos`);
+
+    expect(await screen.findByText('Acosta, Joaquín')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Alumnos' })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByText('3 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(screen.getByText('Al límite')).toBeInTheDocument();
   });
 
   it('con ?tab=notas muestra la grilla de notas de la comisión de carrera', async () => {
