@@ -10,6 +10,15 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useCourse, useUpdateCourse } from '@/features/academic-structure/hooks/useCourses';
+import { FormField, SelectField } from '@/features/academic-structure/components/FormField';
+import {
+  countErrors,
+  describeSaveError,
+  fieldProps,
+  invalidFieldsSummary,
+  validateCourseBasics,
+  validateCourseDetail,
+} from '@/features/academic-structure/lib/offeringForm';
 
 const TEACHING_MODE_OPTIONS = [
   { value: '', label: 'Sin especificar' },
@@ -17,25 +26,6 @@ const TEACHING_MODE_OPTIONS = [
   { value: 'ONLINE', label: 'Virtual' },
   { value: 'HYBRID', label: 'Híbrido' },
 ];
-
-function CampoSelect({ label, value, onChange, options }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 function isoToDatetimeLocal(iso) {
   if (!iso) return '';
@@ -81,26 +71,23 @@ function CursoEditarDatosForm({ id, course }) {
   const [durationMonths, setDurationMonths] = useState(course.durationMonths?.toString() ?? '');
   const [registrationStart, setRegistrationStart] = useState(isoToDatetimeLocal(course.registrationStart));
   const [registrationEnd, setRegistrationEnd] = useState(isoToDatetimeLocal(course.registrationEnd));
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
   async function handleGuardar() {
-    if (!name.trim()) {
-      setError('El nombre es obligatorio.');
-      return;
+    const found = {
+      ...validateCourseBasics({ name, capacity, price }),
+      ...validateCourseDetail({ durationMonths, registrationStart, registrationEnd }),
+    };
+    if (!found.price && course.price && price === '') {
+      found.price = 'No se puede dejar vacío: el sistema conserva el precio anterior. Ingresá 0 si el curso es gratuito.';
     }
-    if (!capacity || parseInt(capacity) < 1) {
-      setError('El cupo debe ser al menos 1.');
-      return;
+    if (course.teachingMode && !teachingMode) {
+      found.teachingMode = 'No se puede quitar la modalidad una vez definida: elegí otra.';
     }
-    if (!durationMonths || parseInt(durationMonths) < 1) {
-      setError('La duración en meses es obligatoria y tiene que ser al menos 1.');
-      return;
-    }
-    if (registrationStart && registrationEnd && registrationEnd < registrationStart) {
-      setError('El cierre de inscripción no puede ser anterior a la apertura.');
-      return;
-    }
-    setError(null);
+    setErrors(found);
+    setSubmitError(null);
+    if (countErrors(found) > 0) return;
     try {
       await updateCourse.mutateAsync({
         name: name.trim(),
@@ -114,8 +101,10 @@ function CursoEditarDatosForm({ id, course }) {
       });
       toast.success('Datos actualizados');
       navigate(`/administrativo/gestion-academica/cursos/${id}`);
-    } catch {
-      setError('No se pudo guardar los cambios. Intentá de nuevo.');
+    } catch (err) {
+      const failure = describeSaveError(err, 'No se pudo guardar los cambios. Intentá de nuevo.');
+      if (failure.field === 'registrationEnd') setErrors({ registrationEnd: failure.message });
+      else setSubmitError(failure.message);
     }
   }
 
@@ -134,85 +123,88 @@ function CursoEditarDatosForm({ id, course }) {
         </div>
 
         <GlassCard className="flex flex-col gap-5 p-6">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-              Nombre <span className="text-danger">*</span>
-            </label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
+          <FormField id="course-name" label="Nombre" required error={errors.name}>
+            <Input
+              {...fieldProps('course-name', errors.name, true)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-                Cupo <span className="text-danger">*</span>
-              </label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField id="course-capacity" label="Cupo" required error={errors.capacity}>
               <Input
+                {...fieldProps('course-capacity', errors.capacity, true)}
                 type="number"
                 min={1}
                 value={capacity}
                 onChange={(e) => setCapacity(e.target.value)}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Precio</label>
+            </FormField>
+            <FormField id="course-price" label="Precio" error={errors.price}>
               <Input
+                {...fieldProps('course-price', errors.price)}
                 type="number"
                 min={0}
                 step={0.01}
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
-            </div>
+            </FormField>
           </div>
 
-          <CampoSelect
+          <SelectField
+            id="course-teaching-mode"
             label="Modalidad"
+            error={errors.teachingMode}
             value={teachingMode}
             onChange={setTeachingMode}
             options={TEACHING_MODE_OPTIONS}
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Horario</label>
-            <Input value={schedule} onChange={(e) => setSchedule(e.target.value)} />
-          </div>
+          <FormField id="course-schedule" label="Horario">
+            <Input id="course-schedule" value={schedule} onChange={(e) => setSchedule(e.target.value)} />
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-              Duración (meses)
-            </label>
+          <FormField id="course-duration" label="Duración (meses)" required error={errors.durationMonths}>
             <Input
+              {...fieldProps('course-duration', errors.durationMonths, true)}
               type="number"
               min={1}
               value={durationMonths}
               onChange={(e) => setDurationMonths(e.target.value)}
             />
-          </div>
+          </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-                Inicio de inscripción
-              </label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField id="course-registration-start" label="Inicio de inscripción">
               <Input
+                id="course-registration-start"
                 type="datetime-local"
                 value={registrationStart}
                 onChange={(e) => setRegistrationStart(e.target.value)}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-                Cierre de inscripción
-              </label>
+            </FormField>
+            <FormField id="course-registration-end" label="Cierre de inscripción" error={errors.registrationEnd}>
               <Input
+                {...fieldProps('course-registration-end', errors.registrationEnd)}
                 type="datetime-local"
                 value={registrationEnd}
                 onChange={(e) => setRegistrationEnd(e.target.value)}
               />
-            </div>
+            </FormField>
           </div>
 
-          {error && <p className="text-[13px] text-danger">{error}</p>}
+          {countErrors(errors) > 0 && (
+            <p role="alert" className="text-[13px] text-danger">
+              {invalidFieldsSummary(errors)}
+            </p>
+          )}
+          {submitError && (
+            <p role="alert" className="text-[13px] text-danger">
+              {submitError}
+            </p>
+          )}
 
           <div className="flex items-center justify-between">
             <Button
