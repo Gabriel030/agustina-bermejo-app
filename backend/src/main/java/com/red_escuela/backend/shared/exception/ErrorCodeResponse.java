@@ -7,12 +7,14 @@ import org.slf4j.MDC;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public record ErrorCodeResponse(
         String code,
         boolean retryable,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_NULL) String requestId,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_EMPTY) List<PolicyViolation> violations) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_EMPTY) List<PolicyViolation> violations,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, Object> details) {
     public static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
     public static final String UNAUTHENTICATED_CODE = "UNAUTHENTICATED";
     public static final String TOKEN_EXPIRED_CODE = "TOKEN_EXPIRED";
@@ -33,7 +35,11 @@ public record ErrorCodeResponse(
     }
 
     public ErrorCodeResponse(String code, boolean retryable) {
-        this(code, retryable, MDC.get(REQUEST_ID_KEY), List.of());
+        this(code, retryable, MDC.get(REQUEST_ID_KEY), List.of(), Map.of());
+    }
+
+    public ErrorCodeResponse(String code, boolean retryable, String requestId, List<PolicyViolation> violations) {
+        this(code, retryable, requestId, violations, Map.of());
     }
 
     public static String codeOf(Class<?> exceptionType) {
@@ -54,6 +60,7 @@ public record ErrorCodeResponse(
 
     public static ErrorCodeResponse of(Throwable exception) {
         List<PolicyViolation> violations = exception instanceof ReportsPolicyViolations reporting && reporting.violations() != null ? reporting.violations() : List.of();
-        return new ErrorCodeResponse(codeOf(exception.getClass()), isRetryable(exception.getClass()), MDC.get(REQUEST_ID_KEY), violations);
+        Map<String, Object> details = exception instanceof ReportsErrorDetails reporting && reporting.details() != null ? reporting.details() : Map.of();
+        return new ErrorCodeResponse(codeOf(exception.getClass()), isRetryable(exception.getClass()), MDC.get(REQUEST_ID_KEY), violations, details);
     }
 }
