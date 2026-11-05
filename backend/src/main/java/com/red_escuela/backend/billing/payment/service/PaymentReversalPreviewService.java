@@ -18,12 +18,14 @@ import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class PaymentReversalPreviewService {
     private static final PolicyViolation INVOICE_CANNOT_BE_REOPENED = new PolicyViolation("INVOICE_CANNOT_BE_REOPENED",
             "Una factura imputada con este pago no está en un estado que admita reabrirla.");

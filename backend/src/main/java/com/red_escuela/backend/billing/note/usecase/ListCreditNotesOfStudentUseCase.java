@@ -1,9 +1,8 @@
 package com.red_escuela.backend.billing.note.usecase;
 
-import com.red_escuela.backend.billing.note.domain.CreditNote;
-
+import com.red_escuela.backend.billing.note.dto.CreditNoteResponse;
 import java.util.List;
 
 public interface ListCreditNotesOfStudentUseCase {
-    List<CreditNote> listCreditNotesOfStudent(Long studentId);
+    List<CreditNoteResponse> listCreditNotesOfStudent(Long studentId);
 }
