@@ -8,12 +8,9 @@ import { axe } from '@/test/axe';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { errorBody } from '@/test/fixtures/errors';
-import { GRADUATION_DEBT_SUMMARY_PENDING_IN_CONTRACT, tolerateOperationsPendingInContract } from '@/test/contract/pendingOperations';
 import { AdministrativoEgresoDetalle } from '@/features/graduation/pages/AdministrativoEgresoDetalle';
 
 const API = 'http://localhost:8080';
-
-tolerateOperationsPendingInContract(GRADUATION_DEBT_SUMMARY_PENDING_IN_CONTRACT);
 
 function graduation(overrides = {}) {
   return {
