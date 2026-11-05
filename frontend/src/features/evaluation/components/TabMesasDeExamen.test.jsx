@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { LlamadosDisponibles } from '@/features/evaluation/components/TabMesasDeExamen';
+import { TabMesasDeExamen, LlamadosDisponibles } from '@/features/evaluation/components/TabMesasDeExamen';
 
 const API = 'http://localhost:8080';
 
@@ -38,5 +38,28 @@ describe('LlamadosDisponibles', () => {
     await user.click(await screen.findByRole('button', { name: 'Inscribirme a este llamado' }));
 
     expect(await screen.findByText('No pudimos inscribirte, probá de nuevo.')).toBeInTheDocument();
+  });
+});
+
+describe('TabMesasDeExamen', () => {
+  it('distingue una mesa cancelada de una inscripción dada de baja', async () => {
+    const mesa = { subjectName: 'Didáctica', examDate: '2026-12-01T09:00:00', classroom: null, subjectId: 3 };
+    server.use(
+      http.get(`${API}/me/program-section-enrollments`, () => HttpResponse.json([])),
+      http.get(`${API}/me/exam-board-registrations`, () =>
+        HttpResponse.json([
+          { id: 1, status: 'WITHDRAWN', score: null, examBoard: { ...mesa, id: 10, status: 'CANCELED', cancelReason: 'Paro docente' } },
+          { id: 2, status: 'WITHDRAWN', score: null, examBoard: { ...mesa, id: 11, status: 'SCHEDULED' } },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<TabMesasDeExamen />);
+
+    await user.click(await screen.findByRole('tab', { name: 'Mis inscripciones' }));
+
+    expect(await screen.findByText('Mesa cancelada')).toBeInTheDocument();
+    expect(screen.getByText('Motivo: Paro docente')).toBeInTheDocument();
+    expect(screen.getByText('De baja')).toBeInTheDocument();
   });
 });
