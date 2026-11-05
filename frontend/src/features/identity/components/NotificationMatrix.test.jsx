@@ -53,9 +53,10 @@ describe('NotificationMatrix', () => {
     renderWithProviders(<NotificationMatrix />);
 
     await screen.findByText('Aviso institucional');
-    for (const label of ['Cuenta creada', 'Nota publicada', 'Factura generada', 'Mesa de examen registrada']) {
+    for (const label of ['Cuenta creada', 'Nota publicada', 'Factura generada']) {
       expect(screen.queryByText(label)).not.toBeInTheDocument();
     }
+    expect(screen.getByText('Mesa de examen registrada')).toBeInTheDocument();
   });
 
   it('shows the holiday reminder only to administrative staff', async () => {
