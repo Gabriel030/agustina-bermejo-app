@@ -23,7 +23,8 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionReposi
 import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleReader;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleReviewer;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
@@ -61,7 +63,7 @@ class CycleSubmissionAndApprovalServicesTest {
     @Mock
     private SectionConflictChecker conflictChecker;
     @Mock
-    private CurrentPersonService currentPersonService;
+    private CurrentActorFinder currentActorFinder;
 
     private AcademicOfferingCycle cycle;
     private Term term;
@@ -81,7 +83,8 @@ class CycleSubmissionAndApprovalServicesTest {
 
     private ApproveCycleService approveService() {
         return new ApproveCycleService(cycleRepository, subjectSectionRepository, courseSectionRepository,
-                slotRepository, conflictChecker, currentPersonService);
+                slotRepository, conflictChecker,
+                new AcademicOfferingCycleReviewer(currentActorFinder, Clock.systemDefaultZone()));
     }
 
     private SubjectSection subjectSection(Long id, InstructorRole... roles) {
@@ -264,7 +267,7 @@ class CycleSubmissionAndApprovalServicesTest {
         when(courseSectionRepository.findByAcademicOfferingCycleId(CYCLE_ID)).thenReturn(List.of(courseSection));
         when(slotRepository.findBySubjectSectionId(1L)).thenReturn(List.of(subjectSlot));
         when(slotRepository.findByCourseSectionId(2L)).thenReturn(List.of(courseSlot));
-        when(currentPersonService.resolveCurrentPerson()).thenReturn(director);
+        when(currentActorFinder.currentPerson()).thenReturn(director);
 
         approveService().approve(CYCLE_ID);
 
