@@ -103,7 +103,7 @@ class InvoiceIssuingPoliciesTest {
     @Tag("D-129")
     void aDiscountOfAnotherInvoiceTypeIsDiscarded() {
         DiscountMatchesInvoiceTypePolicy policy = new DiscountMatchesInvoiceTypePolicy();
-        var candidate = candidate(DiscountType.PROMOTION, 1, InvoiceType.ENROLLMENT_FEE, "100.00", "10.00");
+        var candidate = candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.ENROLLMENT_FEE, "100.00", "10.00");
 
         assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, candidate, List.of())).code())
                 .isEqualTo("DISCOUNT_NOT_APPLICABLE_TO_INVOICE_TYPE");
@@ -112,37 +112,40 @@ class InvoiceIssuingPoliciesTest {
 
     @Test
     @Tag("D-073")
-    void onlyTheBiggestDiscountWinsAndTiesGoToTheLowestSourceId() {
-        BestDiscountPerInvoiceTypePolicy policy = new BestDiscountPerInvoiceTypePolicy();
+    @Tag("D-295")
+    @Tag("D-301")
+    void aRivalOfTheSameLineThatRanksHigherOutbidsTheCandidate() {
+        BestDiscountPerInvoiceLinePolicy policy = new BestDiscountPerInvoiceLinePolicy();
         var big = candidate(DiscountType.SCHOLARSHIP, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "50.00");
-        var small = candidate(DiscountType.PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "30.00");
-        var tieLowId = candidate(DiscountType.PROMOTION, 2, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "50.00");
-        var tieSameIdOtherType = candidate(DiscountType.COHORT_ENTRY, 5, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "50.00");
+        var small = candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "30.00");
+        var tiePromotion = candidate(DiscountType.COHORT_PROMOTION, 2, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "50.00");
 
         assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, big, List.of(small))).allowed()).isTrue();
         assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, small, List.of(big))).code()).isEqualTo("DISCOUNT_OUTBID_BY_A_BETTER_ONE");
-        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, big, List.of(tieLowId))).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, tieLowId, List.of(big))).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, big, List.of(tieSameIdOtherType))).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, tieSameIdOtherType, List.of(big))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, big, List.of(tiePromotion))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, tiePromotion, List.of(big))).code()).isEqualTo("DISCOUNT_OUTBID_BY_A_BETTER_ONE");
     }
 
     @Test
-    @Tag("D-157")
-    void aScholarshipOnlyCoversMonthlyInstallments() {
-        ScholarshipDiscountAppliesPolicy policy = new ScholarshipDiscountAppliesPolicy();
+    @Tag("D-301")
+    void aHigherRankedRivalOfAnotherLineDoesNotOutbid() {
+        BestDiscountPerInvoiceLinePolicy policy = new BestDiscountPerInvoiceLinePolicy();
+        var candidate = candidateOnLine(1, DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "10.00");
+        var strongerRivalOfAnotherLine = candidateOnLine(2, DiscountType.SCHOLARSHIP, 2, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "90.00");
+        var strongerRivalOfTheSameLine = candidateOnLine(1, DiscountType.SCHOLARSHIP, 3, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "90.00");
 
-        assertThat(policy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(FeeType.MONTHLY_INSTALLMENT, true)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(FeeType.MONTHLY_INSTALLMENT, false)).code())
-                .isEqualTo("SCHOLARSHIP_ONLY_FOR_MONTHLY_INSTALLMENTS");
-        assertThat(policy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(FeeType.ENROLLMENT_FEE, true)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, candidate, List.of(strongerRivalOfAnotherLine))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, candidate, List.of(strongerRivalOfAnotherLine, strongerRivalOfTheSameLine))).allowed()).isFalse();
     }
 
-    @ParameterizedTest
-    @Tag("D-074")
-    @CsvSource({"2,0,true", "2,1,true", "2,2,false", "2,3,false", ",50,true"})
-    void aPromotionStopsWhenItsInstallmentsAreExhausted(Integer scope, long applied, boolean allowed) {
-        assertThat(new PromotionDiscountInstallmentCapPolicy().evaluateRule(new PromotionDiscountInstallmentCapPolicy.Usage(scope, applied)).allowed()).isEqualTo(allowed);
+    @Test
+    @Tag("D-129")
+    void aHigherRankedRivalOfAnotherInvoiceTypeDoesNotOutbid() {
+        BestDiscountPerInvoiceLinePolicy policy = new BestDiscountPerInvoiceLinePolicy();
+        var candidate = candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "10.00");
+        var strongerRivalOfAnotherType = candidate(DiscountType.SCHOLARSHIP, 2, InvoiceType.ENROLLMENT_FEE, "100.00", "90.00");
+
+        assertThat(policy.evaluateRule(new DiscountContest(InvoiceType.MONTHLY_INSTALLMENT, candidate, List.of(strongerRivalOfAnotherType))).allowed()).isTrue();
     }
 
     @ParameterizedTest

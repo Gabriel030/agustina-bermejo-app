@@ -1,10 +1,11 @@
 package com.red_escuela.backend.billing.invoice.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.shared.domain.Money;
 
 public record InvoiceLineResponse(int lineNumber, String feeType, String period, String description, Money amount,
-                                  InvoiceLineDiscountResponse discount) {
+                                  @Schema(nullable = true) InvoiceLineDiscountResponse discount) {
 
     public static InvoiceLineResponse from(InvoiceLine line) {
         return new InvoiceLineResponse(line.getLineNumber(), line.getFeeType().name(), line.getPeriod().toString(), line.getConcept(),

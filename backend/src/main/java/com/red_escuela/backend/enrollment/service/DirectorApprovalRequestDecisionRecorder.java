@@ -5,8 +5,6 @@ import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.DirectorApprovalRequestApprovedEvent;
-import com.red_escuela.backend.notification.DirectorApprovalRequestRejectedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +33,9 @@ public class DirectorApprovalRequestDecisionRecorder {
         DirectorApprovalRequest saved = directorApprovalRequestRepository.save(entity);
 
         if (nuevoStatus == DirectorApprovalRequestStatus.APPROVED) {
-            eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved));
+            eventPublisher.publishEvent(EnrollmentNotificationEvents.approvalOf(saved));
         } else {
-            eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved));
+            eventPublisher.publishEvent(EnrollmentNotificationEvents.rejectionOf(saved));
         }
         return saved;
     }

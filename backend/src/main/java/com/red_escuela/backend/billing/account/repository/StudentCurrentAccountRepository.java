@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.account.repository;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.shared.domain.Currency;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -26,6 +27,9 @@ public interface StudentCurrentAccountRepository extends Repository<StudentCurre
 
     @Query("select a.id from StudentCurrentAccount a where a.studentId = :studentId and a.currency = :currency")
     Optional<Long> findIdByStudentIdAndCurrency(@Param("studentId") Long studentId, @Param("currency") Currency currency);
+
+    @Query("select a.id from StudentCurrentAccount a where a.unallocatedCreditAmount.value.amount > 0 and a.id > :lastId order by a.id")
+    List<Long> findIdsWithUnallocatedCreditAfter(@Param("lastId") Long lastId, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from StudentCurrentAccount a where a.id = :id")

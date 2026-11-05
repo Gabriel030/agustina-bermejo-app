@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -11,6 +12,7 @@ import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.domain.InvalidPercentageException;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @JsonTest
 class PricingAndAttendanceContractJsonTest {
@@ -44,10 +47,32 @@ class PricingAndAttendanceContractJsonTest {
     }
 
     @Test
+    void cycleSectionRequestReadsMaxAbsencePercentInPoints() throws Exception {
+        var request = objectMapper.readValue(
+                "{\"name\":\"A\",\"subjectId\":1,\"capacity\":20,\"maxAbsencePercent\":25}", CreateCycleSectionRequest.class);
+
+        assertThat(request.maxAbsencePercent()).isEqualTo(Percentage.ofPoints(new BigDecimal("25")));
+    }
+
+    @Test
+    void cycleSectionRequestWithoutMaxAbsencePercentLeavesItNull() throws Exception {
+        var request = objectMapper.readValue("{\"name\":\"A\",\"subjectId\":1,\"capacity\":20}", CreateCycleSectionRequest.class);
+
+        assertThat(request.maxAbsencePercent()).isNull();
+    }
+
+    @Test
+    void cycleSectionRequestRejectsMaxAbsencePercentAbove100() {
+        assertThatThrownBy(() -> objectMapper.readValue(
+                "{\"name\":\"A\",\"subjectId\":1,\"capacity\":20,\"maxAbsencePercent\":120}", CreateCycleSectionRequest.class))
+                .hasRootCauseInstanceOf(InvalidPercentageException.class);
+    }
+
+    @Test
     void rosterHistoryAndSummaryExposeAttendancePercentInPoints() throws Exception {
         Percentage half = Percentage.ofFraction(new BigDecimal("0.5"));
 
-        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false));
+        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false, 4, half, 1));
         JsonNode history = json(new AttendanceHistoryResponse.StudentHistoryRow(2L, "Ana", Map.of(), half));
         JsonNode summary = json(new SubjectAttendanceSummaryResponse("Matematica", half));
 
@@ -59,7 +84,7 @@ class PricingAndAttendanceContractJsonTest {
 
     @Test
     void courseAndProgramPricesAreMoneyObjects() throws Exception {
-        Course course = Course.builder().name("Curso").term(new Term()).price(new BigDecimal("18000")).currency(Currency.USD).build();
+        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).price(new BigDecimal("18000")).currency(Currency.USD).build();
         Program program = Program.builder().name("Carrera").price(new BigDecimal("45000"))
                 .enrollmentFeeAmount(new BigDecimal("30000")).currency(Currency.ARS).build();
 
@@ -74,7 +99,7 @@ class PricingAndAttendanceContractJsonTest {
 
     @Test
     void courseWithoutPriceSerializesNull() throws Exception {
-        Course course = Course.builder().name("Curso").term(new Term()).build();
+        Course course = Course.builder().name("Curso").term(TermFixtures.newTerm()).build();
 
         assertThat(json(CourseResponse.from(course)).get("price").isNull()).isTrue();
     }

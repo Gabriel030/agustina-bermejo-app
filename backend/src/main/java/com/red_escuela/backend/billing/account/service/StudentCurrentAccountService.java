@@ -19,6 +19,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -31,12 +32,36 @@ public class StudentCurrentAccountService {
     private final StudentCurrentAccountRepository accountRepository;
     private final CurrentAccountEntryRepository entryRepository;
     private final EntityManager entityManager;
+    private final ReservedAccountCredit reservedAccountCredit;
+
+    public NonNegativeMoney creditAvailableForAllocation(StudentCurrentAccount account) {
+        return account.getUnallocatedCreditAmount().minusNotBelowZero(reservedCreditOf(account));
+    }
+
+    public NonNegativeMoney reservedCreditOf(StudentCurrentAccount account) {
+        return reservedAccountCredit.reservedOn(account.getId(), account.getCurrency());
+    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public StudentCurrentAccount findOrOpenAndLockStudentCurrentAccount(Long studentId, Currency currency) {
         accountRepository.insertStudentCurrentAccountIfAbsent(studentId, currency.name(), ApplicationTime.now());
         Long accountId = accountRepository.findIdByStudentIdAndCurrency(studentId, currency).orElseThrow();
         return lockStudentCurrentAccount(accountId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<StudentCurrentAccount> findStudentCurrentAccount(Long studentId, Currency currency) {
+        return accountRepository.findIdByStudentIdAndCurrency(studentId, currency).flatMap(accountRepository::findById);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<StudentCurrentAccount> findStudentCurrentAccountById(Long studentCurrentAccountId) {
+        return accountRepository.findById(studentCurrentAccountId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findStudentCurrentAccountIds(Long studentId) {
+        return accountRepository.findIdsByStudentId(studentId);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -102,6 +127,16 @@ public class StudentCurrentAccountService {
                                                      LocalDate effectiveDate, String concept) {
         requireLocked(lockedAccount);
         return persist(lockedAccount, lockedAccount.recordRefundPaidDebit(refundId, amount, effectiveDate, concept));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<CurrentAccountEntry> findPaymentCreditNotYetReversed(Long paymentId) {
+        return entryRepository.findPaymentCreditNotYetReversed(paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CurrentAccountEntry> findPaymentCreditToReverse(Long paymentId) {
+        return entryRepository.findPaymentCreditNotYetReversed(paymentId);
     }
 
     public boolean isCreditNoteBookedInLedger(Long creditNoteId) {

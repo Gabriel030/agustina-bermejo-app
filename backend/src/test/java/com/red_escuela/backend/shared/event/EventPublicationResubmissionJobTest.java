@@ -1,10 +1,14 @@
 package com.red_escuela.backend.shared.event;
 
+import com.red_escuela.backend.shared.resilience.CircuitBreakerFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Tag;
+import org.springframework.mock.env.MockEnvironment;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.IncompleteEventPublications;
 
+import java.time.Clock;
 import java.time.Duration;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -19,7 +23,7 @@ class EventPublicationResubmissionJobTest {
 
     private final IncompleteEventPublications incompleteEventPublications = mock(IncompleteEventPublications.class);
     private final JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
-    private final EventPublicationResubmissionJob job = new EventPublicationResubmissionJob(incompleteEventPublications, jdbcTemplate);
+    private final EventPublicationResubmissionJob job = new EventPublicationResubmissionJob(incompleteEventPublications, jdbcTemplate, new CircuitBreakerFactory(new MockEnvironment().withProperty("resilience.default.enabled", "false").withProperty("resilience.default.window", "5").withProperty("resilience.default.failure-threshold", "3").withProperty("resilience.default.wait-open", "30s"), Clock.systemUTC(), new SimpleMeterRegistry()), 100);
 
     @Test
     @Tag("D-178")

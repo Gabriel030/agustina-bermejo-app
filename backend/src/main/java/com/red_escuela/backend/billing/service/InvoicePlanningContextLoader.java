@@ -1,12 +1,16 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.planning.domain.PaymentPlanCoverage;
 import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
@@ -44,11 +48,15 @@ public class InvoicePlanningContextLoader {
     private final YearCycleFactory cycleFactory;
     private final BillingConfigurationReader configurationReader;
 
+    private final EnrollmentPaymentStandingQuery standingQuery;
+
     public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository,
                                        InvoiceRepository invoiceRepository, PaymentPlanSelectionRepository selectionRepository,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
-                                       YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader) {
+                                       YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader,
+                                       EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.cycleFactory = cycleFactory;
         this.configurationReader = configurationReader;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -63,12 +71,16 @@ public class InvoicePlanningContextLoader {
     }
 
     public PlanningContext load(ProgramEnrollment detached, YearMonth month, LocalDate today) {
+        return load(detached, month, today, today);
+    }
+
+    public PlanningContext load(ProgramEnrollment detached, YearMonth month, LocalDate today, LocalDate issueDate) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(detached.getId())
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(detached.getId()));
         Long enrollmentId = enrollment.getId();
         boolean active = enrollment.getStatus() == ProgramEnrollmentStatus.ENROLLED || enrollment.getStatus() == ProgramEnrollmentStatus.PAUSED;
-        boolean suspended = enrollment.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED
-                || enrollment.getPaymentStatus() == EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT;
+        boolean suspended = standingQuery.findStandingOfProgramEnrollment(enrollment.getId())
+                .map(standing -> standing.status().stopsBilling()).orElse(false);
         boolean paused = enrollment.getStatus() == ProgramEnrollmentStatus.PAUSED;
         boolean completed = false;
         boolean onlyFinals = false;
@@ -91,6 +103,9 @@ public class InvoicePlanningContextLoader {
                 .map(i -> new IssuedEnrollmentFee(i.getId(), i.getTemplateId(), i.getEnrollmentFeeSlot(), i.getPeriod(), i.getPaymentStatus(), i.getDueDate(),
                         i.getPrimaryLine().getChargeKeyReleased())).toList();
         Set<YearMonth> recurringPeriods = periods(invoices, FeeType.MONTHLY_INSTALLMENT);
+        Set<YearMonth> awaitingAnnualPeriods = invoices.stream()
+                .filter(i -> i.getInvoiceType() == InvoiceType.ANNUAL_UPFRONT && i.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT)
+                .flatMap(i -> i.getLines().stream()).filter(line -> !line.getChargeKeyReleased()).map(InvoiceLine::getPeriod).collect(Collectors.toSet());
 
         YearMonth entryMonth = enrollment.getProgramCohort() != null ? YearMonth.from(enrollment.getProgramCohort().getCursadaStart())
                 : (enrollment.getEnrollmentDate() != null ? YearMonth.from(enrollment.getEnrollmentDate()) : null);
@@ -107,7 +122,7 @@ public class InvoicePlanningContextLoader {
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
                 coverage, !selections.isEmpty(),
                 cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList, today),
-                entryTemplateId, entrySlot, cursadaStart);
+                entryTemplateId, entrySlot, cursadaStart, issueDate, awaitingAnnualPeriods);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
     }
 
@@ -124,10 +139,10 @@ public class InvoicePlanningContextLoader {
         if (cycles.isEmpty()) {
             return windows;
         }
-        Set<String> irregularTypes = configurationReader.irregularTermTypesEffectiveOn(today).types().stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<TermType> irregularTypes = Set.copyOf(configurationReader.irregularTermTypesEffectiveOn(today).types());
         List<Term> terms = termRepository.findTermsOfProgram(programId).stream()
                 .filter(t -> t.getEnrollmentStart() != null && t.getStartDate() != null)
-                .filter(t -> t.getType() == null || !irregularTypes.contains(t.getType().trim().toUpperCase())).toList();
+                .filter(t -> t.getType() == null || !irregularTypes.contains(t.getType())).toList();
         for (YearCycle cycle : cycles) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
                 final int currentSlot = slot;

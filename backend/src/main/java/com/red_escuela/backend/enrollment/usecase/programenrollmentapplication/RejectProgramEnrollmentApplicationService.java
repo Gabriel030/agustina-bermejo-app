@@ -1,24 +1,20 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationRejection;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class RejectProgramEnrollmentApplicationService implements RejectProgramEnrollmentApplicationUseCase {
 
-    private final ProgramEnrollmentApplicationFinder applicationFinder;
+    private final ProgramEnrollmentApplicationRejection applicationRejection;
 
-    public RejectProgramEnrollmentApplicationService(ProgramEnrollmentApplicationFinder applicationFinder) {
-        this.applicationFinder = applicationFinder;
+    public RejectProgramEnrollmentApplicationService(ProgramEnrollmentApplicationRejection applicationRejection) {
+        this.applicationRejection = applicationRejection;
     }
 
     @Override
-    @Transactional
     public ProgramEnrollmentApplication reject(RejectProgramEnrollmentApplicationCommand command) {
-        ProgramEnrollmentApplication application = applicationFinder.findOrThrow(command.id());
-        application.reject(command.decidedBy(), command.reason());
-        return application;
+        return applicationRejection.reject(command.id(), command.decidedBy(), command.reason());
     }
 }

@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.invoice.operation;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Tag;
@@ -34,8 +33,8 @@ class InvoiceIssuingTimelineIT extends AbstractInvoiceIssuingIT {
         var plain = factory.newLearner(offering, null);
         var scholar = factory.newLearner(offering, null);
         var promoted = factory.newLearner(offering, null);
-        factory.grantScholarship(offering, scholar, Percentage.ofPoints(new BigDecimal("50")), 2, ScholarshipScope.INSTALLMENTS);
-        factory.redeemPromotion(offering, promoted, FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("25")), 3);
+        factory.grantScholarship(offering, scholar, Percentage.ofPoints(new BigDecimal("50")), YearMonth.of(2027, 3), YearMonth.of(2027, 4));
+        factory.acquireCohortPromotion(offering, promoted, FeeType.MONTHLY_INSTALLMENT, Percentage.ofPoints(new BigDecimal("25")), 3);
         List<BigDecimal> plainTotals = new ArrayList<>();
         List<BigDecimal> scholarTotals = new ArrayList<>();
         List<BigDecimal> promotedTotals = new ArrayList<>();

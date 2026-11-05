@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.repository;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;
@@ -23,7 +24,7 @@ class TermDatesConstraintTest extends AbstractIntegrationTest {
 
     @Test
     void databaseRejectsATermEndingBeforeItStartsEvenBypassingTheDomain() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2027);
         term.setDescription("Período invertido por fuera del dominio");
         term.setStartDate(LocalDateTime.of(2027, 12, 31, 0, 0));

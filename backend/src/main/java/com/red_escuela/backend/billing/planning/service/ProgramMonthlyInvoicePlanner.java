@@ -92,7 +92,7 @@ public final class ProgramMonthlyInvoicePlanner implements MonthlyInvoicePlanner
         long sequence = context.installmentsIssued() + 1;
         int total = context.terms().monthlyInstallmentsCount();
         charges.add(new PlannedInvoice(FeeType.MONTHLY_INSTALLMENT, context.period(),
-                dueDateCalculator.calculateInstallmentDueDate(context.facts().today(), context.terms().monthlyInstallmentDueDays()),
+                dueDateCalculator.calculateInstallmentDueDate(context.facts().issueDate(), context.terms().monthlyInstallmentDueDays()),
                 context.facts().today(), context.installmentCycle().templateId(), null, "cuota " + sequence + " de " + total + " del año lectivo", false, false));
         decisions.add(new InvoicePlanningDecision(5, "ISSUE_INSTALLMENT", "cuota " + sequence + " de " + total));
     }

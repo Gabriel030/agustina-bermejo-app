@@ -1,28 +1,20 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
-import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
-import com.red_escuela.backend.enrollment.service.DirectorApprovalRequestDecisionRecorder;
-import com.red_escuela.backend.enrollment.service.DirectorApprovalRequestFinder;
+import com.red_escuela.backend.enrollment.service.DirectorApprovalDecision;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class RejectDirectorApprovalRequestService implements RejectDirectorApprovalRequestUseCase {
 
-    private final DirectorApprovalRequestFinder directorApprovalRequestFinder;
-    private final DirectorApprovalRequestDecisionRecorder decisionRecorder;
+    private final DirectorApprovalDecision directorApprovalDecision;
 
-    public RejectDirectorApprovalRequestService(DirectorApprovalRequestFinder directorApprovalRequestFinder,
-                                                 DirectorApprovalRequestDecisionRecorder decisionRecorder) {
-        this.directorApprovalRequestFinder = directorApprovalRequestFinder;
-        this.decisionRecorder = decisionRecorder;
+    public RejectDirectorApprovalRequestService(DirectorApprovalDecision directorApprovalDecision) {
+        this.directorApprovalDecision = directorApprovalDecision;
     }
 
     @Override
-    @Transactional
     public DirectorApprovalRequest reject(DecideDirectorApprovalRequestCommand command) {
-        DirectorApprovalRequest entity = directorApprovalRequestFinder.findOrThrow(command.id());
-        return decisionRecorder.record(entity, DirectorApprovalRequestStatus.REJECTED, command.notas());
+        return directorApprovalDecision.reject(command.id(), command.notas());
     }
 }

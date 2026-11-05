@@ -89,3 +89,18 @@ describe('DirectorEsquemasEvaluacion', () => {
     expect(screen.queryByRole('button', { name: 'Editar Promocional' })).not.toBeInTheDocument();
   });
 });
+
+describe('DirectorEsquemasEvaluacion — load failure', () => {
+  it('shows the error state and reloads the schemes on retry', async () => {
+    server.use(http.get(`${API}/evaluation-schemes`, () => new HttpResponse(null, { status: 500 })));
+    const user = userEvent.setup();
+    renderWithProviders(<DirectorEsquemasEvaluacion />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar los esquemas');
+    mockearEsquemas();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Reglamento borrador')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

@@ -10,7 +10,7 @@ public class ChangeReasonRequiredException extends BadRequestException implement
     private final List<PolicyViolation> violations;
 
     public ChangeReasonRequiredException(List<PolicyViolation> violations) {
-        super("El cambio de configuración necesita un motivo.");
+        super("El cambio necesita un motivo.");
         this.violations = List.copyOf(violations);
     }
 

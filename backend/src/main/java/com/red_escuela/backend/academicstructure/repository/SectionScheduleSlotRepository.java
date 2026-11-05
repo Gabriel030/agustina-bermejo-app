@@ -49,7 +49,159 @@ public interface SectionScheduleSlotRepository extends JpaRepository<SectionSche
             @Param("endTime") LocalTime endTime
     );
 
+    @Query("""
+            select s from SectionScheduleSlot s
+            left join s.subjectSection ss
+            left join ss.term sst
+            left join ss.academicOfferingCycle ssc
+            left join s.courseSection cs
+            left join cs.term cst
+            left join cs.academicOfferingCycle csc
+            where s.dayOfWeek = :dayOfWeek
+            and s.startTime < :endTime
+            and s.endTime > :startTime
+            and (
+                (ss is not null and exists (
+                    select 1 from SubjectSectionInstructor i
+                    where i.section = ss and i.instructor.id = :instructorId))
+                or (cs is not null and exists (
+                    select 1 from CourseSubjectSectionInstructor ci
+                    where ci.section = cs and ci.instructor.id = :instructorId))
+            )
+            and (
+                sst.id = :termId
+                or cst.id = :termId
+                or (sst.startDate <= :termEnd and sst.endDate >= :termStart)
+                or (cst.startDate <= :termEnd and cst.endDate >= :termStart)
+            )
+            and (
+                ss.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or cs.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or ssc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                or csc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+            )
+            """)
+    List<SectionScheduleSlot> findInstructorOccupyingSlots(
+            @Param("instructorId") Long instructorId,
+            @Param("termId") Long termId,
+            @Param("termStart") LocalDateTime termStart,
+            @Param("termEnd") LocalDateTime termEnd,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime
+    );
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            join fetch s.classroom
+            left join fetch s.subjectSection ss
+            left join fetch ss.term sst
+            left join fetch ss.subject
+            left join ss.academicOfferingCycle ssc
+            left join fetch s.courseSection cs
+            left join fetch cs.term cst
+            left join fetch cs.courseSubject ccs
+            left join fetch ccs.course
+            left join cs.academicOfferingCycle csc
+            where s.dayOfWeek = :dayOfWeek
+            and s.startTime < :endTime
+            and s.endTime > :startTime
+            and (
+                (sst.startDate <= :windowEnd and sst.endDate >= :windowStart)
+                or (cst.startDate <= :windowEnd and cst.endDate >= :windowStart)
+            )
+            and (
+                ss.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or cs.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or ssc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                or csc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+            )
+            """)
+    List<SectionScheduleSlot> findOccupantSlotsInWindow(
+            @Param("windowStart") LocalDateTime windowStart,
+            @Param("windowEnd") LocalDateTime windowEnd,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime
+    );
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            join fetch s.classroom
+            left join fetch s.subjectSection ss
+            left join fetch ss.term sst
+            left join fetch ss.subject
+            left join ss.academicOfferingCycle ssc
+            left join fetch s.courseSection cs
+            left join fetch cs.term cst
+            left join fetch cs.courseSubject ccs
+            left join fetch ccs.course
+            left join cs.academicOfferingCycle csc
+            where s.classroom.id = :classroomId
+            and (
+                (sst.startDate <= :windowEnd and sst.endDate >= :windowStart)
+                or (cst.startDate <= :windowEnd and cst.endDate >= :windowStart)
+            )
+            and (
+                ss.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or cs.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or ssc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                or csc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+            )
+            """)
+    List<SectionScheduleSlot> findClassroomSlotsInWindow(
+            @Param("classroomId") Long classroomId,
+            @Param("windowStart") LocalDateTime windowStart,
+            @Param("windowEnd") LocalDateTime windowEnd
+    );
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            left join s.subjectSection ss
+            left join ss.academicOfferingCycle ssc
+            left join s.courseSection cs
+            left join cs.academicOfferingCycle csc
+            where s.classroom.id = :classroomId
+            and (
+                ss.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or cs.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or ssc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                or csc.status in (
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
+                    com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)
+            )
+            """)
+    List<SectionScheduleSlot> findSlotsOfActiveSectionsInClassroom(@Param("classroomId") Long classroomId);
+
     List<SectionScheduleSlot> findBySubjectSectionId(Long subjectSectionId);
 
     List<SectionScheduleSlot> findByCourseSectionId(Long courseSectionId);
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            join fetch s.classroom
+            where s.subjectSection.id in :sectionIds
+            """)
+    List<SectionScheduleSlot> findWithClassroomBySubjectSectionIdIn(@Param("sectionIds") java.util.Collection<Long> sectionIds);
+
+    @Query("""
+            select s from SectionScheduleSlot s
+            join fetch s.classroom
+            where s.courseSection.id in :sectionIds
+            """)
+    List<SectionScheduleSlot> findWithClassroomByCourseSectionIdIn(@Param("sectionIds") java.util.Collection<Long> sectionIds);
 }

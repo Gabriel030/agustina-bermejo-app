@@ -1,11 +1,10 @@
 package com.red_escuela.backend.billing.invoice.repository;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 
@@ -13,14 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-056")
 @Tag("integration")
+@Tag("migration")
 class V91MigrationOnLegacyDataIT {
 
     @Test
     void theLegacyInvoiceKeepsItsRowsAndIncomingForeignKeysAndTheNewTablesStartEmpty() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("90").load().migrate();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("90")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into invoice (fee_type, period, due_date, base_amount, base_amount_currency, status, created_at, updated_at, issue_reason) "
                     + "values ('RECURRING_FEE', date '2026-09-01', date '2026-09-10', 48000.00, 'ARS', 'PENDING', now(), now(), 'LEGACY')");

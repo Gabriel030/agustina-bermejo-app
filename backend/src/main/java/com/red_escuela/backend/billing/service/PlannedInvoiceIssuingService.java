@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.exception.ChargeRejectedException;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuanceDestination;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.planning.domain.MonthlyInvoicePlan;
 import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;
@@ -41,8 +42,16 @@ public class PlannedInvoiceIssuingService {
     }
 
     public InvoiceIssuingResult issuePlannedProgramInvoice(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge, InvoiceIssuingReason reason, boolean inCurrentTransaction) {
+        return issuePlannedProgramInvoice(enrollment, selection, charge, reason, inCurrentTransaction, InvoiceIssuanceDestination.EMIT_NOW);
+    }
+
+    public InvoiceIssuingResult issuePlannedProgramInvoice(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge, InvoiceIssuingReason reason,
+                                                           boolean inCurrentTransaction, InvoiceIssuanceDestination destination) {
+        if (inCurrentTransaction && !InvoiceIssuanceDestination.EMIT_NOW.equals(destination)) {
+            throw new IllegalArgumentException("Issuing in the caller transaction only supports immediate emission, got " + destination);
+        }
         var request = InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(enrollment, selection, charge, reason);
-        InvoiceIssuingResult result = inCurrentTransaction ? invoiceIssuingService.issueInvoiceInCallerTransaction(request) : invoiceIssuingService.issueInvoiceInNewTransaction(request);
+        InvoiceIssuingResult result = inCurrentTransaction ? invoiceIssuingService.issueInvoiceInCallerTransaction(request) : invoiceIssuingService.issueInvoiceInNewTransaction(request, destination);
         if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
             throw new ChargeRejectedException(rejected.evaluationResult());
         }
@@ -53,15 +62,23 @@ public class PlannedInvoiceIssuingService {
         log.info("Plan de cargos de curso: inscripcion={}, mes={}, cargos={}, decisiones={}", plan.enrollmentId(), plan.month(), plan.charges().size(), plan.describe());
         int issued = 0;
         for (PlannedInvoice charge : plan.charges()) {
-            var request = InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(enrollment, selection, charge, InvoiceIssuingReason.COURSE_MONTHLY_RUN);
-            InvoiceIssuingResult result = invoiceIssuingService.issueInvoiceInNewTransaction(request);
-            if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
-                throw new ChargeRejectedException(rejected.evaluationResult());
-            }
-            if (result instanceof InvoiceIssuingResult.InvoiceIssued) {
+            if (issuePlannedCourseInvoice(enrollment, selection, charge) instanceof InvoiceIssuingResult.InvoiceIssued) {
                 issued++;
             }
         }
         return issued;
+    }
+
+    public InvoiceIssuingResult issuePlannedCourseInvoice(CourseEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge) {
+        return issuePlannedCourseInvoice(enrollment, selection, charge, InvoiceIssuanceDestination.EMIT_NOW);
+    }
+
+    public InvoiceIssuingResult issuePlannedCourseInvoice(CourseEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge, InvoiceIssuanceDestination destination) {
+        var request = InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(enrollment, selection, charge, InvoiceIssuingReason.COURSE_MONTHLY_RUN);
+        InvoiceIssuingResult result = invoiceIssuingService.issueInvoiceInNewTransaction(request, destination);
+        if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
+            throw new ChargeRejectedException(rejected.evaluationResult());
+        }
+        return result;
     }
 }

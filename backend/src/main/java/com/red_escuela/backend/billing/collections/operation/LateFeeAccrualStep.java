@@ -18,6 +18,7 @@ import java.util.Map;
 public class LateFeeAccrualStep {
     private static final Logger log = LoggerFactory.getLogger(LateFeeAccrualStep.class);
     private static final int PAGE_SIZE = 200;
+    private static final int SETTLEMENT_RECOVERY_WINDOW_DAYS = 35;
 
     private final PendingInvoiceQueryService overdueInvoiceQueryService;
     private final LateFeeAccrualService accrualService;
@@ -28,9 +29,15 @@ public class LateFeeAccrualStep {
     }
 
     public LateFeeAccrualResult accrueLateFees(LocalDate today) {
+        return accrueLateFees(today, HeldSubjectFinder.NONE);
+    }
+
+    public LateFeeAccrualResult accrueLateFees(LocalDate today, HeldSubjectFinder heldInvoices) {
         int candidates = 0;
         int issued = 0;
         int failed = 0;
+        int recovered = 0;
+        int settlementCandidates = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
         LatePaymentTimeline timeline = accrualService.timelineOf(today);
         LocalDate cutoffDay = LateFeeCutoff.closingOfMonthBefore(today).lastDay();
@@ -41,7 +48,12 @@ public class LateFeeAccrualStep {
                 break;
             }
             candidates += batch.size();
+            Map<Long, String> held = heldInvoices.findHoldCodesAmong(batch);
             for (Long originId : batch) {
+                if (held.containsKey(originId)) {
+                    errors.add(heldInvoiceError(originId, held.get(originId)));
+                    continue;
+                }
                 try {
                     issued += accrualService.reconcileLateFeesOfInvoice(originId, today, timeline);
                 } catch (Exception e) {
@@ -55,6 +67,41 @@ public class LateFeeAccrualStep {
             }
             lastId = batch.get(batch.size() - 1);
         }
-        return new LateFeeAccrualResult(candidates, issued, failed, errors);
+        lastId = 0L;
+        LocalDate since = today.minusDays(SETTLEMENT_RECOVERY_WINDOW_DAYS);
+        while (true) {
+            List<Long> batch = accrualService.findRecentlySettledOriginIdsAfter(lastId, since, PAGE_SIZE);
+            if (batch.isEmpty()) {
+                break;
+            }
+            settlementCandidates += batch.size();
+            Map<Long, String> held = heldInvoices.findHoldCodesAmong(batch);
+            for (Long originId : batch) {
+                if (held.containsKey(originId)) {
+                    errors.add(heldInvoiceError(originId, held.get(originId)));
+                    continue;
+                }
+                try {
+                    recovered += accrualService.reconcileLateFeesOfSettledInvoice(originId, today, timeline);
+                } catch (Exception e) {
+                    failed++;
+                    log.error("Falló la recuperación del recargo final de la factura id={}", originId, e);
+                    Map<String, Object> error = new LinkedHashMap<>();
+                    error.put("invoiceId", originId);
+                    error.put("message", e.getMessage());
+                    errors.add(error);
+                }
+            }
+            lastId = batch.get(batch.size() - 1);
+        }
+        return new LateFeeAccrualResult(candidates, issued + recovered, failed, errors, recovered, settlementCandidates);
+    }
+
+    private static Map<String, Object> heldInvoiceError(Long invoiceId, String holdCode) {
+        Map<String, Object> heldInvoice = new LinkedHashMap<>();
+        heldInvoice.put("invoiceId", invoiceId);
+        heldInvoice.put("decisionCode", holdCode);
+        heldInvoice.put("message", HeldSubjectFinder.messageOf(holdCode));
+        return heldInvoice;
     }
 }

@@ -1,5 +1,7 @@
 # Frontend — convenciones y patrones (React)
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Leé esto antes de tocar `frontend/`. Los ejemplos de rutas/carpetas de abajo son
 ilustrativos (no todos existen aún); el inventario real de componentes vive en
 [components.md](components.md). Es la propuesta de patrones para el proyecto —
@@ -162,9 +164,11 @@ necesite de verdad.
   patrón de compound components de Radix (`<Dialog><DialogTrigger/><DialogContent/>`)
   antes que un único componente con 10 props booleanas.
 - **Los layouts de rol son el ejemplo del patrón Strategy aplicado al frontend**:
-  `RUTAS_POR_ROL` en `AppRouter.jsx` mapea rol → `{Layout, paginas}` en vez de un
-  único componente con un `switch` gigante por rol. Cuando agregues una pantalla
-  nueva de un rol, se agrega a `paginas` de ese rol, no se toca el router en sí.
+  `ROLE_CONFIG` (`frontend/src/routes/roleConfig.js`) mapea rol → `{Layout, pages}` y
+  `FEATURE_ROUTES` (`routes/featureRoutes.jsx`) declara las rutas de cada funcionalidad
+  (públicas, compartidas y por rol) en vez de un único componente con un `switch`
+  gigante por rol. Cuando agregues una pantalla nueva de un rol, se agrega a `pages` de
+  ese rol y a `FEATURE_ROUTES`, no se toca `AppRouter.jsx` en sí.
 - **`apiFetch` es una Facade** sobre `fetch` — cualquier lógica nueva de red
   (headers, reintentos, manejo de error) va ahí adentro, nunca duplicada
   componente por componente.
@@ -181,14 +185,24 @@ necesite de verdad.
 
 ## Manejo de errores
 
-- **`ErrorBoundary` de React en la raíz de `App.jsx`** (pendiente de agregar —
-  hoy no existe, es deuda de la Fase 1 detectada al escribir este doc). Cubre
-  errores de render que ninguna captura de `try/catch` en un handler puede
-  atajar. No confundir con el manejo de errores de red, que ya vive en
-  `apiFetch` (`AuthError`, `RateLimitedError`, mensaje genérico por status).
-- Los mensajes de error al usuario se arman en el frontend a partir del status
-  HTTP (ver `docs/context/backend.md` — el backend no manda body de error), nunca
-  se intenta parsear un mensaje que el backend no envía.
+- **`ApiError`** (`api/apiError.js`): todo error HTTP de `apiFetch` lo es, con
+  `status`, `code`, `retryable`, `requestId` y `violations` (cuerpo estándar del
+  catálogo `docs/api/error-catalog.md`).
+- **`describeError(error)`** (`api/describeError.js`) devuelve `{ kind, message,
+  retryable, requestId }` con el mensaje en castellano por código transversal. Un
+  test cruza `ERROR_MESSAGES` contra el catálogo: sumar un transversal en el backend
+  obliga a sumarlo acá. Los códigos de dominio siguen en cada feature (prioridad:
+  mensaje de la feature, luego `describeError`). Regla en mutaciones:
+  `toast.error(describeError(err).message)`.
+- **Timeouts**: 30 s por pedido (`timeoutMs` en las opciones lo cambia), 120 s para
+  `FormData` y descargas. Un timeout se trata como falla de red.
+- **`ErrorBoundary`** (`components/ErrorBoundary.jsx`) en la raíz de `App.jsx` y por
+  pantalla en `RoleShell` (se resetea al cambiar `resetKey`, la ruta). Muestra
+  `ErrorFallback`. Los errores de render los captura el boundary; los de red,
+  `apiFetch`.
+- **`reportClientError`** (`lib/reportClientError.js`) es el puerto de reporte: por
+  defecto solo `console.error`; se enchufa con `setClientErrorReporter` cuando
+  exista Sentry (Épica 17). También reporta los `unhandledrejection`.
 
 ## Naming
 

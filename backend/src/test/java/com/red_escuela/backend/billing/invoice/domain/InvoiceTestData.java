@@ -52,6 +52,10 @@ public final class InvoiceTestData {
         return new InvoiceDiscountDraft(DiscountType.SCHOLARSHIP, "Beca", null, ars(base), ars(amount), null, null);
     }
 
+    public static InvoiceDiscountDraft discount(String base, String amount, Long studentDiscountId) {
+        return new InvoiceDiscountDraft(DiscountType.SCHOLARSHIP, "Beca", studentDiscountId, ars(base), ars(amount), null, null);
+    }
+
     public static Invoice monthlyDraft(String amount) {
         return InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header(InvoiceType.MONTHLY_INSTALLMENT),
                 monthlyLine(amount, "PE:123:MONTHLY_INSTALLMENT:2027-03"), Optional.empty(), ACTOR);

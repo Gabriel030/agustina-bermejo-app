@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.policy;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -23,7 +24,7 @@ final class PlanningFixtures {
     }
 
     static ProgramYearBillingTemplate template(long id, int year, int installments, int count, int first, Integer second) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStartDate(LocalDateTime.of(year, 3, 1, 0, 0));
         term.setEndDate(LocalDateTime.of(year, 12, 31, 23, 59));

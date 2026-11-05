@@ -33,6 +33,7 @@ class PaymentStatusTransitionTest {
 
     private static final Set<Row> SPEC_TABLE = Set.of(
             new Row(null, CASH_PAYMENT_REGISTERED, APPROVED),
+            new Row(null, GATEWAY_PAYMENT_REGISTERED_AS_APPROVED, APPROVED),
             new Row(null, PENDING_ONLINE_PAYMENT_CREATED, PENDING),
             new Row(null, PENDING_BANK_TRANSFER_CREATED, PENDING),
             new Row(PENDING, PAYMENT_HOLD_AUTHORIZED, AUTHORIZED),

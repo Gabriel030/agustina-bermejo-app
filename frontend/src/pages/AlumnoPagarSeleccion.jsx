@@ -3,6 +3,7 @@ import { Banknote, CreditCard, ChevronLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
 import { cn } from '@/lib/utils';
@@ -50,9 +51,16 @@ function CardPaymentOption({ enabled, onSelect }) {
 export function AlumnoPagarSeleccion() {
   const { invoiceId } = useParams();
   const { originLabel, goToOrigin, goTo } = usePaymentReturn();
-  const { data: config, isLoading: loadingConfig } = usePaymentConfig();
-  const { data: breakdown, isLoading: loadingBreakdown } = usePriceBreakdown(invoiceId);
-  const payable = !breakdown || PAYABLE_STATUSES.includes(breakdown.status);
+  const { data: config, isLoading: loadingConfig, isError: configFailed, error: configError, refetch: refetchConfig } = usePaymentConfig();
+  const {
+    data: breakdown,
+    isLoading: loadingBreakdown,
+    isError: breakdownFailed,
+    error: breakdownError,
+    refetch: refetchBreakdown,
+  } = usePriceBreakdown(invoiceId);
+  const payable = !breakdownFailed && (!breakdown || PAYABLE_STATUSES.includes(breakdown.status));
+  const settled = !breakdownFailed && !payable;
 
   const tieneTransferencia = Boolean(config?.bankCbu || config?.bankAlias);
   const tieneMp = config?.mpEnabled === true;
@@ -71,9 +79,12 @@ export function AlumnoPagarSeleccion() {
       <h1 className="text-xl font-bold">¿Cómo querés pagar?</h1>
 
       {loadingBreakdown && <Skeleton className="h-32" />}
+      {breakdownFailed && (
+        <LoadErrorState error={breakdownError} onRetry={refetchBreakdown} resource="la cuota" />
+      )}
       {breakdown && <InvoiceSummary breakdown={breakdown} />}
 
-      {!payable && (
+      {settled && (
         <GlassCard className="p-6 text-center text-sm text-ink-soft">
           Esta cuota ya está saldada. No tenés que pagar nada más.
         </GlassCard>
@@ -81,7 +92,11 @@ export function AlumnoPagarSeleccion() {
 
       {payable && loadingConfig && <Skeleton className="h-24" />}
 
-      {payable && !loadingConfig && (
+      {payable && !loadingConfig && configFailed && (
+        <LoadErrorState error={configError} onRetry={refetchConfig} resource="los medios de pago" />
+      )}
+
+      {payable && !loadingConfig && !configFailed && (
         <div className="flex flex-col gap-4">
           {tieneTransferencia && (
             <button

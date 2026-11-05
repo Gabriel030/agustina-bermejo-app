@@ -48,4 +48,22 @@ class LatePaymentTermsStrictnessTest {
         ObjectMapper lenient = JsonMapper.builder().findAndAddModules().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
         assertThatThrownBy(() -> lenient.readValue(monthly, LatePaymentTerms.class)).hasRootCauseInstanceOf(InvalidConfigurationValuesException.class);
     }
+
+    @Test
+    @Tag("D-510")
+    void aVersionWithoutThePendingReceiptCapReadsTenAndTheCapIsReadWhenPresent() {
+        String withoutCap = WITH_CAP.replace("\"lateFeeCapMonths\":12,", "");
+        LatePaymentTerms defaulted = (LatePaymentTerms) ConfigurationValuesCodec.fromJson(withoutCap);
+        LatePaymentTerms configured = (LatePaymentTerms) ConfigurationValuesCodec.fromJson(withoutCap.replace("\"lateFeeChargingEnabled\":true", "\"lateFeeChargingEnabled\":true,\"pendingReceiptProtectionBusinessDays\":4"));
+        assertThat(defaulted.pendingReceiptProtectionBusinessDays()).isEqualTo(10);
+        assertThat(LatePaymentTerms.initial().pendingReceiptProtectionBusinessDays()).isEqualTo(10);
+        assertThat(configured.pendingReceiptProtectionBusinessDays()).isEqualTo(4);
+    }
+
+    @Test
+    @Tag("D-510")
+    void thePendingReceiptCapMustBeAtLeastOneBusinessDay() {
+        String zero = WITH_CAP.replace("\"lateFeeCapMonths\":12,", "").replace("\"lateFeeChargingEnabled\":true", "\"lateFeeChargingEnabled\":true,\"pendingReceiptProtectionBusinessDays\":0");
+        assertThatThrownBy(() -> ConfigurationValuesCodec.fromJson(zero)).isInstanceOf(IllegalStateException.class).hasRootCauseInstanceOf(InvalidConfigurationValuesException.class);
+    }
 }

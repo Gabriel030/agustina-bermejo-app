@@ -41,29 +41,36 @@ export function useOpenProgramCohorts(id) {
 }
 
 export function useProgramaPlanDeEstudio(id) {
-  return useQuery({ queryKey: ['programa', id, 'subjects'], queryFn: () => apiFetch(`/programs/${id}/subjects`), enabled: !!id });
+  return useQuery({ queryKey: ['programa', id, 'subjects'], queryFn: () => apiFetch(`/programs/${id}/subjects?status=ACTIVE`), enabled: !!id });
 }
 
 export function useCursoTemario(id) {
-  return useQuery({ queryKey: ['curso', id, 'subjects'], queryFn: () => apiFetch(`/courses/${id}/subjects`), enabled: !!id });
+  return useQuery({ queryKey: ['curso', id, 'subjects'], queryFn: () => apiFetch(`/courses/${id}/subjects?status=ACTIVE`), enabled: !!id });
 }
 
-export function useMisSolicitudesCarrera() {
-  return useQuery({ queryKey: ['mis-solicitudes-carrera'], queryFn: () => apiFetch('/me/program-enrollment-applications') });
+export function useMisSolicitudesCarrera(enabled = true) {
+  return useQuery({ queryKey: ['mis-solicitudes-carrera'], queryFn: () => apiFetch('/me/program-enrollment-applications'), enabled });
 }
 
-export function useMisSolicitudesCurso() {
-  return useQuery({ queryKey: ['mis-solicitudes-curso'], queryFn: () => apiFetch('/me/course-enrollment-applications') });
+export function useMisSolicitudesCurso(enabled = true) {
+  return useQuery({ queryKey: ['mis-solicitudes-curso'], queryFn: () => apiFetch('/me/course-enrollment-applications'), enabled });
 }
+
+const PARTES_DOCUMENTOS_CARRERA = {
+  DNI_FRENTE: 'dniFront',
+  DNI_DORSO: 'dniBack',
+  ANALITICO_SECUNDARIO: 'academicTranscript',
+};
 
 export function useSolicitarCarrera() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ programId, cohortId }) => {
+    mutationFn: ({ programId, cohortId, documentos }) => {
       const formData = new FormData();
       formData.append('programId', programId);
       formData.append('cohortId', cohortId);
-      return apiFetch('/me/program-enrollment-applications', { method: 'POST', body: formData });
+      Object.entries(PARTES_DOCUMENTOS_CARRERA).forEach(([tipo, parte]) => formData.append(parte, documentos[tipo]));
+      return apiFetch('/me/program-enrollment-applications/with-documents', { method: 'POST', body: formData });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-carrera'] }),
   });
@@ -72,13 +79,12 @@ export function useSolicitarCarrera() {
 export function useInscribirmeCurso() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, comprobante }) => {
-      const formData = new FormData();
-      formData.append('courseId', courseId);
-      formData.append('comprobante', comprobante);
-      return apiFetch('/me/course-enrollments', { method: 'POST', body: formData });
+    mutationFn: ({ body, idempotencyKey }) =>
+      apiFetch('/me/course-enrollments', { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] }),
   });
 }
 
@@ -99,4 +105,8 @@ export function useAgregarDocumentoSolicitudCarrera() {
       });
     },
   });
+}
+
+export function useMyDocuments() {
+  return useQuery({ queryKey: ['me-documents'], queryFn: () => apiFetch('/me/documents') });
 }

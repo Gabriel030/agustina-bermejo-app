@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+  echo "uso: backend/dev-test <Clase[,Clase...]|paquete|--changed>" >&2
+  echo "  Clase      nombre simple de clase de test (una sola invocacion de Maven para todas)" >&2
+  echo "  paquete    com.red_escuela.backend.billing.catalog (o con barras)" >&2
+  echo "  --changed  tests tocados + tests homonimos de las clases de produccion tocadas vs origin/develop y working tree" >&2
+  exit 2
+fi
+
+backend_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(git -C "$backend_dir" rev-parse --show-toplevel)"
+test_root="$backend_dir/src/test/java"
+slot_script="$HOME/.claude/epica18/ci-slot.sh"
+owner="dev-test-$$"
+
+changed_files() {
+  {
+    git -C "$repo_root" diff --name-only origin/develop...HEAD 2>/dev/null || true
+    git -C "$repo_root" diff --name-only HEAD 2>/dev/null || true
+    git -C "$repo_root" ls-files --others --exclude-standard 2>/dev/null || true
+  } | sort -u
+}
+
+tests_for_changed_files() {
+  local file base
+  while IFS= read -r file; do
+    [[ "$file" == backend/src/*.java ]] || continue
+    base="$(basename "$file" .java)"
+    if [[ "$file" == backend/src/test/java/* ]]; then
+      [[ -f "$repo_root/$file" ]] && echo "$base"
+    else
+      find "$test_root" \( -name "${base}Test.java" -o -name "${base}Tests.java" -o -name "${base}IT.java" \) -print0 \
+        | xargs -0 -n1 basename 2>/dev/null | sed 's/\.java$//'
+    fi
+  done | sort -u
+}
+
+arg="$1"
+if [[ "$arg" == "--changed" ]]; then
+  selected="$(changed_files | tests_for_changed_files | paste -sd, -)"
+  if [[ -z "$selected" ]]; then
+    echo "dev-test: no hay tests tocados ni homonimos de clases tocadas" >&2
+    exit 0
+  fi
+elif [[ "$arg" == *[/.]* && "$arg" =~ ^[a-z] ]]; then
+  selected="${arg//.//}/**/*"
+else
+  selected="$arg"
+fi
+
+echo "dev-test: -Dtest=$selected" >&2
+
+if [[ -f "$slot_script" ]]; then
+  zsh "$slot_script" acquire "$owner" >&2
+  trap 'zsh "$slot_script" release "$owner" >/dev/null 2>&1 || true' EXIT
+  trap 'exit 130' INT TERM HUP
+fi
+
+cd "$backend_dir"
+./mvnw -o test \
+  -Dtest="$selected" \
+  -Dsurefire.failIfNoSpecifiedTests=false \
+  -Darchunit.freeze.store.default.allowStoreUpdate=false

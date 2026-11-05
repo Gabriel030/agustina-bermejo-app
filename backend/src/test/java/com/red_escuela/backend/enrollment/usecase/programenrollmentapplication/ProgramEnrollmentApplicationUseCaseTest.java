@@ -1,11 +1,16 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -24,9 +29,6 @@ import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedExce
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -40,6 +42,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import com.red_escuela.backend.enrollment.entity.DocumentType;
+import com.red_escuela.backend.enrollment.exception.ApplicationDocumentsIncompleteException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -66,7 +70,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     private RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
 
     @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
+    private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -75,7 +79,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.enrollment.service.ProgramEnrollmentService programEnrollmentService;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.PaymentRepository paymentRepository;
+    private com.red_escuela.backend.billing.payment.repository.PaymentRepository paymentRepository;
 
     @Autowired
     private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
@@ -125,6 +129,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     private Program persistProgram(String nombre) {
         Program program = new Program();
+        program.setVisibleInCatalog(true);
         program.setName(nombre);
         program.setTotalYears(3);
         program.setTotalCreditsRequired(0);
@@ -133,7 +138,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     }
 
     private ProgramCohort persistCohort(Program program, LocalDate admissionStart, LocalDate admissionEnd, Person createdBy) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
@@ -167,8 +172,46 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
+        StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
         entityManager.flush();
         return requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));
+    }
+
+    private ProgramEnrollmentApplication requestApplicationWithoutDocuments(String dni, DocumentType omitted) {
+        ProgramEnrollmentApplication application = requestApplication(dni);
+        Long studentId = application.getStudent().getId();
+        entityManager.flush();
+        entityManager.createQuery("delete from StudentDocument d where d.student.id = :id and d.type = :type")
+                .setParameter("id", studentId).setParameter("type", omitted).executeUpdate();
+        entityManager.clear();
+        return application;
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingWithoutOneRequiredDocumentIsRejectedAndKeepsTheApplicationPending() {
+        ProgramEnrollmentApplication application = requestApplicationWithoutDocuments("81000040", DocumentType.DNI_DORSO);
+        Person preceptor = persistPreceptor();
+
+        assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor)))
+                .isInstanceOf(ApplicationDocumentsIncompleteException.class)
+                .hasMessageContaining("DNI_DORSO");
+
+        assertThat(admissionInvoicesOf(entityManager.find(ProgramEnrollmentApplication.class, application.getId()).getStudent())).isZero();
+        assertThat(entityManager.find(ProgramEnrollmentApplication.class, application.getId()).getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingWithoutAnyDocumentIsRejected() {
+        ProgramEnrollmentApplication application = requestApplication("81000041");
+        entityManager.flush();
+        entityManager.createQuery("delete from StudentDocument d where d.student.id = :id").setParameter("id", application.getStudent().getId()).executeUpdate();
+        entityManager.clear();
+        Person preceptor = persistPreceptor();
+
+        assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor)))
+                .isInstanceOf(ApplicationDocumentsIncompleteException.class);
     }
 
     private Person persistPreceptor() {
@@ -294,6 +337,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Program program = persistProgram("Sin Precio " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
+        StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, student);
         entityManager.flush();
         ProgramEnrollmentApplication application = requestProgramEnrollmentApplicationUseCase.request(
                 new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));
@@ -310,18 +354,18 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         String mpPaymentId = "mp-" + System.nanoTime();
-        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(invoiceRepository, paymentRepository,
-                registerPaymentUseCase,
+        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
-                        new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
-                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true));
+                        new ReportedGatewayAllocation(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
+                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true)));
 
         service.process("", "req", mpPaymentId);
         entityManager.flush();
         entityManager.clear();
 
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).hasSize(1);
+        assertThat(entityManager.createQuery("select count(p) from com.red_escuela.backend.billing.payment.domain.Payment p where p.gatewayPaymentId = :id", Long.class)
+                .setParameter("id", mpPaymentId).getSingleResult()).isEqualTo(1L);
     }
 
     @Test
@@ -333,10 +377,10 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         var receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
-                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", "%PDF-1.4".getBytes()));
         entityManager.flush();
 
-        approvePaymentReceiptUseCase.approve(receipt.getId(), preceptor);
+        approvePaymentReceiptUseCase.approve(receipt.getId(), preceptor, PaymentVerification.none());
         entityManager.flush();
         entityManager.clear();
 
@@ -415,7 +459,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId).admissionInvoice().receiptStatus()).isNull();
 
         uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
-                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", "%PDF-1.4".getBytes()));
         entityManager.flush();
 
         ProgramEnrollmentApplicationResponse response = ProgramEnrollmentApplicationResponse.from(application,

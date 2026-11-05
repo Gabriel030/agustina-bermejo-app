@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+store_dir="$root/backend/src/test/resources/archunit-frozen"
+rule_marker='should not declare @Transactional on the class nor on its methods'
+
+store_id="$(sed 's/\\ / /g' "$store_dir/stored.rules" | grep -F "$rule_marker" | sed 's/.*=//' | head -n 1)"
+if [[ -z "$store_id" || ! -f "$store_dir/$store_id" ]]; then
+  echo "R10 store not found (already unfrozen?): 0 lines" >&2
+  echo "total 0"
+  exit 0
+fi
+
+grep -E '^com\.red_escuela\.backend\.' "$store_dir/$store_id" \
+  | sed -E 's/^com\.red_escuela\.backend\.([a-z_]+)\..*/\1/' \
+  | sort | uniq -c | sort -rn | awk '{ print $2, $1; total += $1 } END { print "total", total + 0 }'

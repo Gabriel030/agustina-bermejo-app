@@ -7,6 +7,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +18,15 @@ import java.util.Optional;
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
+
+    @Query("select a.justificationAttachmentUrl from Attendance a where a.id = :attendanceId and a.justificationAttachmentUrl is not null")
+    Optional<String> findJustificationAttachmentKeyById(@Param("attendanceId") Long attendanceId);
+
+    Page<Attendance> findByStatus(AttendanceStatus status, Pageable pageable);
+
+    Page<Attendance> findByStatusAndJustificationReasonIsNotNull(AttendanceStatus status, Pageable pageable);
+
+    Page<Attendance> findByStatusAndJustificationRejectionReasonIsNotNull(AttendanceStatus status, Pageable pageable);
 
     @Query("""
             select a.programSubjectSectionEnrollment.id, count(a),
@@ -65,6 +77,17 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Optional<Attendance> findByProgramSubjectSectionEnrollmentIdAndClassDate(Long enrollmentId, LocalDate classDate);
 
     Optional<Attendance> findByCourseSubjectSectionEnrollmentIdAndClassDate(Long enrollmentId, LocalDate classDate);
+
+    @Query("""
+            select a.programSubjectSectionEnrollment.id, count(a),
+                   coalesce(sum(case when a.status in :absenceStatuses then 1 else 0 end), 0)
+            from Attendance a
+            where a.programSubjectSectionEnrollment.id in :enrollmentIds
+            group by a.programSubjectSectionEnrollment.id
+            """)
+    List<Object[]> countTotalAndAbsencesByProgramEnrollmentIds(
+            @Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
+            @Param("absenceStatuses") List<AttendanceStatus> absenceStatuses);
 
     long countByProgramSubjectSectionEnrollmentId(Long enrollmentId);
 

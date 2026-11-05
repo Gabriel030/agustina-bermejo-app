@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.testsupport.ExplorationTier;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.junit.jupiter.api.Tag;
@@ -22,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CurrentAccountAllocationCommandSequencesIT extends AbstractCurrentAccountIT {
 
     private static final LocalDate BASE_DATE = LocalDate.of(2027, 4, 1);
-    private static final int SEQUENCES = 25;
+    private static final int SEQUENCES = ExplorationTier.sequences(5, 50);
 
     private enum Kind {
         ISSUE_INVOICE,
@@ -51,7 +53,7 @@ class CurrentAccountAllocationCommandSequencesIT extends AbstractCurrentAccountI
     @Test
     void anySequenceOfIssuesCreditsAllocationsAndReversalsKeepsTheBillingInvariants() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
-        Random random = new Random(20261009L);
+        Random random = new Random(ExplorationTier.seed("CurrentAccountAllocationCommandSequencesIT", 20261009L));
 
         for (int sequence = 0; sequence < SEQUENCES; sequence++) {
             Long accountId = newAccountId(newStudentId(), Currency.ARS);
@@ -62,7 +64,7 @@ class CurrentAccountAllocationCommandSequencesIT extends AbstractCurrentAccountI
                     case ISSUE_INVOICE -> issueAdministrativeFeeWithLedgerDebit(accountId, command.amount().toPlainString(), date);
                     case RECEIVE_CREDIT -> {
                         inTransaction(() -> {
-                            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars(command.amount().toPlainString()), date, "Pago");
+                            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(command.amount().toPlainString())), ars(command.amount().toPlainString()), date, "Pago");
                             return null;
                         });
                         creditedInTotal = creditedInTotal.add(command.amount());

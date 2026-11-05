@@ -1,5 +1,6 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.identity.api.AccessTokenVerifier;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -20,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JwtAuthenticationFilterTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
-    private final JwtService jwtService = new JwtService(SECRET, 15);
-    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtService);
+    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
+    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService));
 
     @AfterEach
     void clearContext() {
@@ -85,5 +86,24 @@ class JwtAuthenticationFilterTest {
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         assertThat(chain.getRequest()).isNotNull();
+    }
+
+    @Test
+    void rejectedTokenMarksTheRequestSoTheEntryPointCanReportIt() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-invalido");
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(request.getAttribute(UnauthenticatedEntryPoint.REJECTED_TOKEN_ATTRIBUTE)).isEqualTo(Boolean.TRUE);
+    }
+
+    @Test
+    void requestWithoutTokenIsNotMarkedAsRejected() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(request.getAttribute(UnauthenticatedEntryPoint.REJECTED_TOKEN_ATTRIBUTE)).isNull();
     }
 }

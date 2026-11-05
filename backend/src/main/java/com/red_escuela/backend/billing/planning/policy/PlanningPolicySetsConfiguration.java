@@ -26,6 +26,7 @@ public final class PlanningPolicySetsConfiguration {
 
     private final PolicySet<MonthlyInstallmentPlanningContext> monthlyInstallmentPlanning = PolicySet.named("MONTHLY_INSTALLMENT_PLANNING", List.of(
             new NotBeforeEntryMonthPolicy(),
+            new AnnualUpfrontAwaitingPaymentPolicy(),
             new MonthlyCadencePolicy(),
             new InstallmentWithinLectiveYearRangePolicy(),
             new BillingWhilePausedPolicy<MonthlyInstallmentPlanningContext>(),

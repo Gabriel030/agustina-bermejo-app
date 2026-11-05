@@ -1,14 +1,15 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
 import org.mockito.Mockito;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
@@ -36,11 +37,11 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import net.javacrumbs.shedlock.core.LockConfiguration;
-import net.javacrumbs.shedlock.core.LockProvider;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,7 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -62,7 +64,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,12 +74,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @ExtendWith(OutputCaptureExtension.class)
+@SharedMockBeans
 class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     private static final StatusChangeActor TEST_ACTOR = new StatusChangeActor(null, "OverdueInvoiceDetectionTest");
 
-    @MockitoBean
+    @Autowired
     private LateFeeAccrualStep lateFeeAccrualStep;
-    @MockitoBean
+    @Autowired
     private LateFeeOnOverdueInvoiceListener lateFeeOnOverdueInvoiceListener;
 
     @org.junit.jupiter.api.BeforeEach
@@ -98,7 +101,7 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
-    private LockProvider lockProvider;
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
     @Autowired
     private ApplicationEvents applicationEvents;
     @Autowired
@@ -144,7 +147,7 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -304,11 +307,11 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         Invoice invoice = invoiceDueOn(LocalDate.of(2047, 3, 12));
 
         MutableClock.INSTANCE.setInstant(Instant.parse("2047-03-18T01:00:00Z"));
-        sweepService.run();
+        detectionStep.detectOverdueInvoices(LocalDate.now(MutableClock.INSTANCE));
         assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.PENDING);
 
         MutableClock.INSTANCE.setInstant(Instant.parse("2047-03-18T03:30:00Z"));
-        sweepService.run();
+        detectionStep.detectOverdueInvoices(LocalDate.now(MutableClock.INSTANCE));
         assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
     }
 
@@ -384,23 +387,44 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-288")
-    void theSweepIsSkippedWhileAnotherInstanceHoldsItsLockAndRunsOnceWhenReleased() {
+    @Tag("D-457")
+    void theOverdueTransitionTakesTheEnrollmentBeforeTheAccountAndTheInvoice() throws Exception {
         arrange();
-        publishGrace(5, LocalDate.of(2052, 1, 1));
-        Invoice invoice = invoiceDueOn(LocalDate.of(2052, 3, 12));
-        MutableClock.INSTANCE.setInstant(Instant.parse("2052-03-18T12:00:00Z"));
+        publishGrace(5, LocalDate.of(2060, 1, 1));
+        Invoice invoice = invoiceDueOn(LocalDate.of(2060, 3, 12));
+        Long accountId = jdbcTemplate.queryForObject("select student_current_account_id from invoice where id = ?", Long.class, invoice.getId());
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch enrollmentHeld = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicLong holderTransactionId = new AtomicLong();
+        Future<?> holder = executor.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            jdbcTemplate.queryForList("select id from course_enrollment where id = ? for update", Long.class, enrollment.getId());
+            holderTransactionId.set(jdbcTemplate.queryForObject("select txid_current() % 4294967296", Long.class));
+            enrollmentHeld.countDown();
+            try {
+                release.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }));
+        enrollmentHeld.await();
+        Future<?> transition = executor.submit(() -> detectOn(invoice, LocalDate.of(2060, 3, 18)));
 
-        var heldByOtherInstance = lockProvider.lock(new LockConfiguration(Instant.now(), "InvoiceOverdueSweepService", Duration.ofMinutes(5), Duration.ZERO));
-        assertThat(heldByOtherInstance).isPresent();
         try {
-            sweepService.run();
+            Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> jdbcTemplate.queryForObject(
+                    "select count(*) from pg_locks where not granted and locktype = 'transactionid' and transactionid::text = ?",
+                    Integer.class, String.valueOf(holderTransactionId.get())) > 0);
+            assertThatCode(() -> jdbcTemplate.queryForList("select id from student_current_account where id = ? for update nowait", Long.class, accountId)).doesNotThrowAnyException();
+            assertThatCode(() -> jdbcTemplate.queryForList("select id from invoice where id = ? for update nowait", Long.class, invoice.getId())).doesNotThrowAnyException();
         } finally {
-            heldByOtherInstance.get().unlock();
+            release.countDown();
         }
-        assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.PENDING);
-
-        sweepService.run();
+        try {
+            holder.get(30, TimeUnit.SECONDS);
+            transition.get(30, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdown();
+        }
         assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
     }
 
@@ -418,7 +442,7 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         for (int i = 0; i < 2; i++) {
             runs.add(executor.submit(() -> {
                 go.await();
-                sweepService.run();
+                detectionStep.detectOverdueInvoices(LocalDate.now(MutableClock.INSTANCE));
                 return null;
             }));
         }

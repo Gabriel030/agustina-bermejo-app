@@ -1,6 +1,7 @@
-import { DocenteComisionDetalle } from '@/features/announcements/pages/DocenteComisionDetalle';
-import { AvisoWizard } from '@/features/announcements/pages/AvisoWizard';
-import { AvisoEditar } from '@/features/announcements/pages/AvisoEditar';
+import { lazyPage } from '@/routes/lazyPage';
+const DocenteComisionDetalle = lazyPage(() => import('@/features/announcements/pages/DocenteComisionDetalle'), 'DocenteComisionDetalle');
+const AvisoWizard = lazyPage(() => import('@/features/announcements/pages/AvisoWizard'), 'AvisoWizard');
+const AvisoEditar = lazyPage(() => import('@/features/announcements/pages/AvisoEditar'), 'AvisoEditar');
 
 export const routes = {
   public: [],

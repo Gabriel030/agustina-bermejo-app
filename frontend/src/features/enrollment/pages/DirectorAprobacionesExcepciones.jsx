@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
-import { BandejaTramites } from '@/components/director/BandejaTramites';
+import { BandejaTramites } from '@/components/BandejaTramites';
 import {
   useExcepcionesPendientes,
   useHistorialExcepciones,
 } from '@/features/enrollment/hooks/useExceptionApprovals';
 import { formatearFecha } from '@/lib/comisiones';
-import { ESTADO_TRAMITE_LABEL, TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
+import { ageLabel, ESTADO_TRAMITE_LABEL, TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 
 function Fila({ e, esHistorial }) {
   const pill = ESTADO_TRAMITE_LABEL[e.status] ?? { label: e.status, tone: 'neutral' };
@@ -22,15 +22,11 @@ function Fila({ e, esHistorial }) {
           {TIPO_EXCEPCION_LABEL[e.type] ?? e.type} · {e.studentName} · {e.programName}{e.subjectName ? ` · ${e.subjectName}` : ''}
         </div>
         <div className="mt-0.5 text-[12px] text-ink-faint">
-          {esHistorial ? `Decidido ${formatearFecha(e.decidedAt) ?? '—'}` : `Solicitado ${formatearFecha(e.requestedAt) ?? '—'}`}
+          {esHistorial ? `Decidido ${formatearFecha(e.decidedAt) ?? '—'}` : `Solicitado ${formatearFecha(e.requestedAt) ?? '—'} · ${ageLabel(e.requestedAt) ?? ''}`}
         </div>
       </div>
       <div className="flex items-center gap-3">
-        {esHistorial ? (
-          <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
-        ) : (
-          <StatusPill tone="warning">Pendiente de revisión</StatusPill>
-        )}
+        <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
     </Link>

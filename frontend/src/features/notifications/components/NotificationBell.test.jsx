@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { render } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -14,9 +16,9 @@ describe('NotificationBell', () => {
     server.use(
       http.get(`${API}/me/notifications`, () =>
         HttpResponse.json([
-          { id: 1, type: 'GRADE_POSTED', read: false, createdAt: '2026-10-01T10:00:00' },
-          { id: 2, type: 'GRADE_POSTED', read: false, createdAt: '2026-10-01T11:00:00' },
-          { id: 3, type: 'GRADE_POSTED', read: true, createdAt: '2026-10-01T12:00:00' },
+          { id: 1, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T10:00:00' },
+          { id: 2, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T11:00:00' },
+          { id: 3, type: 'PAYMENT_RECEIPT_APPROVED', read: true, createdAt: '2026-10-01T12:00:00' },
         ]),
       ),
     );
@@ -66,5 +68,68 @@ describe('NotificationBell', () => {
     await user.click(await screen.findByText('Solicitud aprobada'));
 
     expect(await screen.findByText('/mis-solicitudes/42')).toBeInTheDocument();
+  });
+
+  it('shows an error state with retry instead of the empty message when loading fails', async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    server.use(
+      http.get(`${API}/me/notifications`, () => {
+        calls += 1;
+        if (calls === 1) return HttpResponse.json({ message: 'boom' }, { status: 500 });
+        return HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', message: 'Listo', read: false, createdAt: '2026-10-01T10:00:00' }]);
+      }),
+    );
+    renderWithProviders(<NotificationBell />);
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones, no pudimos cargarlas' }));
+    expect(await screen.findByText('No pudimos cargar tus notificaciones.')).toBeInTheDocument();
+    expect(screen.queryByText('Nada por ahora')).not.toBeInTheDocument();
+    expect(screen.getByTestId('bell-error-indicator')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Pago acreditado')).toBeInTheDocument();
+  });
+
+  it('shows a Spanish generic label and screen reader text for unknown unread types', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([{ id: 1, type: 'SOME_FUTURE_TYPE', message: 'Algo pasó', read: false, createdAt: '2026-10-01T10:00:00' }]),
+      ),
+    );
+    renderWithProviders(<NotificationBell />);
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' }));
+    expect(await screen.findByText('Notificación')).toBeInTheDocument();
+    expect(screen.queryByText('SOME_FUTURE_TYPE')).not.toBeInTheDocument();
+    expect(screen.getByText('Sin leer')).toBeInTheDocument();
+  });
+
+  it('keeps the list visible when a refetch fails after a good load', async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    server.use(
+      http.get(`${API}/me/notifications`, () => {
+        calls += 1;
+        if (calls === 1) return HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', message: 'Listo', read: false, createdAt: '2026-10-01T10:00:00' }]);
+        return HttpResponse.json({ message: 'boom' }, { status: 500 });
+      }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <NotificationBell />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' }));
+    await screen.findByText('Pago acreditado');
+    await queryClient.refetchQueries({ queryKey: ['me', 'notifications'] });
+
+    expect(screen.getByText('Pago acreditado')).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos cargar tus notificaciones.')).not.toBeInTheDocument();
   });
 });

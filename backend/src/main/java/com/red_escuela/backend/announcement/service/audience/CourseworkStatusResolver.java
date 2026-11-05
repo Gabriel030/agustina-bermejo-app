@@ -3,7 +3,7 @@ package com.red_escuela.backend.announcement.service.audience;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
+import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;

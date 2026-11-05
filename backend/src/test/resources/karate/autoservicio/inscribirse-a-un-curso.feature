@@ -18,7 +18,7 @@ Feature: Caso de uso — Inscribirse a un curso
     * def descripcionPeriodo = 'Karate - Periodo ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(descripcionPeriodo)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -30,6 +30,12 @@ Feature: Caso de uso — Inscribirse a un curso
     When method post
     Then status 201
     * def courseId = response.id
+
+    Given path '/courses', courseId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
 
     # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(MONTHLY_INSTALLMENT) desde el
     # price de arriba — no hace falta un paso aparte.
@@ -54,7 +60,14 @@ Feature: Caso de uso — Inscribirse a un curso
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field courseId = courseId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And header Idempotency-Key = 'karate-course-' + java.lang.System.nanoTime()
+    And multipart file file = { value: '%PDF-1.4 comprobante de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart field declaredAmount = '15000.00'
+    And multipart field currency = 'ARS'
+    And multipart field transferDate = '' + java.time.LocalDate.now()
+    And multipart field operationNumber = 'KAR-COURSE-' + java.lang.System.nanoTime()
+    And multipart field originAccount = '0170099220000067797370'
+    And multipart field holderName = 'Ana Perez'
     When method post
     Then status 201
     And match response.paymentStatus == 'PENDING_REVIEW'
@@ -116,7 +129,14 @@ Feature: Caso de uso — Inscribirse a un curso
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field courseId = courseId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante2.pdf', contentType: 'application/pdf' }
+    And header Idempotency-Key = 'karate-course-' + java.lang.System.nanoTime()
+    And multipart file file = { value: '%PDF-1.4 comprobante de prueba', filename: 'comprobante2.pdf', contentType: 'application/pdf' }
+    And multipart field declaredAmount = '15000.00'
+    And multipart field currency = 'ARS'
+    And multipart field transferDate = '' + java.time.LocalDate.now()
+    And multipart field operationNumber = 'KAR-COURSE-' + java.lang.System.nanoTime()
+    And multipart field originAccount = '0170099220000067797370'
+    And multipart field holderName = 'Ana Perez'
     When method post
     Then status 409
     And match response.code == 'ALREADY_ENROLLED_IN_COURSE'
@@ -125,6 +145,23 @@ Feature: Caso de uso — Inscribirse a un curso
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field courseId = 999999
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And header Idempotency-Key = 'karate-course-' + java.lang.System.nanoTime()
+    And multipart file file = { value: '%PDF-1.4 comprobante de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart field declaredAmount = '15000.00'
+    And multipart field currency = 'ARS'
+    And multipart field transferDate = '' + java.time.LocalDate.now()
+    And multipart field operationNumber = 'KAR-COURSE-' + java.lang.System.nanoTime()
+    And multipart field originAccount = '0170099220000067797370'
+    And multipart field holderName = 'Ana Perez'
     When method post
     Then status 404
+
+  Scenario: Inscribirme con el comprobante en el formato viejo, sin datos de la transferencia — 400
+    Given path '/me/course-enrollments'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And header Idempotency-Key = 'karate-course-legacy-' + java.lang.System.nanoTime()
+    And multipart field courseId = courseId
+    And multipart file comprobante = { value: '%PDF-1.4 comprobante de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 400
+    And match response.code == 'BANK_TRANSFER_DETAILS_REQUIRED'

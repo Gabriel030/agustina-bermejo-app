@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { errorBody } from '@/test/fixtures/errors';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -17,7 +18,7 @@ function renderDetalle(id = '1') {
     <Routes>
       <Route path="/catalogo/cursos/:id" element={<DetalleCurso />} />
     </Routes>,
-    { route: `/catalogo/cursos/${id}` },
+    { route: `/catalogo/cursos/${id}`, withAuth: true },
   );
 }
 
@@ -35,6 +36,16 @@ function renderConWizard(id = '1') {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+vi.setConfig({ testTimeout: 20000 });
+
+async function fillReceiptData(user) {
+  await user.type(screen.getByLabelText('Número de operación'), '4821937');
+  await user.type(screen.getByLabelText('CBU o alias de origen'), '0170099220000067797370');
+  const holder = screen.getByLabelText('Titular de la cuenta de origen');
+  await user.clear(holder);
+  await user.type(holder, 'Valentina Suárez');
 }
 
 describe('DetalleCurso', () => {
@@ -83,10 +94,9 @@ describe('DetalleCurso', () => {
     const file = new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' });
     const [fileInput] = document.querySelectorAll('input[type="file"]');
     await user.upload(fileInput, file);
-    await user.click(await screen.findByRole('button', { name: 'Confirmar solicitud' }));
-
-    const modal = await screen.findByRole('dialog');
-    await user.click(within(modal).getByRole('button', { name: 'Sí, confirmar' }));
+    await fillReceiptData(user);
+    await user.click(await screen.findByRole('button', { name: 'Enviar comprobante' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
     expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
 
@@ -94,13 +104,17 @@ describe('DetalleCurso', () => {
       ([url, opts]) => String(url).endsWith('/me/course-enrollments') && opts?.method === 'POST',
     );
     expect(inscribirmeOpts.body.get('courseId')).toBe('1');
-    expect(inscribirmeOpts.body.get('comprobante').name).toBe('comprobante.pdf');
+    expect(inscribirmeOpts.body.get('file').name).toBe('comprobante.pdf');
+    expect(inscribirmeOpts.body.get('declaredAmount')).toBe('8000.00');
+    expect(inscribirmeOpts.body.get('operationNumber')).toBe('4821937');
+    expect(inscribirmeOpts.body.get('holderName')).toBe('Valentina Suárez');
+    expect(inscribirmeOpts.body.has('comprobante')).toBe(false);
   });
 
   it('si el curso tiene la inscripción cerrada lo dice en vez de un error genérico', async () => {
     server.use(
       http.post(`${API}/me/course-enrollments`, () =>
-        HttpResponse.json({ code: 'ADMISSION_WINDOW_CLOSED' }, { status: 400 }),
+        HttpResponse.json(errorBody('ADMISSION_WINDOW_CLOSED'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();
@@ -116,8 +130,8 @@ describe('DetalleCurso', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar →' }));
     const [fileInput] = await waitForFileInput();
     await user.upload(fileInput, new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' }));
-    await user.click(await screen.findByRole('button', { name: 'Confirmar solicitud' }));
-    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Sí, confirmar' }));
+    await fillReceiptData(user);
+    await user.click(await screen.findByRole('button', { name: 'Enviar comprobante' }));
 
     expect(await screen.findByText('La inscripción a este curso está cerrada.')).toBeInTheDocument();
   });
@@ -161,8 +175,8 @@ describe('DetalleCurso', () => {
     server.use(http.get(`${API}/courses/9999`, () => new HttpResponse(null, { status: 404 })));
     renderDetalle('9999');
 
-    expect(await screen.findByText('Este curso no existe o ya no está disponible.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '← Catálogo' })).toBeInTheDocument();
+    expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=cursos');
   });
 
   it('the payment step shows the bank account the applicant has to transfer to', async () => {

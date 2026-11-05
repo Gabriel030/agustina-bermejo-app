@@ -9,6 +9,14 @@ export function useInscripcionesACarrera(studentId) {
   });
 }
 
+export function useInscripcionesACurso(studentId) {
+  return useQuery({
+    queryKey: ['alumno', studentId, 'course-enrollments'],
+    queryFn: () => apiFetch(`/students/${studentId}/course-enrollments`),
+    enabled: !!studentId,
+  });
+}
+
 export function useEstadoMatriculaDeInscripcion(programEnrollmentId) {
   return useQuery({
     queryKey: ['program-enrollment', programEnrollmentId, 'enrollment-fee-status'],

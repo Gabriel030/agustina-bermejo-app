@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,7 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useProgram, useUpdateProgram } from '@/features/academic-structure/hooks/usePrograms';
+import { FormField, SelectField } from '@/features/academic-structure/components/FormField';
+import {
+  countErrors,
+  describeSaveError,
+  fieldProps,
+  invalidFieldsSummary,
+  validateProgramFields,
+} from '@/features/academic-structure/lib/offeringForm';
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
 
 const LEVEL_OPTIONS = [
   { value: '', label: 'Sin especificar' },
@@ -18,71 +29,67 @@ const LEVEL_OPTIONS = [
   { value: 'DIPLOMA', label: 'Diplomatura' },
 ];
 
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
-];
+export function CarreraEditarDatos() {
+  const { id } = useParams();
+  const { data: program, isError, error, refetch } = useProgram(id);
 
-function CampoSelect({ label, value, onChange, options }) {
+  if (program) return <CarreraEditarDatosForm key={program.id} id={id} program={program} />;
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={error}
+          onRetry={refetch}
+          resource="la carrera"
+          backTo="/administrativo/gestion-academica?section=carreras"
+          backLabel="carreras"
+        />
+      </PageContainer>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
+    <PageContainer>
+      <Skeleton className="h-8 w-64 rounded-xl" />
+    </PageContainer>
   );
 }
 
-export function CarreraEditarDatos() {
-  const { id } = useParams();
+function CarreraEditarDatosForm({ id, program }) {
   const navigate = useNavigate();
-  const { data: program, isLoading } = useProgram(id);
   const updateProgram = useUpdateProgram(id);
 
-  const [name, setName] = useState('');
-  const [totalYears, setTotalYears] = useState('');
-  const [level, setLevel] = useState('');
-  const [teachingMode, setTeachingMode] = useState('');
-  const [totalCreditsRequired, setTotalCreditsRequired] = useState('');
-  const [totalHoursRequired, setTotalHoursRequired] = useState('');
-  const [graduationProfile, setGraduationProfile] = useState('');
-  const [admissionRequirements, setAdmissionRequirements] = useState('');
-  const [error, setError] = useState(null);
+  const [name, setName] = useState(program.name ?? '');
+  const [totalYears, setTotalYears] = useState(program.totalYears?.toString() ?? '');
+  const [level, setLevel] = useState(program.level ?? '');
+  const [teachingMode, setTeachingMode] = useState(program.teachingMode ?? '');
+  const [totalCreditsRequired, setTotalCreditsRequired] = useState(program.totalCreditsRequired?.toString() ?? '');
+  const [totalHoursRequired, setTotalHoursRequired] = useState(program.totalHoursRequired?.toString() ?? '');
+  const [graduationProfile, setGraduationProfile] = useState(program.graduationProfile ?? '');
+  const [admissionRequirements, setAdmissionRequirements] = useState(program.admissionRequirements ?? '');
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
-  useEffect(() => {
-    if (program) {
-      setName(program.name ?? '');
-      setTotalYears(program.totalYears?.toString() ?? '');
-      setLevel(program.level ?? '');
-      setTeachingMode(program.teachingMode ?? '');
-      setTotalCreditsRequired(program.totalCreditsRequired?.toString() ?? '');
-      setTotalHoursRequired(program.totalHoursRequired?.toString() ?? '');
-      setGraduationProfile(program.graduationProfile ?? '');
-      setAdmissionRequirements(program.admissionRequirements ?? '');
-    }
-  }, [program]);
+  const dirty =
+    name !== (program.name ?? '') ||
+    totalYears !== (program.totalYears?.toString() ?? '') ||
+    level !== (program.level ?? '') ||
+    teachingMode !== (program.teachingMode ?? '') ||
+    totalCreditsRequired !== (program.totalCreditsRequired?.toString() ?? '') ||
+    totalHoursRequired !== (program.totalHoursRequired?.toString() ?? '') ||
+    graduationProfile !== (program.graduationProfile ?? '') ||
+    admissionRequirements !== (program.admissionRequirements ?? '');
+  const { requestNavigation, guardDialog } = useUnsavedChangesGuard(dirty);
 
   async function handleGuardar() {
-    if (!name.trim()) {
-      setError('El nombre es obligatorio.');
-      return;
-    }
-    if (!totalYears || parseInt(totalYears) < 1) {
-      setError('La duración debe ser al menos 1 año.');
-      return;
-    }
-    setError(null);
+    const found = validateProgramFields(
+      { name, totalYears, totalCreditsRequired, totalHoursRequired },
+      { requireCredits: false },
+    );
+    setErrors(found);
+    setSubmitError(null);
+    if (countErrors(found) > 0) return;
     try {
       await updateProgram.mutateAsync({
         name: name.trim(),
@@ -97,20 +104,8 @@ export function CarreraEditarDatos() {
       toast.success('Datos actualizados');
       navigate(`/administrativo/gestion-academica/carreras/${id}`);
     } catch (err) {
-      setError(
-        err?.status === 400
-          ? 'Revisá los datos: la duración tiene que ser al menos 1 año y los créditos no pueden ser negativos.'
-          : 'No se pudieron guardar los cambios. Intentá de nuevo.',
-      );
+      setSubmitError(describeSaveError(err, 'No se pudieron guardar los cambios. Intentá de nuevo.').message);
     }
-  }
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <Skeleton className="h-8 w-64 rounded-xl" />
-      </PageContainer>
-    );
   }
 
   return (
@@ -122,48 +117,46 @@ export function CarreraEditarDatos() {
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
-            {program?.name ?? 'Carrera'}
+            {program.name ?? 'Carrera'}
           </Link>
           <h1 className="font-heading text-xl font-bold text-ink">Editar datos</h1>
         </div>
 
         <GlassCard className="flex flex-col gap-5 p-6">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-              Nombre <span className="text-danger">*</span>
-            </label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
+          <FormField id="program-name" label="Nombre" required error={errors.name}>
+            <Input
+              {...fieldProps('program-name', errors.name, true)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-                Duración (años) <span className="text-danger">*</span>
-              </label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField id="program-years" label="Duración (años)" required error={errors.totalYears}>
               <Input
+                {...fieldProps('program-years', errors.totalYears, true)}
                 type="number"
                 min={1}
                 max={10}
                 value={totalYears}
                 onChange={(e) => setTotalYears(e.target.value)}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-                Créditos requeridos
-              </label>
+            </FormField>
+            <FormField id="program-credits" label="Créditos requeridos" error={errors.totalCreditsRequired}>
               <Input
+                {...fieldProps('program-credits', errors.totalCreditsRequired)}
                 type="number"
                 min={0}
                 value={totalCreditsRequired}
                 onChange={(e) => setTotalCreditsRequired(e.target.value)}
               />
-            </div>
+            </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <CampoSelect label="Nivel" value={level} onChange={setLevel} options={LEVEL_OPTIONS} />
-            <CampoSelect
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SelectField id="program-level" label="Nivel" value={level} onChange={setLevel} options={LEVEL_OPTIONS} />
+            <SelectField
+              id="program-teaching-mode"
               label="Modalidad"
               value={teachingMode}
               onChange={setTeachingMode}
@@ -171,46 +164,49 @@ export function CarreraEditarDatos() {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-              Horas requeridas
-            </label>
+          <FormField id="program-hours" label="Horas requeridas" error={errors.totalHoursRequired}>
             <Input
+              {...fieldProps('program-hours', errors.totalHoursRequired)}
               type="number"
               min={0}
               value={totalHoursRequired}
               onChange={(e) => setTotalHoursRequired(e.target.value)}
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-              Perfil del egresado
-            </label>
+          <FormField id="program-profile" label="Perfil del egresado">
             <Textarea
+              id="program-profile"
               rows={4}
               value={graduationProfile}
               onChange={(e) => setGraduationProfile(e.target.value)}
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-              Requisitos de admisión
-            </label>
+          <FormField id="program-admission" label="Requisitos de admisión">
             <Textarea
+              id="program-admission"
               rows={3}
               value={admissionRequirements}
               onChange={(e) => setAdmissionRequirements(e.target.value)}
             />
-          </div>
+          </FormField>
 
-          {error && <p className="text-[13px] text-danger">{error}</p>}
+          {countErrors(errors) > 0 && (
+            <p role="alert" className="text-[13px] text-danger">
+              {invalidFieldsSummary(errors)}
+            </p>
+          )}
+          {submitError && (
+            <p role="alert" className="text-[13px] text-danger">
+              {submitError}
+            </p>
+          )}
 
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
-              onClick={() => navigate(`/administrativo/gestion-academica/carreras/${id}`)}
+              onClick={() => requestNavigation(`/administrativo/gestion-academica/carreras/${id}`)}
             >
               Cancelar
             </Button>
@@ -219,6 +215,7 @@ export function CarreraEditarDatos() {
             </Button>
           </div>
         </GlassCard>
+        {guardDialog}
       </div>
     </PageContainer>
   );

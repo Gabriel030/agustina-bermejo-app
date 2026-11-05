@@ -34,12 +34,14 @@ Si la fase ya la está haciendo otra sesión, avisarle con `SendMessage` en vez 
 
 ## 3. CI local ANTES de abrir el PR (obligatorio)
 
-GitHub Actions cobra minutos: no se abre un PR sin haber corrido en local lo mismo que corre `.github/workflows/ci.yml` y haberlo visto pasar.
+**Excepción autorizada (15-oct-2026) para este repo, que es público (runners estándar gratis: el costo real de la CI es el tiempo de espera y el tope de 20 jobs concurrentes, no los minutos):** no hace falta correr la suite completa ni PIT en local. Alcanza con compilar y correr los tests focalizados del cambio (más ArchUnit/Modulith si se tocan paquetes); la suite completa y PIT corren en GitHub (job `mutation` en paralelo a los shards, requisito de merge vía el agregador `backend`; en push a `develop` lo corre en frío, sin bloquear el CI, el workflow aparte `mutation-develop-cold.yml`; ver `testing.md`, sección "PIT en GitHub"). El PR se abre en borrador mientras se itera y se marca listo para disparar la CI.
+
+Cuando el repo vuelva a tener minutos facturables, rige lo siguiente: GitHub Actions cobra minutos: no se abre un PR sin haber corrido en local lo mismo que corre `.github/workflows/ci.yml` y haberlo visto pasar.
 
 | Área tocada | Comandos (desde la raíz) |
 |---|---|
 | Backend | `cd backend && ./mvnw clean verify` (Java 21; necesita Docker por Testcontainers) |
-| Frontend | `cd frontend && npm ci && npm run lint && npm run build && npm run test` (Node 22, como el CI) |
+| Frontend | `cd frontend && npm ci && npm run lint && npm run build:check && npm run test` (Node 22, como el CI) |
 | Solo docs/`.md` | Ninguno, pero verificar que los links y comandos citados existan |
 
 Reglas:
@@ -84,3 +86,11 @@ Solo el usuario abre PRs contra `master`. Hay dos caminos:
 ## 7. CI de GitHub (costo)
 
 `ci.yml` corre en PRs y en push a `develop`/`master`, cancela corridas viejas del mismo PR y **no corre si el cambio es solo `.md` o `docs/`**. Si se activan checks requeridos en la protección de rama, revisar que el filtro de paths no deje el check "omitido" y bloquee el merge de PRs de docs.
+
+### Seguridad de dependencias y secretos
+
+- `.github/dependabot.yml` abre PRs semanales contra `develop` para Maven, npm y GitHub Actions (máx. 5 abiertos por ecosistema).
+- `security-nightly.yml` (07:00 UTC y `workflow_dispatch`) corre `dependency-check` (falla con CVSS >= 7, usa el secreto `NVD_API_KEY`), `npm run audit:prod` (falla con severidad alta; `audit:all` es informativo) y `gitleaks` sobre todo el historial.
+- `ci.yml` suma `secret-scan-pr`: gitleaks sobre los commits de cada PR. La configuración es `.gitleaks.toml` (permite solo la contraseña demo `Test1234`).
+- Local: `cd backend && ./mvnw -B -ntp -Pdependency-check verify -DskipTests` (lento sin `NVD_API_KEY`), `cd frontend && npm run audit:prod`, `docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --config /repo/.gitleaks.toml --no-banner`.
+- `ProductionProfileHardeningIT` verifica que sin perfil `local`/`demo` no hay seeds, Swagger ni `simulated-emails`, y que el actuator no expone `env`/`heapdump`.

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -161,7 +162,7 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
 }
 
 export function AniosLectivosSection({ programId, canEdit = false }) {
-  const { data: templates, isLoading } = useProgramBillingTemplates(programId);
+  const { data: templates, isLoading, isError, error, refetch } = useProgramBillingTemplates(programId);
   const { data: alertas } = useBillingConfigurationAlerts();
   const { data: terminos } = useTerminos();
   const [editando, setEditando] = useState(null);
@@ -191,6 +192,8 @@ export function AniosLectivosSection({ programId, canEdit = false }) {
 
       {isLoading ? (
         <Skeleton rows={2} />
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="los años lectivos" bare />
       ) : !templates?.length ? (
         <GlassCard className="p-6">
           <EmptyState title="Sin años lectivos" description="Dirección tiene que cargar el año lectivo de la carrera para que se emitan cuotas y matrículas." />

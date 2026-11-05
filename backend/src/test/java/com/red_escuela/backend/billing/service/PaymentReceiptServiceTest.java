@@ -1,5 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -8,7 +12,7 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -21,11 +25,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
@@ -35,7 +35,7 @@ import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingExc
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -70,6 +70,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 class PaymentReceiptServiceTest extends AbstractIntegrationTest {
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @Autowired
     private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
 
@@ -124,9 +127,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     @Autowired
     private NotificationRepository notificationRepository;
 
-    @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
-
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
@@ -153,7 +153,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     private CourseEnrollment persistCourseEnrollment(Student student) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -198,7 +198,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
+        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes());
     }
 
     @Test
@@ -238,10 +238,95 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+    }
+
+    @Test
+    @Tag("D-376")
+    void approvingARealReceiptCreatesAnApprovedTransferPaymentLinkedToTheReceiptWithItsAllocationSource() {
+        Person admin = persistPerson("admin.d376." + System.nanoTime());
+        Student student = persistStudent("97376001");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
+
+        Long paymentId = approved.getPaymentId();
+        assertThat(paymentId).isNotNull();
+        java.util.Map<String, Object> payment = jdbcTemplate.queryForMap("select status, gateway, method_type, amount, approved_amount, reviewed_by_person_id, registered_by_person_id from payment where id = ?", paymentId);
+        assertThat(payment).containsEntry("status", "APPROVED").containsEntry("gateway", "MANUAL").containsEntry("method_type", "BANK_TRANSFER")
+                .containsEntry("reviewed_by_person_id", admin.getId()).containsEntry("registered_by_person_id", admin.getId());
+        assertThat((java.math.BigDecimal) payment.get("amount")).isEqualByComparingTo("10000");
+        assertThat((java.math.BigDecimal) payment.get("approved_amount")).isEqualByComparingTo("10000");
+        assertThat(jdbcTemplate.queryForList("select s.payment_id, s.amount from payment_allocation_source s join payment_allocation a on a.id = s.payment_allocation_id where a.invoice_id = ?", invoice.getId()))
+                .singleElement().satisfies(source -> {
+                    assertThat(source.get("payment_id")).isEqualTo(paymentId);
+                    assertThat((java.math.BigDecimal) source.get("amount")).isEqualByComparingTo("10000");
+                });
+    }
+
+    @Test
+    @Tag("D-376")
+    void approvingTheSameReceiptTwiceSequentiallyCreditsTheAccountOnlyOnce() {
+        com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbcTemplate);
+        Person admin = persistPerson("admin.idem1." + System.nanoTime());
+        Student student = persistStudent("97376002");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
+
+        assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none())).isInstanceOf(com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class);
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from payment where student_current_account_id = ?", Long.class, accountId)).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId)).isEqualTo(1L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-376")
+    void twoAdminsApprovingTheSameReceiptAtTheSameTimeCreditTheAccountOnlyOnce() throws Exception {
+        com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbcTemplate);
+        Person admin1 = persistPerson("admin.idem2a." + System.nanoTime());
+        Person admin2 = persistPerson("admin.idem2b." + System.nanoTime());
+        Student student = persistStudent("97376003");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        List<Future<BankTransferReceipt>> attempts = List.of(
+                executor.submit(() -> {
+                    start.await();
+                    return approvePaymentReceiptUseCase.approve(receipt.getId(), admin1, PaymentVerification.none());
+                }),
+                executor.submit(() -> {
+                    start.await();
+                    return approvePaymentReceiptUseCase.approve(receipt.getId(), admin2, PaymentVerification.none());
+                }));
+        start.countDown();
+        int approvals = 0;
+        for (Future<BankTransferReceipt> attempt : attempts) {
+            try {
+                attempt.get(60, TimeUnit.SECONDS);
+                approvals++;
+            } catch (ExecutionException e) {
+                assertThat(e.getCause()).isInstanceOfAny(com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class,
+                        com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class, InvoiceNotPayableException.class);
+            }
+        }
+        executor.shutdownNow();
+
+        assertThat(approvals).isEqualTo(1);
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from payment where student_current_account_id = ?", Long.class, accountId)).isEqualTo(1L);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -289,7 +374,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Callable<BankTransferReceipt> intentoAprobar = () -> {
             listos.countDown();
             arranca.await();
-            return approvePaymentReceiptUseCase.approve(receipt.getId(), admin1);
+            return approvePaymentReceiptUseCase.approve(receipt.getId(), admin1, PaymentVerification.none());
         };
         Callable<BankTransferReceipt> intentoRechazar = () -> {
             listos.countDown();
@@ -310,8 +395,8 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
                 exitos++;
             } catch (ExecutionException e) {
                 assertThat(e.getCause()).isInstanceOfAny(
-                        org.springframework.orm.ObjectOptimisticLockingFailureException.class,
-                        InvalidPaymentReceiptStateException.class);
+                        com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class,
+                        com.red_escuela.backend.billing.payment.exception.PaymentReceiptAlreadyReviewedException.class);
                 conflictos++;
             }
         }
@@ -369,10 +454,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "El importe no coincide con la cuota", admin);
 
-        assertThat(notificationsOf(student))
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsOf(student))
                 .filteredOn(notification -> notification.getType() == NotificationType.PAYMENT_RECEIPT_REJECTED)
                 .singleElement()
-                .satisfies(notification -> assertThat(notification.getMessage()).contains("El importe no coincide con la cuota"));
+                .satisfies(notification -> assertThat(notification.getMessage()).contains("El importe no coincide con la cuota")));
     }
 
     @Test
@@ -383,11 +468,11 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+        approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
 
-        assertThat(notificationsOf(student))
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsOf(student))
                 .extracting(Notification::getType)
-                .contains(NotificationType.PAYMENT_RECEIPT_APPROVED);
+                .contains(NotificationType.PAYMENT_RECEIPT_APPROVED));
     }
 
     @Test
@@ -402,7 +487,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
         assertThatInvoice(invoiceRepository.findById(older.getId()).orElseThrow()).isPaid();
@@ -424,13 +509,13 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none());
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(notificationsOf(student)).extracting(Notification::getType)
+        AsyncNotifications.awaitAsserted(() -> assertThat(notificationsOf(student)).extracting(Notification::getType)
                 .contains(NotificationType.PAYMENT_RECEIPT_APPROVED)
-                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT);
+                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT));
     }
 
     @Test
@@ -440,11 +525,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+        BillingTestFixtures.payInvoiceInFull(invoice);
 
-        assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin))
+        assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin, PaymentVerification.none()))
                 .isInstanceOf(InvoiceNotPayableException.class);
         assertThat(bankTransferReceiptRepository.findById(receipt.getId()).orElseThrow().getStatus())
                 .isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
@@ -464,7 +547,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Long invoiceId = invoice.getId();
 
         BankTransferReceiptResponse response = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(status ->
-                BankTransferReceiptResponse.from(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId)).get(0), null));
+                BankTransferReceiptResponse.from(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId)).get(0), student.getPerson(), null, List.of(invoiceId)));
 
         assertThat(response.studentName()).isEqualTo("Ana Comprobante");
         assertThat(response.studentDni()).isEqualTo("97000013");

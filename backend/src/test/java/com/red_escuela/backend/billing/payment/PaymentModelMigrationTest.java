@@ -1,12 +1,13 @@
 package com.red_escuela.backend.billing.payment;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SlowTest(reason = "Migrates a real database through Flyway step by step to prove legacy payment rows survive")
+@Tag("migration")
 class PaymentModelMigrationTest {
 
     private static final String LOCATIONS = "classpath:db/migration";
@@ -63,10 +66,7 @@ class PaymentModelMigrationTest {
     @Tag("D-082")
     @Tag("D-144")
     void renamingThePaymentTableKeepsEveryLegacyRowAmountAndForeignKeyIntact() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "102");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("102")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             jdbc.update("insert into payment (amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at, external_reference) "
@@ -99,10 +99,7 @@ class PaymentModelMigrationTest {
     @Tag("D-082")
     @Tag("D-144")
     void theFirstNewPaymentGetsAnIdAboveEveryLegacyPaymentId() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "102");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("102")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             for (int index = 0; index < 3; index++) {
@@ -122,10 +119,7 @@ class PaymentModelMigrationTest {
     @Test
     @Tag("D-082")
     void theNewPaymentIdentityStartsAtOneWhenThereAreNoLegacyPayments() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "104");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("104")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             insertPayment(jdbc, insertStudentCurrentAccount(jdbc, personId, "ARS"), personId, "");
@@ -139,10 +133,7 @@ class PaymentModelMigrationTest {
     @Tag("D-097")
     @Tag("D-136")
     void theNewPaymentTableEnforcesItsInvariantsInTheDatabase() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "104");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("104")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             Long accountId = insertStudentCurrentAccount(jdbc, personId, "ARS");
@@ -171,10 +162,7 @@ class PaymentModelMigrationTest {
     @Test
     @Tag("D-082")
     void thePaymentStatusHistoryAndTheIdempotencyRecordsAreStructuredAsDeclared() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            migrateTo(dataSource, "104");
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("104")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             Long personId = insertPerson(jdbc);
             Long accountId = insertStudentCurrentAccount(jdbc, personId, "ARS");

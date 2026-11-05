@@ -81,7 +81,7 @@ export function NuevoAlumno() {
     trigger,
     getValues,
     formState: { errors },
-  } = useForm({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { documentType: 'DNI' } });
+  } = useForm({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { documentType: 'DNI', dni: '' } });
 
   const isMutating = crearProspecto.isPending || guardarBorrador.isPending || confirmarAlta.isPending;
 

@@ -1,13 +1,16 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
+import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceDiscardedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceMarkedAsOverdueEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReviewReleasedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReversedEvent;
 import com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCreditableAmountException;
 import com.red_escuela.backend.billing.invoice.exception.DiscountExceedsLineAmountException;
+import com.red_escuela.backend.billing.invoice.exception.DraftNotPendingException;
 import com.red_escuela.backend.billing.invoice.exception.DueDateBeforeIssueDateException;
 import com.red_escuela.backend.billing.invoice.exception.IllegalInvoiceDocumentStatusTransitionException;
 import com.red_escuela.backend.billing.invoice.exception.IllegalInvoicePaymentStatusTransitionException;
@@ -57,7 +60,7 @@ import java.util.Optional;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Invoice {
 
-    private static final int MAX_ANNUAL_UPFRONT_LINES = 10;
+    public static final int MAX_ANNUAL_UPFRONT_LINES = 10;
     private static final int MAX_DISCARD_REASON_LENGTH = 500;
 
     @Id
@@ -117,6 +120,9 @@ public class Invoice {
 
     @Embedded
     private InvoiceAmounts amounts;
+
+    @Column(name = "monthly_invoice_run_id", updatable = false)
+    private Long monthlyInvoiceRunId;
 
     @Column(name = "discarded_reason", length = MAX_DISCARD_REASON_LENGTH)
     private String discardedReason;
@@ -191,6 +197,12 @@ public class Invoice {
         return getPrimaryLine().getEnrollmentFeeSlot();
     }
 
+    public void requirePayable() {
+        if (!isPayable()) {
+            throw new InvoiceNotPayableException(id, paymentStatus == null ? documentStatus.name() : paymentStatus.name());
+        }
+    }
+
     public boolean isPayable() {
         return documentStatus == InvoiceDocumentStatus.ISSUED && (paymentStatus == InvoicePaymentStatus.PENDING || paymentStatus == InvoicePaymentStatus.OVERDUE);
     }
@@ -255,6 +267,14 @@ public class Invoice {
         this.paymentDeadline = paymentDeadline;
     }
 
+    public void assignDraftToMonthlyRun(Long monthlyInvoiceRunId) {
+        Objects.requireNonNull(monthlyInvoiceRunId, "monthlyInvoiceRunId");
+        if (documentStatus != InvoiceDocumentStatus.DRAFT) {
+            throw new IllegalStateException("Only a draft can belong to a monthly run draft batch");
+        }
+        this.monthlyInvoiceRunId = monthlyInvoiceRunId;
+    }
+
     public void issueInvoice(InvoiceNumber invoiceNumber, LocalDate issueDate, LocalDate dueDate, StudentSnapshot studentSnapshot,
                              StatusChangeActor actor) {
         Objects.requireNonNull(invoiceNumber, "invoiceNumber");
@@ -279,6 +299,12 @@ public class Invoice {
         recordedDomainEvents.add(invoiceId -> new InvoiceIssuedEvent(invoiceId, studentCurrentAccountId, documentType, invoiceType, amounts.total(), issueDate, dueDate));
         if (zeroTotal) {
             recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, InvoicePaymentEvent.ISSUED_WITH_ZERO_TOTAL, issueDate));
+        }
+    }
+
+    public void requirePendingDraftOfRun(Long monthlyRunId) {
+        if (documentStatus != InvoiceDocumentStatus.DRAFT || !monthlyRunId.equals(monthlyInvoiceRunId)) {
+            throw new DraftNotPendingException(id);
         }
     }
 
@@ -308,9 +334,18 @@ public class Invoice {
                 InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED);
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         changePaymentStatus(event, amounts, businessDate, actor, reason);
+        recordedDomainEvents.add(invoiceId -> new InvoicePaymentReviewReleasedEvent(invoiceId, businessDate));
         if (event == InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED) {
             recordedDomainEvents.add(invoiceId -> new InvoiceMarkedAsOverdueEvent(invoiceId, dueDate, businessDate));
         }
+    }
+
+    public void releasePaymentReviewWithoutLateTerms(LocalDate businessDate, StatusChangeActor actor, String reason) {
+        requireBusinessContext(businessDate, actor);
+        InvoicePaymentEvent event = InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_BEFORE_DUE_DATE_PASSED;
+        InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
+        changePaymentStatus(event, amounts, businessDate, actor, reason);
+        recordedDomainEvents.add(invoiceId -> new InvoicePaymentReviewReleasedEvent(invoiceId, businessDate));
     }
 
     public void allocateFullInvoicePayment(NonNegativeMoney allocatedAmount, LocalDate businessDate, StatusChangeActor actor) {
@@ -322,11 +357,23 @@ public class Invoice {
         recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, event, businessDate));
     }
 
-    public void reversePaymentAllocation(LocalDate businessDate, int gracePeriodDays, StatusChangeActor actor, String reason) {
-        requireBusinessContext(businessDate, actor);
-        InvoicePaymentEvent event = resolveEventByDueDate(businessDate, gracePeriodDays,
+    public InvoicePaymentStatus getPaymentStatusIfAllocationReversedOn(LocalDate businessDate, int gracePeriodDays) {
+        return InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, allocationReversalEventOn(businessDate, gracePeriodDays));
+    }
+
+    public NonNegativeMoney getOutstandingAmountIfAllocationReversed() {
+        return amounts.withPaymentAllocationReversed().outstandingAmount();
+    }
+
+    private InvoicePaymentEvent allocationReversalEventOn(LocalDate businessDate, int gracePeriodDays) {
+        return resolveEventByDueDate(businessDate, gracePeriodDays,
                 InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_BEFORE_DUE_DATE_PASSED,
                 InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_AFTER_DUE_DATE_PASSED);
+    }
+
+    public void reversePaymentAllocation(LocalDate businessDate, int gracePeriodDays, StatusChangeActor actor, String reason) {
+        requireBusinessContext(businessDate, actor);
+        InvoicePaymentEvent event = allocationReversalEventOn(businessDate, gracePeriodDays);
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         if (!amounts.hasPaidAmount()) {
             throw new IllegalInvoicePaymentStatusTransitionException(paymentStatus, event);

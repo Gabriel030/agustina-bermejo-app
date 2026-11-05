@@ -1,0 +1,1 @@
+com.red_escuela.backend.billing.invoice.service.CourseAdmissionInvoiceEnrollmentLinker.linkInvoiceToConfirmedCourseEnrollment(com.red_escuela.backend.enrollment.events.CourseEnrollmentConfirmedByAdmissionPaymentEvent) is an event listener with its own @Transactional

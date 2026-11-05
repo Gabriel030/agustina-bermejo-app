@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 
 public record AttendanceResponse(
         Long id, Long enrollmentId, LocalDate classDate, String status,
-        String justificationReason, String justificationAttachmentUrl, LocalDateTime justifiedAt) {
+        String justificationReason, String justificationAttachmentUrl, LocalDateTime justifiedAt,
+        String justificationRejectionReason) {
 
     public static AttendanceResponse from(Attendance attendance) {
         Long enrollmentId = attendance.getProgramSubjectSectionEnrollment() != null
@@ -20,6 +21,7 @@ public record AttendanceResponse(
                 attendance.getStatus().name(),
                 attendance.getJustificationReason(),
                 attendance.getJustificationAttachmentUrl(),
-                attendance.getJustifiedAt());
+                attendance.getJustifiedAt(),
+                attendance.getJustificationRejectionReason());
     }
 }

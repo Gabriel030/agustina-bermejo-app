@@ -8,16 +8,18 @@ import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.academicstructure.entity.Holiday;
+import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.repository.EvaluationSchemeTestRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -42,6 +44,20 @@ public class KarateFixtures {
                             + "KarateSpringContext.set(applicationContext) en un @BeforeEach.");
         }
         return context;
+    }
+
+    public static int yearWithHolidays() {
+        HolidayRepository holidayRepository = context().getBean(HolidayRepository.class);
+        int year = 3000 + (int) Math.abs(System.nanoTime() % 1000000);
+        while (holidayRepository.existsByDate(java.time.LocalDate.of(year, 1, 1))) {
+            year++;
+        }
+        Holiday holiday = new Holiday();
+        holiday.setDate(java.time.LocalDate.of(year, 1, 1));
+        holiday.setName("Año Nuevo");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
+        holidayRepository.save(holiday);
+        return year;
     }
 
     public static Long createInstitution() {
@@ -194,7 +210,7 @@ public class KarateFixtures {
         context().getBean(org.springframework.transaction.support.TransactionTemplate.class).executeWithoutResult(status -> {
             var enrollment = context().getBean(ProgramEnrollmentRepository.class).findById(programEnrollmentId)
                     .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
-            var term = new com.red_escuela.backend.academicstructure.entity.Term();
+            var term = com.red_escuela.backend.testsupport.TermFixtures.newTerm();
             term.setYear(2026);
             term.setDescription("Karate plan completo");
             term.setStatus(StatusType.ACTIVE);
@@ -265,5 +281,31 @@ public class KarateFixtures {
             accountService.recordInvoiceIssuedDebit(account, saved, java.time.LocalDate.of(2027, 3, 1));
             return saved.getId();
         });
+    }
+
+    public static Map<String, Object> createProgramLearnerWithPricing() {
+        var factory = context().getBean(com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory.class);
+        var transactionTemplate = new org.springframework.transaction.support.TransactionTemplate(
+                context().getBean(org.springframework.transaction.PlatformTransactionManager.class));
+        var studentRepository = context().getBean(StudentRepository.class);
+        var personRepository = context().getBean(PersonRepository.class);
+        var roleRepository = context().getBean(RoleRepository.class);
+        var jwtService = context().getBean(JwtService.class);
+        var learner = factory.newLearner(factory.newProgram(com.red_escuela.backend.shared.domain.Currency.ARS, 80000, 50000), null);
+        String accessToken = transactionTemplate.execute(status -> {
+            Person person = studentRepository.findById(learner.studentId()).orElseThrow().getPerson();
+            person.getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+            return jwtService.generateAccessToken(personRepository.save(person));
+        });
+        Map<String, Object> result = new HashMap<>();
+        result.put("studentId", learner.studentId());
+        result.put("programEnrollmentId", learner.programEnrollmentId());
+        result.put("accessToken", accessToken);
+        return result;
+    }
+
+    public static Long createProgramId() {
+        var factory = context().getBean(com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory.class);
+        return factory.newProgram(com.red_escuela.backend.shared.domain.Currency.ARS, 80000, 50000).programId();
     }
 }

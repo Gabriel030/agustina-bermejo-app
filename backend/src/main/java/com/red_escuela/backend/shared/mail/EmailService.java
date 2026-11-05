@@ -1,10 +1,12 @@
 package com.red_escuela.backend.shared.mail;
 
-import com.red_escuela.backend.identity.entity.Person;
-
 public interface EmailService {
 
-    void sendPasswordResetCode(Person person, String code);
+    void sendPasswordResetCode(MailRecipient recipient, String institutionName, String code);
 
-    void sendEmailVerification(Person person, String verificationLink);
+    void sendEmailVerification(MailRecipient recipient, String institutionName, String verificationLink);
+
+    void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink);
+
+    void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail);
 }

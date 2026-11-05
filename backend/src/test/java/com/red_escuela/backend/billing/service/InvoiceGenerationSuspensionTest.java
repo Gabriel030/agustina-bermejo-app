@@ -1,12 +1,13 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -23,7 +24,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
@@ -48,6 +49,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     @Autowired
     private BillingTestTrigger invoiceGenerationService;
 
@@ -122,13 +126,14 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
-        enrollment.setPaymentStatus(paymentStatus);
-        return programEnrollmentRepository.save(enrollment);
+        ProgramEnrollment saved = programEnrollmentRepository.save(enrollment);
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, saved.getId(), paymentStatus);
+        return saved;
     }
 
     private CourseEnrollment persistCourseEnrollment(String dni, EnrollmentStatus status, EnrollmentPaymentStatus paymentStatus) {
         Student student = persistStudent(dni);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -144,8 +149,9 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setCourse(course);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
-        enrollment.setPaymentStatus(paymentStatus);
-        return courseEnrollmentRepository.save(enrollment);
+        CourseEnrollment saved = courseEnrollmentRepository.save(enrollment);
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, saved.getId(), paymentStatus);
+        return saved;
     }
 
     @Test
@@ -200,8 +206,8 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         selection.setCreatedBy(director);
         paymentPlanSelectionRepository.save(selection);
 
-        enrollment.setPaymentStatus(EnrollmentPaymentStatus.UP_TO_DATE);
         courseEnrollmentRepository.save(enrollment);
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedCourseEnrollmentStanding(jdbc, enrollment.getId(), EnrollmentPaymentStatus.UP_TO_DATE);
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 

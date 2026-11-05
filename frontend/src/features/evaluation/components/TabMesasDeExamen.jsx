@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, MapPin } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,7 +35,7 @@ const REGISTRATION_ERROR_MESSAGES = {
 };
 
 export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscripciones }) {
-  const { data: mesas, isLoading } = useMesasDisponibles(subjectId);
+  const { data: mesas, isLoading, isError, error, refetch } = useMesasDisponibles(subjectId);
   const inscribirme = useInscribirmeAMesa();
   const darmeDeBaja = useDarmeDeBajaDeMesa();
   const [registrationError, setRegistrationError] = useState(null);
@@ -43,6 +44,14 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
     return (
       <div className="flex flex-col gap-2 border-t border-border p-4">
         <Skeleton className="h-12" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="border-t border-border p-4">
+        <LoadErrorState error={error} onRetry={refetch} resource="los llamados" bare />
       </div>
     );
   }
@@ -136,13 +145,28 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
 // propias del alumno; ambos endpoints se agregaron para esto (GET /me/exam-boards?subjectId=,
 // GET /me/exam-board-registrations).
 export function TabMesasDeExamen({ carreraId }) {
-  const { data: inscripciones, isLoading: cargandoInscripciones } = useMisInscripciones();
-  const { data: misMesas, isLoading: cargandoMesas } = useMisInscripcionesAMesas();
+  const {
+    data: inscripciones,
+    isLoading: cargandoInscripciones,
+    isError: inscripcionesFallaron,
+    refetch: recargarInscripciones,
+  } = useMisInscripciones();
+  const {
+    data: misMesas,
+    isLoading: cargandoMesas,
+    isError: mesasFallaron,
+    refetch: recargarMesas,
+  } = useMisInscripcionesAMesas();
   const darmeDeBaja = useDarmeDeBajaDeMesa();
   const [subTab, setSubTab] = useState('para-rendir');
   const [expandidoId, setExpandidoId] = useState(null);
 
   const regulares = (inscripciones ?? []).filter((i) => (!carreraId || i.programEnrollmentId === carreraId) && i.status === 'REGULAR');
+
+  function recargarTodo() {
+    if (inscripcionesFallaron) recargarInscripciones();
+    if (mesasFallaron) recargarMesas();
+  }
 
   function toggleFila(id) {
     setExpandidoId((actual) => (actual === id ? null : id));
@@ -163,6 +187,8 @@ export function TabMesasDeExamen({ carreraId }) {
           <div className="flex flex-col gap-2">
             <Skeleton className="h-16" />
           </div>
+        ) : inscripcionesFallaron || mesasFallaron ? (
+          <LoadErrorState onRetry={recargarTodo} resource="tus mesas de examen" bare />
         ) : regulares.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-8">
             <EmptyState
@@ -208,6 +234,8 @@ export function TabMesasDeExamen({ carreraId }) {
         <div className="flex flex-col gap-2">
           <Skeleton className="h-16" />
         </div>
+      ) : mesasFallaron ? (
+        <LoadErrorState onRetry={recargarMesas} resource="tus inscripciones a mesas" bare />
       ) : !misMesas || misMesas.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8">
           <EmptyState title="Todavía no te inscribiste a ninguna mesa" description="Cuando te inscribas a un llamado, lo vas a ver acá." />
@@ -222,15 +250,18 @@ export function TabMesasDeExamen({ carreraId }) {
                   {formatearFecha(mia.examBoard.examDate)}
                   {mia.examBoard.classroom && ` · ${mia.examBoard.classroom}`}
                 </div>
+                {mia.examBoard.status === 'CANCELED' && mia.examBoard.cancelReason && (
+                  <div className="text-xs text-danger">Motivo: {mia.examBoard.cancelReason}</div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 {mia.score != null && <span className="font-heading text-base font-bold text-ink">{mia.score}</span>}
                 {/* El status de la inscripción a mesa nunca pasa a GRADED en el backend — "ya
                     rindió" se deriva de si hay nota, no del status. */}
-                <StatusPill tone={mia.status === 'WITHDRAWN' ? 'neutral' : mia.score != null ? 'success' : 'accent'}>
-                  {mia.status === 'WITHDRAWN' ? 'De baja' : mia.score != null ? 'Rendido' : 'Inscripto'}
+                <StatusPill tone={mia.examBoard.status === 'CANCELED' ? 'danger' : mia.status === 'WITHDRAWN' ? 'neutral' : mia.score != null ? 'success' : 'accent'}>
+                  {mia.examBoard.status === 'CANCELED' ? 'Mesa cancelada' : mia.status === 'WITHDRAWN' ? 'De baja' : mia.score != null ? 'Rendido' : 'Inscripto'}
                 </StatusPill>
-                {mia.status === 'REGISTERED' && mia.score == null && (
+                {mia.status === 'REGISTERED' && mia.score == null && mia.examBoard.status !== 'CANCELED' && (
                   <Button variant="outline" className="text-danger" onClick={() => darmeDeBaja.mutate(mia.id)} disabled={darmeDeBaja.isPending}>
                     Darme de baja
                   </Button>

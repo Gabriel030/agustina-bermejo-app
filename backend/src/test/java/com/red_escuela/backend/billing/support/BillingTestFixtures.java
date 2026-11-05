@@ -2,10 +2,6 @@ package com.red_escuela.backend.billing.support;
 
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
-import com.red_escuela.backend.billing.entity.Payment;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.ChargeKey;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -19,7 +15,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
-import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
@@ -79,34 +74,70 @@ public final class BillingTestFixtures {
     }
 
     public static Invoice payInvoiceInFull(Invoice invoice) {
-        return inTransaction(() -> payInTransaction(reload(invoice), invoice.getDueDate()));
+        return inTransaction(() -> payInTransaction(reload(invoice), invoice.getDueDate(), invoice.getDueDate()));
     }
 
-    private static Invoice payInTransaction(Invoice invoice, LocalDate paidOn) {
-        Long studentId = bean(InvoiceRepository.class).findOwnerStudentIdByInvoiceId(invoice.getId()).orElseThrow();
-        Student student = bean(com.red_escuela.backend.identity.repository.StudentRepository.class).findById(studentId).orElseThrow();
+    public static Invoice payInvoiceInFullWithMoneyOf(Invoice invoice, LocalDate effectiveDate, LocalDate allocatedOn) {
+        return inTransaction(() -> payInTransaction(reload(invoice), effectiveDate, allocatedOn));
+    }
+
+    public static Long registerApprovedGatewayPayment(Long invoiceId, Money amount) {
+        return bean(com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort.class).registerApprovedMercadoPagoPayment(
+                invoiceId, amount, 1, null, "mp-fixture-" + UUID.randomUUID());
+    }
+
+    public static Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId) {
+        return bean(com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort.class).registerApprovedBankTransferPayment(invoiceId, reviewerPersonId);
+    }
+
+    private static Invoice payInTransaction(Invoice invoice, LocalDate effectiveDate, LocalDate paidOn) {
         Money amount = invoice.getAmounts().outstandingAmount().value();
-        Payment payment = new Payment();
-        payment.setAmount(amount);
-        payment.setMethod(PaymentMethod.CASH);
-        payment.setStatus(PaymentStatus.CONFIRMED);
-        payment.setRegisteredBy(student.getPerson());
-        payment.setPaidAt(LocalDateTime.now());
-        payment = bean(PaymentRepository.class).save(payment);
-        invoice.allocateFullInvoicePayment(NonNegativeMoney.of(amount), paidOn, ACTOR);
-        PaymentAllocation allocation = new PaymentAllocation();
-        allocation.setPayment(payment);
-        allocation.setInvoice(invoice);
-        allocation.setAmountApplied(amount);
-        payment.getAllocations().add(allocation);
-        bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).save(
-                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), paidOn, paidOn, ACTOR));
         StudentCurrentAccountService accounts = bean(StudentCurrentAccountService.class);
         StudentCurrentAccount account = accounts.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
-        accounts.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
+        com.red_escuela.backend.billing.payment.domain.Payment payment = bean(com.red_escuela.backend.billing.payment.repository.PaymentRepository.class).save(
+                com.red_escuela.backend.billing.payment.domain.Payment.registerApprovedCashPayment(account, NonNegativeMoney.of(amount), paidOn,
+                        new com.red_escuela.backend.billing.payment.domain.CashPaymentDetails(null), UUID.randomUUID().toString(), ACTOR));
+        invoice.allocateFullInvoicePayment(NonNegativeMoney.of(amount), paidOn, ACTOR);
+        com.red_escuela.backend.billing.account.domain.CurrentAccountEntry credit = accounts.recordPaymentReceivedCredit(account, payment.getId(),
+                NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
+        bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).saveWithSources(
+                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), effectiveDate, paidOn, ACTOR),
+                java.util.List.of(new com.red_escuela.backend.billing.account.domain.AllocationSourceShare(credit.getId(), payment.getId(), null, NonNegativeMoney.of(amount))));
         accounts.consumeUnallocatedCreditForAllocation(account, NonNegativeMoney.of(amount));
         bean(InvoiceRepository.class).flush();
         return invoice;
+    }
+
+    public static long seedApprovedPaymentRow(Long accountId) {
+        return seedApprovedPaymentRow(accountId, java.math.BigDecimal.ONE);
+    }
+
+    public static long seedApprovedPaymentRow(Long accountId, NonNegativeMoney amount) {
+        return seedApprovedPaymentRow(accountId, amount.value().amount());
+    }
+
+    public static long seedCompletedRefundRow(Long accountId, NonNegativeMoney amount) {
+        long paymentId = seedApprovedPaymentRow(accountId, amount);
+        org.springframework.jdbc.core.JdbcTemplate jdbc = bean(org.springframework.jdbc.core.JdbcTemplate.class);
+        jdbc.update("update payment set refunded_amount = ?, status = 'REFUNDED' where id = ?", amount.value().amount(), paymentId);
+        long refundId = jdbc.queryForObject(
+                "insert into refund (refund_request_id, payment_id, student_current_account_id, currency, status, method_type, amount, amount_currency, "
+                        + "destination_account, destination_holder, requested_by_person_id, requested_on, approved_on, completed_on, completion_reference) "
+                        + "select nextval('refund_request_id_seq'), ?, a.id, a.currency, 'COMPLETED', 'CASH', ?, a.currency, 'CBU-TEST', 'Titular de prueba', s.person_id, "
+                        + "current_date, current_date, current_date, 'REF-TEST' from student_current_account a join student s on s.id = a.student_id where a.id = ? returning id",
+                Long.class, paymentId, amount.value().amount(), accountId);
+        jdbc.update("insert into refund_status_change (refund_id, event, from_status, to_status, actor_person_id, occurred_at) "
+                + "select r.id, 'REFUND_COMPLETED', 'APPROVED', 'COMPLETED', r.requested_by_person_id, now() from refund r where r.id = ?", refundId);
+        return refundId;
+    }
+
+    private static long seedApprovedPaymentRow(Long accountId, java.math.BigDecimal amount) {
+        return bean(org.springframework.jdbc.core.JdbcTemplate.class).queryForObject(
+                "insert into payment (student_current_account_id, currency, status, gateway, method_type, amount, amount_currency, approved_amount, "
+                        + "approved_amount_currency, paid_on, refunded_amount, refunded_amount_currency, registered_at, started_at, method_details, registered_by_process) "
+                        + "select a.id, a.currency, 'APPROVED', 'MANUAL', 'CASH', ?, a.currency, ?, a.currency, current_date, 0, a.currency, now(), now(), "
+                        + "cast('{\"type\":\"CASH\"}' as jsonb), 'TEST' from student_current_account a where a.id = ? returning id",
+                Long.class, amount, amount, accountId);
     }
 
     private static Invoice reload(Invoice invoice) {
@@ -235,7 +266,7 @@ public final class BillingTestFixtures {
             };
             if (scholarshipAmount != null) {
                 draft.addDiscountToDraftLine(1, new com.red_escuela.backend.billing.invoice.domain.InvoiceDiscountDraft(
-                        com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP, "Beca de prueba", null, NonNegativeMoney.of(baseAmount),
+                        com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP, "Beca de prueba", seedStudentDiscount(studentId, person.getId()), NonNegativeMoney.of(baseAmount),
                         NonNegativeMoney.of(scholarshipAmount), null, null));
             }
             draft.issueInvoice(bean(InvoiceNumberGenerator.class).nextInvoiceNumber(InvoiceDocumentType.INVOICE), dueDate.isAfter(LocalDate.now()) ? LocalDate.now() : dueDate,
@@ -247,13 +278,23 @@ public final class BillingTestFixtures {
             if (status == InvoicePaymentStatus.OVERDUE) {
                 result.markInvoiceAsOverdue(dueDate.plusDays(1), ACTOR);
             } else if (status == InvoicePaymentStatus.PAID) {
-                result = payInTransaction(result, dueDate);
+                result = payInTransaction(result, dueDate, dueDate);
             } else if (status != InvoicePaymentStatus.PENDING) {
                 throw new UnsupportedOperationException("The new billing model has no direct " + status + " state (D-165, D-136)");
             }
             customization.accept(result);
             bean(InvoiceRepository.class).flush();
             return result;
+        }
+
+        private Long seedStudentDiscount(Long studentId, Long personId) {
+            String enrollmentColumn = programEnrollment != null ? "program_enrollment_id" : "course_enrollment_id";
+            Long enrollmentId = programEnrollment != null ? programEnrollment.getId() : courseEnrollment.getId();
+            return bean(JdbcTemplate.class).queryForObject(
+                    "insert into student_discount (" + enrollmentColumn + ", student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
+                            + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, ?, 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "
+                            + "cast('{\"type\":\"PROPORTIONAL\",\"fraction\":\"0.5\"}' as jsonb), 1, date '2027-03-01', date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id",
+                    Long.class, enrollmentId, studentId, baseAmount.currency().name(), personId);
         }
 
         private Long priceVersionId(Long createdById) {

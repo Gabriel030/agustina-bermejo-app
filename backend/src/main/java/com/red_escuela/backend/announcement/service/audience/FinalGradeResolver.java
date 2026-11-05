@@ -33,6 +33,6 @@ public class FinalGradeResolver implements AudienceResolver {
 
     @Override
     public boolean availableFor(SectionSnapshot section, AudienceSegmentKey key) {
-        return section.hasEvaluationScheme() && Boolean.TRUE.equals(section.evaluationScheme().getHasFinal());
+        return section.hasFinal();
     }
 }

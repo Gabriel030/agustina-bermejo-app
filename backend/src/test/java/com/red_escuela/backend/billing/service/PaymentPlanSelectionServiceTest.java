@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
@@ -8,7 +9,7 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
@@ -21,7 +22,7 @@ import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -121,7 +122,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse(int durationMonths, BigDecimal price, Person director) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -164,7 +165,6 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-039")
-    @Tag("D-191")
     void sixMonthCourseOffersOneInstallmentOrSixInstallmentsAccordingToChosenPlan() {
         Person director = persistPersonBase("DIR4" + System.nanoTime());
 
@@ -299,7 +299,6 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-039")
-    @Tag("D-191")
     void runningTheSameMonthTwiceOverAnUpfrontBlockDoesNotDuplicate() {
         Person director = persistPersonBase("DIR41" + System.nanoTime());
         Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
@@ -391,7 +390,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     void generatingMonthlyOutsideTheCourseWindowIsASilentNoOp() {
         Person director = persistPersonBase("DIRVENT" + System.nanoTime());
         YearMonth base = YearMonth.now();
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(base.atDay(1).atStartOfDay());

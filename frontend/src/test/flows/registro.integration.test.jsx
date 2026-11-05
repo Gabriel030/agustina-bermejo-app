@@ -76,6 +76,7 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     // a bytes, sin que MSW tenga que reparsearlo.
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
+    let applicationSubmitted = false;
     server.use(
       http.get(`${API}/me`, () =>
         HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', roles: [] }),
@@ -92,12 +93,27 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
       http.put(`${API}/me`, () =>
         HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', dni: '30111222', roles: [] }),
       ),
-      http.post(`${API}/me/program-enrollment-applications`, () =>
-        HttpResponse.json({ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING' }, { status: 201 }),
-      ),
-      http.post(`${API}/me/program-enrollment-applications/:id/documents`, () => new HttpResponse(null, { status: 201 })),
+      http.post(`${API}/me/program-enrollment-applications/with-documents`, () => {
+        applicationSubmitted = true;
+        return HttpResponse.json(
+          {
+            id: 42,
+            studentId: 9,
+            programId: 1,
+            programName: 'Diseño Gráfico',
+            programCohortId: 1,
+            status: 'PENDING',
+            requestedAt: '2026-03-02T10:00:00',
+            decidedAt: null,
+            rejectionReason: null,
+            admissionInvoice: null,
+            programEnrollmentId: 1,
+          },
+          { status: 201 },
+        );
+      }),
       http.get(`${API}/me/program-enrollment-applications`, () =>
-        HttpResponse.json([{ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
+        HttpResponse.json(!applicationSubmitted ? [] : [{ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
       ),
       http.get(`${API}/me/course-enrollment-applications`, () => HttpResponse.json([])),
     );
@@ -150,19 +166,14 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     const [, actualizarPerfilOpts] = llamadaA('/me', 'PUT');
     expect(JSON.parse(actualizarPerfilOpts.body)).toMatchObject({ dni: '30111222', street: 'Calle Falsa', number: '123', city: 'Ciudad' });
 
-    const [, solicitarCarreraOpts] = llamadaA('/me/program-enrollment-applications', 'POST');
+    const [, solicitarCarreraOpts] = llamadaA('/me/program-enrollment-applications/with-documents', 'POST');
     const solicitudFormData = solicitarCarreraOpts.body;
     expect(solicitudFormData.get('programId')).toBe('1');
     expect(solicitudFormData.get('cohortId')).toBe('1');
     expect(solicitudFormData.has('comprobante')).toBe(false);
-
-    const documentosSubidos = fetchSpy.mock.calls
-      .filter(([url]) => String(url).includes('/documents?type='))
-      .map(([url, opts]) => ({ type: new URL(url).searchParams.get('type'), fileName: opts.body.get('file')?.name }));
-    expect(documentosSubidos).toEqual([
-      { type: 'DNI_FRENTE', fileName: 'dni-frente.jpg' },
-      { type: 'DNI_DORSO', fileName: 'dni-dorso.jpg' },
-      { type: 'ANALITICO_SECUNDARIO', fileName: 'analitico.pdf' },
-    ]);
+    expect(solicitudFormData.get('dniFront').name).toBe('dni-frente.jpg');
+    expect(solicitudFormData.get('dniBack').name).toBe('dni-dorso.jpg');
+    expect(solicitudFormData.get('academicTranscript').name).toBe('analitico.pdf');
+    expect(fetchSpy.mock.calls.filter(([url]) => String(url).includes('/documents'))).toHaveLength(0);
   });
 });

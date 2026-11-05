@@ -5,12 +5,10 @@ import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @UseCase
-@Transactional(readOnly = true)
 public class ListClassroomsService implements ListClassroomsUseCase {
 
     private final ClassroomRepository classroomRepository;

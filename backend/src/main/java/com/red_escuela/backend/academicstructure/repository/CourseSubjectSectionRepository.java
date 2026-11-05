@@ -14,6 +14,9 @@ import java.util.Optional;
 
 @Repository
 public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubjectSection, Long> {
+
+    boolean existsByCode(String code);
+
     List<CourseSubjectSection> findByCourseSubjectId(Long courseSubjectId);
 
     List<CourseSubjectSection> findByAcademicOfferingCycleId(Long cycleId);
@@ -23,6 +26,9 @@ public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubj
     List<CourseSubjectSection> findByTermId(Long termId);
 
     boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
+
+    @Query("select s.evaluationScheme.id from CourseSubjectSection s where s.id = :id")
+    Optional<Long> findEvaluationSchemeIdById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CourseSubjectSection s where s.id = :id")

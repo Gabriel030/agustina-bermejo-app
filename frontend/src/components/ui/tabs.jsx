@@ -39,16 +39,51 @@ function TabsList({
   className,
   variant = "default",
   children,
+  style,
   ...props
 }) {
   const { containerRef, rect } = useSlidingIndicator('[data-slot="tabs-trigger"][data-state="active"]');
+  const [overflow, setOverflow] = React.useState({ start: false, end: false });
+  const segmented = variant === "segmented";
+  const activeLeft = rect?.left;
+  const activeWidth = rect?.width;
+
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!segmented || !container) return undefined;
+    function measureOverflow() {
+      const start = container.scrollLeft > 1;
+      const end = container.scrollLeft + container.clientWidth < container.scrollWidth - 1;
+      setOverflow((previous) => (previous.start === start && previous.end === end ? previous : { start, end }));
+    }
+    measureOverflow();
+    container.addEventListener("scroll", measureOverflow, { passive: true });
+    window.addEventListener("resize", measureOverflow);
+    return () => {
+      container.removeEventListener("scroll", measureOverflow);
+      window.removeEventListener("resize", measureOverflow);
+    };
+  }, [segmented, containerRef, rect]);
+
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!segmented || activeLeft == null || !container || typeof container.scrollTo !== "function") return;
+    const target = activeLeft - (container.clientWidth - activeWidth) / 2;
+    container.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+  }, [segmented, containerRef, activeLeft, activeWidth]);
+
+  const edge = 28;
+  const maskImage = segmented && (overflow.start || overflow.end)
+    ? `linear-gradient(to right, ${overflow.start ? `transparent, black ${edge}px` : "black, black"}, ${overflow.end ? `black calc(100% - ${edge}px), transparent` : "black, black"})`
+    : undefined;
 
   return (
     <TabsPrimitive.List
       ref={containerRef}
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(tabsListVariants({ variant }), segmented && "max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)}
+      style={maskImage ? { maskImage, WebkitMaskImage: maskImage, ...style } : style}
       {...props}
     >
       {variant === "segmented" && rect && (

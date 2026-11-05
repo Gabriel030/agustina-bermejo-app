@@ -1,100 +1,52 @@
-# Aplicación de Gestión Educativa
+# agustina-bermejo-app
 
-Aplicación web para la gestión de una institución educativa, desarrollada con Spring Boot en el backend y React en el frontend.
+Aplicación web de gestión académica y administrativa para institutos de formación: personas, estructura académica, inscripciones, asistencia, evaluación, egresos, comunicados, notificaciones y un motor de facturación (cuotas, matrícula, comprobantes, notas de crédito).
 
-## 🏗️ Arquitectura
+> Verificado: 2026-10-31, commit `cd1ede80`.
 
-El proyecto sigue una arquitectura de tres capas:
+## Stack
 
-### Backend (Spring Boot)
-- **Capa de Entidades**: Modelos de datos que representan las tablas de la base de datos.
-- **Repositorios**: Interfaces que extienden `JpaRepository` para el acceso a datos.
-- **Servicios**: Lógica de negocio y reglas de la aplicación.
-- **Controladores**: Manejan las peticiones HTTP y devuelven respuestas.
-- **DTOs**: Objetos para transferencia de datos entre capas.
-- **Seguridad**: Autenticación y autorización con JWT.
-- **Migraciones**: Versionado de esquema con Flyway.
+| Capa | Tecnología |
+|---|---|
+| Backend (`backend/`) | Java 21, Spring Boot 3.5, Spring Security con JWT, Spring Data JPA, Spring Modulith, Flyway, Maven (`./mvnw`) |
+| Base de datos | PostgreSQL 16 |
+| Frontend (`frontend/`) | React 19, Vite 7, Tailwind CSS v4, shadcn/ui, JavaScript (sin TypeScript), Vitest |
+| Pruebas de sistema (`e2e/`) | Playwright (solo local) |
 
-### Frontend (React + Vite)
-- **Componentes**: UI reutilizables.
-- **Vistas**: Páginas principales de la aplicación.
-- **Servicios**: Llamadas a la API del backend.
-- **Contexto**: Gestión del estado global de la aplicación.
-- **Ruteo**: Navegación con React Router.
+## Cómo levantarlo
 
-### Base de Datos
-- MySQL/PostgreSQL para almacenamiento persistente.
-- Migraciones con Flyway.
+Requisitos: JDK 21, Node.js, Docker (para Postgres y para los tests con Testcontainers).
 
-## 🗄️ Modelo de Datos
+```bash
+docker compose up -d
 
-- **Diagrama DER (versión previa)**  
-  ![Diagrama DER](backend/src/main/java/com/red_escuela/backend/repository/der/DER.png)
+cd backend
+JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
-- **Nuevo DDL v2**  
-  ![DDL v2](backend/src/main/java/com/red_escuela/backend/repository/der/DDL-v2.png)
+cd frontend
+npm install
+npm run dev
+```
 
-  Enlace directo en GitHub (opcional):  
-  https://github.com/Gabriel030/agustina-bermejo-app/blob/master/backend/src/main/java/com/red_escuela/backend/repository/der/DDL-v2.png
+El backend queda en `http://localhost:8080`; el perfil `local` apunta al Postgres de `docker-compose.yml` y siembra usuarios de prueba (ver [docs/context/test-users.md](docs/context/test-users.md)). El frontend lee `VITE_API_BASE_URL` (ver `frontend/.env.example`).
 
-## 🚀 Características Principales
+Tests: `cd backend && ./mvnw test` (o `backend/dev-test <Clase|paquete|--changed>` para una corrida focalizada) y `cd frontend && npm test`. Detalle en [docs/context/testing.md](docs/context/testing.md) y [docs/context/debugging.md](docs/context/debugging.md).
 
-- Gestión de estudiantes y docentes
-- Administración de cursos y materias
-- Sistema de inscripciones
-- Gestión de calificaciones
-- Programas de estudio
-- Eventos institucionales
-- Seguridad con JWT y control de acceso por roles
-- Migraciones automáticas con Flyway
+## Estructura del repo
 
-## 🆕 Novedades de esta versión
+| Carpeta | Contenido |
+|---|---|
+| `backend/` | API Spring Boot, un paquete por módulo (`identity`, `academicstructure`, `enrollment`, `attendance`, `evaluation`, `graduation`, `announcement`, `notification`, `billing`, `config`, `shared`) y migraciones Flyway en `src/main/resources/db/migration` |
+| `frontend/` | SPA React, organizada por rol y por funcionalidad |
+| `contracts/` | `openapi.json`, contrato HTTP versionado y verificado en CI |
+| `docs/` | Documentación técnica; el índice es [docs/README.md](docs/README.md) |
+| `e2e/` | Pruebas de sistema con Playwright |
+| `qa/`, `load/`, `scripts/` | Colecciones Bruno, pruebas de carga y scripts de apoyo |
+| `.github/` | Workflows de CI y scripts de reparto de tests |
 
-- **DDL v2** con relaciones, claves foráneas e índices actualizados.
-- **Migraciones Flyway** alineadas al nuevo esquema.
-- **DTOs y servicios** ajustados al nuevo modelo de datos.
-- **Endpoints actualizados** para reflejar cambios en entidades y relaciones.
-- **Mejoras de seguridad** y manejo de roles/permisos.
-- **Ajustes de frontend** para consumir los nuevos contratos del backend.
+## Documentación y proceso
 
-## 🛠️ Tecnologías Utilizadas
-
-### Backend
-- Java 17
-- Spring Boot 3.x
-- Spring Security
-- JPA/Hibernate
-- JWT
-- Flyway
-- Maven
-
-### Frontend
-- React 18
-- Vite
-- TypeScript
-- Tailwind CSS
-- React Router
-- Axios
-
-## 📦 Requisitos Previos
-
-- Java 17 o superior
-- Node.js 16+ y npm/yarn
-- Base de datos MySQL/PostgreSQL
-- Maven 3.6+
-
-## 🚀 Instalación
-
-1. Clonar el repositorio
-2. Configurar la base de datos en `backend/src/main/resources/application.properties`
-3. Ejecutar el backend:
-   ```bash
-   cd backend
-   mvn spring-boot:run
-
-4. Ejecutar el frontend:
-   ```bash
-
-   cd frontend
-   npm install
-   npm run dev
+- [docs/README.md](docs/README.md): índice de toda la documentación del repo.
+- [CLAUDE.md](CLAUDE.md): reglas de código y proceso (identificadores en inglés, sin comentarios, PRs contra `develop`).
+- [docs/adr/](docs/adr/README.md): decisiones de arquitectura.
+- [docs/context/workflow.md](docs/context/workflow.md) y [.github/workflows/ci.yml](.github/workflows/ci.yml): ramas, PRs y el flujo de CI.

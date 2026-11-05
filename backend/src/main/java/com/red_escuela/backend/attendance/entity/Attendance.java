@@ -58,9 +58,19 @@ public class Attendance {
     @Column(name = "justified_at")
     private LocalDateTime justifiedAt;
 
+    @Column(name = "justification_rejection_reason", length = 500)
+    private String justificationRejectionReason;
+
+    @Column(name = "justification_rejected_at")
+    private LocalDateTime justificationRejectedAt;
+
     @PrePersist
     @PreUpdate
     private void validateSingleEnrollmentTarget() {
+        if (this.status != AttendanceStatus.ABSENT) {
+            this.justificationRejectionReason = null;
+            this.justificationRejectedAt = null;
+        }
         boolean hasCourse = this.courseSubjectSectionEnrollment != null;
         boolean hasProgram = this.programSubjectSectionEnrollment != null;
         if (hasCourse == hasProgram) {
@@ -88,5 +98,20 @@ public class Attendance {
             throw new AttendanceAlreadyRecordedException(enrollmentId, String.valueOf(classDate));
         }
         status = newStatus;
+    }
+
+    public boolean isRecordableByInstructor() {
+        return status == AttendanceStatus.PRESENT || status == AttendanceStatus.ABSENT || status == AttendanceStatus.LATE;
+    }
+
+    public boolean wasRecordedBy(Instructor instructor) {
+        return recordedBy != null && recordedBy.getId().equals(instructor.getId());
+    }
+
+    public AttendanceStatus correct(AttendanceStatus newStatus) {
+        newStatus.requireRecordableByInstructor();
+        AttendanceStatus previous = status;
+        status = newStatus;
+        return previous;
     }
 }

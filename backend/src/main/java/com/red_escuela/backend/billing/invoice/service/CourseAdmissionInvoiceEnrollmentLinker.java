@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.invoice.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.events.CourseEnrollmentConfirmedByAdmissionPaymentEvent;
@@ -16,6 +18,7 @@ public class CourseAdmissionInvoiceEnrollmentLinker {
         this.invoiceRepository = invoiceRepository;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @EventListener
     @Transactional
     public void linkInvoiceToConfirmedCourseEnrollment(CourseEnrollmentConfirmedByAdmissionPaymentEvent event) {

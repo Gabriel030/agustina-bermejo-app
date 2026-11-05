@@ -18,6 +18,8 @@ import com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTe
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramBillingTemplatesUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramCohortsForProgramUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramCohortsForTemplateUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +35,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class ProgramYearBillingTemplateController {
     private final CreateProgramYearBillingTemplateUseCase createTemplateUseCase;
     private final CreateProgramCohortUseCase createCohortUseCase;
@@ -71,6 +74,7 @@ public class ProgramYearBillingTemplateController {
         return ProgramCohortResponse.from(cohort, findConfigurationUseCase.findEntryDiscountInEffect(cohort.getId()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/programs/{id}/year-billing-templates")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
@@ -78,6 +82,7 @@ public class ProgramYearBillingTemplateController {
         return templateResponse(createTemplateUseCase.create(id, request.termId(), request.recurringFeeInvoicesCount(), request.configuration()));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/year-billing-templates/{id}/cohorts")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
@@ -97,12 +102,14 @@ public class ProgramYearBillingTemplateController {
         return listBillingTemplatesUseCase.list(id).stream().map(this::templateResponse).toList();
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PatchMapping("/year-billing-templates/{id}/configuration")
     @PreAuthorize("hasRole('DIRECTOR')")
     public ProgramYearBillingTemplateResponse updateConfiguration(@PathVariable Long id, @Valid @RequestBody YearBillingConfigurationRequest request) {
         return templateResponse(updateYearConfigurationUseCase.update(id, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PatchMapping("/cohorts/{id}/entry-fee-discount")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public ProgramCohortResponse updateEntryFeeDiscount(@PathVariable Long id, @Valid @RequestBody UpdateEntryFeeDiscountRequest request) {

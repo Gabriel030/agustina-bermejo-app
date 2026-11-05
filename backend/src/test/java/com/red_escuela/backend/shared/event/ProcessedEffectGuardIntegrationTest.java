@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.event;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("D-178")
 @Tag("D-183")
 @Tag("D-184")
+@SlowTest(reason = "Exercises claim retries and concurrent handlers with real waits between attempts")
 class ProcessedEffectGuardIntegrationTest extends AbstractIntegrationTest {
 
     record ProbeEvent(UUID eventId, String correlationId, Instant occurredAt) implements DeduplicableDomainEvent {

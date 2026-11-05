@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 
 import java.time.LocalDateTime;
@@ -7,7 +8,7 @@ import java.time.LocalDateTime;
 public record DirectorApprovalRequestResponse(
         Long id, String type, Long programEnrollmentId, String studentName, String programName,
         Long subjectId, String subjectName, String justification,
-        String status, LocalDateTime requestedAt, LocalDateTime decidedAt, String decisionNotes) {
+        String status, LocalDateTime requestedAt, @Schema(nullable = true) LocalDateTime decidedAt, @Schema(nullable = true) String decisionNotes) {
 
     public static DirectorApprovalRequestResponse from(DirectorApprovalRequest request) {
         var programEnrollment = request.getProgramEnrollment();

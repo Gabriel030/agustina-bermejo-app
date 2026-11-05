@@ -1,7 +1,11 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 
+import com.red_escuela.backend.billing.authorization.domain.PendingInvoiceAuthorization;
+import com.red_escuela.backend.billing.authorization.service.PendingInvoiceAuthorizationReader;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -20,8 +24,14 @@ public class InvoiceDetailLoader {
     private final InvoiceViewLoader invoiceViewLoader;
     private final BankTransferReceiptRepository bankTransferReceiptRepository;
 
+    private final PendingInvoiceAuthorizationReader pendingAuthorizations;
+    private final EnrollmentPaymentStandingQuery standingQuery;
+
     public InvoiceDetailLoader(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
-                               BankTransferReceiptRepository bankTransferReceiptRepository) {
+                               BankTransferReceiptRepository bankTransferReceiptRepository, PendingInvoiceAuthorizationReader pendingAuthorizations,
+                               EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
+        this.pendingAuthorizations = pendingAuthorizations;
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.bankTransferReceiptRepository = bankTransferReceiptRepository;
@@ -37,6 +47,16 @@ public class InvoiceDetailLoader {
         return attachReceipts(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId));
     }
 
+    @Transactional(readOnly = true)
+    public EnrollmentPaymentStandingView findStandingOfCourseEnrollmentOrNull(Long courseEnrollmentId) {
+        return standingQuery.findStandingOfCourseEnrollment(courseEnrollmentId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public EnrollmentPaymentStandingView findStandingOfProgramEnrollmentOrNull(Long programEnrollmentId) {
+        return standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).orElse(null);
+    }
+
     private List<InvoiceWithReceipts> attachReceipts(List<Invoice> invoices) {
         if (invoices.isEmpty()) {
             return List.of();
@@ -44,8 +64,9 @@ public class InvoiceDetailLoader {
         List<Long> ids = invoices.stream().map(Invoice::getId).toList();
         Map<Long, List<BankTransferReceipt>> receiptsByInvoiceId = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(ids).stream()
                 .collect(Collectors.groupingBy(receipt -> receipt.getInvoice().getId()));
+        Map<Long, List<PendingInvoiceAuthorization>> pendingByInvoiceId = pendingAuthorizations.findPendingByInvoiceIdNewestFirst(ids);
         return invoiceViewLoader.loadInvoiceViews(invoices).stream()
-                .map(view -> new InvoiceWithReceipts(view, receiptsByInvoiceId.getOrDefault(view.invoice().getId(), List.of())))
+                .map(view -> new InvoiceWithReceipts(view, receiptsByInvoiceId.getOrDefault(view.invoice().getId(), List.of()), pendingByInvoiceId.getOrDefault(view.invoice().getId(), List.of())))
                 .toList();
     }
 }

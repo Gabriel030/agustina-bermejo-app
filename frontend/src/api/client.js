@@ -2,12 +2,22 @@
  * Wrapper fino sobre fetch — no se suma Axios/React Query en esta fase
  * (ver Spec - Fundación técnica y login local, decisión 5).
  */
+import { createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
+import { ApiError } from '@/api/apiError';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
+export { CircuitOpenError, NetworkError } from '@/api/retryPolicy';
+export { ApiError } from '@/api/apiError';
+
+const DEFAULT_TIMEOUT_MS = 30000;
+const UPLOAD_TIMEOUT_MS = 120000;
+
 export class RateLimitedError extends Error {
-  constructor() {
-    super('Demasiados intentos, esperá un momento antes de reintentar.');
+  constructor(retryAfterSeconds = null) {
+    super(rateLimitMessage(retryAfterSeconds));
     this.name = 'RateLimitedError';
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -26,6 +36,9 @@ const STATUS_MESSAGES = {
   403: 'No tenés permiso para hacer esto.',
   404: 'No se encontró lo que buscabas.',
   409: 'La operación entra en conflicto con el estado actual.',
+  502: 'El servicio no está disponible por ahora. Probá de nuevo en unos minutos.',
+  503: 'El servicio no está disponible por ahora. Probá de nuevo en unos minutos.',
+  504: 'El servicio no está disponible por ahora. Probá de nuevo en unos minutos.',
 };
 
 function messageForStatus(status) {
@@ -35,9 +48,14 @@ function messageForStatus(status) {
 async function readErrorBody(response) {
   try {
     const body = await response.json();
-    return { code: body?.code ?? null, violations: Array.isArray(body?.violations) ? body.violations : [] };
+    return {
+      code: body?.code ?? null,
+      retryable: body?.retryable === true,
+      requestId: body?.requestId ?? null,
+      violations: Array.isArray(body?.violations) ? body.violations : [],
+    };
   } catch {
-    return { code: null, violations: [] };
+    return { code: null, retryable: false, requestId: null, violations: [] };
   }
 }
 
@@ -46,13 +64,21 @@ let onSessionExpired = null;
 
 export function setAccessToken(token) {
   accessToken = token;
+  if (token) sessionExpiredNotified = false;
 }
 
 export function setSessionExpiredHandler(handler) {
   onSessionExpired = handler;
 }
 
+function timeoutFor(options) {
+  if (options.timeoutMs != null) return options.timeoutMs;
+  return options.body instanceof FormData ? UPLOAD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+}
+
 async function rawFetch(path, options) {
+  const fetchOptions = { ...options };
+  delete fetchOptions.timeoutMs;
   const headers = new Headers(options.headers);
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
@@ -63,7 +89,55 @@ async function rawFetch(path, options) {
   if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const timeout = AbortSignal.timeout(timeoutFor(options));
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  return fetch(`${API_BASE_URL}${path}`, { ...fetchOptions, headers, signal });
+}
+
+const circuits = new Map();
+let retrySleep;
+let circuitOptions = {};
+
+export function setRetrySleep(sleep) {
+  retrySleep = sleep;
+}
+
+export function setCircuitOptions(options) {
+  circuitOptions = options;
+  circuits.clear();
+}
+
+export function resetCircuits() {
+  circuits.clear();
+}
+
+function circuitForHost() {
+  const host = new URL(API_BASE_URL).host;
+  if (!circuits.has(host)) circuits.set(host, createCircuitBreaker(circuitOptions));
+  return circuits.get(host);
+}
+
+function sendWithRetryPolicy(path, options) {
+  return runWithRetry({
+    send: () => rawFetch(path, options),
+    method: options.method ?? 'GET',
+    hasIdempotencyKey: new Headers(options.headers).has('Idempotency-Key'),
+    signal: options.signal,
+    circuit: circuitForHost(),
+    sleep: retrySleep,
+  });
+}
+
+let refreshInFlight = null;
+let sessionExpiredNotified = false;
+
+function requestSessionRefresh() {
+  if (!refreshInFlight) {
+    refreshInFlight = refreshSession().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
 }
 
 async function refreshSession() {
@@ -82,38 +156,34 @@ async function refreshSession() {
   return true;
 }
 
-async function fetchWithAuth(path, options) {
-  let response = await rawFetch(path, options);
+function expireSession() {
+  if (!sessionExpiredNotified) {
+    sessionExpiredNotified = true;
+    onSessionExpired?.();
+  }
+  throw new AuthError();
+}
 
-  // El backend nunca manda body en sus errores, así que un token expirado y un rol
-  // realmente insuficiente son indistinguibles acá: ambos casos caen en el mismo
-  // JwtAuthenticationFilter (limpia el contexto ante un JWT inválido/vencido en vez de
-  // cortar la request, ver JwtAuthenticationFilter.java) y terminan en 403 vía
-  // @PreAuthorize, no en 401. Reintentar refresh también en 403 es lo único que
-  // recupera la sesión vencida sin pedirle al usuario que vuelva a loguearse a mano;
-  // el costo en el caso de rol insuficiente es un round-trip de más (refresh exitoso,
-  // reintento que vuelve a dar 403 legítimo).
-  if ((response.status === 401 || response.status === 403) && !path.startsWith('/auth/')) {
-    const refreshed = await refreshSession();
-    if (refreshed) {
-      response = await rawFetch(path, options);
-    } else if (response.status === 401) {
-      onSessionExpired?.();
-      throw new AuthError();
-    }
+async function fetchWithAuth(path, options) {
+  const tokenSent = accessToken;
+  let response = await sendWithRetryPolicy(path, options);
+
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    const alreadyRefreshed = accessToken !== null && accessToken !== tokenSent;
+    const refreshed = alreadyRefreshed || (await requestSessionRefresh());
+    if (!refreshed) expireSession();
+    response = await sendWithRetryPolicy(path, options);
+    if (response.status === 401) expireSession();
   }
 
   if (response.status === 429) {
-    throw new RateLimitedError();
+    const retryAfter = Number(response.headers.get('Retry-After'));
+    throw new RateLimitedError(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : null);
   }
 
   if (!response.ok) {
-    const error = new Error(messageForStatus(response.status));
-    error.status = response.status;
     const body = await readErrorBody(response);
-    error.code = body.code;
-    error.violations = body.violations;
-    throw error;
+    throw new ApiError(messageForStatus(response.status), { status: response.status, ...body });
   }
 
   return response;
@@ -126,10 +196,18 @@ export async function apiFetch(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+export async function apiFetchWithTotal(path, options = {}) {
+  const response = await fetchWithAuth(path, options);
+  const text = await response.text();
+  const items = text ? JSON.parse(text) : [];
+  const header = response.headers.get('X-Total-Count');
+  return { items, total: header == null ? items.length : Number(header) };
+}
+
 // Descarga de archivos (ej. exportar asistencia a PDF/XLS) — a diferencia de apiFetch, el body
 // de la respuesta no es JSON, así que no puede pasar por el mismo parseo.
 export async function apiFetchBlob(path, options = {}) {
-  const response = await fetchWithAuth(path, options);
+  const response = await fetchWithAuth(path, { timeoutMs: UPLOAD_TIMEOUT_MS, ...options });
   const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'archivo';
   const blob = await response.blob();
   return { blob, filename };

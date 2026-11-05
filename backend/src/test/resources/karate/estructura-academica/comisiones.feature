@@ -18,7 +18,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreTerm = 'Ciclo QA ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(nombreTerm)', type: 'ANUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -95,14 +95,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreTermSeccion = 'Ciclo QA sección ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(nombreTermSeccion)', type: 'ANUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTermSeccion)', type: 'ANNUAL', startDate: '2026-03-01T00:00:00', endDate: '2026-07-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termSeccionId = response.id
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'Comisión A', termId: '#(termSeccionId)', capacity: 25 }
+    And request { name: 'Comisión A', shift: 'MORNING', termId: '#(termSeccionId)', capacity: 25 }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -156,13 +156,13 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', 999999, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'x', termId: '#(termId)', capacity: 10 }
+    And request { name: 'x', shift: 'MORNING', termId: '#(termId)', capacity: 10 }
     When method post
     Then status 404
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'x', termId: 999999, capacity: 10 }
+    And request { name: 'x', shift: 'MORNING', termId: 999999, capacity: 10 }
     When method post
     Then status 404
 
@@ -177,7 +177,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión B', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -206,14 +206,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión C', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionCId = response.id
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión D', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión D', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionDId = response.id
@@ -243,7 +243,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión con esquema inexistente', termId: '#(termId)', capacity: 20, evaluationSchemeId: 999999 }
+    And request { name: 'Comisión con esquema inexistente', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: 999999 }
     When method post
     Then status 404
 
@@ -258,7 +258,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + alumnoToken
-    And request { name: 'Comisión no autorizada', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión no autorizada', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 403
 
@@ -275,7 +275,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: 'Comisión Única', termId: '#(termId)', capacity: 40 }
+    And request { name: 'Comisión Única', shift: 'MORNING', termId: '#(termId)', capacity: 40 }
     When method post
     Then status 201
     And match response.subjectId == subjectId
@@ -365,7 +365,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     # La comisión no referencia ningún Program — se crea una sola vez para la materia
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión compartida', termId: '#(termId)', capacity: 50 }
+    And request { name: 'Comisión compartida', shift: 'MORNING', termId: '#(termId)', capacity: 50 }
     When method post
     Then status 201
 
@@ -388,14 +388,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión E', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión E', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionEId = response.id
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión F', termId: '#(termId)', capacity: 20, durationMonths: 3 }
+    And request { name: 'Comisión F', shift: 'MORNING', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionFId = response.id
@@ -416,7 +416,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
   Scenario: Subject o Term inexistente al crear comisión de materia — 404
     Given path '/subjects', 999999, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'x', termId: '#(termId)', capacity: 10 }
+    And request { name: 'x', shift: 'MORNING', termId: '#(termId)', capacity: 10 }
     When method post
     Then status 404
 
@@ -432,6 +432,21 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'x', termId: 999999, capacity: 10 }
+    And request { name: 'x', shift: 'MORNING', termId: 999999, capacity: 10 }
     When method post
     Then status 404
+
+  Scenario: Crear una comisión fuera de ciclo sin turno — 400 con código
+    Given path '/subjects', 999999, 'sections'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: 'Sin turno', termId: 1, capacity: 10 }
+    When method post
+    Then status 400
+    And match response.code == 'SECTION_SHIFT_REQUIRED'
+
+    Given path '/course-subjects', 999999, 'sections'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: 'Sin turno', termId: 1, capacity: 10 }
+    When method post
+    Then status 400
+    And match response.code == 'SECTION_SHIFT_REQUIRED'

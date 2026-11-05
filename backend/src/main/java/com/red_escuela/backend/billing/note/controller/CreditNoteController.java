@@ -6,8 +6,11 @@ import com.red_escuela.backend.billing.note.dto.CreditNotePendingAuthorizationRe
 import com.red_escuela.backend.billing.note.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.note.usecase.IssueCreditNoteUseCase;
 import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentUseCase;
+import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,18 +24,23 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class CreditNoteController {
     private final IssueCreditNoteUseCase issueCreditNoteUseCase;
     private final ListCreditNotesOfStudentUseCase listCreditNotesOfStudentUseCase;
     private final CurrentStudentService currentStudentService;
 
+    private final ListCreditNotesOfStudentWithAuthorshipUseCase listCreditNotesWithAuthorshipUseCase;
+
     public CreditNoteController(IssueCreditNoteUseCase issueCreditNoteUseCase, ListCreditNotesOfStudentUseCase listCreditNotesOfStudentUseCase,
-                                CurrentStudentService currentStudentService) {
+                                CurrentStudentService currentStudentService, ListCreditNotesOfStudentWithAuthorshipUseCase listCreditNotesWithAuthorshipUseCase) {
+        this.listCreditNotesWithAuthorshipUseCase = listCreditNotesWithAuthorshipUseCase;
         this.issueCreditNoteUseCase = issueCreditNoteUseCase;
         this.listCreditNotesOfStudentUseCase = listCreditNotesOfStudentUseCase;
         this.currentStudentService = currentStudentService;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/invoices/{invoiceId}/credit-notes")
     public ResponseEntity<?> issueOrRequestCreditNote(@PathVariable Long invoiceId, @Valid @RequestBody CreateCreditNoteRequest request) {
         BillingOperationOutcome<CreditNote> outcome = issueCreditNoteUseCase.issueOrRequestCreditNote(invoiceId, request);
@@ -46,13 +54,13 @@ public class CreditNoteController {
     @GetMapping("/students/{studentId}/credit-notes")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<CreditNoteResponse> listCreditNotesOfStudent(@PathVariable Long studentId) {
-        return listCreditNotesOfStudentUseCase.listCreditNotesOfStudent(studentId).stream().map(CreditNoteResponse::from).toList();
+        return listCreditNotesWithAuthorshipUseCase.listCreditNotesOfStudentWithAuthorship(studentId);
     }
 
     @GetMapping("/me/credit-notes")
     @PreAuthorize("hasRole('ALUMNO')")
     public List<CreditNoteResponse> listMyCreditNotes() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return listCreditNotesOfStudentUseCase.listCreditNotesOfStudent(studentId).stream().map(CreditNoteResponse::from).toList();
+        return listCreditNotesOfStudentUseCase.listCreditNotesOfStudent(studentId);
     }
 }

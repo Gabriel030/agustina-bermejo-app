@@ -4,6 +4,9 @@ import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestApprovedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceChangeRequestRejectedEvent;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,12 @@ class AttendanceChangeRequestDecisionEventTest {
         attendance.setProgramSubjectSectionEnrollment(enrollment);
         attendance.setClassDate(LocalDate.of(2026, 10, 12));
         AttendanceChangeRequest request = new AttendanceChangeRequest();
+        Person requesterPerson = new Person();
+        requesterPerson.setId(77L);
+        Instructor requester = new Instructor();
+        requester.setPerson(requesterPerson);
+        request.setId(5L);
+        request.setRequestedBy(requester);
         request.setAttendance(attendance);
         request.setPreviousStatus(from);
         request.setRequestedStatus(to);
@@ -34,8 +43,10 @@ class AttendanceChangeRequestDecisionEventTest {
 
     @Test
     void approvedMessageNamesTheStudentTheClassDateAndTranslatedStatuses() {
-        AttendanceChangeRequestApprovedEvent event = new AttendanceChangeRequestApprovedEvent(
-                changeRequest(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFIED), new Person());
+        AttendanceChangeRequestApprovedEvent source = AttendanceChangeRequestApprovedEvent.approvedFor(
+                changeRequest(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFIED));
+        AttendanceChangeRequestApprovedNotification event = new AttendanceChangeRequestApprovedNotification(source.requestId(), new Person(),
+                source.studentFullName(), source.classDate(), source.previousStatusLabel(), source.requestedStatusLabel());
 
         assertThat(event.message()).isEqualTo(
                 "Tu solicitud de modificación de asistencia de Benjamín Coronel del 12/10/2026 fue aprobada: Ausente → Justificada");
@@ -43,8 +54,10 @@ class AttendanceChangeRequestDecisionEventTest {
 
     @Test
     void rejectedMessageNamesTheStudentTheClassDateAndTranslatedStatuses() {
-        AttendanceChangeRequestRejectedEvent event = new AttendanceChangeRequestRejectedEvent(
-                changeRequest(AttendanceStatus.PRESENT, AttendanceStatus.LATE), new Person());
+        AttendanceChangeRequestRejectedEvent source = AttendanceChangeRequestRejectedEvent.rejectedFor(
+                changeRequest(AttendanceStatus.PRESENT, AttendanceStatus.LATE));
+        AttendanceChangeRequestRejectedNotification event = new AttendanceChangeRequestRejectedNotification(source.requestId(), new Person(),
+                source.studentFullName(), source.classDate(), source.previousStatusLabel(), source.requestedStatusLabel());
 
         assertThat(event.message()).isEqualTo(
                 "Tu solicitud de modificación de asistencia de Benjamín Coronel del 12/10/2026 fue rechazada: Presente → Tarde");

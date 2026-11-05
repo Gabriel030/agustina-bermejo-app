@@ -13,7 +13,6 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
 
 @Getter
 @Setter
@@ -77,5 +76,17 @@ public class SubjectSectionEnrollment {
 
     public EnrollmentStatus statusAssumingRegularWhen(boolean assumeRegular) {
         return assumeRegular ? EnrollmentStatus.REGULAR : status;
+    }
+
+    public Long subjectSectionId() {
+        return subjectSection.getId();
+    }
+
+    public Long subjectId() {
+        return subjectSection.getSubject().getId();
+    }
+
+    public Long termId() {
+        return subjectSection.getTerm().getId();
     }
 }

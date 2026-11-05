@@ -9,6 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateProgram } from '@/features/academic-structure/hooks/usePrograms';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
+import { FormField, SelectField } from '@/features/academic-structure/components/FormField';
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
+import {
+  countErrors,
+  describeSaveError,
+  fieldProps,
+  invalidFieldsSummary,
+  validateProgramFields,
+} from '@/features/academic-structure/lib/offeringForm';
 
 const PASOS = [
   { key: 'datos', label: 'Datos básicos' },
@@ -23,17 +33,11 @@ const LEVEL_OPTIONS = [
   { value: 'DIPLOMA', label: 'Diplomatura' },
 ];
 
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
-];
-
 function estadoInicial() {
   return {
     paso: 'datos',
     pasosVisitados: ['datos'],
+    showErrors: false,
     name: '',
     totalYears: '',
     level: '',
@@ -53,6 +57,8 @@ function reducer(state, action) {
   switch (action.type) {
     case 'SET':
       return { ...state, [action.campo]: action.valor };
+    case 'SHOW_ERRORS':
+      return { ...state, showErrors: true };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso, pasosVisitados: visitado(state, action.paso) };
     default:
@@ -60,60 +66,38 @@ function reducer(state, action) {
   }
 }
 
-function CampoSelect({ label, value, onChange, options, required }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
+function visibleBasicErrors(state) {
+  const found = validateProgramFields(state, { requireCredits: false });
+  return Object.fromEntries(
+    Object.entries({ name: found.name, totalYears: found.totalYears }).filter(([, v]) => v),
   );
 }
 
 function Paso1Datos({ state, dispatch }) {
-  const [error, setError] = useState(null);
+  const errors = state.showErrors ? visibleBasicErrors(state) : {};
 
   function handleContinuar() {
-    if (!state.name.trim()) {
-      setError('El nombre es obligatorio.');
+    if (countErrors(visibleBasicErrors(state)) > 0) {
+      dispatch({ type: 'SHOW_ERRORS' });
       return;
     }
-    if (!state.totalYears || parseInt(state.totalYears) < 1) {
-      setError('La duración debe ser al menos 1 año.');
-      return;
-    }
-    setError(null);
     dispatch({ type: 'IR_A_PASO', paso: 'contenido' });
   }
 
   return (
     <GlassCard className="flex flex-col gap-5 p-6">
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Nombre de la carrera <span className="text-danger">*</span>
-        </label>
+      <FormField id="program-name" label="Nombre de la carrera" required error={errors.name}>
         <Input
+          {...fieldProps('program-name', errors.name, true)}
           value={state.name}
           onChange={(e) => dispatch({ type: 'SET', campo: 'name', valor: e.target.value })}
           placeholder="Ej. Licenciatura en Enfermería"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Duración (años) <span className="text-danger">*</span>
-        </label>
+      <FormField id="program-years" label="Duración (años)" required error={errors.totalYears}>
         <Input
+          {...fieldProps('program-years', errors.totalYears, true)}
           type="number"
           min={1}
           max={10}
@@ -121,23 +105,29 @@ function Paso1Datos({ state, dispatch }) {
           onChange={(e) => dispatch({ type: 'SET', campo: 'totalYears', valor: e.target.value })}
           placeholder="Ej. 3"
         />
-      </div>
+      </FormField>
 
-      <CampoSelect
+      <SelectField
+        id="program-level"
         label="Nivel"
         value={state.level}
         onChange={(v) => dispatch({ type: 'SET', campo: 'level', valor: v })}
         options={LEVEL_OPTIONS}
       />
 
-      <CampoSelect
+      <SelectField
+        id="program-teaching-mode"
         label="Modalidad"
         value={state.teachingMode}
         onChange={(v) => dispatch({ type: 'SET', campo: 'teachingMode', valor: v })}
         options={TEACHING_MODE_OPTIONS}
       />
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {countErrors(errors) > 0 && (
+        <p role="alert" className="text-[13px] text-danger">
+          {invalidFieldsSummary(errors)}
+        </p>
+      )}
 
       <div className="flex justify-end">
         <Button variant="gradient" onClick={handleContinuar}>
@@ -150,18 +140,18 @@ function Paso1Datos({ state, dispatch }) {
 
 function Paso2Contenido({ state, dispatch }) {
   const createProgram = useCreateProgram();
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
   const navigate = useNavigate();
 
   async function handleCrear() {
-    if (state.totalCreditsRequired === '') {
-      setError('Los créditos requeridos son obligatorios.');
-      return;
-    }
-    setError(null);
+    const found = validateProgramFields(state, { requireCredits: true });
+    setErrors(found);
+    setSubmitError(null);
+    if (countErrors(found) > 0) return;
     try {
       const body = {
-        name: state.name,
+        name: state.name.trim(),
         totalYears: parseInt(state.totalYears),
         ...(state.level && { level: state.level }),
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
@@ -173,71 +163,69 @@ function Paso2Contenido({ state, dispatch }) {
       const result = await createProgram.mutateAsync(body);
       toast.success('Carrera creada');
       navigate(`/administrativo/gestion-academica/carreras/${result.id}`);
-    } catch {
-      setError('No se pudo crear la carrera. Intentá de nuevo.');
+    } catch (err) {
+      setSubmitError(describeSaveError(err, 'No se pudo crear la carrera. Intentá de nuevo.').message);
     }
   }
 
   return (
     <GlassCard className="flex flex-col gap-5 p-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Créditos requeridos <span className="text-danger">*</span>
-          </label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField id="program-credits" label="Créditos requeridos" required error={errors.totalCreditsRequired}>
           <Input
+            {...fieldProps('program-credits', errors.totalCreditsRequired, true)}
             type="number"
             min={0}
             value={state.totalCreditsRequired}
             onChange={(e) => dispatch({ type: 'SET', campo: 'totalCreditsRequired', valor: e.target.value })}
             placeholder="Ej. 180"
           />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Horas requeridas
-          </label>
+        </FormField>
+        <FormField id="program-hours" label="Horas requeridas" error={errors.totalHoursRequired}>
           <Input
+            {...fieldProps('program-hours', errors.totalHoursRequired)}
             type="number"
             min={0}
             value={state.totalHoursRequired}
             onChange={(e) => dispatch({ type: 'SET', campo: 'totalHoursRequired', valor: e.target.value })}
             placeholder="Ej. 2400"
           />
-        </div>
+        </FormField>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Perfil del egresado
-        </label>
+      <FormField id="program-profile" label="Perfil del egresado">
         <Textarea
+          id="program-profile"
           rows={4}
           value={state.graduationProfile}
           onChange={(e) => dispatch({ type: 'SET', campo: 'graduationProfile', valor: e.target.value })}
           placeholder="Describí las competencias y habilidades del egresado…"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Requisitos de admisión
-        </label>
+      <FormField id="program-admission" label="Requisitos de admisión">
         <Textarea
+          id="program-admission"
           rows={3}
           value={state.admissionRequirements}
           onChange={(e) => dispatch({ type: 'SET', campo: 'admissionRequirements', valor: e.target.value })}
           placeholder="Ej. Título secundario completo…"
         />
-      </div>
+      </FormField>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {countErrors(errors) > 0 && (
+        <p role="alert" className="text-[13px] text-danger">
+          {invalidFieldsSummary(errors)}
+        </p>
+      )}
+      {submitError && (
+        <p role="alert" className="text-[13px] text-danger">
+          {submitError}
+        </p>
+      )}
 
       <div className="flex items-center justify-between">
-        <Button
-          variant="outline"
-          onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'datos' })}
-        >
+        <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'datos' })}>
           Atrás
         </Button>
         <Button variant="gradient" loading={createProgram.isPending} onClick={handleCrear}>
@@ -248,8 +236,31 @@ function Paso2Contenido({ state, dispatch }) {
   );
 }
 
+const FIELD_KEYS = [
+  'name',
+  'totalYears',
+  'level',
+  'teachingMode',
+  'totalCreditsRequired',
+  'totalHoursRequired',
+  'graduationProfile',
+  'admissionRequirements',
+];
+
 export function CarreraWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
+  const initial = estadoInicial();
+  const dirty = FIELD_KEYS.some((key) => state[key] !== initial[key]);
+  const { guardDialog } = useUnsavedChangesGuard(dirty);
+
+  function handleStepClick(paso) {
+    if (paso !== 'datos' && countErrors(visibleBasicErrors(state)) > 0) {
+      dispatch({ type: 'IR_A_PASO', paso: 'datos' });
+      dispatch({ type: 'SHOW_ERRORS' });
+      return;
+    }
+    dispatch({ type: 'IR_A_PASO', paso });
+  }
 
   return (
     <PageContainer>
@@ -269,11 +280,12 @@ export function CarreraWizard() {
           pasos={PASOS}
           pasoActual={state.paso}
           pasosVisitados={state.pasosVisitados}
-          onStepClick={(key) => dispatch({ type: 'IR_A_PASO', paso: key })}
+          onStepClick={handleStepClick}
         />
 
         {state.paso === 'datos' && <Paso1Datos state={state} dispatch={dispatch} />}
         {state.paso === 'contenido' && <Paso2Contenido state={state} dispatch={dispatch} />}
+        {guardDialog}
       </div>
     </PageContainer>
   );

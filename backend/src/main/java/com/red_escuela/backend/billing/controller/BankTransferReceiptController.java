@@ -2,14 +2,17 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
+import com.red_escuela.backend.billing.payment.dto.ApproveBankTransferReceiptRequest;
 import com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.GetPaymentReceiptFileUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.PaymentReceiptFile;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ListPendingPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import jakarta.validation.Valid;
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/bank-transfer-receipts")
 public class BankTransferReceiptController {
 
@@ -51,7 +55,7 @@ public class BankTransferReceiptController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<BankTransferReceiptResponse> listPending() {
-        return receiptResponseAssembler.assembleBankTransferReceiptResponses(listPendingPaymentReceiptsUseCase.list());
+        return receiptResponseAssembler.assembleReviewerReceiptResponses(listPendingPaymentReceiptsUseCase.list());
     }
 
     @GetMapping("/{id}/file")
@@ -64,16 +68,20 @@ public class BankTransferReceiptController {
                 .body(file.content());
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BankTransferReceiptResponse approve(@PathVariable Long id) {
-        return receiptResponseAssembler.assembleBankTransferReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson()));
+    public BankTransferReceiptResponse approve(@PathVariable Long id, @RequestBody(required = false) ApproveBankTransferReceiptRequest request) {
+        PaymentVerification verification = request == null ? PaymentVerification.none() : request.toVerification();
+        return receiptResponseAssembler.assembleReviewerReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson(), verification));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public BankTransferReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody RejectPaymentReceiptRequest request) {
-        return receiptResponseAssembler.assembleBankTransferReceiptResponse(
-                rejectPaymentReceiptUseCase.reject(id, request.rejectionReason(), currentPersonService.resolveCurrentPerson()));
+    public BankTransferReceiptResponse reject(@PathVariable Long id, @RequestBody(required = false) RejectPaymentReceiptRequest request) {
+        String rejectionReason = request == null ? null : request.rejectionReason();
+        return receiptResponseAssembler.assembleReviewerReceiptResponse(
+                rejectPaymentReceiptUseCase.reject(id, rejectionReason, currentPersonService.resolveCurrentPerson()));
     }
 }

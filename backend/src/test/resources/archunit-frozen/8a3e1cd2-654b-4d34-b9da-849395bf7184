@@ -1,0 +1,6 @@
+com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery.findStatusesOfCourseEnrollments(java.util.Collection) exposes com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus which is not @NamedInterface("model")
+com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery.findStatusesOfProgramEnrollments(java.util.Collection) exposes com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus which is not @NamedInterface("model")
+com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView.status() exposes com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus which is not @NamedInterface("model")
+com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView.statusOrUpToDate(com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView) exposes com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus which is not @NamedInterface("model")
+com.red_escuela.backend.billing.api.EnrollmentPaymentStatusChangeView.fromStatus() exposes com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus which is not @NamedInterface("model")
+com.red_escuela.backend.billing.api.EnrollmentPaymentStatusChangeView.toStatus() exposes com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus which is not @NamedInterface("model")

@@ -32,7 +32,7 @@ class StudentCurrentAccountOperationProperties {
         return BillingOperationCommand.sequences(80);
     }
 
-    @Property(tries = 1000, seed = "20261007")
+    @Property(seed = "20261007")
     void everyCommandKeepsTheAccountInvariantsOrIsRejectedWithoutChanges(@ForAll("commands") List<BillingOperationCommand> commands) {
         StudentCurrentAccount account = AccountTestData.arsAccount();
         List<CurrentAccountEntry> entries = new ArrayList<>();

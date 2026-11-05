@@ -19,7 +19,7 @@ function ItemNav({ to, label, icon: Icon }) {
   return (
     <NavLink key={to} to={to} className={({ isActive }) => cn(NAV_ITEM_BASE, isActive ? NAV_ITEM_ACTIVO : NAV_ITEM_INACTIVO)}>
       {Icon && <Icon className="h-4 w-4 shrink-0" />}
-      <span className="truncate">{label}</span>
+      <span className="truncate" title={label}>{label}</span>
     </NavLink>
   );
 }

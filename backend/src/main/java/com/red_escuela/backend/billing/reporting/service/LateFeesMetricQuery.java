@@ -55,7 +55,7 @@ public class LateFeesMetricQuery implements MetricQuery {
                 });
         jdbc.query("select to_char(n.issue_date, 'YYYY-MM') as month, count(*) as notes, coalesce(sum(n.total_amount), 0) as amount "
                         + "from credit_note n join invoice i on i.id = n.invoice_id "
-                        + "where n.reason = 'LATE_FEE_ANNULMENT' and n.issue_date >= :from and n.issue_date < :to" + scope.conditions()
+                        + "where n.reason in ('LATE_FEE_ANNULMENT', 'LATE_FEE_CORRECTION') and n.issue_date >= :from and n.issue_date < :to" + scope.conditions()
                         + " group by 1 order by 1",
                 scope.parameters(), row -> {
                     series.put("annulledCount", MonthlyRows.monthOf(row), new CountValue(row.getLong("notes")));

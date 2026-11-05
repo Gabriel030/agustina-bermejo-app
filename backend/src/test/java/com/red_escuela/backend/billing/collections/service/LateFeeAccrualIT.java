@@ -1,7 +1,9 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -9,7 +11,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
@@ -45,11 +47,11 @@ import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.mockito.Mockito;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -77,6 +79,8 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest
 @ActiveProfiles("test")
 @RecordApplicationEvents
+@SlowTest(reason = "Twenty-nine accrual scenarios that each seed invoices and payments and run the real late fee reconciliation against Postgres")
+@SharedSpyBeans
 class LateFeeAccrualIT extends AbstractIntegrationTest {
     private static final StatusChangeActor ACTOR = new StatusChangeActor(null, "LateFeeAccrualIT");
 
@@ -114,9 +118,9 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     private TransactionTemplate transactionTemplate;
     @Autowired
     private InvoiceOverdueSweepService sweepService;
-    @MockitoSpyBean
+    @Autowired
     private PendingInvoiceQueryService pendingInvoiceQueryService;
-    @MockitoSpyBean
+    @Autowired
     private LateFeeChargeRepository chargeRepositorySpy;
 
     @Autowired
@@ -151,7 +155,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
-        term = new Term();
+        term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -288,6 +292,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-331")
     @Tag("D-332")
+    @Tag("D-383")
     void installmentStillInGraceAtMonthCloseIsChargedWhenItBecomesOverdue() {
         arrange(2101);
         publish(10, "0.002", 10, true, true, d(2101, 1, 1));
@@ -662,8 +667,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         publishDefaults(2117);
         Invoice origin = installmentDueOn(d(2117, 3, 11), ars(100000));
         Long accountId = reload(origin).getStudentCurrentAccountId();
-        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(accountId),
-                System.nanoTime(), NonNegativeMoney.of(ars(5000)), d(2117, 3, 17), "Pago"));
+        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, NonNegativeMoney.of(ars(5000))), NonNegativeMoney.of(ars(5000)), d(2117, 3, 17), "Pago"));
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
 
         reconcile(origin, d(2117, 4, 1));

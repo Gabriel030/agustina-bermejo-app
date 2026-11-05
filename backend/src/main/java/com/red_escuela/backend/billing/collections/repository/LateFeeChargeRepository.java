@@ -2,14 +2,16 @@ package com.red_escuela.backend.billing.collections.repository;
 
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCharge;
+import com.red_escuela.backend.billing.note.service.LateFeeDebitNoteLookup;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long> {
+public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>, LateFeeDebitNoteLookup {
 
     LateFeeCharge save(LateFeeCharge charge);
 
@@ -17,7 +19,83 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
             + "where c.originInvoiceId = :originInvoiceId order by c.periodStart")
     List<LateFeeAccrualPeriod> findCoveredPeriodsByOriginInvoiceId(@Param("originInvoiceId") Long originInvoiceId);
 
+    @Query(value = """
+            select i.id from invoice i
+            join payment_allocation a on a.invoice_id = i.id and a.reverses_allocation_id is null
+              and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
+            cross join lateral (
+                select coalesce(
+                    (select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
+                     where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= i.due_date
+                     order by v.effective_from desc, v.decided_at desc, v.id desc limit 1),
+                    (select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
+                     where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
+                     order by v.effective_from asc, v.decided_at asc, v.id asc limit 1), 0) as grace_days) g
+            where i.payment_status = 'PAID' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
+              and i.id > :lastId and a.allocated_on >= :since
+              and ((a.effective_date > i.due_date + g.grace_days
+                    and not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date))
+                   or exists (select 1 from late_fee_charge c
+                              cross join lateral generate_series(
+                                  greatest(c.period_start, case when a.effective_date <= i.due_date + g.grace_days then c.period_start else a.effective_date + 1 end),
+                                  c.period_end, interval '1 day') s(day)
+                              where c.origin_invoice_id = i.id
+                                and not exists (select 1 from late_fee_charge_correction k where k.late_fee_charge_id = c.id
+                                                and s.day::date between k.first_corrected_day and k.last_corrected_day)))
+            order by i.id asc
+            limit :pageSize
+            """, nativeQuery = true)
+    List<Long> findRecentlySettledLateFeeOriginIdsAfter(@Param("lastId") Long lastId, @Param("since") LocalDate since, @Param("pageSize") int pageSize);
+
     List<LateFeeCharge> findByOriginInvoiceIdOrderByPeriodStart(Long originInvoiceId);
 
+    @Override
+    @Query("select c.debitNoteId from LateFeeCharge c where c.originInvoiceId = :originInvoiceId order by c.debitNoteId")
+    List<Long> findDebitNoteIdsOfOriginInvoiceInAscendingOrder(@Param("originInvoiceId") Long originInvoiceId);
+
     Optional<LateFeeCharge> findByDebitNoteId(Long debitNoteId);
+
+    Optional<LateFeeCharge> findById(Long id);
+
+    @Query(value = """
+            select c.id from late_fee_charge c
+            join invoice d on d.id = c.debit_note_id
+            join lateral (
+                select coalesce(pe.completion_date, ce.completion_date)::date as end_date
+                from invoice_line l
+                left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+                left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+                where l.invoice_id = c.origin_invoice_id order by l.id limit 1) e on e.end_date is not null
+            where c.id > :lastId and d.document_status = 'ISSUED' and d.payment_status not in ('CANCELLED', 'PAYMENT_UNDER_REVIEW')
+              and exists (select 1 from invoice_line nl where nl.invoice_id = d.id
+                          and (nl.amount - nl.discount_amount) - nl.credited_amount - nl.free_credited_amount > 0)
+              and c.charged_days - coalesce((select sum(k.corrected_days) from late_fee_charge_correction k where k.late_fee_charge_id = c.id), 0)
+                  > greatest(0, least(c.period_end, e.end_date) - c.period_start + 1)
+            order by c.id
+            limit :pageSize
+            """, nativeQuery = true)
+    List<Long> findChargeIdsWithDaysAfterTheEnrollmentEndAfter(@Param("lastId") Long lastId, @Param("pageSize") int pageSize);
+
+    @Query(value = """
+            select to_char(coalesce(pe.withdrawal_registered_on, ce.withdrawal_registered_on), 'YYYY-MM-DD')
+            from invoice_line l
+            left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+            left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+            where l.invoice_id = (select c.origin_invoice_id from late_fee_charge c where c.id = :chargeId) order by l.id limit 1
+            """, nativeQuery = true)
+    Optional<String> findEnrollmentEndRegistrationDateOfCharge(@Param("chargeId") Long chargeId);
+
+    @Query(value = """
+            select c.id from late_fee_charge c
+            where (select l.program_enrollment_id from invoice_line l where l.invoice_id = c.origin_invoice_id order by l.id limit 1) = :programEnrollmentId
+            order by c.id
+            """, nativeQuery = true)
+    List<Long> findChargeIdsOfProgramEnrollment(@Param("programEnrollmentId") Long programEnrollmentId);
+
+    @Query(value = """
+            select c.id from late_fee_charge c
+            where (select l.course_enrollment_id from invoice_line l where l.invoice_id = c.origin_invoice_id order by l.id limit 1) = :courseEnrollmentId
+            order by c.id
+            """, nativeQuery = true)
+    List<Long> findChargeIdsOfCourseEnrollment(@Param("courseEnrollmentId") Long courseEnrollmentId);
 }

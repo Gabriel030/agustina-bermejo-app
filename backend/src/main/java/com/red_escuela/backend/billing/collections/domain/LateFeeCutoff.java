@@ -12,6 +12,10 @@ public record LateFeeCutoff(LateFeeCutoffKind kind, LocalDate lastDay) {
         Objects.requireNonNull(lastDay, "lastDay");
     }
 
+    public static LateFeeCutoff settledOn(LocalDate paymentDate) {
+        return new LateFeeCutoff(LateFeeCutoffKind.SETTLEMENT, paymentDate);
+    }
+
     public static LateFeeCutoff closingOfMonthBefore(LocalDate businessDate) {
         return new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, businessDate.withDayOfMonth(1).minusDays(1));
     }

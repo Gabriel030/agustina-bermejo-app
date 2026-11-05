@@ -17,6 +17,7 @@ import java.util.Map;
 public class OverdueInvoiceDetectionStep {
     private static final Logger log = LoggerFactory.getLogger(OverdueInvoiceDetectionStep.class);
     private static final int PAGE_SIZE = 200;
+    public static final String SKIPPED_WITHOUT_LATE_PAYMENT_TERMS_CODE = "NO_LATE_PAYMENT_TERMS";
 
     private final PendingInvoiceQueryService pendingInvoiceQueryService;
     private final OverdueInvoiceTransitionService transitionService;
@@ -27,6 +28,10 @@ public class OverdueInvoiceDetectionStep {
     }
 
     public OverdueDetectionResult detectOverdueInvoices(LocalDate today) {
+        return detectOverdueInvoices(today, HeldSubjectFinder.NONE);
+    }
+
+    public OverdueDetectionResult detectOverdueInvoices(LocalDate today, HeldSubjectFinder heldInvoices) {
         int candidates = 0;
         int marked = 0;
         int skipped = 0;
@@ -39,7 +44,17 @@ public class OverdueInvoiceDetectionStep {
                 break;
             }
             candidates += batch.size();
+            Map<Long, String> held = heldInvoices.findHoldCodesAmong(batch);
             for (Long invoiceId : batch) {
+                if (held.containsKey(invoiceId)) {
+                    skipped++;
+                    Map<String, Object> heldInvoice = new LinkedHashMap<>();
+                    heldInvoice.put("invoiceId", invoiceId);
+                    heldInvoice.put("decisionCode", held.get(invoiceId));
+                    heldInvoice.put("message", HeldSubjectFinder.messageOf(held.get(invoiceId)));
+                    errors.add(heldInvoice);
+                    continue;
+                }
                 try {
                     OverdueTransitionOutcome outcome = transitionService.markAsOverdueWhenPastDueDate(invoiceId, today);
                     if (outcome == OverdueTransitionOutcome.MARKED_AS_OVERDUE) {
@@ -48,6 +63,7 @@ public class OverdueInvoiceDetectionStep {
                         skipped++;
                         Map<String, Object> skippedInvoice = new LinkedHashMap<>();
                         skippedInvoice.put("invoiceId", invoiceId);
+                        skippedInvoice.put("decisionCode", SKIPPED_WITHOUT_LATE_PAYMENT_TERMS_CODE);
                         skippedInvoice.put("message", "Sin versión de mora aplicable: no se evaluó su vencimiento");
                         errors.add(skippedInvoice);
                     }

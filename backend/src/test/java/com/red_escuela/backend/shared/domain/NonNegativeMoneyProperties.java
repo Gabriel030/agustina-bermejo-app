@@ -36,18 +36,18 @@ class NonNegativeMoneyProperties {
         return PropertySettings.anyPercentage();
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void anyAmountFromZeroUpIsAccepted(@ForAll("nonNegative") BigDecimal amount, @ForAll("anyCurrency") Currency currency) {
         assertThat(NonNegativeMoney.of(amount, currency).value()).isEqualTo(Money.of(amount, currency));
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void anyNegativeAmountIsRejected(@ForAll("negative") BigDecimal amount, @ForAll("anyCurrency") Currency currency) {
         assertThatThrownBy(() -> NonNegativeMoney.of(amount, currency)).isInstanceOf(NegativeMoneyAmountException.class);
         assertThatThrownBy(() -> NonNegativeMoney.of(Money.of(amount, currency))).isInstanceOf(NegativeMoneyAmountException.class);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void sumIsNeverNegativeAndIsCommutative(@ForAll("nonNegative") BigDecimal first, @ForAll("nonNegative") BigDecimal second,
                                             @ForAll("anyCurrency") Currency currency) {
         NonNegativeMoney a = NonNegativeMoney.of(first, currency);
@@ -58,7 +58,7 @@ class NonNegativeMoneyProperties {
         assertThat(a.plus(NonNegativeMoney.zero(currency))).isEqualTo(a);
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void timesIsNeverNegative(@ForAll("nonNegative") BigDecimal amount, @ForAll("percentages") Percentage rate,
                               @ForAll("anyCurrency") Currency currency) {
         NonNegativeMoney result = NonNegativeMoney.of(amount, currency).times(rate);
@@ -67,7 +67,7 @@ class NonNegativeMoneyProperties {
         assertThat(result.value()).isEqualTo(Money.of(amount, currency).times(rate));
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void minusNotBelowZeroIsTheDifferenceFlooredAtZero(@ForAll("nonNegative") BigDecimal first, @ForAll("nonNegative") BigDecimal second,
                                                        @ForAll("anyCurrency") Currency currency) {
         NonNegativeMoney a = NonNegativeMoney.of(first, currency);
@@ -78,7 +78,7 @@ class NonNegativeMoneyProperties {
         assertThat(a.minus(b)).isEqualTo(Money.of(first.subtract(second), currency));
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void operatingAcrossCurrenciesIsRejected(@ForAll("nonNegative") BigDecimal amount, @ForAll("anyCurrency") Currency first,
                                              @ForAll("anyCurrency") Currency second) {
         net.jqwik.api.Assume.that(first != second);

@@ -8,10 +8,8 @@ import com.red_escuela.backend.attendance.entity.ClassSessionStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.repository.ClassSessionRepository;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
@@ -26,22 +24,16 @@ import java.util.stream.Collectors;
 @Service
 public class AttendanceHistoryBuilder {
 
-    private static final List<EnrollmentStatus> ACTIVE_ENROLLMENT_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
-
     private final AttendanceRepository attendanceRepository;
     private final ClassSessionRepository classSessionRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final SectionEnrollmentFinder sectionEnrollmentFinder;
 
     public AttendanceHistoryBuilder(AttendanceRepository attendanceRepository,
                                      ClassSessionRepository classSessionRepository,
-                                     SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-                                     CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
+                                     SectionEnrollmentFinder sectionEnrollmentFinder) {
         this.attendanceRepository = attendanceRepository;
         this.classSessionRepository = classSessionRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
     }
 
     public AttendanceHistoryResponse buildForProgramSection(Long sectionId) {
@@ -55,7 +47,7 @@ public class AttendanceHistoryBuilder {
                 .collect(Collectors.groupingBy(a -> a.getProgramSubjectSectionEnrollment().getId()));
 
         List<SubjectSectionEnrollment> inscriptos =
-                subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
+                sectionEnrollmentFinder.findActiveInProgramSection(sectionId);
         List<AttendanceHistoryResponse.StudentHistoryRow> filas = inscriptos.stream()
                 .map(enrollment -> buildRow(
                         enrollment.getStudent().getId(), enrollment.getStudent().getPerson(),
@@ -77,7 +69,7 @@ public class AttendanceHistoryBuilder {
                 .collect(Collectors.groupingBy(a -> a.getCourseSubjectSectionEnrollment().getId()));
 
         List<CourseSubjectSectionEnrollment> inscriptos =
-                courseSubjectSectionEnrollmentRepository.findByCourseSubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
+                sectionEnrollmentFinder.findActiveInCourseSection(sectionId);
         List<AttendanceHistoryResponse.StudentHistoryRow> filas = inscriptos.stream()
                 .map(enrollment -> buildRow(
                         enrollment.getStudent().getId(), enrollment.getStudent().getPerson(),

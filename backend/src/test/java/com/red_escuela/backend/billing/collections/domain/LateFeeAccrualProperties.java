@@ -159,7 +159,7 @@ class LateFeeAccrualProperties {
         return charged;
     }
 
-    @Property(tries = 1000, seed = "20261010")
+    @Property(seed = "20261010")
     void plannerMatchesTheDayByDayOracleWithoutPayments(@ForAll("scenarios") Scenario scenario) {
         Outcome outcome = simulate(scenario.dueOffsetDays(), scenario.graceDays(), scenario.steps());
 
@@ -185,7 +185,7 @@ class LateFeeAccrualProperties {
         assertThat(expandedEnabledDays).isEqualTo(oracleChargedDays(outcome, scenario.graceDays()));
     }
 
-    @Property(tries = 500, seed = "20261011")
+    @Property(seed = "20261011")
     void runningLessOftenNeverChangesWhichPeriodsAreIssuedWhenNothingElseHappens(@ForAll("scenarios") Scenario scenario) {
         int total = scenario.steps().stream().mapToInt(Step::value).sum();
         List<Step> everyDay = new ArrayList<>();

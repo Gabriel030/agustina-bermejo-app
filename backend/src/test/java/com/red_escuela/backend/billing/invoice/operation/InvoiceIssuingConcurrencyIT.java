@@ -104,11 +104,11 @@ class InvoiceIssuingConcurrencyIT extends AbstractInvoiceIssuingIT {
 
     @Test
     @Tag("D-073")
-    void concurrentIssuingConsumesEachScholarshipInstallmentOnceWithDistinctProgress() throws Exception {
+    void concurrentIssuingAppliesTheScholarshipOncePerMonthOfItsRangeWithDistinctProgress() throws Exception {
         var offering = factory.newProgram(Currency.ARS, 80000, 50000);
         var learner = factory.newLearner(offering, null);
-        Long scholarshipId = factory.grantScholarship(offering, learner, com.red_escuela.backend.shared.domain.Percentage.ofPoints(new java.math.BigDecimal("50")), 3,
-                com.red_escuela.backend.billing.entity.ScholarshipScope.INSTALLMENTS);
+        Long scholarshipId = factory.grantScholarship(offering, learner, com.red_escuela.backend.shared.domain.Percentage.ofPoints(new java.math.BigDecimal("50")),
+                YearMonth.of(2027, 3), YearMonth.of(2027, 5));
         List<InvoiceIssuingRequest> requests = new ArrayList<>();
         for (int month = 3; month <= 8; month++) {
             requests.add(installment(offering, learner, YearMonth.of(2027, month), LocalDate.of(2027, month, 11), LocalDate.of(2027, 3, 1)));
@@ -122,9 +122,8 @@ class InvoiceIssuingConcurrencyIT extends AbstractInvoiceIssuingIT {
 
         assertThat(jdbc.queryForList("select installment_number from invoice_discount where discount_type = 'SCHOLARSHIP' and student_discount_id = ? order by installment_number",
                 Integer.class, scholarshipId)).containsExactly(1, 2, 3);
-        assertThat(jdbc.queryForObject("select count(distinct source_installment_id) from invoice_discount where student_discount_id = ? and discount_type = 'SCHOLARSHIP'",
+        assertThat(jdbc.queryForObject("select count(distinct l.period) from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where d.student_discount_id = ? and d.discount_type = 'SCHOLARSHIP'",
                 Long.class, scholarshipId)).isEqualTo(3L);
-        assertThat(jdbc.queryForObject("select count(*) from scholarship_installment where scholarship_id = ? and status = 'APPLIED'", Long.class, scholarshipId)).isEqualTo(3L);
         invariants.assertAllBillingInvariantsHold();
     }
 }

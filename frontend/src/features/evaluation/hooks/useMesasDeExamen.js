@@ -51,3 +51,29 @@ export function useDarDeBajaInscripcion(id) {
     onSuccess: () => invalidarMesa(queryClient, id),
   });
 }
+
+function invalidarListas(queryClient) {
+  queryClient.invalidateQueries({ queryKey: ['exam-boards'] });
+}
+
+export function useReprogramarMesa(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => apiFetch(`/exam-boards/${id}/reschedule`, { method: 'POST', body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      invalidarMesa(queryClient, id);
+      invalidarListas(queryClient);
+    },
+  });
+}
+
+export function useCancelarMesa(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason) => apiFetch(`/exam-boards/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }),
+    onSuccess: () => {
+      invalidarMesa(queryClient, id);
+      invalidarListas(queryClient);
+    },
+  });
+}

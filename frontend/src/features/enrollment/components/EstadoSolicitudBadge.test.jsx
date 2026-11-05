@@ -9,6 +9,7 @@ describe('EstadoSolicitudBadge', () => {
     ['PENDING', undefined, 'En revisión'],
     ['PENDING_REVIEW', undefined, 'En revisión'],
     ['REJECTED', undefined, 'Rechazada'],
+    ['EXPIRED', undefined, 'Vencida'],
     ['APPROVED', undefined, 'Aprobada'],
     ['APPROVED', null, 'Aprobada'],
     ['WAITLISTED', undefined, 'En lista de espera'],

@@ -7,6 +7,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +19,8 @@ import {
 } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { PanelModulo } from './PanelModulo';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
+import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 
 const STATUS_CONFIG = {
   ACTIVE: { label: 'Activo', tone: 'success' },
@@ -27,12 +30,6 @@ const STATUS_CONFIG = {
 const MODULE_STATUS_CONFIG = {
   ACTIVE: { label: 'Activo', tone: 'success' },
   INACTIVE: { label: 'Inactivo', tone: 'neutral' },
-};
-
-const TEACHING_MODE_LABELS = {
-  IN_PERSON: 'Presencial',
-  ONLINE: 'Virtual',
-  HYBRID: 'Híbrido',
 };
 
 function ModuleRow({ mod }) {
@@ -59,14 +56,28 @@ function ModuleRow({ mod }) {
 export function CursoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: course, isLoading: loadingCourse } = useCourse(id);
-  const { data: modules, isLoading: loadingModules } = useCourseSubjects(id);
+  const {
+    data: course,
+    isLoading: loadingCourse,
+    isError: courseFailed,
+    error: courseError,
+    refetch: refetchCourse,
+  } = useCourse(id);
+  const {
+    data: modules,
+    isLoading: loadingModules,
+    isError: modulesFailed,
+    error: modulesError,
+    refetch: refetchModules,
+  } = useCourseSubjects(id);
+  const modulesUnavailable = modulesFailed && !modules;
   const { data: terminos } = useTerminos();
   const deactivateCourse = useDeactivateCourse();
   const activateCourse = useActivateCourse();
   const setCatalogVisibility = useSetCourseCatalogVisibility();
 
   const [panelOpen, setPanelOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const term = (terminos ?? []).find((t) => String(t.id) === String(course?.termId));
 
@@ -79,6 +90,7 @@ export function CursoDetalle() {
           ? 'El curso ahora aparece en el catálogo de inscripciones'
           : 'El curso fue retirado del catálogo. Los alumnos actuales no se ven afectados.'
       );
+      setConfirmAction(null);
     } catch {
       toast.error('No se pudo cambiar la visibilidad en el catálogo.');
     }
@@ -90,6 +102,7 @@ export function CursoDetalle() {
       if (isActive) {
         await deactivateCourse.mutateAsync(id);
         toast.success('Curso desactivado');
+        setConfirmAction(null);
       } else {
         await activateCourse.mutateAsync(id);
         toast.success('Curso activado');
@@ -99,7 +112,7 @@ export function CursoDetalle() {
     }
   }
 
-  if (loadingCourse) {
+  if (!course && (loadingCourse || !courseFailed)) {
     return (
       <PageContainer>
         <Skeleton className="h-8 w-64 rounded-xl" />
@@ -110,7 +123,13 @@ export function CursoDetalle() {
   if (!course) {
     return (
       <PageContainer>
-        <EmptyState title="Curso no encontrado" />
+        <LoadErrorState
+          error={courseError}
+          onRetry={refetchCourse}
+          resource="el curso"
+          backTo="/administrativo/gestion-academica?section=cursos"
+          backLabel="cursos"
+        />
       </PageContainer>
     );
   }
@@ -163,7 +182,7 @@ export function CursoDetalle() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleToggleStatus}
+                onClick={() => (isActive ? setConfirmAction('deactivate') : handleToggleStatus())}
                 loading={deactivateCourse.isPending || activateCourse.isPending}
                 className={isActive ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
               >
@@ -194,7 +213,7 @@ export function CursoDetalle() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleToggleCatalog}
+              onClick={() => (course.visibleInCatalog ? setConfirmAction('retire') : handleToggleCatalog())}
               loading={setCatalogVisibility.isPending}
               className={course.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
             >
@@ -222,14 +241,18 @@ export function CursoDetalle() {
 
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Temario</h2>
-          <Button variant="gradient" size="sm" onClick={() => setPanelOpen(true)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Agregar módulo
-          </Button>
+          {!modulesUnavailable && (
+            <Button variant="gradient" size="sm" onClick={() => setPanelOpen(true)}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Agregar módulo
+            </Button>
+          )}
         </div>
 
         {loadingModules ? (
           <Skeleton rows={3} />
+        ) : modulesUnavailable ? (
+          <LoadErrorState error={modulesError} onRetry={refetchModules} resource="el temario" />
         ) : sortedModules.length === 0 ? (
           <GlassCard className="p-6">
             <EmptyState
@@ -252,6 +275,26 @@ export function CursoDetalle() {
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         courseId={id}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'deactivate'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Desactivar curso"
+        description="El curso va a quedar inactivo. Podés volver a activarlo más adelante."
+        confirmLabel="Desactivar"
+        pending={deactivateCourse.isPending}
+        onConfirm={handleToggleStatus}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'retire'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Retirar del catálogo"
+        description="El curso deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados."
+        confirmLabel="Retirar"
+        pending={setCatalogVisibility.isPending}
+        onConfirm={handleToggleCatalog}
       />
     </PageContainer>
   );

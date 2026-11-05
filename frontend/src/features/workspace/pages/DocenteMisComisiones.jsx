@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useComisionesDictadas } from '@/features/academic-structure';
 import { useMisComisiones } from '@/features/evaluation';
-import { agruparComisionesPorFase, diasHastaVencimientoMasProximo, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
+import { agruparComisionesPorFase, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
 
 function FilaComision({ comision }) {
   const esCurso = comision.type === 'COURSE';
@@ -125,8 +125,6 @@ export function DocenteMisComisiones() {
   const lista = unificarComisiones(configs ?? [], dictadas ?? []);
   const { bandejaDeAprobacion, enCurso, cerradas } = agruparComisionesPorFase(lista);
   const vigentes = lista.filter((c) => !cerradas.includes(c));
-  const diasVencimiento = diasHastaVencimientoMasProximo(vigentes);
-  const vencido = diasVencimiento === 'vencido';
 
   return (
     <PageContainer>
@@ -135,23 +133,21 @@ export function DocenteMisComisiones() {
         <p className="mt-0.5 text-sm text-ink-soft">Evaluación, mesas y avisos de tus comisiones</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Comisiones y cursos este período">
           <div className="font-heading text-2xl font-bold text-ink">{vigentes.length}</div>
         </StatCard>
         <StatCard label="Pendientes de completar/aprobar">
           <div className="font-heading text-2xl font-bold text-ink">{bandejaDeAprobacion.length}</div>
         </StatCard>
-        <StatCard label="Días para el vencimiento más próximo">
-          <div className={`font-heading text-2xl font-bold ${vencido || (diasVencimiento !== null && diasVencimiento <= 5) ? 'text-danger' : 'text-ink'}`}>
-            {vencido ? 'Vencido' : (diasVencimiento ?? '—')}
-          </div>
-        </StatCard>
       </div>
 
       {lista.length === 0 ? (
         <GlassCard className="p-4">
-          <EmptyState title="Todavía no tenés comisiones asignadas" description="Cuando Dirección te asigne una comisión, aparece acá." />
+          <EmptyState
+            title="Todavía no tenés comisiones para mostrar"
+            description="Las comisiones aparecen acá cuando Dirección te las asigna y el ciclo se aprueba. Si ya te asignaron una, puede que su ciclo todavía no esté aprobado."
+          />
         </GlassCard>
       ) : (
         <div className="flex flex-col gap-4">

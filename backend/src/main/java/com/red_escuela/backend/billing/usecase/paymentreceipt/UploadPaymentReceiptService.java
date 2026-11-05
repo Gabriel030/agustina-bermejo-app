@@ -19,6 +19,11 @@ public class UploadPaymentReceiptService implements UploadPaymentReceiptUseCase 
     @Override
     public BankTransferReceipt upload(Long invoiceId, Long studentId, MultipartFile comprobante) {
         String filePath = fileStorageService.store(studentId, "comprobantes", comprobante);
-        return paymentReceiptPersister.persist(invoiceId, studentId, filePath);
+        try {
+            return paymentReceiptPersister.persist(invoiceId, studentId, filePath);
+        } catch (RuntimeException e) {
+            fileStorageService.delete(filePath);
+            throw e;
+        }
     }
 }

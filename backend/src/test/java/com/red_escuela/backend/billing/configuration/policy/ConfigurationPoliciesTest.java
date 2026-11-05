@@ -140,6 +140,7 @@ class ConfigurationPoliciesTest {
     }
 
     @Tag("D-330")
+    @Tag("D-381")
     @ParameterizedTest(name = "tasa diaria {0} puntos con cobro {1} permitida={2}")
     @CsvSource({"0.17,true,true", "0.01,true,true", "0.50,true,true", "0.51,true,false", "0.175,true,false", "0.00,true,false", "0.00,false,true", "5,true,false", "0.1667,true,false"})
     void dailyRateHasAtMostTwoDecimalsAndStaysWithinOneHundredthAndHalfAPercent(String points, boolean enabled, boolean allowed) {

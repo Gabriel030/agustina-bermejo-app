@@ -1,8 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
-import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.repository.CourseRepository;
+import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +14,12 @@ import java.time.LocalDate;
 public class CourseEnrollmentWaitlistExpiryJob {
     private static final Logger log = LoggerFactory.getLogger(CourseEnrollmentWaitlistExpiryJob.class);
 
-    private final CourseRepository courseRepository;
+    private final CourseCatalogFinder courseCatalogFinder;
     private final CourseWaitlistExpiration courseWaitlistExpiration;
     private final Clock clock;
 
-    public CourseEnrollmentWaitlistExpiryJob(CourseRepository courseRepository, CourseWaitlistExpiration courseWaitlistExpiration, Clock clock) {
-        this.courseRepository = courseRepository;
+    public CourseEnrollmentWaitlistExpiryJob(CourseCatalogFinder courseCatalogFinder, CourseWaitlistExpiration courseWaitlistExpiration, Clock clock) {
+        this.courseCatalogFinder = courseCatalogFinder;
         this.courseWaitlistExpiration = courseWaitlistExpiration;
         this.clock = clock;
     }
@@ -34,17 +33,14 @@ public class CourseEnrollmentWaitlistExpiryJob {
         int candidates = 0;
         int processed = 0;
         int failed = 0;
-        for (Course course : courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull()) {
-            if (!course.waitlistDeadlineHasPassed(today)) {
-                continue;
-            }
+        for (Long courseId : courseCatalogFinder.findCourseIdsWithWaitlistDeadlinePassed(today)) {
             candidates++;
             try {
-                courseWaitlistExpiration.expire(course.getId());
+                courseWaitlistExpiration.expire(courseId);
                 processed++;
             } catch (RuntimeException e) {
                 failed++;
-                log.error("No se pudo vencer la lista de espera del curso {}", course.getId(), e);
+                log.error("No se pudo vencer la lista de espera del curso {}", courseId, e);
             }
         }
         log.info("Vencimiento de listas de espera finalizado: candidatas={}, procesadas={}, fallidas={}, duracion={}ms",

@@ -1,10 +1,13 @@
 package com.red_escuela.backend.billing.reporting.controller;
 
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.reporting.dto.FirstBillingMonthResponse;
 import com.red_escuela.backend.billing.reporting.dto.MonthlyMetricResponse;
 import com.red_escuela.backend.billing.reporting.exception.UnknownMetricPanelException;
+import com.red_escuela.backend.billing.reporting.usecase.GetFirstBillingMonthUseCase;
 import com.red_escuela.backend.billing.reporting.usecase.GetMonthlyBillingMetricsCommand;
 import com.red_escuela.backend.billing.reporting.usecase.GetMonthlyBillingMetricsUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,14 +24,23 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.YearMonth;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/billing/metrics")
 @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
 public class BillingMetricsController {
 
     private final GetMonthlyBillingMetricsUseCase getMonthlyBillingMetrics;
 
-    public BillingMetricsController(GetMonthlyBillingMetricsUseCase getMonthlyBillingMetrics) {
+    private final GetFirstBillingMonthUseCase getFirstBillingMonth;
+
+    public BillingMetricsController(GetMonthlyBillingMetricsUseCase getMonthlyBillingMetrics, GetFirstBillingMonthUseCase getFirstBillingMonth) {
         this.getMonthlyBillingMetrics = getMonthlyBillingMetrics;
+        this.getFirstBillingMonth = getFirstBillingMonth;
+    }
+
+    @GetMapping("/first-month")
+    public FirstBillingMonthResponse getFirstMonth() {
+        return FirstBillingMonthResponse.from(getFirstBillingMonth.getFirstBillingMonth());
     }
 
     @GetMapping("/{panel}")

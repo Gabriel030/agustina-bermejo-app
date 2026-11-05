@@ -15,6 +15,7 @@ const ETIQUETA_TAB = {
   notas: 'Notas',
   'mesas-de-examen': 'Mesas de examen',
   asistencia: 'Asistencia',
+  egreso: 'Egreso',
 };
 
 const ETIQUETA_TAB_PADRON = {
@@ -40,6 +41,9 @@ export function useBreadcrumb() {
   const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
   const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);
 
+  const enPedirReembolso = /^\/(administrativo|director)\/alumnos\/[^/]+\/reembolsos\/nuevo$/.test(location.pathname);
+  const { data: legajoReembolso } = useLegajoAlumno(params.id, enPedirReembolso);
+
   const enLegajoPersonal = /^\/(administrativo|director)\/personal\/[^/]+$/.test(location.pathname);
   const { data: legajoPersonal } = useLegajoPersonal(params.id, enLegajoPersonal);
 
@@ -52,6 +56,38 @@ export function useBreadcrumb() {
 
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
+
+  const enNotaDeCredito = /^\/(administrativo|director)\/facturacion\/cuotas\/[^/]+\/nota-de-credito$/.test(location.pathname);
+  const billingInboxDetail = /^\/(director\/aprobaciones\/facturacion|administrativo\/aprobaciones)\/(\d+)$/.exec(location.pathname);
+  if (billingInboxDetail) {
+    const rolBase = location.pathname.split('/')[1];
+    const requestLabel = `Pedido N.º ${billingInboxDetail[2]}`;
+    if (rolBase === 'director') {
+      return [
+        { label: 'Aprobaciones', to: '/director/aprobaciones' },
+        { label: 'Operaciones de facturación', to: '/director/aprobaciones/facturacion' },
+        { label: requestLabel },
+      ];
+    }
+    return [{ label: 'Aprobaciones', to: '/administrativo/aprobaciones' }, { label: requestLabel }];
+  }
+
+  if (location.pathname === '/director/aprobaciones/facturacion') {
+    return [{ label: 'Aprobaciones', to: '/director/aprobaciones' }, { label: 'Operaciones de facturación' }];
+  }
+
+  if (enNotaDeCredito) {
+    const rolBase = location.pathname.split('/')[1];
+    const alumno = searchParams.get('alumno');
+    return [
+      { label: 'Facturación', to: `/${rolBase}/facturacion${alumno ? `?alumno=${alumno}` : ''}` },
+      { label: 'Nota de crédito' },
+    ];
+  }
+
+  if (location.pathname === '/alumno/pagos/notas-de-credito') {
+    return [{ label: 'Mis pagos', to: '/alumno/pagos' }, { label: 'Mis notas de crédito' }];
+  }
 
   const enPagos = location.pathname === '/alumno/pagos';
   if (enPagos) {
@@ -71,6 +107,18 @@ export function useBreadcrumb() {
     return [
       { label: 'Mis pagos', to: '/alumno/pagos' },
       { label: productName },
+    ];
+  }
+
+  if (enPedirReembolso) {
+    const rolBase = location.pathname.split('/')[1];
+    return [
+      { label: 'Padrón de alumnos', to: `/${rolBase}/alumnos` },
+      {
+        label: legajoReembolso ? `${legajoReembolso.apellido}, ${legajoReembolso.nombre}` : <Skeleton className="h-4 w-24" />,
+        to: `/${rolBase}/alumnos/${params.id}?view=financiero`,
+      },
+      { label: 'Pedir reembolso' },
     ];
   }
 

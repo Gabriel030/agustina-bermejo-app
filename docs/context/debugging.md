@@ -34,7 +34,7 @@ tiene la config `frontend` (`npm --prefix frontend run dev`).
 
 ## Datos de prueba — perfil `local`
 
-`LocalSeedRunner` (`config/LocalSeedRunner.java`, `@Profile("local")`) crea 5
+`LocalSeedRunner` (`identity/service/LocalSeedRunner.java`, `@Profile("local")`) crea 5
 cuentas ya logueables, una por rol, la primera vez que arranca la app con ese
 perfil activo — idempotente, no duplica en arranques siguientes:
 

@@ -1,0 +1,1 @@
+alter table bank_transfer_receipt drop constraint fk_bank_transfer_receipt_payment;

@@ -14,7 +14,7 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
     * def nombreTerm = 'Ciclo QA avisos ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(nombreTerm)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -45,7 +45,7 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión QA avisos', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión QA avisos', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -103,6 +103,8 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
     # La campanita recibió un puntero, no una copia: el mensaje NO trae el cuerpo
     Given path '/me/notifications'
     And header Authorization = 'Bearer ' + alumno.accessToken
+    * configure retry = { count: 30, interval: 500 }
+    And retry until responseStatus == 200 && response.filter(function(x){ return x.type == 'ANNOUNCEMENT_PUBLISHED' }).length > 0
     When method get
     Then status 200
     * def puntero = response.filter(function(x){ return x.type == 'ANNOUNCEMENT_PUBLISHED' })[0]
@@ -119,17 +121,11 @@ Feature: Avisos del docente (AnnouncementController, MeAnnouncementController)
     When method post
     Then status 403
 
-  Scenario: Sin sesión — 403, que es lo que devuelve hoy la API (no 401)
-    # Se fija el comportamiento REAL, no el esperable. Un request sin token contra un
-    # endpoint con @PreAuthorize devuelve 403 y no 401, porque la falta de autenticación
-    # llega a la capa de method security como AccessDeniedException. El proyecto ya
-    # convivía con esta ambigüedad sin fijarla: PersonControllerTest tiene dos tests
-    # llamados "...Returns401OrForbidden" que asiertan is4xxClientError(). Si algún día
-    # se unifica en 401, este escenario falla y hay que actualizarlo a propósito.
+  Scenario: Sin sesión — 401
     Given path '/subject-sections', sectionId, 'announcements'
     And request { title: 'Sin token', body: 'Cuerpo cualquiera.', category: 'REMINDER', urgent: false }
     When method post
-    Then status 403
+    Then status 401
 
   Scenario: Body inválido — 400, Bean Validation activo
     Given path '/subject-sections', sectionId, 'announcements'

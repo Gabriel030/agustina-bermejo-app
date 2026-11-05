@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -31,7 +32,7 @@ class ProgramMonthlyInvoicePlannerTest {
     private final ProgramMonthlyInvoicePlanner planner = new ProgramMonthlyInvoicePlanner();
 
     private static ProgramYearBillingTemplate template(long id, int year, int installments, int count, int first, Integer second) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStartDate(LocalDateTime.of(year, 3, 1, 0, 0));
         term.setEndDate(LocalDateTime.of(year, 12, 31, 23, 59));
@@ -274,21 +275,6 @@ class ProgramMonthlyInvoicePlannerTest {
         assertThat(december.slotPeriod(1)).isEqualTo(ym(2026, 12));
         assertThat(december.start()).isEqualTo(ym(2026, 12));
         assertThat(february.slotPeriod(1)).isEqualTo(ym(2027, 2));
-    }
-
-    @Test
-    void anUndatedTermUsesItsOwnYearSoTheCapOfASecondYearStartsFromZero() {
-        Term term = new Term();
-        term.setYear(2027);
-        ProgramYearBillingTemplate t = new ProgramYearBillingTemplate();
-        t.setId(2L);
-        t.setTerm(term);
-        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(t, 2);
-        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, 2026);
-        Set<YearMonth> issuedLastYear = Set.of(ym(2026, 3), ym(2026, 4), ym(2026, 5));
-
-        assertThat(issuedLastYear.stream().filter(cycle::installmentRangeContains)).isEmpty();
-        assertThat(cycle.installmentRangeContains(ym(2027, 3))).isTrue();
     }
 
     @Test

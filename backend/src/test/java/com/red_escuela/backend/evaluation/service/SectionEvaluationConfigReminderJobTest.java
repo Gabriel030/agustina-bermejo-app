@@ -1,8 +1,10 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -89,7 +91,7 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
             subject.setCode(TestSubjectCodes.next());
             subject.setName("MateriaRecordatorio");
             entityManager.persist(subject);
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2099);
             term.setDescription("Ciclo recordatorio");
             term.setStatus(StatusType.ACTIVE);
@@ -132,7 +134,9 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
 
         reminderJob.sendReminders();
 
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(personId);
-        assertThat(notifications).extracting(Notification::getType).containsExactly(NotificationType.SECTION_EVAL_CONFIG_REMINDER);
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(personId);
+            assertThat(notifications).extracting(Notification::getType).containsExactly(NotificationType.SECTION_EVAL_CONFIG_REMINDER);
+        });
     }
 }

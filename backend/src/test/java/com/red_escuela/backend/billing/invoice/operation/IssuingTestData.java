@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
+import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingFacts;
@@ -14,6 +15,7 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -45,6 +47,29 @@ public final class IssuingTestData {
     }
 
     public static InvoiceDiscountCandidate candidate(DiscountType type, long sourceId, InvoiceType invoiceType, String base, String discount) {
-        return new InvoiceDiscountCandidate(type, sourceId, sourceId, type.name() + sourceId, invoiceType, ars(base), ars(discount), null, null);
+        return candidateOnLine(1, type, sourceId, invoiceType, base, discount);
+    }
+
+    public static InvoiceDiscountCandidate candidateOnLine(int lineNumber, DiscountType type, long sourceId, InvoiceType invoiceType, String base, String discount) {
+        return new InvoiceDiscountCandidate(type, sourceId, sourceId, type.name() + sourceId, invoiceType, ars(base), ars(discount), null, null,
+                lineNumber, null, null, null, legacyOriginOf(type));
+    }
+
+    public static InvoiceDiscountCandidate studentDiscountCandidate(DiscountType type, long sourceId, long studentDiscountId, String discount, Integer priority, Instant grantedAt) {
+        return new InvoiceDiscountCandidate(type, sourceId, studentDiscountId, type.name() + sourceId, InvoiceType.MONTHLY_INSTALLMENT, ars("100.00"), ars(discount),
+                null, null, 1, priority, grantedAt, null, DiscountCandidateOrigin.STUDENT_DISCOUNT);
+    }
+
+    public static InvoiceDiscountCandidate withOrigin(InvoiceDiscountCandidate candidate, DiscountCandidateOrigin origin) {
+        return new InvoiceDiscountCandidate(candidate.discountType(), candidate.sourceId(), candidate.studentDiscountId(), candidate.discountName(),
+                candidate.applicableInvoiceType(), candidate.baseAmount(), candidate.discountAmount(), candidate.installmentNumber(), candidate.installmentsTotal(),
+                candidate.lineNumber(), candidate.priority(), candidate.grantedAt(), candidate.calculation(), origin);
+    }
+
+    private static DiscountCandidateOrigin legacyOriginOf(DiscountType type) {
+        return switch (type) {
+            case COHORT_ENTRY -> DiscountCandidateOrigin.COHORT_ENTRY;
+            case SCHOLARSHIP, PROMOTION, COHORT_PROMOTION, ANNUAL_UPFRONT, INDIVIDUAL -> DiscountCandidateOrigin.STUDENT_DISCOUNT;
+        };
     }
 }

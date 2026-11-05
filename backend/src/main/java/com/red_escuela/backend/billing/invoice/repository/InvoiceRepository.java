@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.invoice.repository;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
@@ -28,9 +29,15 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     long count();
 
+    long countByDocumentStatus(InvoiceDocumentStatus documentStatus);
+
+    long countByDocumentStatusAndPaymentStatusIn(InvoiceDocumentStatus documentStatus, Collection<InvoicePaymentStatus> paymentStatuses);
+
     List<Invoice> findAll();
 
     Optional<Invoice> findById(Long id);
+
+    List<Invoice> findByIdIn(Collection<Long> ids);
 
     @Query("select distinct i from Invoice i left join fetch i.lines l left join fetch l.discount where i.id = :id")
     Optional<Invoice> findInvoiceWithLinesById(@Param("id") Long id);
@@ -38,36 +45,49 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     @Query(value = "select id from invoice where id = :id for update", nativeQuery = true)
     Optional<Long> lockInvoiceRowById(@Param("id") Long id);
 
+    @Query("select distinct i.studentCurrentAccountId from Invoice i where i.id in :ids")
+    List<Long> findAccountIdsOfInvoices(@Param("ids") java.util.Collection<Long> ids);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Invoice i where i.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
 
+    @Query(value = """
+            select i.* from invoice i
+            where i.student_current_account_id = :accountId
+              and i.document_status = 'ISSUED'
+              and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
+              and not exists (select 1 from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
+                              where ari.invoice_id = i.id and ar.status = 'PENDING')
+            order by i.due_date asc, i.id asc
+            """, nativeQuery = true)
+    List<Invoice> findOpenIssuedInvoicesByAccountOrderedForAllocation(@Param("accountId") Long accountId);
+
     @Query("""
-            select i from Invoice i
+            select i.id from Invoice i
             where i.studentCurrentAccountId = :accountId
               and i.documentStatus = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.ISSUED
               and i.paymentStatus in (com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PENDING,
                                       com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.OVERDUE,
                                       com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAYMENT_UNDER_REVIEW)
-            order by i.dueDate asc, i.id asc
+            order by i.id asc
             """)
-    List<Invoice> findOpenIssuedInvoicesByAccountOrderedForAllocation(@Param("accountId") Long accountId);
+    List<Long> findOpenIssuedInvoiceIdsByAccountOrderedById(@Param("accountId") Long accountId);
+
+    @Query("select distinct l.invoice.studentCurrentAccountId from InvoiceLine l where l.programEnrollmentId = :programEnrollmentId or l.courseEnrollmentId = :courseEnrollmentId")
+    List<Long> findAccountIdsOfEnrollment(@Param("programEnrollmentId") Long programEnrollmentId, @Param("courseEnrollmentId") Long courseEnrollmentId);
+
+    @Query(value = """
+            select distinct ari.invoice_id from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
+            where ar.status = 'PENDING' and ari.invoice_id in (:invoiceIds)
+            """, nativeQuery = true)
+    List<Long> findInvoiceIdsWithPendingAuthorizationRequest(@Param("invoiceIds") Collection<Long> invoiceIds);
 
     @Query("select i.studentCurrentAccountId from Invoice i where i.id = :invoiceId")
     Optional<Long> findStudentCurrentAccountIdByInvoiceId(@Param("invoiceId") Long invoiceId);
 
     @Query("select l.invoice.id from InvoiceLine l where l.chargeKey = :chargeKey and l.chargeKeyReleasedAt is null")
     Optional<Long> findLiveInvoiceIdByChargeKey(@Param("chargeKey") String chargeKey);
-
-    @Query("""
-            select count(d) from InvoiceDiscount d, StudentCurrentAccount a
-            where d.discountType = com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION
-              and d.studentDiscountId = :benefitId
-              and a.id = d.invoiceLine.invoice.studentCurrentAccountId
-              and a.studentId = :studentId
-              and d.invoiceLine.invoice.documentStatus <> com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.DISCARDED
-            """)
-    long countPromotionDiscountsOfStudent(@Param("benefitId") Long benefitId, @Param("studentId") Long studentId);
 
     @Query("select distinct i from Invoice i join fetch i.lines l left join fetch l.discount where l.programEnrollmentId = :enrollmentId")
     List<Invoice> findByProgramEnrollmentId(@Param("enrollmentId") Long enrollmentId);
@@ -149,6 +169,36 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     boolean existsByStudentIdAndPaymentStatus(@Param("studentId") Long studentId, @Param("status") InvoicePaymentStatus status);
 
+    @Query(value = """
+            select exists (
+              select 1 from invoice i
+              join student_current_account a on a.id = i.student_current_account_id
+              where a.student_id = :studentId
+                and i.document_status = 'ISSUED'
+                and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
+                and exists (select 1 from invoice_line l
+                            where l.invoice_id = i.id
+                              and (l.program_enrollment_id in (select pe.id from program_enrollment pe where pe.status = 'WITHDRAWN')
+                                   or l.course_enrollment_id in (select ce.id from course_enrollment ce where ce.status = 'WITHDRAWN'))))
+            """, nativeQuery = true)
+    boolean existsOpenInvoiceOfWithdrawnEnrollmentByStudentId(@Param("studentId") Long studentId);
+
+    @Query(value = """
+            select exists (
+              select 1 from invoice i
+              join student_current_account a on a.id = i.student_current_account_id
+              where a.student_id = :studentId
+                and i.document_status = 'ISSUED'
+                and i.payment_status in ('PENDING', 'OVERDUE', 'PAYMENT_UNDER_REVIEW')
+                and exists (select 1 from authorization_request_invoice ari join authorization_request ar on ar.id = ari.authorization_request_id
+                            where ari.invoice_id = i.id and ar.status = 'PENDING')
+                and exists (select 1 from invoice_line l
+                            where l.invoice_id = i.id
+                              and (l.program_enrollment_id in (select pe.id from program_enrollment pe where pe.status = 'WITHDRAWN')
+                                   or l.course_enrollment_id in (select ce.id from course_enrollment ce where ce.status = 'WITHDRAWN'))))
+            """, nativeQuery = true)
+    boolean existsOpenInvoiceOfWithdrawnEnrollmentInPendingRequestByStudentId(@Param("studentId") Long studentId);
+
     @Query("select a.studentId from StudentCurrentAccount a, Invoice i where i.id = :invoiceId and a.id = i.studentCurrentAccountId")
     Optional<Long> findOwnerStudentIdByInvoiceId(@Param("invoiceId") Long invoiceId);
 
@@ -161,7 +211,15 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     List<Long> findStudentIdsByPaymentStatus(@Param("status") InvoicePaymentStatus status);
 
-    @Query("select distinct i from Invoice i join fetch i.lines where i.paymentStatus = :status")
+    @Query("""
+            select count(i) > 0 from Invoice i
+            where i.studentCurrentAccountId = :accountId and i.documentStatus = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.ISSUED
+              and i.paymentStatus in :unpaidStatuses and i.dueDate < :today
+            """)
+    boolean existsUnpaidIssuedDocumentDueBefore(@Param("accountId") Long accountId, @Param("unpaidStatuses") Collection<InvoicePaymentStatus> unpaidStatuses,
+                                                @Param("today") LocalDate today);
+
+    @Query("select distinct i from Invoice i join fetch i.lines l left join fetch l.discount where i.paymentStatus = :status")
     List<Invoice> findByPaymentStatusWithLines(@Param("status") InvoicePaymentStatus status);
 
     interface CurrencyTotal {

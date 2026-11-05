@@ -22,12 +22,12 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     And match response.onboardingStatus == 'PROSPECTO'
     * def studentId = response.id
 
-    # 2. Sin sesión no se puede agregar documentación — 403
+    # 2. Sin sesión no se puede agregar documentación — 401
     Given path '/prospects', studentId, 'documents'
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
-    Then status 403
+    Then status 401
 
     # 3. Con sesión de Preceptor, tipo de archivo no soportado — 400
     Given path '/prospects', studentId, 'documents'
@@ -41,7 +41,7 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     Given path '/prospects', studentId, 'documents'
     And header Authorization = 'Bearer ' + preceptorToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 
@@ -49,7 +49,7 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     Given path '/prospects', studentId, 'documents'
     And header Authorization = 'Bearer ' + preceptorToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'version 2', filename: 'dni-v2.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 version 2', filename: 'dni-v2.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 
@@ -88,16 +88,16 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     When method get
     Then status 200
 
-    # 9. Un Director NO puede dar de baja (matriz: solo Preceptor/Administrativo) — 403
+    # 9. Un Preceptor NO puede dar de baja el legajo (D-250: solo Administrativo y Director) — 403
     Given path '/students', studentId, 'withdraw'
-    And header Authorization = 'Bearer ' + directorToken
+    And header Authorization = 'Bearer ' + preceptorToken
     And request { reason: 'ABANDONO' }
     When method post
     Then status 403
 
-    # 10. El Preceptor sí puede — 204
+    # 10. El Director sí puede (el alumno no tiene inscripciones activas) — 204
     Given path '/students', studentId, 'withdraw'
-    And header Authorization = 'Bearer ' + preceptorToken
+    And header Authorization = 'Bearer ' + directorToken
     And request { reason: 'ABANDONO', detail: 'Prueba automatizada' }
     When method post
     Then status 204

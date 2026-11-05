@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.shared.domain.Address;
@@ -85,7 +85,7 @@ class DocumentReplacementTransactionTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile pdf(String content) {
-        return new MockMultipartFile("file", "dni.pdf", "application/pdf", content.getBytes());
+        return new MockMultipartFile("file", "dni.pdf", "application/pdf", ("%PDF-1.4 " + content).getBytes());
     }
 
     private String upload(String content) {

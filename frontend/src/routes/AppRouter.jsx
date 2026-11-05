@@ -3,6 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { ROLE_CONFIG } from '@/routes/roleConfig';
+import { firstRealPage, pageLabel } from '@/routes/menuAccess';
+import { ModuleGate } from '@/routes/ModuleGate';
 import { PUBLIC_ROUTES, SHARED_ROUTES, roleRoutesFor } from '@/routes/featureRoutes';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
@@ -16,14 +18,20 @@ function SharedRoutesLayout() {
   return <Layout />;
 }
 
+function placeholderElement(role, page, pages) {
+  const target = page === 'inicio' ? firstRealPage(role, pages) : null;
+  if (target) return <Navigate to={`/${role}/${target}`} replace />;
+  return <Placeholder titulo={pageLabel(page)} />;
+}
+
 function renderRoleRoutes(role, pages) {
   const routes = roleRoutesFor(role);
   const covered = new Set(routes.map((route) => route.path));
   return [
-    ...routes.map(({ path, element }) => <Route key={path} path={path} element={element} />),
+    ...routes.map(({ path, element }) => <Route key={path} path={path} element={<ModuleGate role={role} path={path}>{element}</ModuleGate>} />),
     ...pages
       .filter((page) => !covered.has(page))
-      .map((page) => <Route key={page} path={page} element={<Placeholder titulo={page} />} />),
+      .map((page) => <Route key={page} path={page} element={placeholderElement(role, page, pages)} />),
   ];
 }
 
@@ -62,7 +70,7 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to={pages[0]} replace />} />
+          <Route index element={<Navigate to={firstRealPage(role, pages) ?? pages[0]} replace />} />
           {renderRoleRoutes(role, pages)}
         </Route>
       ))}

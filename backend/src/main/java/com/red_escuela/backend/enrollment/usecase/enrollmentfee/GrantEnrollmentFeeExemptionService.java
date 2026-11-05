@@ -17,7 +17,7 @@ import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundExc
 import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.EnrollmentFeeExemptionGrantedEvent;
+import com.red_escuela.backend.enrollment.service.EnrollmentNotificationEvents;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,7 @@ public class GrantEnrollmentFeeExemptionService implements GrantEnrollmentFeeExe
         }
         log.info("Habilitación de matrícula otorgada: habilitacion={}, inscripcion={}, plantilla={}, matricula={}, por={}",
                 saved.getId(), programEnrollmentId, template.getId(), request.slot(), saved.getGrantedBy().getId());
-        eventPublisher.publishEvent(new EnrollmentFeeExemptionGrantedEvent(saved));
+        eventPublisher.publishEvent(EnrollmentNotificationEvents.exemptionGrantOf(saved));
         return saved;
     }
 }

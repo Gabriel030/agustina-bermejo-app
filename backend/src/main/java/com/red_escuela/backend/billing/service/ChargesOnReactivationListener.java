@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -20,6 +22,7 @@ public class ChargesOnReactivationListener {
         this.clock = clock;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @ApplicationModuleListener
     public void onSuspensionLifted(EnrollmentSuspensionLiftedEvent event) {
         if (!event.concernsProgramEnrollment()) {

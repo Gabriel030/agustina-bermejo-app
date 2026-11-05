@@ -4,6 +4,8 @@ import com.red_escuela.backend.billing.events.AuthorizationRequestExpiredEvent;
 import com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent;
 import com.red_escuela.backend.billing.events.ConfigurationVersionCancelledEvent;
 import com.red_escuela.backend.billing.events.AuthorizationRequestedEvent;
+import com.red_escuela.backend.billing.events.DiscountQuotaExhaustedEvent;
+import com.red_escuela.backend.billing.events.PriceChangeDecidedEvent;
 import com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
@@ -20,7 +22,9 @@ public class BillingOperationNotificationListener {
     static final String AUTHORIZATION_REQUESTED_HANDLER = "BillingOperationNotificationListener.notifyAuthorizationRequested";
     static final String AUTHORIZATION_EXPIRED_HANDLER = "BillingOperationNotificationListener.notifyAuthorizationRequestExpired";
     static final String CONFIGURATION_DECIDED_HANDLER = "BillingOperationNotificationListener.notifyConfigurationChangeDecided";
+    static final String PRICE_DECIDED_HANDLER = "BillingOperationNotificationListener.notifyPriceChangeDecided";
     static final String CONFIGURATION_CANCELLED_HANDLER = "BillingOperationNotificationListener.notifyConfigurationVersionCancelled";
+    static final String DISCOUNT_QUOTA_EXHAUSTED_HANDLER = "BillingOperationNotificationListener.notifyDiscountQuotaExhausted";
     private static final String DIRECTOR_ROLE = "DIRECTOR";
 
     private final ProcessedEffectGuard effectGuard;
@@ -51,9 +55,10 @@ public class BillingOperationNotificationListener {
 
     @ApplicationModuleListener
     public void notifyAuthorizationRequestExpired(AuthorizationRequestExpiredEvent event) {
+        String subject = "CHANGE_PRICE".equals(event.operationType()) ? "Una propuesta de precio" : "Una propuesta de configuración";
         sendOnce(event, AUTHORIZATION_EXPIRED_HANDLER, new BillingOperationNotification(
                 NotificationType.AUTHORIZATION_REQUEST_EXPIRED,
-                "Una propuesta de configuración venció sin que se decidiera. Hay que cargarla de nuevo con una fecha nueva.",
+                subject + " venció sin que se decidiera. Hay que cargarla de nuevo con una fecha nueva.",
                 List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "AuthorizationRequest", event.authorizationRequestId()));
     }
 
@@ -68,11 +73,29 @@ public class BillingOperationNotificationListener {
     }
 
     @ApplicationModuleListener
+    public void notifyPriceChangeDecided(PriceChangeDecidedEvent event) {
+        boolean approved = "APPROVED".equals(event.decision());
+        String message = approved ? "Se aprobó la propuesta de precio (" + event.priceDescription() + ") con vigencia desde el " + event.effectiveFrom() + "."
+                : "Se rechazó la propuesta de precio (" + event.priceDescription() + "): " + event.reason();
+        sendOnce(event, PRICE_DECIDED_HANDLER, new BillingOperationNotification(
+                approved ? NotificationType.PRICE_CHANGE_APPROVED : NotificationType.PRICE_CHANGE_REJECTED,
+                message, List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "PriceVersion", event.priceVersionId()));
+    }
+
+    @ApplicationModuleListener
     public void notifyConfigurationVersionCancelled(ConfigurationVersionCancelledEvent event) {
         sendOnce(event, CONFIGURATION_CANCELLED_HANDLER, new BillingOperationNotification(
                 NotificationType.CONFIGURATION_VERSION_CANCELLED,
                 "Se canceló antes de regir el cambio de configuración " + event.topicKey() + " previsto desde el " + event.effectiveFrom() + ": " + event.reason(),
                 List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "ConfigurationVersion", event.configurationVersionId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyDiscountQuotaExhausted(DiscountQuotaExhaustedEvent event) {
+        sendOnce(event, DISCOUNT_QUOTA_EXHAUSTED_HANDLER, new BillingOperationNotification(
+                NotificationType.DISCOUNT_QUOTA_EXHAUSTED,
+                "Se agotó el cupo de la promoción \"" + event.discountName() + "\" (" + event.quota() + " lugares). Deja de otorgarse a inscripciones nuevas; quienes ya la tienen la conservan.",
+                List.of(NotificationTopic.DISCOUNT_SUPERVISION), "DiscountDefinition", event.discountDefinitionId()));
     }
 
     private void sendOnce(DeduplicableDomainEvent event, String handlerName, BillingOperationNotification notification) {

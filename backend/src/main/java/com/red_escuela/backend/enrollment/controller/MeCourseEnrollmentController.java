@@ -1,8 +1,7 @@
 package com.red_escuela.backend.enrollment.controller;
 
-import com.red_escuela.backend.enrollment.dto.CourseEnrollmentResponse;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.enrollment.dto.MyCourseEnrollmentResponse;
+import com.red_escuela.backend.enrollment.usecase.courseenrollment.ListMyCourseEnrollmentsUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,16 +13,16 @@ import java.util.List;
 @RequestMapping("/me")
 public class MeCourseEnrollmentController {
     private final CurrentStudentService currentStudentService;
-    private final CourseEnrollmentService courseEnrollmentService;
+    private final ListMyCourseEnrollmentsUseCase listMyCourseEnrollmentsUseCase;
 
-    public MeCourseEnrollmentController(CurrentStudentService currentStudentService, CourseEnrollmentService courseEnrollmentService) {
+    public MeCourseEnrollmentController(
+            CurrentStudentService currentStudentService, ListMyCourseEnrollmentsUseCase listMyCourseEnrollmentsUseCase) {
         this.currentStudentService = currentStudentService;
-        this.courseEnrollmentService = courseEnrollmentService;
+        this.listMyCourseEnrollmentsUseCase = listMyCourseEnrollmentsUseCase;
     }
 
     @GetMapping("/course-enrollments")
-    public List<CourseEnrollmentResponse> mine() {
-        Student student = currentStudentService.resolveCurrentStudent();
-        return courseEnrollmentService.listByStudent(student.getId()).stream().map(CourseEnrollmentResponse::from).toList();
+    public List<MyCourseEnrollmentResponse> mine() {
+        return listMyCourseEnrollmentsUseCase.list(currentStudentService.resolveCurrentStudent().getId());
     }
 }

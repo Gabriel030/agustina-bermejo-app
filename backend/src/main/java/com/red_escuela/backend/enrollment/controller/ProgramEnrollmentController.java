@@ -9,6 +9,9 @@ import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
+import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,15 +23,19 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class ProgramEnrollmentController {
     private final ProgramEnrollmentService programEnrollmentService;
+    private final CurrentPersonService currentPersonService;
     private final CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase;
 
-    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService, CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase) {
+    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService, CurrentPersonService currentPersonService, CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase) {
         this.programEnrollmentService = programEnrollmentService;
+        this.currentPersonService = currentPersonService;
         this.createAdHocInvoiceUseCase = createAdHocInvoiceUseCase;
     }
 
@@ -41,9 +48,10 @@ public class ProgramEnrollmentController {
 
     @PostMapping("/program-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void withdraw(@PathVariable Long id) {
-        programEnrollmentService.withdraw(id);
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public void withdraw(@PathVariable Long id, @Valid @RequestBody(required = false) WithdrawEnrollmentRequest request) {
+        LocalDate informedDate = Optional.ofNullable(request).map(WithdrawEnrollmentRequest::effectiveDate).orElse(null);
+        programEnrollmentService.withdraw(id, EnrollmentWithdrawal.voluntaryRegisteredBy(informedDate, currentPersonService.resolveCurrentPerson().getId()));
     }
 
     @GetMapping("/students/{id}/program-enrollments")

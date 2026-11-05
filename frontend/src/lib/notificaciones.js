@@ -5,6 +5,11 @@ export const TIPO_NOTIFICACION_LABEL = {
   SECTION_EVAL_CONFIG_REMINDER: 'Recordatorio',
   ATTENDANCE_CHANGE_REQUEST_APPROVED: 'Cambio de asistencia aprobado',
   ATTENDANCE_CHANGE_REQUEST_REJECTED: 'Cambio de asistencia rechazado',
+  ATTENDANCE_JUSTIFICATION_APPROVED: 'Justificación de inasistencia aprobada',
+  ATTENDANCE_JUSTIFICATION_REJECTED: 'Justificación de inasistencia rechazada',
+  GRADUATION_REQUEST_CREATED: 'Solicitud de egreso registrada',
+  GRADUATION_REQUEST_PENDING_REVIEW: 'Egreso pendiente de revisión',
+  GRADUATION_REQUEST_VERIFIED: 'Egreso verificado por Administración',
   GRADUATION_REQUEST_APPROVED: 'Egreso aprobado',
   GRADUATION_REQUEST_REJECTED: 'Egreso rechazado',
   DIRECTOR_APPROVAL_REQUEST_APPROVED: 'Excepción aprobada',
@@ -15,13 +20,30 @@ export const TIPO_NOTIFICACION_LABEL = {
   PAYMENT_RECEIPT_REJECTED: 'Comprobante rechazado',
   ANNOUNCEMENT_PUBLISHED: 'Nuevo aviso',
   ANNOUNCEMENT_UPDATED: 'Aviso actualizado',
+  EXAM_BOARD_RESCHEDULED: 'Mesa de examen reprogramada',
+  EXAM_BOARD_CANCELED: 'Mesa de examen cancelada',
+  ENROLLMENT_FEE_EXEMPTION_GRANTED: 'Matrícula exonerada',
+  ENROLLMENT_FEE_EXEMPTION_REVOKED: 'Exoneración de matrícula revocada',
   PROGRAM_APPLICATION_APPROVED: 'Solicitud aprobada',
   PROGRAM_ENROLLMENT_STALLED: 'Inscripción pendiente de revisión',
   PAYMENT_LEFT_AS_ACCOUNT_CREDIT: 'Pago a saldo a favor',
+  GATEWAY_PAYMENT_WITH_GATEWAY_OFF: 'Pago online con la pasarela apagada',
   PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT: 'Pago aplicado a deuda anterior',
+  PAYMENT_CHARGED_BACK: 'Pago revertido por contracargo',
   CREDIT_NOTE_ISSUED: 'Nota de crédito emitida',
   LATE_FEE_ISSUED: 'Recargo por mora emitido',
   LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'Recargo emitido fuera de plazo',
+  LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW: 'Corrección de recargo fuera de plazo',
+  COLLECTION_REMINDER: 'Aviso de cobranza',
+  OVERDUE_CONTACT_LIST_UPDATED: 'Alumnos para contactar',
+  PAYMENT_RECEIPT_REVIEW_OVERDUE: 'Comprobante sin revisar',
+  INCONSISTENT_ACCOUNT_DETECTED: 'Cuenta con saldo inconsistente',
+  NIGHTLY_RUN_FAILED: 'Falló el proceso nocturno',
+  NIGHTLY_RUN_MISSED: 'No corrió el proceso nocturno',
+  NIGHTLY_RUN_COMPLETED_WITH_ERRORS: 'Proceso nocturno con errores',
+  MONTHLY_INVOICE_RUN_MISSED: 'No corrió la emisión mensual',
+  MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'Reintentos de emisión agotados',
+  HOLIDAYS_MISSING_FOR_NEXT_YEAR: 'Faltan los feriados del año que viene',
 };
 
 export const TONO_NOTIFICACION = {
@@ -31,6 +53,11 @@ export const TONO_NOTIFICACION = {
   SECTION_EVAL_CONFIG_REMINDER: 'accent2',
   ATTENDANCE_CHANGE_REQUEST_APPROVED: 'success',
   ATTENDANCE_CHANGE_REQUEST_REJECTED: 'danger',
+  ATTENDANCE_JUSTIFICATION_APPROVED: 'success',
+  ATTENDANCE_JUSTIFICATION_REJECTED: 'danger',
+  GRADUATION_REQUEST_CREATED: 'accent2',
+  GRADUATION_REQUEST_PENDING_REVIEW: 'warning',
+  GRADUATION_REQUEST_VERIFIED: 'accent2',
   GRADUATION_REQUEST_APPROVED: 'success',
   GRADUATION_REQUEST_REJECTED: 'danger',
   DIRECTOR_APPROVAL_REQUEST_APPROVED: 'success',
@@ -41,22 +68,54 @@ export const TONO_NOTIFICACION = {
   PAYMENT_RECEIPT_REJECTED: 'danger',
   ANNOUNCEMENT_PUBLISHED: 'accent2',
   ANNOUNCEMENT_UPDATED: 'accent2',
+  EXAM_BOARD_RESCHEDULED: 'warning',
+  EXAM_BOARD_CANCELED: 'danger',
+  ENROLLMENT_FEE_EXEMPTION_GRANTED: 'success',
+  ENROLLMENT_FEE_EXEMPTION_REVOKED: 'warning',
   PROGRAM_APPLICATION_APPROVED: 'success',
   PROGRAM_ENROLLMENT_STALLED: 'warning',
   PAYMENT_LEFT_AS_ACCOUNT_CREDIT: 'accent2',
+  GATEWAY_PAYMENT_WITH_GATEWAY_OFF: 'warning',
   PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT: 'warning',
+  PAYMENT_CHARGED_BACK: 'danger',
   CREDIT_NOTE_ISSUED: 'accent2',
   LATE_FEE_ISSUED: 'warning',
   LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'danger',
+  LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW: 'danger',
+  COLLECTION_REMINDER: 'warning',
+  OVERDUE_CONTACT_LIST_UPDATED: 'warning',
+  PAYMENT_RECEIPT_REVIEW_OVERDUE: 'warning',
+  INCONSISTENT_ACCOUNT_DETECTED: 'danger',
+  NIGHTLY_RUN_FAILED: 'danger',
+  NIGHTLY_RUN_MISSED: 'danger',
+  NIGHTLY_RUN_COMPLETED_WITH_ERRORS: 'warning',
+  MONTHLY_INVOICE_RUN_MISSED: 'danger',
+  MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'warning',
+  HOLIDAYS_MISSING_FOR_NEXT_YEAR: 'warning',
 };
 
+export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';
+
+export function etiquetaNotificacion(tipo) {
+  return TIPO_NOTIFICACION_LABEL[tipo] ?? ETIQUETA_NOTIFICACION_DESCONOCIDA;
+}
+
+function fechaCorta(fecha) {
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${fecha.getFullYear()}`;
+}
+
 export function tiempoRelativo(fechaIso) {
-  const diffMs = Date.now() - new Date(fechaIso).getTime();
+  const fecha = new Date(fechaIso);
+  if (!fechaIso || Number.isNaN(fecha.getTime())) return '';
+  const diffMs = Date.now() - fecha.getTime();
   const minutos = Math.floor(diffMs / 60000);
   if (minutos < 1) return 'recién';
   if (minutos < 60) return `hace ${minutos} min`;
   const horas = Math.floor(minutos / 60);
   if (horas < 24) return `hace ${horas} h`;
   const dias = Math.floor(horas / 24);
-  return `hace ${dias} d`;
+  if (dias < 7) return `hace ${dias} d`;
+  return fechaCorta(fecha);
 }

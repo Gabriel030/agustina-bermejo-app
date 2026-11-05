@@ -3,7 +3,7 @@ package com.red_escuela.backend.characterization.academicorg;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.entity.Person;

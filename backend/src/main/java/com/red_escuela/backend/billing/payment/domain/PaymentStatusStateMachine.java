@@ -11,6 +11,7 @@ public final class PaymentStatusStateMachine {
     public static final StateTransitionTable<PaymentStatus, PaymentEvent> TRANSITIONS =
             StateTransitionTable.forStatesAndEvents(PaymentStatus.class, PaymentEvent.class)
                     .allowInitialTransition(CASH_PAYMENT_REGISTERED, APPROVED)
+                    .allowInitialTransition(GATEWAY_PAYMENT_REGISTERED_AS_APPROVED, APPROVED)
                     .allowInitialTransition(PENDING_ONLINE_PAYMENT_CREATED, PENDING)
                     .allowInitialTransition(PENDING_BANK_TRANSFER_CREATED, PENDING)
                     .allowTransition(PENDING, PAYMENT_HOLD_AUTHORIZED, AUTHORIZED)

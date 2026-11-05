@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.decision;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -205,6 +206,148 @@ class BillingDecisionCoverageRulesTest {
 
         assertThat(DecisionCoverageRules.findViolations(registry(row("D-161", "a confirmar", "implementada")), uses))
                 .hasSize(1);
+    }
+
+    private static final String ONLY_NIGHTLY_METHOD = """
+            class FixtureTest {
+                @Test
+                @NightlyTest(reason = "volume")
+                @Tag("D-059")
+                void volumeCase() {
+                }
+            }
+            """;
+
+    private static final String PR_METHOD = """
+            class FixtureTest {
+                @Test
+                @Tag("D-059")
+                void prCase() {
+                }
+            }
+            """;
+
+    private static List<String> violationsOf(String... sources) {
+        List<TaggedTestUse> uses = new ArrayList<>();
+        for (int i = 0; i < sources.length; i++) {
+            uses.addAll(TaggedTestScanner.scanSources(Map.of("Fixture" + i + "Test.java", sources[i])));
+        }
+        return DecisionCoverageRules.findViolations(registry(row("D-059", "vigente", "implementada")), uses);
+    }
+
+    @Test
+    void r5FailsWhenTheOnlyTaggedTestIsNightly() {
+        assertThat(violationsOf(ONLY_NIGHTLY_METHOD)).singleElement().asString().startsWith("R5 D-059");
+    }
+
+    @Test
+    void r5FailsWhenTheWholeClassIsNightly() {
+        String source = """
+                @Tag("D-059")
+                @NightlyTest(reason = "volume")
+                class FixtureTest {
+                    @Test
+                    void case1() {
+                    }
+                }
+                """;
+
+        assertThat(violationsOf(source)).singleElement().asString().startsWith("R5 D-059");
+    }
+
+    @Test
+    void r5FailsWhenTheOnlyTaggedTestIsAMigrationTest() {
+        String source = """
+                @Tag("migration")
+                class FixtureTest {
+                    @Test
+                    @Tag("D-059")
+                    void case1() {
+                    }
+                }
+                """;
+
+        assertThat(violationsOf(source)).singleElement().asString().startsWith("R5 D-059");
+    }
+
+    @Test
+    void r5FailsWhenTheOnlyTaggedTestHasTheRawNightlyTag() {
+        String source = """
+                class FixtureTest {
+                    @Test
+                    @Tag("nightly")
+                    @Tag("D-059")
+                    void case1() {
+                    }
+                }
+                """;
+
+        assertThat(violationsOf(source)).singleElement().asString().startsWith("R5 D-059");
+    }
+
+    @Test
+    void r5FailsWhenTheOnlyTaggedTestIsDisabled() {
+        String source = """
+                class FixtureTest {
+                    @Test
+                    @Disabled("later")
+                    @Tag("D-059")
+                    void case1() {
+                    }
+                }
+                """;
+
+        assertThat(violationsOf(source)).singleElement().asString().startsWith("R5 D-059");
+    }
+
+    @Test
+    void r5IsSatisfiedByOnePrTestEvenIfOtherTestsOfTheDecisionAreNightly() {
+        assertThat(violationsOf(ONLY_NIGHTLY_METHOD, PR_METHOD)).isEmpty();
+    }
+
+    @Test
+    void removingTheOnlyPrTestOfADecisionMakesTheCoverageFail() {
+        assertThat(violationsOf(ONLY_NIGHTLY_METHOD, PR_METHOD)).isEmpty();
+        assertThat(violationsOf(ONLY_NIGHTLY_METHOD)).hasSize(1);
+    }
+
+    @Test
+    void aNightlyMarkerOnAnotherMethodDoesNotMakeTheNextTestNightly() {
+        String source = """
+                class FixtureTest {
+                    @Test
+                    @NightlyTest(reason = "volume")
+                    void volumeCase() {
+                    }
+
+                    @Test
+                    @Tag("D-059")
+                    void prCase() {
+                    }
+                }
+                """;
+
+        assertThat(violationsOf(source)).isEmpty();
+    }
+
+    @Test
+    void aNightlyReasonWithSemicolonsAndBracesStillMarksTheTest() {
+        String source = """
+                class FixtureTest {
+                    @Test
+                    @NightlyTest(reason = "volume; heavy {400 rows}")
+                    @Tag("D-059")
+                    void volumeCase() {
+                    }
+                }
+                """;
+
+        assertThat(violationsOf(source)).singleElement().asString().startsWith("R5 D-059");
+    }
+
+    @Test
+    void anUntaggedDecisionStillReportsR1AndNotR5() {
+        assertThat(violationsOf()).singleElement().asString().startsWith("R1 D-059");
     }
 
     @Test

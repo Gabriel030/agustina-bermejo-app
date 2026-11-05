@@ -1,6 +1,5 @@
 package com.red_escuela.backend.announcement.usecase.audience;
 
-import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
 import com.red_escuela.backend.announcement.dto.AudienceStudentResponse;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
@@ -9,11 +8,9 @@ import com.red_escuela.backend.announcement.service.audience.AudienceLabels;
 import com.red_escuela.backend.announcement.service.audience.AudienceService;
 import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
 import com.red_escuela.backend.announcement.service.audience.StudentSnapshot;
-import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -26,21 +23,16 @@ public class PreviewAudienceService implements PreviewAudienceUseCase {
 
     private final AudienceService audienceService;
     private final SectionMembership sectionMembership;
-    private final CurrentInstructorService currentInstructorService;
 
     public PreviewAudienceService(AudienceService audienceService,
-                                  SectionMembership sectionMembership,
-                                  CurrentInstructorService currentInstructorService) {
+                                  SectionMembership sectionMembership) {
         this.audienceService = audienceService;
         this.sectionMembership = sectionMembership;
-        this.currentInstructorService = currentInstructorService;
     }
 
     @Override
-    @Transactional(readOnly = true)
     public AudiencePreviewResponse preview(PreviewAudienceCommand command) {
-        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        sectionMembership.requireInstructorOf(command.sectionType(), command.sectionId(), instructor.getId());
+        sectionMembership.requireCurrentInstructorOf(command.sectionType(), command.sectionId());
 
         SectionSnapshot section = audienceService.snapshotOf(command.sectionType(), command.sectionId());
         List<StudentSnapshot> matched = audienceService.resolve(section, command.spec());

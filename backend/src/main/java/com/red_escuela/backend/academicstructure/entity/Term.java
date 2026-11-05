@@ -1,13 +1,16 @@
 package com.red_escuela.backend.academicstructure.entity;
 import jakarta.persistence.*;
+import org.springframework.modulith.NamedInterface;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity
@@ -24,23 +27,24 @@ public class Term {
     @Column(name = "description")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private String type;
+    private TermType type;
 
-    @Column(name = "start_date")
+    @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
 
-    @Column(name = "end_date")
+    @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private StatusType status;
 
-    @Column(name = "enrollment_start")
+    @Column(name = "enrollment_start", nullable = false)
     private LocalDateTime enrollmentStart;
 
-    @Column(name = "enrollment_end")
+    @Column(name = "enrollment_end", nullable = false)
     private LocalDateTime enrollmentEnd;
 
     @Enumerated(EnumType.STRING)

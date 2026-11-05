@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
 export function useEnrollmentPaymentStatus() {
@@ -39,18 +39,44 @@ export function usePriceBreakdown(invoiceId) {
   });
 }
 
-export function useSubirComprobante() {
+export function useSubmitBankTransferReceipt({ studentId } = {}) {
   const queryClient = useQueryClient();
+  const invalidateOwner = () => {
+    if (studentId == null) {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['students', String(studentId), 'billing-overview'] });
+    queryClient.invalidateQueries({ queryKey: ['admin', 'bank-transfer-receipts'] });
+  };
   return useMutation({
-    mutationFn: ({ invoiceId, file }) => {
-      const body = new FormData();
-      body.append('comprobante', file);
-      return apiFetch(`/me/invoices/${invoiceId}/bank-transfer-receipts`, { method: 'POST', body });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['me', 'bank-transfer-receipts'] });
+    mutationFn: ({ submission, idempotencyKey }) =>
+      apiFetch(submission.path, {
+        method: 'POST',
+        body: submission.body,
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
+    onSuccess: invalidateOwner,
+    onError: (error) => {
+      if (error?.status === 409) invalidateOwner();
     },
   });
+}
+
+export function useMyOpenInvoices() {
+  const { data: standings, isLoading: loadingStandings } = useEnrollmentPaymentStatus();
+  const results = useQueries({
+    queries: (standings ?? []).map((enrollment) => {
+      const segment = enrollment.enrollmentType === 'CourseEnrollment' ? 'course-enrollments' : 'program-enrollments';
+      return {
+        queryKey: ['me', segment, enrollment.enrollmentId, 'invoices'],
+        queryFn: () => apiFetch(`/me/${segment}/${enrollment.enrollmentId}/invoices`),
+      };
+    }),
+  });
+  const loading = loadingStandings || results.some((result) => result.isLoading);
+  const invoices = results.flatMap((result) => result.data?.invoices ?? []);
+  return { invoices, isLoading: loading };
 }
 
 export function useCrearPreferenciaMp() {
@@ -75,11 +101,23 @@ export function useAdminBillingOverview(studentId) {
   });
 }
 
-export function useRegistrarPago() {
+export function usePreviewCashPayment(studentId) {
+  return useMutation({
+    mutationFn: (amount) =>
+      apiFetch(`/students/${studentId}/cash-payments/preview`, { method: 'POST', body: JSON.stringify({ amount }) }),
+  });
+}
+
+export function useRegisterCashPayment(studentId) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => apiFetch('/payments', { method: 'POST', body: JSON.stringify(payload) }),
-    onSuccess: () => {
+    mutationFn: ({ key, payload }) =>
+      apiFetch(`/students/${studentId}/cash-payments`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': key },
+        body: JSON.stringify(payload),
+      }),
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
   });

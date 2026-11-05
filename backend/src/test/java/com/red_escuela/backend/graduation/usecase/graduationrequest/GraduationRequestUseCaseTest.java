@@ -1,5 +1,7 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
@@ -7,11 +9,12 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.graduation.dto.OwnGraduationRequestResponse;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -53,6 +56,8 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@org.springframework.test.context.event.RecordApplicationEvents
+@SharedSpyBeans
 class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -68,7 +73,16 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     private RejectGraduationRequestUseCase rejectGraduationRequestUseCase;
 
     @Autowired
+    private GetOwnGraduationRequestUseCase getOwnGraduationRequestUseCase;
+
+    @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private org.springframework.test.context.event.ApplicationEvents applicationEvents;
+
+    @Autowired
+    private com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort withdrawalBillingPort;
 
     @AfterEach
     void clearSecurityContext() {
@@ -127,7 +141,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(programSubject);
 
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
@@ -367,6 +381,81 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    @org.junit.jupiter.api.Tag("D-296")
+    @org.junit.jupiter.api.Tag("D-142")
+    void approvingAGraduationInOctoberWithPaidFutureInstallmentsEmitsNoCreditNoteAndMovesNothing() {
+        Student student = persistStudent("80000011");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos11");
+        entityManager.flush();
+        BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(java.time.YearMonth.of(2027, 11))
+                .dueOn(LocalDate.of(2027, 11, 10)).withBaseAmount(ars(100)).paid().build();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000011");
+        authenticateAsPerson("DIRECTOR80000011");
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2027, 10, 20));
+        long creditNotesBefore = countRows("credit_note");
+        long entriesBefore = countRows("current_account_entry");
+        long allocationsBefore = countRows("payment_allocation");
+        long authorizationRequestsBefore = countRows("authorization_request");
+
+        approveGraduationRequestUseCase.approve(request.getId());
+        entityManager.flush();
+
+        assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
+        assertThat(applicationEvents.stream(com.red_escuela.backend.enrollment.events.ProgramEnrollmentGraduatedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.programEnrollmentId()).isEqualTo(enrollment.getId());
+                    assertThat(event.studentId()).isEqualTo(student.getId());
+                    assertThat(event.effectiveDate()).isEqualTo(LocalDate.of(2027, 10, 20));
+                });
+        assertThat(countRows("credit_note")).isEqualTo(creditNotesBefore);
+        assertThat(countRows("current_account_entry")).isEqualTo(entriesBefore);
+        assertThat(countRows("payment_allocation")).isEqualTo(allocationsBefore);
+        assertThat(countRows("authorization_request")).isEqualTo(authorizationRequestsBefore);
+        assertThat(entityManager.createNativeQuery("select unallocated_credit_amount from student_current_account a where a.student_id = :studentId")
+                .setParameter("studentId", student.getId()).getResultList()).allSatisfy(amount -> assertThat((java.math.BigDecimal) amount).isEqualByComparingTo("0.00"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    @org.junit.jupiter.api.Tag("D-296")
+    void approvingAGraduationRegistersItInBillingWithTheGraduationCause() {
+        Student student = persistStudent("80000012");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos12");
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000012");
+        authenticateAsPerson("DIRECTOR80000012");
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2027, 10, 20));
+
+        approveGraduationRequestUseCase.approve(request.getId());
+
+        org.mockito.Mockito.verify(withdrawalBillingPort).registerWithdrawalForBilling(
+                com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts.ofProgramEnrollment(student.getId(), enrollment.getId(), LocalDate.of(2027, 10, 20), LocalDate.of(2027, 10, 20),
+                        com.red_escuela.backend.enrollment.api.WithdrawalCause.GRADUATION));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    void aFailureOfTheBillingPortAbortsTheGraduationApprovalInTheSameTransaction() {
+        Student student = persistStudent("80000013");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos13");
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000013");
+        authenticateAsPerson("DIRECTOR80000013");
+        org.mockito.Mockito.doThrow(new IllegalStateException("billing unavailable")).when(withdrawalBillingPort).registerWithdrawalForBilling(org.mockito.ArgumentMatchers.any());
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId())).hasRootCauseInstanceOf(IllegalStateException.class).hasMessageContaining("billing unavailable");
+
+        org.springframework.test.context.transaction.TestTransaction.flagForCommit();
+        assertThatThrownBy(org.springframework.test.context.transaction.TestTransaction::end)
+                .isInstanceOf(org.springframework.transaction.UnexpectedRollbackException.class);
+    }
+
+    private long countRows(String table) {
+        return ((Number) entityManager.createNativeQuery("select count(*) from " + table).getSingleResult()).longValue();
+    }
+
+    @Test
     void rejectingARequestedRequestAllowsRequestingAgain() {
         Student student = persistStudent("80000005");
         ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos4");
@@ -382,5 +471,148 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         GraduationRequest second = requestGraduationUseCase.request(enrollment.getId());
         assertThat(second.getId()).isNotEqualTo(first.getId());
         assertThat(second.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
+    }
+
+    @Test
+    void requestingGraduationPublishesOneRequestedEventWithFlatValues() {
+        Student student = persistStudent("80000021");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento1");
+        entityManager.flush();
+
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.requestId()).isEqualTo(request.getId());
+                    assertThat(event.studentPersonId()).isEqualTo(student.getPerson().getId());
+                    assertThat(event.studentName()).isEqualTo("Persona 80000021");
+                    assertThat(event.programName()).isEqualTo("CarreraEvento1");
+                });
+    }
+
+    @Test
+    void aRejectedRequestPublishesNoRequestedEventUntilTheNextRequest() {
+        Student student = persistStudent("80000022");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento2");
+        entityManager.flush();
+        GraduationRequest first = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000022");
+        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(first.getId(), "Datos incompletos"));
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestedEvent.class)).hasSize(1);
+        requestGraduationUseCase.request(enrollment.getId());
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestedEvent.class)).hasSize(2);
+    }
+
+    @Test
+    void verifyingTheDebtPublishesOneVerifiedEventWithFlatValues() {
+        Student student = persistStudent("80000023");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento3");
+        entityManager.flush();
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000023");
+
+        verifyGraduationRequestDebtUseCase.verify(request.getId());
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.requestId()).isEqualTo(request.getId());
+                    assertThat(event.studentPersonId()).isEqualTo(student.getPerson().getId());
+                    assertThat(event.programName()).isEqualTo("CarreraEvento3");
+                });
+    }
+
+    @Test
+    void aVerificationBlockedByDebtPublishesNoVerifiedEvent() {
+        Student student = persistStudent("80000028");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraEvento4");
+        entityManager.flush();
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        persistInvoice(enrollment, LocalDate.of(2026, 1, 10));
+        authenticateAsPerson("ADMIN80000028");
+
+        assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId())).isInstanceOf(PendingDebtException.class);
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void ownRequestWithoutAnyRequestReportsEligibilityAndNoRequest() {
+        Student student = persistStudent("80000024");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraPropia1");
+        entityManager.flush();
+
+        OwnGraduationRequestResponse response = getOwnGraduationRequestUseCase.get(enrollment.getId());
+
+        assertThat(response.request()).isNull();
+        assertThat(response.eligible()).isTrue();
+        assertThat(response.graduated()).isFalse();
+        assertThat(response.programName()).isEqualTo("CarreraPropia1");
+        assertThat(response.pendingMandatorySubjects()).isEmpty();
+    }
+
+    @Test
+    void ownRequestWithoutBeingEligibleListsTheMissingSubjects() {
+        Student student = persistStudent("80000025");
+        Program program = persistProgramWithPendingSubject("CarreraPropia2");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+
+        OwnGraduationRequestResponse response = getOwnGraduationRequestUseCase.get(enrollment.getId());
+
+        assertThat(response.eligible()).isFalse();
+        assertThat(response.pendingMandatorySubjects()).containsExactly("Materia pendiente CarreraPropia2");
+        assertThat(response.requiredCredits()).isEqualTo(10);
+        assertThat(response.accumulatedCredits()).isZero();
+        assertThat(response.request()).isNull();
+    }
+
+    @Test
+    void ownRequestFollowsTheRequestThroughVerificationAndApproval() {
+        Student student = persistStudent("80000026");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraPropia3");
+        entityManager.flush();
+
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        var requested = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(requested.id()).isEqualTo(request.getId());
+        assertThat(requested.status()).isEqualTo("REQUESTED");
+        assertThat(requested.verifiedAt()).isNull();
+        assertThat(requested.decidedAt()).isNull();
+
+        authenticateAsPerson("ADMIN80000026");
+        verifyGraduationRequestDebtUseCase.verify(request.getId());
+        var verified = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(verified.status()).isEqualTo("ADMIN_VERIFIED");
+        assertThat(verified.verifiedAt()).isNotNull();
+        assertThat(verified.decidedAt()).isNull();
+
+        authenticateAsPerson("DIRECTOR80000026");
+        approveGraduationRequestUseCase.approve(request.getId());
+        OwnGraduationRequestResponse approved = getOwnGraduationRequestUseCase.get(enrollment.getId());
+        assertThat(approved.request().status()).isEqualTo("APPROVED");
+        assertThat(approved.request().decidedAt()).isNotNull();
+        assertThat(approved.request().rejectionReason()).isNull();
+        assertThat(approved.graduated()).isTrue();
+    }
+
+    @Test
+    void ownRequestShowsTheRejectionReasonAndThenTheNewerRequest() {
+        Student student = persistStudent("80000027");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraPropia4");
+        entityManager.flush();
+        GraduationRequest first = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000027");
+        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(first.getId(), "Datos incompletos"));
+
+        var rejected = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(rejected.status()).isEqualTo("REJECTED");
+        assertThat(rejected.rejectionReason()).isEqualTo("Datos incompletos");
+
+        GraduationRequest second = requestGraduationUseCase.request(enrollment.getId());
+        var latest = getOwnGraduationRequestUseCase.get(enrollment.getId()).request();
+        assertThat(latest.id()).isEqualTo(second.getId());
+        assertThat(latest.status()).isEqualTo("REQUESTED");
+        assertThat(latest.rejectionReason()).isNull();
     }
 }

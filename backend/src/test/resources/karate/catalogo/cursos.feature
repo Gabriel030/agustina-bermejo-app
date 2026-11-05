@@ -12,7 +12,7 @@ Feature: Catálogo — Cursos (CourseController)
     * def descripcionPeriodo = 'Karate - Periodo catálogo curso ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(descripcionPeriodo)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -225,7 +225,7 @@ Feature: Catálogo — Cursos (CourseController)
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión única', termId: '#(termId)', capacity: 1 }
+    And request { name: 'Comisión única', shift: 'MORNING', termId: '#(termId)', capacity: 1 }
     When method post
     Then status 201
 

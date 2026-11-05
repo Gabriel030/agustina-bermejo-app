@@ -4,6 +4,8 @@ import com.red_escuela.backend.billing.dto.PaymentPlanSelectionResponse;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class PaymentPlanSelectionController {
     private final SelectPaymentPlanForCourseUseCase selectForCourseUseCase;
     private final SelectPaymentPlanForProgramUseCase selectForProgramUseCase;
@@ -24,6 +27,7 @@ public class PaymentPlanSelectionController {
         this.selectForProgramUseCase = selectForProgramUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/course-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
@@ -31,6 +35,7 @@ public class PaymentPlanSelectionController {
         return PaymentPlanSelectionResponse.from(selectForCourseUseCase.select(id, request));
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/program-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")

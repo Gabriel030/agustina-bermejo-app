@@ -1,20 +1,25 @@
 package com.red_escuela.backend.billing.invoice.operation;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.Promotion;
-import com.red_escuela.backend.billing.entity.PromotionBenefit;
-import com.red_escuela.backend.billing.entity.PromotionRedemption;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.entity.Scholarship;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
+import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.domain.CohortPromotionAcquisition;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
+import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.domain.ScholarshipPeriodRange;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrant;
+import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -33,11 +38,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.YearMonth;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class IssuingScenarioFactory {
+
+    public static final LocalDate INITIAL_PRICE_FROM = LocalDate.of(2020, 1, 1);
 
     private static final AtomicLong SEQUENCE = new AtomicLong(800_000_000L + java.util.concurrent.ThreadLocalRandom.current().nextLong(0, 90_000_000L));
 
@@ -85,8 +93,8 @@ public class IssuingScenarioFactory {
             program.setTotalCreditsRequired(10);
             program.setCurrency(currency);
             entityManager.persist(program);
-            addPrice(program, director, FeeType.MONTHLY_INSTALLMENT, currency, monthlyPrice, LocalDate.of(2020, 1, 1));
-            addPrice(program, director, FeeType.ENROLLMENT_FEE, currency, enrollmentFeePrice, LocalDate.of(2020, 1, 1));
+            addPrice(program, director, FeeType.MONTHLY_INSTALLMENT, currency, monthlyPrice, INITIAL_PRICE_FROM);
+            addPrice(program, director, FeeType.ENROLLMENT_FEE, currency, enrollmentFeePrice, INITIAL_PRICE_FROM);
             return new Offering(program.getId(), director.getId(), institution.getId(), currency);
         });
     }
@@ -102,7 +110,7 @@ public class IssuingScenarioFactory {
 
     public Long newTemplate(Offering offering, int year) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(String.valueOf(year));
             term.setStatus(StatusType.ACTIVE);
@@ -181,42 +189,37 @@ public class IssuingScenarioFactory {
         });
     }
 
-    public Long grantScholarship(Offering offering, Learner learner, Percentage rate, int installments, ScholarshipScope scope) {
+    public Long grantScholarship(Offering offering, Learner learner, Percentage rate, YearMonth from, YearMonth to) {
         return transactionTemplate.execute(status -> {
-            Scholarship scholarship = new Scholarship();
-            scholarship.setProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, learner.programEnrollmentId()));
-            scholarship.setValue(new MonetaryAdjustment.Proportional(rate));
-            scholarship.setReason("Beca " + rate.points().stripTrailingZeros().toPlainString() + "%");
-            scholarship.setAppliesTo(scope);
-            scholarship.setGrantedBy(entityManager.getReference(Person.class, offering.directorId()));
-            scholarship.addInstallments(installments);
+            Long definitionId = ((Number) entityManager.createNativeQuery(
+                    "select id from discount_definition where discount_type = 'SCHOLARSHIP' and status = 'ACTIVE' order by id limit 1").getSingleResult()).longValue();
+            StudentDiscountGrant grant = new StudentDiscountGrant(EnrollmentReference.ofProgram(learner.programEnrollmentId()), learner.studentId(), offering.currency(),
+                    definitionId, DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, new MonetaryAdjustment.Proportional(rate), null, 1,
+                    new ScholarshipPeriodRange(from, to), "Beca " + rate.points().stripTrailingZeros().toPlainString() + "%");
+            StudentDiscount scholarship = StudentDiscount.grantStudentDiscount(grant, offering.directorId(), null, Instant.parse("2027-02-01T10:00:00Z"));
             entityManager.persist(scholarship);
             return scholarship.getId();
         });
     }
 
-    public Long redeemPromotion(Offering offering, Learner learner, FeeType feeType, Percentage rate, Integer scopeCount) {
+    public Long acquireCohortPromotion(Offering offering, Learner learner, FeeType feeType, Percentage rate, Integer scopeCount) {
+        return acquireCohortPromotion(offering, learner, feeType, rate, scopeCount, null);
+    }
+
+    public Long acquireCohortPromotion(Offering offering, Learner learner, FeeType feeType, Percentage rate, Integer scopeCount, LocalDate availableUntil) {
         return transactionTemplate.execute(status -> {
-            Promotion promotion = new Promotion();
-            promotion.setDescription("Promo " + rate.points().stripTrailingZeros().toPlainString() + "%");
-            promotion.setProgram(entityManager.getReference(Program.class, offering.programId()));
-            promotion.setEligibilityValidFrom(LocalDate.of(2020, 1, 1));
-            promotion.setEligibilityValidTo(LocalDate.of(2030, 1, 1));
-            promotion.setCreatedBy(entityManager.getReference(Person.class, offering.directorId()));
-            promotion.setCreatedAt(LocalDateTime.of(2027, 1, 1, 0, 0));
+            Instant now = Instant.parse("2027-02-01T10:00:00Z");
+            DiscountDraftBuilder draft = DiscountDraftBuilder.cohortPromotion().named("Promo " + rate.points().stripTrailingZeros().toPlainString() + "%")
+                    .forProgram(offering.programId()).forInvoiceType(InvoiceType.valueOf(feeType.name())).withPercent(rate.points().toPlainString())
+                    .availableFrom(LocalDate.of(2020, 1, 1)).availableUntil(availableUntil).withEnrollmentWindow(LocalDate.of(2020, 1, 1), LocalDate.of(2030, 1, 1));
+            DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition((scopeCount == null ? draft.withoutInstallments() : draft.withInstallments(scopeCount)).build(),
+                    offering.directorId(), now);
+            entityManager.persist(definition);
+            CohortPromotionAcquisition acquisition = new CohortPromotionAcquisition(EnrollmentReference.ofProgram(learner.programEnrollmentId()), learner.studentId(), offering.currency(),
+                    definition, new ScholarshipPeriodRange(YearMonth.of(2027, 2), YearMonth.of(2027, 2)), offering.directorId(), "Promoción adquirida");
+            StudentDiscount promotion = StudentDiscount.acquireCohortPromotion(acquisition, now);
             entityManager.persist(promotion);
-            PromotionBenefit benefit = new PromotionBenefit();
-            benefit.setPromotion(promotion);
-            benefit.setFeeType(feeType);
-            benefit.setValue(new MonetaryAdjustment.Proportional(rate));
-            benefit.setInvoiceScopeCount(scopeCount);
-            entityManager.persist(benefit);
-            PromotionRedemption redemption = new PromotionRedemption();
-            redemption.setPromotion(promotion);
-            redemption.setPaymentPlanSelection(entityManager.getReference(PaymentPlanSelection.class, learner.selectionId()));
-            redemption.setRedeemedAt(LocalDateTime.of(2027, 2, 1, 0, 0));
-            entityManager.persist(redemption);
-            return benefit.getId();
+            return promotion.getId();
         });
     }
 }

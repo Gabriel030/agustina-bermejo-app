@@ -1,5 +1,6 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -9,7 +10,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
@@ -31,9 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -85,9 +84,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
 
-    @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
-
     private Long persistInstitution() {
         Institution institution = new Institution();
         institution.setName("Instituto de prueba");
@@ -98,6 +94,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
     private Program persistProgram() {
         Program program = new Program();
+        program.setVisibleInCatalog(true);
         program.setName("Diseño Gráfico " + System.nanoTime());
         program.setTotalYears(3);
         program.setTotalCreditsRequired(0);
@@ -114,7 +111,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         director.setStatus(StatusType.ACTIVE);
         entityManager.persist(director);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
@@ -140,12 +137,13 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse(int capacity) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
 
         Course course = new Course();
+        course.setVisibleInCatalog(true);
         course.setName("Illustrator desde cero " + System.nanoTime());
         course.setTerm(term);
         course.setCapacity(capacity);
@@ -201,13 +199,23 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile comprobante() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
+        return new MockMultipartFile("file", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido de prueba".getBytes());
     }
 
     private RegisterRequest validRegistration(String sufijo, Long institutionId) {
         return new RegisterRequest(
                 "Sofía", "Ramírez", "sofia.ramirez." + sufijo + "@example.com",
                 "sofia.ramirez." + sufijo, "Test1234", institutionId);
+    }
+
+    private void uploadRequiredDocuments(Long applicationId, String accessToken) throws Exception {
+        for (String type : new String[] {"DNI_FRENTE", "DNI_DORSO", "ANALITICO_SECUNDARIO"}) {
+            mockMvc.perform(multipart("/me/program-enrollment-applications/" + applicationId + "/documents")
+                            .file(new MockMultipartFile("file", type + ".pdf", "application/pdf", "%PDF-1.4 test".getBytes()))
+                            .param("type", type)
+                            .header("Authorization", "Bearer " + accessToken))
+                    .andExpect(status().isCreated());
+        }
     }
 
     private void giveDni(String suffix) {
@@ -306,6 +314,8 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isConflict());
 
+        uploadRequiredDocuments(applicationId, accessToken);
+
         String tokenPreceptor = preceptorToken();
         mockMvc.perform(post("/program-enrollment-applications/" + applicationId + "/approve")
                         .header("Authorization", "Bearer " + tokenPreceptor))
@@ -326,10 +336,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
                 .isEmpty();
 
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                java.util.List.of(new PaymentAllocationRequest(persisted.getAdmissionInvoice().getId(),
-                        persisted.getAdmissionInvoice().getAmounts().outstandingAmount().value())),
-                PaymentMethod.TRANSFER, false, null, null, null, null), persisted.getDecidedBy());
+        BillingTestFixtures.registerApprovedBankTransferPayment(persisted.getAdmissionInvoice().getId(), persisted.getDecidedBy().getId());
         entityManager.flush();
         entityManager.clear();
 
@@ -509,6 +516,13 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(multipart("/me/course-enrollments")
                         .file(comprobante())
                         .param("courseId", course.getId().toString())
+                        .param("declaredAmount", "15000.00")
+                        .param("currency", "ARS")
+                        .param("transferDate", java.time.LocalDate.now().toString())
+                        .param("operationNumber", "OP-REGISTRATION-1")
+                        .param("originAccount", "0170099220000067797370")
+                        .param("holderName", "Titular de prueba")
+                        .header("Idempotency-Key", java.util.UUID.randomUUID().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.paymentStatus").value("PENDING_REVIEW"))

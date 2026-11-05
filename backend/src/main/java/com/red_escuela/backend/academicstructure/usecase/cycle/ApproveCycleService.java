@@ -9,11 +9,9 @@ import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotR
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleReviewer;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @UseCase
 public class ApproveCycleService implements ApproveCycleUseCase {
@@ -23,7 +21,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
     private final CourseSubjectSectionRepository courseSectionRepository;
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionConflictChecker conflictChecker;
-    private final CurrentPersonService currentPersonService;
+    private final AcademicOfferingCycleReviewer cycleReviewer;
 
     public ApproveCycleService(
             AcademicOfferingCycleRepository cycleRepository,
@@ -31,14 +29,14 @@ public class ApproveCycleService implements ApproveCycleUseCase {
             CourseSubjectSectionRepository courseSectionRepository,
             SectionScheduleSlotRepository slotRepository,
             SectionConflictChecker conflictChecker,
-            CurrentPersonService currentPersonService
+            AcademicOfferingCycleReviewer cycleReviewer
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.courseSectionRepository = courseSectionRepository;
         this.slotRepository = slotRepository;
         this.conflictChecker = conflictChecker;
-        this.currentPersonService = currentPersonService;
+        this.cycleReviewer = cycleReviewer;
     }
 
     @Override
@@ -55,6 +53,7 @@ public class ApproveCycleService implements ApproveCycleUseCase {
             for (var slot : slotRepository.findBySubjectSectionId(section.getId())) {
                 conflictChecker.checkClassroomAvailability(cycle.getTerm(),
                         slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
+                conflictChecker.checkSubjectSlotInstructorsAvailability(cycle, section, slot);
             }
         }
 
@@ -63,13 +62,14 @@ public class ApproveCycleService implements ApproveCycleUseCase {
             for (var slot : slotRepository.findByCourseSectionId(section.getId())) {
                 conflictChecker.checkClassroomAvailability(cycle.getTerm(),
                         slot.getClassroom().getId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime(), slot.getId());
+                conflictChecker.checkCourseSlotInstructorsAvailability(cycle, section, slot);
             }
         }
 
         subjectSections.forEach(s -> { s.setStatus(StatusType.ACTIVE); subjectSectionRepository.save(s); });
         courseSections.forEach(s -> { s.setStatus(StatusType.ACTIVE); courseSectionRepository.save(s); });
 
-        cycle.approve(currentPersonService.resolveCurrentPerson(), LocalDateTime.now());
+        cycleReviewer.approve(cycle);
         cycleRepository.save(cycle);
     }
 }

@@ -5,8 +5,12 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { SeccionDestinatarios } from '../components/SeccionDestinatarios';
 import { SeccionMensaje } from '../components/SeccionMensaje';
 import { EnvioYCaducidad } from '../components/EnvioYCaducidad';
@@ -16,8 +20,9 @@ import { useAvisos, useDestinatariosDeAviso } from '../hooks/useAvisos';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
 import { useEditarAviso } from '../hooks/useEditarAviso';
-import { aPayload, desdeAviso, SPEC_INICIAL } from '../lib/formularioDeAviso';
+import { aPayload, cambiosQueMerecenAviso, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL, unirCambios } from '../lib/formularioDeAviso';
 import { formatearFechaHora } from '@/lib/avisos';
+import { LoadErrorState } from '@/components/LoadErrorState';
 
 export function AvisoEditar() {
   const { sectionId, avisoId } = useParams();
@@ -26,7 +31,7 @@ export function AvisoEditar() {
   const tipo = searchParams.get('type') === 'COURSE' ? 'COURSE' : 'PROGRAM';
   const esCurso = tipo === 'COURSE';
 
-  const { data: avisos, isLoading } = useAvisos(sectionId, tipo);
+  const { data: avisos, isLoading, isError, error, refetch } = useAvisos(sectionId, tipo);
   const aviso = (avisos ?? []).find((a) => String(a.id) === avisoId);
   const programado = aviso?.status === 'SCHEDULED';
 
@@ -34,6 +39,8 @@ export function AvisoEditar() {
   const [spec, setSpec] = useState(SPEC_INICIAL);
   const [envioAbierto, setEnvioAbierto] = useState(false);
   const [rosterAbierto, setRosterAbierto] = useState(false);
+  const [confirmarRenotificar, setConfirmarRenotificar] = useState(false);
+  const [notificarManual, setNotificarManual] = useState(null);
 
   useEffect(() => {
     if (aviso && valores === null) setValores(desdeAviso(aviso));
@@ -47,7 +54,45 @@ export function AvisoEditar() {
   const destinatarios = useDestinatariosDeAviso(programado ? undefined : avisoId);
   const editarAviso = useEditarAviso(sectionId, tipo, avisoId);
 
+  const cambios = aviso && valores ? cambiosQueMerecenAviso(desdeAviso(aviso), valores) : [];
+  const notificar = notificarManual ?? cambios.length > 0;
+  const motivoDeCasilla =
+    notificarManual !== null
+      ? `Elegiste ${notificarManual ? 'avisar' : 'no avisar'} a mano.`
+      : cambios.length > 0
+        ? `Se tildó solo porque cambiaste ${unirCambios(cambios)}.`
+        : 'Viene destildada: los cambios de texto o categoría no generan notificación.';
+
   const volverA = `/docente/mis-comisiones/${sectionId}?tab=avisos${esCurso ? '&type=COURSE' : ''}`;
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <h1 className="font-heading text-2xl font-bold text-ink">Editar aviso</h1>
+        <LoadErrorState error={error} onRetry={refetch} resource="el aviso" backTo={volverA} backLabel="los avisos" />
+      </PageContainer>
+    );
+  }
+
+  if (!isLoading && avisos && !aviso) {
+    return (
+      <PageContainer>
+        <h1 className="font-heading text-2xl font-bold text-ink">Editar aviso</h1>
+        <GlassCard className="p-4">
+          <EmptyState
+            icon="🔎"
+            title="No encontramos este aviso"
+            description="Puede que haya sido eliminado o que el enlace sea incorrecto."
+            action={
+              <Button variant="outline" onClick={() => navigate(volverA)}>
+                Volver a los avisos
+              </Button>
+            }
+          />
+        </GlassCard>
+      </PageContainer>
+    );
+  }
 
   if (isLoading || !aviso || !valores) {
     return (
@@ -59,13 +104,18 @@ export function AvisoEditar() {
   }
 
   async function guardar() {
+    setConfirmarRenotificar(false);
     try {
       const payload = aPayload({ valores, spec, esCurso });
-      await editarAviso.mutateAsync({ ...payload, audience: programado ? payload.audience : null });
-      toast.success(programado ? 'Cambios guardados' : 'Aviso actualizado: les volvió a llegar la notificación');
+      await editarAviso.mutateAsync({
+        ...payload,
+        audience: programado ? payload.audience : null,
+        ...(programado ? {} : { notify: notificar }),
+      });
+      toast.success(notificar && !programado ? 'Aviso actualizado: les llegó la notificación del cambio' : 'Cambios guardados');
       navigate(volverA);
     } catch (error) {
-      toast.error(error.message ?? 'No pudimos guardar los cambios. Probá de nuevo.');
+      toast.error(mensajeDeErrorDeAviso(error, 'No pudimos guardar los cambios. Probá de nuevo.'));
     }
   }
 
@@ -93,7 +143,7 @@ export function AvisoEditar() {
       ) : (
         <GlassCard className="flex flex-col gap-3 p-5">
           <h2 className="font-heading text-[15px] font-semibold text-ink">Destinatarios</h2>
-          <Input readOnly className="cursor-default" value={aviso.audienceLabel} />
+          <Input readOnly aria-label="Destinatarios" className="cursor-default" value={aviso.audienceLabel} />
           <span className="text-[11.5px] text-ink-faint">
             {esCurso
               ? 'Un curso suelto no tiene esquema de evaluación, así que el aviso le llega a todo el curso.'
@@ -121,13 +171,34 @@ export function AvisoEditar() {
           valores={valores}
           onChange={setValores}
           yaEnviadoEl={programado ? null : aviso.sentAt}
+          soloReprogramar={programado}
         />
+        {!programado && (
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="avisar-cambio"
+              className="mt-0.5"
+              aria-describedby="avisar-cambio-motivo"
+              checked={notificar}
+              onCheckedChange={(value) => setNotificarManual(value === true)}
+            />
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="avisar-cambio" className="font-normal">
+                Avisar a los alumnos de este cambio
+              </Label>
+              <span id="avisar-cambio-motivo" className="text-[11.5px] text-ink-faint">
+                {motivoDeCasilla}
+              </span>
+            </div>
+          </div>
+        )}
         <TiraDeConsecuencias
           alcanzados={programado ? preview?.count ?? 0 : destinatarios.data?.length ?? 0}
           total={preview?.totalInSection ?? destinatarios.data?.length ?? 0}
           sinCorregir={!!preview?.hasUngradedInstances}
           scheduledFor={valores.cuando === 'programar' ? valores.scheduledFor : null}
-          reNotifica={!programado}
+          reNotifica={!programado && notificar}
+          sinNotificar={!programado && !notificar}
         />
       </SeccionMensaje>
 
@@ -140,11 +211,30 @@ export function AvisoEditar() {
           variant="gradient"
           loading={editarAviso.isPending}
           disabled={!valores.title.trim() || !valores.body.trim()}
-          onClick={guardar}
+          onClick={programado || !notificar ? guardar : () => setConfirmarRenotificar(true)}
         >
-          {programado ? 'Guardar cambios' : 'Guardar y volver a notificar'}
+          {notificar && !programado ? 'Guardar y avisar' : 'Guardar cambios'}
         </Button>
       </div>
+
+      <Dialog open={confirmarRenotificar} onOpenChange={setConfirmarRenotificar}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Volver a notificar</DialogTitle>
+            <DialogDescription>
+              Al guardar se volverá a notificar a todos los destinatarios ({destinatarios.data?.length ?? '—'} alumnos).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmarRenotificar(false)}>
+              Seguir editando
+            </Button>
+            <Button type="button" variant="gradient" onClick={guardar}>
+              Guardar y avisar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <RosterSegmento
         abierto={rosterAbierto}

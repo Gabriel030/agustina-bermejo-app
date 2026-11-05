@@ -3,6 +3,8 @@ package com.red_escuela.backend.billing.decision;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -32,13 +34,33 @@ class BillingDecisionRegistryTest {
     }
 
     @Test
-    void parsesEveryRowOfTheRepositoryRegistry() {
-        DecisionRegistry registry = DecisionRegistry.readFile(Path.of("../docs/billing/decision-registry.md"));
+    void parsesEveryRowOfTheRepositoryRegistry() throws IOException {
+        Path registryFile = Path.of("../docs/billing/decision-registry.md");
+        DecisionRegistry registry = DecisionRegistry.readFile(registryFile);
+        long decisionRowsInTheFile = Files.readAllLines(registryFile).stream().filter(line -> line.startsWith("| D-")).count();
 
-        assertThat(registry.size()).isEqualTo(260);
+        assertThat((long) registry.size()).isEqualTo(decisionRowsInTheFile).isGreaterThan(300L);
         assertThat(registry.find("D-001")).isPresent();
         assertThat(registry.find("D-177")).isPresent();
         assertThat(registry.find("D-170").orElseThrow().implementation()).isEqualTo("implementada");
+        assertThat(registry.find("D-490").orElseThrow().implementation()).isEqualTo("implementada");
+    }
+
+    @Test
+    @Tag("D-378")
+    @Tag("D-331")
+    @Tag("D-308")
+    @Tag("D-414")
+    void decisionRegistryRowsOfLatePaymentAnnulment() {
+        DecisionRegistry registry = DecisionRegistry.readFile(Path.of("../docs/billing/decision-registry.md"));
+
+        assertThat(registry.find("D-378").orElseThrow().implementation()).isEqualTo("implementada");
+        assertThat(registry.find("D-331").orElseThrow().implementation()).isEqualTo("implementada");
+        assertThat(registry.find("D-308").orElseThrow().implementation()).isEqualTo("implementada");
+        DecisionRegistryRow reposition = registry.find("D-414").orElseThrow();
+        assertThat(reposition.implementation()).isEqualTo("implementada");
+        assertThat(reposition.isCurrent()).isTrue();
+        assertThat(reposition.testCase()).startsWith("Dado un pago que anuló 5 días");
     }
 
     @Test

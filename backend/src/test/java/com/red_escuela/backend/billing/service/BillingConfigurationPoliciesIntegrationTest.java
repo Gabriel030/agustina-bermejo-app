@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.dto.UpdateTermRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.usecase.term.UpdateTermCommand;
@@ -220,29 +221,10 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
     @Test
     @Tag("D-002")
-    void creatingATemplateForATermWithoutDatesIsRejected() {
-        Career career = newCareer();
-        Long termId = transactionTemplate.execute(status -> {
-            Term term = new Term();
-            term.setYear(2027);
-            term.setDescription("sin fechas");
-            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
-            entityManager.persist(term);
-            return term.getId();
-        });
-        authenticateAsNewPerson();
-
-        assertThatThrownBy(() -> createTemplate.create(career.programId(), termId, 10))
-                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
-                        e -> assertThat(codes(e)).containsExactly("TERM_WITHOUT_DATES"));
-    }
-
-    @Test
-    @Tag("D-002")
     void aTemplateCreatedWithoutConfigurationPersistsTheFirstFeeMonthBeforeTheTermStart() {
         Career career = newCareer();
         Long januaryTermId = transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2027);
             term.setDescription("enero");
             term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
@@ -266,7 +248,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         Year marchYear = newYear(career, 2028, 10, 1, 2, null);
         authenticateAsNewPerson();
         Long termId = transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2029);
             term.setDescription("marzo");
             term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);

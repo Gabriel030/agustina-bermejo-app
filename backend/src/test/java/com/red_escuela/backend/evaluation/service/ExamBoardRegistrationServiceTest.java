@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.TestSubjectCodes;
@@ -11,7 +12,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -27,7 +28,7 @@ import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInAnotherEx
 import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInExamBoardException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
-import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.evaluation.exception.StudentNotRegularException;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
@@ -99,7 +100,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

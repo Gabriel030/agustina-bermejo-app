@@ -79,6 +79,6 @@ class CurrentAccountAllocationControllerTest extends AbstractIntegrationTest {
 
     @org.junit.jupiter.api.Test
     void anonymousCallersAreRejected() throws Exception {
-        mockMvc.perform(post("/students/987654321/current-account/allocations")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/students/987654321/current-account/allocations")).andExpect(status().isUnauthorized());
     }
 }

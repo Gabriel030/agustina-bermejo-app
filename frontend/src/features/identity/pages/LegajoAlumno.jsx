@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { useWithdrawStudent, useResetStudentPassword } from '@/features/identity/hooks/useAccionesLegajo';
@@ -22,18 +23,33 @@ const ESTADO_STATUS_BADGE = {
 
 export function LegajoAlumno() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { usuario } = useAuth();
-  const { data: legajo, isLoading, isError } = useLegajoAlumno(id);
+  const { data: legajo, isLoading, isError, error, refetch } = useLegajoAlumno(id);
 
   const [bajaOpen, setBajaOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get('view') === 'financiero' ? 'financiero' : 'datos-personales');
+  const [enrollmentKey, setEnrollmentKey] = useState(null);
+  const [sectionEnrollmentId, setSectionEnrollmentId] = useState(null);
+
+  function handleEnrollmentChange(key) {
+    setEnrollmentKey(key);
+    setSectionEnrollmentId(null);
+  }
+
+  function handleViewGrades(key, sectionId) {
+    setEnrollmentKey(key);
+    setSectionEnrollmentId(sectionId);
+    setActiveTab('evaluacion');
+  }
 
   const withdrawMutation = useWithdrawStudent(id);
   const resetMutation = useResetStudentPassword(id);
 
   const rolBase = usuario?.roles[0]?.toLowerCase();
   const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
-  const puededarDeBaja = puedeAccionar && legajo?.status !== 'DELETED';
+  const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
 
   const badge = ESTADO_STATUS_BADGE[legajo?.status];
 
@@ -44,7 +60,7 @@ export function LegajoAlumno() {
           {isLoading ? (
             <Skeleton className="h-10 w-64" />
           ) : isError ? (
-            <p className="text-[14px] text-ink-faint">No se pudo cargar el legajo.</p>
+            <LoadErrorState error={error} onRetry={refetch} resource="el legajo" bare />
           ) : (
             <div className="flex items-center gap-3">
               <div>
@@ -59,7 +75,8 @@ export function LegajoAlumno() {
             </div>
           )}
 
-          <Tabs defaultValue="datos-personales">
+          {!isError && (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList variant="segmented" className="w-full">
               <TabsTrigger value="datos-personales" className="flex-1">
                 Datos personales
@@ -85,15 +102,27 @@ export function LegajoAlumno() {
               />
             </TabsContent>
             <TabsContent value="academico" className="mt-4">
-              <AcademicoTab />
+              <AcademicoTab
+                studentId={id}
+                enrollmentKey={enrollmentKey}
+                onEnrollmentChange={handleEnrollmentChange}
+                onViewGrades={handleViewGrades}
+              />
             </TabsContent>
             <TabsContent value="evaluacion" className="mt-4">
-              <EvaluacionTab />
+              <EvaluacionTab
+                studentId={id}
+                enrollmentKey={enrollmentKey}
+                onEnrollmentChange={handleEnrollmentChange}
+                sectionEnrollmentId={sectionEnrollmentId}
+                onSectionChange={setSectionEnrollmentId}
+              />
             </TabsContent>
             <TabsContent value="financiero" className="mt-4">
-              <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} />
+              <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} roleBase={rolBase} />
             </TabsContent>
           </Tabs>
+          )}
         </GlassCard>
       </div>
 

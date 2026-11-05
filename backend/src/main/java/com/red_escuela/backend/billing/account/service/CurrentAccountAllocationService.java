@@ -18,6 +18,7 @@ import com.red_escuela.backend.billing.account.repository.CurrentAccountEntryRep
 import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.billing.events.AccountCreditAllocatedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.events.PaymentAllocationReversedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,44 +73,66 @@ public class CurrentAccountAllocationService {
     @Transactional(propagation = Propagation.MANDATORY)
     public AccountCreditAllocationResult allocateAccountCreditToOldestInvoices(StudentCurrentAccount lockedAccount, LocalDate businessDate,
                                                                               StatusChangeActor actor) {
-        return allocateAccountCredit(lockedAccount, businessDate, actor, strategy, Set.of());
+        return allocateAccountCredit(lockedAccount, businessDate, actor, Set.of(), Set.of(), Set.of());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AccountCreditAllocationResult allocateAccountCreditToOldestInvoicesSkipping(StudentCurrentAccount lockedAccount, LocalDate businessDate,
+                                                                                      StatusChangeActor actor, Set<Long> skippedInvoiceIds) {
+        return allocateAccountCredit(lockedAccount, businessDate, actor, Set.of(), skippedInvoiceIds, Set.of());
+    }
+
+    public List<PlannedInvoiceAllocation> planFullInvoiceAllocationsSkipping(NonNegativeMoney credit, List<OpenInvoiceView> openInvoiceViews,
+                                                                             Set<Long> skippedInvoiceIds) {
+        return strategy.planFullInvoiceAllocations(credit, openInvoiceViews.stream().filter(view -> !skippedInvoiceIds.contains(view.invoiceId())).toList());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public AccountCreditAllocationResult allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(StudentCurrentAccount lockedAccount, LocalDate businessDate,
                                                                                             StatusChangeActor actor,
                                                                                             Set<Long> programAdmissionInvoiceIdsBeingPaid) {
-        AccountCreditAllocationStrategy effective = programAdmissionInvoiceIdsBeingPaid.isEmpty() ? strategy
-                : new ProgramAdmissionInvoicePaidFirstAllocationStrategy(strategy, programAdmissionInvoiceIdsBeingPaid);
-        return allocateAccountCredit(lockedAccount, businessDate, actor, effective, programAdmissionInvoiceIdsBeingPaid);
+        return allocateAccountCredit(lockedAccount, businessDate, actor, programAdmissionInvoiceIdsBeingPaid, Set.of(), Set.of());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AccountCreditAllocationResult allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(StudentCurrentAccount lockedAccount,
+                                                                                                            LocalDate businessDate, StatusChangeActor actor,
+                                                                                                            Set<Long> programAdmissionInvoiceIdsBeingPaid,
+                                                                                                            Set<Long> underReviewInvoiceIdsOfTheApprovedPayment) {
+        return allocateAccountCredit(lockedAccount, businessDate, actor, programAdmissionInvoiceIdsBeingPaid, Set.of(), underReviewInvoiceIdsOfTheApprovedPayment);
     }
 
     private AccountCreditAllocationResult allocateAccountCredit(StudentCurrentAccount lockedAccount, LocalDate businessDate, StatusChangeActor actor,
-                                                                AccountCreditAllocationStrategy strategy,
-                                                                Set<Long> programAdmissionInvoiceIdsBeingPaid) {
-        NonNegativeMoney creditToAllocate = lockedAccount.getUnallocatedCreditAmount();
+                                                                Set<Long> programAdmissionInvoiceIdsBeingPaid, Set<Long> skippedInvoiceIds,
+                                                                Set<Long> underReviewInvoiceIdsThatMayBePaid) {
+        NonNegativeMoney creditToAllocate = accountService.creditAvailableForAllocation(lockedAccount);
         if (creditToAllocate.value().isZero()) {
             return AccountCreditAllocationResult.nothingAllocated();
         }
-        List<Invoice> openInvoices = invoices.listOpenInvoicesOfAccount(lockedAccount.getId());
-        List<OpenInvoiceView> orderedViews = strategy.sortInAllocationOrder(openInvoices.stream().map(OpenInvoiceView::of)
-                .filter(view -> !view.outstandingAmount().value().isZero()).toList());
-        List<PlannedInvoiceAllocation> plan = strategy.planFullInvoiceAllocations(creditToAllocate, orderedViews);
+        List<Invoice> openInvoices = invoices.listInvoicesAllocatableToAccountCredit(lockedAccount.getId(), underReviewInvoiceIdsThatMayBePaid);
+        List<OpenInvoiceView> candidateViews = openInvoices.stream().map(OpenInvoiceView::of)
+                .filter(view -> !view.outstandingAmount().value().isZero()).filter(view -> !skippedInvoiceIds.contains(view.invoiceId())).toList();
+        Set<Long> coveredProgramAdmissionInvoiceIds = ProgramAdmissionInvoicePaidFirstAllocationStrategy.programAdmissionInvoiceIdsFullyCoveredByCredit(
+                strategy, programAdmissionInvoiceIdsBeingPaid, creditToAllocate, candidateViews);
+        AccountCreditAllocationStrategy effective = coveredProgramAdmissionInvoiceIds.isEmpty() ? strategy
+                : new ProgramAdmissionInvoicePaidFirstAllocationStrategy(strategy, coveredProgramAdmissionInvoiceIds);
+        List<OpenInvoiceView> orderedViews = effective.sortInAllocationOrder(candidateViews);
+        List<PlannedInvoiceAllocation> plan = effective.planFullInvoiceAllocations(creditToAllocate, orderedViews);
         planPolicies.evaluateRulesUntilFirstViolation(new AllocationPlanContext(lockedAccount.getId(), lockedAccount.getCurrency(), creditToAllocate,
-                orderedViews, plan, programAdmissionInvoiceIdsBeingPaid)).throwIfDenied(PaymentAllocationRejectedException::new);
+                orderedViews, plan, coveredProgramAdmissionInvoiceIds)).throwIfDenied(PaymentAllocationRejectedException::new);
         if (plan.isEmpty()) {
             return AccountCreditAllocationResult.nothingAllocated();
         }
         Map<Long, Invoice> invoicesById = openInvoices.stream().collect(Collectors.toMap(Invoice::getId, Function.identity()));
-        CreditContributions credits = CreditContributions.fromEntriesOldestFirst(
-                entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(lockedAccount.getId()));
+        CreditContributions credits = CreditContributions.availableFrom(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(lockedAccount.getId()),
+                allocationRepository.netSourcedByCreditEntry(lockedAccount.getId()), lockedAccount.getUnallocatedCreditAmount()).limitedToOldest(creditToAllocate);
         List<PaymentAllocation> allocations = new ArrayList<>();
         List<Invoice> settledInvoices = new ArrayList<>();
-        for (ScheduledAllocation scheduled : AllocationSchedule.scheduleInvoiceAllocations(plan, credits, creditToAllocate, businessDate)) {
+        for (ScheduledAllocation scheduled : AllocationSchedule.scheduleInvoiceAllocations(plan, credits, businessDate)) {
             Invoice invoice = invoicesById.get(scheduled.invoiceId());
             invoice.allocateFullInvoicePayment(scheduled.amount(), businessDate, actor);
-            PaymentAllocation allocation = allocationRepository.save(
-                    PaymentAllocation.recordFullInvoiceAllocation(invoice, scheduled.amount(), scheduled.effectiveDate(), businessDate, actor));
+            PaymentAllocation allocation = allocationRepository.saveWithSources(
+                    PaymentAllocation.recordFullInvoiceAllocation(invoice, scheduled.amount(), scheduled.effectiveDate(), businessDate, actor), scheduled.sources());
             accountService.consumeUnallocatedCreditForAllocation(lockedAccount, scheduled.amount());
             allocations.add(allocation);
             settledInvoices.add(invoice);
@@ -124,26 +148,82 @@ public class CurrentAccountAllocationService {
     public List<PaymentAllocation> reverseNewestAllocationsUntilCreditCovers(StudentCurrentAccount lockedAccount, NonNegativeMoney creditToRemove,
                                                                              LocalDate businessDate, int gracePeriodDays, String reason,
                                                                              StatusChangeActor actor) {
+        return reverseNewestAllocationsUntilCreditCovers(lockedAccount, creditToRemove, businessDate, invoice -> gracePeriodDays, reason, actor);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<PaymentAllocation> reverseNewestAllocationsUntilCreditCovers(StudentCurrentAccount lockedAccount, NonNegativeMoney creditToRemove,
+                                                                             LocalDate businessDate, ToIntFunction<Long> gracePeriodDaysOfInvoice, String reason,
+                                                                             StatusChangeActor actor) {
         List<PaymentAllocation> reversals = new ArrayList<>();
         for (PaymentAllocation current : NewestAllocationsReversalSelection.selectAllocationsToReverse(
-                allocationRepository.findCurrentAllocationsByAccountNewestFirst(lockedAccount.getId()), lockedAccount.getUnallocatedCreditAmount(),
+                allocationRepository.findCurrentAllocationsByAccountNewestFirst(lockedAccount.getId()), accountService.creditAvailableForAllocation(lockedAccount),
                 creditToRemove)) {
-            reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDays, reason, actor));
+            reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDaysOfInvoice, reason, actor));
         }
-        lockedAccount.requireUnallocatedCreditCovers(creditToRemove);
+        lockedAccount.requireCreditCovers(accountService.creditAvailableForAllocation(lockedAccount), creditToRemove);
+        return reversals;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<Long> listInvoiceIdsOfCurrentAllocations(StudentCurrentAccount lockedAccount) {
+        return allocationRepository.findCurrentAllocationsByAccountNewestFirst(lockedAccount.getId()).stream().map(PaymentAllocation::getInvoiceId).distinct().toList();
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<PaymentAllocation> reverseAllocationsFundedByPayment(StudentCurrentAccount lockedAccount, Long paymentId, LocalDate businessDate,
+                                                                    int gracePeriodDays, String reason, StatusChangeActor actor) {
+        return reverseAllocationsFundedByPayment(lockedAccount, paymentId, businessDate, invoice -> gracePeriodDays, reason, actor);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> listInvoiceIdsFundedByPayment(Long studentCurrentAccountId, Long paymentId) {
+        return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(studentCurrentAccountId, paymentId).stream().map(PaymentAllocation::getInvoiceId)
+                .distinct().sorted().toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentAllocation> listCurrentAllocationsFundedByPaymentNewestFirst(Long studentCurrentAccountId, Long paymentId) {
+        return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(studentCurrentAccountId, paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentAllocation> listCurrentAllocationsNewestFirst(Long studentCurrentAccountId) {
+        return allocationRepository.findCurrentAllocationsByAccountNewestFirst(studentCurrentAccountId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<Long> listInvoiceIdsOfAllocationsFundedByPayment(StudentCurrentAccount lockedAccount, Long paymentId) {
+        return allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(lockedAccount.getId(), paymentId).stream().map(PaymentAllocation::getInvoiceId).distinct().toList();
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<PaymentAllocation> reverseAllocationsFundedByPayment(StudentCurrentAccount lockedAccount, Long paymentId, LocalDate businessDate,
+                                                                    ToIntFunction<Long> gracePeriodDaysOfInvoice, String reason, StatusChangeActor actor) {
+        List<PaymentAllocation> toReverse = allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(lockedAccount.getId(), paymentId);
+        List<PaymentAllocation> reversals = new ArrayList<>();
+        for (PaymentAllocation current : toReverse) {
+            reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDaysOfInvoice, reason, actor));
+        }
         return reversals;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public PaymentAllocation reverseAllocation(StudentCurrentAccount lockedAccount, PaymentAllocation allocation, LocalDate businessDate,
                                                int gracePeriodDays, String reason, StatusChangeActor actor) {
+        return reverseAllocation(lockedAccount, allocation, businessDate, invoice -> gracePeriodDays, reason, actor);
+    }
+
+    private PaymentAllocation reverseAllocation(StudentCurrentAccount lockedAccount, PaymentAllocation allocation, LocalDate businessDate,
+                                                ToIntFunction<Long> gracePeriodDaysOfInvoice, String reason, StatusChangeActor actor) {
         Invoice invoice = invoices.lockInvoice(allocation.getInvoiceId());
         reversalPolicies.evaluateRulesUntilFirstViolation(new AllocationReversalContext(allocation.getId(),
                 allocation.isReversal() || allocationRepository.existsByReversesAllocationId(allocation.getId()),
                 lockedAccount.getId(), allocation.getStudentCurrentAccountId()))
                 .throwIfDenied(PaymentAllocationRejectedException::new);
-        PaymentAllocation reversal = allocationRepository.save(allocation.recordAllocationReversal(businessDate, reason, actor));
-        invoice.reversePaymentAllocation(businessDate, gracePeriodDays, actor, reason);
+        PaymentAllocation reversal = allocationRepository.saveReversalWithSourcesOfTheReversedAllocation(allocation.recordAllocationReversal(businessDate, reason, actor));
+        invoice.reversePaymentAllocation(businessDate, gracePeriodDaysOfInvoice.applyAsInt(allocation.getInvoiceId()), actor, reason);
+        eventPublisher.publishEvent(PaymentAllocationReversedEvent.reversedFor(allocation.getInvoiceId(), lockedAccount.getId(), businessDate));
         accountService.restoreUnallocatedCreditFromReversedAllocation(lockedAccount, allocation.getAmount());
         log.info("Imputación revertida: cuenta={}, factura={}, monto={}, motivo={}", lockedAccount.getId(), allocation.getInvoiceId(),
                 allocation.getAmount().value().amount(), reason);

@@ -1,10 +1,11 @@
 package com.red_escuela.backend.announcement;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -51,6 +52,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private io.micrometer.core.instrument.MeterRegistry meterRegistry;
 
     @Autowired
     private ScheduledAnnouncementDispatchJob job;
@@ -122,8 +126,13 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
                 new AudienceSpec(AudienceSegmentKey.ABSENCES, null, null, 3));
         Long healthy = scheduled(fixture.sectionId, LocalDateTime.now().plusMinutes(5), null);
 
+        double failuresBefore = meterRegistry.counter("scheduled.job.failures", "job", "ScheduledAnnouncementDispatchJob", "cause", "IllegalArgumentException").count();
+
         job.dispatchDue(clockAt(6));
 
+        assertThat(meterRegistry.getMeters().stream().filter(m -> m.getId().getName().equals("scheduled.job.failures")
+                && "ScheduledAnnouncementDispatchJob".equals(m.getId().getTag("job")))
+                .mapToDouble(m -> ((io.micrometer.core.instrument.Counter) m).count()).sum()).isGreaterThan(failuresBefore);
         assertThat(statusOf(broken)).isEqualTo(AnnouncementStatus.SCHEDULED);
         assertThat(statusOf(healthy)).isEqualTo(AnnouncementStatus.SENT);
         assertThat(recipientRepository.findByAnnouncementId(healthy)).hasSize(2);
@@ -251,7 +260,7 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

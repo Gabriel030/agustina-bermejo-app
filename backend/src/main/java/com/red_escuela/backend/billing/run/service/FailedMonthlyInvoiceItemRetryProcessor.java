@@ -1,0 +1,90 @@
+package com.red_escuela.backend.billing.run.service;
+
+import com.red_escuela.backend.billing.run.domain.FailedInvoiceRetrySchedule;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceItemOutcome;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemAttempt;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
+import com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunItemNotFoundException;
+import com.red_escuela.backend.billing.run.exception.RunItemNotRetryableException;
+import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemAttemptRepository;
+import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemRepository;
+import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.Optional;
+
+@Service
+public class FailedMonthlyInvoiceItemRetryProcessor {
+    private final MonthlyInvoiceRunItemRepository itemRepository;
+    private final MonthlyInvoiceRunItemAttemptRepository attemptRepository;
+    private final MonthlyInvoiceRunRepository runRepository;
+    private final MonthlyInvoiceRunItemProcessor itemProcessor;
+    private final FailedInvoiceRetryScheduleResolver scheduleResolver;
+    private final BillingRunAlertPublisher alertPublisher;
+    private final Clock clock;
+    private final MonthlyInvoiceIssuanceStrategies issuanceStrategies;
+
+    public FailedMonthlyInvoiceItemRetryProcessor(MonthlyInvoiceRunItemRepository itemRepository, MonthlyInvoiceRunItemAttemptRepository attemptRepository,
+                                                  MonthlyInvoiceRunRepository runRepository, MonthlyInvoiceRunItemProcessor itemProcessor,
+                                                  FailedInvoiceRetryScheduleResolver scheduleResolver, BillingRunAlertPublisher alertPublisher, Clock clock,
+                                                  MonthlyInvoiceIssuanceStrategies issuanceStrategies) {
+        this.itemRepository = itemRepository;
+        this.attemptRepository = attemptRepository;
+        this.runRepository = runRepository;
+        this.itemProcessor = itemProcessor;
+        this.scheduleResolver = scheduleResolver;
+        this.alertPublisher = alertPublisher;
+        this.clock = clock;
+        this.issuanceStrategies = issuanceStrategies;
+    }
+
+    @Transactional
+    public Optional<MonthlyInvoiceRunItem> retryItemIfDue(Long itemId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        Optional<MonthlyInvoiceRunItem> locked = itemRepository.findByIdForUpdate(itemId).filter(item -> item.isDueForRetryAt(now))
+                .filter(item -> findRunOf(item).isOpenForRetriedItems());
+        locked.ifPresent(item -> retryDueItem(item, now));
+        return locked;
+    }
+
+    @Transactional
+    public MonthlyInvoiceRunItem retryItemManually(Long runId, Long itemId) {
+        MonthlyInvoiceRunItem item = itemRepository.findByIdForUpdate(itemId).filter(found -> found.getMonthlyInvoiceRunId().equals(runId))
+                .orElseThrow(() -> new MonthlyInvoiceRunItemNotFoundException(runId, itemId));
+        if (!item.isRetryableByStaff()) {
+            throw new RunItemNotRetryableException(itemId, item.getResult().name());
+        }
+        MonthlyInvoiceRun run = findRunOf(item);
+        if (!run.isOpenForRetriedItems()) {
+            throw new RunItemNotRetryableException(itemId, "owned by a " + run.getStatus().name() + " review run");
+        }
+        retryDueItem(item, LocalDateTime.now(clock));
+        return item;
+    }
+
+    private MonthlyInvoiceRun findRunOf(MonthlyInvoiceRunItem item) {
+        return runRepository.findById(item.getMonthlyInvoiceRunId()).orElseThrow();
+    }
+
+    private void retryDueItem(MonthlyInvoiceRunItem item, LocalDateTime now) {
+        boolean wasExhausted = item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED;
+        MonthlyInvoiceRun run = findRunOf(item);
+        LocalDate pricingDate = run.getPeriod();
+        MonthlyInvoiceItemOutcome outcome = itemProcessor.attemptEnrollmentMonthIssuance(item.getEnrollmentType(), item.getEnrollmentId(), YearMonth.from(pricingDate), pricingDate,
+                issuanceStrategies.strategyOf(run.getIssuanceMode()).destinationOfRun(run.getId()));
+        FailedInvoiceRetrySchedule schedule = scheduleResolver.resolveScheduleEffectiveOn(now.toLocalDate());
+        item.recordRetryOutcome(outcome, schedule, now);
+        itemRepository.save(item);
+        attemptRepository.save(MonthlyInvoiceRunItemAttempt.recordAttempt(item.getId(), item.getAttempts(), now, outcome));
+        if (!wasExhausted && item.getResult() == MonthlyInvoiceRunItemResult.RETRIES_EXHAUSTED) {
+            alertPublisher.publishItemRetriesExhaustedAlert(item);
+        }
+    }
+}

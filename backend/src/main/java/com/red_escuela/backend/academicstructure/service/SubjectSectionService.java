@@ -10,7 +10,6 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
@@ -18,6 +17,7 @@ import com.red_escuela.backend.academicstructure.exception.SectionNotFoundExcept
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigDraftInitializer;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 
 @Service
 public class SubjectSectionService {
@@ -39,7 +39,10 @@ public class SubjectSectionService {
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
-    private final SectionEvaluationConfigDraftInitializer sectionEvaluationConfigDraftInitializer;
+    private final SectionEvaluationSetupPort evaluationSetupPort;
+    private final SectionIdentityAssigner identityAssigner;
+    private final SectionConflictChecker conflictChecker;
+    private final SectionScheduleSlotRepository slotRepository;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -48,18 +51,25 @@ public class SubjectSectionService {
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
             EntityManager entityManager,
-            SectionEvaluationConfigDraftInitializer sectionEvaluationConfigDraftInitializer) {
+            SectionEvaluationSetupPort evaluationSetupPort,
+            SectionIdentityAssigner identityAssigner,
+            SectionConflictChecker conflictChecker,
+            SectionScheduleSlotRepository slotRepository) {
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
-        this.sectionEvaluationConfigDraftInitializer = sectionEvaluationConfigDraftInitializer;
+        this.evaluationSetupPort = evaluationSetupPort;
+        this.identityAssigner = identityAssigner;
+        this.conflictChecker = conflictChecker;
+        this.slotRepository = slotRepository;
     }
 
     @Transactional
     public SubjectSection create(Long subjectId, CreateSectionRequest request) {
+        identityAssigner.requireShift(request.shift());
         Subject subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
         Term term = termRepository.findById(request.termId())
@@ -72,13 +82,15 @@ public class SubjectSectionService {
         section.setName(request.name());
         section.setSchedule(request.schedule());
         section.setCapacity(request.capacity());
+        section.setMaxAbsenceRate(request.maxAbsencePercent());
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(LocalDateTime.now());
+        identityAssigner.identifyNewSubjectSection(section, request.shift(), request.description());
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         SubjectSection guardada = sectionRepository.save(section);
-        sectionEvaluationConfigDraftInitializer.createInitialDraft(guardada);
+        evaluationSetupPort.createInitialEvaluationDraft(guardada);
         return guardada;
     }
 
@@ -94,8 +106,17 @@ public class SubjectSectionService {
         if (request.capacity() != null) {
             section.setCapacity(request.capacity());
         }
+        if (request.description() != null) {
+            section.setDescription(request.description());
+        }
+        if (request.shift() != null) {
+            identityAssigner.changeSubjectSectionShift(section, request.shift());
+        }
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
+        }
+        if (request.maxAbsencePercent() != null) {
+            section.setMaxAbsenceRate(request.maxAbsencePercent());
         }
         return sectionRepository.save(section);
     }
@@ -129,6 +150,8 @@ public class SubjectSectionService {
         SubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
+        conflictChecker.checkInstructorAvailability(
+                section.getTerm(), instructor.getId(), slotRepository.findBySubjectSectionId(sectionId));
 
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);
@@ -163,10 +186,7 @@ public class SubjectSectionService {
     }
 
     private EvaluationScheme resolveEvaluationScheme(Long id) {
-        EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
-        if (scheme == null) {
-            throw new EvaluationSchemeNotFoundException(id);
-        }
-        return scheme;
+        evaluationSetupPort.requireEvaluationSchemeExists(id);
+        return entityManager.find(EvaluationScheme.class, id);
     }
 }

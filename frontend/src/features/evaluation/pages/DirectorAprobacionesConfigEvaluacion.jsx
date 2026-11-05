@@ -2,18 +2,18 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
-import { BandejaTramites } from '@/components/director/BandejaTramites';
+import { BandejaTramites } from '@/components/BandejaTramites';
 import {
   useConfigsPendientes,
   useHistorialAprobaciones,
 } from '@/features/evaluation/hooks/useEvaluationConfig';
 import { ESTADO_CONFIG_LABEL, formatearFecha } from '@/lib/comisiones';
+import { ageLabel } from '@/lib/aprobaciones';
 
 function Fila({ c, esHistorial }) {
-  const pill = esHistorial ? (ESTADO_CONFIG_LABEL[c.status] ?? { label: c.status, tone: 'neutral' }) : null;
+  const pill = ESTADO_CONFIG_LABEL[c.status] ?? { label: c.status, tone: 'neutral' };
   return (
     <Link
-      key={c.id}
       to={`/director/revisar-configuracion/${c.subjectSectionId}`}
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
     >
@@ -30,16 +30,12 @@ function Fila({ c, esHistorial }) {
           </>
         ) : (
           <div className="mt-0.5 text-[12px] text-ink-faint">
-            {c.instructors?.find((i) => i.role === 'LEAD')?.name ?? 'Sin titular'} (Titular) · enviada {formatearFecha(c.submittedAt) ?? '—'}
+            {c.instructors?.find((i) => i.role === 'LEAD')?.name ?? 'Sin titular'} (Titular) · enviada {formatearFecha(c.submittedAt) ?? '—'} · {ageLabel(c.submittedAt)}
           </div>
         )}
       </div>
       <div className="flex items-center gap-3">
-        {esHistorial ? (
-          <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
-        ) : (
-          <span className="rounded-full bg-warning-bg px-2.5 py-1 text-[11px] font-bold text-warning">Pendiente de aprobación</span>
-        )}
+        <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
     </Link>

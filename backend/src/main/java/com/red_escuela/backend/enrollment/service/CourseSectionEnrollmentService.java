@@ -5,9 +5,8 @@ import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +16,14 @@ import java.util.List;
 @Service
 public class CourseSectionEnrollmentService {
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
-    private final CourseSubjectSectionRepository courseSubjectSectionRepository;
+    private final SectionFinder sectionFinder;
     private final Clock clock;
 
     public CourseSectionEnrollmentService(CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            CourseSubjectSectionRepository courseSubjectSectionRepository,
+            SectionFinder sectionFinder,
             Clock clock) {
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
-        this.courseSubjectSectionRepository = courseSubjectSectionRepository;
+        this.sectionFinder = sectionFinder;
         this.clock = clock;
     }
 
@@ -42,12 +41,11 @@ public class CourseSectionEnrollmentService {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setDroppedAt(LocalDateTime.now(clock));
         courseSubjectSectionEnrollmentRepository.save(enrollment);
-        promoteNextFromWaitlist(enrollment.getCourseSubjectSection().getId());
+        promoteNextFromWaitlist(enrollment.courseSubjectSectionId());
     }
 
     private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
-        courseSubjectSectionRepository.findByIdForUpdate(courseSubjectSectionId)
-                .orElseThrow(() -> new SectionNotFoundException(courseSubjectSectionId));
+        sectionFinder.lockCourseSection(courseSubjectSectionId);
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { localIsoDate } from '@/lib/calendario';
+import { attendancePercentToPoints } from '@/lib/attendancePercent';
+import { StatusPill } from '@/components/StatusPill';
+import { attendanceRisk } from '@/features/attendance/lib/attendanceRisk';
+import { clearAttendanceDraft, loadAttendanceDraft, saveAttendanceDraft } from '@/features/attendance/lib/attendanceDraft';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useMisComisionesParaAsistencia,
@@ -36,10 +41,24 @@ const ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION = [
 const CHIP_INACTIVO = 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg/70';
 const ESTADO_POR_VALOR = Object.fromEntries([...ESTADOS, ...ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION].map((e) => [e.value, e]));
 
+const EDITABLE_SAVED_STATUSES = ['PRESENT', 'ABSENT', 'LATE'];
+
 const SAVE_ERROR_MESSAGES = {
   CLASS_ON_HOLIDAY: 'Esa fecha es feriado: no se puede tomar asistencia.',
-  ATTENDANCE_ALREADY_RECORDED: 'Esa asistencia ya estaba guardada. Para corregirla, pedí la modificación desde Historial.',
+  ATTENDANCE_ALREADY_RECORDED: 'Esa asistencia ya estaba guardada. Si la registró otro docente o ya pasó el día, pedí la modificación desde Historial.',
 };
+
+function saveErrorMessage(err) {
+  if (SAVE_ERROR_MESSAGES[err.code]) return SAVE_ERROR_MESSAGES[err.code];
+  const retry = 'Tus cambios siguen acá: probá de nuevo.';
+  if (err.name === 'NetworkError' || err.name === 'CircuitOpenError' || err.name === 'RateLimitedError') return `${err.message} ${retry}`;
+  if (err.status === 400) return `Hay datos de la asistencia que no son válidos. Revisalos y probá de nuevo.`;
+  if (err.status === 403) return 'No tenés permiso para tomar asistencia en esta comisión.';
+  if (err.status === 404) return 'No encontramos la comisión o la fecha. Recargá la página; tus cambios quedan guardados en este dispositivo.';
+  if (err.status === 409) return 'La asistencia cambió mientras la cargabas. Recargá la página; tus cambios quedan guardados en este dispositivo.';
+  if (err.status >= 500) return `El servicio no está disponible por ahora. ${retry}`;
+  return `No se pudo guardar la asistencia. ${retry}`;
+}
 
 const NOMBRE_MES = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' });
 
@@ -59,18 +78,27 @@ function agruparFechasPorMes(fechas) {
 
 const ESTADOS_QUE_CUENTAN_COMO_AUSENCIA = ['ABSENT', 'JUSTIFICATION_PENDING'];
 
-function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada }) {
+function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirModificacion }) {
   const config = estado ? ESTADO_POR_VALOR[estado] : null;
   const sumaAusenciaHoy = ESTADOS_QUE_CUENTAN_COMO_AUSENCIA.includes(estado);
   const inasistenciasAMostrar = alumno.absenceCount + (sumaAusenciaHoy ? 1 : 0);
+  const riesgo = attendanceRisk(alumno, inasistenciasAMostrar);
   return (
     <div className={`flex flex-col gap-2 rounded-2xl p-3 sm:flex-row sm:items-center sm:justify-between ${config?.filaClass ?? 'bg-neutral-bg/40'} ${deshabilitada ? 'opacity-50' : ''}`}>
       <div className="min-w-0 flex-1">
         <div className="font-heading text-[14px] font-semibold text-ink">{alumno.studentName}</div>
-        {alumno.atRisk && <div className="text-[12px] text-danger">⚠ en riesgo de libre</div>}
-      </div>
-      <div className={`w-24 shrink-0 text-center text-[12.5px] font-bold ${sumaAusenciaHoy ? 'text-danger' : 'text-ink-faint'}`}>
-        {inasistenciasAMostrar} inasist.
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+          <span className={`text-[12px] font-semibold tabular-nums ${riesgo.level === 'danger' ? 'text-danger' : riesgo.level === 'warning' ? 'text-warning-ink' : 'text-ink-faint'}`}>
+            {riesgo.text}
+          </span>
+          {riesgo.pill && (
+            <span title={riesgo.hint}>
+              <StatusPill tone={riesgo.level} className="px-2 py-0.5">
+                {riesgo.pill}
+              </StatusPill>
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex shrink-0 flex-wrap gap-1.5">
         {ESTADOS.map((e) => (
@@ -84,19 +112,27 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada }) {
             {e.label}
           </button>
         ))}
+        {onPedirModificacion && (
+          <Button type="button" variant="outline" size="sm" onClick={onPedirModificacion}>
+            Pedir modificación
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
 export function TabAsistencia({ type, sectionId }) {
-  const { data: roster, isLoading: cargandoRoster } = useRosterDeAsistencia(type, sectionId);
-  const { data: historial } = useHistorialAsistencia(type, sectionId);
+  const rosterQuery = useRosterDeAsistencia(type, sectionId);
+  const { data: roster, isLoading: cargandoRoster } = rosterQuery;
+  const historialQuery = useHistorialAsistencia(type, sectionId);
+  const { data: historial } = historialQuery;
   const guardar = useGuardarAsistencia(type, sectionId);
   const cancelar = useCancelarClase(type, sectionId);
 
   const [classDate, setClassDate] = useState(() => localIsoDate());
-  const { data: claseDelDia } = useClaseDelDia(type, sectionId, classDate);
+  const claseQuery = useClaseDelDia(type, sectionId, classDate);
+  const { data: claseDelDia } = claseQuery;
   const [busqueda, setBusqueda] = useState('');
   const [estados, setEstados] = useState({});
   const [topic, setTopic] = useState('');
@@ -105,36 +141,79 @@ export function TabAsistencia({ type, sectionId }) {
   const [confirmarMarcarTodos, setConfirmarMarcarTodos] = useState(false);
   const [confirmarCancelar, setConfirmarCancelar] = useState(false);
   const [error, setError] = useState(null);
+  const [recuperado, setRecuperado] = useState(false);
+  const huboCambiosRef = useRef(false);
+  const claveAnterior = useRef(null);
+  const borradorAplicadoPara = useRef(null);
+  const claveBorrador = `${type}:${sectionId}:${classDate}`;
 
   const lista = useMemo(() => roster ?? [], [roster]);
 
   // Lo ya guardado para esta fecha puntual (si el docente ya la había cargado antes) —
   // se arma cruzando el roster (enrollmentId + studentId) con el historial (studentId +
   // estado por fecha), sin pegarle a un endpoint nuevo.
-  const estadosGuardados = useMemo(() => {
+  const celdasGuardadas = useMemo(() => {
     if (!historial) return {};
     const porStudentId = new Map(historial.rows.map((fila) => [fila.studentId, fila.cellsByDate[classDate]]));
     const resultado = {};
     for (const alumno of lista) {
       const celda = porStudentId.get(alumno.studentId);
-      if (celda) resultado[alumno.enrollmentId] = celda.status;
+      if (celda) resultado[alumno.enrollmentId] = celda;
     }
     return resultado;
   }, [historial, lista, classDate]);
+  const estadosGuardados = useMemo(
+    () => Object.fromEntries(Object.entries(celdasGuardadas).map(([enrollmentId, celda]) => [enrollmentId, celda.status])),
+    [celdasGuardadas],
+  );
+  const [modificacionPedida, setModificacionPedida] = useState(null);
   const hayAsistenciaGuardada = Object.keys(estadosGuardados).length > 0;
+  const esClaseDeHoy = classDate === localIsoDate();
+  const puedeCorregirGuardado = (enrollmentId) =>
+    esClaseDeHoy && EDITABLE_SAVED_STATUSES.includes(estadosGuardados[enrollmentId]);
 
   useEffect(() => {
-    setEstados(estadosGuardados);
-    setHuboCambios(false);
+    huboCambiosRef.current = huboCambios;
+  }, [huboCambios]);
+
+  useEffect(() => {
+    const cambioClave = claveAnterior.current !== claveBorrador;
+    claveAnterior.current = claveBorrador;
+    if (!cambioClave && huboCambiosRef.current) {
+      setEstados((prev) => ({ ...prev, ...estadosGuardados }));
+      return;
+    }
+    const borrador = loadAttendanceDraft(type, sectionId, classDate);
+    const pendientes = borrador ? Object.fromEntries(Object.entries(borrador.estados).filter(([id]) => estadosGuardados[id] == null)) : {};
+    if (borrador && Object.keys(pendientes).length > 0) {
+      setEstados({ ...pendientes, ...estadosGuardados });
+      setTopic(borrador.topic);
+      setObservations(borrador.observations);
+      setHuboCambios(true);
+      setRecuperado(true);
+      borradorAplicadoPara.current = claveBorrador;
+    } else {
+      if (borrador) clearAttendanceDraft(type, sectionId, classDate);
+      setEstados(estadosGuardados);
+      setHuboCambios(false);
+      setRecuperado(false);
+      borradorAplicadoPara.current = null;
+    }
     setError(null);
-  }, [sectionId, classDate, estadosGuardados]);
+  }, [type, sectionId, classDate, claveBorrador, estadosGuardados]);
 
   useEffect(() => {
-    if (claseDelDia) {
+    if (huboCambios && Object.keys(estados).length > 0) {
+      saveAttendanceDraft(type, sectionId, classDate, { estados, topic, observations });
+    }
+  }, [huboCambios, estados, topic, observations, type, sectionId, classDate]);
+
+  useEffect(() => {
+    if (claseDelDia && borradorAplicadoPara.current !== claveBorrador) {
       setTopic(claseDelDia.topic ?? '');
       setObservations(claseDelDia.observations ?? '');
     }
-  }, [claseDelDia]);
+  }, [claseDelDia, claveBorrador]);
 
   const claseCancelada = claseDelDia?.status === 'CANCELED';
 
@@ -165,9 +244,12 @@ export function TabAsistencia({ type, sectionId }) {
     const entries = Object.entries(estados).map(([enrollmentId, status]) => ({ enrollmentId: Number(enrollmentId), status }));
     try {
       await guardar.mutateAsync({ classDate, entries, topic: topic || null, observations: observations || null });
+      clearAttendanceDraft(type, sectionId, classDate);
+      borradorAplicadoPara.current = null;
+      setRecuperado(false);
       setHuboCambios(false);
     } catch (err) {
-      setError(SAVE_ERROR_MESSAGES[err.code] ?? 'No se pudo guardar la asistencia. Los cambios siguen acá, probá de nuevo.');
+      setError(saveErrorMessage(err));
     }
   }
 
@@ -183,12 +265,34 @@ export function TabAsistencia({ type, sectionId }) {
   const presentes = Object.values(estados).filter((s) => s === 'PRESENT').length;
   const ausentes = Object.values(estados).filter((s) => s === 'ABSENT').length;
 
+  const failedQueries = [
+    { query: rosterQuery, resource: 'los alumnos de la comisión' },
+    { query: historialQuery, resource: 'la asistencia ya guardada' },
+    { query: claseQuery, resource: 'los datos de la clase', ignoredStatus: 404 },
+  ].filter(({ query, ignoredStatus }) => query.isError && query.data === undefined && query.error?.status !== ignoredStatus);
+
   if (cargandoRoster) {
     return (
       <div className="flex flex-col gap-2 pt-4">
         <Skeleton className="h-10" />
         <Skeleton className="h-10" />
         <Skeleton className="h-10" />
+      </div>
+    );
+  }
+
+  if (failedQueries.length > 0) {
+    return (
+      <div className="flex flex-col gap-4 pt-4">
+        <Input type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} className="w-fit" />
+        <GlassCard className="p-4">
+          <LoadErrorState
+            bare
+            error={failedQueries[0].query.error}
+            resource={failedQueries[0].resource}
+            onRetry={() => failedQueries.forEach(({ query }) => query.refetch())}
+          />
+        </GlassCard>
       </div>
     );
   }
@@ -228,8 +332,14 @@ export function TabAsistencia({ type, sectionId }) {
 
       {hayAsistenciaGuardada && !claseCancelada && (
         <div className="rounded-xl bg-neutral-bg px-4 py-2 text-[13px] font-medium text-ink-soft">
-          La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.
+          {esClaseDeHoy
+            ? 'Podés corregir la asistencia de hoy.'
+            : 'La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.'}
         </div>
+      )}
+
+      {recuperado && !error && (
+        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-[13px] font-medium text-ink-soft">Recuperamos tu asistencia sin enviar.</div>
       )}
 
       {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">{error}</div>}
@@ -263,7 +373,12 @@ export function TabAsistencia({ type, sectionId }) {
                 alumno={alumno}
                 estado={estados[alumno.enrollmentId]}
                 onCambiarEstado={cambiarEstado}
-                deshabilitada={claseCancelada || estadosGuardados[alumno.enrollmentId] != null}
+                deshabilitada={claseCancelada || (estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId))}
+                onPedirModificacion={
+                  !claseCancelada && estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId)
+                    ? () => setModificacionPedida({ attendanceId: celdasGuardadas[alumno.enrollmentId].attendanceId, status: estadosGuardados[alumno.enrollmentId] })
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -317,18 +432,39 @@ export function TabAsistencia({ type, sectionId }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {modificacionPedida && (
+        <ModalSolicitarModificacion
+          attendanceId={modificacionPedida.attendanceId}
+          estadoActual={modificacionPedida.status}
+          onClose={() => setModificacionPedida(null)}
+        />
+      )}
     </div>
   );
+}
+
+function requestErrorMessage(err) {
+  if (err.status === 403) return 'No tenés permiso para pedir la modificación en esta comisión.';
+  if (err.status === 404) return 'No encontramos ese registro de asistencia. Recargá la página y probá de nuevo.';
+  if (err.status === 400) return 'La solicitud no es válida. Revisá el estado elegido y el motivo.';
+  return 'No se pudo enviar la solicitud. Probá de nuevo.';
 }
 
 function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
   const [nuevoEstado, setNuevoEstado] = useState('PRESENT');
   const [motivo, setMotivo] = useState('');
+  const [error, setError] = useState(null);
   const solicitar = useSolicitarModificacion(attendanceId);
 
   async function enviar() {
-    await solicitar.mutateAsync({ requestedStatus: nuevoEstado, reason: motivo });
-    onClose();
+    setError(null);
+    try {
+      await solicitar.mutateAsync({ requestedStatus: nuevoEstado, reason: motivo });
+      onClose();
+    } catch (err) {
+      setError(requestErrorMessage(err));
+    }
   }
 
   return (
@@ -346,6 +482,7 @@ function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
             </SelectContent>
           </Select>
           <Textarea placeholder="Motivo de la modificación..." value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">{error}</div>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -497,7 +634,7 @@ function TabHistorial({ type, sectionId }) {
                   );
                 })}
                 <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-white' : 'border-transparent text-ink'}`}>
-                  {fila.attendancePercent == null ? '-' : `${Math.round(fila.attendancePercent)}%`}
+                  {fila.attendancePercent == null ? '-' : `${Math.round(attendancePercentToPoints(fila.attendancePercent))}%`}
                 </td>
               </tr>
             );
@@ -644,7 +781,7 @@ function DistribucionDeAsistencia({ type, sectionId }) {
 
 function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
   const [hover, setHover] = useState(false);
-  const porcentaje = entrada.attendancePercent == null ? null : Math.round(entrada.attendancePercent);
+  const porcentaje = attendancePercentToPoints(entrada.attendancePercent) == null ? null : Math.round(attendancePercentToPoints(entrada.attendancePercent));
   const inasistencias = entrada.absenceCount;
   // "Presencias" = clases registradas menos las que ya cuentan como inasistencia (Ausente,
   // justificación pendiente o justificada) — mismo criterio que absenceCount en el backend.
@@ -708,7 +845,7 @@ function TabReporteDeAsistencia({ type, sectionId }) {
         <GlassCard className="flex flex-col gap-1 p-3">
           <div className="px-2 pb-1 font-heading text-[14px] font-semibold text-ink">% de asistencia por alumno</div>
           <div className="px-2 pb-1 text-[11px] text-ink-faint">Pasá el mouse por la barra para ver presencias e inasistencias</div>
-          {[...reporte].sort((a, b) => (b.attendancePercent ?? 0) - (a.attendancePercent ?? 0)).map((entrada) => (
+          {[...reporte].sort((a, b) => (attendancePercentToPoints(b.attendancePercent) ?? 0) - (attendancePercentToPoints(a.attendancePercent) ?? 0)).map((entrada) => (
             <BarraAsistenciaPorAlumno key={entrada.enrollmentId} entrada={entrada} totalClases={totalClasesPorAlumno.get(entrada.studentId)} />
           ))}
         </GlassCard>

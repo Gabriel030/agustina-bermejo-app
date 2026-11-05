@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -11,7 +13,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
@@ -28,7 +30,7 @@ import com.red_escuela.backend.evaluation.exception.EvaluationDateOnHolidayExcep
 import com.red_escuela.backend.evaluation.exception.EvaluationDateOutsideTermException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
 import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
@@ -114,6 +117,11 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         return person;
     }
 
+    private void authenticateAs(Person person) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(person.getId().toString(), null));
+    }
+
     private Person persistPersonWithRole(String dni, String roleName) {
         Person person = persistPersonBase(dni);
         Role role = roleRepository.findByName(roleName).orElseThrow();
@@ -138,7 +146,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime start, LocalDateTime end) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
@@ -270,7 +278,8 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         LocalDate holidayDate = nonHolidayDate(45);
         Holiday holiday = new Holiday();
         holiday.setDate(holidayDate);
-        holiday.setDescription("Feriado de prueba");
+        holiday.setName("Feriado de prueba");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
 
         Subject subject = persistSubject("MateriaFeriado");
@@ -360,9 +369,12 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         SectionEvaluationConfig submitted = submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
         assertThat(submitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(director.getId());
-        assertThat(notifications).extracting(Notification::getType)
-                .contains(NotificationType.SECTION_EVAL_CONFIG_PROPOSED);
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(director.getId());
+            assertThat(notifications).extracting(Notification::getType)
+                    .contains(NotificationType.SECTION_EVAL_CONFIG_PROPOSED);
+        });
     }
 
     @Test
@@ -375,6 +387,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000008");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000009", "DIRECTOR");
+        authenticateAs(actor);
         entityManager.flush();
 
         LocalDate finalCall1 = nonHolidayDate(80);
@@ -384,14 +397,19 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
                         nonHolidayDate(45), nonHolidayDate(60), null, null, finalCall1, finalCall2)));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
-        SectionEvaluationConfig approved = approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor));
+        SectionEvaluationConfig approved = approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId()));
 
         assertThat(approved.getStatus()).isEqualTo(SectionEvaluationConfigStatus.APPROVED);
+        assertThat(approved.getReviewedBy()).isEqualTo(actor);
+        assertThat(approved.getReviewedAt()).isNotNull();
         List<ExamBoard> examBoards = examBoardRepository.findBySubjectIdAndStatus(subject.getId(), com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
         assertThat(examBoards).hasSize(2);
-        List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(leadInstructor.getPerson().getId());
-        assertThat(notifications).extracting(Notification::getType)
-                .contains(NotificationType.SECTION_EVAL_CONFIG_APPROVED);
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(leadInstructor.getPerson().getId());
+            assertThat(notifications).extracting(Notification::getType)
+                    .contains(NotificationType.SECTION_EVAL_CONFIG_APPROVED);
+        });
     }
 
     @Test
@@ -404,6 +422,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000024");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000025", "DIRECTOR");
+        authenticateAs(actor);
         LocalDate finalCall1 = LocalDate.of(2099, 12, 2);
         LocalDate finalCall2 = LocalDate.of(2099, 12, 7);
         Classroom classroom = new Classroom();
@@ -423,7 +442,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
                 new UpdateSectionEvaluationConfigRequest(1, LocalDate.of(2099, 4, 24), null, null,
                         LocalDate.of(2099, 5, 15), LocalDate.of(2099, 9, 11), null, null, finalCall1, finalCall2)));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
-        approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor));
+        approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId()));
 
         List<ExamBoard> examBoards = examBoardRepository.findBySubjectIdAndStatus(subject.getId(), com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
         assertThat(examBoards).extracting(ExamBoard::getExamDate)
@@ -446,15 +465,17 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000010");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000011", "DIRECTOR");
+        authenticateAs(actor);
         entityManager.flush();
 
         saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
                 validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
-        SectionEvaluationConfig rejected = rejectSectionEvaluationConfigUseCase.reject(new RejectSectionEvaluationConfigCommand(section.getId(), actor,
+        SectionEvaluationConfig rejected = rejectSectionEvaluationConfigUseCase.reject(new RejectSectionEvaluationConfigCommand(section.getId(),
                 new RejectSectionEvaluationConfigRequest("Faltan fechas de TP")));
         assertThat(rejected.getStatus()).isEqualTo(SectionEvaluationConfigStatus.REJECTED);
+        assertThat(rejected.getReviewedBy()).isEqualTo(actor);
         assertThat(rejected.getRejectionReason()).isEqualTo("Faltan fechas de TP");
 
         SectionEvaluationConfig updated = saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
@@ -537,7 +558,8 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     void savingAHolidayDateReportsItFallsOnAHoliday() {
         Holiday holiday = new Holiday();
         holiday.setDate(LocalDate.of(2020, 12, 9));
-        holiday.setDescription("Feriado de prueba 2020");
+        holiday.setName("Feriado de prueba 2020");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
         Instructor leadInstructor = persistInstructor("90000023");
         SubjectSection section = sectionInPastTermWithLead("MateriaFinalEnFeriado", leadInstructor);
@@ -555,9 +577,10 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         SubjectSection section = subjectSectionService.create(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Person actor = persistPersonWithRole("90000012", "DIRECTOR");
+        authenticateAs(actor);
         entityManager.flush();
 
-        assertThatThrownBy(() -> approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor)))
+        assertThatThrownBy(() -> approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId())))
                 .isInstanceOf(InvalidSectionEvaluationConfigTransitionException.class);
     }
 }

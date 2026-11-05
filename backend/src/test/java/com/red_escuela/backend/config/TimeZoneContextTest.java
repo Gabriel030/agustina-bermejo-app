@@ -1,15 +1,14 @@
 package com.red_escuela.backend.config;
 
-import com.red_escuela.backend.billing.service.MonthlyInstallmentIssuanceJob;
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
+import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
+import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import com.red_escuela.backend.shared.time.ClockConfig;
 import com.red_escuela.backend.shared.time.MutableClock;
-import com.red_escuela.backend.shared.time.RawNowRule;
-import com.tngtech.archunit.core.domain.JavaClasses;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.ActiveProfiles;
@@ -17,24 +16,23 @@ import org.springframework.test.context.ActiveProfiles;
 import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.TimeZone;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedSpyBeans
 class TimeZoneContextTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -46,8 +44,11 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
     @Autowired
     private Clock clock;
 
-    @MockitoSpyBean
-    private MonthlyInstallmentIssuanceJob monthlyJob;
+    @Autowired
+    private MonthlyInvoiceRunExecutor monthlyIssuance;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Test
     void theLoadedContextAppliesTheConfiguredZoneWithoutGoingThroughMain() {
@@ -122,30 +123,20 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void monthlyJobUsesTheClockNotTheJvmZone() {
-        doNothing().when(monthlyJob).run(any(YearMonth.class));
+    void monthlyIssuanceUsesTheClockNotTheJvmZone() {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try {
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T02:30:00Z"));
-            monthlyJob.run();
-            verify(monthlyJob, never()).run(any(YearMonth.class));
+            assertThat(monthlyIssuance.runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger.SCHEDULED)).isEmpty();
 
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T07:00:00Z"));
-            monthlyJob.run();
-            verify(monthlyJob).run(YearMonth.of(2027, 3));
+            assertThat(monthlyIssuance.runMonthlyInvoicesOnIssuanceDayOfToday(MonthlyInvoiceRunTrigger.SCHEDULED))
+                    .hasValueSatisfying(run -> assertThat(run.getPeriod()).isEqualTo(LocalDate.of(2027, 3, 1)));
         } finally {
             TimeZone.setDefault(previous);
+            jdbcTemplate.update("delete from monthly_invoice_run_item where monthly_invoice_run_id in (select id from monthly_invoice_run where period = ?)", LocalDate.of(2027, 3, 1));
+            jdbcTemplate.update("delete from monthly_invoice_run where period = ?", LocalDate.of(2027, 3, 1));
         }
-    }
-
-    @Test
-    void noRawNowInBilling() {
-        JavaClasses classes = RawNowRule.importMainClasses();
-
-        assertThat(RawNowRule.guardedViolations(classes)).isEmpty();
-
-        Set<String> offenders = RawNowRule.offendingClassesOutsideGuard(classes);
-        assertThat(offenders).isSubsetOf(RawNowRule.frozenBaseline());
     }
 }

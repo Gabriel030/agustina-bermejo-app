@@ -5,14 +5,63 @@
 |Spring components
 |_Event listeners_
 
+* `c.r.b.n.BillingOperationNotificationListener`
+* `c.r.b.n.CollectionReminderNotificationListener`
+* `c.r.b.n.CreditNoteNotificationListener`
+* `c.r.b.n.GatewayPaymentArrivedWithGatewayDisabledNotificationListener`
+* `c.r.b.n.LateFeeCorrectionNotificationListener`
+* `c.r.b.n.LateFeeNotificationListener`
 * `c.r.b.n.NotificationDispatcher`
+* `c.r.b.n.OverdueContactListNotificationListener`
+* `c.r.b.n.PaymentChargedBackNotificationListener`
+* `c.r.b.n.PaymentLeftAsAccountCreditNotificationListener`
+* `c.r.b.n.PaymentReceiptAppliedToOlderDebtNotificationListener`
+* `c.r.b.n.PaymentReceiptReviewOverdueNotificationListener`
+* `c.r.b.n.PostWithdrawalSummaryNotificationListener`
+* `c.r.b.n.ProgramApplicationApprovedNotificationListener`
 
 _Others_
 
+* `c.r.b.n.delivery.service.EmailDispatchSettingsSource` (via `c.r.b.n.BillingEmailDispatchSettingsSource`)
+* `c.r.b.n.delivery.service.EmailDispatchSource` (via `c.r.b.n.CollectionReminderEmailDispatchSource`)
+* `c.r.b.n.CollectionReminderMessageComposer`
 * `c.r.b.n.NotificationChannel` (via `c.r.b.n.InAppNotificationChannel`)
+* `c.r.b.n.PostWithdrawalSummaryMessageComposer`
 |Bean references
-|* `c.r.b.i.repository.PersonRepository` (in Identity)
+|* `c.r.b.b.api.CollectionReminderEmailSettingsQuery` (in Billing)
+* `c.r.b.s.event.ProcessedEffectGuard` (in Shared)
+* `c.r.b.b.api.CollectionReminderApplicabilityQuery` (in Billing)
+* `c.r.b.b.api.CollectionReminderEmailsQuery` (in Billing)
+* `c.r.b.i.api.NotificationPreferenceQuery` (in Identity)
+* `c.r.b.i.repository.PersonRepository` (in Identity)
 * `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.i.api.EmailRecipientLookup` (in Identity)
+* `c.r.b.s.domain.policy.PolicySet` (in Shared)
+* `c.r.b.s.mail.TransactionalEmailGateway` (in Shared)
+* `c.r.b.a.api.BusinessDayCalendar` (in Academic structure)
 |Events listened to
-|* `c.r.b.n.DomainNotificationEvent` 
+|* `c.r.b.b.events.AuthorizationRequestExpiredEvent` (async) 
+* `c.r.b.b.events.AuthorizationRequestedEvent` (async) 
+* `c.r.b.b.events.ConfigurationChangeDecidedEvent` (async) 
+* `c.r.b.b.events.ConfigurationVersionCancelledEvent` (async) 
+* `c.r.b.b.events.DiscountQuotaExhaustedEvent` (async) 
+* `c.r.b.b.events.LatePaymentSettingsCreatedEvent` (async) 
+* `c.r.b.b.events.CollectionReminderPlannedEvent` (async) 
+* `c.r.b.b.events.CreditNoteIssuedEvent` (async) 
+* `c.r.b.b.events.CreditNoteIssuedEvent` (async) 
+* `c.r.b.b.events.GatewayPaymentArrivedWithGatewayDisabledEvent` (async) 
+* `c.r.b.b.events.LateFeeCorrectionIssuedAfterFiscalWindowEvent` (async) 
+* `c.r.b.b.events.LateFeeAnnulledByPaymentDateEvent` (async) 
+* `c.r.b.b.events.LateFeeIssuedEvent` (async) 
+* `c.r.b.b.events.LateFeeIssuedEvent` (async) 
+* `c.r.b.n.DomainNotificationEvent` 
+* `c.r.b.b.events.OverdueContactListUpdatedEvent` (async) 
+* `c.r.b.b.events.PaymentChargedBackEvent` (async) 
+* `c.r.b.b.events.PaymentLeftAsAccountCreditEvent` (async) 
+* `c.r.b.b.events.PaymentLeftAsAccountCreditEvent` (async) 
+* `c.r.b.b.events.PaymentReceiptAppliedToOlderDebtEvent` (async) 
+* `c.r.b.b.events.PaymentReceiptReviewOverdueEvent` (async) 
+* `c.r.b.b.events.PostWithdrawalSummaryPlannedEvent` (async) 
+* `c.r.b.e.events.AdmissionEnrollmentStalledEvent` (async) 
+* `c.r.b.e.events.ProgramApplicationApprovedEvent` (async) 
 |===

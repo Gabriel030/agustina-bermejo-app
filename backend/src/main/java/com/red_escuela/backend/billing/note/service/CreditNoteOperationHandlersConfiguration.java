@@ -7,6 +7,8 @@ import com.red_escuela.backend.billing.note.policy.CancellationByFullCreditNoteP
 import com.red_escuela.backend.billing.note.policy.CancellationInvoiceNotUnderReviewPolicy;
 import com.red_escuela.backend.billing.note.policy.CancellationJustificationPolicy;
 import com.red_escuela.backend.billing.note.policy.CancellationReasonPolicy;
+import com.red_escuela.backend.billing.note.policy.LateFeeDebitNoteAnnulmentContext;
+import com.red_escuela.backend.billing.note.policy.LateFeeDebitNoteNotUnderPaymentReviewPolicy;
 import com.red_escuela.backend.billing.note.policy.InvoiceCancellationContext;
 import com.red_escuela.backend.billing.note.policy.SystemInitiatedCancellationPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteDestinationUnchangedPolicy;
@@ -20,6 +22,10 @@ import com.red_escuela.backend.billing.note.policy.CreditNoteFullDebtRequiresCan
 import com.red_escuela.backend.billing.note.policy.CreditNoteReferencesIssuedInvoicePolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteRefundWithinPaidAmountPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteWithinOutstandingAmountPolicy;
+import com.red_escuela.backend.billing.note.policy.WithdrawalLineReductionContext;
+import com.red_escuela.backend.billing.note.policy.WithdrawalReductionInvoiceUnpaidPolicy;
+import com.red_escuela.backend.billing.note.policy.WithdrawalReductionLeavesDebtPolicy;
+import com.red_escuela.backend.billing.note.policy.WithdrawalReductionLinesUnchangedPolicy;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,6 +46,11 @@ public class CreditNoteOperationHandlersConfiguration {
     }
 
     @Bean
+    public OperationPreHandlers cancelInvoicesAfterWithdrawalPreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
+        return new OperationPreHandlers(BillingOperationType.CANCEL_INVOICES_AFTER_WITHDRAWAL, List.of(directorAuthorizationHandler));
+    }
+
+    @Bean
     public PolicySet<InvoiceCancellationContext> invoiceCancellationPolicySet() {
         return PolicySet.named("INVOICE_CANCELLATION", List.of(
                 new CancellationJustificationPolicy(),
@@ -47,6 +58,11 @@ public class CreditNoteOperationHandlersConfiguration {
                 new SystemInitiatedCancellationPolicy(),
                 new CancellationInvoiceNotUnderReviewPolicy(),
                 new CancellationByFullCreditNotePolicy()));
+    }
+
+    @Bean
+    public PolicySet<LateFeeDebitNoteAnnulmentContext> lateFeeAnnulmentOnCancellationPolicySet() {
+        return PolicySet.named("LATE_FEE_ANNULMENT_ON_CANCELLATION", List.of(new LateFeeDebitNoteNotUnderPaymentReviewPolicy()));
     }
 
     @Bean
@@ -62,5 +78,13 @@ public class CreditNoteOperationHandlersConfiguration {
                 new CreditNoteWithinOutstandingAmountPolicy(),
                 new CreditNoteLinesWithinCreditableAmountPolicy(),
                 new CreditNoteFullDebtRequiresCancellationPolicy()));
+    }
+
+    @Bean
+    public PolicySet<WithdrawalLineReductionContext> withdrawalLineReductionPolicySet() {
+        return PolicySet.named("WITHDRAWAL_LINE_REDUCTION", List.of(
+                new WithdrawalReductionInvoiceUnpaidPolicy(),
+                new WithdrawalReductionLinesUnchangedPolicy(),
+                new WithdrawalReductionLeavesDebtPolicy()));
     }
 }

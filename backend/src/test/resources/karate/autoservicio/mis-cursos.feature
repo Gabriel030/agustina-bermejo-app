@@ -14,7 +14,7 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     * def descripcionPeriodo = 'Karate - Periodo mis cursos ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(descripcionPeriodo)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -26,6 +26,12 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     When method post
     Then status 201
     * def courseId = response.id
+
+    Given path '/courses', courseId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
 
     * def alumno = fixtures.createConfirmedStudent(institutionId)
     Given path '/students', alumno.studentId, 'course-enrollments'
@@ -50,7 +56,7 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     Then status 200
     And match response == '#[0]'
 
-  Scenario: Sin sesión, 403
+  Scenario: Sin sesión, 401
     Given path '/me/course-enrollments'
     When method get
-    Then status 403
+    Then status 401

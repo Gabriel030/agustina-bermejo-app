@@ -6,8 +6,6 @@ import net.jqwik.api.Arbitrary;
 import java.math.BigDecimal;
 
 final class PropertySettings {
-
-    static final int TRIES = 1000;
     static final String SEED = "20261006";
 
     private PropertySettings() {

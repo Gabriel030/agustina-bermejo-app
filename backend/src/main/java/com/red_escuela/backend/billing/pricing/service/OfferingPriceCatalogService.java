@@ -65,7 +65,7 @@ public class OfferingPriceCatalogService implements OfferingPriceCatalog {
         }
     }
 
-    private static boolean isConcurrentPriceWrite(RuntimeException exception) {
+    static boolean isConcurrentPriceWrite(RuntimeException exception) {
         if (exception instanceof ObjectOptimisticLockingFailureException) {
             return true;
         }

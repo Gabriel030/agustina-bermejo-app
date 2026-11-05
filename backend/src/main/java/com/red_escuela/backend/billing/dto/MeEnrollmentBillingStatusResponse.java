@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.service.InvoiceWithReceipts;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
@@ -12,16 +13,16 @@ public record MeEnrollmentBillingStatusResponse(String paymentStatus, LocalDateT
                    String enrollmentType, Long enrollmentId,
                    String productName, Long productId) {
 
-    public static MeEnrollmentBillingStatusResponse of(CourseEnrollment enrollment, List<InvoiceWithReceipts> invoices) {
+    public static MeEnrollmentBillingStatusResponse of(CourseEnrollment enrollment, EnrollmentPaymentStandingView standing, List<InvoiceWithReceipts> invoices) {
         return new MeEnrollmentBillingStatusResponse(
-                enrollment.getPaymentStatus().name(), enrollment.getPaymentStatusUpdatedAt(),
+                EnrollmentPaymentStandingView.statusOrUpToDate(standing).name(), EnrollmentPaymentStandingView.statusChangedAtOrNull(standing),
                 invoices.stream().map(i -> MeInvoiceResponse.of(i.view(), i.receipts())).toList(),
                 "COURSE", enrollment.getId(), enrollment.getCourse().getName(), enrollment.getCourse().getId());
     }
 
-    public static MeEnrollmentBillingStatusResponse of(ProgramEnrollment enrollment, List<InvoiceWithReceipts> invoices) {
+    public static MeEnrollmentBillingStatusResponse of(ProgramEnrollment enrollment, EnrollmentPaymentStandingView standing, List<InvoiceWithReceipts> invoices) {
         return new MeEnrollmentBillingStatusResponse(
-                enrollment.getPaymentStatus().name(), enrollment.getPaymentStatusUpdatedAt(),
+                EnrollmentPaymentStandingView.statusOrUpToDate(standing).name(), EnrollmentPaymentStandingView.statusChangedAtOrNull(standing),
                 invoices.stream().map(i -> MeInvoiceResponse.of(i.view(), i.receipts())).toList(),
                 "PROGRAM", enrollment.getId(), enrollment.getProgram().getName(), enrollment.getProgram().getId());
     }

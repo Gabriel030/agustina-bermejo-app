@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,9 +9,9 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
@@ -135,10 +137,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         entradaB.setCredits(3);
         entityManager.persist(entradaB);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 1C");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);
@@ -167,10 +169,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Subject para docentes");
         entityManager.persist(subject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 2C");
-        term.setType("2C");
+        term.setType(TermType.SECOND_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);
@@ -231,10 +233,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Subject con esquema inválido");
         entityManager.persist(subject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 term eval");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);
@@ -258,10 +260,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Subject para cruce de comisiones");
         entityManager.persist(subject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 term cruce");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);
@@ -329,10 +331,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Subject para baja de comisión");
         entityManager.persist(subject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 term baja comisión");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);
@@ -373,10 +375,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Subject para list docentes");
         entityManager.persist(subject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 term list docentes");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);
@@ -416,10 +418,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Subject para editar comisión");
         entityManager.persist(subject);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026 term editar comisión");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);

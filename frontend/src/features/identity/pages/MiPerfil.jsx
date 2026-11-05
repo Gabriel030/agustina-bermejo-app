@@ -10,34 +10,21 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { StatusPill } from '@/components/StatusPill';
+import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
+import { confirmationDeadlineLabel, sameEmail } from '@/features/identity/emailChange';
+import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
 import {
   usePerfilPropio,
   useActualizarPerfil,
   useCambiarContrasena,
   useSesionesActivas,
   useRevocarTodasLasSesiones,
-  usePreferenciasNotificaciones,
-  useActualizarPreferenciasNotificaciones,
   useAvatar,
   useSubirAvatar,
 } from '@/features/identity/hooks/useMiPerfil';
-
-const ETIQUETAS_EVENTO = {
-  ACCOUNT_CREATED: 'Cuenta creada',
-  SUBJECT_ENROLLMENT: 'Inscripción a materia',
-  GRADE_POSTED: 'Nota publicada',
-  INVOICE_GENERATED: 'Factura generada',
-  PAYMENT_DUE_SOON: 'Vencimiento próximo',
-  EXAM_BOARD_REGISTERED: 'Mesa de examen registrada',
-  INSTITUTIONAL_NOTICE: 'Aviso institucional',
-};
-
-const ETIQUETAS_CANAL = {
-  APP: 'En la app',
-  EMAIL: 'Por email',
-};
 
 const AVATAR_TYPES = ['image/jpeg', 'image/png'];
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
@@ -57,7 +44,7 @@ function CampoFormulario({ label, children }) {
   );
 }
 
-function InputContrasena({ value, onChange, required, placeholder }) {
+function InputContrasena({ value, onChange, required, placeholder, ...rest }) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative">
@@ -68,6 +55,7 @@ function InputContrasena({ value, onChange, required, placeholder }) {
         required={required}
         placeholder={placeholder}
         className="pr-10"
+        {...rest}
       />
       <button
         type="button"
@@ -146,13 +134,73 @@ function AvatarUpload() {
   );
 }
 
+function buildProfilePayload(valores, currentPassword) {
+  return {
+    email: valores.email,
+    telefono: valores.telefono,
+    sexo: valores.sexo,
+    dni: valores.dni,
+    documentType: valores.documentType ?? 'DNI',
+    street: valores.street,
+    number: valores.number,
+    floor: valores.floor,
+    city: valores.city,
+    state: valores.state,
+    postalCode: valores.postalCode,
+    country: valores.country,
+    ...(currentPassword ? { currentPassword } : {}),
+  };
+}
+
+function sensitiveChanges(perfil, valores) {
+  const rows = [];
+  const hadDocument = Boolean(perfil?.dni);
+  const documentChanged =
+    hadDocument && (valores.dni !== perfil.dni || (valores.documentType ?? 'DNI') !== (perfil.documentType ?? 'DNI'));
+  if (documentChanged) {
+    rows.push({
+      key: 'document',
+      label: 'Documento',
+      today: `${perfil.documentType ?? 'DNI'} ${perfil.dni}`,
+      next: `${valores.documentType ?? 'DNI'} ${valores.dni}`,
+    });
+  }
+  const emailChanged = Boolean(perfil?.email) && !sameEmail(valores.email, perfil.email);
+  if (emailChanged) {
+    rows.push({ key: 'email', label: 'Email', today: perfil.email, next: valores.email.trim() });
+  }
+  return rows;
+}
+
 function TabDatosPropios() {
-  const { data: perfil, isLoading } = usePerfilPropio();
+  const { data: perfil, isError, error, refetch } = usePerfilPropio();
+
+  if (perfil) return <TabDatosPropiosForm key={perfil.id} perfil={perfil} />;
+
+  if (isError) return <LoadErrorState bare error={error} onRetry={refetch} resource="tus datos" />;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {[...Array(6)].map((_, i) => (
+        <Skeleton key={i} className="h-10 w-full" />
+      ))}
+    </div>
+  );
+}
+
+function TabDatosPropiosForm({ perfil }) {
   const actualizar = useActualizarPerfil();
 
   const [form, setForm] = useState(null);
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState('');
+  const [confirmRows, setConfirmRows] = useState(null);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [pendingEmail, setPendingEmail] = useState(null);
+  const [resendOpen, setResendOpen] = useState(false);
+  const [resendPassword, setResendPassword] = useState('');
+  const [resendError, setResendError] = useState('');
 
   const valores = form ?? perfil ?? {};
 
@@ -162,43 +210,118 @@ function TabDatosPropios() {
     setForm((prev) => ({ ...(prev ?? perfil ?? {}), [campo]: valor }));
   }
 
-  async function guardar(e) {
+  function closeConfirm() {
+    setConfirmRows(null);
+    setCurrentPassword('');
+    setPasswordError('');
+  }
+
+  function guardar(e) {
     e.preventDefault();
     setError('');
+    const rows = sensitiveChanges(perfil, valores);
+    if (rows.length > 0) {
+      setConfirmRows(rows);
+      return;
+    }
+    submit(null);
+  }
+
+  async function submit(password) {
     try {
-      await actualizar.mutateAsync({
-        email: valores.email,
-        telefono: valores.telefono,
-        sexo: valores.sexo,
-        dni: valores.dni,
-        documentType: valores.documentType ?? 'DNI',
-        street: valores.street,
-        number: valores.number,
-        floor: valores.floor,
-        city: valores.city,
-        state: valores.state,
-        postalCode: valores.postalCode,
-        country: valores.country,
-      });
+      await actualizar.mutateAsync(buildProfilePayload(valores, password));
+      const sentTo = confirmRows?.find((row) => row.key === 'email')?.next ?? null;
+      if (sentTo) {
+        setPendingEmail({ email: sentTo, deadline: confirmationDeadlineLabel() });
+      }
+      closeConfirm();
       setForm(null);
       setGuardado(true);
+      return true;
     } catch (err) {
-      setError(err.message ?? 'No se pudo guardar.');
+      if (err.code === 'INVALID_CURRENT_PASSWORD') {
+        setPasswordError(PASSWORD_ERROR_MESSAGES.INVALID_CURRENT_PASSWORD);
+      } else {
+        setError(err.message ?? 'No se pudo guardar.');
+        closeConfirm();
+      }
+      return false;
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-3">
-        {[...Array(6)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
+  async function confirmChanges() {
+    if (!currentPassword) {
+      setPasswordError('Ingresá tu contraseña actual.');
+      return;
+    }
+    setPasswordError('');
+    await submit(currentPassword);
+  }
+
+  async function resendLink() {
+    if (!resendPassword) {
+      setResendError('Ingresá tu contraseña actual.');
+      return;
+    }
+    setResendError('');
+    try {
+      await actualizar.mutateAsync(
+        buildProfilePayload({ ...perfil, email: pendingEmail.email }, resendPassword),
+      );
+      setPendingEmail({ email: pendingEmail.email, deadline: confirmationDeadlineLabel() });
+      setResendOpen(false);
+      setResendPassword('');
+      toast.success(`Enlace reenviado a ${pendingEmail.email}`);
+    } catch (err) {
+      setResendError(
+        err.code === 'INVALID_CURRENT_PASSWORD'
+          ? PASSWORD_ERROR_MESSAGES.INVALID_CURRENT_PASSWORD
+          : (err.message ?? 'No se pudo reenviar el enlace.'),
+      );
+    }
   }
 
   return (
     <form onSubmit={guardar} className="flex flex-col gap-5">
+      {pendingEmail && (
+        <div role="status" className="flex flex-col gap-2 rounded-xl bg-warning-bg px-3 py-2.5 text-[12.5px] text-warning">
+          <p>
+            <b>Te enviamos un enlace a {pendingEmail.email};</b> hasta confirmarlo seguís usando el actual. Vence en 48 h ({pendingEmail.deadline}). Si guardás otro email, reemplaza este pedido.
+          </p>
+          {!resendOpen && (
+            <div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setResendOpen(true)}>
+                Reenviar enlace
+              </Button>
+            </div>
+          )}
+          {resendOpen && (
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[200px] flex-1">
+                <label htmlFor="resend-password" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+                  Contraseña actual
+                </label>
+                <InputContrasena
+                  id="resend-password"
+                  autoComplete="current-password"
+                  value={resendPassword}
+                  onChange={(e) => setResendPassword(e.target.value)}
+                  aria-invalid={resendError ? 'true' : undefined}
+                  aria-describedby={resendError ? 'resend-password-error' : undefined}
+                />
+                {resendError && (
+                  <p id="resend-password-error" role="alert" className="mt-1 text-[12.5px] text-danger">
+                    {resendError}
+                  </p>
+                )}
+              </div>
+              <Button type="button" onClick={resendLink} disabled={actualizar.isPending}>
+                Reenviar
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       <AvatarUpload />
       {perfil?.legajo && (
         <div className="flex items-center gap-2">
@@ -238,12 +361,16 @@ function TabDatosPropios() {
           </Select>
         </CampoFormulario>
         <CampoFormulario label="Email">
-          <Input
-            type="email"
-            value={valores.email ?? ''}
-            onChange={(e) => set('email', e.target.value)}
-            placeholder="tu@email.com"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="email"
+              value={valores.email ?? ''}
+              onChange={(e) => set('email', e.target.value)}
+              placeholder="tu@email.com"
+              className="min-w-[220px] flex-1"
+            />
+            {pendingEmail && <StatusPill tone="warning">Pendiente: {pendingEmail.email}</StatusPill>}
+          </div>
         </CampoFormulario>
         <CampoFormulario label="Teléfono">
           <Input
@@ -314,11 +441,52 @@ function TabDatosPropios() {
       {error && <p className="text-[13px] text-danger">{error}</p>}
       {guardado && <p className="text-[13px] text-success">Datos guardados.</p>}
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={actualizar.isPending}>
-          {actualizar.isPending ? 'Guardando...' : 'Guardar cambios'}
-        </Button>
-      </div>
+      {confirmRows ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-neutral-bg/30 p-4">
+          <h3 className="font-heading text-[15px] font-semibold text-ink">Confirmá los cambios sensibles</h3>
+          <ChangeDiffTable rows={confirmRows} />
+          <div>
+            <label htmlFor="current-password" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Contraseña actual
+            </label>
+            <InputContrasena
+              id="current-password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                setPasswordError('');
+              }}
+              aria-invalid={passwordError ? 'true' : undefined}
+              aria-describedby={passwordError ? 'current-password-error' : undefined}
+            />
+            {passwordError && (
+              <p id="current-password-error" role="alert" className="mt-1 text-[12.5px] text-danger">
+                {passwordError}
+              </p>
+            )}
+          </div>
+          <p className="text-[13px] text-ink-soft">
+            {confirmRows.some((row) => row.key === 'email')
+              ? 'El email nuevo no rige hasta que lo confirmes con el enlace que te enviamos. Mientras tanto seguís ingresando con el actual.'
+              : 'El documento se actualiza en el momento.'}
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="outline" onClick={closeConfirm}>
+              Volver a editar
+            </Button>
+            <Button type="button" onClick={confirmChanges} disabled={actualizar.isPending}>
+              {actualizar.isPending ? 'Guardando...' : 'Confirmar cambios'}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button type="submit" disabled={actualizar.isPending}>
+            {actualizar.isPending ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
@@ -444,112 +612,6 @@ function TabSeguridad() {
   );
 }
 
-function TabNotificaciones() {
-  const { data, isLoading } = usePreferenciasNotificaciones();
-  const actualizar = useActualizarPreferenciasNotificaciones();
-  const [pendiente, setPendiente] = useState(null);
-  const [error, setError] = useState('');
-
-  const prefsOriginales = data?.preferences ?? {};
-  const prefs = pendiente ?? prefsOriginales;
-  const haycambios = pendiente !== null;
-
-  function togglePref(evento, canal) {
-    const base = pendiente ?? prefsOriginales;
-    const valorActual = base[evento]?.[canal] ?? true;
-    setPendiente({
-      ...base,
-      [evento]: { ...(base[evento] ?? {}), [canal]: !valorActual },
-    });
-    setError('');
-  }
-
-  async function guardar() {
-    try {
-      await actualizar.mutateAsync({ preferences: pendiente });
-      setPendiente(null);
-    } catch (err) {
-      setError(err.message ?? 'No se pudo guardar.');
-    }
-  }
-
-  function cancelar() {
-    setPendiente(null);
-    setError('');
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        {[...Array(7)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-  }
-
-  const eventos = Object.keys(ETIQUETAS_EVENTO);
-  const canales = Object.keys(ETIQUETAS_CANAL);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="overflow-x-auto">
-      <Table className="min-w-[400px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Notificación</TableHead>
-            {canales.map((canal) => (
-              <TableHead key={canal} className="text-center">
-                {ETIQUETAS_CANAL[canal]}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {eventos.map((evento) => (
-            <TableRow key={evento}>
-              <TableCell className="text-ink">{ETIQUETAS_EVENTO[evento]}</TableCell>
-              {canales.map((canal) => {
-                const activo = prefs[evento]?.[canal] ?? true;
-                return (
-                  <TableCell key={canal} className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => togglePref(evento, canal)}
-                      disabled={actualizar.isPending}
-                      aria-label={`${ETIQUETAS_EVENTO[evento]} — ${ETIQUETAS_CANAL[canal]}: ${activo ? 'activado' : 'desactivado'}`}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                        activo ? 'bg-gradient-to-br from-primary to-brand' : 'bg-neutral-bg'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform ${
-                          activo ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      </div>
-      {error && <p className="text-[13px] text-danger">{error}</p>}
-      {haycambios && (
-        <div className="flex items-center justify-end gap-2">
-          <Button size="sm" variant="ghost" onClick={cancelar} disabled={actualizar.isPending}>
-            Cancelar
-          </Button>
-          <Button size="sm" onClick={guardar} disabled={actualizar.isPending}>
-            {actualizar.isPending ? 'Guardando…' : 'Guardar'}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function MiPerfil() {
   return (
@@ -573,7 +635,7 @@ export function MiPerfil() {
             <TabSeguridad />
           </TabsContent>
           <TabsContent value="notificaciones">
-            <TabNotificaciones />
+            <NotificationMatrix />
           </TabsContent>
         </Tabs>
       </GlassCard>

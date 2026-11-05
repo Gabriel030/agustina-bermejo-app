@@ -5,7 +5,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
@@ -138,7 +138,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void directorCanListAndViewRecordButCannotWithdraw() throws Exception {
+    void directorCanListViewRecordAndWithdraw() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "42111222", "42111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -154,7 +154,51 @@ class StudentControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void directorAndAdministrativeSeeWithdrawalReasonAndPreceptorDoesNot() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(
+                "42555666", "42555666", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
+        student.setWithdrawalReason(WithdrawalReason.ABANDONO);
+        student.setWithdrawalDetail("detalle");
+        entityManager.flush();
+        String directorToken = tokenWithRole("director.motivo", "DIRECTOR");
+        String administrativeToken = tokenWithRole("administrativo.motivo", "ADMINISTRATIVO");
+        String preceptorToken = tokenWithRole("preceptor.motivo", "PRECEPTOR");
+
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + directorToken))
+                .andExpect(jsonPath("$[0].withdrawalReason").value("ABANDONO"));
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(jsonPath("$[0].withdrawalReason").value("ABANDONO"));
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + preceptorToken))
+                .andExpect(jsonPath("$[0].withdrawalReason").doesNotExist());
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(jsonPath("$.motivoBaja").value("ABANDONO"))
+                .andExpect(jsonPath("$.detalleBaja").value("detalle"));
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + preceptorToken))
+                .andExpect(jsonPath("$.motivoBaja").doesNotExist())
+                .andExpect(jsonPath("$.detalleBaja").doesNotExist());
+    }
+
+    @Test
+    void preceptorCannotWithdrawAStudentFile() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(
+                "42111333", "42111333", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
+        String token = tokenWithRole("preceptor-legajo", "PRECEPTOR");
+
+        mockMvc.perform(post("/students/{id}/withdraw", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "motivo"))))
                 .andExpect(status().isForbidden());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(entityManager.find(Student.class, student.getId()).getPerson().getStatus()).isEqualTo(StatusType.ACTIVE);
     }
 
     @Test
@@ -206,7 +250,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "40999000", "40999000", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
-        String token = tokenWithRole("preceptor3", "PRECEPTOR");
+        String token = tokenWithRole("administrativo-legajo3", "ADMINISTRATIVO");
 
         WithdrawStudentRequest request = new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "dejó de asistir");
 

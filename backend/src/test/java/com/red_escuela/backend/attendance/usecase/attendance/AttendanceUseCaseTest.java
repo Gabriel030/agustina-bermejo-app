@@ -1,5 +1,7 @@
 package com.red_escuela.backend.attendance.usecase.attendance;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -24,9 +26,9 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -40,7 +42,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +54,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import com.red_escuela.backend.attendance.entity.AttendanceCorrection;
+import com.red_escuela.backend.shared.time.MutableClock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,6 +66,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@SlowTest(reason = "Boots the first Spring context of its JVM, so its time includes the one-time start-up, and runs the attendance scenarios")
 class AttendanceUseCaseTest extends AbstractIntegrationTest {
     private static final LocalDate CLASS_DAY = LocalDate.of(2025, 9, 15);
 
@@ -160,7 +165,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
@@ -305,7 +310,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        assertThatThrownBy(() -> justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), "motivo", null)))
+        assertThatThrownBy(() -> justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), null, "motivo", null)))
                 .isInstanceOf(CannotJustifyException.class);
     }
 
@@ -331,7 +336,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        Attendance justificada = justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), "motivo médico", null));
+        Attendance justificada = justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), null, "motivo médico", null));
         assertThat(justificada.getStatus()).isEqualTo(AttendanceStatus.JUSTIFIED);
         assertThat(justificada.getJustificationReason()).isEqualTo("motivo médico");
         assertThat(justificada.getJustifiedAt()).isNotNull();
@@ -454,9 +459,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
                 new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(attendance.getId(), "motivo médico", "students/1/comprobante.pdf"));
+        Person preceptor = persistPersonBase("80000099");
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        Attendance rechazada = rejectAttendanceJustificationUseCase.reject(attendance.getId());
+        Attendance rechazada = rejectAttendanceJustificationUseCase.reject(new RejectAttendanceJustificationCommand(attendance.getId(), "El comprobante no es legible"));
         assertThat(rechazada.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+        assertThat(rechazada.getJustificationRejectionReason()).isEqualTo("El comprobante no es legible");
+        assertThat(rechazada.getJustificationRejectedAt()).isNotNull();
     }
 
     @Test
@@ -593,7 +603,8 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = enrollInNewSection("80000031", "80000032", "MateriaFeriado", instructor);
         Holiday holiday = new Holiday();
         holiday.setDate(CLASS_DAY);
-        holiday.setDescription("Feriado de prueba");
+        holiday.setName("Feriado de prueba");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
         entityManager.flush();
 
@@ -612,6 +623,71 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
                 .isInstanceOf(AttendanceAlreadyRecordedException.class);
         assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()))
                 .extracting(Attendance::getStatus).containsExactly(AttendanceStatus.LATE);
+    }
+
+    @Test
+    void recordingInstructorCorrectsHerOwnAttendanceTheSameDayAndTheCorrectionIsAudited() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000051", "80000052", "MateriaCorreccionMismoDia", instructor);
+        MutableClock.INSTANCE.setDateTime(CLASS_DAY.atTime(9, 0));
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+
+        MutableClock.INSTANCE.setDateTime(CLASS_DAY.atTime(18, 30));
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.PRESENT);
+
+        assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()))
+                .extracting(Attendance::getStatus).containsExactly(AttendanceStatus.PRESENT);
+        List<AttendanceCorrection> corrections = entityManager
+                .createQuery("select c from AttendanceCorrection c", AttendanceCorrection.class).getResultList();
+        assertThat(corrections).hasSize(1);
+        assertThat(corrections.get(0).getPreviousStatus()).isEqualTo(AttendanceStatus.ABSENT);
+        assertThat(corrections.get(0).getCorrectedStatus()).isEqualTo(AttendanceStatus.PRESENT);
+        assertThat(corrections.get(0).getCorrectedBy().getId()).isEqualTo(instructor[0].getId());
+        assertThat(corrections.get(0).getCorrectedAt()).isEqualTo(CLASS_DAY.atTime(18, 30));
+    }
+
+    @Test
+    void correctingTheNextDayIsRejectedAndLeavesTheStatusUntouched() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000053", "80000054", "MateriaCorreccionDiaSiguiente", instructor);
+        MutableClock.INSTANCE.setDateTime(CLASS_DAY.atTime(23, 0));
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+
+        MutableClock.INSTANCE.setDateTime(CLASS_DAY.plusDays(1).atTime(0, 5));
+        assertThatThrownBy(() -> load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.PRESENT))
+                .isInstanceOf(AttendanceAlreadyRecordedException.class);
+
+        assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()))
+                .extracting(Attendance::getStatus).containsExactly(AttendanceStatus.ABSENT);
+    }
+
+    @Test
+    void anotherInstructorOfTheSectionCannotCorrectAnAttendanceHeDidNotRecord() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000055", "80000056", "MateriaCorreccionOtroDocente", instructor);
+        Instructor coTeacher = persistInstructor("80000057");
+        assignInstructor(enrollment.getSubjectSection(), coTeacher);
+        entityManager.flush();
+        MutableClock.INSTANCE.setDateTime(CLASS_DAY.atTime(9, 0));
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+
+        assertThatThrownBy(() -> load(enrollment, coTeacher, CLASS_DAY, AttendanceStatus.PRESENT))
+                .isInstanceOf(AttendanceAlreadyRecordedException.class);
+    }
+
+    @Test
+    void instructorOfAnotherSectionCannotCorrectTheSameDay() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000058", "80000059", "MateriaCorreccionAjena", instructor);
+        Instructor outsider = persistInstructor("80000060");
+        entityManager.flush();
+        MutableClock.INSTANCE.setDateTime(CLASS_DAY.atTime(9, 0));
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+
+        assertThatThrownBy(() -> load(enrollment, outsider, CLASS_DAY, AttendanceStatus.PRESENT))
+                .isInstanceOf(NotOwnSectionException.class);
+        assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()))
+                .extracting(Attendance::getStatus).containsExactly(AttendanceStatus.ABSENT);
     }
 
     @Test
@@ -634,7 +710,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
 
         assertThatThrownBy(() -> requestAttendanceChangeUseCase.request(new RequestAttendanceChangeCommand(
-                attendance.getId(), instructor[0], new CreateAttendanceChangeRequestRequest(AttendanceStatus.JUSTIFIED, "trajo certificado"))))
+                attendance.getId(), instructor[0].getId(), new CreateAttendanceChangeRequestRequest(AttendanceStatus.JUSTIFIED, "trajo certificado"))))
                 .isInstanceOf(AttendanceStatusNotRecordableException.class);
     }
 
@@ -670,7 +746,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Attendance first = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         Person preceptor = persistPersonBase("80000050");
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
-        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), "certificado médico", null));
+        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), null, "certificado médico", null));
         entityManager.flush();
 
         List<RosterEntryResponse> roster = getProgramSectionRosterUseCase.get(

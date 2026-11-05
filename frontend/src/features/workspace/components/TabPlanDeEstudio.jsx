@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { Paginador } from '@/components/Paginador';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -25,17 +26,8 @@ const ESTADO_PILL = {
   bloqueada: { label: 'Bloqueada', tone: 'neutral' },
 };
 
-// Horas semanales — MOCK, no existe ese dato en el backend todavía (ProgramSubject
-// no tiene un campo de carga horaria). Determinístico por créditos, para que la
-// demo sea estable: más créditos, más horas — es una relación razonable aunque el
-// número puntual sea de ejemplo.
-function horasSemanalesMock(credits) {
-  if (credits == null) return null;
-  return Math.max(2, Math.round(credits / 2));
-}
-
 // Pestaña "Plan de estudio" de Mis carreras (Épica 2 Fase 2) — materias por año con
-// horas semanales (mock), créditos, correlativas y tipología. Correlativas: solo los
+// créditos, correlativas y tipología. Correlativas: solo los
 // requisitos INMEDIATOS/explícitos de cada materia (GET /program-subjects/{id}/prerequisites,
 // dato real) — nunca la cadena completa de materias previas, pedido explícito del
 // usuario ("no voy a poner todas las materias anteriores... sino las que pusimos
@@ -68,6 +60,8 @@ export function TabPlanDeEstudio({ carreraId }) {
     setPage,
     totalPages,
     cargando,
+    fallo,
+    recargar,
     estado,
     cambiarEstado,
     anio,
@@ -111,7 +105,6 @@ export function TabPlanDeEstudio({ carreraId }) {
                   extra={<AnioColumnFilter anios={anios} value={anio} onChange={cambiarAnio} />}
                 />
               </TableHead>
-              <TableHead>Hs. semanales</TableHead>
               <TableHead>
                 <SortableColumnHeader label="Créditos" sortId="credits" sortState={estadoDe('credits')} onToggle={toggleOrden} />
               </TableHead>
@@ -131,7 +124,7 @@ export function TabPlanDeEstudio({ carreraId }) {
           <TableBody>
             {cargando ? (
               <TableRow>
-                <TableCell colSpan={8} className="p-4">
+                <TableCell colSpan={7} className="p-4">
                   <div className="flex flex-col gap-2">
                     <Skeleton className="h-10" />
                     <Skeleton className="h-10" />
@@ -139,9 +132,15 @@ export function TabPlanDeEstudio({ carreraId }) {
                   </div>
                 </TableCell>
               </TableRow>
+            ) : fallo ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <LoadErrorState onRetry={recargar} resource="el plan de estudio" bare />
+                </TableCell>
+              </TableRow>
             ) : pagina.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={7}>
                   <EmptyState title="No hay materias para mostrar" description="Probá con otro filtro." />
                 </TableCell>
               </TableRow>
@@ -155,12 +154,11 @@ export function TabPlanDeEstudio({ carreraId }) {
 
                 return (
                   <Fragment key={fila.key}>
-                    {nuevoGrupo && <AnioGroupHeaderRow anio={fila.curricularYear} colSpan={8} />}
+                    {nuevoGrupo && <AnioGroupHeaderRow anio={fila.curricularYear} colSpan={7} />}
                     <TableRow className={fila.estado === 'bloqueada' ? 'opacity-60' : ''}>
                       <TableCell className="font-semibold text-ink-faint">{fila.subjectCode ?? '—'}</TableCell>
                       <TableCell className="font-semibold text-ink"><div className="max-w-[180px] truncate">{fila.subjectName}</div></TableCell>
                       <TableCell className="text-ink-faint">{fila.curricularYear ? `${fila.curricularYear}°` : '—'}</TableCell>
-                      <TableCell className="text-ink-faint">{horasSemanalesMock(fila.credits) ?? '—'}</TableCell>
                       <TableCell className="text-ink-faint">{fila.credits ?? '—'}</TableCell>
                       <TableCell className="whitespace-normal text-ink-faint">
                         {query?.isLoading ? (

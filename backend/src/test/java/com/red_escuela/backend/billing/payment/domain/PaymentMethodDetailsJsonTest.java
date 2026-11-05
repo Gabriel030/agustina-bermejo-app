@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.domain;
 
+import com.red_escuela.backend.billing.operation.CardPaymentType;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;

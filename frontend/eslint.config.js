@@ -84,6 +84,24 @@ export default defineConfig([
   },
   ...featureBoundaryRules,
   {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/components/charts/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...[
+          'ImportDeclaration',
+          'ExportNamedDeclaration',
+          'ExportAllDeclaration',
+          'ImportExpression',
+        ].map((node) => ({
+          selector: `${node}[source.value=/^recharts(\\x2f.*)?$/]`,
+          message: 'Importá los gráficos desde @/components/charts; recharts solo se usa dentro de ese directorio.',
+        })),
+      ],
+    },
+  },
+  {
     files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}', 'src/layouts/**/*.{js,jsx}'],
     ignores: ['**/*.test.{js,jsx}'],
     rules: {

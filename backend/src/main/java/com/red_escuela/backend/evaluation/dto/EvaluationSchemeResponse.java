@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Grade;
 
@@ -8,7 +9,7 @@ import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 public record EvaluationSchemeResponse(
         Long id, String name, Integer examCountExpected, Boolean hasFinal, Double finalWeight,
         String aggregationMethod, BigDecimal minRegularGrade, BigDecimal minApprovalGrade,
-        BigDecimal promotionMinGrade, String notes, boolean inUse) {
+        @Schema(nullable = true) BigDecimal promotionMinGrade, String notes, boolean inUse) {
 
     public static EvaluationSchemeResponse from(EvaluationScheme scheme, boolean inUse) {
         return new EvaluationSchemeResponse(

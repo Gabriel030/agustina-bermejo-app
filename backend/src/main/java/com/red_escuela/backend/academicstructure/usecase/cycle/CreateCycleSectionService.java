@@ -2,10 +2,14 @@ package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
+import java.util.stream.Collectors;
 import com.red_escuela.backend.academicstructure.entity.*;
 import com.red_escuela.backend.academicstructure.exception.*;
 import com.red_escuela.backend.academicstructure.repository.*;
+import com.red_escuela.backend.academicstructure.service.CycleSectionAbsenceLimitAssigner;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
+import com.red_escuela.backend.academicstructure.service.SectionIdentityAssigner;
+import com.red_escuela.backend.academicstructure.service.SectionShiftSlotGuard;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,9 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private final ClassroomRepository classroomRepository;
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionConflictChecker conflictChecker;
+    private final CycleSectionAbsenceLimitAssigner absenceLimitAssigner;
+    private final SectionIdentityAssigner identityAssigner;
+    private final SectionShiftSlotGuard shiftSlotGuard;
 
     public CreateCycleSectionService(
             AcademicOfferingCycleRepository cycleRepository,
@@ -32,7 +39,10 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
             CourseSubjectSectionRepository courseSectionRepository,
             ClassroomRepository classroomRepository,
             SectionScheduleSlotRepository slotRepository,
-            SectionConflictChecker conflictChecker
+            SectionConflictChecker conflictChecker,
+            CycleSectionAbsenceLimitAssigner absenceLimitAssigner,
+            SectionIdentityAssigner identityAssigner,
+            SectionShiftSlotGuard shiftSlotGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectRepository = subjectRepository;
@@ -42,6 +52,9 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         this.classroomRepository = classroomRepository;
         this.slotRepository = slotRepository;
         this.conflictChecker = conflictChecker;
+        this.absenceLimitAssigner = absenceLimitAssigner;
+        this.identityAssigner = identityAssigner;
+        this.shiftSlotGuard = shiftSlotGuard;
     }
 
     @Override
@@ -50,11 +63,20 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
         cycle.ensureEditable();
+        identityAssigner.requireShift(request.shift());
+        lockRequestedClassrooms(request);
         if (cycle.getProgram() != null) {
             return createSubjectSection(cycle, request);
         } else {
             return createCourseSection(cycle, request);
         }
+    }
+
+    private void lockRequestedClassrooms(CreateCycleSectionRequest request) {
+        if (request.slots() == null) return;
+        classroomRepository.lockAllByIdOrdered(request.slots().stream()
+                .map(ScheduleSlotRequest::classroomId)
+                .collect(Collectors.toSet()));
     }
 
     private Long createSubjectSection(AcademicOfferingCycle cycle, CreateCycleSectionRequest request) {
@@ -66,9 +88,11 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         section.setSubject(subject);
         section.setTerm(cycle.getTerm());
         section.setCapacity(request.capacity());
+        absenceLimitAssigner.assignToSubjectSection(section, request.maxAbsencePercent());
         section.setStatus(StatusType.INACTIVE);
         section.setCreatedAt(LocalDateTime.now());
         section.setAcademicOfferingCycle(cycle);
+        identityAssigner.identifyNewSubjectSection(section, request.shift(), request.description());
         var saved = subjectSectionRepository.save(section);
         saveSubjectSlots(saved, request);
         return saved.getId();
@@ -82,9 +106,11 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         section.setCourseSubject(courseSubject);
         section.setTerm(cycle.getTerm());
         section.setCapacity(request.capacity());
+        absenceLimitAssigner.assignToCourseSection(section, request.maxAbsencePercent());
         section.setStatus(StatusType.INACTIVE);
         section.setCreatedAt(LocalDateTime.now());
         section.setAcademicOfferingCycle(cycle);
+        identityAssigner.identifyNewCourseSection(section, request.shift(), request.description());
         var saved = courseSectionRepository.save(section);
         saveCourseSlots(saved, request);
         return saved.getId();
@@ -101,6 +127,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private void saveSubjectSlots(SubjectSection section, CreateCycleSectionRequest request) {
         if (request.slots() == null) return;
         for (var slotReq : request.slots()) {
+            shiftSlotGuard.ensureInsideShift(request.shift(), slotReq.startTime(), slotReq.endTime());
             var classroom = availableClassroom(section.getTerm(), slotReq, request.capacity());
             var slot = new SectionScheduleSlot();
             slot.setSubjectSection(section);
@@ -115,6 +142,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private void saveCourseSlots(CourseSubjectSection section, CreateCycleSectionRequest request) {
         if (request.slots() == null) return;
         for (var slotReq : request.slots()) {
+            shiftSlotGuard.ensureInsideShift(request.shift(), slotReq.startTime(), slotReq.endTime());
             var classroom = availableClassroom(section.getTerm(), slotReq, request.capacity());
             var slot = new SectionScheduleSlot();
             slot.setCourseSection(section);

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationResult;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.exception.InsufficientAccountCreditException;
@@ -94,7 +95,7 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
 
     private void receiveCredit(String amount, LocalDate paidOn) {
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars(amount), paidOn, "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), BillingTestFixtures.seedApprovedPaymentRow(accountId, ars(amount)), ars(amount), paidOn, "Pago");
             return null;
         });
     }
@@ -188,17 +189,38 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
     }
 
     @Test
-    void anInvoiceWithAReceiptUnderReviewIsAllocatedLikeAnyOpenInvoice() {
-        Long invoice = issue("80000.00", LocalDate.of(2027, 4, 10), FeeType.ADMINISTRATIVE_FEE);
+    @Tag("D-261")
+    void anInvoiceWithAReceiptUnderReviewIsSkippedByTheAutomaticAllocationAndTheNextOneIsPaid() {
+        Long underReview = issue("80000.00", LocalDate.of(2027, 3, 10), FeeType.ADMINISTRATIVE_FEE);
+        Long next = issue("80000.00", LocalDate.of(2027, 4, 10), FeeType.ADMINISTRATIVE_FEE);
         inTransaction(() -> {
-            invoiceRepository.findByIdForUpdate(invoice).orElseThrow().markPaymentUnderReview(TODAY, ACTOR, "Comprobante");
+            invoiceRepository.findByIdForUpdate(underReview).orElseThrow().markPaymentUnderReview(TODAY, ACTOR, "Comprobante");
             return null;
         });
         receiveCredit("80000.00", TODAY);
 
         allocateOn(TODAY);
 
-        assertThat(paymentStatusOf(invoice)).isEqualTo("PAID");
+        assertThat(paymentStatusOf(underReview)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(paymentStatusOf(next)).isEqualTo("PAID");
+        assertThat(unallocatedCredit()).isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-261")
+    void creditStaysUnallocatedWhileTheOnlyOpenInvoiceIsUnderReview() {
+        Long underReview = issue("80000.00", LocalDate.of(2027, 4, 10), FeeType.ADMINISTRATIVE_FEE);
+        inTransaction(() -> {
+            invoiceRepository.findByIdForUpdate(underReview).orElseThrow().markPaymentUnderReview(TODAY, ACTOR, "Comprobante");
+            return null;
+        });
+        receiveCredit("80000.00", TODAY);
+
+        allocateOn(TODAY);
+
+        assertThat(paymentStatusOf(underReview)).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(unallocatedCredit()).isEqualByComparingTo("80000.00");
         invariants.assertAllBillingInvariantsHold();
     }
 
@@ -266,9 +288,14 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
         receiveCredit("80000.00", TODAY);
         allocateOn(TODAY);
         PaymentAllocation allocation = allocationRepository.findCurrentAllocationByInvoiceId(invoice).orElseThrow();
-        insertRawAllocation(invoice, allocation.getId());
+        jdbc.execute("alter table payment_allocation disable trigger trg_payment_allocation_has_sources");
+        try {
+            insertRawAllocation(invoice, allocation.getId());
 
-        assertThatThrownBy(() -> insertRawAllocation(invoice, allocation.getId())).isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> insertRawAllocation(invoice, allocation.getId())).isInstanceOf(DataIntegrityViolationException.class);
+        } finally {
+            jdbc.execute("alter table payment_allocation enable trigger trg_payment_allocation_has_sources");
+        }
     }
 
     @Test
@@ -386,7 +413,7 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
         Long otherAccountId = newAccountId(newStudentId(), Currency.ARS);
         issueAdministrativeFeeWithLedgerDebit(otherAccountId, "100.00", LocalDate.of(2027, 3, 10));
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(otherAccountId), nextExternalId(), ars("100.00"), TODAY, "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(otherAccountId), BillingTestFixtures.seedApprovedPaymentRow(otherAccountId, ars("100.00")), ars("100.00"), TODAY, "Pago");
             return allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(otherAccountId), TODAY, ACTOR);
         });
         PaymentAllocation foreign = allocationRepository.findCurrentAllocationsByAccountNewestFirst(otherAccountId).get(0);

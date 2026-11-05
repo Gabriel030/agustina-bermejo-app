@@ -1,16 +1,10 @@
-import { Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { menuItemsFor } from '@/routes/roleMenu';
+import { useVisibleMenuItems } from '@/routes/useVisibleMenuItems';
 
-const ITEMS = [
-  { to: '/administrativo/inicio', label: 'Inicio', icon: Home },
-  { to: '/administrativo/alumnos', label: 'Alumnos', icon: Users },
-  { to: '/administrativo/personal', label: 'Personal', icon: UserCog },
-  { to: '/administrativo/facturacion', label: 'Facturación', icon: Receipt },
-  { to: '/administrativo/constancias', label: 'Constancias', icon: FileText },
-  { to: '/administrativo/solicitudes-de-asistencia', label: 'Solicitudes de asistencia', icon: CalendarCheck },
-  { to: '/administrativo/gestion-academica', label: 'Banco de materias', icon: BookOpen },
-];
+const ITEMS = menuItemsFor('administrativo');
 
 export function AdministrativoLayout() {
-  return <RoleShell titulo="Administrativo" items={ITEMS} />;
+  const items = useVisibleMenuItems('administrativo', ITEMS);
+  return <RoleShell titulo="Administrativo" items={items} />;
 }

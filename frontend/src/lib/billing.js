@@ -58,10 +58,10 @@ export function discountLabel(discount) {
 
 export const ADJUSTMENT_TYPE_LABELS = {
   SCHOLARSHIP: 'Beca',
-  PROMOTION: 'Promoción',
+  COHORT_PROMOTION: 'Promoción',
   ANNUAL_UPFRONT: 'Pago anual',
   COHORT_ENTRY: 'Ingreso de cohorte',
-  MANUAL: 'Manual',
+  INDIVIDUAL: 'Descuento individual',
   DISCOUNT: 'Descuento',
 };
 
@@ -71,6 +71,13 @@ export function formatPeriod(period) {
   if (!period) return '-';
   const [year, month] = period.split('-');
   return `${MONTHS[parseInt(month, 10) - 1]} ${year}`;
+}
+
+export function todayIsoDate() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 export function formatDate(value) {
@@ -85,12 +92,16 @@ export function formatDateTime(value) {
   return time ? `${formatDate(value)} ${time}` : formatDate(value);
 }
 
+export function formatPaymentMoment(value) {
+  if (!value) return '';
+  return value.endsWith('T00:00:00') || value.endsWith('T00:00') ? formatDate(value) : formatDateTime(value);
+}
+
 export const PAYMENT_METHOD_LABELS = {
   CASH: 'Efectivo',
   TRANSFER: 'Transferencia bancaria',
   CARD: 'Tarjeta',
   MERCADO_PAGO: 'Mercado Pago',
-  CREDIT_BALANCE: 'Saldo a favor',
 };
 
 const CARD_TYPE_LABELS = {
@@ -119,6 +130,7 @@ export const RECEIPT_STATUS_CONFIG = {
 export function hasInvoiceDetail(invoice) {
   return (
     (invoice.payments?.length ?? 0) > 0 ||
+    (invoice.creditNotes?.length ?? 0) > 0 ||
     (invoice.receipts?.length ?? 0) > 0 ||
     (invoice.lines ?? []).some((line) => line.discount != null) ||
     (invoice.lines ?? []).length > 1 ||
@@ -165,15 +177,4 @@ export function receiptFileError(file) {
     return 'El archivo pesa más de 5 MB. Subí uno más liviano.';
   }
   return null;
-}
-
-const RECEIPT_UPLOAD_ERRORS = {
-  PAYMENT_RECEIPT_ALREADY_PENDING: 'Ya enviaste un comprobante para esta cuota y está en revisión.',
-  UNSUPPORTED_FILE_TYPE: 'El comprobante tiene que ser un PDF, JPG o PNG.',
-  MAX_UPLOAD_SIZE_EXCEEDED: 'El archivo pesa más de 5 MB. Subí uno más liviano.',
-  INVOICE_NOT_PAYABLE: 'Esta cuota ya no admite pagos: puede que ya esté saldada.',
-};
-
-export function receiptUploadErrorMessage(error) {
-  return RECEIPT_UPLOAD_ERRORS[error?.code] ?? error?.message ?? 'No pudimos enviar el comprobante. Probá de nuevo.';
 }

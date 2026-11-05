@@ -2,30 +2,20 @@ package com.red_escuela.backend.academicstructure.usecase.term;
 
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.academicstructure.service.TermCreation;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class CreateTermService implements CreateTermUseCase {
 
-    private final TermRepository termRepository;
+    private final TermCreation termCreation;
 
-    public CreateTermService(TermRepository termRepository) {
-        this.termRepository = termRepository;
+    public CreateTermService(TermCreation termCreation) {
+        this.termCreation = termCreation;
     }
 
     @Override
-    @Transactional
     public Term create(CreateTermRequest request) {
-        Term term = new Term();
-        term.setYear(request.year());
-        term.setDescription(request.description());
-        term.setType(request.type());
-        term.reschedule(request.startDate(), request.endDate());
-        term.defineEnrollmentWindow(request.enrollmentStart(), request.enrollmentEnd());
-        term.setStatus(StatusType.ACTIVE);
-        return termRepository.save(term);
+        return termCreation.create(request);
     }
 }

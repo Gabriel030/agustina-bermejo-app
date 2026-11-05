@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.StatusType;
 
@@ -67,8 +68,22 @@ public class CourseSubjectSection {
     @JoinColumn(name = "academic_offering_cycle_id")
     private AcademicOfferingCycle academicOfferingCycle;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shift")
+    private SectionShift shift;
+
+    @Column(name = "code", updatable = false)
+    private String code;
+
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "pending_approval", nullable = false)
     private boolean pendingApproval = false;
+
+    public String getModuleName() {
+        return courseSubject.getName();
+    }
 
     public boolean isOfferingApproved() {
         return academicOfferingCycle == null || academicOfferingCycle.wasApproved();

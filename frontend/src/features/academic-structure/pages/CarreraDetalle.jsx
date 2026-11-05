@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, GitBranch, Globe, GlobeOff, Pencil, Power, PowerOff, Trash2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useProgram,
   useProgramSubjects,
@@ -23,6 +23,8 @@ import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
 import { AniosLectivosSection } from '@/features/academic-structure/components/AniosLectivosSection';
 import { CohortesSection } from '@/features/academic-structure/components/CohortesSection';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
+import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 
 const CATEGORY_LABELS = {
   MANDATORY: 'Obligatoria',
@@ -41,12 +43,6 @@ const LEVEL_LABELS = {
   GRADUATE: 'Posgrado',
   EXTENSION: 'Extensión',
   DIPLOMA: 'Diplomatura',
-};
-
-const TEACHING_MODE_LABELS = {
-  IN_PERSON: 'Presencial',
-  ONLINE: 'Virtual',
-  HYBRID: 'Híbrido',
 };
 
 const STATUS_CONFIG = {
@@ -162,11 +158,29 @@ function YearBlock({ year, totalYears, subjects, onAgregar, onCorrelativas, onRe
   );
 }
 
+const DETAIL_TABS = ['plan', 'anios', 'cohortes'];
+
 export function CarreraDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: program, isLoading: loadingProgram } = useProgram(id);
-  const { data: subjects, isLoading: loadingSubjects } = useProgramSubjects(id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = DETAIL_TABS.includes(requestedTab) ? requestedTab : 'plan';
+  const {
+    data: program,
+    isLoading: loadingProgram,
+    isError: programFailed,
+    error: programError,
+    refetch: refetchProgram,
+  } = useProgram(id);
+  const {
+    data: subjects,
+    isLoading: loadingSubjects,
+    isError: subjectsFailed,
+    error: subjectsError,
+    refetch: refetchSubjects,
+  } = useProgramSubjects(id);
+  const subjectsUnavailable = subjectsFailed && !subjects;
   const deactivateProgram = useDeactivateProgram();
   const activateProgram = useActivateProgram();
   const setCatalogVisibility = useSetProgramCatalogVisibility();
@@ -177,6 +191,7 @@ export function CarreraDetalle() {
   const [panelYear, setPanelYear] = useState(null);
   const [panelSession, setPanelSession] = useState(0);
   const [subjectToRemove, setSubjectToRemove] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [correlativasOpen, setCorrelativasOpen] = useState(false);
   const [correlativaPs, setCorrelativaPs] = useState(null);
 
@@ -219,6 +234,7 @@ export function CarreraDetalle() {
           ? 'La carrera ahora aparece en el catálogo de inscripciones'
           : 'La carrera fue retirada del catálogo. Los alumnos actuales no se ven afectados.'
       );
+      setConfirmAction(null);
     } catch {
       toast.error('No se pudo cambiar la visibilidad en el catálogo.');
     }
@@ -230,6 +246,7 @@ export function CarreraDetalle() {
       if (isActive) {
         await deactivateProgram.mutateAsync(id);
         toast.success('Carrera desactivada');
+        setConfirmAction(null);
       } else {
         await activateProgram.mutateAsync(id);
         toast.success('Carrera activada');
@@ -239,7 +256,7 @@ export function CarreraDetalle() {
     }
   }
 
-  if (loadingProgram) {
+  if (!program && (loadingProgram || !programFailed)) {
     return (
       <PageContainer>
         <Skeleton className="h-8 w-64 rounded-xl" />
@@ -250,7 +267,13 @@ export function CarreraDetalle() {
   if (!program) {
     return (
       <PageContainer>
-        <EmptyState title="Carrera no encontrada" />
+        <LoadErrorState
+          error={programError}
+          onRetry={refetchProgram}
+          resource="la carrera"
+          backTo="/administrativo/gestion-academica?section=carreras"
+          backLabel="carreras"
+        />
       </PageContainer>
     );
   }
@@ -319,7 +342,7 @@ export function CarreraDetalle() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleToggleStatus}
+                onClick={() => (isActive ? setConfirmAction('deactivate') : handleToggleStatus())}
                 loading={deactivateProgram.isPending || activateProgram.isPending}
                 className={isActive ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
               >
@@ -350,7 +373,7 @@ export function CarreraDetalle() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleToggleCatalog}
+              onClick={() => (program.visibleInCatalog ? setConfirmAction('retire') : handleToggleCatalog())}
               loading={setCatalogVisibility.isPending}
               className={program.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
             >
@@ -378,7 +401,7 @@ export function CarreraDetalle() {
           </GlassCard>
         )}
 
-        <Tabs defaultValue="plan">
+        <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ tab }, { replace: true })}>
           <TabsList variant="segmented">
             <TabsTrigger value="plan">Plan de estudios</TabsTrigger>
             <TabsTrigger value="anios">Años lectivos</TabsTrigger>
@@ -389,14 +412,18 @@ export function CarreraDetalle() {
             <div className="flex flex-col gap-4 pt-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
-                <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Agregar materia
-                </Button>
+                {!subjectsUnavailable && (
+                  <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    Agregar materia
+                  </Button>
+                )}
               </div>
 
               {loadingSubjects ? (
                 <Skeleton rows={4} />
+              ) : subjectsUnavailable ? (
+                <LoadErrorState error={subjectsError} onRetry={refetchSubjects} resource="el plan de estudios" />
               ) : (
                 <div className="flex flex-col gap-3">
                   {yearBlocks.map((y) => (
@@ -456,24 +483,35 @@ export function CarreraDetalle() {
         subjectName={correlativaPs?.subjectName}
       />
 
-      <Dialog open={subjectToRemove !== null} onOpenChange={(o) => !o && setSubjectToRemove(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Quitar materia del plan</DialogTitle>
-            <DialogDescription>
-              {subjectToRemove?.subjectName} va a quedar inactiva en el plan de estudios. Podés volver a agregarla más adelante.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSubjectToRemove(null)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" loading={deactivateProgramSubject.isPending} onClick={handleConfirmRemove}>
-              Quitar del plan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmActionDialog
+        open={subjectToRemove !== null}
+        onOpenChange={(o) => !o && setSubjectToRemove(null)}
+        title="Quitar materia del plan"
+        description={`${subjectToRemove?.subjectName} va a quedar inactiva en el plan de estudios. Podés volver a agregarla más adelante.`}
+        confirmLabel="Quitar del plan"
+        pending={deactivateProgramSubject.isPending}
+        onConfirm={handleConfirmRemove}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'deactivate'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Desactivar carrera"
+        description="La carrera va a quedar inactiva. Podés volver a activarla más adelante."
+        confirmLabel="Desactivar"
+        pending={deactivateProgram.isPending}
+        onConfirm={handleToggleStatus}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'retire'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Retirar del catálogo"
+        description="La carrera deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados."
+        confirmLabel="Retirar"
+        pending={setCatalogVisibility.isPending}
+        onConfirm={handleToggleCatalog}
+      />
     </PageContainer>
   );
 }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Grade;
 
@@ -15,7 +16,7 @@ public record SectionEvaluationConfigResponse(
         LocalDate tp1DueDate, LocalDate tp2DueDate, LocalDate tp3DueDate,
         LocalDate exam1Date, LocalDate exam2Date, LocalDate exam3Date, LocalDate exam4Date,
         LocalDate finalCall1Date, LocalDate finalCall2Date,
-        String rejectionReason, LocalDateTime submittedAt,
+        @Schema(nullable = true) String rejectionReason, LocalDateTime submittedAt,
         String reviewedByName, LocalDateTime reviewedAt,
         LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
         String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,

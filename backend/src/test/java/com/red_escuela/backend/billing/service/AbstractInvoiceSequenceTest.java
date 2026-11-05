@@ -1,8 +1,10 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -44,6 +46,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.Clock;
+import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
+import com.red_escuela.backend.testsupport.MonthlyInvoiceRunTestDriver;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -59,8 +64,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     private static final AtomicLong DNI = new AtomicLong(700_000_000L + java.util.concurrent.ThreadLocalRandom.current().nextLong(0, 90_000_000L));
 
+    protected MonthlyInvoiceRunTestDriver job;
+
     @Autowired
-    protected MonthlyInstallmentIssuanceJob job;
+    void setMonthlyInvoiceRunTestDriver(MonthlyInvoiceRunExecutor executor, JdbcTemplate jdbc, Clock clock) {
+        this.job = new MonthlyInvoiceRunTestDriver(executor, jdbc, clock);
+    }
     @Autowired
     protected InvoiceRepository invoiceRepository;
     @Autowired
@@ -88,6 +97,13 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
 
     protected static LocalDate date(int year, int month, int day) {
         return LocalDate.of(year, month, day);
+    }
+
+    @Autowired
+    private com.red_escuela.backend.billing.run.operation.TermEndWithdrawalBillingRunStep termEndWithdrawalStep;
+
+    protected void closeFinishedTermsOfSuspendedEnrollments() {
+        termEndWithdrawalStep.runStepForBusinessDate(LocalDate.now(MutableClock.INSTANCE));
     }
 
     protected void today(LocalDate date) {
@@ -121,6 +137,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
             institution.setName("Instituto");
             entityManager.persist(institution);
             Program program = new Program();
+            program.setVisibleInCatalog(true);
             program.setName("Carrera " + System.nanoTime());
             program.setTotalYears(3);
             program.setTotalCreditsRequired(10);
@@ -154,7 +171,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
 
     protected Year newYear(Career career, int year, int installments, int feeCount, int firstFeeMonth, Integer secondFeeMonth) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(String.valueOf(year));
             term.setStatus(StatusType.ACTIVE);
@@ -250,7 +267,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     }
 
     protected void setStanding(Long enrollmentId, EnrollmentPaymentStatus standing) {
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setPaymentStatus(standing));
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbcTemplate, enrollmentId, standing);
     }
 
     protected void markInvoices(Long enrollmentId, FeeType type, YearMonth period, InvoicePaymentStatus newStatus) {
@@ -281,9 +298,9 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
         return invoices(enrollmentId, type).stream().map(Invoice::getPeriod).toList();
     }
 
-    protected Term newCuatrimestre(int year, int startMonth, LocalDate windowOpens, LocalDate windowCloses, String type) {
+    protected Term newCuatrimestre(int year, int startMonth, LocalDate windowOpens, LocalDate windowCloses, TermType type) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(year + "-" + type);
             term.setType(type);

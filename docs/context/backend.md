@@ -68,6 +68,12 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   `@RequestMapping` de recurso (`StudentController`, `AuthController`), cada
   endpoint inyecta el/los `UseCase` que necesita — decisión explícita tomada
   al diseñar el patrón, no un olvido.
+  *Desde el ADR de módulos (30-oct-2026):* un controller depende solo de casos
+  de uso de su módulo (y DTOs), nunca de `service` ni de `repository` (regla R4,
+  congelada). Además, `@Transactional` ya no se declara en los casos de uso nuevos:
+  vive en el especialista (`service` o `..api..`) que es el compositor más externo
+  de las escrituras; los casos de uso existentes que lo tienen quedan congelados.
+  Ver `adr/0002-patron-de-modulos.md`.
 - **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
   del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
   (`identity/service/`) — reusalo, no dupliques esa resolución en un use case
@@ -85,7 +91,7 @@ estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.from`).
 
 ## Paquete por feature: `billing`
 
-El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `Scholarship`,
+El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `StudentDiscount`,
 `Promotion`, `LatePaymentSettings`, `ProgramCohort`, `ProgramYearBillingTemplate`,
 etc. — todo lo de Fase 6.x del roadmap) vive en su propio paquete
 `com.red_escuela.backend.billing.*`. Es ~25% de todo el backend, bastante
@@ -97,14 +103,14 @@ acoplamiento cruzado es esperado, no un smell: `billing.*` importa
 cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
-(`invoice`, `payment`, `paymentreceipt`, `creditnote`, `scholarship`,
+(`invoice`, `payment`, `paymentreceipt`, `creditnote`,
 `promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:
 1. **Compartidos entre varios use cases** del mismo subdominio (evitan
-   duplicar lógica): `PaymentPlanSelectionGuard`, `PromotionRedeemer`,
-   `ScholarshipGrantSupport`, `PaymentReceiptFinder`, etc.
+   duplicar lógica): `PaymentPlanSelectionGuard`, `PaymentPlanOptionFinder`,
+   `PaymentReceiptFinder`, etc.
 2. **Ya cohesivos de por sí**, no tenían el problema de "cajón de sastre"
    (varios métodos, pero todos sobre el mismo concepto — mismo criterio que
    `PersonFactory`/`CurrentPersonService` en `identity`): `InvoiceFactory`
@@ -126,7 +132,7 @@ factura se emite con `billing.invoice.service.InvoiceIssuingService` (la
 operación `ISSUE_INVOICE`); las lecturas con el JSON de siempre pasan por
 `InvoiceView`/`InvoiceViewLoader`, que es también el único punto de `billing`
 que carga inscripciones. Una factura se paga completa o no se paga (D-136):
-`RegisterPaymentService` es el puente de cobro hasta la fase de pagos.
+El cobro vive en `billing.payment` y `billing.operation` (efectivo, Mercado Pago y comprobante entran por `ApprovedPaymentRegistrationPort` y las operaciones de pago); el servicio de cobro legado ya no existe.
 
 El código nuevo de facturación nace con el subdominio como primer nivel del
 paquete (`billing.configuration`, `billing.operation`, y los que cree cada fase
@@ -276,6 +282,9 @@ Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
   se inyecta directo en los controllers para las consultas de soporte de
   UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
   no todo tiene que pasar por un Use Case.
+  *Desde el ADR de módulos (30-oct-2026):* inyectar un colaborador de `service`
+  en un controller queda prohibido para código nuevo (R4, congelada): la consulta
+  de soporte de UI pasa por un caso de uso de su módulo que llama al colaborador.
 - `SectionEvaluationConfigDraftInitializer` — `createInitialDraft`, se
   invoca desde `academicstructure.service.SubjectSectionService` al crear
   una comisión (colaborador cross-feature, no un Use Case porque no lo
@@ -355,6 +364,12 @@ Quedó como el colaborador `GraduationRequestAutoRequester`
 — un colaborador plano puede depender de un Use Case de su propia feature,
 no hace falta que todo pase por otro Use Case.
 
+*Desde el ADR de módulos (30-oct-2026):* un especialista (`service`) no depende
+de `usecase` (R3, congelada) y un caso de uso nunca llama a otro caso de uso (R2,
+congelada). `GraduationRequestAutoRequester` queda como deuda declarada: se
+migra a un especialista que haga la escritura, o a un listener que invoque el
+caso de uso desde el lado coordinador.
+
 ## Paquete por feature: `notification`
 
 **Última feature del roadmap package-by-feature** — a diferencia del resto,
@@ -398,6 +413,35 @@ esta feature — son infraestructura genérica usada cross-feature
 nada que ver con el sistema de eventos; `FileStorageService` lo usan
 enrollment/evaluation/billing/identity) y viven en `shared/mail` y
 `shared/storage`.
+
+**Mails de cobranza (`notification.delivery`):** el único `TransactionalEmailGateway`
+disponible es `MockTransactionalEmailGateway`, activo con
+`app.mail.transactional.provider=mock` (o sin la propiedad). Con cualquier otro valor
+no hay bean y la aplicación no arranca (falla rápida, a propósito) hasta que exista un
+proveedor real. `EmailDeliveryDispatchJob` despacha solo en días hábiles
+(`BusinessDayCalendar`, tabla `holiday`) y dentro de `EmailDispatchWindow.STANDARD`
+(09:00–11:00, fin exclusivo), y toma cada fila con `for update skip locked`: un worker
+nunca espera a otro. El buzón `GET /notification-deliveries/simulated` existe solo con
+los perfiles `local` o `demo`.
+
+## Transacciones: del caso de uso al compositor (D4, regla R10)
+
+Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAreDeclaredOnlyInSpecialists`; los casos de uso existentes están congelados y la Épica 22 los migra). La transacción la abre un especialista de `service/`, `operation/`, `repository/` o `api/`.
+
+**Plantilla "caso de uso → compositor transaccional"** (un compositor por caso de uso que escribe en más de un lugar):
+
+1. El caso de uso conserva la interfaz `XxxUseCase` y la clase `XxxService` con `@UseCase`, sin `@Transactional`. Queda como guion: valida entradas, llama al compositor y arma la respuesta.
+2. El compositor es un bean propio en `service/` del mismo subdominio, clase concreta sin interfaz, nombrado acción + objeto (`RegisterAccountTransaction`, no `Processor`). Lleva `@Transactional` y ejecuta, en orden, todos los pasos de escritura. Nunca se invoca desde un método de su misma clase (el proxy no abriría transacción).
+3. Un caso de uso que llama a dos especialistas que escriben, cada uno con su `@Transactional`, produce dos commits: es un bug. Si hay más de una escritura, va un compositor.
+4. Los lectores (`<Objeto>Reader`, `readOnly = true`) devuelven records ya resueltos dentro de su transacción. El caso de uso no toca relaciones perezosas.
+5. No se cambia ninguna propagación existente (`MANDATORY`, `REQUIRES_NEW`, `NOT_SUPPORTED`). Los colaboradores `MANDATORY` exigen que el compositor haya abierto la transacción.
+6. Los eventos síncronos (`@EventListener`) corren en la transacción del publicador: la publicación va dentro del compositor.
+
+**Open-in-view.** `spring.jpa.open-in-view` no está definido en `backend/src/main/resources`: rige el valor por defecto de Spring Boot (`true`), verificado por `AtomicityTestSupportIT.openInViewInterceptorIsRegisteredBecauseNoPropertyDisablesIt`. Efecto: durante una petición HTTP el `EntityManager` sigue abierto en el caso de uso y puede tapar un acceso perezoso fuera de transacción; no se apoyen en eso: los lectores devuelven records resueltos.
+
+**Test de atomicidad.** `AtomicityTestSupport` (`testsupport/`) observa un conjunto de tablas y ejecuta el flujo con un `FailingStep` que falla en el paso N; verifica con `count(*)` que el flujo falló por esa inyección y que no quedó ninguna fila nueva. El test no debe ser `@Transactional` (el soporte lo rechaza): una transacción de test esconde la falta de transacción del flujo. Ejemplo de uso en `AtomicityTestSupportIT`.
+
+**Progreso de R10.** `scripts/r10-progress` cuenta las líneas del almacén de R10 por módulo.
 
 ## Reglas de arquitectura
 

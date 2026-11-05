@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
@@ -8,7 +9,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -113,7 +114,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);

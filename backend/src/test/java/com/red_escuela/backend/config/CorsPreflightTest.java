@@ -30,4 +30,33 @@ class CorsPreflightTest extends AbstractIntegrationTest {
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
                 .andExpect(header().string("Access-Control-Allow-Methods", Matchers.containsString("PATCH")));
     }
+
+    @Test
+    void preflightAllowsTheIdempotencyKeyHeaderForTheTransferReceiptUpload() throws Exception {
+        mockMvc.perform(options("/me/bank-transfer-receipts")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "authorization,idempotency-key"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+                .andExpect(header().string("Access-Control-Allow-Headers", Matchers.containsStringIgnoringCase("Idempotency-Key")));
+    }
+
+    @Test
+    void preflightKeepsRejectingHeadersOutsideTheAllowList() throws Exception {
+        mockMvc.perform(options("/me/bank-transfer-receipts")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "x-forwarded-host"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void preflightFromAnUnlistedOriginIsRejectedEvenWithTheIdempotencyKeyHeader() throws Exception {
+        mockMvc.perform(options("/me/bank-transfer-receipts")
+                        .header("Origin", "http://evil.example")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "idempotency-key"))
+                .andExpect(status().isForbidden());
+    }
 }

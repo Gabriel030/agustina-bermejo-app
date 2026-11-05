@@ -12,7 +12,20 @@ const REJECTED_STEPS = [
   { key: 'rejected', label: 'Rechazada' },
 ];
 
+const EXPIRED_STEPS = [
+  { key: 'submitted', label: 'Enviada' },
+  { key: 'expired', label: 'Vencida' },
+];
+
 export function applicationProgress(solicitud) {
+  if (solicitud.status === 'EXPIRED') {
+    return {
+      pasos: EXPIRED_STEPS,
+      pasoActual: null,
+      pasosVisitados: ['submitted', 'expired'],
+      stepValidity: { submitted: true, expired: false },
+    };
+  }
   if (solicitud.status === 'REJECTED') {
     return {
       pasos: REJECTED_STEPS,

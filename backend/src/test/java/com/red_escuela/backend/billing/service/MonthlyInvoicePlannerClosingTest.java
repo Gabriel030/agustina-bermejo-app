@@ -1,28 +1,33 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.enrollment.support.StudentDocumentFixtures;
+import com.red_escuela.backend.academicstructure.domain.TermType;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
+import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
+import com.red_escuela.backend.billing.discount.exception.DiscountInvoiceTypeMismatchException;
+import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountCommand;
+import com.red_escuela.backend.billing.discount.operation.GrantStudentDiscountOperation;
+import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
-import com.red_escuela.backend.billing.entity.ScholarshipScope;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
-import com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -37,7 +42,7 @@ import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.R
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.AfterEach;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
@@ -46,6 +51,7 @@ import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
 import com.red_escuela.backend.billing.planning.domain.SlotWindow;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,8 +77,6 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private EnrollmentFeeRequirementService requirementService;
     @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
-    @Autowired
     private UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     @Autowired
     private ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
@@ -83,7 +87,9 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private SelectPaymentPlanForProgramUseCase selectPaymentPlanUseCase;
     @Autowired
-    private GrantScholarshipForProgramUseCase grantScholarshipUseCase;
+    private BillingOperationPipeline pipeline;
+    @Autowired
+    private GrantStudentDiscountOperation grantStudentDiscountOperation;
     @Autowired
     private InvoicePlanningContextLoader contextLoader;
     @Autowired
@@ -114,13 +120,12 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         return fees.get(0);
     }
 
-    private void pay(Career career, Invoice invoice, long amount) {
-        registerPaymentUseCase.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(invoice.getId(), ars(amount))),
-                PaymentMethod.CASH, false, null, null, null, null), director(career));
+    private void pay(Career career, Invoice invoice) {
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), director(career).getId());
     }
 
     private MockMultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido".getBytes());
+        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido".getBytes());
     }
 
     private EnrollmentFeeObligationStatus feeStatus(Long enrollmentId, int slot) {
@@ -216,7 +221,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void aReceiptUnderReviewDoesNotEnableTheEnrollmentButApprovingItDoes() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
         Long section = newSection(career, first);
         today(date(2027, 2, 5));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
@@ -232,7 +237,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
-        approvePaymentReceiptUseCase.approve(receipt.getId(), director(career));
+        approvePaymentReceiptUseCase.approve(receipt.getId(), director(career), PaymentVerification.none());
         assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PAID);
         assertThatCode(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section))).doesNotThrowAnyException();
         assertInvariants(enrollment, y27);
@@ -252,6 +257,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
             created.setInstitution(entityManager.getReference(Institution.class, career.institutionId()));
             created.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(created);
+            StudentDocumentFixtures.persistAllRequiredDocuments(entityManager, created);
             return created;
         });
 
@@ -259,8 +265,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
                 new RequestProgramEnrollmentApplicationCommand(student, career.programId(), cohort));
         ProgramEnrollmentApplication approved = approveApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
         Long admissionInvoiceId = approved.getAdmissionInvoice().getId();
-        registerPaymentUseCase.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(admissionInvoiceId, ars(5000))),
-                PaymentMethod.CASH, false, null, null, null, null), preceptor);
+        BillingTestFixtures.registerApprovedBankTransferPayment(admissionInvoiceId, preceptor.getId());
         Long enrollment = org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(30)).until(() -> transactionTemplate.execute(status ->
                 entityManager.createQuery("select e.id from ProgramEnrollment e where e.student.id = :id", Long.class)
                         .setParameter("id", student.getId()).getResultList().stream().findFirst().orElse(null)), java.util.Objects::nonNull);
@@ -285,8 +290,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 2, 2, 7);
         Year y28 = newYear(career, 2028, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
-        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), "2C");
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
+        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), null);
         newSection(career, first);
         newSection(career, second);
         today(date(2027, 2, 5));
@@ -297,14 +302,14 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Invoice firstFee = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> i.getEnrollmentFeeSlot() == 1).findFirst().orElseThrow();
         Invoice secondFee = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> i.getEnrollmentFeeSlot() == 2).findFirst().orElseThrow();
         authenticateAs(career);
-        pay(career, firstFee, 5000);
+        pay(career, firstFee);
         today(date(2028, 2, 3));
         job.run();
         assertThatCode(() -> requireForTerm(enrollment, first)).doesNotThrowAnyException();
         assertThatThrownBy(() -> requireForTerm(enrollment, second)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         Invoice olderInstallment = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0);
-        pay(career, olderInstallment, olderInstallment.getAmounts().outstandingAmount().value().amount().longValueExact());
-        pay(career, secondFee, 5000);
+        pay(career, olderInstallment);
+        pay(career, secondFee);
         assertThatCode(() -> requireForTerm(enrollment, second)).doesNotThrowAnyException();
         List<Invoice> next = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> y28.templateId().equals(i.getTemplateId())).toList();
         assertThat(next).hasSize(1);
@@ -320,33 +325,43 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
     @Test
     @Tag("D-157")
+    @Tag("D-384")
     void aScholarshipNeverDiscountsTheEnrollmentFeeAndOnlyDiscountsTheInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         today(date(2027, 1, 4));
         Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
-        Long forFee = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
-        Long forInstallments = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
+        Long scholarshipOnFee = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
+        Long individualOnFee = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
+        Long scholarshipOnInstallments = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
         authenticateAs(career);
-        grantScholarshipUseCase.grant(forFee, scholarship(ScholarshipScope.ENROLLMENT_FEE));
-        grantScholarshipUseCase.grant(forInstallments, scholarship(null));
+        assertThatThrownBy(() -> grantDiscount(career, scholarshipOnFee, DiscountType.SCHOLARSHIP, InvoiceType.ENROLLMENT_FEE))
+                .isInstanceOf(DiscountInvoiceTypeMismatchException.class);
+        grantDiscount(career, individualOnFee, DiscountType.INDIVIDUAL, InvoiceType.ENROLLMENT_FEE);
+        grantDiscount(career, scholarshipOnInstallments, DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT);
 
         today(date(2027, 2, 2));
         job.run();
         today(date(2027, 3, 2));
         job.run();
 
-        assertThat(amountDue(onlyFee(forFee))).isEqualTo(ars(5000));
-        assertThat(amountDue(invoices(forFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
-        assertThat(amountDue(onlyFee(forInstallments))).isEqualTo(ars(5000));
-        assertThat(amountDue(invoices(forInstallments, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(5000));
-        assertInvariants(forFee, y27);
-        assertInvariants(forInstallments, y27);
+        assertThat(amountDue(onlyFee(scholarshipOnFee))).isEqualTo(ars(5000));
+        assertThat(amountDue(invoices(scholarshipOnFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
+        assertThat(amountDue(onlyFee(individualOnFee))).isEqualTo(ars(2500));
+        assertThat(amountDue(invoices(individualOnFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
+        assertThat(amountDue(onlyFee(scholarshipOnInstallments))).isEqualTo(ars(5000));
+        assertThat(amountDue(invoices(scholarshipOnInstallments, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(5000));
+        assertInvariants(scholarshipOnFee, y27);
+        assertInvariants(individualOnFee, y27);
+        assertInvariants(scholarshipOnInstallments, y27);
     }
 
-    private CreateScholarshipRequest scholarship(ScholarshipScope scope) {
-        return new CreateScholarshipRequest(new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null,
-                Percentage.ofFraction(new BigDecimal("0.5"))), "Beca 50%", 3, scope);
+    private void grantDiscount(Career career, Long enrollmentId, DiscountType type, InvoiceType invoiceType) {
+        StudentDiscountGrantRequest request = new StudentDiscountGrantRequest(type, null,
+                new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.5"))), invoiceType, YearMonth.of(2027, 3),
+                invoiceType == InvoiceType.MONTHLY_INSTALLMENT ? YearMonth.of(2027, 5) : YearMonth.of(2027, 3), "Beca 50%");
+        pipeline.runOperation(grantStudentDiscountOperation,
+                GrantStudentDiscountCommand.byPerson(EnrollmentReference.ofProgram(enrollmentId), request, career.directorId(), true));
     }
 
     @Test
@@ -354,8 +369,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void aSuspendedStudentWhoDoesNotPayIsWithdrawnWhenTheTermOfTheSuspensionEndsWithTheDebtStillOwed() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
-        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), "2C");
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
+        Term second = newCuatrimestre(2027, 8, date(2027, 7, 1), date(2027, 8, 10), null);
         newSection(career, first);
         newSection(career, second);
         today(date(2027, 1, 4));
@@ -367,14 +382,18 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         today(date(2027, 7, 20));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment).getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
 
         today(date(2027, 8, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
-        assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() ->
+                assertThat(jdbcTemplate.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollment))
+                        .isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT.name()));
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).isNotEmpty()
                 .noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.CANCELLED)
                 .anyMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE);
@@ -387,7 +406,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         configureYear(y27, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setWithdrawSuspendedAtTermEnd(template, false));
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
+        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), null);
         newSection(career, first);
         today(date(2027, 1, 4));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
@@ -397,16 +416,17 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         today(date(2027, 8, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment).getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
 
         today(date(2028, 1, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment).getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
     }
 
     private void suspend(Long enrollment, LocalDateTime on) {
-        setStanding(enrollment, EnrollmentPaymentStatus.SUSPENDED);
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollment).setPaymentStatusUpdatedAt(on));
+        com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbcTemplate, enrollment, EnrollmentPaymentStatus.SUSPENDED, on.toLocalDate(), on);
     }
 
     @Test
@@ -420,8 +440,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void theGlobalIrregularListRemovesThoseTermsFromTheEnrollmentWindows() {
         Career career = newCareer();
         newYear(career, 2027, 10, 1, 2, null);
-        Term regular = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
-        Term summer = newCuatrimestre(2027, 3, date(2027, 1, 5), date(2027, 3, 20), "Intensivo de verano");
+        Term regular = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), TermType.FIRST_SEMESTER);
+        Term summer = newCuatrimestre(2027, 3, date(2027, 1, 5), date(2027, 3, 20), TermType.INTENSIVE);
         newSection(career, regular);
         newSection(career, summer);
         today(date(2027, 1, 10));
@@ -429,7 +449,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         assertThat(windowOpeningDates(enrollment)).containsExactly(date(2027, 1, 5));
 
-        publishIrregularTypes(career, List.of("Intensivo de verano"));
+        publishIrregularTypes(career, List.of(TermType.INTENSIVE));
         try {
             assertThat(windowOpeningDates(enrollment)).containsExactly(date(2027, 2, 1));
         } finally {
@@ -443,7 +463,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
                 .facts().windows().values().stream().map(SlotWindow::opensOn).toList());
     }
 
-    private void publishIrregularTypes(Career career, List<String> types) {
+    private void publishIrregularTypes(Career career, List<TermType> types) {
         transactionTemplate.executeWithoutResult(status -> configurationPublisher.publishVersion(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS),
                 new IrregularTermTypes(types), date(2027, 1, 10), "Prueba de D-213", career.directorId()));
     }

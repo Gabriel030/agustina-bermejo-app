@@ -1,0 +1,81 @@
+package com.red_escuela.backend.billing.invoice.operation;
+
+import com.red_escuela.backend.billing.invoice.domain.DiscountType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountCandidateOrigin;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
+import com.red_escuela.backend.shared.domain.Currency;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+
+import static com.red_escuela.backend.billing.invoice.operation.IssuingTestData.candidate;
+import static com.red_escuela.backend.billing.invoice.operation.IssuingTestData.studentDiscountCandidate;
+import static com.red_escuela.backend.billing.invoice.operation.IssuingTestData.withOrigin;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@Tag("D-073")
+@Tag("D-295")
+class InvoiceDiscountSelectorTest {
+
+    private final InvoiceDiscountCalculator calculator = new InvoiceDiscountCalculator(new InvoiceIssuingOperationConfiguration().invoiceDiscountSelectionPolicySet());
+    private final InvoiceDiscountCandidateStrategy cohortEntry = mock(InvoiceDiscountCandidateStrategy.class);
+    private final InvoiceDiscountCandidateStrategy studentDiscount = mock(InvoiceDiscountCandidateStrategy.class);
+    private final InvoiceIssuingContext context = IssuingTestData.context(IssuingTestData.monthly(), Currency.ARS, null, null);
+
+    private InvoiceDiscountSelector selector() {
+        when(cohortEntry.origin()).thenReturn(DiscountCandidateOrigin.COHORT_ENTRY);
+        when(studentDiscount.origin()).thenReturn(DiscountCandidateOrigin.STUDENT_DISCOUNT);
+        return new InvoiceDiscountSelector(List.of(cohortEntry, studentDiscount), calculator);
+    }
+
+    private InvoiceDiscountCandidate cohortEntryCandidate(String discount) {
+        return withOrigin(candidate(DiscountType.COHORT_PROMOTION, 1, InvoiceType.MONTHLY_INSTALLMENT, "100.00", discount), DiscountCandidateOrigin.COHORT_ENTRY);
+    }
+
+    private InvoiceDiscountCandidate studentScholarshipCandidate(String discount) {
+        return studentDiscountCandidate(DiscountType.SCHOLARSHIP, 9, 9, discount, 1, Instant.parse("2027-02-01T00:00:00Z"));
+    }
+
+    @Test
+    void aLegacyCohortEntryAndAStudentDiscountNeverStackAndAnEqualSavingGoesToTheOneWithPriorityAndGrantDate() {
+        InvoiceDiscountSelector selector = selector();
+        InvoiceDiscountCandidate legacy = cohortEntryCandidate("30.00");
+        InvoiceDiscountCandidate fromStudentDiscount = studentScholarshipCandidate("30.00");
+        when(cohortEntry.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(legacy));
+        when(studentDiscount.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(fromStudentDiscount));
+
+        selector.selectDiscountsWithoutLock(context);
+
+        assertThat(context.winningDiscounts()).containsExactly(Map.entry(1, fromStudentDiscount));
+        assertThat(context.discountCandidates()).containsExactlyInAnyOrder(legacy, fromStudentDiscount);
+    }
+
+    @Test
+    void theReselectionRequestedByTheContextAsksEveryStrategyForItsCandidatesUnderTheEnrollmentLockAndReplacesTheEarlierSelection() {
+        InvoiceDiscountSelector selector = selector();
+        InvoiceDiscountCandidate beforeTheLock = studentScholarshipCandidate("50.00");
+        when(cohortEntry.findDiscountCandidatesForInvoice(context)).thenReturn(List.of());
+        when(studentDiscount.findDiscountCandidatesForInvoice(context)).thenReturn(List.of(beforeTheLock));
+        InvoiceDiscountCandidate afterTheLock = studentScholarshipCandidate("20.00");
+        when(cohortEntry.findDiscountCandidatesUnderEnrollmentLock(context)).thenReturn(List.of());
+        when(studentDiscount.findDiscountCandidatesUnderEnrollmentLock(context)).thenReturn(List.of(afterTheLock));
+
+        selector.selectDiscountsWithoutLock(context);
+        assertThat(context.winningDiscounts()).hasSize(1);
+
+        context.reselectDiscounts();
+
+        assertThat(context.winningDiscounts()).containsExactly(Map.entry(1, afterTheLock));
+        assertThat(context.discountCandidates()).containsExactly(afterTheLock);
+        verify(studentDiscount).findDiscountCandidatesUnderEnrollmentLock(context);
+        verify(cohortEntry).findDiscountCandidatesUnderEnrollmentLock(context);
+    }
+}

@@ -185,7 +185,7 @@ public class ConfigurationVersion {
         version.termId = topic.termId();
         version.courseId = topic.courseId();
         version.cohortId = topic.cohortId();
-        version.valuesJson = ConfigurationValuesCodec.toJson(values);
+        version.valuesJson = ConfigurationValuesCodec.toJson(values.normalized());
         version.effectiveFrom = effectiveFrom;
         version.changeReason = changeReason;
         version.proposedById = proposedById;

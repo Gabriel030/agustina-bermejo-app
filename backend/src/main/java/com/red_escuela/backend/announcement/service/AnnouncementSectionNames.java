@@ -13,6 +13,6 @@ public final class AnnouncementSectionNames {
     }
 
     public static String of(CourseSubjectSection section) {
-        return section.getCourseSubject().getName();
+        return section.getModuleName();
     }
 }

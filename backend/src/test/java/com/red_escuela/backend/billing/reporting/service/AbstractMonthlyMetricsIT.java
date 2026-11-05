@@ -1,11 +1,13 @@
 package com.red_escuela.backend.billing.reporting.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.note.service.AbstractCreditNoteIT;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -25,7 +27,12 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     private final List<Long> seededInvoiceIds = new ArrayList<>();
     private final List<Long> seededPriceIds = new ArrayList<>();
     private final List<Long> seededProgramIds = new ArrayList<>();
+    private final List<Long> seededProgramEnrollmentIds = new ArrayList<>();
+    private final List<Long> seededCourseEnrollmentIds = new ArrayList<>();
+    private final List<Long> seededCourseIds = new ArrayList<>();
+    private final List<Long> seededTermIds = new ArrayList<>();
     private final List<Long> seededConfigurationVersionIds = new ArrayList<>();
+    private final List<Long> seededStudentDiscountIds = new ArrayList<>();
 
     protected Long arsAccountId;
     protected Long usdAccountId;
@@ -45,17 +52,29 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
             return;
         }
         String ids = seededInvoiceIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-        List<String> guards = List.of("payment_allocation.trg_payment_allocation_append_only", "invoice_status_change.trg_invoice_status_change_append_only",
-                "invoice_line.trg_invoice_line_immutable_when_issued", "invoice_discount.trg_invoice_discount_immutable_when_issued");
+        List<String> guards = List.of("payment_allocation_source.trg_payment_allocation_source_append_only", "payment_allocation.trg_payment_allocation_append_only", "invoice_status_change.trg_invoice_status_change_append_only",
+                "credit_note.trg_credit_note_append_only", "invoice_line.trg_invoice_line_immutable_when_issued", "invoice_discount.trg_invoice_discount_immutable_when_issued");
         guards.forEach(guard -> jdbc.execute("alter table " + guard.split("\\.")[0] + " disable trigger " + guard.split("\\.")[1]));
         try {
+            jdbc.update("delete from credit_note where invoice_id in (" + ids + ")");
             jdbc.update("delete from late_fee_charge where debit_note_id in (" + ids + ") or origin_invoice_id in (" + ids + ")");
             jdbc.update("delete from bank_transfer_receipt where invoice_id in (" + ids + ")");
+            jdbc.update("delete from payment_allocation_source where payment_allocation_id in (select id from payment_allocation where invoice_id in (" + ids + "))");
             jdbc.update("delete from payment_allocation where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice_status_change where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice_discount where invoice_line_id in (select id from invoice_line where invoice_id in (" + ids + "))");
             jdbc.update("delete from invoice_line where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice where id in (" + ids + ")");
+            seededStudentDiscountIds.forEach(id -> jdbc.update("delete from student_discount where id = ?", id));
+            seededStudentDiscountIds.clear();
+            seededProgramEnrollmentIds.forEach(id -> jdbc.update("delete from program_enrollment where id = ?", id));
+            seededCourseEnrollmentIds.forEach(id -> jdbc.update("delete from course_enrollment where id = ?", id));
+            seededCourseIds.forEach(id -> jdbc.update("delete from course where id = ?", id));
+            seededTermIds.forEach(id -> jdbc.update("delete from term where id = ?", id));
+            seededTermIds.clear();
+            seededProgramEnrollmentIds.clear();
+            seededCourseEnrollmentIds.clear();
+            seededCourseIds.clear();
             seededConfigurationVersionIds.forEach(versionId -> jdbc.update("delete from configuration_version where id = ?", versionId));
             seededConfigurationVersionIds.clear();
             seededPriceIds.forEach(priceId -> {
@@ -94,11 +113,27 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
                 Long.class, invoiceId, code, issued, "K" + number, linesTotal, code, discountTotal, code, code, code);
         seededInvoiceIds.add(invoiceId);
         if (discountType != null) {
-            jdbc.update("insert into invoice_discount (invoice_line_id, discount_type, concept, currency, base_amount, base_amount_currency, "
-                            + "discount_amount, discount_amount_currency) values (?, ?, 'Descuento', ?, ?, ?, ?, ?)",
-                    lineId, discountType, code, linesTotal, code, discountTotal, code);
+            jdbc.update("insert into invoice_discount (invoice_line_id, student_discount_id, discount_type, concept, currency, base_amount, base_amount_currency, "
+                            + "discount_amount, discount_amount_currency) values (?, ?, ?, 'Descuento', ?, ?, ?, ?, ?)",
+                    lineId, seedStudentDiscount(accountId, currency), discountType, code, linesTotal, code, discountTotal, code);
         }
         return invoiceId;
+    }
+
+    private Long seedStudentDiscount(Long accountId, Currency currency) {
+        Long studentId = jdbc.queryForObject("select student_id from student_current_account where id = ?", Long.class, accountId);
+        Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
+        Long programId = seedProgram(currency);
+        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentId, programId);
+        seededProgramEnrollmentIds.add(enrollmentId);
+        Long studentDiscountId = jdbc.queryForObject(
+                "insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
+                        + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, ?, 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "
+                        + "cast('{\"type\":\"PROPORTIONAL\",\"fraction\":\"0.5\"}' as jsonb), 1, date '2027-03-01', date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id",
+                Long.class, enrollmentId, studentId, currency.name(), personId);
+        seededStudentDiscountIds.add(studentDiscountId);
+        return studentDiscountId;
     }
 
     protected Long seedLateFee(Long accountId, Long originInvoiceId, Currency currency, int monthOrdinal, LocalDate factDate, LocalDate issued, String amount) {
@@ -113,6 +148,50 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
                         + "fact_date, late_payment_version_id, daily_rate, base_amount, currency, created_at) values (?, ?, ?, ?, ?, 1, 'MONTH_CLOSE', ?, ?, 0.002, 100000.00, ?, now())",
                 debitNoteId, originInvoiceId, accountId, factDate, factDate, factDate, versionId, currency.name());
         return debitNoteId;
+    }
+
+    protected Long seedProgramEnrollmentOn(Long invoiceId, Currency currency) {
+        Long programId = seedProgram(currency);
+        enrollInvoiceStudentInProgram(invoiceId, programId);
+        return programId;
+    }
+
+    protected Long seedProgram(Currency currency) {
+        Long programId = jdbc.queryForObject("insert into program (name, currency) values ('Carrera filtrada', ?) returning id", Long.class, currency.name());
+        seededProgramIds.add(programId);
+        return programId;
+    }
+
+    protected void enrollInvoiceStudentInProgram(Long invoiceId, Long programId) {
+        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentOf(invoiceId), programId);
+        seededProgramEnrollmentIds.add(enrollmentId);
+        linkInvoiceLines(invoiceId, "program_enrollment_id", enrollmentId);
+    }
+
+    protected Long seedCourseEnrollmentOn(Long invoiceId, Currency currency) {
+        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) values (2021, true, timestamp '2021-03-01 00:00:00', timestamp '2021-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
+        seededTermIds.add(termId);
+        Long courseId = jdbc.queryForObject("insert into course (name, term_id, currency) values ('Curso filtrado', ?, ?) returning id", Long.class, termId, currency.name());
+        seededCourseIds.add(courseId);
+        Long enrollmentId = jdbc.queryForObject("insert into course_enrollment (student_id, course_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                Long.class, studentOf(invoiceId), courseId);
+        seededCourseEnrollmentIds.add(enrollmentId);
+        linkInvoiceLines(invoiceId, "course_enrollment_id", enrollmentId);
+        return courseId;
+    }
+
+    private Long studentOf(Long invoiceId) {
+        return jdbc.queryForObject("select a.student_id from invoice i join student_current_account a on a.id = i.student_current_account_id where i.id = ?", Long.class, invoiceId);
+    }
+
+    private void linkInvoiceLines(Long invoiceId, String column, Long enrollmentId) {
+        jdbc.execute("alter table invoice_line disable trigger trg_invoice_line_immutable_when_issued");
+        try {
+            jdbc.update("update invoice_line set " + column + " = ? where invoice_id = ?", enrollmentId, invoiceId);
+        } finally {
+            jdbc.execute("alter table invoice_line enable trigger trg_invoice_line_immutable_when_issued");
+        }
     }
 
     protected void seedMarketingDiscount(Long invoiceId, Currency currency, String marketingAmount) {
@@ -133,10 +212,29 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         }
     }
 
+    protected void seedCreditNote(Long accountId, Long invoiceId, String reason, LocalDate issued, String amount) {
+        BigDecimal total = new BigDecimal(amount);
+        String number = String.format("NC-%08d", jdbc.queryForObject("select nextval('credit_note_number_seq')", Long.class));
+        jdbc.update("insert into credit_note (credit_note_number, student_current_account_id, currency, invoice_id, invoice_number, reason, justification, "
+                        + "offset_amount, offset_amount_currency, free_credit_amount, free_credit_amount_currency, total_amount, total_amount_currency, "
+                        + "issue_date, fact_date, recipient_snapshot, issued_by_process, recorded_at) "
+                        + "select ?, ?, i.currency, i.id, i.invoice_number, ?, 'Nota de prueba', 0, i.currency, ?, i.currency, ?, i.currency, "
+                        + "?, ?, cast('{}' as jsonb), 'TEST', now() from invoice i where i.id = ?",
+                number, accountId, reason, total, total, issued, issued, invoiceId);
+    }
+
     protected void seedAllocation(Long accountId, Long invoiceId, Currency currency, String amount, LocalDate effectiveDate) {
-        jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, allocated_on, "
-                        + "actor_process, recorded_at) values (?, ?, ?, ?, ?, ?, 'TEST', now())",
-                accountId, invoiceId, new BigDecimal(amount), currency.name(), effectiveDate, effectiveDate);
+        NonNegativeMoney money = NonNegativeMoney.of(new BigDecimal(amount), currency);
+        long paymentId = BillingTestFixtures.seedApprovedPaymentRow(accountId, money);
+        inTransaction(() -> {
+            Long entryId = service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, money, effectiveDate, "Pago de prueba").getId();
+            Long allocationId = jdbc.queryForObject("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, "
+                    + "allocated_on, actor_process, recorded_at) values (?, ?, ?, ?, ?, ?, 'TEST', now()) returning id",
+                    Long.class, accountId, invoiceId, money.value().amount(), currency.name(), effectiveDate, effectiveDate);
+            jdbc.update("insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, amount, "
+                    + "amount_currency, recorded_at) values (?, ?, ?, ?, ?, ?, now())", allocationId, accountId, entryId, paymentId, money.value().amount(), currency.name());
+            return null;
+        });
     }
 
     protected void seedOverdueDetection(Long invoiceId, LocalDate businessDate, String occurredAt) {

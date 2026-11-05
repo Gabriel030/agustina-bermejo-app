@@ -7,7 +7,8 @@ import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
-import { apiFetch, RateLimitedError } from '@/api/client';
+import { apiFetch } from '@/api/client';
+import { messageForAuthError } from '@/features/identity/lib/loginErrors';
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_TIENE_MAYUSCULA_Y_DIGITO = /(?=.*[A-Z])(?=.*\d)/;
@@ -44,7 +45,7 @@ export function ForgotPassword() {
       await apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
       setCodigoPedido(true);
     } catch (err) {
-      setError(err instanceof RateLimitedError ? 'Demasiados intentos, esperá un momento antes de reintentar.' : 'Algo salió mal. Probá de nuevo.');
+      setError(messageForAuthError(err));
     } finally {
       setEnviando(false);
     }
@@ -67,11 +68,7 @@ export function ForgotPassword() {
       });
       setResetToken(token);
     } catch (err) {
-      setError(
-        err instanceof RateLimitedError
-          ? 'Demasiados intentos, esperá un momento antes de reintentar.'
-          : 'Código incorrecto o vencido. Pedí uno nuevo si hace falta.',
-      );
+      setError(messageForAuthError(err, { fallback: 'Código incorrecto o vencido. Pedí uno nuevo si hace falta.' }));
     } finally {
       setEnviando(false);
     }
@@ -84,8 +81,8 @@ export function ForgotPassword() {
       await apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
       setSegundosParaReenviar(SEGUNDOS_PARA_REENVIAR);
       setCode('');
-    } catch {
-      setError('No pudimos reenviar el código. Probá de nuevo en un momento.');
+    } catch (err) {
+      setError(messageForAuthError(err, { fallback: 'No pudimos reenviar el código. Probá de nuevo en un momento.' }));
     } finally {
       setEnviando(false);
     }

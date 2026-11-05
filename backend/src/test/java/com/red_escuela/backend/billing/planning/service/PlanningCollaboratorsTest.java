@@ -54,7 +54,7 @@ class PlanningCollaboratorsTest {
         assertThat(sets.enrollmentFeePlanning().moment()).isEqualTo("ENROLLMENT_FEE_PLANNING");
         assertThat(names(sets.enrollmentFeePlanning())).containsExactly("BillingWhilePausedPolicy", "FinalExamsOnlyExemptionPolicy", "EnrollmentFeeSlotNotAlreadyIssuedPolicy");
         assertThat(sets.monthlyInstallmentPlanning().moment()).isEqualTo("MONTHLY_INSTALLMENT_PLANNING");
-        assertThat(names(sets.monthlyInstallmentPlanning())).containsExactly("NotBeforeEntryMonthPolicy", "MonthlyCadencePolicy",
+        assertThat(names(sets.monthlyInstallmentPlanning())).containsExactly("NotBeforeEntryMonthPolicy", "AnnualUpfrontAwaitingPaymentPolicy", "MonthlyCadencePolicy",
                 "InstallmentWithinLectiveYearRangePolicy", "BillingWhilePausedPolicy", "InstallmentCapPolicy", "FinalExamsOnlyExemptionPolicy",
                 "MonthlyInstallmentNotAlreadyIssuedPolicy");
         assertThat(sets.courseMonthlyInstallmentPlanning().moment()).isEqualTo("COURSE_MONTHLY_INSTALLMENT_PLANNING");

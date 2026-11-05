@@ -21,6 +21,9 @@ import com.red_escuela.backend.billing.configuration.usecase.ValidateBillingConf
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSettings;
+import com.red_escuela.backend.notification.delivery.domain.EmailDispatchWindow;
+import com.red_escuela.backend.notification.delivery.service.EmailDispatchSettingsSource;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -71,6 +74,8 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     private ConfigurationVersionActivator activator;
     @Autowired
     private BillingConfigurationReader reader;
+    @Autowired
+    private EmailDispatchSettingsSource dispatchSettingsSource;
     @Autowired
     private PersonRepository personRepository;
     @Autowired
@@ -132,17 +137,8 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
 
     private static CollectionReminderSettings withDailyCap(int cap) {
         CollectionReminderSettings initial = CollectionReminderSettings.initial();
-        return new CollectionReminderSettings(initial.emissionReminderEnabled(), initial.daysAfterIssueReminder(), initial.daysBeforeDueReminder(),
-                initial.daysAfterDueReminder(), initial.daysBeforeSuspensionReminder(), initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(),
-                initial.minDaysBetweenEmails(), initial.maxReminderEmailsPerMonth(), initial.emailWindowStart(), initial.emailWindowEnd(), cap,
-                initial.contactListDaysOverdue(), initial.contactListOverdueInstallments());
-    }
-
-    private static CollectionReminderSettings withDaysBeforeDue(int days) {
-        CollectionReminderSettings initial = CollectionReminderSettings.initial();
-        return new CollectionReminderSettings(initial.emissionReminderEnabled(), initial.daysAfterIssueReminder(), days, initial.daysAfterDueReminder(),
-                initial.daysBeforeSuspensionReminder(), initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(), initial.minDaysBetweenEmails(),
-                initial.maxReminderEmailsPerMonth(), initial.emailWindowStart(), initial.emailWindowEnd(), initial.dailyEmailCap(),
+        return new CollectionReminderSettings(initial.suspensionNoticeEnabled(), initial.postWithdrawalSummaryMonths(),
+                initial.emailWindowStart(), initial.emailWindowEnd(), cap,
                 initial.contactListDaysOverdue(), initial.contactListOverdueInstallments());
     }
 
@@ -202,6 +198,21 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-343")
+    @Tag("D-351")
+    void theDispatchJobReadsTheCapAndTheWindowOfTheVersionEffectiveThatDay() {
+        authenticateAs(administrative);
+        Long requestId = proposeAwaiting(withDailyCap(280), MARCH_FOURTH);
+        authenticateAs(director);
+        approveRequest.approve(requestId, "de acuerdo");
+        MutableClock.INSTANCE.setDate(MARCH_FOURTH);
+        activator.activateDueVersions();
+
+        assertThat(dispatchSettingsSource.settingsEffectiveOn(MARCH_THIRD)).isEqualTo(new EmailDispatchSettings(EmailDispatchWindow.STANDARD, 250));
+        assertThat(dispatchSettingsSource.settingsEffectiveOn(MARCH_FOURTH)).isEqualTo(new EmailDispatchSettings(EmailDispatchWindow.STANDARD, 280));
+    }
+
+    @Test
     @Tag("D-351")
     @Tag("D-095")
     void directorPublishesDirectlyForTomorrowAndTheReaderResolvesByDate() {
@@ -249,15 +260,15 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     void aProposalAcceptedWithTwoDaysAndApprovedTheNextDayStillTakesEffectOnItsOwnDate() {
         LocalDate march5 = MARCH_THIRD.plusDays(2);
         authenticateAs(administrative);
-        Long requestId = proposeAwaiting(withDaysBeforeDue(2), march5);
+        Long requestId = proposeAwaiting(withDailyCap(200), march5);
         MutableClock.INSTANCE.setDate(MARCH_FOURTH);
         authenticateAs(director);
 
         approveRequest.approve(requestId, "ok");
 
         assertThat(versionOf(requestId).getStatus()).isEqualTo(ConfigurationVersionStatus.SCHEDULED);
-        assertThat(reader.collectionReminderSettingsEffectiveOn(MARCH_FOURTH).daysBeforeDueReminder()).isEqualTo(1);
-        assertThat(reader.collectionReminderSettingsEffectiveOn(march5).daysBeforeDueReminder()).isEqualTo(2);
+        assertThat(reader.collectionReminderSettingsEffectiveOn(MARCH_FOURTH).dailyEmailCap()).isEqualTo(250);
+        assertThat(reader.collectionReminderSettingsEffectiveOn(march5).dailyEmailCap()).isEqualTo(200);
     }
 
     @Test
@@ -265,9 +276,9 @@ class CollectionReminderSettingsVersioningIT extends AbstractIntegrationTest {
     void incoherentValuesAreRejectedWithTheViolationOfTheField() {
         authenticateAs(administrative);
 
-        assertThatThrownBy(() -> proposeAwaiting(withDaysBeforeDue(0), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderSettingsException.class);
-        assertThat(validate.validateChange(TOPIC, withDaysBeforeDue(61), MARCH_FOURTH, "m")).extracting("code").containsExactly("INVALID_COLLECTION_REMINDER_SETTINGS");
-        assertThat(validate.validateChange(TOPIC, new CollectionReminderSettings(true, 5, 1, 10, 1, true, 6, 3, 4, LocalTime.of(11, 0), LocalTime.of(9, 0), 250, 14, 2),
+        assertThatThrownBy(() -> proposeAwaiting(withDailyCap(0), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderSettingsException.class);
+        assertThat(validate.validateChange(TOPIC, withDailyCap(-1), MARCH_FOURTH, "m")).extracting("code").containsExactly("INVALID_COLLECTION_REMINDER_SETTINGS");
+        assertThat(validate.validateChange(TOPIC, new CollectionReminderSettings(true, 6, LocalTime.of(11, 0), LocalTime.of(9, 0), 250, 14, 2),
                 MARCH_FOURTH, "m")).hasSize(1);
         assertThat(count("select count(*) from configuration_version where proposed_by_id = ?", administrative.getId())).isZero();
     }

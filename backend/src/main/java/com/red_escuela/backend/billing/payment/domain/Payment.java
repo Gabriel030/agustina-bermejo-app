@@ -168,11 +168,32 @@ public class Payment {
 
     public static Payment registerApprovedCashPayment(StudentCurrentAccount account, NonNegativeMoney amount, LocalDate paidOn,
                                                       CashPaymentDetails details, String idempotencyKey, StatusChangeActor actor) {
+        return registerApprovedCashPayment(account, amount, paidOn, details, idempotencyKey, actor, null);
+    }
+
+    public static Payment registerApprovedCashPayment(StudentCurrentAccount account, NonNegativeMoney amount, LocalDate paidOn,
+                                                      CashPaymentDetails details, String idempotencyKey, StatusChangeActor actor, String backdateReason) {
         Objects.requireNonNull(paidOn, "paidOn");
         Payment payment = new Payment(account, amount, PaymentGatewayCode.MANUAL, details, idempotencyKey, actor);
         payment.approvedAmount = amount;
         payment.paidOn = paidOn;
-        payment.changeStatus(PaymentEvent.CASH_PAYMENT_REGISTERED, actor, null, GatewayRawStatus.none());
+        payment.changeStatus(PaymentEvent.CASH_PAYMENT_REGISTERED, actor, backdateReason, GatewayRawStatus.none());
+        return payment;
+    }
+
+    public static Payment registerApprovedGatewayPayment(StudentCurrentAccount account, NonNegativeMoney amount, PaymentGatewayCode gateway,
+                                                         PaymentMethodDetails details, String gatewayPaymentId, GatewayRawStatus rawStatus,
+                                                         LocalDate paidOn, StatusChangeActor actor) {
+        Objects.requireNonNull(paidOn, "paidOn");
+        Objects.requireNonNull(gatewayPaymentId, "gatewayPaymentId");
+        if (!gateway.isOnlineProvider()) {
+            throw new IllegalArgumentException("An approved gateway payment needs an online gateway");
+        }
+        Payment payment = new Payment(account, amount, gateway, details, null, actor);
+        payment.gatewayPaymentId = gatewayPaymentId;
+        payment.approvedAmount = amount;
+        payment.paidOn = paidOn;
+        payment.changeStatus(PaymentEvent.GATEWAY_PAYMENT_REGISTERED_AS_APPROVED, actor, null, rawStatus);
         return payment;
     }
 
@@ -222,11 +243,45 @@ public class Payment {
         changeStatus(PaymentEvent.PENDING_PAYMENT_CANCELLED, actor, reason, GatewayRawStatus.none());
     }
 
+    public void requireAllows(PaymentEvent event) {
+        resolveNextStatusFor(event);
+    }
+
     public void revokeBankTransferApproval(String reason, StatusChangeActor reviewer) {
         resolveNextStatusFor(PaymentEvent.BANK_TRANSFER_APPROVAL_REVOKED);
         this.rejectionReason = reason;
         this.reviewedByPersonId = reviewer.personId();
         changeStatus(PaymentEvent.BANK_TRANSFER_APPROVAL_REVOKED, reviewer, reason, GatewayRawStatus.none());
+    }
+
+    public void registerChargeback(String reference, StatusChangeActor actor) {
+        changeStatus(PaymentEvent.CHARGEBACK_REGISTERED, actor, reference, GatewayRawStatus.none());
+    }
+
+    public void reverseChargeback(StatusChangeActor actor) {
+        changeStatus(PaymentEvent.CHARGEBACK_REVERSED, actor, null, GatewayRawStatus.none());
+    }
+
+    public void registerRefundedAmount(NonNegativeMoney refunded, StatusChangeActor actor, String reason) {
+        Objects.requireNonNull(refunded, "refunded");
+        if (refunded.value().currency() != currency) {
+            throw new StudentCurrentAccountCurrencyMismatchException();
+        }
+        if (refunded.value().isZero()) {
+            throw new IllegalArgumentException("A refunded amount must be greater than zero");
+        }
+        NonNegativeMoney refundedAfter = refundedAmount.plus(refunded);
+        if (refundedAfter.value().isGreaterThan(creditedAmount().value())) {
+            throw new IllegalArgumentException("The refunded amount of a payment cannot exceed what the payment credited");
+        }
+        PaymentEvent event = refundedAfter.equals(creditedAmount()) ? PaymentEvent.FULL_REFUND_REGISTERED : PaymentEvent.PARTIAL_REFUND_REGISTERED;
+        resolveNextStatusFor(event);
+        this.refundedAmount = refundedAfter;
+        changeStatus(event, actor, reason, GatewayRawStatus.none());
+    }
+
+    public NonNegativeMoney creditedAmount() {
+        return approvedAmount == null ? amount : approvedAmount;
     }
 
     public List<PaymentStatusChange> statusChanges() {

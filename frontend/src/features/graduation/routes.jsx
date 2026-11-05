@@ -1,5 +1,8 @@
-import { DirectorAprobacionesEgresos } from '@/features/graduation/pages/DirectorAprobacionesEgresos';
-import { DirectorEgresoDetalle } from '@/features/graduation/pages/DirectorEgresoDetalle';
+import { lazyPage } from '@/routes/lazyPage';
+const DirectorAprobacionesEgresos = lazyPage(() => import('@/features/graduation/pages/DirectorAprobacionesEgresos'), 'DirectorAprobacionesEgresos');
+const DirectorEgresoDetalle = lazyPage(() => import('@/features/graduation/pages/DirectorEgresoDetalle'), 'DirectorEgresoDetalle');
+const AdministrativoEgresosPorVerificar = lazyPage(() => import('@/features/graduation/pages/AdministrativoEgresosPorVerificar'), 'AdministrativoEgresosPorVerificar');
+const AdministrativoEgresoDetalle = lazyPage(() => import('@/features/graduation/pages/AdministrativoEgresoDetalle'), 'AdministrativoEgresoDetalle');
 
 export const routes = {
   public: [],
@@ -7,5 +10,7 @@ export const routes = {
   role: [
     { roles: ['director'], path: 'aprobaciones/egresos', element: <DirectorAprobacionesEgresos /> },
     { roles: ['director'], path: 'aprobaciones/egresos/:id', element: <DirectorEgresoDetalle /> },
+    { roles: ['administrativo'], path: 'egresos-por-verificar', element: <AdministrativoEgresosPorVerificar /> },
+    { roles: ['administrativo'], path: 'egresos-por-verificar/:id', element: <AdministrativoEgresoDetalle /> },
   ],
 };

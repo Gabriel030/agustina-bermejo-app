@@ -55,6 +55,10 @@ public record ChargeKey(String value) {
         return new ChargeKey(LATE_FEE_PREFIX + required(originInvoiceId, "originInvoiceId") + ":D" + required(periodStart, "periodStart"));
     }
 
+    public static ChargeKey forLateFeeReinstatement(Long originInvoiceId, Long correctionId) {
+        return new ChargeKey(LATE_FEE_PREFIX + required(originInvoiceId, "originInvoiceId") + ":R" + required(correctionId, "correctionId"));
+    }
+
     private static <T> T required(T value, String name) {
         return Objects.requireNonNull(value, name);
     }

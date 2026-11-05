@@ -30,6 +30,21 @@ public interface ProgramEnrollmentApplicationRepository extends JpaRepository<Pr
     Optional<ProgramEnrollmentApplication> findLockedById(@Param("id") Long id);
 
     @Query("""
+            select a.id from ProgramEnrollmentApplication a
+            where a.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus.APPROVED
+              and a.admissionInvoice is not null and a.programCohort.admissionEnd < :today
+            order by a.id
+            """)
+    List<Long> findIdsOfApprovedWithAdmissionClosedBefore(@Param("today") java.time.LocalDate today);
+
+    @Query("""
+            select a.admissionInvoice.id from ProgramEnrollmentApplication a
+            where a.id = :id and a.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus.APPROVED
+              and a.admissionInvoice is not null and a.programCohort.admissionEnd < :today
+            """)
+    Optional<Long> findAdmissionInvoiceIdOfApprovedWithAdmissionClosedBefore(@Param("id") Long id, @Param("today") java.time.LocalDate today);
+
+    @Query("""
             select count(a) > 0 from ProgramEnrollmentApplication a
             where a.student.id = :studentId and a.program.id = :programId
               and a.status = com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus.APPROVED

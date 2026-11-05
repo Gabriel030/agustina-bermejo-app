@@ -1,12 +1,13 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -23,7 +24,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
@@ -160,7 +161,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(int year) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(java.time.LocalDateTime.of(year, 1, 1, 0, 0));
@@ -332,6 +333,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-444")
     void annualUpfrontOfAProgramIsRejectedAndNothingIsIssued() {
         Person director = persistPersonBase("DIR37" + System.nanoTime());
         authenticateAsPerson(director);
@@ -353,7 +355,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 12)))
-                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException.class);
+                .isInstanceOfSatisfying(com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontOfProgramMustUseRequestEndpointException.class, e -> assertThat(e.violations())
+                        .extracting(violation -> violation.code()).containsExactly("ANNUAL_UPFRONT_USE_REQUEST_ENDPOINT"));
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }
 

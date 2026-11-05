@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.configuration.repository;
 
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,6 +36,15 @@ public interface ConfigurationVersionRepository extends JpaRepository<Configurat
             order by effective_from asc, decided_at asc, id asc
             """, nativeQuery = true)
     List<ConfigurationVersion> findVersionsEffectiveUpTo(@Param("scope") String scope, @Param("topicKey") String topicKey, @Param("date") LocalDate date);
+
+    @Query("""
+            select distinct new com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic(v.scope, v.programId, v.termId, v.courseId, v.cohortId)
+            from ConfigurationVersion v
+            where v.scope = :scope and v.status in (com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.SCHEDULED,
+                com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.EFFECTIVE,
+                com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.SUPERSEDED)
+            """)
+    List<ConfigurationTopic> findTopicsByScope(@Param("scope") ConfigurationScope scope);
 
     boolean existsByScopeAndTopicKeyAndStatus(ConfigurationScope scope, String topicKey, ConfigurationVersionStatus status);
 

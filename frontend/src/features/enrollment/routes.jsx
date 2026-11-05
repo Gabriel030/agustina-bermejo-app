@@ -1,15 +1,17 @@
-import { Catalogo } from '@/features/enrollment/pages/Catalogo';
-import { DetalleCarrera } from '@/features/enrollment/pages/DetalleCarrera';
-import { DetalleCurso } from '@/features/enrollment/pages/DetalleCurso';
-import { InscripcionCarrera } from '@/features/enrollment/pages/InscripcionCarrera';
-import { InscripcionCurso } from '@/features/enrollment/pages/InscripcionCurso';
-import { DetalleSolicitud } from '@/features/enrollment/pages/DetalleSolicitud';
-import { AlumnoMisCarreras } from '@/features/workspace/pages/AlumnoMisCarreras';
-import { AlumnoMateriaDetalle } from '@/features/workspace/pages/AlumnoMateriaDetalle';
-import { DirectorAprobacionesExcepciones } from '@/features/enrollment/pages/DirectorAprobacionesExcepciones';
-import { DirectorExcepcionDetalle } from '@/features/enrollment/pages/DirectorExcepcionDetalle';
-import { PadronAlumnos } from '@/features/identity/pages/PadronAlumnos';
+const Catalogo = lazyPage(() => import('@/features/enrollment/pages/Catalogo'), 'Catalogo');
+const DetalleCarrera = lazyPage(() => import('@/features/enrollment/pages/DetalleCarrera'), 'DetalleCarrera');
+const DetalleCurso = lazyPage(() => import('@/features/enrollment/pages/DetalleCurso'), 'DetalleCurso');
+const InscripcionCarrera = lazyPage(() => import('@/features/enrollment/pages/InscripcionCarrera'), 'InscripcionCarrera');
+const InscripcionCurso = lazyPage(() => import('@/features/enrollment/pages/InscripcionCurso'), 'InscripcionCurso');
+const DetalleSolicitud = lazyPage(() => import('@/features/enrollment/pages/DetalleSolicitud'), 'DetalleSolicitud');
+const AlumnoMisCursos = lazyPage(() => import('@/features/enrollment/pages/AlumnoMisCursos'), 'AlumnoMisCursos');
+const AlumnoMisCarreras = lazyPage(() => import('@/features/workspace/pages/AlumnoMisCarreras'), 'AlumnoMisCarreras');
+const AlumnoMateriaDetalle = lazyPage(() => import('@/features/workspace/pages/AlumnoMateriaDetalle'), 'AlumnoMateriaDetalle');
+const DirectorAprobacionesExcepciones = lazyPage(() => import('@/features/enrollment/pages/DirectorAprobacionesExcepciones'), 'DirectorAprobacionesExcepciones');
+const DirectorExcepcionDetalle = lazyPage(() => import('@/features/enrollment/pages/DirectorExcepcionDetalle'), 'DirectorExcepcionDetalle');
+const PadronAlumnos = lazyPage(() => import('@/features/identity/pages/PadronAlumnos'), 'PadronAlumnos');
 import { Navigate } from 'react-router-dom';
+import { lazyPage } from '@/routes/lazyPage';
 
 export const routes = {
   public: [],
@@ -24,6 +26,7 @@ export const routes = {
   ],
   role: [
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos', element: <PadronAlumnos /> },
+    { roles: ['alumno'], path: 'mis-cursos', element: <AlumnoMisCursos /> },
     { roles: ['alumno'], path: 'mis-carreras', element: <AlumnoMisCarreras /> },
     { roles: ['alumno'], path: 'mis-carreras/materias/:id', element: <AlumnoMateriaDetalle /> },
     { roles: ['director'], path: 'aprobaciones/excepciones', element: <DirectorAprobacionesExcepciones /> },

@@ -1,7 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.billing.exception.DuplicateChargeException;
@@ -23,14 +24,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.newIdempotencyKey;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.signedInAs;
+import static com.red_escuela.backend.billing.support.TransferReceiptFixtures.transferReceiptOf;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -78,11 +80,12 @@ class CourseAdmissionChargeReleaseIT extends AbstractIntegrationTest {
 
     private Course persistPricedCourse() {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(2026);
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);
             Course course = new Course();
+            course.setVisibleInCatalog(true);
             course.setName("Curso " + System.nanoTime());
             course.setTerm(term);
             course.setCapacity(20);
@@ -97,12 +100,8 @@ class CourseAdmissionChargeReleaseIT extends AbstractIntegrationTest {
         return jdbc.queryForObject("select charge_key from invoice_line where invoice_id = ?", String.class, invoiceId);
     }
 
-    private MultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
-    }
-
     private CourseEnrollmentApplication request(Student student, Course course) {
-        return applicationService.requestWithPayment(student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
+        return applicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null), transferReceiptOf(15000), newIdempotencyKey());
     }
 
     @Test
@@ -112,7 +111,9 @@ class CourseAdmissionChargeReleaseIT extends AbstractIntegrationTest {
         Course course = persistPricedCourse();
         CourseEnrollmentApplication first = request(student, course);
         String key = chargeKeyOf(first.getInvoiceId());
+        jdbc.update("update payment set status = 'REJECTED' where id = (select payment_id from bank_transfer_receipt where id = ?)", first.getPaymentReceipt().getId());
         jdbc.update("update bank_transfer_receipt set status = 'REJECTED' where id = ?", first.getPaymentReceipt().getId());
+        jdbc.update("update invoice set payment_status = 'PENDING' where id = ?", first.getInvoiceId());
         assertThatThrownBy(() -> request(student, course)).isInstanceOf(DuplicateChargeException.class);
 
         systemCancellation.cancelInvoiceWithoutDirector(first.getInvoiceId(), SystemCancellationOrigin.REJECTED_COURSE_RECEIPT, "Comprobante rechazado");

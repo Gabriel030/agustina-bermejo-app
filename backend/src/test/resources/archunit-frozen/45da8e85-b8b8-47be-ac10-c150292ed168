@@ -1,0 +1,8 @@
+Cycle detected: Slice entity -> \
+                Slice exception -> \
+                Slice entity\
+  1. Dependencies of Slice entity\
+    - Method <com.red_escuela.backend.attendance.entity.AttendanceStatus.requireRecordableByInstructor()> calls constructor <com.red_escuela.backend.attendance.exception.AttendanceStatusNotRecordableException.<init>(com.red_escuela.backend.attendance.entity.AttendanceStatus)> in (AttendanceStatus.java:38)\
+    - Method <com.red_escuela.backend.attendance.entity.Attendance.record(com.red_escuela.backend.attendance.entity.AttendanceStatus)> calls constructor <com.red_escuela.backend.attendance.exception.AttendanceAlreadyRecordedException.<init>(java.lang.Long, java.lang.String)> in (Attendance.java:88)\
+  2. Dependencies of Slice exception\
+    - Constructor <com.red_escuela.backend.attendance.exception.AttendanceStatusNotRecordableException.<init>(com.red_escuela.backend.attendance.entity.AttendanceStatus)> has parameter of type <com.red_escuela.backend.attendance.entity.AttendanceStatus> in (AttendanceStatusNotRecordableException.java:0)

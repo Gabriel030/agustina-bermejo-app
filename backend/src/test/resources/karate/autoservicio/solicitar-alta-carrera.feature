@@ -21,16 +21,22 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def nombreCarrera = 'Karate - Carrera ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0, teachingMode: 'IN_PERSON' }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
     * def programId = response.id
 
+    Given path '/programs', programId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
+
     * def descripcionPeriodoCarrera = 'Karate - Periodo carrera ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(descripcionPeriodoCarrera)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(descripcionPeriodoCarrera)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -107,6 +113,17 @@ Feature: Caso de uso — Solicitar alta en carrera
     When method post
     Then status 403
 
+    # Sin los tres documentos el Preceptor no puede aprobar — 409
+    Given path '/program-enrollment-applications', applicationId, 'approve'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method post
+    Then status 409
+    And match response.code == 'APPLICATION_DOCUMENTS_INCOMPLETE'
+
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_FRENTE' }
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_DORSO' }
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'ANALITICO_SECUNDARIO' }
+
     # El Preceptor sí puede — 200, APPROVED
     Given path '/program-enrollment-applications', applicationId, 'approve'
     And header Authorization = 'Bearer ' + preceptorToken
@@ -123,6 +140,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match propiaAprobada.status == 'APPROVED'
     And match propiaAprobada.admissionInvoice.paymentStatus == 'PENDING'
     * def admissionInvoiceId = propiaAprobada.admissionInvoice.id
+    * def applicantStudentId = propiaAprobada.studentId
 
     # Rol ALUMNO otorgado automáticamente al aprobar — criterio de aceptación clave
     Given path '/me'
@@ -140,11 +158,21 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match inscripcionesAntesDePagar == '#[0]'
 
     # Al pagarla, la inscripción queda confirmada
-    Given path '/payments'
+    Given path '/students', applicantStudentId, 'cash-payments', 'preview'
     And header Authorization = 'Bearer ' + adminToken
-    And request { allocations: [{ invoiceId: '#(admissionInvoiceId)', amountApplied: { amount: '50000', currency: 'ARS' } }], method: 'TRANSFER' }
+    And request { amount: { amount: '50000', currency: 'ARS' } }
+    When method post
+    Then status 200
+    And match response.coveredInvoices[0].invoiceId == admissionInvoiceId
+    * def admissionPreviewFingerprint = response.previewFingerprint
+
+    Given path '/students', applicantStudentId, 'cash-payments'
+    And header Authorization = 'Bearer ' + adminToken
+    And header Idempotency-Key = 'karate-admission-' + java.lang.System.nanoTime()
+    And request { amount: { amount: '50000', currency: 'ARS' }, receiptNumber: 'KARATE-1', previewFingerprint: '#(admissionPreviewFingerprint)' }
     When method post
     Then status 201
+    And match response.allocatedInvoices[0].invoiceId == admissionInvoiceId
 
     # La inscripción se confirma después del commit del pago, de forma asíncrona
     * configure retry = { count: 30, interval: 500 }

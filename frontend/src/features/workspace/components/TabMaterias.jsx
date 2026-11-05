@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ const ESTADO_PILL = {
   REGULAR: { label: 'Regular · falta final', tone: 'warning' },
   IN_PROGRESS: { label: 'En curso', tone: 'accent' },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning' },
+  WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },
   ENROLLED: { label: 'Inscripto', tone: 'accent' },
   APPROVED: { label: 'Aprobada', tone: 'success' },
   FAILED: { label: 'Desaprobada', tone: 'danger' },
@@ -42,7 +44,7 @@ const ESTADO_PILL = {
 export function TabMaterias({ carreraId }) {
   const navigate = useNavigate();
   const [inscribiendo, setInscribiendo] = useState(false);
-  const { data: inscripciones, isLoading } = useMisInscripciones();
+  const { data: inscripciones, isLoading, isError, error, refetch } = useMisInscripciones();
   const [subTab, setSubTab] = useState('en-curso');
 
   if (inscribiendo) {
@@ -81,6 +83,8 @@ export function TabMaterias({ carreraId }) {
           <Skeleton className="h-16" />
           <Skeleton className="h-16" />
         </div>
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="tus materias" bare />
       ) : lista.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8">
           <EmptyState

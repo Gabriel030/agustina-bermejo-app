@@ -2,7 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DOCUMENT_TYPES, documentTypeOf } from '@/lib/documentType';
 
-export function DocumentField({ type, number, onTypeChange, onNumberChange, error, disabled, ariaLabel = 'Tipo de documento', onBlur }) {
+export function DocumentField({ type, number, onTypeChange, onNumberChange, error, disabled, ariaLabel = 'Tipo de documento', onBlur, inputId, errorId, maxLength }) {
   const actual = documentTypeOf(type);
   return (
     <div>
@@ -25,10 +25,13 @@ export function DocumentField({ type, number, onTypeChange, onNumberChange, erro
           inputMode={actual.value === 'DNI' ? 'numeric' : 'text'}
           aria-invalid={!!error}
           aria-label="Número de documento"
+          id={inputId}
+          aria-describedby={errorId}
+          maxLength={maxLength}
           disabled={disabled}
         />
       </div>
-      <p className={error ? 'mt-1 text-xs text-danger' : 'mt-1 text-xs text-ink-soft'}>{error ?? actual.hint}</p>
+      <p id={errorId} className={error ? 'mt-1 text-xs text-danger' : 'mt-1 text-xs text-ink-soft'}>{error ?? actual.hint}</p>
     </div>
   );
 }

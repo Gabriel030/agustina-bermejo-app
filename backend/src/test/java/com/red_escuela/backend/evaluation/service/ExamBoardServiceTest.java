@@ -1,11 +1,12 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import java.math.BigDecimal;
 
 import com.red_escuela.backend.academicstructure.entity.Holiday;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -65,7 +66,7 @@ class ExamBoardServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
@@ -135,7 +136,8 @@ class ExamBoardServiceTest extends AbstractIntegrationTest {
     void creatingAnExamBoardOnAHolidayFails() {
         Holiday holiday = new Holiday();
         holiday.setDate(LocalDate.of(2099, 11, 20));
-        holiday.setDescription("Feriado de prueba");
+        holiday.setName("Feriado de prueba");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
         Subject subject = persistSubject("MateriaMesaEnFeriado");
         Term term = persistTerm();

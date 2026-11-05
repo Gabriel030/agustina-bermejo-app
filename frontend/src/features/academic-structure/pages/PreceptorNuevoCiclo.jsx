@@ -1,4 +1,5 @@
 import { useId, useReducer, useState } from 'react';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, CheckCircle2 } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useProgramas, useCursos, useProgramaPlanDeEstudio, useCursoTemario } from '@/hooks/useCatalogo';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { useInstructores } from '@/features/academic-structure/hooks/useInstructores';
@@ -20,6 +22,12 @@ import {
   useAsignarInstructorSeccion,
   useSubmitCiclo,
 } from '@/features/academic-structure/hooks/useCiclos';
+import { AttendanceRegimeField } from '@/features/academic-structure/components/AttendanceRegimeField';
+import {
+  EMPTY_ATTENDANCE_REGIME,
+  attendanceRegimeToPercent,
+  isAttendanceRegimeValid,
+} from '@/features/academic-structure/attendanceRegime';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 
 const PASOS = [
@@ -73,10 +81,10 @@ function leadInstructorName(section) {
   return section.instructors?.find((i) => i.role === 'LEAD')?.name ?? 'Sin titular';
 }
 
-function cycleDetailPath(tipo, programaId, cursoId) {
+function cycleDetailPath(basePath, tipo, programaId, cursoId) {
   return tipo === 'programa'
-    ? `/preceptor/oferta-academica/carreras/${programaId}`
-    : `/preceptor/oferta-academica/cursos/${cursoId}`;
+    ? `${basePath}/oferta-academica/carreras/${programaId}`
+    : `${basePath}/oferta-academica/cursos/${cursoId}`;
 }
 
 function estadoInicial() {
@@ -179,14 +187,17 @@ function CreatedCyclePeriod({ state, dispatch }) {
 }
 
 function Paso1Periodo({ state, dispatch, onCycleCreated }) {
-  const { data: terminos, isLoading: loadingTerminos } = useTerminos();
-  const { data: programas, isLoading: loadingProgramas } = useProgramas();
-  const { data: cursos, isLoading: loadingCursos } = useCursos();
+  const basePath = useRoleBasePath();
+  const { data: terminos, isLoading: loadingTerminos, isError: terminosFailed, refetch: refetchTerminos } = useTerminos();
+  const { data: programas, isLoading: loadingProgramas, isError: programasFailed, refetch: refetchProgramas } = useProgramas();
+  const { data: cursos, isLoading: loadingCursos, isError: cursosFailed, refetch: refetchCursos } = useCursos();
   const createCiclo = useCreateCiclo();
   const [error, setError] = useState(null);
 
   const lista = state.tipo === 'programa' ? programas : cursos;
   const loadingLista = state.tipo === 'programa' ? loadingProgramas : loadingCursos;
+  const listaFailed = state.tipo === 'programa' ? programasFailed : cursosFailed;
+  const refetchLista = state.tipo === 'programa' ? refetchProgramas : refetchCursos;
 
   async function handleContinuar() {
     setError(null);
@@ -214,6 +225,8 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
   if (state.cicloId) return <CreatedCyclePeriod state={state} dispatch={dispatch} />;
 
   if (loadingTerminos) return <Skeleton className="h-[200px] w-full rounded-2xl" />;
+
+  if (terminosFailed) return <LoadErrorState onRetry={refetchTerminos} resource="los períodos académicos" />;
 
   const entidadId = state.tipo === 'programa' ? state.programaId : state.cursoId;
   const campoEntidad = state.tipo === 'programa' ? 'programaId' : 'cursoId';
@@ -244,6 +257,12 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
 
         {loadingLista ? (
           <Skeleton className="h-10 w-full rounded-xl" />
+        ) : listaFailed ? (
+          <LoadErrorState
+            onRetry={refetchLista}
+            resource={state.tipo === 'programa' ? 'las carreras' : 'los cursos'}
+            bare
+          />
         ) : (
           <CampoSelect
             label={state.tipo === 'programa' ? 'Carrera' : 'Curso'}
@@ -263,7 +282,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
           {error.alreadyInProgress && (
             <>
               {' '}
-              <Link to={cycleDetailPath(state.tipo, state.programaId, state.cursoId)} className="font-medium underline">
+              <Link to={cycleDetailPath(basePath, state.tipo, state.programaId, state.cursoId)} className="font-medium underline">
                 {state.tipo === 'programa' ? 'Ir a la carrera' : 'Ir al curso'}
               </Link>
             </>
@@ -271,7 +290,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
         </p>
       )}
 
-      <Button variant="gradient" onClick={handleContinuar} disabled={createCiclo.isPending}>
+      <Button variant="gradient" onClick={handleContinuar} disabled={createCiclo.isPending || listaFailed}>
         {createCiclo.isPending ? 'Creando…' : 'Crear borrador y continuar'}
       </Button>
     </GlassCard>
@@ -287,11 +306,13 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
   const [horaInicio, setHoraInicio] = useState('08:00');
   const [horaFin, setHoraFin] = useState('12:00');
   const [aulaId, setAulaId] = useState('');
+  const [regime, setRegime] = useState(EMPTY_ATTENDANCE_REGIME);
   const [error, setError] = useState(null);
   const [abierto, setAbierto] = useState(false);
 
-  const { data: instructores } = useInstructores();
-  const { data: aulas } = useClassrooms();
+  const { data: instructores, isError: instructoresFailed, refetch: refetchInstructores } = useInstructores();
+  const { data: aulas, isError: aulasFailed, refetch: refetchAulas } = useClassrooms();
+  const lookupsFailed = instructoresFailed || aulasFailed;
   const addSeccion = useAddSeccion(cicloId);
   const asignarInstructor = useAsignarInstructorSeccion(tipoCiclo);
 
@@ -316,6 +337,8 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
       capacity: Number(cupo),
       slots: [{ classroomId: Number(aulaId), dayOfWeek: dia, startTime: `${horaInicio}:00`, endTime: `${horaFin}:00` }],
     };
+    const maxAbsencePercent = attendanceRegimeToPercent(regime);
+    if (maxAbsencePercent !== null) sectionBody.maxAbsencePercent = maxAbsencePercent;
     if (subjectId) sectionBody.subjectId = subjectId;
     else sectionBody.courseSubjectId = courseSubjectId;
 
@@ -323,7 +346,7 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
       onSuccess: (sectionId) => {
         asignarInstructor.mutate({ sectionId, instructorId: Number(instructorId) }, {
           onSuccess: () => {
-            setNombre(''); setCupo(''); setInstructorId(''); setAulaId(''); setAbierto(false);
+            setNombre(''); setCupo(''); setInstructorId(''); setAulaId(''); setRegime(EMPTY_ATTENDANCE_REGIME); setAbierto(false);
           },
           onError: () => setError('Sección creada pero no se pudo asignar el docente. Podés asignarlo después.'),
         });
@@ -420,11 +443,24 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
         </select>
       </div>
 
+      <AttendanceRegimeField value={regime} onChange={setRegime} />
+
+      {lookupsFailed && (
+        <LoadErrorState
+          onRetry={() => {
+            refetchInstructores();
+            refetchAulas();
+          }}
+          resource="los docentes y aulas"
+          bare
+        />
+      )}
+
       {error && <p className="mt-2 text-[12px] text-danger">{error}</p>}
 
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => { setAbierto(false); setError(null); }}>Cancelar</Button>
-        <Button variant="gradient" size="sm" onClick={handleAgregar} disabled={addSeccion.isPending || asignarInstructor.isPending}>
+        <Button variant="gradient" size="sm" onClick={handleAgregar} disabled={lookupsFailed || addSeccion.isPending || asignarInstructor.isPending || !isAttendanceRegimeValid(regime)}>
           {addSeccion.isPending || asignarInstructor.isPending ? 'Guardando…' : 'Agregar comisión'}
         </Button>
       </div>
@@ -434,9 +470,24 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
 function Paso2Comisiones({ state, dispatch }) {
   const esProgramaCiclo = state.tipo === 'programa';
-  const { data: materiasPrograma, isLoading: loadingPrograma } = useProgramaPlanDeEstudio(esProgramaCiclo ? state.programaId : null);
-  const { data: materiasTemario, isLoading: loadingTemario } = useCursoTemario(!esProgramaCiclo ? state.cursoId : null);
-  const { data: cycleSections, isLoading: loadingSections } = useCicloSecciones(state.cicloId);
+  const {
+    data: materiasPrograma,
+    isLoading: loadingPrograma,
+    isError: programaFailed,
+    refetch: refetchPrograma,
+  } = useProgramaPlanDeEstudio(esProgramaCiclo ? state.programaId : null);
+  const {
+    data: materiasTemario,
+    isLoading: loadingTemario,
+    isError: temarioFailed,
+    refetch: refetchTemario,
+  } = useCursoTemario(!esProgramaCiclo ? state.cursoId : null);
+  const {
+    data: cycleSections,
+    isLoading: loadingSections,
+    isError: sectionsFailed,
+    refetch: refetchSections,
+  } = useCicloSecciones(state.cicloId);
   const materias = esProgramaCiclo ? materiasPrograma : materiasTemario;
   const isLoading = (esProgramaCiclo ? loadingPrograma : loadingTemario) || loadingSections;
   const sections = cycleSections ?? [];
@@ -448,6 +499,18 @@ function Paso2Comisiones({ state, dispatch }) {
   }
 
   if (isLoading) return <Skeleton className="h-[200px] w-full rounded-2xl" />;
+  if ((esProgramaCiclo ? programaFailed : temarioFailed) || sectionsFailed) {
+    return (
+      <LoadErrorState
+        onRetry={() => {
+          if (esProgramaCiclo) refetchPrograma();
+          else refetchTemario();
+          refetchSections();
+        }}
+        resource="las materias y comisiones"
+      />
+    );
+  }
   if (!materias?.length) return <EmptyState title="Esta carrera/curso no tiene materias cargadas." className="py-8" />;
 
   return (
@@ -517,6 +580,7 @@ function Paso2Comisiones({ state, dispatch }) {
 }
 
 function Paso3Resumen({ state, dispatch }) {
+  const basePath = useRoleBasePath();
   const navigate = useNavigate();
   const submitCiclo = useSubmitCiclo();
   const [error, setError] = useState(null);
@@ -526,7 +590,7 @@ function Paso3Resumen({ state, dispatch }) {
   function handleSubmit() {
     setError(null);
     submitCiclo.mutate(state.cicloId, {
-      onSuccess: () => navigate(cycleDetailPath(state.tipo, state.programaId, state.cursoId)),
+      onSuccess: () => navigate(cycleDetailPath(basePath, state.tipo, state.programaId, state.cursoId)),
       onError: (err) => setError(SUBMIT_ERROR_MESSAGES[err.code] ?? 'No se pudo enviar a aprobación. Probá de nuevo.'),
     });
   }
@@ -606,6 +670,7 @@ function CycleWizard({ resumedCycle, onCycleCreated }) {
 }
 
 function ResumedCycleGate({ cycleId, onCycleCreated }) {
+  const basePath = useRoleBasePath();
   const { data: cycle, isLoading, isError } = useCycle(cycleId);
 
   if (isLoading) return <Skeleton className="h-[200px] w-full rounded-2xl" />;
@@ -623,7 +688,7 @@ function ResumedCycleGate({ cycleId, onCycleCreated }) {
           title={NOT_EDITABLE_MESSAGE}
           action={
             <Button variant="outline" asChild>
-              <Link to={cycleDetailPath(cycle.programId ? 'programa' : 'curso', cycle.programId, cycle.courseId)}>
+              <Link to={cycleDetailPath(basePath, cycle.programId ? 'programa' : 'curso', cycle.programId, cycle.courseId)}>
                 Ver el ciclo
               </Link>
             </Button>
@@ -636,6 +701,7 @@ function ResumedCycleGate({ cycleId, onCycleCreated }) {
 }
 
 export function PreceptorNuevoCiclo() {
+  const basePath = useRoleBasePath();
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialCycleId] = useState(() => searchParams.get('cicloId'));
 
@@ -648,7 +714,7 @@ export function PreceptorNuevoCiclo() {
       <div className="flex flex-col gap-5">
         <div>
           <Link
-            to="/preceptor/oferta-academica"
+            to={`${basePath}/oferta-academica`}
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />

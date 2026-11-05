@@ -1,13 +1,24 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
+import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
+import com.red_escuela.backend.billing.api.StudentDebtInstallmentView;
+import com.red_escuela.backend.billing.api.StudentDebtView;
 import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 
 import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
+import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
+import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
+import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
+import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
+import com.red_escuela.backend.billing.note.exception.CreditNoteSourceIntegrityException;
+import com.red_escuela.backend.billing.payment.domain.Payment;
+import com.red_escuela.backend.billing.payment.exception.PaymentSourceIntegrityException;
+import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
@@ -27,21 +38,37 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class InvoiceQueryService {
+    private final EnrollmentPaymentStandingQuery standingQuery;
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceViewLoader invoiceViewLoader;
     private final PriceReader priceReader;
+    private final AllocationSourceQueryService allocationSources;
+    private final CreditNoteRepository creditNoteRepository;
+    private final PaymentRepository paymentRepository;
     private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
-                               PriceReader priceReader, Clock clock) {
+                               PriceReader priceReader, AllocationSourceQueryService allocationSources, CreditNoteRepository creditNoteRepository,
+                               PaymentRepository paymentRepository, Clock clock,
+                               EnrollmentPaymentStandingQuery standingQuery) {
+        this.standingQuery = standingQuery;
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.priceReader = priceReader;
+        this.allocationSources = allocationSources;
+        this.creditNoteRepository = creditNoteRepository;
+        this.paymentRepository = paymentRepository;
         this.clock = clock;
     }
 
@@ -53,6 +80,14 @@ public class InvoiceQueryService {
     @Transactional(readOnly = true)
     public List<InvoiceView> byProgram(Long programEnrollmentId) {
         return invoiceViewLoader.loadInvoiceViews(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId));
+    }
+
+    public EnrollmentPaymentStandingView courseStanding(Long courseEnrollmentId) {
+        return standingQuery.findStandingOfCourseEnrollment(courseEnrollmentId).orElse(null);
+    }
+
+    public EnrollmentPaymentStandingView programStanding(Long programEnrollmentId) {
+        return standingQuery.findStandingOfProgramEnrollment(programEnrollmentId).orElse(null);
     }
 
     public CourseEnrollment courseBillable(Long courseEnrollmentId) {
@@ -93,11 +128,13 @@ public class InvoiceQueryService {
                 .filter(l -> l.getDiscount() != null)
                 .map(l -> toLine(l.getDiscount()))
                 .toList();
-        List<PriceBreakdownPaymentResponse> payments = invoiceViewLoader.loadInvoiceView(invoice).allocations().stream().map(this::toPayment).toList();
+        List<PaymentAllocationSource> sources = allocationSources.findCurrentSourcesByInvoiceId(List.of(invoiceId)).getOrDefault(invoiceId, List.of());
+        List<PriceBreakdownPaymentResponse> payments = toPayments(sources.stream().filter(source -> source.getPaymentId() != null).toList());
+        List<PriceBreakdownCreditNoteResponse> creditNotes = toCreditNotes(sources.stream().filter(source -> source.getCreditNoteId() != null).toList());
         return new PriceBreakdownResponse(
                 invoice.getId(), line.getFeeType().name(), line.getPeriod().toString(), invoice.getAmounts().linesTotal().value(),
                 resolvePriceVersionDescription(invoice),
-                lines, invoice.getAmounts().total().value(), payments, invoice.getAmounts().outstandingAmount().value(), statusNameOf(invoice));
+                lines, invoice.getAmounts().total().value(), payments, invoice.getAmounts().outstandingAmount().value(), statusNameOf(invoice), creditNotes);
     }
 
     @Transactional(readOnly = true)
@@ -121,6 +158,29 @@ public class InvoiceQueryService {
             }
         }
         return false;
+    }
+
+    public StudentDebtView debtOf(Long studentId) {
+        List<Invoice> unpaid = new ArrayList<>();
+        for (CourseEnrollment enrollment : invoiceViewLoader.findCourseEnrollmentsOfStudent(studentId)) {
+            unpaid.addAll(unpaidOf(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId())));
+        }
+        for (ProgramEnrollment enrollment : invoiceViewLoader.findProgramEnrollmentsOfStudent(studentId)) {
+            unpaid.addAll(unpaidOf(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())));
+        }
+        if (unpaid.isEmpty()) {
+            return StudentDebtView.none();
+        }
+        List<StudentDebtInstallmentView> installments = unpaid.stream()
+                .sorted(Comparator.comparing(Invoice::getPeriod).thenComparing(Invoice::getDueDate))
+                .map(i -> new StudentDebtInstallmentView(i.getPeriod(), i.getDueDate(), i.getAmounts().outstandingAmount().value(), i.getPaymentStatus().name()))
+                .toList();
+        Money total = installments.stream().map(StudentDebtInstallmentView::amount).reduce(Money::plus).orElseThrow();
+        return new StudentDebtView(total, installments);
+    }
+
+    private List<Invoice> unpaidOf(List<Invoice> invoices) {
+        return invoices.stream().filter(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE).toList();
     }
 
     public boolean hasOverdueDebt(Long studentId) {
@@ -152,10 +212,40 @@ public class InvoiceQueryService {
         return new PriceBreakdownLineResponse(discount.getDiscountType().name(), Money.zero(amount.currency()).minus(amount), discount.getConcept(), "Sistema", null);
     }
 
-    private PriceBreakdownPaymentResponse toPayment(PaymentAllocation allocation) {
-        return new PriceBreakdownPaymentResponse(
-                allocation.getPayment().getId(), allocation.getAmountApplied(),
-                allocation.getPayment().getMethod().name(), allocation.getPayment().getPaidAt());
+    private List<PriceBreakdownCreditNoteResponse> toCreditNotes(List<PaymentAllocationSource> sources) {
+        if (sources.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> numbers = creditNoteRepository.findCreditNoteNumbersByIds(sources.stream().map(PaymentAllocationSource::getCreditNoteId).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(row -> (Long) row[0], row -> (String) row[1]));
+        return sources.stream().map(source -> {
+            String number = numbers.get(source.getCreditNoteId());
+            if (number == null) {
+                throw new CreditNoteSourceIntegrityException(source.getCreditNoteId());
+            }
+            return new PriceBreakdownCreditNoteResponse(source.getCreditNoteId(), number, source.getAmount().value(), "Nota de crédito " + number);
+        }).toList();
+    }
+
+    private List<PriceBreakdownPaymentResponse> toPayments(List<PaymentAllocationSource> sources) {
+        if (sources.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> paymentIds = sources.stream().map(PaymentAllocationSource::getPaymentId).collect(Collectors.toSet());
+        Map<Long, Payment> accountPayments = paymentRepository.findByIdIn(paymentIds).stream().collect(Collectors.toMap(Payment::getId, Function.identity()));
+        return sources.stream().map(source -> {
+            Long paymentId = source.getPaymentId();
+            Money amount = source.getAmount().value();
+            Payment payment = accountPayments.get(paymentId);
+            if (payment == null) {
+                throw PaymentSourceIntegrityException.missing(paymentId);
+            }
+            if (!payment.getStudentCurrentAccountId().equals(source.getStudentCurrentAccountId())) {
+                throw PaymentSourceIntegrityException.ofAnotherAccount(paymentId);
+            }
+            return new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
+                    payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay());
+        }).toList();
     }
 
     private boolean hasAnyUnpaidInstallment(List<Invoice> invoices) {

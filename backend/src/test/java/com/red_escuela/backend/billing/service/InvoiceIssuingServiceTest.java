@@ -196,7 +196,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
             ProgramCohort cohort = entityManager.find(ProgramCohort.class, cohortId);
             var student = new com.red_escuela.backend.identity.entity.Student();
             student.setPerson(newPerson());
-            student.setInstitution(entityManager.getReference(com.red_escuela.backend.academicstructure.entity.Institution.class, career.institutionId()));
+            student.setInstitution(entityManager.getReference(com.red_escuela.backend.identity.entity.Institution.class, career.institutionId()));
             student.setOnboardingStatus(com.red_escuela.backend.identity.entity.StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
             InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(student.getId(), program, cohort, com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(cohort.getTemplate()), java.time.LocalDate.now(clockOf())));

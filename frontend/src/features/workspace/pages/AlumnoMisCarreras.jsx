@@ -6,14 +6,17 @@ import { Stagger } from '@/components/Stagger';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CertificateActions } from '@/features/workspace/components/CertificateActions';
 import { TabMaterias } from '@/features/workspace/components/TabMaterias';
 import { TabPlanDeEstudio } from '@/features/workspace/components/TabPlanDeEstudio';
 import { TabNotas } from '@/features/evaluation';
 import { TabAsistencia } from '@/features/attendance';
 import { TabMesasDeExamen } from '@/features/evaluation';
+import { GraduationTab, GraduationRequestAction } from '@/features/graduation';
 import { useMisMatriculaciones, useMiProgreso } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
@@ -27,7 +30,13 @@ import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
 // Materias, no hace falta duplicarla acá.
 export function AlumnoMisCarreras() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: matriculaciones, isLoading: cargandoMatriculaciones } = useMisMatriculaciones();
+  const {
+    data: matriculaciones,
+    isLoading: cargandoMatriculaciones,
+    isError: matriculacionesFallaron,
+    error: errorMatriculaciones,
+    refetch: recargarMatriculaciones,
+  } = useMisMatriculaciones();
 
   const activas = (matriculaciones ?? [])
     .filter((m) => m.status !== 'WITHDRAWN')
@@ -77,6 +86,14 @@ export function AlumnoMisCarreras() {
     );
   }
 
+  if (matriculacionesFallaron) {
+    return (
+      <PageContainer>
+        <LoadErrorState error={errorMatriculaciones} onRetry={recargarMatriculaciones} resource="tus carreras" />
+      </PageContainer>
+    );
+  }
+
   if (activas.length === 0) {
     return (
       <PageContainer>
@@ -104,7 +121,7 @@ export function AlumnoMisCarreras() {
             {graduated && <StatusPill tone="success">Carrera finalizada</StatusPill>}
             {progreso && !graduated && (
               <StatusPill tone={progreso.esRegular ? 'success' : 'neutral'}>
-                {progreso.esRegular ? 'Alumno regular' : 'No estás cursando'}
+                {progreso.esRegular ? 'Inscripción activa' : 'Sin inscripción activa'}
               </StatusPill>
             )}
           </div>
@@ -113,18 +130,22 @@ export function AlumnoMisCarreras() {
         {/* Siempre visible, aunque haya una sola carrera — predecible, no aparece/desaparece
             según cuántas carreras tenga el alumno (decisión de producto). En la URL
             (?carrera=) para que el breadcrumb pueda volver acá sin perder la carrera elegida. */}
-        <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {activas.map((m) => (
-              <SelectItem key={m.id} value={String(m.id)}>
-                {m.status === 'COMPLETED' ? `${m.programName} (finalizada)` : m.programName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <CertificateActions key={`certificates-${matricula.id}`} carreraId={matricula.id} />
+          {tab === 'egreso' && <GraduationRequestAction key={matricula.id} carreraId={matricula.id} />}
+          <Select value={String(matricula?.id ?? '')} onValueChange={cambiarCarrera}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {activas.map((m) => (
+                <SelectItem key={m.id} value={String(m.id)}>
+                  {m.status === 'COMPLETED' ? `${m.programName} (finalizada)` : m.programName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -158,6 +179,7 @@ export function AlumnoMisCarreras() {
           <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>
           <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           <TabsTrigger value="plan-de-estudio">Plan de estudio</TabsTrigger>
+          <TabsTrigger value="egreso">Egreso</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -170,6 +192,7 @@ export function AlumnoMisCarreras() {
       {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
       {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
       {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
+      {tab === 'egreso' && <GraduationTab key={matricula.id} carreraId={matricula.id} onSeeStudyPlan={() => cambiarTab('plan-de-estudio')} />}
     </PageContainer>
   );
 }

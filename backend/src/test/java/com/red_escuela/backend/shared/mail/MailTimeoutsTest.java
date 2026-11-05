@@ -18,7 +18,7 @@ class MailTimeoutsTest extends AbstractIntegrationTest {
 
     @Test
     void smtpConnectionReadAndWriteHaveTimeoutsSoASlowServerCannotHangARequest() {
-        var properties = ((JavaMailSenderImpl) mailSender).getJavaMailProperties();
+        var properties = ((JavaMailSenderImpl) ((CircuitBreakingMailSender) mailSender).delegate()).getJavaMailProperties();
 
         assertThat(properties.getProperty("mail.smtp.connectiontimeout")).isNotBlank();
         assertThat(properties.getProperty("mail.smtp.timeout")).isNotBlank();

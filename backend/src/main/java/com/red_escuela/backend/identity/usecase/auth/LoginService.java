@@ -1,9 +1,11 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.LoginAttempt;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
+import com.red_escuela.backend.identity.service.DummyPasswordHash;
 import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
@@ -24,17 +26,20 @@ public class LoginService implements LoginUseCase {
     private final LoginAttemptRepository loginAttemptRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenIssuer authTokenIssuer;
+    private final DummyPasswordHash dummyPasswordHash;
     private final int lockoutMaxAttempts;
     private final long lockoutDurationMinutes;
 
     public LoginService(PersonRepository personRepository, LoginAttemptRepository loginAttemptRepository,
                          PasswordEncoder passwordEncoder, AuthTokenIssuer authTokenIssuer,
+                         DummyPasswordHash dummyPasswordHash,
                          @Value("${auth.lockout.max-attempts}") int lockoutMaxAttempts,
                          @Value("${auth.lockout.duration-minutes}") long lockoutDurationMinutes) {
         this.personRepository = personRepository;
         this.loginAttemptRepository = loginAttemptRepository;
         this.passwordEncoder = passwordEncoder;
         this.authTokenIssuer = authTokenIssuer;
+        this.dummyPasswordHash = dummyPasswordHash;
         this.lockoutMaxAttempts = lockoutMaxAttempts;
         this.lockoutDurationMinutes = lockoutDurationMinutes;
     }
@@ -47,6 +52,7 @@ public class LoginService implements LoginUseCase {
                 .or(() -> personRepository.findByDocumentTypeAndDni(DocumentType.DNI, command.username()));
 
         if (personOpt.isEmpty()) {
+            passwordEncoder.matches(command.password(), dummyPasswordHash.value());
             recordAttempt(command.username(), null, false, command.ipAddress());
             throw new InvalidCredentialsException();
         }
@@ -55,6 +61,7 @@ public class LoginService implements LoginUseCase {
 
         if (isLocked(person) || person.getPassword() == null
                 || person.getStatus() != StatusType.ACTIVE) {
+            passwordEncoder.matches(command.password(), dummyPasswordHash.value());
             recordAttempt(command.username(), person, false, command.ipAddress());
             throw new InvalidCredentialsException();
         }

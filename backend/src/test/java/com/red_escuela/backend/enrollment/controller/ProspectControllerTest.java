@@ -5,7 +5,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Role;
@@ -23,7 +23,7 @@ import com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand;
 import com.red_escuela.backend.identity.usecase.auth.ResetPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
 import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
-import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -187,7 +187,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         String token = tokenWithRole("preceptor3", "PRECEPTOR");
 
         MockMultipartFile file = new MockMultipartFile(
-                "file", "dni.pdf", "application/pdf", new byte[2 * 1024 * 1024]);
+                "file", "dni.pdf", "application/pdf", twoMegabytePdf());
 
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
                         .file(file)
@@ -207,12 +207,12 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         Student student = persistProspect(institutionId);
         String token = tokenWithRole("preceptor4", "PRECEPTOR");
 
-        MockMultipartFile primero = new MockMultipartFile("file", "dni1.pdf", "application/pdf", "uno".getBytes());
+        MockMultipartFile primero = new MockMultipartFile("file", "dni1.pdf", "application/pdf", "%PDF-1.4 uno".getBytes());
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
                         .file(primero).param("type", "DNI_FRENTE").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
 
-        MockMultipartFile segundo = new MockMultipartFile("file", "dni2.pdf", "application/pdf", "dos".getBytes());
+        MockMultipartFile segundo = new MockMultipartFile("file", "dni2.pdf", "application/pdf", "%PDF-1.4 dos".getBytes());
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
                         .file(segundo).param("type", "DNI_FRENTE").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
@@ -288,10 +288,17 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         String token = tokenWithRole("preceptor7", "PRECEPTOR");
-        MockMultipartFile file = new MockMultipartFile("file", "dni.pdf", "application/pdf", "contenido".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "dni.pdf", "application/pdf", "%PDF-1.4 contenido".getBytes());
 
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
                         .file(file).param("type", "DNI_FRENTE").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
+    }
+
+    private static byte[] twoMegabytePdf() {
+        byte[] content = new byte[2 * 1024 * 1024];
+        byte[] header = "%PDF-1.4".getBytes();
+        System.arraycopy(header, 0, content, 0, header.length);
+        return content;
     }
 }

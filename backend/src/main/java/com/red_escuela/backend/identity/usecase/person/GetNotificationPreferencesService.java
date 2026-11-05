@@ -7,6 +7,7 @@ import com.red_escuela.backend.identity.entity.NotificationPreference;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.NotificationPreferenceRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.domain.MandatoryNotificationChannels;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.HashMap;
@@ -36,15 +37,15 @@ public class GetNotificationPreferencesService implements GetNotificationPrefere
         }
 
         Map<String, Map<String, Boolean>> result = new HashMap<>();
-        for (NotificationEvent event : NotificationEvent.values()) {
+        for (NotificationEvent event : com.red_escuela.backend.identity.domain.EmittedNotificationEvents.visible()) {
             Map<String, Boolean> channels = new HashMap<>();
             for (NotificationChannel channel : NotificationChannel.values()) {
-                channels.put(channel.name(), disabledByKey.getOrDefault(key(event, channel), true));
+                channels.put(channel.name(), MandatoryNotificationChannels.cannotBeTurnedOff(event, channel) || disabledByKey.getOrDefault(key(event, channel), true));
             }
             result.put(event.name(), channels);
         }
 
-        return new NotificationPreferencesResponse(result);
+        return new NotificationPreferencesResponse(result, MandatoryNotificationChannels.channelNamesByEventName());
     }
 
     private String key(NotificationEvent event, NotificationChannel channel) {

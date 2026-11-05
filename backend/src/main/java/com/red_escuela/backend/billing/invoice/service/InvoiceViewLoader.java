@@ -1,8 +1,6 @@
 package com.red_escuela.backend.billing.invoice.service;
 
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -22,13 +20,15 @@ public class InvoiceViewLoader {
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final PaymentAllocationRepository paymentAllocationRepository;
+    private final InvoicePaymentShareSource paymentShareSource;
+    private final InvoiceCreditNoteShareSource creditNoteShareSource;
 
     public InvoiceViewLoader(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                             PaymentAllocationRepository paymentAllocationRepository) {
+                             InvoicePaymentShareSource paymentShareSource, InvoiceCreditNoteShareSource creditNoteShareSource) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.paymentAllocationRepository = paymentAllocationRepository;
+        this.paymentShareSource = paymentShareSource;
+        this.creditNoteShareSource = creditNoteShareSource;
     }
 
     @Transactional(readOnly = true)
@@ -41,18 +41,19 @@ public class InvoiceViewLoader {
         if (invoices.isEmpty()) {
             return List.of();
         }
-        Map<Long, ProgramEnrollment> programs = programEnrollmentRepository.findAllById(invoices.stream()
+        Map<Long, ProgramEnrollment> programs = programEnrollmentRepository.findAllWithStudentAndProgramByIdIn(invoices.stream()
                 .flatMap(invoice -> invoice.findProgramEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(ProgramEnrollment::getId, Function.identity()));
-        Map<Long, CourseEnrollment> courses = courseEnrollmentRepository.findAllById(invoices.stream()
+        Map<Long, CourseEnrollment> courses = courseEnrollmentRepository.findAllWithStudentAndCourseByIdIn(invoices.stream()
                 .flatMap(invoice -> invoice.findCourseEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(CourseEnrollment::getId, Function.identity()));
-        Map<Long, List<PaymentAllocation>> allocations = paymentAllocationRepository
-                .findByInvoiceIdInWithPayments(invoices.stream().map(Invoice::getId).toList()).stream()
-                .collect(Collectors.groupingBy(allocation -> allocation.getInvoice().getId()));
+        List<Long> invoiceIds = invoices.stream().map(Invoice::getId).toList();
+        Map<Long, List<InvoicePaymentShare>> shares = paymentShareSource.findCurrentSharesByInvoiceId(invoiceIds).resolvedByInvoiceId();
+        Map<Long, List<InvoiceCreditNoteSourceShare>> creditNotes = creditNoteShareSource.findCurrentCreditNoteSharesByInvoiceId(invoiceIds);
         return invoices.stream()
                 .map(invoice -> new InvoiceView(invoice, invoice.findProgramEnrollmentId().map(programs::get).orElse(null),
-                        invoice.findCourseEnrollmentId().map(courses::get).orElse(null), allocations.getOrDefault(invoice.getId(), List.of())))
+                        invoice.findCourseEnrollmentId().map(courses::get).orElse(null), shares.getOrDefault(invoice.getId(), List.of()),
+                        creditNotes.getOrDefault(invoice.getId(), List.of())))
                 .toList();
     }
 

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.characterization.coursework;
 
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;

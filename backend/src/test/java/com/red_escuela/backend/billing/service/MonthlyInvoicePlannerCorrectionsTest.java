@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+@SlowTest(reason = "Walks the monthly issuance over several simulated months with enrollment corrections")
 class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     private static final YearMonth JAN_2026 = YearMonth.of(2026, 1);
@@ -52,11 +55,13 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
                 entityManager.find(ProgramEnrollment.class, enrollmentId), EnrollmentFeeRequirementScope.CERTIFICATE));
     }
 
-    private Year newUndatedYear(Career career, int year, int installments) {
+    private Year newMarchToDecemberYear(Career career, int year, int installments) {
         return transactionTemplate.execute(status -> {
-            Term term = new Term();
+            Term term = TermFixtures.newTerm();
             term.setYear(year);
             term.setDescription(String.valueOf(year));
+            term.setStartDate(java.time.LocalDateTime.of(year, 3, 1, 0, 0));
+            term.setEndDate(java.time.LocalDateTime.of(year, 12, 15, 0, 0));
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
@@ -119,10 +124,10 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     @Test
     @Tag("D-001")
-    void undatedTermsBillFromMarchAndTheCapCountsOnlyThatYear() {
+    void termsStartingInMarchBillFromMarchAndTheCapCountsOnlyThatYear() {
         Career career = newCareer();
-        Year y26 = newUndatedYear(career, 2026, 3);
-        Year y27 = newUndatedYear(career, 2027, 3);
+        Year y26 = newMarchToDecemberYear(career, 2026, 3);
+        Year y27 = newMarchToDecemberYear(career, 2027, 3);
         Long cohort = newCohort(y26, CohortIntake.FIRST, date(2026, 3, 1));
         today(date(2026, 1, 5));
         Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 5));
@@ -175,8 +180,6 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         runEveryMonth(JAN_2026, YearMonth.of(2026, 4), () -> {
         });
         setStanding(enrollment, EnrollmentPaymentStatus.SUSPENDED);
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollment)
-                .setPaymentStatusUpdatedAt(LocalDateTime.of(2026, 4, 20, 10, 0)));
         List<String> frozen = sequence(enrollment);
 
         runEveryMonth(YearMonth.of(2026, 5), YearMonth.of(2026, 12), () -> assertThat(sequence(enrollment)).isEqualTo(frozen));
@@ -184,10 +187,13 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
         today(date(2027, 1, 4));
         job.run();
+        closeFinishedTermsOfSuspendedEnrollments();
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
-        assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() ->
+                assertThat(jdbcTemplate.queryForObject("select status from enrollment_payment_standing where program_enrollment_id = ?", String.class, enrollment))
+                        .isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT.name()));
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PAID);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y26);

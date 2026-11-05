@@ -1,28 +1,25 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase;
 import com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsUseCase;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -44,7 +41,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -57,9 +53,6 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ListDebtorsUseCase listDebtorsUseCase;
-
-    @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -111,7 +104,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
     }
 
     private CourseEnrollment persistCourseEnrollment(Student student) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -138,12 +131,6 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         return response.totalsByCurrency().stream()
                 .filter(totals -> totals.totalDebt().currency() == Currency.ARS)
                 .findFirst().orElseThrow();
-    }
-
-    private void pay(Invoice invoice, Money amount, Person admin) {
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), amount)),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
     }
 
     @Test

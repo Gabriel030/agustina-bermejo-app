@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
@@ -89,5 +90,44 @@ describe('AlumnoPagos', () => {
 
     expect(await screen.findByText('Pago en revisión')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('muestra la pestaña Mis descuentos con los descuentos del alumno', async () => {
+    server.use(
+      http.get(`${API}/me/student-discounts`, () =>
+        HttpResponse.json([
+          {
+            id: 1, type: 'SCHOLARSHIP', applicableInvoiceType: 'MONTHLY_INSTALLMENT', calculation: { type: 'PROPORTIONAL', ratePercent: 15 },
+            fromPeriod: '2026-03', toPeriod: '2026-12', status: 'ACTIVE', appliedInstallments: [], lostPeriods: [], definitionName: 'Beca', enrollmentName: 'Enfermería',
+          },
+        ])),
+    );
+    const user = userEvent.setup();
+    renderPagos();
+
+    await user.click(await screen.findByRole('tab', { name: 'Mis descuentos' }));
+
+    expect(await screen.findByRole('heading', { name: 'Vigentes' })).toBeInTheDocument();
+    expect(screen.getByText('15 %')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Cuotas' }));
+    expect(await screen.findByPlaceholderText('Buscar curso o carrera…')).toBeInTheDocument();
+  });
+
+  it('muestra el saldo a favor con el enlace a las notas de crédito cuando hay crédito disponible', async () => {
+    server.use(
+      http.get(`${API}/me/credit-balance`, () =>
+        HttpResponse.json({
+          currency: 'ARS',
+          unallocatedCredit: { amount: '6000.00', currency: 'ARS' },
+          reservedByPendingRefunds: { amount: '0.00', currency: 'ARS' },
+          availableCredit: { amount: '6000.00', currency: 'ARS' },
+        }),
+      ),
+    );
+    renderPagos();
+
+    expect(await screen.findByText('Saldo a favor')).toBeInTheDocument();
+    expect(screen.getByText('$ 6.000,00')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver mis notas de crédito' })).toBeInTheDocument();
   });
 });

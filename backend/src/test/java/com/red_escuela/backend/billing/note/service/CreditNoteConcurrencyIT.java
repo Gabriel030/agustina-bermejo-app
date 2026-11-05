@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
 import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-165")
 @Tag("D-192")
+@SlowTest(reason = "Issues credit notes from concurrent threads to prove numbering and net limits under contention")
 class CreditNoteConcurrencyIT extends AbstractCreditNoteIT {
 
     @Autowired

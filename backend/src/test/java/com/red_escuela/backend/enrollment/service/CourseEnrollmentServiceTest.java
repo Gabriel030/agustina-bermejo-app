@@ -1,12 +1,14 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
@@ -17,7 +19,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -91,7 +93,7 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime startDate) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(startDate);
@@ -152,7 +154,7 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         assertThat(primero.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
-        courseEnrollmentService.withdraw(primero.getId());
+        courseEnrollmentService.withdraw(primero.getId(), new com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal(null, null, com.red_escuela.backend.enrollment.api.WithdrawalCause.VOLUNTARY));
 
         CourseEnrollment segundoRecargado = courseEnrollmentRepository.findById(segundo.getId()).orElseThrow();
         assertThat(segundoRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
@@ -169,7 +171,7 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
                 persistStudent("93000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
-        courseEnrollmentService.withdraw(segundo.getId());
+        courseEnrollmentService.withdraw(segundo.getId(), new com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal(null, null, com.red_escuela.backend.enrollment.api.WithdrawalCause.VOLUNTARY));
 
         CourseEnrollment primeroRecargado = courseEnrollmentRepository.findById(primero.getId()).orElseThrow();
         assertThat(primeroRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
@@ -195,10 +197,13 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment primeroRecargado = courseEnrollmentRepository.findById(primero.getId()).orElseThrow();
         assertThat(primeroRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
 
-        List<Notification> notificaciones = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(
-                segundo.getStudent().getPerson().getId());
-        assertThat(notificaciones).hasSize(1);
-        assertThat(notificaciones.get(0).getType()).isEqualTo(NotificationType.COURSE_WAITLIST_EXPIRED);
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> notificaciones = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(
+                    segundo.getStudent().getPerson().getId());
+            assertThat(notificaciones).hasSize(1);
+            assertThat(notificaciones.get(0).getType()).isEqualTo(NotificationType.COURSE_WAITLIST_EXPIRED);
+        });
     }
 
     @Test

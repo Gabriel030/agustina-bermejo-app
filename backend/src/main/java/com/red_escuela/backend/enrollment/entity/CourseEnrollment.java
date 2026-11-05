@@ -9,9 +9,9 @@ import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.academicstructure.entity.Course;
 
 @NamedInterface("model")
@@ -48,13 +48,27 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false)
-    private EnrollmentPaymentStatus paymentStatus = EnrollmentPaymentStatus.UP_TO_DATE;
+    @Column(name = "withdrawal_effective_date")
+    private LocalDate withdrawalEffectiveDate;
 
-    @Column(name = "payment_status_updated_at")
-    private LocalDateTime paymentStatusUpdatedAt;
+    @Column(name = "withdrawal_registered_on")
+    private LocalDate withdrawalRegisteredOn;
+
+    @Column(name = "withdrawn_by_person_id")
+    private Long withdrawnByPersonId;
 
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;
+
+    public void markWithdrawn(LocalDate effectiveDate, LocalDateTime completionMoment, LocalDate registeredOn, Long registeredByPersonId) {
+        this.status = EnrollmentStatus.WITHDRAWN;
+        this.withdrawalEffectiveDate = effectiveDate;
+        this.withdrawalRegisteredOn = registeredOn;
+        this.completionDate = completionMoment;
+        this.withdrawnByPersonId = registeredByPersonId;
+    }
+
+    public Long courseId() {
+        return course.getId();
+    }
 }

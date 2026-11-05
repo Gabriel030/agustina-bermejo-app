@@ -1,8 +1,10 @@
 package com.red_escuela.backend.identity.service;
 
+import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
+import com.red_escuela.backend.identity.policy.StaffVisibilityPolicy;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -17,14 +19,17 @@ public class StaffRoleAssignmentPolicy {
             "ADMINISTRATIVO", Set.of("DOCENTE", "PRECEPTOR"),
             "DIRECTOR", Set.of("ADMINISTRATIVO"));
 
-    private static final Map<String, Set<String>> VISIBLE_ROLES_BY_ROLE = Map.of(
-            "ADMINISTRATIVO", Set.of("DOCENTE", "PRECEPTOR"),
-            "DIRECTOR", Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO"));
-
     private final CurrentPersonService currentPersonService;
 
-    public StaffRoleAssignmentPolicy(CurrentPersonService currentPersonService) {
+    private final EmailChangeRequester emailChangeRequester;
+
+    public StaffRoleAssignmentPolicy(CurrentPersonService currentPersonService, EmailChangeRequester emailChangeRequester) {
         this.currentPersonService = currentPersonService;
+        this.emailChangeRequester = emailChangeRequester;
+    }
+
+    public void requireNoEmailChangeInFlight(Person target) {
+        emailChangeRequester.requireNoEmailChangeInFlight(target);
     }
 
     public void requireCanAssign(String targetRole) {
@@ -40,12 +45,17 @@ public class StaffRoleAssignmentPolicy {
         }
     }
 
+    public void requireManageableOrNotFound(Long personId, String targetRole) {
+        try {
+            requireCanAssign(targetRole);
+        } catch (RoleNotAssignableByActorException exception) {
+            throw new PersonNotFoundException(personId);
+        }
+    }
+
     public Set<String> visibleRolesForCurrentActor() {
         Person actor = currentPersonService.resolveCurrentPerson();
-        return actor.getRoles().stream()
-                .map(Role::getName)
-                .flatMap(actorRole -> VISIBLE_ROLES_BY_ROLE.getOrDefault(actorRole, Set.of()).stream())
-                .collect(Collectors.toSet());
+        return StaffVisibilityPolicy.visibleRoles(actor.getRoles().stream().map(Role::getName).toList());
     }
 
     public String resolveStaffRole(Person person) {

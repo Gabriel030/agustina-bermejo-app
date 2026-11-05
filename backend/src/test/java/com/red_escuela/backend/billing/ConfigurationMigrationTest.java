@@ -1,17 +1,17 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("migration")
 class ConfigurationMigrationTest {
 
     @Test
@@ -19,10 +19,7 @@ class ConfigurationMigrationTest {
     @Tag("D-210")
     @Tag("D-118")
     void versionOneCopiesExactlyWhatExistsToday() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("93").load().migrate();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("93")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into address default values");
             Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);

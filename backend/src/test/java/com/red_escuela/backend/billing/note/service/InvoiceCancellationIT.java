@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.note.service;
 
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDraftHeader;
@@ -62,9 +63,16 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
             long tag = System.nanoTime();
             Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, 'ARS') returning id", Long.class, "Fixture " + tag);
             Long revisionId = com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(programId, null, com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT, "Test", com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("1000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), java.time.LocalDate.of(2027, 1, 1), person.getId());
+            Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                    Long.class, studentId, programId);
+            Long studentDiscountId = jdbc.queryForObject(
+                    "insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
+                            + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, 'ARS', 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "
+                            + "cast('{\"type\":\"PROPORTIONAL\",\"fraction\":\"0.5\"}' as jsonb), 1, date '2027-03-01', date '2027-03-01', 'ACTIVE', now(), ?, 'motivo') returning id",
+                    Long.class, enrollmentId, studentId, person.getId());
             List<InvoiceLineDraft> lines = List.of(annualLine(1, tag, revisionId), annualLine(2, tag, revisionId), annualLine(3, tag, revisionId));
             Invoice draft = InvoiceFactory.createAnnualUpfrontInvoiceDraft(header, lines,
-                    Map.of(1, discount("1000.00", "333.33"), 2, discount("1000.00", "333.33"), 3, discount("1000.00", "333.34")), ACTOR);
+                    Map.of(1, discount("1000.00", "333.33", studentDiscountId), 2, discount("1000.00", "333.33", studentDiscountId), 3, discount("1000.00", "333.34", studentDiscountId)), ACTOR);
             draft.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), DUE_DATE.minusDays(9), DUE_DATE, snapshot, ACTOR);
             Invoice saved = invoiceRepository.save(draft);
             service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), saved, DUE_DATE.minusDays(9));
@@ -141,6 +149,36 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
     }
 
     @Test
+    @Tag("D-199")
+    @Tag("D-286")
+    void thePreviewShowsTheConsumedDiscountTheRealCancellationReturnsAndWritesNothing() throws Exception {
+        Long studentId = newStudentId();
+        Long accountId = newAccountId(studentId, Currency.ARS);
+        Long invoiceId = issueDiscountedAnnualInvoice(studentId, accountId);
+        Long studentDiscountId = jdbc.queryForObject("select distinct d.student_discount_id from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ?",
+                Long.class, invoiceId);
+        jdbc.update("update student_discount set status = 'EXHAUSTED', applicable_invoice_type = 'MONTHLY_INSTALLMENT', installments_total = 3 where id = ?", studentDiscountId);
+        Staff director = newStaff("DIRECTOR");
+
+        String body = mockMvc.perform(post("/invoices/" + invoiceId + "/cancellations/preview").header("Authorization", "Bearer " + director.token())
+                .contentType(APPLICATION_JSON).content(cancellationBody("BILLING_ERROR", "Error"))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode released = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("discountConsumptionReleased");
+
+        assertThat(released).hasSize(1);
+        assertThat(released.get(0).get("studentDiscountId").asLong()).isEqualTo(studentDiscountId);
+        assertThat(released.get(0).get("reactivatesDiscount").asBoolean()).isTrue();
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, studentDiscountId)).isEqualTo("EXHAUSTED");
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ? and d.consumption_released_at is not null",
+                Long.class, invoiceId)).isZero();
+
+        requestCancellation(invoiceId, director, cancellationBody("BILLING_ERROR", "Error"), 201);
+
+        assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, studentDiscountId)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("select count(*) from invoice_discount d join invoice_line l on l.id = d.invoice_line_id where l.invoice_id = ? and d.consumption_released_at is not null",
+                Long.class, invoiceId)).isPositive();
+    }
+
+    @Test
     @Tag("B2-40")
     @Tag("D-036")
     void partialCreditNoteOnDiscountedInvoiceTakesTheInvoiceLockWithoutFailing() throws Exception {
@@ -212,7 +250,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         Scenario scenario = unpaidInvoice("80000.00");
         Staff administrative = newStaff("ADMINISTRATIVO");
         long requestId = pendingRequestId(requestCancellation(scenario.invoiceId(), administrative, cancellationBody("BILLING_ERROR", "Error"), 202));
-        payAccount(scenario.accountId(), "80000.00", LocalDate.of(2027, 3, 11));
+        BillingTestFixtures.payInvoiceInFull(invoiceRepository.findById(scenario.invoiceId()).orElseThrow());
 
         MvcResult result = mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + newStaff("DIRECTOR").token())
                 .contentType(APPLICATION_JSON).content("{\"decisionReason\":\"ok\"}")).andExpect(status().isConflict()).andReturn();
@@ -247,6 +285,17 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
     }
 
     @Test
+    @Tag("D-127")
+    @Tag("D-375")
+    void lateFeeCorrectionReasonIsRejected() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+
+        MvcResult result = requestCancellation(scenario.invoiceId(), newStaff("DIRECTOR"), cancellationBody("LATE_FEE_CORRECTION", "Correccion"), 400);
+
+        assertThat(result.getResponse().getContentAsString()).contains("INVALID_CREDIT_NOTE_REASON");
+    }
+
+    @Test
     @Tag("B2-12")
     @Tag("D-238")
     void withdrawalReasonIsRejected() throws Exception {
@@ -271,7 +320,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         authorizationRequestExpirer.expireDueRequests();
 
         assertThat(jdbc.queryForObject("select status from authorization_request where id = ?", String.class, requestId)).isEqualTo("PENDING");
-        payAccount(scenario.accountId(), "80000.00", LocalDate.of(2027, 3, 11));
+        BillingTestFixtures.payInvoiceInFull(invoiceRepository.findById(scenario.invoiceId()).orElseThrow());
         decide("approve", requestId, director, 409);
         assertThat(jdbc.queryForObject("select resume_outcome from authorization_request where id = ?", String.class, requestId)).isEqualTo("REJECTED_ON_RESUME");
     }
@@ -447,7 +496,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         long withdrawnRequest = pendingRequestId(requestCreditNote(withdrawn.invoiceId(), administrative, creditNoteBody("BILLING_ERROR", "Error", 1, "1000.00"), 202));
         for (Scenario scenario : List.of(rejected, withdrawn)) {
             inTransaction(() -> {
-                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
+                service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), BillingTestFixtures.seedApprovedPaymentRow(scenario.accountId(), ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
                 return null;
             });
             assertThat(paymentStatusOf(scenario.invoiceId())).isEqualTo("PENDING");

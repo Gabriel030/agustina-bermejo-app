@@ -1,11 +1,10 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.testsupport.MigrationTestDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;
 import java.util.Map;
@@ -13,16 +12,14 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@Tag("migration")
 class CreditNoteCutoverMigrationTest {
 
     @Test
     @Tag("D-144")
     @Tag("D-165")
     void ledgerEntriesPointingToLegacyCreditNotesAreRemovedAndTheLedgerIsRebuiltBeforeTheForeignKeyExists() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("102").load().migrate();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("102")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into address default values");
             Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);
@@ -68,10 +65,7 @@ class CreditNoteCutoverMigrationTest {
     @Test
     @Tag("D-144")
     void theMigrationAbortsWhenThereAreCreditBalancePaymentsOrLegacyCreditApplications() {
-        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
-            postgres.start();
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("102").load().migrate();
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("102")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into address default values");
             Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);

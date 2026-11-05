@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,8 +16,8 @@ import { useMisSolicitudesCarrera, useMisSolicitudesCurso } from '@/features/enr
 // navegan a un detalle: no existe pantalla de detalle de solicitud de curso
 // (no hace falta — no tiene documentación que subir, ver spec funcional).
 export function TabMisSolicitudes() {
-  const { data: solicitudesCarrera, isLoading: cargandoCarrera, isError: errorCarrera } = useMisSolicitudesCarrera();
-  const { data: solicitudesCurso, isLoading: cargandoCurso, isError: errorCurso } = useMisSolicitudesCurso();
+  const { data: solicitudesCarrera, isLoading: cargandoCarrera, isError: errorCarrera, refetch: refetchCarrera } = useMisSolicitudesCarrera();
+  const { data: solicitudesCurso, isLoading: cargandoCurso, isError: errorCurso, refetch: refetchCurso } = useMisSolicitudesCurso();
 
   const filas = useMemo(() => {
     const carrera = (solicitudesCarrera ?? []).map((s) => ({
@@ -37,7 +38,15 @@ export function TabMisSolicitudes() {
   }, [solicitudesCarrera, solicitudesCurso]);
 
   if (errorCarrera || errorCurso) {
-    return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar tus solicitudes. Probá recargar la página.</GlassCard>;
+    return (
+      <LoadErrorState
+        onRetry={() => {
+          refetchCarrera();
+          refetchCurso();
+        }}
+        resource="tus solicitudes"
+      />
+    );
   }
   if (cargandoCarrera || cargandoCurso) {
     return (

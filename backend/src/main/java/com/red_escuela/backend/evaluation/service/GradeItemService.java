@@ -1,13 +1,14 @@
 package com.red_escuela.backend.evaluation.service;
 
-import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import java.util.function.BooleanSupplier;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
+import com.red_escuela.backend.enrollment.api.SectionEnrollmentOutcomeRecorder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
+import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
@@ -15,16 +16,14 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
+import com.red_escuela.backend.evaluation.exception.InvalidGradeItemWeightException;
 import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
-import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
-import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
+import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
-import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester;
+import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 
 @Service
 public class GradeItemService {
@@ -44,51 +43,49 @@ public class GradeItemService {
     private static final int WORKING_SCALE = 6;
 
     private final GradeItemRepository gradeItemRepository;
-    private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
-    private final SubjectSectionInstructorRepository subjectSectionInstructorRepository;
-    private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
+    private final SectionEnrollmentFinder sectionEnrollmentFinder;
+    private final SectionEnrollmentOutcomeRecorder sectionEnrollmentOutcomeRecorder;
+    private final SectionTeachingFinder sectionTeachingFinder;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
-    private final GraduationRequestAutoRequester graduationRequestAutoRequester;
-    private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final GraduationRequestTriggerPort graduationRequestTrigger;
+    private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
-            SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            SubjectSectionInstructorRepository subjectSectionInstructorRepository,
-            CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
+            SectionEnrollmentFinder sectionEnrollmentFinder,
+            SectionEnrollmentOutcomeRecorder sectionEnrollmentOutcomeRecorder,
+            SectionTeachingFinder sectionTeachingFinder,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
-            GraduationRequestAutoRequester graduationRequestAutoRequester,
-            AttendanceRiskCalculator attendanceRiskCalculator,
+            GraduationRequestTriggerPort graduationRequestTrigger,
+            AbsenceFreeStatusChecker absenceFreeStatusChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator) {
         this.gradeItemRepository = gradeItemRepository;
-        this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
-        this.subjectSectionInstructorRepository = subjectSectionInstructorRepository;
-        this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
+        this.sectionEnrollmentFinder = sectionEnrollmentFinder;
+        this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
+        this.sectionTeachingFinder = sectionTeachingFinder;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
-        this.graduationRequestAutoRequester = graduationRequestAutoRequester;
-        this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.graduationRequestTrigger = graduationRequestTrigger;
+        this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
     }
 
     @Transactional
     public GradeItem loadProgramEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        requireWeightBetweenZeroAndOne(request);
+        sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
+        SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         if (scheme == null) {
             throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
         }
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
-                () -> subjectSectionInstructorRepository
-                        .existsBySectionIdAndInstructorId(enrollment.getSubjectSection().getId(), instructorId),
+                () -> sectionTeachingFinder
+                        .teaches(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
 
         GradeItem gradeItem = gradeItemRepository
@@ -106,14 +103,14 @@ public class GradeItemService {
 
     @Transactional
     public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
-        subjectSectionEnrollmentRepository.findById(enrollmentId)
+        sectionEnrollmentFinder.findProgramEnrollmentIfPresent(enrollmentId)
                 .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
                 .ifPresent(enrollment -> applyProgramEnrollmentCondition(enrollment, false));
     }
 
     @Transactional
     public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
-        courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
+        sectionEnrollmentFinder.findCourseEnrollmentIfPresent(enrollmentId)
                 .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
                 .ifPresent(enrollment -> applyCourseEnrollmentCondition(enrollment, false));
     }
@@ -125,38 +122,32 @@ public class GradeItemService {
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
         var current = enrollment.statusAssumingRegularWhen(finalCorrection);
         CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
-                current, () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
+                current, () -> absenceFreeStatusChecker.isProgramEnrollmentFreeByAbsences(enrollmentId));
         if (result == null && finalCorrection) {
             result = new CourseworkResult(current, null, null);
         }
         if (result != null) {
-            enrollment.setStatus(result.status());
-            if (result.finalScore() != null) {
-                enrollment.setFinalScore(result.finalScore());
-                enrollment.setFinalGradeType(result.finalGradeType());
-            } else if (finalCorrection) {
-                enrollment.setFinalScore(null);
-                enrollment.setFinalGradeType(null);
-            }
-            subjectSectionEnrollmentRepository.save(enrollment);
+            sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
+                    enrollmentId, result.status(), result.finalScore(), result.finalGradeType(), finalCorrection);
             if (result.status() == EnrollmentStatus.APPROVED) {
-                graduationRequestAutoRequester.createIfEligible(enrollment.getProgramEnrollment().getId());
+                graduationRequestTrigger.requestGraduationIfEligible(enrollment.getProgramEnrollment().getId());
             }
         }
     }
 
     @Transactional
     public GradeItem loadCourseEnrollmentGrade(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
-        CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        requireWeightBetweenZeroAndOne(request);
+        sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
+        CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         if (scheme == null) {
             throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
         }
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
-                () -> courseSubjectSectionInstructorRepository
-                        .existsBySectionIdAndInstructorId(enrollment.getCourseSubjectSection().getId(), instructorId),
+                () -> sectionTeachingFinder
+                        .teaches(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
 
         GradeItem gradeItem = gradeItemRepository
@@ -179,20 +170,13 @@ public class GradeItemService {
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
         var current = enrollment.statusAssumingRegularWhen(finalCorrection);
         CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
-                current, () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
+                current, () -> absenceFreeStatusChecker.isCourseEnrollmentFreeByAbsences(enrollmentId));
         if (result == null && finalCorrection) {
             result = new CourseworkResult(current, null, null);
         }
         if (result != null) {
-            enrollment.setStatus(result.status());
-            if (result.finalScore() != null) {
-                enrollment.setFinalScore(result.finalScore());
-                enrollment.setFinalGradeType(result.finalGradeType());
-            } else if (finalCorrection) {
-                enrollment.setFinalScore(null);
-                enrollment.setFinalGradeType(null);
-            }
-            courseSubjectSectionEnrollmentRepository.save(enrollment);
+            sectionEnrollmentOutcomeRecorder.recordCourseOutcome(
+                    enrollmentId, result.status(), result.finalScore(), result.finalGradeType(), finalCorrection);
         }
     }
 
@@ -234,13 +218,20 @@ public class GradeItemService {
         }
         ExamBoard examBoard = examBoardRepository.findById(examBoardId)
                 .orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
-        if (examBoard.getStatus() == com.red_escuela.backend.evaluation.entity.ExamBoardStatus.CLOSED) {
+        if (examBoard.getStatus() != com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED) {
             throw new ExamBoardClosedException(examBoardId);
         }
         if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
             throw new NotOwnSectionException(instructorId, examBoardId);
         }
         return examBoard;
+    }
+
+    private void requireWeightBetweenZeroAndOne(CreateGradeItemRequest request) {
+        Double weight = request.weight();
+        if (weight != null && (weight.isNaN() || weight < 0.0 || weight > 1.0)) {
+            throw new InvalidGradeItemWeightException(weight);
+        }
     }
 
     private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {

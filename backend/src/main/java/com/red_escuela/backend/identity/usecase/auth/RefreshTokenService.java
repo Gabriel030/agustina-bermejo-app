@@ -1,40 +1,20 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
-import com.red_escuela.backend.identity.entity.RefreshToken;
-import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
-import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
-import com.red_escuela.backend.identity.service.AuthTokenIssuer;
+import com.red_escuela.backend.identity.dto.AuthTokens;
+import com.red_escuela.backend.identity.service.RefreshTokenRotation;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.identity.util.TokenHashUtil;
-import com.red_escuela.backend.shared.time.ApplicationTime;
-import org.springframework.transaction.annotation.Transactional;
-
 
 @UseCase
 public class RefreshTokenService implements RefreshTokenUseCase {
 
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final AuthTokenIssuer authTokenIssuer;
+    private final RefreshTokenRotation refreshTokenRotation;
 
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, AuthTokenIssuer authTokenIssuer) {
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.authTokenIssuer = authTokenIssuer;
+    public RefreshTokenService(RefreshTokenRotation refreshTokenRotation) {
+        this.refreshTokenRotation = refreshTokenRotation;
     }
 
     @Override
-    @Transactional
     public AuthTokens refresh(String rawRefreshToken) {
-        String hash = TokenHashUtil.sha256Hex(rawRefreshToken);
-        RefreshToken existing = refreshTokenRepository.findByTokenHash(hash)
-                .filter(rt -> !rt.getRevoked())
-                .filter(rt -> rt.getExpiresAt().isAfter(ApplicationTime.now()))
-                .filter(rt -> rt.getPerson().getStatus() == StatusType.ACTIVE)
-                .orElseThrow(InvalidRefreshTokenException::new);
-
-        existing.setRevoked(true);
-        refreshTokenRepository.save(existing);
-
-        return authTokenIssuer.issueTokens(existing.getPerson());
+        return refreshTokenRotation.rotate(rawRefreshToken);
     }
 }

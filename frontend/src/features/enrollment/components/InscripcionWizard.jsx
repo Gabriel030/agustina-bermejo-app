@@ -1,9 +1,10 @@
-import { useReducer, useState } from 'react';
+import { newIdempotencyKey } from '@/api/idempotencyKey';
+import { useReducer, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, Clock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
@@ -17,10 +18,13 @@ import {
   useSolicitarCarrera,
   useInscribirmeCurso,
   useActualizarPerfilPropio,
-  useAgregarDocumentoSolicitudCarrera,
 } from '@/features/enrollment/hooks/useCatalogo';
 import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
-import { formatMoney, cn } from '@/lib/utils';
+import { BankTransferReceiptFields } from '@/components/billing/BankTransferReceiptFields';
+import { useReceiptFields } from '@/components/billing/useReceiptFields';
+import { buildCourseEnrollmentBody, receiptFormErrors, receiptSubmissionFailure, todayIsoDate } from '@/lib/bankTransferReceipt';
+import { formatDate } from '@/lib/billing';
+import { formatMoney, moneyValue, cn } from '@/lib/utils';
 
 // Tipos de documento requeridos para carrera (Épica 7 Fase 3, UX del wizard) —
 // los cursos no piden documentación (ver TabMisSolicitudes.jsx). El input de
@@ -78,6 +82,8 @@ function MotivoDeshabilitado({ id, faltantes, visible }) {
 }
 
 const MENSAJES_ERROR_INSCRIPCION = {
+  PROGRAM_NOT_AVAILABLE: 'Esta carrera ya no está disponible para inscripción.',
+  COURSE_NOT_AVAILABLE: 'Este curso ya no está disponible para inscripción.',
   ALREADY_HAS_PENDING_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
   PENDING_COURSE_ENROLLMENT_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
   ALREADY_ENROLLED_IN_COURSE: 'Ya tenés una inscripción activa en este curso.',
@@ -88,8 +94,19 @@ const MENSAJES_ERROR_INSCRIPCION = {
   DNI_REQUIRED: 'Cargá tu documento para poder enviar la solicitud.',
   DNI_ALREADY_EXISTS: 'Ese documento ya está registrado en otra cuenta. Revisalo en tus datos personales.',
   INVALID_DOCUMENT_NUMBER: 'El número de documento no tiene un formato válido para el tipo elegido.',
-  STUDENT_IN_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
+  OUTSTANDING_DEBT_BLOCKS_REENROLLMENT: 'Tenés deuda pendiente. Regularizala antes de inscribirte; si está en un pedido del director, esperá su decisión.',
   PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
+  ADMISSION_FEE_AWAITING_PAYMENT: 'Tu solicitud ya fue aprobada y tiene una matrícula de ingreso por pagar. Revisá Mis facturas.',
+  CHARGE_REJECTED: 'El cobro fue rechazado. Revisá los datos del pago o probá con otro medio.',
+  AMBIGUOUS_SECTION: 'Este curso tiene más de una comisión por módulo y todavía no podés elegir una desde acá. Consultá en Secretaría.',
+  ENROLLMENT_FEE_NOT_PAID: 'Primero tenés que pagar la matrícula para poder inscribirte.',
+  ENROLLMENT_WINDOW_CLOSED: 'El período de inscripción está cerrado.',
+  PROGRAM_ENROLLMENT_REQUIRED: 'Primero tenés que estar inscripto en la carrera.',
+  REQUIRED_APPLICATION_DOCUMENTS_MISSING: 'Faltan documentos. Adjuntá el frente y el dorso del DNI y el analítico del secundario.',
+  UNSUPPORTED_FILE_TYPE: 'Alguno de los archivos no es un PDF, JPG o PNG válido. Revisá los tres documentos y probá de nuevo.',
+  MAX_UPLOAD_SIZE_EXCEEDED: 'Los archivos juntos son demasiado pesados (máximo 10 MB en total). Achicá las imágenes y probá de nuevo.',
+  APPLICATION_DOCUMENT_TOO_LARGE: 'Alguno de los archivos es demasiado grande (máximo 3 MB cada uno). Achicá la imagen y probá de nuevo.',
+  STUDENT_NOT_ACTIVE: 'Tu cuenta no está activa. Consultá en Secretaría.',
 };
 
 function pasosDe(tipo) {
@@ -125,11 +142,11 @@ function estadoInicial({ tipo }) {
     paso: pasosDe(tipo)[0].key,
     cohortId: null,
     documentos: {},
-    comprobante: null,
     visitados: [pasosDe(tipo)[0].key],
     enviando: false,
     error: null,
     exito: false,
+    estadoInscripcion: null,
   };
 }
 
@@ -148,21 +165,19 @@ function reducer(state, action) {
       return { ...state, documentos: { ...state.documentos, [action.tipo]: action.file } };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso, error: null, visitados: marcarVisitado(state, action.paso) };
-    case 'ELEGIR_COMPROBANTE':
-      return { ...state, comprobante: action.file, error: null };
     case 'ENVIANDO':
       return { ...state, enviando: true, error: null };
     case 'ERROR':
       return { ...state, enviando: false, error: action.message };
     case 'EXITO':
-      return { ...state, enviando: false, exito: true };
+      return { ...state, enviando: false, exito: true, estadoInscripcion: action.estadoInscripcion ?? null };
     default:
       return state;
   }
 }
 
 // tipo: 'carrera' | 'curso'. target: { id, name }. cohorts/pricing según tipo.
-export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
+export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cursoLleno = false }) {
   const navigate = useNavigate();
   const { usuario, refrescarPerfil } = useAuth();
   const [state, dispatch] = useReducer(reducer, { tipo }, estadoInicial);
@@ -177,12 +192,24 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   } = useForm({ resolver: zodResolver(datosSchema), mode: 'onTouched', defaultValues: datosIniciales(usuario) });
   const datos = watch();
   const [modalConfirmarAbierto, setModalConfirmarAbierto] = useState(false);
+  const [erroresDeComprobante, setErroresDeComprobante] = useState({});
+  const claveIdempotencia = useRef(null);
   const pasos = pasosDe(tipo);
+  const cuotaDelCurso = tipo === 'curso' ? pricing?.cuotaMensual : null;
+  const titularInicial = usuario ? `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() : '';
+  const comprobante = useReceiptFields({
+    initialAmount: moneyValue(cuotaDelCurso),
+    defaultHolderName: titularInicial,
+    onEdit: () => {
+      claveIdempotencia.current = null;
+      setErroresDeComprobante({});
+    },
+  });
+  const hoy = todayIsoDate();
 
   const solicitarCarrera = useSolicitarCarrera();
   const inscribirmeCurso = useInscribirmeCurso();
   const actualizarPerfil = useActualizarPerfilPropio();
-  const agregarDocumento = useAgregarDocumentoSolicitudCarrera();
 
   const cohorteElegida = cohorts?.find((c) => c.id === state.cohortId);
   const montoAPagar =
@@ -208,14 +235,41 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
     return [...camposDatosFaltantes(), ...documentosFaltantes()];
   }
 
-  function faltantesDeSolicitud() {
-    const faltantes = faltantesDeDocumentacion();
-    if (tipo === 'curso' && !state.comprobante) faltantes.push('el comprobante de pago');
+  function erroresLocalesDeComprobante() {
+    return receiptFormErrors({
+      file: comprobante.file,
+      operationNumber: comprobante.operationNumber,
+      originAccount: comprobante.originAccount,
+      holderName: comprobante.holderName,
+      amount: comprobante.amount,
+      firstInvoiceOutstanding: moneyValue(cuotaDelCurso),
+    });
+  }
+
+  function faltantesDeComprobante() {
+    const errores = erroresLocalesDeComprobante();
+    const etiquetas = {
+      file: 'el comprobante de pago',
+      operationNumber: 'el número de operación',
+      originAccount: 'el CBU o alias de origen',
+      holderName: 'el titular de la cuenta',
+      amount: 'un monto que cubra la cuota',
+    };
+    const faltantes = Object.keys(etiquetas).filter((campo) => errores[campo]).map((campo) => etiquetas[campo]);
+    if (comprobante.fileError && !errores.file) faltantes.push('un comprobante válido');
+    if (!cuotaDelCurso?.currency) faltantes.push('el precio del curso');
     return faltantes;
   }
 
-  async function confirmarSolicitud() {
+  function faltantesDeSolicitud() {
+    const faltantes = faltantesDeDocumentacion();
+    if (tipo === 'curso') faltantes.push(...faltantesDeComprobante());
+    return faltantes;
+  }
+
+  async function enviarSolicitud() {
     setModalConfirmarAbierto(false);
+    claveIdempotencia.current ??= newIdempotencyKey();
     dispatch({ type: 'ENVIANDO' });
     try {
       const valores = getValues();
@@ -239,20 +293,35 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
       const resultado =
         tipo === 'carrera'
-          ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId })
-          : await inscribirmeCurso.mutateAsync({ courseId: target.id, comprobante: state.comprobante });
+          ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId, documentos: state.documentos })
+          : await inscribirmeCurso.mutateAsync({
+              body: buildCourseEnrollmentBody({
+                courseId: target.id,
+                file: comprobante.file,
+                amount: comprobante.amount,
+                currency: cuotaDelCurso.currency,
+                operationNumber: comprobante.operationNumber,
+                originAccount: comprobante.originAccount,
+                holderName: comprobante.holderName,
+                bankName: comprobante.bankName,
+                transferDate: hoy,
+              }),
+              idempotencyKey: claveIdempotencia.current,
+            });
 
-      if (tipo === 'carrera') {
-        for (const doc of DOCUMENTOS_CARRERA) {
-          await agregarDocumento.mutateAsync({ applicationId: resultado.id, type: doc.tipo, file: state.documentos[doc.tipo] });
-        }
-      }
-
-      dispatch({ type: 'EXITO' });
+      dispatch({ type: 'EXITO', estadoInscripcion: tipo === 'curso' ? resultado?.courseEnrollmentStatus : null });
     } catch (err) {
+      const fallo = tipo === 'curso' && !MENSAJES_ERROR_INSCRIPCION[err.code] ? receiptSubmissionFailure(err) : null;
+      if (fallo) setErroresDeComprobante(fallo.fieldErrors);
       dispatch({
         type: 'ERROR',
-        message: MENSAJES_ERROR_INSCRIPCION[err.code] ?? 'No pudimos completar la inscripción. Probá de nuevo.',
+        message:
+          MENSAJES_ERROR_INSCRIPCION[err.code] ??
+          (fallo?.duplicate
+            ? 'Ya tenemos registrada esa transferencia. Si ya la enviaste, no hace falta repetirla: revisá Mis solicitudes.'
+            : fallo?.message) ??
+          (fallo && Object.keys(fallo.fieldErrors).length > 0 ? 'Revisá los datos del comprobante.' : null) ??
+          'No pudimos completar la inscripción. Probá de nuevo.',
       });
     }
   }
@@ -267,7 +336,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
         <div className="max-w-[420px] text-[13.5px] text-ink-soft">
           {tipo === 'carrera'
             ? `Tu solicitud para ${target.name} quedó en revisión y no se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener un plazo para pagarla: recién con ese pago queda confirmada tu inscripción. Te avisamos cuando haya novedades.`
-            : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
+            : state.estadoInscripcion === 'WAITLISTED'
+              ? 'Tu comprobante queda en revisión. El curso no tiene cupos disponibles, así que quedaste en lista de espera: te avisamos si se libera un lugar.'
+              : cursoLleno
+                ? 'Tu comprobante queda en revisión. Como el curso estaba completo, si te falta lugar vas a quedar en lista de espera. Te avisamos cuando haya novedades.'
+                : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
         </div>
         <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="gradient" className="mt-2 px-6">
           Ir a mis solicitudes
@@ -498,6 +571,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <div className="font-heading text-xl font-bold text-ink">{formatMoney(montoAPagar) || 'A definir'}</div>
             <div className="mt-1 text-xs text-ink-faint">{tipo === 'carrera' ? 'Matrícula' : 'Primera cuota'}</div>
           </div>
+          {tipo === 'curso' && cursoLleno && (
+            <p className="rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
+              Este curso no tiene cupos disponibles. Si enviás el comprobante, quedás en lista de espera.
+            </p>
+          )}
 
           <div>
             <div className="mb-2 text-xs font-semibold text-ink-soft">Elegí el método de pago</div>
@@ -519,30 +597,18 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
           {state.error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{state.error}</div>}
 
-          <label
-            className={cn(
-              'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed px-4 py-8 text-center transition-colors hover:bg-neutral-bg',
-              state.comprobante ? 'border-success bg-success-bg' : 'border-border',
-            )}
-          >
-            <span className="text-[13px] font-semibold text-ink">
-              {state.comprobante ? state.comprobante.name : 'Subir comprobante de pago'}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-heading text-sm font-bold text-ink">Datos del comprobante</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-bg px-3 py-1 text-xs font-semibold text-ink-soft">
+              <Clock className="size-3.5" aria-hidden="true" />
+              Transferencia de hoy, {formatDate(hoy)}
             </span>
-            {state.comprobante ? (
-              <span className="flex items-center gap-1 text-xs font-semibold text-success">
-                <CircleCheck className="h-3.5 w-3.5" /> Cargado correctamente
-              </span>
-            ) : (
-              <span className="text-xs text-ink-faint">PDF, JPG o PNG</span>
-            )}
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => { setTocado(true); dispatch({ type: 'ELEGIR_COMPROBANTE', file: e.target.files?.[0] }); }}
-            />
-          </label>
+          </div>
+          <BankTransferReceiptFields
+            fields={comprobante}
+            errors={{ ...erroresDeComprobante, ...(comprobante.fileError ? { file: comprobante.fileError } : {}) }}
+          />
+          <p className="text-xs text-ink-faint">Si transferiste otro día, avisale a Secretaría.</p>
 
           <MotivoDeshabilitado id="motivo-solicitud" faltantes={faltantesDeSolicitud()} visible={tocado || isDirty} />
           <div className="flex justify-between gap-3">
@@ -550,13 +616,13 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               ← Volver
             </Button>
             <Button
-              onClick={() => setModalConfirmarAbierto(true)}
+              onClick={enviarSolicitud}
               disabled={faltantesDeSolicitud().length > 0}
               aria-describedby="motivo-solicitud"
               loading={state.enviando}
               variant="gradient"
             >
-              Confirmar solicitud
+              Enviar comprobante
             </Button>
           </div>
         </GlassCard>
@@ -568,24 +634,14 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <div className="font-heading text-base font-bold text-ink">Confirmar solicitud</div>
           </DialogHeader>
           <div className="text-[13px] text-ink-soft">
-            {tipo === 'carrera' ? (
-              <>
-                Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
-                recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
-              </>
-            ) : (
-              <>
-                Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong> por{' '}
-                <strong className="text-ink">{formatMoney(montoAPagar) || 'el monto informado'}</strong>. Una vez enviada, no vas a poder
-                modificarla hasta que la revisen.
-              </>
-            )}
+            Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
+            recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalConfirmarAbierto(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button onClick={confirmarSolicitud} variant="gradient">
+            <Button onClick={enviarSolicitud} variant="gradient">
               Sí, confirmar
             </Button>
           </DialogFooter>

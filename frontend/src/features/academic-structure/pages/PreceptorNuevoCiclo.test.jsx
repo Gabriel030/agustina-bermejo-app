@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { errorBody } from '@/test/fixtures/errors';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
@@ -173,7 +174,7 @@ describe('PreceptorNuevoCiclo', () => {
     mockExistingCycle();
     server.use(
       http.post(`${API}/academic-offering-cycles/16/sections`, () =>
-        HttpResponse.json({ code: 'SUBJECT_NOT_OPENABLE_FOR_SECTIONS' }, { status: 409 }),
+        HttpResponse.json(errorBody('SUBJECT_NOT_OPENABLE_FOR_SECTIONS'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();
@@ -189,12 +190,73 @@ describe('PreceptorNuevoCiclo', () => {
     ).toBeInTheDocument();
   });
 
+  it('sends no maxAbsencePercent when the section has no attendance limit', async () => {
+    mockCatalog();
+    mockExistingCycle();
+    let body = null;
+    server.use(
+      http.post(`${API}/academic-offering-cycles/16/sections`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(errorBody('SECTION_SCHEDULE_CONFLICT'), { status: 409 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWizard('/preceptor/oferta-academica/nuevo-ciclo?cicloId=16');
+
+    await openSectionForm(user);
+    await user.type(screen.getByLabelText('Cupo'), '15');
+    await user.selectOptions(screen.getByLabelText('Aula'), '3');
+    await user.click(screen.getByRole('button', { name: 'Agregar comisión' }));
+
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body).not.toHaveProperty('maxAbsencePercent');
+  });
+
+  it('sends maxAbsencePercent as a number in points when the section has an attendance limit', async () => {
+    mockCatalog();
+    mockExistingCycle();
+    let body = null;
+    server.use(
+      http.post(`${API}/academic-offering-cycles/16/sections`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(errorBody('SECTION_SCHEDULE_CONFLICT'), { status: 409 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWizard('/preceptor/oferta-academica/nuevo-ciclo?cicloId=16');
+
+    await openSectionForm(user);
+    await user.type(screen.getByLabelText('Cupo'), '15');
+    await user.selectOptions(screen.getByLabelText('Aula'), '3');
+    await user.click(screen.getByRole('radio', { name: 'Con límite de ausentismo' }));
+    await user.type(screen.getByLabelText('Porcentaje máximo de ausentismo'), '25');
+    expect(screen.getByText(/en 40 clases dictadas, desde la ausencia número 11/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Agregar comisión' }));
+
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body.maxAbsencePercent).toBe(25);
+  });
+
+  it('blocks the section while the attendance limit is outside 0 to 100', async () => {
+    mockCatalog();
+    mockExistingCycle();
+    const user = userEvent.setup();
+    renderWizard('/preceptor/oferta-academica/nuevo-ciclo?cicloId=16');
+
+    await openSectionForm(user);
+    await user.click(screen.getByRole('radio', { name: 'Con límite de ausentismo' }));
+    await user.type(screen.getByLabelText('Porcentaje máximo de ausentismo'), '120');
+
+    expect(screen.getByText('Ingresá un valor entre 0 y 100.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar comisión' })).toBeDisabled();
+  });
+
   it('explains a classroom conflict reported by the API', async () => {
     mockCatalog();
     mockExistingCycle();
     server.use(
       http.post(`${API}/academic-offering-cycles/16/sections`, () =>
-        HttpResponse.json({ code: 'SECTION_SCHEDULE_CONFLICT' }, { status: 409 }),
+        HttpResponse.json(errorBody('SECTION_SCHEDULE_CONFLICT'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();
@@ -214,7 +276,7 @@ describe('PreceptorNuevoCiclo', () => {
     mockCatalog();
     server.use(
       http.post(`${API}/academic-offering-cycles`, () =>
-        HttpResponse.json({ code: 'CYCLE_ALREADY_IN_PROGRESS' }, { status: 409 }),
+        HttpResponse.json(errorBody('CYCLE_ALREADY_IN_PROGRESS'), { status: 409 }),
       ),
     );
     const user = userEvent.setup();

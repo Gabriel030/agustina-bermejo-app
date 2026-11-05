@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 
 import java.time.LocalDateTime;
@@ -16,8 +17,8 @@ public record AcademicOfferingCycleResponse(
         String createdByName,
         LocalDateTime createdAt,
         String decidedByName,
-        LocalDateTime decidedAt,
-        String rejectionReason
+        @Schema(nullable = true) LocalDateTime decidedAt,
+        @Schema(nullable = true) String rejectionReason
 ) {
     public static AcademicOfferingCycleResponse from(AcademicOfferingCycle c) {
         return new AcademicOfferingCycleResponse(

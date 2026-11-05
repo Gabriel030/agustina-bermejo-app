@@ -9,5 +9,4 @@
 * `c.r.b.b.service.InvoiceQueryService` (in Billing)
 * `c.r.b.i.service.CurrentPersonService` (in Identity)
 * `c.r.b.b.service.EnrollmentFeeRequirementService` (in Billing)
-* `c.r.b.b.service.EnrollmentWithdrawalCreditService` (in Billing)
 |===

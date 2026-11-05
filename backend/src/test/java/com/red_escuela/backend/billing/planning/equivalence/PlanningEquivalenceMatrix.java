@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.equivalence;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -54,7 +55,7 @@ public final class PlanningEquivalenceMatrix {
 
     private static ProgramYearBillingTemplate template(long id, int year, boolean dated, int installments, int count, int first, Integer second,
                                                        boolean paysWhilePaused, boolean requireFee, int lead, boolean blocks) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(year);
         term.setStartDate(dated ? LocalDateTime.of(year, 3, 1, 0, 0) : null);
         term.setEndDate(dated ? LocalDateTime.of(year, 12, 31, 23, 59) : null);

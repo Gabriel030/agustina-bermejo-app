@@ -197,6 +197,32 @@ describe('AlumnoPagoDetalle', () => {
     expect(screen.queryByText(/Registrado por/)).not.toBeInTheDocument();
   });
 
+  it('expands an installment financed only by a credit note and shows it as Nota de crédito N', async () => {
+    withReceipts([]);
+    server.use(
+      http.get(`${API}/me/program-enrollments/10/invoices`, () =>
+        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
+          invoice({
+            paymentStatus: 'PAID',
+            paid: '48000.00',
+            creditNotes: [
+              { creditNoteId: 5, creditNoteNumber: 'NC-0000005', amount: { amount: '48000.00', currency: 'ARS' }, description: 'Nota de crédito NC-0000005' },
+            ],
+          }),
+        ])),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderDetail('/alumno/pagos/carrera/10');
+
+    const toggle = await screen.findByRole('button', { name: /Ver detalle de/ });
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Nota de crédito NC-0000005')).toBeInTheDocument();
+  });
+
   it('does not make an installment without payments or receipts expandable', async () => {
     withReceipts([]);
     server.use(

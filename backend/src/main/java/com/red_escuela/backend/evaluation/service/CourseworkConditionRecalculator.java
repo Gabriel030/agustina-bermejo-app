@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
-import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
+import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 

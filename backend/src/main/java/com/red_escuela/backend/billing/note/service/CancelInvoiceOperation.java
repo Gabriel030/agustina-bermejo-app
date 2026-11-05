@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.note.service;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.discount.service.DiscountConsumptionService;
 import com.red_escuela.backend.billing.events.CreditNoteIssuedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEvent;
@@ -38,12 +39,15 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
     private final CreditNoteRepository creditNoteRepository;
     private final CreditNoteNumberGenerator numberGenerator;
     private final PolicySet<InvoiceCancellationContext> cancellationPolicies;
+    private final LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment;
+    private final DiscountConsumptionService discountConsumption;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public CancelInvoiceOperation(InvoiceCreditAccessService invoices, StudentCurrentAccountService accountService,
                                   CurrentAccountAllocationService allocationService, CreditNoteRepository creditNoteRepository,
                                   CreditNoteNumberGenerator numberGenerator, PolicySet<InvoiceCancellationContext> cancellationPolicies,
+                                  LateFeeAnnulmentOnInstallmentCancellation lateFeeAnnulment, DiscountConsumptionService discountConsumption,
                                   ApplicationEventPublisher eventPublisher, Clock clock) {
         this.invoices = invoices;
         this.accountService = accountService;
@@ -51,6 +55,8 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
         this.creditNoteRepository = creditNoteRepository;
         this.numberGenerator = numberGenerator;
         this.cancellationPolicies = cancellationPolicies;
+        this.lateFeeAnnulment = lateFeeAnnulment;
+        this.discountConsumption = discountConsumption;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -79,14 +85,32 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
     public void requireValidContext(CancelInvoiceCommand command) {
         Invoice invoice = invoices.findInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
+        lateFeeAnnulment.requireNoLateFeeDebitNoteUnderPaymentReview(invoice.getId());
     }
 
     @Override
     public CreditNote processOperation(CancelInvoiceCommand command) {
+        CreditNote note = cancelWithoutAllocatingCredit(command);
+        allocateAccountCreditOf(note.getInvoiceId(), command.actor());
+        return note;
+    }
+
+    public void allocateAccountCreditOf(Long invoiceId, StatusChangeActor actor) {
+        Long accountId = invoices.findAccountIdOf(invoiceId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(invoiceId));
+        allocationService.allocateAccountCreditToOldestInvoices(accountService.lockStudentCurrentAccount(accountId), LocalDate.now(clock), actor);
+    }
+
+    public CreditNote cancelWithoutAllocatingCredit(CancelInvoiceCommand command) {
         Long accountId = invoices.findAccountIdOf(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
+        discountConsumption.lockEnrollmentsOfDiscountsAppliedOn(command.invoiceId());
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(accountId);
         Invoice invoice = invoices.lockInvoice(command.invoiceId()).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(command.invoiceId()));
         requireAllowed(command, invoice);
+        for (CreditNote annulment : lateFeeAnnulment.annulLiveLateFeesOfInstallment(invoice)) {
+            accountService.recordCreditNoteIssuedCredit(account, annulment.getId(), annulment.getOffsetAmount(), annulment.getFreeCreditAmount(), LocalDate.now(clock),
+                    "Anulación del recargo " + annulment.getInvoiceNumber() + " por la cancelación de la cuota " + invoice.getInvoiceNumber().value() + " (nota de crédito "
+                            + annulment.getCreditNoteNumber().value() + ")");
+        }
         LocalDate businessDate = LocalDate.now(clock);
         StatusChangeActor actor = command.actor();
         CreditNote note = CreditNote.issueCancellationCreditNoteForInvoice(invoice, command.reason(), command.justification(), numberGenerator.nextCreditNoteNumber(),
@@ -96,7 +120,6 @@ public class CancelInvoiceOperation implements BillingOperation<CancelInvoiceCom
         accountService.recordCreditNoteIssuedCredit(account, note.getId(), note.getOffsetAmount(), note.getFreeCreditAmount(), businessDate,
                 "Cancelación de la factura " + note.getInvoiceNumber() + " (nota de crédito " + note.getCreditNoteNumber().value() + ")");
         invoice.pullRecordedDomainEvents().stream().filter(InvoiceCancelledEvent.class::isInstance).forEach(eventPublisher::publishEvent);
-        allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, actor);
         log.info("Factura cancelada: numero={}, notaDeCredito={}, motivo={}, claveLiberada={}, origenDeSistema={}, authorizationRequestId={}", note.getInvoiceNumber(),
                 note.getCreditNoteNumber().value(), note.getReason(), command.releasesChargeKeys(), command.systemOrigin(), note.getAuthorizationRequestId());
         return note;

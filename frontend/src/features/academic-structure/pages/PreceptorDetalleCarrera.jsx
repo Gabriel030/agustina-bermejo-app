@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Users, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Calendar, ClipboardList } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { usePrograma } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hooks/useCiclos';
+import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
 import { ResumeCycleButton } from '@/features/academic-structure/components/ResumeCycleButton';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 
@@ -34,7 +36,8 @@ function formatHora(t) {
   return t?.slice(0, 5) ?? '—';
 }
 
-function FilaSeccion({ seccion }) {
+function FilaSeccion({ seccion, cicloId }) {
+  const basePath = useRoleBasePath();
   const cfg = SECCION_STATUS_CONFIG[seccion.status] ?? { label: seccion.status, tone: 'neutral' };
   const titular = seccion.instructors?.find((i) => i.role === 'LEAD');
   const slotsPrimero = seccion.slots?.[0];
@@ -69,14 +72,23 @@ function FilaSeccion({ seccion }) {
           <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         </div>
       </div>
+      <div className="mt-2">
+        <Button variant="outline" size="sm" asChild>
+          <Link to={`${basePath}/oferta-academica/ciclos/${cicloId}/comisiones/${seccion.id}/inscriptos`}>
+            <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
+            Inscriptos
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
 
 function PanelCiclo({ ciclo }) {
+  const basePath = useRoleBasePath();
   const navigate = useNavigate();
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
-  const { data: secciones, isLoading } = useCicloSecciones(ciclo.id);
+  const { data: secciones, isLoading, isError, error, refetch } = useCicloSecciones(ciclo.id);
 
   return (
     <GlassCard className="flex flex-col gap-4 p-4">
@@ -93,7 +105,7 @@ function PanelCiclo({ ciclo }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/preceptor/oferta-academica/calendario?termId=${ciclo.termId}`)}
+            onClick={() => navigate(`${basePath}/oferta-academica/calendario?termId=${ciclo.termId}`)}
           >
             <Calendar className="mr-1.5 h-3.5 w-3.5" />
             Calendario
@@ -107,11 +119,13 @@ function PanelCiclo({ ciclo }) {
         <div className="flex flex-col gap-2">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)}
         </div>
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="las comisiones" bare />
       ) : !secciones?.length ? (
         <EmptyState title="Este ciclo aún no tiene comisiones." className="py-6" />
       ) : (
         <div className="flex flex-col gap-2">
-          {secciones.map((s) => <FilaSeccion key={s.id} seccion={s} />)}
+          {secciones.map((s) => <FilaSeccion key={s.id} seccion={s} cicloId={ciclo.id} />)}
         </div>
       )}
     </GlassCard>
@@ -119,10 +133,23 @@ function PanelCiclo({ ciclo }) {
 }
 
 export function PreceptorDetalleCarrera() {
+  const basePath = useRoleBasePath();
   const { programaId } = useParams();
   const navigate = useNavigate();
-  const { data: programa, isLoading: loadingPrograma } = usePrograma(programaId);
-  const { data: ciclos, isLoading: loadingCiclos } = useCiclos({ programId: programaId });
+  const {
+    data: programa,
+    isLoading: loadingPrograma,
+    isError: programaFailed,
+    error: programaError,
+    refetch: refetchPrograma,
+  } = usePrograma(programaId);
+  const {
+    data: ciclos,
+    isLoading: loadingCiclos,
+    isError: ciclosFailed,
+    error: ciclosError,
+    refetch: refetchCiclos,
+  } = useCiclos({ programId: programaId });
   const [verAnteriores, setVerAnteriores] = useState(false);
 
   const ciclosActivos = (ciclos ?? []).filter(
@@ -141,12 +168,26 @@ export function PreceptorDetalleCarrera() {
     );
   }
 
+  if (programaFailed) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={programaError}
+          onRetry={refetchPrograma}
+          resource="la carrera"
+          backTo={`${basePath}/oferta-academica?tab=carreras`}
+          backLabel="la oferta académica"
+        />
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
         <div>
           <Link
-            to="/preceptor/oferta-academica?tab=carreras"
+            to={`${basePath}/oferta-academica?tab=carreras`}
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -154,7 +195,7 @@ export function PreceptorDetalleCarrera() {
           </Link>
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-xl font-bold text-ink">{programa?.name}</h1>
-            <Button variant="gradient" onClick={() => navigate('/preceptor/oferta-academica/nuevo-ciclo')}>
+            <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
               Iniciar alta de ciclo
             </Button>
           </div>
@@ -184,6 +225,8 @@ export function PreceptorDetalleCarrera() {
           <div className="flex flex-col gap-3">
             <Skeleton className="h-[200px] w-full rounded-2xl" />
           </div>
+        ) : ciclosFailed ? (
+          <LoadErrorState error={ciclosError} onRetry={refetchCiclos} resource="los ciclos" />
         ) : !ciclosMostrados.length ? (
           <GlassCard className="p-6">
             <EmptyState

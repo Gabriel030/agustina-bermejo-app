@@ -1,12 +1,14 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.testsupport.SharedSpyBeans;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.time.LocalDate;
 
@@ -16,9 +18,10 @@ import static org.mockito.ArgumentMatchers.any;
 
 @Tag("D-313")
 @Tag("D-253")
+@SharedSpyBeans
 class ResumeRejectedAllocationIT extends AbstractInvoiceCancellationIT {
 
-    @SpyBean
+    @Autowired
     private CurrentAccountAllocationService spiedAllocation;
 
     @AfterEach
@@ -37,7 +40,7 @@ class ResumeRejectedAllocationIT extends AbstractInvoiceCancellationIT {
         long requestId = pendingRequestId(requestCancellation(scenario.invoiceId(), administrative, cancellationBody("CANCELLATION", "Baja"), 202));
         requestCancellation(scenario.invoiceId(), director, cancellationBody("CANCELLATION", "Baja directa"), 201);
         inTransaction(() -> {
-            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(scenario.accountId()), BillingTestFixtures.seedApprovedPaymentRow(scenario.accountId(), ars("80000.00")), ars("80000.00"), LocalDate.of(2027, 3, 11), "Pago");
             return null;
         });
         assertThat(paymentStatusOf(otherInvoiceId)).isEqualTo("PENDING");

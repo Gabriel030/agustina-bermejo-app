@@ -1,21 +1,24 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
 import com.red_escuela.backend.billing.collections.domain.DailyLateFeeSchedule;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
+import com.red_escuela.backend.billing.collections.domain.LateFeeChargeCorrection;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPlanner;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
+import com.red_escuela.backend.billing.collections.domain.LateFeeFreeze;
 import com.red_escuela.backend.billing.collections.domain.PlannedLateFeePeriod;
 import com.red_escuela.backend.billing.collections.policy.LateFeeDebitNoteDraftFacts;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeOriginFacts;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentVersion;
+import com.red_escuela.backend.billing.events.LateFeeCutoffKind;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.enrollment.usecase.EnrollmentLifecycleQuery;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -26,18 +29,29 @@ import java.util.function.Predicate;
 
 @Component
 public class LateFeeContextLoader {
-    private static final Set<InvoicePaymentStatus> STATUSES_WITH_LATE_FEE_CANDIDATES = Set.of(InvoicePaymentStatus.OVERDUE, InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
+    private static final Set<InvoicePaymentStatus> STATUSES_WITH_LATE_FEE_CANDIDATES = Set.of(InvoicePaymentStatus.OVERDUE, InvoicePaymentStatus.PAYMENT_UNDER_REVIEW, InvoicePaymentStatus.PAID);
 
     private final LatePaymentVersionResolver versionResolver;
-    private final EnrollmentLifecycleQuery enrollmentLifecycle;
+    private final LateFeeFreezeResolver freezeResolver;
     private final LateFeeCalculationStrategy calculationStrategy;
+    private final InvoiceSettlementQueryService settlementQuery;
     private final LateFeeAccrualPlanner planner = new LateFeeAccrualPlanner();
 
-    public LateFeeContextLoader(LatePaymentVersionResolver versionResolver, EnrollmentLifecycleQuery enrollmentLifecycle,
-                                LateFeeCalculationStrategy calculationStrategy) {
+    public LateFeeContextLoader(LatePaymentVersionResolver versionResolver, LateFeeFreezeResolver freezeResolver,
+                                LateFeeCalculationStrategy calculationStrategy, InvoiceSettlementQueryService settlementQuery) {
         this.versionResolver = versionResolver;
-        this.enrollmentLifecycle = enrollmentLifecycle;
+        this.freezeResolver = freezeResolver;
         this.calculationStrategy = calculationStrategy;
+        this.settlementQuery = settlementQuery;
+    }
+
+    public Optional<ResolvedLateFeeCutoff> resolveCutoff(Invoice origin, LocalDate businessDate) {
+        return switch (origin.getPaymentStatus()) {
+            case OVERDUE, PAYMENT_UNDER_REVIEW -> Optional.of(new ResolvedLateFeeCutoff(LateFeeCutoff.closingOfMonthBefore(businessDate), Optional.empty()));
+            case PAID -> settlementQuery.findCurrentSettlementOfInvoice(origin.getId())
+                    .map(settlement -> new ResolvedLateFeeCutoff(LateFeeCutoff.settledOn(settlement.paymentDate()), Optional.of(settlement.allocationId())));
+            default -> Optional.empty();
+        };
     }
 
     public List<LateFeeIssuingContext> loadMissingPeriodContexts(Invoice origin, List<LateFeeAccrualPeriod> coveredPeriods, LocalDate businessDate,
@@ -45,41 +59,72 @@ public class LateFeeContextLoader {
         if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || !STATUSES_WITH_LATE_FEE_CANDIDATES.contains(origin.getPaymentStatus())) {
             return List.of();
         }
+        Optional<ResolvedLateFeeCutoff> resolvedCutoff = resolveCutoff(origin, businessDate);
+        if (resolvedCutoff.isEmpty()) {
+            return List.of();
+        }
+        LateFeeCutoff cutoff = resolvedCutoff.get().cutoff();
         Optional<LatePaymentVersion> dueDateVersion = versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId());
         if (dueDateVersion.isEmpty()) {
             return List.of();
         }
         LatePaymentTerms dueDateTerms = dueDateVersion.get().terms();
         DailyLateFeeSchedule schedule = new DailyLateFeeSchedule(origin.getDueDate(), dueDateTerms.gracePeriodDays());
-        if (!schedule.isPastGraceOn(businessDate)) {
+        if (cutoff.kind() == LateFeeCutoffKind.MONTH_CLOSE && !schedule.isPastGraceOn(businessDate)) {
             return List.of();
         }
-        LateFeeCutoff cutoff = LateFeeCutoff.closingOfMonthBefore(businessDate);
         LateFeeOriginFacts facts = originFactsOf(origin);
-        Optional<LocalDate> enrollmentEndDate = findEnrollmentEndDate(facts);
-        boolean frozenByRuleOfTheEndDate = enrollmentEndDate.map(end -> timeline.termsOn(end, dueDateTerms).freezeLateFeesOnWithdrawal()).orElse(false);
-        Predicate<LocalDate> frozenOn = day -> frozenByRuleOfTheEndDate && enrollmentEndDate.map(day::isAfter).orElse(false);
-        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled(), frozenOn);
+        ChargingDays chargingDays = resolveChargingDays(facts, dueDateTerms, timeline);
+        LateFeeFreeze freeze = chargingDays.freeze();
+        Predicate<LocalDate> frozenOn = freeze.frozenOn();
+        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, chargingDays.enabledOn(), frozenOn);
         return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
-                dueDateVersion.get().versionId(), dueDateTerms, frozenOn, enrollmentEndDate,
+                dueDateVersion.get().versionId(), dueDateTerms, frozenOn, freeze.enrollmentEndDate(),
                 calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
-                Optional.empty())).toList();
+                resolvedCutoff.get().settlementAllocationId())).toList();
     }
 
-    private Optional<LocalDate> findEnrollmentEndDate(LateFeeOriginFacts facts) {
-        if (facts.programEnrollmentId() != null) {
-            return enrollmentLifecycle.findProgramEnrollmentEndDate(facts.programEnrollmentId());
+    public Optional<LateFeeIssuingContext> loadReinstatementContext(Invoice origin, InvoicePaymentStatus originStatus, LateFeeChargeCorrection correction, LocalDate businessDate,
+                                                                    LatePaymentTimeline timeline) {
+        if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || originStatus != InvoicePaymentStatus.OVERDUE) {
+            return Optional.empty();
         }
-        if (facts.courseEnrollmentId() != null) {
-            return enrollmentLifecycle.findCourseEnrollmentEndDate(facts.courseEnrollmentId());
+        Optional<LatePaymentVersion> dueDateVersion = versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId());
+        if (dueDateVersion.isEmpty()) {
+            return Optional.empty();
         }
-        return Optional.empty();
+        LatePaymentTerms dueDateTerms = dueDateVersion.get().terms();
+        LateFeeOriginFacts facts = originFactsOf(origin, originStatus);
+        ChargingDays chargingDays = resolveChargingDays(facts, dueDateTerms, timeline);
+        LateFeeAccrualPeriod range = new LateFeeAccrualPeriod(correction.getFirstCorrectedDay(), correction.getLastCorrectedDay());
+        int chargedDays = Math.min(correction.getCorrectedDays(), (int) range.firstDay().datesUntil(range.lastDay().plusDays(1))
+                .filter(day -> chargingDays.enabledOn().test(day) && !chargingDays.freeze().frozenOn().test(day)).count());
+        if (chargedDays == 0) {
+            return Optional.empty();
+        }
+        PlannedLateFeePeriod planned = new PlannedLateFeePeriod(range, chargedDays, LateFeeCutoffKind.REINSTATEMENT);
+        return Optional.of(new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned, dueDateVersion.get().versionId(), dueDateTerms,
+                chargingDays.freeze().frozenOn(), chargingDays.freeze().enrollmentEndDate(),
+                calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), chargedDays), businessDate, Optional.empty(),
+                Optional.of(correction.getId())));
+    }
+
+    private ChargingDays resolveChargingDays(LateFeeOriginFacts facts, LatePaymentTerms dueDateTerms, LatePaymentTimeline timeline) {
+        LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId(), dueDateTerms, timeline);
+        return new ChargingDays(freeze, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled());
+    }
+
+    private record ChargingDays(LateFeeFreeze freeze, Predicate<LocalDate> enabledOn) {
     }
 
     private LateFeeOriginFacts originFactsOf(Invoice origin) {
+        return originFactsOf(origin, origin.getPaymentStatus());
+    }
+
+    private LateFeeOriginFacts originFactsOf(Invoice origin, InvoicePaymentStatus paymentStatus) {
         InvoiceLine line = origin.getPrimaryLine();
         return new LateFeeOriginFacts(origin.getId(), origin.getInvoiceNumber().value(), origin.getStudentCurrentAccountId(), origin.getDocumentType(),
-                origin.getInvoiceType(), origin.getPaymentStatus(), origin.getDueDate(), origin.getCurrency(), line.getAmount(), origin.getStudentSnapshot(),
+                origin.getInvoiceType(), paymentStatus, origin.getDueDate(), origin.getCurrency(), line.getAmount(), origin.getStudentSnapshot(),
                 line.getPeriod(), line.getProgramEnrollmentId(), line.getCourseEnrollmentId());
     }
 }

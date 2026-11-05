@@ -1,12 +1,13 @@
 package com.red_escuela.backend.graduation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 
 import java.time.LocalDateTime;
 
 public record GraduationRequestResponse(
         Long id, Long programEnrollmentId, Long studentId, String studentName, String programName, String status,
-        LocalDateTime requestedAt, LocalDateTime decidedAt, String rejectionReason) {
+        LocalDateTime requestedAt, @Schema(nullable = true) LocalDateTime decidedAt, @Schema(nullable = true) String rejectionReason) {
 
     public static GraduationRequestResponse from(GraduationRequest request) {
         var programEnrollment = request.getProgramEnrollment();

@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { errorBody } from '@/test/fixtures/errors';
+import { Toaster, toast } from 'sonner';
 import { AvisoWizard } from './AvisoWizard';
 
 const API = 'http://localhost:8080';
@@ -37,10 +39,13 @@ function mockear({ previewBody = preview(), onPost } = {}) {
 
 function montar(route = `/docente/mis-comisiones/${SECTION_ID}/avisos/nuevo`) {
   return renderWithProviders(
-    <Routes>
-      <Route path="/docente/mis-comisiones/:sectionId/avisos/nuevo" element={<AvisoWizard />} />
-      <Route path="/docente/mis-comisiones/:sectionId" element={<div>Volvió a la comisión</div>} />
-    </Routes>,
+    <>
+      <Toaster />
+      <Routes>
+        <Route path="/docente/mis-comisiones/:sectionId/avisos/nuevo" element={<AvisoWizard />} />
+        <Route path="/docente/mis-comisiones/:sectionId" element={<div>Volvió a la comisión</div>} />
+      </Routes>
+    </>,
     { route },
   );
 }
@@ -51,6 +56,10 @@ async function irAMensaje(user) {
 }
 
 describe('AvisoWizard', () => {
+  beforeEach(() => {
+    toast.dismiss();
+  });
+
   it('arranca en Destinatarios con toda la comisión y su conteo', async () => {
     mockear();
     montar();
@@ -136,6 +145,37 @@ describe('AvisoWizard', () => {
     expect(await screen.findByDisplayValue('Cambio de aula')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Nos vemos en la 204.')).toBeInTheDocument();
     expect(screen.queryByText('Volvió a la comisión')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['EMPTY_AUDIENCE', 'Ese grupo no tiene ningún alumno hoy. Elegí otro grupo de destinatarios.'],
+    ['SCHEDULED_DATE_IN_THE_PAST', 'La fecha de envío ya pasó. Elegí una fecha y hora futuras.'],
+  ])('un rechazo %s se informa por su causa y no con el mensaje genérico', async (code, mensaje) => {
+    mockear({ onPost: () => HttpResponse.json(errorBody(code), { status: 400 }) });
+    const user = userEvent.setup();
+    montar();
+    await irAMensaje(user);
+
+    await user.type(await screen.findByLabelText('Título'), 'Cambio de aula');
+    await user.type(screen.getByLabelText('Mensaje'), 'Nos vemos en la 204.');
+    await user.click(screen.getByRole('button', { name: 'Publicar aviso' }));
+
+    expect(await screen.findByText(mensaje)).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos publicar el aviso. Probá de nuevo.')).not.toBeInTheDocument();
+  });
+
+  it('las fechas de envío y de vencimiento no aceptan días anteriores a hoy', async () => {
+    mockear();
+    const user = userEvent.setup();
+    montar();
+    await irAMensaje(user);
+
+    await user.click(await screen.findByRole('button', { name: 'Cambiar fechas' }));
+    await user.click(screen.getByRole('radio', { name: 'Programar…' }));
+    await user.click(screen.getByRole('radio', { name: 'Otra fecha…' }));
+
+    expect(screen.getByLabelText('Fecha y hora de envío').min).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(screen.getByLabelText('Fecha de vencimiento').min).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('un curso suelto no tiene paso de destinatarios ni selector', async () => {

@@ -1,12 +1,13 @@
 package com.red_escuela.backend.billing.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
 
 public record PaymentGatewayConfigResponse(
-        String bankAlias,
-        String bankCbu,
-        String accountHolder,
-        String qrImageUrl,
+        @Schema(nullable = true) String bankAlias,
+        @Schema(nullable = true) String bankCbu,
+        @Schema(nullable = true) String accountHolder,
+        @Schema(nullable = true) String qrImageUrl,
         boolean mpEnabled) {
 
     public static PaymentGatewayConfigResponse from(PaymentGatewayConfig config, String qrImageUrl) {

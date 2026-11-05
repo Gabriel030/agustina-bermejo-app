@@ -42,7 +42,7 @@ export function VerificacionEmail() {
           {estado === 'verificando' && (
             <>
               <Loader2 size={40} className="text-brand animate-spin" />
-              <p className="text-[14px] text-ink-soft">Verificando tu email…</p>
+              <p className="text-[14px] text-ink-soft">Confirmando tu email…</p>
             </>
           )}
 
@@ -52,9 +52,9 @@ export function VerificacionEmail() {
                 <CheckCircle2 size={36} className="text-success" />
               </div>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">Email verificado</p>
+                <p className="font-heading text-lg font-bold text-ink">Email confirmado</p>
                 <p className="mt-1 text-[13px] text-ink-soft">
-                  Tu email fue confirmado correctamente. La institución procesará tu inscripción y te contactará a la brevedad.
+                  Tu email quedó confirmado. Desde ahora lo usás para ingresar.
                 </p>
               </div>
               <Link to="/login" className="text-[13px] font-semibold text-brand hover:text-accent-2">
@@ -69,10 +69,18 @@ export function VerificacionEmail() {
                 <XCircle size={36} className="text-danger" />
               </div>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">Link inválido o expirado</p>
+                <p className="font-heading text-lg font-bold text-ink">El enlace venció o ya se usó</p>
                 <p className="mt-1 text-[13px] text-ink-soft">
-                  El enlace de verificación no es válido o ya expiró. Pedí a la institución que reenvíe el correo de verificación.
+                  Los enlaces duran 48 horas y sirven una sola vez. Si todavía no confirmaste tu email, entrá a Mi perfil y pedí un enlace nuevo; si ya lo confirmaste, no hace falta hacer nada más.
                 </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Link to="/perfil" className="text-[13px] font-semibold text-brand hover:text-accent-2">
+                  Ir a Mi perfil
+                </Link>
+                <Link to="/login" className="text-[13px] font-semibold text-brand hover:text-accent-2">
+                  Ir a ingresar
+                </Link>
               </div>
             </>
           )}

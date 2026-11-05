@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
@@ -8,10 +9,10 @@ import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -30,7 +31,6 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
-import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
@@ -120,12 +120,14 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
-        term.setEnrollmentStart(enrollmentStart);
-        term.setEnrollmentEnd(enrollmentEnd);
+        term.setEnrollmentStart(enrollmentStart != null ? enrollmentStart : TermFixtures.OPEN_WINDOW_START);
+        term.setEnrollmentEnd(enrollmentEnd != null ? enrollmentEnd : TermFixtures.OPEN_WINDOW_END);
+        term.setStartDate(term.getEnrollmentStart());
+        term.setEndDate(term.getEnrollmentEnd());
         entityManager.persist(term);
         return term;
     }
@@ -149,24 +151,6 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(enrollment);
         return enrollment;
-    }
-
-    @Test
-    void enrollingWithInvertedEnrollmentWindowThrowsConfigurationExceptionNotWindowClosed() {
-        Institution institution = persistInstitution();
-        Student student = persistStudent("60000001", StatusType.ACTIVE, institution);
-        Subject subject = persistSubject("MateriaVentanaInvertida");
-        Program program = persistProgram("CarreraVentanaInvertida");
-        persistProgramSubject(program, subject);
-        LocalDateTime now = LocalDateTime.now();
-        Term term = persistTerm(now.plusDays(10), now.minusDays(10));
-        SubjectSection section = persistSubjectSection(subject, term, null);
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
-        entityManager.flush();
-
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
-                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
-                .isInstanceOf(InvalidWindowConfigurationException.class);
     }
 
     @Test

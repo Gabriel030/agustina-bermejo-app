@@ -1,7 +1,9 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.AsyncNotifications;
+import org.springframework.test.context.transaction.TestTransaction;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
@@ -142,9 +144,13 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/reject")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
+        AsyncNotifications.commitTestTransaction();
+        TestTransaction.start();
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/approve")
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.code").value("INVALID_ATTENDANCE_CHANGE_REQUEST_STATE"));
+        TestTransaction.end();
+        TestTransaction.start();
 
         getAs(preceptor, "/section-enrollments/" + classroom.enrollment().getId() + "/attendance")
                 .andExpect(jsonPath("$[0].status").value("ABSENT"));
@@ -166,5 +172,49 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.code").value("ATTENDANCE_STATUS_NOT_RECORDABLE"));
         assertThat(countRows("AttendanceChangeRequest", "e.attendance.id = " + attendanceId)).isZero();
+    }
+
+    @Test
+    void settingTheSectionMaximumAbsenceMakesTheRiskCalculableAndLibreFollowsTheNewLimit() throws Exception {
+        Classroom classroom = classroomWithMaxAbsence("setmax1", "7600010", null);
+        Person preceptor = persistPerson("setmax1.preceptor", "76000107", "PRECEPTOR");
+        loadFourDays(classroom, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.ABSENT);
+        String riskPath = "/section-enrollments/" + classroom.enrollment().getId() + "/attendance/risk";
+        String sectionPath = "/program-sections/" + classroom.section().getId();
+        getAs(preceptor, riskPath).andExpect(jsonPath("$.calculable").value(false)).andExpect(jsonPath("$.libre").value(false));
+
+        putJson(preceptor, sectionPath, java.util.Map.of("maxAbsencePercent", 25))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxAbsencePercent").value(25));
+        getAs(preceptor, riskPath)
+                .andExpect(jsonPath("$.calculable").value(true))
+                .andExpect(jsonPath("$.libre").value(true))
+                .andExpect(jsonPath("$.maxAbsencePercent").value(25.0));
+
+        putJson(preceptor, sectionPath, java.util.Map.of("maxAbsencePercent", 60))
+                .andExpect(status().isOk());
+        getAs(preceptor, riskPath).andExpect(jsonPath("$.libre").value(false));
+        getAs(preceptor, sectionPath).andExpect(jsonPath("$.maxAbsencePercent").value(60));
+    }
+
+    @Test
+    void updatingASectionWithoutTheMaximumKeepsTheConfiguredOne() throws Exception {
+        Classroom classroom = classroomWithMaxAbsence("setmax2", "7600011", Percentage.ofPoints(new BigDecimal("30")));
+        Person preceptor = persistPerson("setmax2.preceptor", "76000117", "PRECEPTOR");
+
+        putJson(preceptor, "/program-sections/" + classroom.section().getId(), java.util.Map.of("capacity", 12))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxAbsencePercent").value(30));
+    }
+
+    @Test
+    void settingTheMaximumAbsenceRejectsOutOfRangeValuesAndRolesWithoutPermission() throws Exception {
+        Classroom classroom = classroomWithMaxAbsence("setmax3", "7600012", null);
+        Person preceptor = persistPerson("setmax3.preceptor", "76000127", "PRECEPTOR");
+        String sectionPath = "/program-sections/" + classroom.section().getId();
+
+        putJson(preceptor, sectionPath, java.util.Map.of("maxAbsencePercent", 101)).andExpect(status().isBadRequest());
+        putJson(preceptor, sectionPath, java.util.Map.of("maxAbsencePercent", -1)).andExpect(status().isBadRequest());
+        putJson(classroom.teacher(), sectionPath, java.util.Map.of("maxAbsencePercent", 25)).andExpect(status().isForbidden());
     }
 }

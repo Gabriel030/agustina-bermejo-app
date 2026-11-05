@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import java.math.BigDecimal;
 
 import com.red_escuela.backend.config.TestSubjectCodes;
@@ -15,13 +17,13 @@ import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.GradeMode;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
-import com.red_escuela.backend.academicstructure.entity.RequirementType;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -41,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -63,6 +66,9 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private com.red_escuela.backend.academicstructure.repository.HolidayRepository holidayRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -315,12 +321,32 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void creatingCycleForTermOfAYearWithoutHolidaysReturns409WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-cycle-noholidays", "PRECEPTOR");
+        Term term = TermFixtures.newTerm();
+        term.setYear(2077);
+        term.setDescription("Term sin feriados");
+        term.setType(TermType.FIRST_SEMESTER);
+        term.setStartDate(LocalDateTime.of(2077, 3, 1, 0, 0));
+        term.setEndDate(LocalDateTime.of(2077, 7, 1, 0, 0));
+        entityManager.persist(term);
+        entityManager.flush();
+
+        mockMvc.perform(post("/academic-offering-cycles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"courseId\":1,\"termId\":" + term.getId() + "}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("HOLIDAYS_NOT_LOADED_FOR_YEAR"));
+    }
+
+    @Test
     void deactivatingAndReactivatingCourseWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-curso1", "ADMINISTRATIVO");
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term para curso baja");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(2));
         entityManager.persist(term);
@@ -373,10 +399,323 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void creatingTermWithoutEnrollmentWindowReturns400WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-term-window1", "PRECEPTOR");
+        String body = "{\"year\":2061,\"description\":\"Sin ventana\",\"type\":\"FIRST_SEMESTER\","
+                + "\"startDate\":\"2061-03-01T00:00:00\",\"endDate\":\"2061-07-15T00:00:00\"}";
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TERM_ENROLLMENT_WINDOW_REQUIRED"));
+    }
+
+    @Test
+    void creatingTermWithoutDatesReturns400WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-term-dates1", "PRECEPTOR");
+        String body = "{\"year\":2062,\"description\":\"Sin fechas\",\"type\":\"FIRST_SEMESTER\","
+                + "\"enrollmentStart\":\"2062-02-01T00:00:00\",\"enrollmentEnd\":\"2062-02-28T00:00:00\"}";
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TERM_DATES_REQUIRED"));
+    }
+
+    @Test
+    void creatingTermWithInvertedEnrollmentWindowReturns400() throws Exception {
+        String token = tokenWithRole("preceptor-term-window2", "PRECEPTOR");
+        String body = "{\"year\":2062,\"description\":\"Invertida\",\"type\":\"FIRST_SEMESTER\","
+                + "\"startDate\":\"2062-03-01T00:00:00\",\"endDate\":\"2062-07-15T00:00:00\","
+                + "\"enrollmentStart\":\"2062-02-28T00:00:00\",\"enrollmentEnd\":\"2062-02-01T00:00:00\"}";
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    private void seedHoliday(int year) {
+        java.time.LocalDate date = java.time.LocalDate.of(year, 1, 1);
+        if (!holidayRepository.existsByDate(date)) {
+            var holiday = new com.red_escuela.backend.academicstructure.entity.Holiday();
+            holiday.setDate(date);
+            holiday.setName("Año Nuevo");
+            holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
+            holidayRepository.save(holiday);
+        }
+    }
+
+    private String termBody(int year) {
+        return "{\"year\":" + year + ",\"description\":\"Term " + year + "\",\"type\":\"ANNUAL\""
+                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\",\"enrollmentStart\":\"" + year + "-02-01T00:00:00\",\"enrollmentEnd\":\"" + year + "-02-28T00:00:00\"}";
+    }
+
+    @Test
+    void creatingTermOfAYearWithoutHolidaysReturns409WithStableCode() throws Exception {
+        String token = tokenWithRole("preceptor-term-noholidays", "PRECEPTOR");
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(termBody(2077)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("HOLIDAYS_NOT_LOADED_FOR_YEAR"));
+    }
+
+    @Test
+    void creatingTermSucceedsOnceAHolidayOfThatYearIsLoadedByAdministrativo() throws Exception {
+        String admin = tokenWithRole("admin-holiday-abm", "ADMINISTRATIVO");
+        String preceptor = tokenWithRole("preceptor-holiday-abm", "PRECEPTOR");
+
+        mockMvc.perform(post("/holidays")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2078-01-01\",\"name\":\"Año Nuevo\",\"type\":\"NATIONAL\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + preceptor)
+                        .content(termBody(2078)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void loadingAHolidayTwiceOnTheSameDateReturns409() throws Exception {
+        String admin = tokenWithRole("admin-holiday-dup", "ADMINISTRATIVO");
+        String body = "{\"date\":\"2079-05-01\",\"name\":\"Día del Trabajador\",\"type\":\"NATIONAL\"}";
+
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + admin).content(body)).andExpect(status().isCreated());
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + admin).content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("HOLIDAY_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void preceptorCannotLoadHolidays() throws Exception {
+        String token = tokenWithRole("preceptor-holiday-forbidden", "PRECEPTOR");
+
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + token)
+                .content("{\"date\":\"2080-05-01\",\"name\":\"X\",\"type\":\"NATIONAL\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deletingAHolidayRemovesItAndAMissingOneReturns404() throws Exception {
+        String admin = tokenWithRole("admin-holiday-del", "ADMINISTRATIVO");
+        String response = mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + admin)
+                .content("{\"date\":\"2081-05-01\",\"name\":\"X\",\"type\":\"NATIONAL\"}"))
+                .andReturn().getResponse().getContentAsString();
+        long id = objectMapper.readTree(response).get("id").asLong();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/holidays/" + id)
+                .header("Authorization", "Bearer " + admin)).andExpect(status().isNoContent());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/holidays/" + id)
+                .header("Authorization", "Bearer " + admin)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updatingAHolidayChangesNameTypeDateAndDescription() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd", "ADMINISTRATIVO");
+        long id = createHolidayAs(admin, "2082-05-01", "Original", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2082-05-02\",\"name\":\"Asueto\",\"type\":\"NON_WORKING_DAY\",\"description\":\"Por la peregrinacion\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.date").value("2082-05-02"))
+                .andExpect(jsonPath("$.name").value("Asueto"))
+                .andExpect(jsonPath("$.type").value("NON_WORKING_DAY"))
+                .andExpect(jsonPath("$.description").value("Por la peregrinacion"));
+    }
+
+    @Test
+    void updatingAHolidayKeepingItsOwnDateIsAllowed() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-same", "ADMINISTRATIVO");
+        long id = createHolidayAs(admin, "2083-05-01", "Original", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2083-05-01\",\"name\":\"Renombrado\",\"type\":\"BRIDGE\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Renombrado"))
+                .andExpect(jsonPath("$.type").value("BRIDGE"))
+                .andExpect(jsonPath("$.description").value(""));
+    }
+
+    @Test
+    void updatingAHolidayToADateUsedByAnotherReturns409() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-dup", "ADMINISTRATIVO");
+        createHolidayAs(admin, "2084-05-01", "Uno", "NATIONAL");
+        long second = createHolidayAs(admin, "2084-05-02", "Dos", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + second).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2084-05-01\",\"name\":\"Dos\",\"type\":\"NATIONAL\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("HOLIDAY_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void updatingAMissingHolidayReturns404() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-missing", "ADMINISTRATIVO");
+
+        mockMvc.perform(put("/holidays/987654321").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2085-05-01\",\"name\":\"X\",\"type\":\"OTHER\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void holidayWithoutNameOrTypeIsRejected() throws Exception {
+        String admin = tokenWithRole("admin-holiday-invalid", "ADMINISTRATIVO");
+
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2086-05-01\",\"type\":\"NATIONAL\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2086-05-01\",\"name\":\"X\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2086-05-01\",\"name\":\"X\",\"type\":\"INVENTED\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void preceptorCannotUpdateHolidays() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-owner", "ADMINISTRATIVO");
+        String preceptor = tokenWithRole("preceptor-holiday-upd", "PRECEPTOR");
+        long id = createHolidayAs(admin, "2087-05-01", "Original", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + preceptor)
+                        .content("{\"date\":\"2087-05-01\",\"name\":\"Hack\",\"type\":\"OTHER\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    private long createHolidayAs(String token, String date, String name, String type) throws Exception {
+        String response = mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"date\":\"" + date + "\",\"name\":\"" + name + "\",\"type\":\"" + type + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("id").asLong();
+    }
+
+    private Long createTermAs(String token, int year, String type) throws Exception {
+        seedHoliday(year);
+        String body = "{\"year\":" + year + ",\"description\":\"Term " + year + "\",\"type\":" + type
+                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\",\"enrollmentStart\":\"" + year + "-02-01T00:00:00\",\"enrollmentEnd\":\"" + year + "-02-28T00:00:00\"}";
+        String response = mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("id").asLong();
+    }
+
+    private int createTermStatus(String token, int year, String type) throws Exception {
+        seedHoliday(year);
+        String body = "{\"year\":" + year + ",\"description\":\"Term " + year + "\",\"type\":" + type
+                + ",\"startDate\":\"" + year + "-03-01T00:00:00\",\"endDate\":\"" + year + "-12-15T00:00:00\",\"enrollmentStart\":\"" + year + "-02-01T00:00:00\",\"enrollmentEnd\":\"" + year + "-02-28T00:00:00\"}";
+        return mockMvc.perform(post("/terms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(body))
+                .andReturn().getResponse().getStatus();
+    }
+
+    @Test
+    void creatingTermReturnsTheCatalogTypeInTheResponse() throws Exception {
+        String token = tokenWithRole("preceptor-term-type1", "PRECEPTOR");
+        Long id = createTermAs(token, 2061, "\"SECOND_SEMESTER\"");
+
+        mockMvc.perform(get("/terms/{id}", id).header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.type").value("SECOND_SEMESTER"));
+    }
+
+    @Test
+    void creatingTermWithATypeOutsideTheCatalogReturns400() throws Exception {
+        String token = tokenWithRole("preceptor-term-type2", "PRECEPTOR");
+
+        assertThat(createTermStatus(token, 2062, "\"1C\"")).isEqualTo(400);
+        assertThat(createTermStatus(token, 2062, "null")).isEqualTo(400);
+    }
+
+    @Test
+    void creatingASecondActiveTermOfTheSameYearAndTypeReturns409ButAnotherTypeIsAllowed() throws Exception {
+        String token = tokenWithRole("preceptor-term-type3", "PRECEPTOR");
+        createTermAs(token, 2063, "\"FIRST_SEMESTER\"");
+
+        assertThat(createTermStatus(token, 2063, "\"FIRST_SEMESTER\"")).isEqualTo(409);
+        assertThat(createTermStatus(token, 2063, "\"SECOND_SEMESTER\"")).isEqualTo(201);
+        assertThat(createTermStatus(token, 2064, "\"FIRST_SEMESTER\"")).isEqualTo(201);
+    }
+
+    @Test
+    void administrativeAndDirectorRolesCanManageTerms() throws Exception {
+        String administrativeToken = tokenWithRole("administrativo-term-manage1", "ADMINISTRATIVO");
+        String directorToken = tokenWithRole("director-term-manage1", "DIRECTOR");
+
+        assertThat(createTermStatus(administrativeToken, 2066, "\"FIRST_SEMESTER\"")).isEqualTo(201);
+        Long directorTermId = createTermAs(directorToken, 2067, "\"ANNUAL\"");
+
+        mockMvc.perform(post("/terms/{id}/deactivate", directorTermId).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/terms/{id}/activate", directorTermId).header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/terms").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void studentAndTeacherRolesCannotManageTerms() throws Exception {
+        String studentToken = tokenWithRole("alumno-term-manage2", "ALUMNO");
+        String teacherToken = tokenWithRole("docente-term-manage2", "DOCENTE");
+        String preceptorToken = tokenWithRole("preceptor-term-manage2", "PRECEPTOR");
+        Long termId = createTermAs(preceptorToken, 2068, "\"ANNUAL\"");
+
+        assertThat(createTermStatus(studentToken, 2069, "\"ANNUAL\"")).isEqualTo(403);
+        assertThat(createTermStatus(teacherToken, 2069, "\"ANNUAL\"")).isEqualTo(403);
+        mockMvc.perform(post("/terms/{id}/deactivate", termId).header("Authorization", "Bearer " + teacherToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void aDeactivatedTermDoesNotCountForUniquenessButReactivatingItWhileAnotherIsActiveReturns409() throws Exception {
+        String token = tokenWithRole("preceptor-term-type4", "PRECEPTOR");
+        Long first = createTermAs(token, 2065, "\"ANNUAL\"");
+        mockMvc.perform(post("/terms/{id}/deactivate", first).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        Long second = createTermAs(token, 2065, "\"ANNUAL\"");
+
+        mockMvc.perform(post("/terms/{id}/activate", first).header("Authorization", "Bearer " + token))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/terms/{id}/activate", second).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void deactivatingAndReactivatingTermWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("preceptor-term1", "PRECEPTOR");
         CreateTermRequest request = new CreateTermRequest(
-                2026, "Term Baja", "1C", LocalDateTime.now(), LocalDateTime.now().plusMonths(4), null, null);
+                2026, "Term Baja", TermType.FIRST_SEMESTER, LocalDateTime.now(), LocalDateTime.now().plusMonths(4), LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(1));
         String body = mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -399,7 +738,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingTermWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("alumno-term1", "ALUMNO");
         CreateTermRequest request = new CreateTermRequest(
-                2026, "Term sin permiso", "1C", LocalDateTime.now(), LocalDateTime.now().plusMonths(4), null, null);
+                2026, "Term sin permiso", TermType.FIRST_SEMESTER, LocalDateTime.now(), LocalDateTime.now().plusMonths(4), LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(1));
 
         mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -495,10 +834,10 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void addingModuleWithAdministrativeRoleReturns201() throws Exception {
         String token = tokenWithRole("admin-coursesubject1", "ADMINISTRATIVO");
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term para módulo");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(2));
         entityManager.persist(term);
@@ -538,10 +877,10 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingCourseSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-coursesubject2", "ADMINISTRATIVO");
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term para módulo baja");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(2));
         entityManager.persist(term);

@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
+import { fechaHoraLocalMinima, fechaLocalMinima } from '../lib/formularioDeAviso';
 import { fechaEnPalabras, formatearFechaCorta, formatearFechaHora } from '@/lib/avisos';
 
 const OPCIONES_CADUCIDAD = [
@@ -10,14 +11,15 @@ const OPCIONES_CADUCIDAD = [
   { valor: 'otra', label: 'Otra fecha…' },
 ];
 
-function Chip({ activo, onClick, children }) {
+function Chip({ activo, onClick, disabled = false, children }) {
   return (
     <button
       type="button"
       role="radio"
       aria-checked={activo}
+      disabled={disabled}
       onClick={onClick}
-      className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+      className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
         activo
           ? 'border-transparent bg-gradient-to-br from-brand to-accent-2 text-white'
           : 'border-border text-ink-soft hover:border-brand hover:text-ink'
@@ -28,7 +30,7 @@ function Chip({ activo, onClick, children }) {
   );
 }
 
-export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviadoEl }) {
+export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviadoEl, soloReprogramar = false }) {
   const { cuando, scheduledFor, caducidad, expiresAt } = valores;
 
   if (!abierto) {
@@ -65,18 +67,28 @@ export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviado
           ¿Cuándo se envía?
         </span>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="et-cuando">
-          <Chip activo={cuando === 'ahora'} onClick={() => onChange({ ...valores, cuando: 'ahora', scheduledFor: null })}>
+          <Chip
+            activo={cuando === 'ahora'}
+            disabled={soloReprogramar}
+            onClick={() => onChange({ ...valores, cuando: 'ahora', scheduledFor: null })}
+          >
             Ahora
           </Chip>
           <Chip activo={cuando === 'programar'} onClick={() => onChange({ ...valores, cuando: 'programar' })}>
             Programar…
           </Chip>
         </div>
+        {soloReprogramar && (
+          <span className="text-[11.5px] text-ink-faint">
+            Para enviarlo ahora, creá un aviso nuevo. Acá solo podés cambiar la fecha de envío.
+          </span>
+        )}
         {cuando === 'programar' && (
           <div className="mt-2 flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2.5">
               <Input
                 type="datetime-local"
+                min={fechaHoraLocalMinima()}
                 className="max-w-[240px]"
                 value={scheduledFor ?? ''}
                 onChange={(e) => onChange({ ...valores, scheduledFor: e.target.value })}
@@ -107,6 +119,7 @@ export function EnvioYCaducidad({ abierto, onAbrir, valores, onChange, yaEnviado
         {caducidad === 'otra' && (
           <Input
             type="date"
+            min={fechaLocalMinima()}
             className="mt-2 max-w-[200px]"
             value={expiresAt ?? ''}
             onChange={(e) => onChange({ ...valores, expiresAt: e.target.value })}

@@ -1,5 +1,7 @@
 # Catálogo de componentes del frontend
 
+> Verificado: 2026-10-31, commit `cd1ede80`.
+
 Inventario por categoría de lo que existe hoy en `frontend/src/`, relevado del código real. Se usa para elegir componentes al diseñar, al escribir criterios de aceptación de una spec ("Componentes a usar") y al implementar. Reglas de estilo, tokens y motion: [frontend.md](frontend.md).
 
 **Mantenimiento:** todo PR que cree, elimine o cambie la API (props/variantes) de un componente compartido actualiza este archivo. Si un componente que necesitás no figura acá, verificá con `ls src/components src/components/ui` antes de crearlo.
@@ -13,7 +15,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
 | `MeshBackground` [shared] | Fondo de pantallas públicas | — |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
-| `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `RUTAS_POR_ROL` | — |
+| `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
 ## 2. Navegación
 | Componente | Uso | API relevante |
@@ -31,9 +33,14 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `Table` `TableHeader` `TableBody` `TableRow` `TableHead` `TableCell` [ui] | Toda tabla, dentro de un `GlassCard` (sin borde propio). Excepción: grillas con rowSpan/colSpan (asistencia) | `TableRow` admite `onClick` |
 | `StatCard` [shared] | KPI/métrica (dentro de `Stagger` en grillas) | `label`, `children` |
+| `ProgressBar` [shared] | barra de un solo valor (avance, porcentaje), `role="progressbar"`; nunca la librería de gráficos | `value` (0-100), `label`, `tone`, `showValue` |
+| `components/charts/*` [shared] | gráficos con Recharts 3.8.0 encapsulado: `TrendBarChart`, `StackedBarChart`, `TrendLineChart`, `StackedAreaChart`, `ComposedTrendChart`, `GoalLine`, `ChartFrame` (título, `info` en tooltip, `badge`, carga, error con `onRetry`, no disponible con `unavailableText`, vacío, "Ver como tabla"), `InfoTip`; `recharts` solo se importa dentro de ese directorio (ESLint). **Contrato de `data`:** filas `{label, [key]: valor}` donde `valor` es un número, `null` o un Money `{amount, currency}` (el gráfico lo convierte a número y toma la moneda del propio Money; la tabla lo formatea con su moneda). Porcentajes en puntos (45 = 45 %) | `title`, `subtitle`, `info`, `badge`, `ariaLabel`, `data`, `series` (`{key, label, color?, unit?, type? ('bar'/'line'/'area' en el compuesto), axis? ('right' = eje Y secundario), stack?}`), `tableSeries` (columnas extra solo en la tabla), `unit` (`money`/`percent`/`days`/`count`), `currency`, `goal` (`{value, label, axis?}`), `loading`, `error`, `onRetry`, `unavailableText`, `onCategoryClick(row)` (clic en el gráfico y botón `openLabel` por fila de la tabla, accesible con teclado; sin el prop no hay affordance) |
 | `StatusPill` [shared] | Estado con color semántico | `tone`: `success` `warning` `danger` `accent` `neutral`; `dot` |
 | `EstadoSolicitudBadge` [shared] | `StatusPill` ya mapeado para estados de solicitud | `status` |
 | `Badge` [ui] | Sin uso hoy; preferir `StatusPill` | variantes `default` `secondary` `destructive` `outline` `ghost` `link` |
+| `DataTable` [shared: `components/table/`] | Tabla con `@tanstack/react-table` v8: orden por encabezado, filtro estilo Excel, filas expandibles, estados cargando/vacío/error y cards bajo 768px. Las columnas son definiciones de TanStack; `meta`: `filterable`, `filterTitle`, `filterLabel(valor)`, `align: 'right'`, `hideInCard`, `cardTitle` (encabezado de la tarjeta, sin etiqueta), `cardBlock` (etiqueta arriba y valor a la izquierda) | `columns`, `data`, `getRowId`, `isLoading`, `isError`, `onRetry`, `errorMessage`, `emptyState`, `renderExpanded(row)`, `expandLabel`, `onRowClick(item)` (clic en la fila fuera de enlaces/botones; el acceso por teclado va con un enlace en la celda), `initialSorting`, `minWidth`, `mobileLayout` (`'cards'` por defecto; `'scroll'` mantiene la tabla con scroll horizontal bajo 768px ; en cards hay barra "Ordenar por" y filtros, y las columnas con header vacío van al pie de la tarjeta) |
+| `ColumnFilter` [shared: `components/table/`] | Filtro multi-selección (Popover + `Checkbox`) con los valores presentes en los datos; lo usa `DataTable` cuando la columna tiene `meta.filterable` | `label`, `options` (`{ value, label, count }`), `selected`, `onChange` |
+| `RefundsSection` [domain: billing] | Reembolsos de un alumno (pedidos agrupados, partes expandibles, "Marcar como hecho" / "No se pudo"); vive en el Financiero de la ficha del alumno | `studentId` |
 | `SortableColumnHeader` [domain: alumno] | Encabezado ordenable (hook `useOrdenamiento`) | — |
 | `AnioColumnFilter` `EstadoColumnFilter` [domain: alumno] | Filtro tipo Excel en el encabezado de columna (checkboxes + seleccionar todo) | — |
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
@@ -41,6 +48,10 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `InvoiceSummary` [domain: alumno] | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
 | `BankAccountDetails` [domain: catalogo] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
 | `Card` [ui] | Sin uso hoy; usar `GlassCard` | — |
+| `DataTable` [shared: table] | Tabla con orden, filtro Excel por columna (`meta.filterable`; no se dibuja con una sola opción), filas expandibles y modo tarjeta bajo 768px | `columns`, `data`, `renderExpanded`, `onRowClick`, `emptyState` |
+| `ProgressBar` [shared] | Barra de avance con `aria-label`; en Mis descuentos con `showValue={false}` y el texto "N de M" en `label` | `value`, `label`, `showValue`, `tone` |
+| `MonthGrid` [shared] | Grilla mensual interactiva (`role="grid"`, un solo tab stop, flechas, Home/End, PageUp/PageDown cambian de mes); la celda es un botón con feriado/estado, hoy y selección | `year`, `month`, `entries` (`{ [iso]: { label, typeLabel, chip, cellClass } }`), `todayIso`, `selectedIso`, `onSelect(iso)`, `onNavigate(year, month)` |
+| `MonthPicker` [shared] | Selector de mes (`YYYY-MM`) con mínimo/máximo; en el otorgamiento de descuentos el mínimo es la próxima cuota | `value`, `onChange`, `minMonth`, `maxMonth` |
 
 ## 4. Formularios y entrada
 | Componente | Uso | API relevante |
@@ -49,7 +60,10 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `PasswordInput` [ui] | Contraseñas con mostrar/ocultar | — |
 | `Textarea` [ui] | Texto largo | — |
 | `Select` [ui] | Lista cerrada de opciones | compound (`SelectTrigger`, `SelectContent`, `SelectItem`) |
+| `RadioGroup` [ui] | Elección exclusiva corta (Porcentaje / Monto fijo); en billing se usa envuelto por `RadioChoice` | compound |
 | `Command` + `Popover` [ui] | Combobox con búsqueda | compound |
+| `Switch` [ui] | Interruptor (CLI de shadcn, con tokens: gradiente al activarse, `neutral-bg` apagado); lo usa la matriz de notificaciones de Mi perfil y los filtros de recordatorios | `checked`, `onCheckedChange`, `disabled` |
+| `Checkbox` [ui] | Casilla (la usa `ColumnFilter`); en el archivo generado por la CLI se corrigió el import de `cn` y el estado `data-[state=checked]` | `checked`, `onCheckedChange` |
 | `Buscador` [domain: catalogo] | Campo de búsqueda de listados | `value`, `onChange`, `placeholder` |
 | Formularios con validación / wizards | React Hook Form + Zod (patrón: `NuevoAlumno.jsx`) | — |
 
@@ -64,10 +78,15 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `toast` / `Toaster` [ui: sonner] | Resultado de acciones (`toast.success/error`); nunca errores de mutación como párrafo inline | montado en `App.jsx` |
 | `Skeleton` [shared] | Carga (shimmer) | `className` |
+| `LoadErrorState` [shared] | Error de carga con Reintentar y 404 diferenciado; `bare` para usarlo dentro de un bloque | `error`, `onRetry`, `resource`, `backTo`, `backLabel`, `bare` |
+| `ModuleDisabled` [domain: pages/] | Pantalla "Este módulo no está habilitado en tu instituto" con enlace a Inicio; la muestra `ModuleGate` en una URL directa a una pantalla de un módulo apagado | `role` |
+| `CatalogDetailLayout` / `CatalogEnrollAction` / `CatalogViewerAction` / `CatalogBlock` / `CatalogItemList` [domain: enrollment] | Detalle de carrera y curso del catálogo: cabecera con `<h1>`, CTA con motivo asociado (`aria-describedby`), bloque con carga y error propios, filas de plan/temario (con rótulo opcional); `CatalogViewerAction` reemplaza el CTA por "Vista previa" (roles de staff) o por el estado del alumno (solicitud pendiente, ya inscripto) | ver `features/enrollment/components/` |
 | `EmptyState` [shared] | Listas/tablas vacías | `icon`, `title`, `description`, `action` |
 | `NotificationBell` [shared] | Campana con badge de no leídas | — |
 | `Dialog` [ui] | Confirmaciones y acciones breves; no para flujos de varios pasos | compound |
-| `ModalMotivo` [domain: director] | Pide un motivo al aprobar/rechazar | `open`, `onClose`, `onConfirmar`, `confirmando`, `requerido` |
+| `DropdownMenu` `DropdownMenuTrigger` `DropdownMenuContent` `DropdownMenuItem` `DropdownMenuGroup` `DropdownMenuLabel` `DropdownMenuSeparator` [ui] | Menú de acciones por fila (flechas, foco, `disabled` real). Fijar el ancho del contenido con `className="w-72"`: por defecto toma el ancho del trigger | `DropdownMenuItem variant="destructive"` |
+| `ModalMotivo` [domain: director] | Pide un motivo al aprobar/rechazar | `open`, `onClose`, `onConfirmar`, `confirmando`, `requerido`, `titulo`, `descripcion`, `placeholder`, `confirmarLabel`, `confirmarVariant` |
+| `AuthorizationInboxPage` / `AuthorizationRequestDetailPage` [domain: billing] | Bandeja de autorizaciones (director: `aprobaciones/facturacion`; administrativo: `aprobaciones`) y detalle con barra fija Aprobar/Rechazar/Retirar | — |
 | `*Modal` [domain: gestion-personas] | `AltaPersonalModal`, `EditarPersonalModal`, `DarDeBajaModal`, `DarDeBajaPersonalModal`, `ReactivarPersonalModal`, `ResetPasswordModal` | — |
 
 ## 6. Motion
@@ -83,13 +102,19 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 - **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`, `AmountBreakdown`, `InvoiceSummary`.
 - **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
 - **director:** `BandejaTramites`.
+- **billing (descuentos):** `features/billing/discounts/` — `DiscountsPage` (catálogo, promociones, otorgados), `DiscountDefinitionFormPage`, `DiscountDefinitionDetailPage`, `GrantDiscountPage`, `StudentDiscountsSection` (Financiero del legajo), `MyDiscountsTab` (Pagos del alumno), `ViolationList`, `DiscountStatusPill` / `PromotionStatusPill` (constantes sobre `StatusPill`).
 - **docente:** `CalendarioConfiguracion`.
+- **academic-structure (feriados, `/administrativo/feriados`):** `HolidayCalendar` (mes con ‹ ›, sobre `MonthGrid`), `HolidayList` (lista del año por mes con filas clicables), `HolidayPanelContent` (alta/edición; panel lateral en desktop, `Sheet` inferior bajo 1024 px), `DeleteHolidayDialog` (único Dialog), `HolidayTypePill` (letra + tono + trazo por tipo).
+- **billing/payment-reversals:** `StudentPaymentsCard` (card "Pagos del alumno" de la ficha de Facturación del staff), `PaymentActionsMenu`, `ReversalDialog` (contracargo, reversión y revocación con vista previa del impacto), `ReversalImpact`, `PendingRefundsNotice`.
+- **billing (`features/billing/credit-notes/`):** `ReasonCards` (dos o más tarjetas seleccionables como `radiogroup`, con flechas), `AmountDiffTable` (tabla Hoy / Nuevo / Diferencia con filas sin cambios; en móvil se apila en pares etiqueta/valor), `CancelInvoiceDialog` (cancelar cuota / anular recargo con vista previa de efectos), `InvoiceActions` (acciones de la cuota; entra a `InvoiceDetail` por su prop `actions`, que no conoce roles), `CreditNoteLinesForm`, `CreateCreditNotePage` (2 pasos con `Stepper`), `StudentCreditNotesSection`, `PendingAuthorizationBanner`, `CreditBalanceCard` (alumno) y `MyCreditNotesPage`.
+- **billing (pago por transferencia del alumno, `components/billing/`):** `BankTransferReceiptForm` (paso 2 de `AlumnoPagarTransferencia`: cuotas en orden, dropzone, número de operación, monto, CBU o alias, titular precargado, banco opcional, "Qué va a pasar" y barra fija con el único CTA; envía a `POST /me/bank-transfer-receipts` con `Idempotency-Key`), `InvoiceCoverageList` (cuotas por prefijo con cobertura por fila y filas informativas en revisión) y `ReceiptDropzone` (valida tipo y 5 MB, con "Quitar"). La lógica pura vive en `lib/bankTransferReceipt.js`. El paso Pago del wizard de curso todavía no lo usa (V2-04b1c-2).
+- **billing (`features/billing/reminders/`):** `ReminderSettingsPage` (Recordatorios de pago, 2 pasos con `Stepper`), `ReminderTimeline` (avisos por hito) con `NoticeEditor` inline, `SettingsFields` (ajustes generales y `SendingOverrides` con herencia), `ExceptionsTable`, `VersionHistory`, `ReminderConfirmStep` (tabla Hoy / Nuevo / Diferencia, vigencia, motivo, impacto), `ContactListTab` (pestaña Para contactar de Facturación, con `mobileLayout="scroll"`) y `SimulatedMailsPage` (solo local y demo). En identity: `NotificationMatrix` (Mi perfil › Notificaciones, candados según `mandatoryChannels`).
 - **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).
 Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `frontend.md`).
 
 ## 8. Contextos y hooks transversales
 - `AuthContext` (`useAuth`) y `ThemeContext` (`useTheme` → `{ tema, alternarTema }`).
-- Hooks de UI: `useSlidingIndicator`, `useOrdenamiento`, `useBreadcrumb`.
+- Hooks de UI: `useSlidingIndicator`, `useOrdenamiento`, `useBreadcrumb`, `useMediaQuery(query)`.
 - Hooks de datos (React Query), uno por recurso: en `hooks/` (`useAlumno`, `useBilling`, `useCatalogo`, `useDirector`, `useDocente`, `useDocenteAsistencia`, `useGrillaDeMaterias`, `useMateriasDelPlan`, `useMesasDeExamen`, `useNotifications`, `useSolicitudesAsistencia`) y por feature en `features/*/hooks/`.
 
 ## Cómo usar este catálogo en una spec (criterios de aceptación)

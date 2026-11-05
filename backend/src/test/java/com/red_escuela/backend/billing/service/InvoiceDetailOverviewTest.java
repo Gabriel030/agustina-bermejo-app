@@ -1,32 +1,35 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.billing.operation.PaymentVerification;
+
+import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.AdminInvoicePaymentResponse;
 import com.red_escuela.backend.billing.dto.AdminInvoiceResponse;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.MeInvoicePaymentResponse;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
+import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
+import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
+import com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewUseCase;
-import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
@@ -50,18 +53,22 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -71,9 +78,6 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     @Autowired
     private GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase;
-
-    @Autowired
-    private RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
@@ -89,6 +93,12 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @Autowired
+    private com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort registrationPort;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -142,7 +152,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     private CourseEnrollment persistCourseEnrollment(Student student) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -165,12 +175,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile receiptFile() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido".getBytes());
-    }
-
-    private RegisterPaymentRequest request(PaymentMethod method, String reference, Integer installments, String notes,
-                                           PaymentAllocationRequest... allocations) {
-        return new RegisterPaymentRequest(Arrays.asList(allocations), method, false, null, reference, installments, notes);
+        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "%PDF-1.4 contenido".getBytes());
     }
 
     private AdminInvoiceResponse adminInvoice(Student student, Long invoiceId) {
@@ -182,12 +187,11 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-136")
-    void theOverviewListsTheFullPaymentOfAnInvoiceWithItsRecorderAndNotes() {
+    void theOverviewListsTheFullPaymentOfAnInvoiceWithItsRecorder() {
         Person recorder = persistPerson("admin.detail1." + System.nanoTime(), "Ana", "Ruiz");
         Student student = persistStudent();
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
-        registerPaymentUseCase.register(request(PaymentMethod.TRANSFER, "TRF-998", null, "Pago completo",
-                new PaymentAllocationRequest(invoice.getId(), ars(10000))), recorder);
+        BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), recorder.getId());
 
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
 
@@ -198,34 +202,12 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         assertThat(response.payments()).hasSize(1);
         AdminInvoicePaymentResponse payment = response.payments().get(0);
         assertThat(payment.method()).isEqualTo("TRANSFER");
-        assertThat(payment.externalReference()).isEqualTo("TRF-998");
         assertThat(payment.amountApplied()).isEqualTo(ars(10000));
         assertThat(payment.paymentTotal()).isEqualTo(ars(10000));
         assertThat(payment.registeredByName()).isEqualTo("Ana Ruiz");
         assertThat(payment.status()).isEqualTo("CONFIRMED");
-        assertThat(payment.notes()).isEqualTo("Pago completo");
         assertThat(response.paymentDate()).isEqualTo(payment.paidAt());
         assertThat(response.receipts()).isEmpty();
-    }
-
-    @Test
-    @Tag("D-136")
-    void aPaymentCoveringTwoInstallmentsReportsTheAppliedAmountAndTheTotalOnEach() {
-        Person recorder = persistPerson("admin.detail2." + System.nanoTime(), "Ana", "Ruiz");
-        Student student = persistStudent();
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice first = persistInvoice(enrollment, ars(10000), 0);
-        Invoice second = persistInvoice(enrollment, ars(10000), 1);
-        registerPaymentUseCase.register(request(PaymentMethod.CARD, "LOTE-1", 3, null,
-                new PaymentAllocationRequest(first.getId(), ars(10000)),
-                new PaymentAllocationRequest(second.getId(), ars(10000))), recorder);
-
-        AdminInvoicePaymentResponse onSecond = adminInvoice(student, second.getId()).payments().get(0);
-
-        assertThat(onSecond.amountApplied()).isEqualTo(ars(10000));
-        assertThat(onSecond.paymentTotal()).isEqualTo(ars(20000));
-        assertThat(onSecond.cardInstallments()).isEqualTo(3);
-        assertThat(onSecond.cardType()).isNull();
     }
 
     @Test
@@ -236,14 +218,16 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer, PaymentVerification.none());
 
         BankTransferReceipt reloaded = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
-        assertThat(reloaded.getPayment()).isNotNull();
-        assertThat(reloaded.getPayment().getId()).isNotNull();
+        assertThat(reloaded.getPaymentId()).isNotNull();
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
         assertThat(response.payments()).hasSize(1);
+        assertThat(response.payments().get(0).paymentId()).isEqualTo(reloaded.getPaymentId());
         assertThat(response.payments().get(0).receiptId()).isEqualTo(approved.getId());
+        assertThat(response.payments().get(0).method()).isEqualTo("TRANSFER");
+        assertThat(response.payments().get(0).registeredByName()).isEqualTo("Laura Gomez");
         assertThat(response.receipts()).hasSize(1);
         assertThat(response.receipts().get(0).status()).isEqualTo("APPROVED");
         assertThat(response.receipts().get(0).reviewedByName()).isEqualTo("Laura Gomez");
@@ -276,7 +260,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), 0);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-        approvePaymentReceiptUseCase.approve(receipt.getId(), recorder);
+        approvePaymentReceiptUseCase.approve(receipt.getId(), recorder, PaymentVerification.none());
 
         JsonNode admin = objectMapper.valueToTree(adminInvoice(student, invoice.getId()));
         MeEnrollmentBillingStatusResponse own = getOwnCourseEnrollmentBillingStatusUseCase.get(student.getId(), enrollment.getId());
@@ -313,19 +297,91 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         for (int i = 0; i < 24; i++) {
             Invoice invoice = persistInvoice(enrollment, ars(10000), i);
             if (i % 2 == 0) {
-                registerPaymentUseCase.register(request(PaymentMethod.CASH, null, null, null,
-                        new PaymentAllocationRequest(invoice.getId(), ars(10000))), recorder);
+                BillingTestFixtures.payInvoiceInFull(invoice);
             } else {
-                uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+                BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+                approvePaymentReceiptUseCase.approve(receipt.getId(), recorder, PaymentVerification.none());
             }
         }
 
+        await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(
+                jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Long.class)).isZero());
+
         List<AdminEnrollmentBillingStatusResponse> overview = QueryCountAssertions.assertAtMostQueries(
-                entityManagerFactory, 12, () -> getStudentBillingOverviewUseCase.get(student.getId()));
+                entityManagerFactory, 14, () -> getStudentBillingOverviewUseCase.get(student.getId()));
 
         assertThat(overview).hasSize(1);
         assertThat(overview.get(0).invoices()).hasSize(24);
         assertThat(overview.get(0).invoices().get(0).payments()).hasSize(1);
         assertThat(overview.get(0).invoices().get(1).receipts()).hasSize(1);
+        assertThat(overview.get(0).invoices().get(1).payments()).hasSize(1);
+    }
+
+    private Long mercadoPagoPays(Long invoiceId, long amount) {
+        String mpPaymentId = "mp-" + System.nanoTime();
+        ProcessMpWebhookService service = new ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
+                id -> Optional.of(new MercadoPagoApprovedPayment(new ReportedGatewayAllocation(invoiceId, ars(amount)), 1)),
+                new MpWebhookSignatureVerifier("", true)));
+        service.process("", "request-" + System.nanoTime(), mpPaymentId);
+        return jdbc.queryForObject("select id from payment where gateway_payment_id = ?", Long.class, mpPaymentId);
+    }
+
+    private Money sumOfAppliedAmounts(AdminInvoiceResponse response) {
+        return response.payments().stream().map(AdminInvoicePaymentResponse::amountApplied).reduce(ars(0), Money::plus);
+    }
+
+    @Test
+    @Tag("D-376")
+    void anInvoiceFundedByAGatewayPaymentAndThenABankTransferShowsEachPaymentOnceAddingUpToWhatWasAllocated() {
+        Person recorder = persistPerson("admin.detail7." + System.nanoTime(), "Ana", "Ruiz");
+        Student student = persistStudent();
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
+        Long gatewayPaymentId = mercadoPagoPays(invoice.getId(), 4000);
+        Long transferPaymentId = BillingTestFixtures.registerApprovedBankTransferPayment(invoice.getId(), recorder.getId());
+
+        AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
+
+        assertThat(response.paymentStatus()).isEqualTo("PAID");
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method, AdminInvoicePaymentResponse::amountApplied, AdminInvoicePaymentResponse::paymentId)
+                .containsExactlyInAnyOrder(tuple("TRANSFER", ars(6000), transferPaymentId), tuple("MERCADO_PAGO", ars(4000), gatewayPaymentId));
+        assertThat(sumOfAppliedAmounts(response)).isEqualTo(response.paidAmount());
+    }
+
+    @Test
+    @Tag("D-376")
+    void anInvoiceFundedByTheLeftoverCreditOfAnEarlierPaymentAndANewPaymentShowsBothAddingUpToWhatWasAllocated() {
+        Student student = persistStudent();
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice first = persistInvoice(enrollment, ars(10000), 0);
+        Long leftoverPaymentId = mercadoPagoPays(first.getId(), 14000);
+        Invoice second = persistInvoice(enrollment, ars(10000), 1);
+        Long newPaymentId = mercadoPagoPays(second.getId(), 6000);
+
+        AdminInvoiceResponse response = adminInvoice(student, second.getId());
+
+        assertThat(response.paymentStatus()).isEqualTo("PAID");
+        assertThat(response.payments()).extracting(AdminInvoicePaymentResponse::method, AdminInvoicePaymentResponse::amountApplied, AdminInvoicePaymentResponse::paymentId)
+                .containsExactlyInAnyOrder(tuple("MERCADO_PAGO", ars(6000), newPaymentId), tuple("MERCADO_PAGO", ars(4000), leftoverPaymentId));
+        assertThat(sumOfAppliedAmounts(response)).isEqualTo(response.paidAmount());
+    }
+
+    @Test
+    @Tag("D-376")
+    void aPaidInvoiceWhoseAllocationHasNoSourcesShowsNoPaymentsAndDoesNotFail() {
+        Student student = persistStudent();
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
+        BillingTestFixtures.payInvoiceInFull(invoice);
+        jdbc.execute("alter table payment_allocation_source disable trigger user");
+        try {
+            jdbc.update("delete from payment_allocation_source where payment_allocation_id in (select id from payment_allocation where invoice_id = ?)", invoice.getId());
+        } finally {
+            jdbc.execute("alter table payment_allocation_source enable trigger user");
+        }
+
+        AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
+
+        assertThat(response.paymentStatus()).isEqualTo("PAID");
+        assertThat(response.payments()).isEmpty();
+        assertThat(response.paymentDate()).isNull();
     }
 }

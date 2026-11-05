@@ -35,7 +35,11 @@ public final class InvoiceIssuingRequestFactory {
     }
 
     public static InvoiceIssuingRequest createCourseAdmissionRequest(Long studentId, Course course, LocalDate today) {
-        return new InvoiceIssuingRequest(studentId, null, null, null, course.getId(), null, FeeType.MONTHLY_INSTALLMENT, YearMonth.from(today), today, today,
+        return createCourseAdmissionRequest(studentId, course.getId(), today);
+    }
+
+    public static InvoiceIssuingRequest createCourseAdmissionRequest(Long studentId, Long courseId, LocalDate today) {
+        return new InvoiceIssuingRequest(studentId, null, null, null, courseId, null, FeeType.MONTHLY_INSTALLMENT, YearMonth.from(today), today, today,
                 InvoiceIssuingReason.COURSE_ADMISSION, null, null, null, false, null, null, null, null, null, actor());
     }
 

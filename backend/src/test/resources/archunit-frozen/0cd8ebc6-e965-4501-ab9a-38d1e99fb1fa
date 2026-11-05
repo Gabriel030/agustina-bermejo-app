@@ -1,0 +1,13 @@
+com.red_escuela.backend.academicstructure.api.BusinessDayCalendar is an api interface not named *Port
+com.red_escuela.backend.academicstructure.api.TermScheduleChangeValidator is an api interface not named *Port
+com.red_escuela.backend.billing.api.AdmissionReceiptLookup is an api interface not named *Port
+com.red_escuela.backend.billing.api.CollectionReminderApplicabilityQuery is an api interface not named *Port
+com.red_escuela.backend.billing.api.CollectionReminderEmailSettingsQuery is an api interface not named *Port
+com.red_escuela.backend.billing.api.CollectionReminderEmailsQuery is an api interface not named *Port
+com.red_escuela.backend.billing.api.EnrollmentDebtGuard is an api interface not named *Port
+com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery is an api interface not named *Port
+com.red_escuela.backend.billing.api.PaymentFactsQuery is an api interface not named *Port
+com.red_escuela.backend.billing.api.ReminderPaymentGoalQuery is an api interface not named *Port
+com.red_escuela.backend.billing.api.StudentSegment is an api interface not named *Port
+com.red_escuela.backend.enrollment.api.AdmissionApplicationExpiryPort has no implementation in another module
+com.red_escuela.backend.enrollment.api.CourseEnrollmentApplicationCancellationPort has no implementation in another module

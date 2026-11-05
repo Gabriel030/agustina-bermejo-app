@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.NightlyTest;
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
@@ -13,7 +16,7 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -25,7 +28,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -48,6 +51,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SlowTest(reason = "Sweeps hundreds of overdue installments and re-runs the daily job to prove it is idempotent")
 class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceOverdueSweepService sweepService;
@@ -112,7 +116,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
 
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -206,6 +210,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @NightlyTest(reason = "Volume: persists 400 overdue invoices; the sweep behavior is covered by the small cases of the class")
     void dailyProcessMustReviewFourHundredOverdueInstallmentsAndNoneIsLeftUnprocessed() {
         Person director = persistPerson("director.sweep5." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));

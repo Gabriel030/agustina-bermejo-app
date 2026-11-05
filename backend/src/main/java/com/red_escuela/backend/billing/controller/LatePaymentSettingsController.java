@@ -4,6 +4,8 @@ import com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.usecase.latepaymentsettings.CreateLatePaymentSettingsUseCase;
 import com.red_escuela.backend.billing.usecase.latepaymentsettings.FindCurrentLatePaymentSettingsUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class LatePaymentSettingsController {
     private final CreateLatePaymentSettingsUseCase createLatePaymentSettingsUseCase;
     private final FindCurrentLatePaymentSettingsUseCase findCurrentLatePaymentSettingsUseCase;
@@ -24,6 +27,7 @@ public class LatePaymentSettingsController {
         this.findCurrentLatePaymentSettingsUseCase = findCurrentLatePaymentSettingsUseCase;
     }
 
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @PostMapping("/late-payment-settings")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")

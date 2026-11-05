@@ -47,12 +47,12 @@ class InvoiceResponseContractTest {
     static class ContractController {
         @GetMapping("/contract/admin-invoice")
         AdminInvoiceResponse admin() {
-            return AdminInvoiceResponse.of(new InvoiceView(scholarshipInvoice(), null, null, List.of()), List.of());
+            return AdminInvoiceResponse.of(new InvoiceView(scholarshipInvoice(), null, null, List.of()), List.of(), List.of());
         }
 
         @GetMapping("/contract/draft-invoice")
         AdminInvoiceResponse draft() {
-            return AdminInvoiceResponse.of(new InvoiceView(scholarshipDraftInvoice(), null, null, List.of()), List.of());
+            return AdminInvoiceResponse.of(new InvoiceView(scholarshipDraftInvoice(), null, null, List.of()), List.of(), List.of());
         }
 
         @GetMapping("/contract/me-invoice")

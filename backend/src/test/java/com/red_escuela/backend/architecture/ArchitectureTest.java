@@ -3,7 +3,7 @@ package com.red_escuela.backend.architecture;
 import com.red_escuela.backend.shared.time.RawNowRule;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
+import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import com.red_escuela.backend.architecture.fixture.billing.configuration.entity.FixtureEntity;
 import jakarta.persistence.Entity;
@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Tag;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.junit.jupiter.api.Test;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -25,9 +27,7 @@ class ArchitectureTest {
 
     @Test
     void primitiveMoneyRuleDetectsViolations() {
-        JavaClasses fixture = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+        JavaClasses fixture = ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
 
         assertThatThrownBy(() -> ArchitectureRules.noPrimitiveMoneyPercentOrGradeFields("..dto..").check(fixture))
                 .isInstanceOf(AssertionError.class)
@@ -43,7 +43,7 @@ class ArchitectureTest {
 
     @Test
     void sharedDoesNotDependOnFeatures() {
-        FreezingArchRule.freeze(ArchitectureRules.sharedDoesNotDependOnFeatures()).check(MAIN_CLASSES);
+        ArchitectureRules.sharedDoesNotDependOnFeatures().check(MAIN_CLASSES);
     }
 
     @Test
@@ -86,6 +86,14 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-375")
+    void lateFeeCorrectionRuleDetectsAShortcutToTheIssuer() {
+        assertThatThrownBy(() -> ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LateFeeCorrectionShortcutFixture");
+    }
+
+    @Test
     @Tag("B2-33")
     @Tag("D-127")
     void cancellationRuleDetectsABackdoor() {
@@ -109,6 +117,27 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-142")
+    @Tag("D-296")
+    void enrollmentLifecycleNeverWritesBillingMoney() {
+        ArchitectureRules.enrollmentLifecycleNeverWritesBillingMoney().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.enrollmentLifecycleNeverWritesBillingMoney().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("WithdrawalWritingBillingFixture");
+    }
+
+    @Test
+    @Tag("C-21")
+    @Tag("D-142")
+    @Tag("D-314")
+    void enrollmentReadsStudentDebtOnlyThroughTheDebtGuard() {
+        ArchitectureRules.enrollmentReadsStudentDebtOnlyThroughTheDebtGuard().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.enrollmentReadsStudentDebtOnlyThroughTheDebtGuard().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("DebtReadingFixture");
+    }
+
+    @Test
     @Tag("D-051")
     void policiesAndPlannersArePure() {
         ArchitectureRules.policiesArePure().check(MAIN_CLASSES);
@@ -116,9 +145,7 @@ class ArchitectureTest {
 
     @Test
     void issuanceRulesDetectViolations() {
-        JavaClasses fixture = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+        JavaClasses fixture = ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
 
         assertThatThrownBy(() -> ArchitectureRules.invoicesAreIssuedOnlyByInvoiceIssuingService().check(fixture))
                 .isInstanceOf(AssertionError.class)
@@ -134,9 +161,7 @@ class ArchitectureTest {
     private static final String FIXTURE_V2 = ArchitectureRules.ROOT + ".architecture.fixture.billing.configuration";
 
     private static JavaClasses fixtureClasses() {
-        return new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
-                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+        return ImportedApplicationClasses.fixturesIn(ArchitectureRules.ROOT + ".architecture.fixture");
     }
 
     @Test
@@ -167,6 +192,16 @@ class ArchitectureTest {
         assertThatThrownBy(() -> ArchitectureRules.useCasesDependOnlyOnPortsRepositoriesAndPolicies(FIXTURE_V2).check(fixtureClasses()))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("UseCaseDependingOnAnEntityFixture");
+    }
+
+    @Test
+    @Tag("D-173")
+    void billingUseCasesMayDependOnSubdomainServicesButNotOnSubdomainExceptions() {
+        String billingFixtures = ArchitectureRules.ROOT + ".architecture.fixture.billing";
+        assertThatThrownBy(() -> ArchitectureRules.useCasesDependOnlyOnPortsRepositoriesAndPolicies(billingFixtures).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UseCaseUsingSubdomainExceptionFixture")
+                .hasMessageNotContaining("UseCaseUsingSubdomainServiceFixture");
     }
 
     @Test
@@ -335,6 +370,13 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-159")
+    void refundStatusChangesOnlyThroughItsTransitionTable() {
+        ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable("com.red_escuela.backend.billing.payment.domain.Refund", "status", "changeStatus",
+                "com.red_escuela.backend.billing.payment.domain.RefundStatusStateMachine").check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-082")
     void paymentsArePersistedOnlyByOperations() {
         ArchitectureRules.economicStateIsPersistedOnlyByOperations(PAYMENT_V2_REPOSITORY_CLASS, com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
@@ -446,6 +488,26 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-291")
+    void lateFeeAnnulmentRuleDetectsAShortcutOutsideTheCancellation() {
+        assertThatThrownBy(() -> ArchitectureRules.lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LateFeeAnnulmentShortcutFixture");
+    }
+
+    @Test
+    @Tag("D-291")
+    void lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation() {
+        ArchitectureRules.lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-375")
+    void lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
+        ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-144")
     void writeRulesDetectCallersThatAreNotOperations() {
         assertThatThrownBy(() -> ArchitectureRules.economicStateIsPersistedOnlyByOperations(INVOICE_REPOSITORY_CLASS, com.red_escuela.backend.architecture.fixture.billing.ledger.FixtureOperation.class).check(fixtureClasses()))
@@ -511,7 +573,66 @@ class ArchitectureTest {
         noMethods()
                 .that().areDeclaredInClassesThat().resideInAPackage("..billing.collections..")
                 .should().beAnnotatedWith(Scheduled.class)
-                .because("the nightly pipeline calls each collections step from the existing sweeps (V2-11a orchestrates them)")
+                .because("the nightly pipeline calls each collections step; no collections class has a cron of its own")
                 .check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-339")
+    void overdueContactSegmentImplementsThePublicStudentSegmentInterface() {
+        classes()
+                .that().haveFullyQualifiedName("com.red_escuela.backend.billing.collections.service.OverdueContactSegment")
+                .should().implement("com.red_escuela.backend.billing.api.StudentSegment")
+                .because("the contact list is the first reusable segment of the campaigns and exposes it through the public billing api")
+                .check(MAIN_CLASSES);
+        classes()
+                .that().haveFullyQualifiedName("com.red_escuela.backend.billing.api.StudentSegment")
+                .should().beInterfaces()
+                .check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-339")
+    void noCampaignClassExistsYet() {
+        noClasses()
+                .should().haveSimpleNameContaining("Campaign")
+                .because("the campaigns of epic 12 are not implemented by the contact list (D-339)")
+                .check(MAIN_CLASSES);
+    }
+
+    @Test
+    void billingControllersDeclareRequiresModule() {
+        ArchitectureRules.billingControllersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..").check(MAIN_CLASSES);
+    }
+
+    @Test
+    void controllerGuardRuleDetectsUnguardedControllersAndAllowsGuardedOnes() {
+        assertThatThrownBy(() -> ArchitectureRules.billingControllersDeclareRequiresModule(GUARD_FIXTURE_ROOT + "..").check(guardFixtures()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnguardedControllerFixture")
+                .hasMessageContaining("PartlyGuardedControllerFixture")
+                .hasMessageNotContaining("ClassGuardedControllerFixture")
+                .hasMessageNotContaining("MethodGuardedControllerFixture");
+    }
+
+    @Test
+    void billingJobsAndListenersDeclareRequiresModule() {
+        ArchitectureRules.billingJobsAndListenersDeclareRequiresModule(ArchitectureRules.ROOT + ".billing..").check(MAIN_CLASSES);
+    }
+
+    @Test
+    void jobGuardRuleDetectsUnguardedJobsAndListenersAndAllowsGuardedOnes() {
+        assertThatThrownBy(() -> ArchitectureRules.billingJobsAndListenersDeclareRequiresModule(GUARD_FIXTURE_ROOT + "..").check(guardFixtures()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnguardedJobFixture")
+                .hasMessageContaining("UnguardedListenerFixture")
+                .hasMessageNotContaining("ClassGuardedJobFixture")
+                .hasMessageNotContaining("MethodGuardedListenerFixture");
+    }
+
+    private static final String GUARD_FIXTURE_ROOT = ArchitectureRules.ROOT + ".architecture.fixture.guard";
+
+    private static JavaClasses guardFixtures() {
+        return ImportedApplicationClasses.fixturesIn(GUARD_FIXTURE_ROOT);
     }
 }

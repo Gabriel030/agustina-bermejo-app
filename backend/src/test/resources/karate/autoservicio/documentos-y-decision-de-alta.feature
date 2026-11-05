@@ -21,10 +21,16 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Then status 201
     * def programId = response.id
 
+    Given path '/programs', programId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
+
     * def descripcionPeriodoCarreraDocs = 'Karate - Periodo carrera docs ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(descripcionPeriodoCarreraDocs)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(descripcionPeriodoCarreraDocs)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -62,18 +68,18 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def applicationId = response.id
 
   Scenario: Agregar documentación propia, no ajena; listar pendientes; rechazar con motivo
-    # Sin sesión — 403
+    # Sin sesión — 401
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
-    Then status 403
+    Then status 401
 
     # El propio alumno puede subir su documento — 201
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + alumnoToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 
@@ -88,7 +94,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + otroAlumno.accessToken
     And param type = 'DNI_DORSO'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni-dorso.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni-dorso.pdf', contentType: 'application/pdf' }
     When method post
     Then status 404
 
@@ -152,6 +158,10 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def sinFactura = response.filter(function(x){ return x.id == applicationId })[0]
     And match sinFactura.admissionInvoice == null
 
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_FRENTE' }
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'DNI_DORSO' }
+    * call read('classpath:karate/helpers/subir-documento.feature') { applicationId: '#(applicationId)', alumnoToken: '#(alumnoToken)', tipo: 'ANALITICO_SECUNDARIO' }
+
     Given path '/program-enrollment-applications', applicationId, 'approve'
     And header Authorization = 'Bearer ' + preceptorToken
     When method post
@@ -164,6 +174,14 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def conFactura = response.filter(function(x){ return x.id == applicationId })[0]
     And match conFactura.admissionInvoice.paymentStatus == 'PENDING'
     And match conFactura.admissionInvoice.total.amount == '50000.00'
+
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And param type = 'DNI_FRENTE'
+    And multipart file file = { value: '%PDF-1.4 reemplazo', filename: 'reemplazo.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 409
+    And match response.code == 'APPLICATION_DOCUMENTS_LOCKED'
 
   Scenario: Rechazar la solicitud no deja ninguna factura de matrícula
     Given path '/program-enrollment-applications', applicationId, 'reject'
@@ -183,12 +201,12 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
   Scenario: El alumno ve los documentos que ya subió, y solo los propios
     Given path '/me/documents'
     When method get
-    Then status 403
+    Then status 401
 
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + alumnoToken
     And param type = 'DNI_FRENTE'
-    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    And multipart file file = { value: '%PDF-1.4 contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
 

@@ -15,7 +15,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     * def nombreTerm = 'Ciclo QA mesas ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(nombreTerm)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -47,7 +47,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión QA mesas', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
+    And request { name: 'Comisión QA mesas', shift: 'MORNING', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -137,6 +137,14 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And match response.id == registrationId
     And match response.status == 'REGISTERED'
 
+    Given path '/exam-boards', examBoardId, 'reschedule'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { examDate: '2026-07-02T00:00:00' }
+    When method post
+    Then status 200
+    And match response.status == 'SCHEDULED'
+    And match response.rescheduledFrom == '#notnull'
+
     Given path '/exam-boards', examBoardId, 'close'
     And header Authorization = 'Bearer ' + adminToken
     When method post
@@ -147,6 +155,12 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 204
+
+    Given path '/exam-boards', examBoardId, 'cancel'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { reason: 'Motivo suficiente' }
+    When method post
+    Then status 409
 
   Scenario: Inscribirse sin estar REGULAR — 400
     * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())

@@ -1,11 +1,13 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.mail.EmailService;
+import com.red_escuela.backend.shared.mail.MailRecipient;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,7 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedMockBeans
 class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
     @Autowired
     private RequestPasswordResetUseCase requestPasswordResetUseCase;
@@ -39,7 +42,7 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @MockBean
+    @Autowired
     private EmailService emailService;
 
     private String email;
@@ -54,6 +57,7 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
             entityManager.persist(address);
             Person person = new Person();
             person.setUsername(email);
+            person.setName("Ana");
             person.setEmail(email);
             person.setAuthProvider(AuthProvider.LOCAL);
             person.setAddress(address);
@@ -75,10 +79,10 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
     void theResetCodeIsEmailedOnlyAfterTheTransactionCommits() {
         transactionTemplate.executeWithoutResult(status -> {
             requestPasswordResetUseCase.requestReset(email);
-            verify(emailService, never()).sendPasswordResetCode(any(), anyString());
+            verify(emailService, never()).sendPasswordResetCode(any(), anyString(), anyString());
         });
 
-        verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, timeout(5000)).sendPasswordResetCode(any(MailRecipient.class), anyString(), anyString());
     }
 
     @Test
@@ -88,6 +92,6 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
             status.setRollbackOnly();
         });
 
-        verify(emailService, after(1000).never()).sendPasswordResetCode(any(), anyString());
+        verify(emailService, after(1000).never()).sendPasswordResetCode(any(), anyString(), anyString());
     }
 }

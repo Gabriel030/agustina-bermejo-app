@@ -7,6 +7,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 
 import com.tngtech.archunit.lang.CompositeArchRule;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -24,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,16 +54,14 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.note..", "..billing.collections..", "..billing.payment.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.note..", "..billing.collections..", "..billing.payment..", "..billing.discount..", "..billing.annualupfront.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.note", ROOT + ".billing.collections", ROOT + ".billing.payment"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.note", ROOT + ".billing.collections", ROOT + ".billing.payment", ROOT + ".billing.discount", ROOT + ".billing.annualupfront"};
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
-            + "|service\\.legacy\\.[A-Za-z]+"
-            + "|service\\.(?:InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
+            + "|service\\.(?:EnrollmentBackedInvoiceIssuingContextLoader|InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
 
-    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService"
-            + "," + ROOT + ".billing.account.service.CurrentAccountAllocationService";
+    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.account.service.CurrentAccountAllocationService";
 
     static final String DEBIT_NOTE_ISSUER_CLASS = ROOT + ".billing.invoice.operation.DebitNoteIssuer";
 
@@ -141,11 +142,33 @@ public final class ArchitectureRules {
     public static ArchRule cancellationApplicationsAreBuiltOnlyByTheCancellationOperation() {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.CancelInvoiceOperation")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")
                 .should().callCodeUnitWhere(DescribedPredicate.describe("the creation of a cancellation application",
                         (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ROOT + ".billing.note.domain.CreditNote")
                                 && call.getTarget().getName().equals("toInvoiceCancellationApplication")))
                 .allowEmptyShould(true)
-                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation");
+                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation or the late fee correction issuer, which keeps the charge key");
+    }
+
+    public static ArchRule lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".billing.collections.operation.LateFeeCorrectionCreditNoteOperation")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeAnnulmentOnInstallmentCancellation")
+                .should().callMethodWhere(target(owner(assignableTo(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")))
+                        .and(target(name("issueCorrectionCreditNote"))))
+                .allowEmptyShould(true)
+                .because("a late fee correction credit note must go through its operation, or through the annulment that rides on the cancellation of its installment, which validate the target debit note");
+    }
+
+    public static ArchRule lateFeeAnnulmentOnCancellationIsCalledOnlyByTheCancellationOperation() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.CancelInvoiceOperation")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeAnnulmentOnInstallmentCancellation")
+                .should().callMethodWhere(target(owner(assignableTo(ROOT + ".billing.note.service.LateFeeAnnulmentOnInstallmentCancellation")))
+                        .and(target(name("annulLiveLateFeesOfInstallment"))))
+                .allowEmptyShould(true)
+                .because("the late fees of an installment are annulled only inside the cancellation of that installment, under its account and installment locks");
     }
 
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
@@ -159,6 +182,24 @@ public final class ArchitectureRules {
                 .and().doNotHaveFullyQualifiedName(ROOT + ".billing.account.service.CurrentAccountAllocationService")
                 .should().callMethodWhere(target(name("allocateFullInvoicePayment")).and(target(owner(assignableTo(Invoice.class)))))
                 .because("a payment allocation must be registered together with its credit in the current account");
+    }
+
+    public static ArchRule enrollmentLifecycleNeverWritesBillingMoney() {
+        return noClasses().that().resideInAnyPackage("..enrollment..", "..graduation..")
+                .should().dependOnClassesThat().resideInAnyPackage("..billing.note..", "..billing.account..")
+                .orShould().callMethodWhere(target(owner(assignableTo(Invoice.class)))
+                        .and(target(name("applyCreditNote")).or(target(name("allocateFullInvoicePayment"))).or(target(name("reversePaymentAllocation")))
+                                .or(target(name("markInvoiceAsOverdue"))).or(target(name("issueInvoice")))))
+                .because("a withdrawal or a graduation never touches invoices, credit notes or the current account; billing decides through its port (D-142, D-296)");
+    }
+
+    public static ArchRule enrollmentReadsStudentDebtOnlyThroughTheDebtGuard() {
+        return noClasses().that().resideInAPackage("..enrollment..")
+                .should().callMethodWhere(target(owner(assignableTo(InvoiceRepository.class)))
+                        .and(target(name("existsByStudentIdAndPaymentStatus"))
+                                .or(target(name("existsOpenInvoiceOfWithdrawnEnrollmentByStudentId")))
+                                .or(target(name("existsOpenInvoiceOfWithdrawnEnrollmentInPendingRequestByStudentId")))))
+                .because("the debt that blocks a new enrollment is decided only by EnrollmentDebtGuard and its policy (D-142, D-314)");
     }
 
     public static ArchRule policiesArePure() {
@@ -189,12 +230,16 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule useCasesDependOnlyOnPortsRepositoriesAndPolicies(String subdomain) {
+        List<String> allowedPackages = new ArrayList<>(List.of(
+                subdomain + ".repository..", subdomain + ".policy..", subdomain + ".domain..", subdomain + ".service..",
+                subdomain + ".dto..", subdomain + ".usecase..", subdomain + ".events..", ROOT + ".shared..", ROOT + ".billing.operation..",
+                "java..", "org.springframework..", "jakarta.transaction..", "org.slf4j.."));
+        if (subdomain.endsWith(".billing")) {
+            allowedPackages.add(subdomain + ".*.service..");
+        }
         return classes()
                 .that().resideInAPackage(subdomain + ".usecase..")
-                .should().onlyDependOnClassesThat().resideInAnyPackage(
-                        subdomain + ".repository..", subdomain + ".policy..", subdomain + ".domain..", subdomain + ".service..",
-                        subdomain + ".dto..", subdomain + ".usecase..", ROOT + ".shared..", ROOT + ".billing.operation..",
-                        "java..", "org.springframework..", "jakarta.transaction..", "org.slf4j..")
+                .should().onlyDependOnClassesThat().resideInAnyPackage(allowedPackages.toArray(String[]::new))
                 .allowEmptyShould(true)
                 .because("a use case orchestrates ports, repositories and policies of its own subdomain");
     }
@@ -287,6 +332,64 @@ public final class ArchitectureRules {
                 .allowEmptyShould(true)
                 .because("domain events are serialized into event_publication and carry ids and plain values, never entities");
     }
+
+    public static ArchRule billingControllersDeclareRequiresModule(String billingPackage) {
+        ArchCondition<JavaClass> condition = new ArchCondition<>("declare @RequiresModule on the class or on every request mapping") {
+            @Override
+            public void check(JavaClass controller, ConditionEvents events) {
+                boolean classGuarded = controller.isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class);
+                java.util.List<String> unguarded = controller.getMethods().stream()
+                        .filter(method -> REQUEST_MAPPINGS.stream().anyMatch(method::isAnnotatedWith))
+                        .filter(method -> !method.isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class))
+                        .map(method -> method.getName())
+                        .sorted()
+                        .toList();
+                boolean satisfied = classGuarded || unguarded.isEmpty();
+                events.add(new SimpleConditionEvent(controller, satisfied,
+                        controller.getName() + " exposes endpoints without @RequiresModule: " + unguarded));
+            }
+        };
+        return classes()
+                .that().resideInAPackage(billingPackage)
+                .and(DescribedPredicate.describe("are controllers", (JavaClass javaClass) ->
+                        javaClass.isAnnotatedWith(org.springframework.web.bind.annotation.RestController.class)
+                                || javaClass.getPackageName().contains(".controller")))
+                .should(condition)
+                .allowEmptyShould(true)
+                .because("with billing off every billing endpoint answers 404 (R-G1, Epic 19)");
+    }
+
+    public static ArchRule billingJobsAndListenersDeclareRequiresModule(String billingPackage) {
+        ArchCondition<com.tngtech.archunit.core.domain.JavaMethod> condition = new ArchCondition<>("be guarded by @RequiresModule on the method or its class") {
+            @Override
+            public void check(com.tngtech.archunit.core.domain.JavaMethod method, ConditionEvents events) {
+                boolean guarded = method.isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class)
+                        || method.getOwner().isAnnotatedWith(com.red_escuela.backend.shared.module.RequiresModule.class);
+                events.add(new SimpleConditionEvent(method, guarded, method.getFullName() + " is a job or listener without @RequiresModule"));
+            }
+        };
+        return com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods()
+                .that().areDeclaredInClassesThat().resideInAPackage(billingPackage)
+                .and(DescribedPredicate.describe("are scheduled jobs or event listeners", (com.tngtech.archunit.core.domain.JavaMethod method) ->
+                        JOB_AND_LISTENER_ANNOTATIONS.stream().anyMatch(method::isAnnotatedWith)))
+                .should(condition)
+                .allowEmptyShould(true)
+                .because("with billing off no billing job or listener runs (R-G2, Epic 19)");
+    }
+
+    private static final java.util.List<Class<? extends java.lang.annotation.Annotation>> REQUEST_MAPPINGS = java.util.List.of(
+            org.springframework.web.bind.annotation.RequestMapping.class,
+            org.springframework.web.bind.annotation.GetMapping.class,
+            org.springframework.web.bind.annotation.PostMapping.class,
+            org.springframework.web.bind.annotation.PutMapping.class,
+            org.springframework.web.bind.annotation.PatchMapping.class,
+            org.springframework.web.bind.annotation.DeleteMapping.class);
+
+    private static final java.util.List<Class<? extends java.lang.annotation.Annotation>> JOB_AND_LISTENER_ANNOTATIONS = java.util.List.of(
+            org.springframework.scheduling.annotation.Scheduled.class,
+            org.springframework.modulith.events.ApplicationModuleListener.class,
+            org.springframework.context.event.EventListener.class,
+            org.springframework.transaction.event.TransactionalEventListener.class);
 
     public static ArchRule academicStructureDoesNotDependOnBilling() {
         return noClasses()

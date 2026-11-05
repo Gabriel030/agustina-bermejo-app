@@ -1,25 +1,20 @@
 package com.red_escuela.backend.identity.controller;
 
-import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
-import com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewUseCase;
-import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
-import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.usecase.student.GetStudentRecordUseCase;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsCommand;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsUseCase;
 import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
-import com.red_escuela.backend.identity.repository.StudentRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,21 +33,13 @@ public class StudentController {
     private final GetStudentRecordUseCase getStudentRecordUseCase;
     private final WithdrawStudentUseCase withdrawStudentUseCase;
     private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
-    private final GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase;
-    private final StudentRepository studentRepository;
-    private final StudentDocumentRepository studentDocumentRepository;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
-                              WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
-                              GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase, StudentRepository studentRepository,
-                              StudentDocumentRepository studentDocumentRepository) {
+                              WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
         this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
-        this.getStudentBillingOverviewUseCase = getStudentBillingOverviewUseCase;
-        this.studentRepository = studentRepository;
-        this.studentDocumentRepository = studentDocumentRepository;
     }
 
     @GetMapping
@@ -61,27 +48,20 @@ public class StudentController {
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus,
             @RequestParam(required = false) String search) {
+        boolean seesWithdrawalReason = seesWithdrawalReason();
         return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus, search))
-                .stream().map(StudentResponse::from).toList();
+                .stream().map(student -> StudentResponse.from(student, seesWithdrawalReason)).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StudentRecordResponse getRecord(@PathVariable Long id) {
-        return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id));
-    }
-
-    @GetMapping("/{id}/documents")
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<StudentDocumentResponse> getDocuments(@PathVariable Long id) {
-        if (!studentRepository.existsById(id)) throw new StudentNotFoundException(id);
-        return studentDocumentRepository.findByStudentId(id).stream()
-                .map(StudentDocumentResponse::from).toList();
+        return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id), seesWithdrawalReason());
     }
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
         withdrawStudentUseCase.withdraw(new WithdrawStudentCommand(id, request));
     }
@@ -93,12 +73,9 @@ public class StudentController {
         resetStudentPasswordUseCase.resetPassword(id);
     }
 
-    @GetMapping("/{id}/billing-overview")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public List<AdminEnrollmentBillingStatusResponse> billingOverview(@PathVariable Long id) {
-        return getStudentBillingOverviewUseCase.get(id);
+    private boolean seesWithdrawalReason() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority())
+                        || "ROLE_ADMINISTRATIVO".equals(authority.getAuthority()));
     }
-
-
-
 }

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
@@ -9,7 +11,7 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -98,10 +100,10 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     private CourseSubject persistCourseSubject(String name) {
-        Term courseTerm = new Term();
+        Term courseTerm = TermFixtures.newTerm();
         courseTerm.setYear(2026);
         courseTerm.setDescription("Term del curso");
-        courseTerm.setType("1C");
+        courseTerm.setType(TermType.FIRST_SEMESTER);
         courseTerm.setStartDate(LocalDateTime.now());
         courseTerm.setEndDate(LocalDateTime.now().plusMonths(2));
         entityManager.persist(courseTerm);
@@ -122,10 +124,10 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     private Term persistSectionTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("Term de la comisión");
-        term.setType("1C");
+        term.setType(TermType.FIRST_SEMESTER);
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
         entityManager.persist(term);

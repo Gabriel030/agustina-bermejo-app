@@ -2,9 +2,9 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
+import com.red_escuela.backend.enrollment.dto.ProspectResponse;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
-import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.service.ProspectService;
 import jakarta.validation.Valid;
@@ -36,8 +36,8 @@ public class ProspectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StudentResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
-        return StudentResponse.from(prospectService.createProspect(request));
+    public ProspectResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
+        return ProspectResponse.from(prospectService.createProspect(request));
     }
 
     @PostMapping("/{id}/documents")
@@ -65,8 +65,8 @@ public class ProspectController {
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
-        return StudentResponse.from(prospectService.confirm(id, request));
+    public ProspectResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
+        return ProspectResponse.from(prospectService.confirm(id, request));
     }
 
     @PostMapping("/{id}/send-verification")

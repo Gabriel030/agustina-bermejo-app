@@ -1,12 +1,12 @@
 package com.red_escuela.backend.characterization.coursework;
 
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.evaluation.entity.FinalGradeType;
+import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.identity.entity.Person;

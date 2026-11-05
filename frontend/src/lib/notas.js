@@ -27,6 +27,8 @@ export const COLUMNAS_NOTAS = [
 // "Vía" por la que una materia quedó aprobada — espejo del enum de backend
 // FinalGradeType (PROMOTION/FINAL_EXAM), mostrado como calificador junto al
 // pill "Aprobada" en vez de inventar un estado nuevo (ver SectionEnrollmentResponse.finalGradeType).
+export const TIPO_NOTA_LABEL = { EXAM: 'Parcial', TP: 'TP', FINAL: 'Final' };
+
 export const FINAL_GRADE_TYPE_LABEL = { PROMOTION: 'por promoción', FINAL_EXAM: 'por examen final' };
 
 // Espejo del enum de backend CurricularTerm (FIRST/SECOND/ANNUAL) — compartido por Plan de

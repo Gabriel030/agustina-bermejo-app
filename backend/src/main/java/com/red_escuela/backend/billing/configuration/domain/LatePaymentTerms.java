@@ -9,12 +9,23 @@ import java.util.Map;
 
 public record LatePaymentTerms(int gracePeriodDays, Percentage dailyLateFeeRate, int suspensionAfterDays, int suspensionAfterInvoiceCount,
                                boolean blockNewEnrollmentsWhenOverdue, int lateFeeDebitNoteDueDays, boolean freezeLateFeesOnWithdrawal,
-                               boolean lateFeeChargingEnabled) implements ConfigurationValues {
+                               boolean lateFeeChargingEnabled, int pendingReceiptProtectionBusinessDays) implements ConfigurationValues {
+
+    public static final int DEFAULT_PENDING_RECEIPT_PROTECTION_BUSINESS_DAYS = 10;
 
     public LatePaymentTerms {
         if (dailyLateFeeRate == null) {
             throw new InvalidConfigurationValuesException("La tasa diaria de recargo es obligatoria");
         }
+        if (pendingReceiptProtectionBusinessDays < 1) {
+            throw new InvalidConfigurationValuesException("El tope de protección del comprobante pendiente debe ser de al menos 1 día hábil");
+        }
+    }
+
+    public LatePaymentTerms(int gracePeriodDays, Percentage dailyLateFeeRate, int suspensionAfterDays, int suspensionAfterInvoiceCount,
+                            boolean blockNewEnrollmentsWhenOverdue, int lateFeeDebitNoteDueDays, boolean freezeLateFeesOnWithdrawal, boolean lateFeeChargingEnabled) {
+        this(gracePeriodDays, dailyLateFeeRate, suspensionAfterDays, suspensionAfterInvoiceCount, blockNewEnrollmentsWhenOverdue, lateFeeDebitNoteDueDays,
+                freezeLateFeesOnWithdrawal, lateFeeChargingEnabled, DEFAULT_PENDING_RECEIPT_PROTECTION_BUSINESS_DAYS);
     }
 
     @JsonCreator
@@ -23,12 +34,14 @@ public record LatePaymentTerms(int gracePeriodDays, Percentage dailyLateFeeRate,
                                      @JsonProperty("blockNewEnrollmentsWhenOverdue") boolean blockNewEnrollmentsWhenOverdue,
                                      @JsonProperty("lateFeeDebitNoteDueDays") int lateFeeDebitNoteDueDays,
                                      @JsonProperty("freezeLateFeesOnWithdrawal") boolean freezeLateFeesOnWithdrawal,
-                                     @JsonProperty("lateFeeChargingEnabled") boolean lateFeeChargingEnabled, @JsonAnySetter Map<String, Object> unknownProperties) {
+                                     @JsonProperty("lateFeeChargingEnabled") boolean lateFeeChargingEnabled,
+                                     @JsonProperty("pendingReceiptProtectionBusinessDays") Integer pendingReceiptProtectionBusinessDays, @JsonAnySetter Map<String, Object> unknownProperties) {
         if (!unknownProperties.isEmpty()) {
             throw new InvalidConfigurationValuesException("La mora no admite estos campos: " + unknownProperties.keySet());
         }
         return new LatePaymentTerms(gracePeriodDays, dailyLateFeeRate, suspensionAfterDays, suspensionAfterInvoiceCount, blockNewEnrollmentsWhenOverdue,
-                lateFeeDebitNoteDueDays, freezeLateFeesOnWithdrawal, lateFeeChargingEnabled);
+                lateFeeDebitNoteDueDays, freezeLateFeesOnWithdrawal, lateFeeChargingEnabled,
+                pendingReceiptProtectionBusinessDays == null ? DEFAULT_PENDING_RECEIPT_PROTECTION_BUSINESS_DAYS : pendingReceiptProtectionBusinessDays);
     }
 
     public static LatePaymentTerms initial() {

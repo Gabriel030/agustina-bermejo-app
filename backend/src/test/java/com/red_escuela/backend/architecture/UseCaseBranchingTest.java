@@ -14,7 +14,7 @@ class UseCaseBranchingTest {
     @Test
     void useCaseServicesOfTheV2SubdomainsHaveNoBranching() {
         List<String> violations = UseCaseBranchingScanner.findViolations(
-                Path.of("src/main/java"), List.of("/billing/configuration/", "/billing/operation/"));
+                Path.of("src/main/java"), List.of("/billing/configuration/", "/billing/operation/", "/billing/discount/"));
 
         assertThat(violations).isEmpty();
     }

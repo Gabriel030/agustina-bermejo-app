@@ -45,13 +45,37 @@ class ProgramAdmissionInvoicePaidFirstAllocationStrategyTest {
         assertThat(plannedIds(oldestFirst, "80000.00")).containsExactly(1L);
     }
 
-    @Test
-    void creditThatDoesNotCoverTheAdmissionInvoiceSettlesNothingEvenIfItCoversTheOlderDebt() {
-        OpenInvoiceView smallerOlderDebt = invoice(1, InvoiceDocumentType.INVOICE, null, "2027-03-10", "2027-03-01", "30000.00");
-        AccountCreditAllocationStrategy strategy = new ProgramAdmissionInvoicePaidFirstAllocationStrategy(oldestFirst, Set.of(2L));
+    private Set<Long> covered(Set<Long> candidates, String credit, OpenInvoiceView... invoices) {
+        return ProgramAdmissionInvoicePaidFirstAllocationStrategy.programAdmissionInvoiceIdsFullyCoveredByCredit(oldestFirst, candidates, ars(credit), List.of(invoices));
+    }
 
-        assertThat(strategy.planFullInvoiceAllocations(ars("40000.00"), List.of(smallerOlderDebt, admission))).isEmpty();
+    @Test
+    @Tag("D-089")
+    void creditThatDoesNotCoverTheAdmissionInvoiceCoversNoAdmissionAndTheOlderDebtGoesFirst() {
+        OpenInvoiceView smallerOlderDebt = invoice(1, InvoiceDocumentType.INVOICE, null, "2027-03-10", "2027-03-01", "30000.00");
+
+        assertThat(covered(Set.of(2L), "40000.00", smallerOlderDebt, admission)).isEmpty();
+        assertThat(covered(Set.of(2L), "49999.99", smallerOlderDebt, admission)).isEmpty();
+        assertThat(covered(Set.of(2L), "50000.00", smallerOlderDebt, admission)).containsExactly(2L);
         assertThat(oldestFirst.planFullInvoiceAllocations(ars("40000.00"), List.of(smallerOlderDebt, admission)))
                 .extracting(PlannedInvoiceAllocation::invoiceId).containsExactly(1L);
+    }
+
+    @Test
+    void creditIsAccumulatedPerAdmissionInvoiceAndStopsAtTheFirstOneItDoesNotCover() {
+        OpenInvoiceView secondAdmission = invoice(3, InvoiceDocumentType.INVOICE, null, "2027-05-20", "2027-05-01", "50000.00");
+        OpenInvoiceView thirdAdmission = invoice(4, InvoiceDocumentType.INVOICE, null, "2027-06-20", "2027-06-01", "10000.00");
+
+        assertThat(covered(Set.of(2L, 3L, 4L), "80000.00", march, admission, secondAdmission, thirdAdmission)).containsExactly(2L);
+        assertThat(covered(Set.of(2L, 3L, 4L), "100000.00", march, admission, secondAdmission, thirdAdmission)).containsExactlyInAnyOrder(2L, 3L);
+        assertThat(covered(Set.of(2L, 3L, 4L), "110000.00", march, admission, secondAdmission, thirdAdmission)).containsExactlyInAnyOrder(2L, 3L, 4L);
+    }
+
+    @Test
+    void onlyDeclaredAdmissionInvoicesWithOutstandingBalanceAreCovered() {
+        OpenInvoiceView alreadySettledAdmission = invoice(3, InvoiceDocumentType.INVOICE, null, "2027-03-01", "2027-03-01", "0.00");
+
+        assertThat(covered(Set.of(2L, 3L), "50000.00", march, admission, alreadySettledAdmission)).containsExactly(2L);
+        assertThat(covered(Set.of(), "500000.00", march, admission)).isEmpty();
     }
 }

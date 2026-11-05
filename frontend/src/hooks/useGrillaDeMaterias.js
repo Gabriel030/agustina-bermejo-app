@@ -35,7 +35,7 @@ export function useGrillaDeMaterias(carreraId, criteriosExtra = [], comparadorDe
   const anio = searchParams.get('anio') ?? 'todos';
   const [page, setPage] = useState(1);
 
-  const { filas: filasSinOrdenPropio, cargando } = useMateriasDelPlan(carreraId);
+  const { filas: filasSinOrdenPropio, cargando, fallo, recargar } = useMateriasDelPlan(carreraId);
   const filas = comparadorDefault ? [...filasSinOrdenPropio].sort(comparadorDefault) : filasSinOrdenPropio;
   const anios = aniosDisponibles(filas);
   const { criterios, toggleOrden: toggleOrdenBase, estadoDe } = useOrdenamiento();
@@ -88,6 +88,8 @@ export function useGrillaDeMaterias(carreraId, criteriosExtra = [], comparadorDe
     setPage,
     totalPages,
     cargando,
+    fallo,
+    recargar,
     estado,
     cambiarEstado,
     anio,

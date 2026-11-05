@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.PaymentAllocationResponse;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
+import com.red_escuela.backend.shared.validation.PositiveMoney;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -28,15 +29,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class BillingMoneyContractTest {
 
+    record AmountBody(@NotNull Long invoiceId, @NotNull @PositiveMoney Money amountApplied) {
+    }
+
     @RestController
     static class ContractController {
         @GetMapping("/contract/allocation")
-        PaymentAllocationResponse allocation() {
-            return new PaymentAllocationResponse(1L, ars(48000));
+        AmountBody allocation() {
+            return new AmountBody(1L, ars(48000));
         }
 
         @PostMapping("/contract/allocation")
-        PaymentAllocationRequest allocation(@Valid @RequestBody PaymentAllocationRequest request) {
+        AmountBody allocation(@Valid @RequestBody AmountBody request) {
             return request;
         }
 

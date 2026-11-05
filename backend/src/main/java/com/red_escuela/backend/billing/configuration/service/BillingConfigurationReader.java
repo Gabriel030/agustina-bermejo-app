@@ -4,13 +4,25 @@ import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.BillingDashboardGoals;
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
+import com.red_escuela.backend.billing.configuration.domain.CohortEntryVersion;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
+import com.red_escuela.backend.billing.configuration.domain.CourseReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
+import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleProposal;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleResolver;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTopicState;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleVersion;
+import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
+import com.red_escuela.backend.billing.configuration.domain.ResolvedReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
@@ -22,7 +34,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -41,6 +57,12 @@ public class BillingConfigurationReader {
 
     public Optional<CohortEntryDiscount> findCohortEntryEffectiveOn(Long cohortId, LocalDate date) {
         return findEffective(ConfigurationTopic.ofCohortEntry(cohortId), date, CohortEntryDiscount.class);
+    }
+
+    public Optional<CohortEntryVersion> findCohortEntryVersionEffectiveOn(Long cohortId, LocalDate date) {
+        ConfigurationTopic topic = ConfigurationTopic.ofCohortEntry(cohortId);
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date)
+                .map(version -> new CohortEntryVersion(version.getId(), CohortEntryDiscount.class.cast(version.values())));
     }
 
     public Optional<LatePaymentTerms> findLatePaymentSettingsEffectiveOn(LocalDate date) {
@@ -104,6 +126,64 @@ public class BillingConfigurationReader {
 
     public CollectionReminderSettings collectionReminderSettingsEffectiveOn(LocalDate date) {
         return findCollectionReminderSettingsEffectiveOn(date).orElse(CollectionReminderSettings.initial());
+    }
+
+    public ResolvedReminderSchedule reminderScheduleFor(ReminderScheduleTarget target, LocalDate date) {
+        return resolveReminderSchedule(target, date, null);
+    }
+
+    public ResolvedReminderSchedule reminderScheduleWithProposal(ReminderScheduleTarget target, LocalDate date, ReminderScheduleProposal proposal) {
+        return resolveReminderSchedule(target, date, Objects.requireNonNull(proposal, "proposal"));
+    }
+
+    private ResolvedReminderSchedule resolveReminderSchedule(ReminderScheduleTarget target, LocalDate date, ReminderScheduleProposal proposal) {
+        Optional<ReminderScheduleVersion> exception = target.targetId() == null ? Optional.empty()
+                : proposedVersionFor(proposal, target.group(), target.targetId())
+                        .or(() -> findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId()), date));
+        Optional<ReminderScheduleVersion> group = proposedVersionFor(proposal, target.group(), null)
+                .or(() -> findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleGroup(target.group()), date));
+        ConfigurationTopic globalTopic = ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS);
+        Optional<ConfigurationVersion> globalVersion = repository.findEffectiveVersion(globalTopic.scope().name(), globalTopic.key(), date);
+        CollectionReminderSettings globalSettings = globalVersion.map(version -> CollectionReminderSettings.class.cast(version.values()))
+                .orElse(CollectionReminderSettings.initial());
+        return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null));
+    }
+
+    private static Optional<ReminderScheduleVersion> proposedVersionFor(ReminderScheduleProposal proposal, TeachingGroup group, Long targetId) {
+        if (proposal == null || proposal.target().group() != group || !Objects.equals(proposal.target().targetId(), targetId)) {
+            return Optional.empty();
+        }
+        return Optional.of(new ReminderScheduleVersion(null, proposal.schedule()));
+    }
+
+    public List<ReminderScheduleTopicState> listReminderScheduleTopicsEffectiveOn(TeachingGroup group, LocalDate date) {
+        List<ConfigurationTopic> topics = new ArrayList<>(List.of(ConfigurationTopic.ofReminderScheduleGroup(group)));
+        repository.findTopicsByScope(group.scope()).stream().filter(ConfigurationTopic::isReminderScheduleException)
+                .sorted(Comparator.comparing(ConfigurationTopic::key)).forEach(topics::add);
+        return topics.stream().map(topic -> reminderScheduleTopicState(topic, date)).toList();
+    }
+
+    private ReminderScheduleTopicState reminderScheduleTopicState(ConfigurationTopic topic, LocalDate date) {
+        Optional<ConfigurationVersion> effective = repository.findEffectiveVersion(topic.scope().name(), topic.key(), date);
+        boolean openProposal = repository.existsByScopeAndTopicKeyAndStatus(topic.scope(), topic.key(), ConfigurationVersionStatus.PROPOSED);
+        LocalDate followsGroupFrom = repository.findByScopeAndTopicKeyAndStatus(topic.scope(), topic.key(), ConfigurationVersionStatus.SCHEDULED).stream()
+                .filter(version -> version.getEffectiveFrom().isAfter(date) && reminderScheduleOf(version.values()).followsGroupSchedule())
+                .map(ConfigurationVersion::getEffectiveFrom).min(Comparator.naturalOrder()).orElse(null);
+        return new ReminderScheduleTopicState(topic, effective.map(ConfigurationVersion::getId).orElse(null), effective.map(ConfigurationVersion::getEffectiveFrom).orElse(null),
+                effective.map(version -> reminderScheduleOf(version.values())).orElse(null), openProposal, followsGroupFrom);
+    }
+
+    private Optional<ReminderScheduleVersion> findReminderScheduleVersion(ConfigurationTopic topic, LocalDate date) {
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date)
+                .map(version -> new ReminderScheduleVersion(version.getId(), reminderScheduleOf(version.values())));
+    }
+
+    private static ReminderSchedule reminderScheduleOf(ConfigurationValues values) {
+        return switch (values) {
+            case ProgramReminderSchedule program -> program.schedule();
+            case CourseReminderSchedule course -> course.schedule();
+            default -> throw new IllegalStateException("La versión no es una lista de avisos: " + values.scope());
+        };
     }
 
     public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {

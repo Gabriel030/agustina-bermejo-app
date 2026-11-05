@@ -53,14 +53,18 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
     }
 
     private String tokenWithRole(String roleName) {
+        return tokenOf(roleName, "Persona", "Prueba");
+    }
+
+    private String tokenOf(String roleName, String name, String lastname) {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
         String username = roleName.toLowerCase() + "." + System.nanoTime();
         person.setUsername(username);
         person.setDni(Long.toString(Math.abs((long) username.hashCode())));
-        person.setName("Persona");
-        person.setLastname("Prueba");
+        person.setName(name);
+        person.setLastname(lastname);
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -70,10 +74,9 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    private static String body(int dailyCap, int daysBeforeDue, String start, String end, LocalDate effectiveFrom) {
-        return "{\"values\":{\"emissionReminderEnabled\":true,\"daysAfterIssueReminder\":5,\"daysBeforeDueReminder\":" + daysBeforeDue
-                + ",\"daysAfterDueReminder\":10,\"daysBeforeSuspensionReminder\":1,\"suspensionNoticeEnabled\":true,\"postWithdrawalSummaryMonths\":6,"
-                + "\"minDaysBetweenEmails\":3,\"maxReminderEmailsPerMonth\":4,\"emailWindowStart\":\"" + start + "\",\"emailWindowEnd\":\"" + end
+    private static String body(int dailyCap, int postWithdrawalMonths, String start, String end, LocalDate effectiveFrom) {
+        return "{\"values\":{\"suspensionNoticeEnabled\":true,\"postWithdrawalSummaryMonths\":" + postWithdrawalMonths + ","
+                + "\"emailWindowStart\":\"" + start + "\",\"emailWindowEnd\":\"" + end
                 + "\",\"dailyEmailCap\":" + dailyCap + ",\"contactListDaysOverdue\":14,\"contactListOverdueInstallments\":2},\"effectiveFrom\":\"" + effectiveFrom
                 + "\",\"changeReason\":\"motivo\"}";
     }
@@ -110,6 +113,31 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-351")
+    void aPendingProposalNamesItsProposerAndNoDecider() throws Exception {
+        String administrative = tokenOf("ADMINISTRATIVO", "Ana", "Proponente");
+
+        postTo("/changes", administrative, body(280, 1, "09:00", "11:00", TODAY.plusDays(1))).andExpect(status().isAccepted());
+        mockMvc.perform(get(BASE + "/versions").header("Authorization", "Bearer " + administrative)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposedByName").value("Ana Proponente"))
+                .andExpect(jsonPath("$[0].decidedById").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$[0].decidedByName").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    @Tag("D-351")
+    void aDirectPublicationNamesTheDirectorAsProposerAndDeciderInTheResponseAndInTheHistory() throws Exception {
+        String director = tokenOf("DIRECTOR", "Dario", "Decisor");
+
+        postTo("/changes", director, body(290, 1, "09:00", "11:00", TODAY.plusDays(2))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.proposedByName").value("Dario Decisor"))
+                .andExpect(jsonPath("$.decidedByName").value("Dario Decisor"));
+        mockMvc.perform(get(BASE + "/versions").header("Authorization", "Bearer " + director)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposedByName").value("Dario Decisor"))
+                .andExpect(jsonPath("$[0].decidedByName").value("Dario Decisor"));
+    }
+
+    @Test
     @Tag("D-350")
     void sameDayVigencyAnswers400WithTheDeclaredCode() throws Exception {
         postTo("/changes", tokenWithRole("ADMINISTRATIVO"), body(280, 1, "09:00", "11:00", TODAY))
@@ -126,7 +154,7 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
         postTo("/changes", token, body(280, 0, "09:00", "11:00", TODAY.plusDays(1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_COLLECTION_REMINDER_SETTINGS"))
-                .andExpect(jsonPath("$.violations[0].message").value("daysBeforeDueReminder debe estar entre 1 y 60."));
+                .andExpect(jsonPath("$.violations[0].message").value("Los meses de resumen posterior a la baja deben estar entre 1 y 24."));
         postTo("/changes", token, body(280, 1, "11:00", "09:00", TODAY.plusDays(1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_COLLECTION_REMINDER_SETTINGS"));
@@ -175,7 +203,7 @@ class CollectionReminderSettingsControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-110")
-    void anonymousIsForbidden() throws Exception {
-        mockMvc.perform(get(BASE + "/versions")).andExpect(status().isForbidden());
+    void anonymousIsUnauthorized() throws Exception {
+        mockMvc.perform(get(BASE + "/versions")).andExpect(status().isUnauthorized());
     }
 }

@@ -8,12 +8,10 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
-import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.evaluation.service.ExamBoardRegistrationService;
 import com.red_escuela.backend.evaluation.service.ExamBoardService;
 import com.red_escuela.backend.evaluation.service.GradeItemService;
-import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,19 +30,16 @@ import java.util.List;
 public class MeExamBoardRegistrationController {
 
     private final CurrentStudentService currentStudentService;
-    private final SubjectSectionEnrollmentService subjectSectionEnrollmentService;
     private final ExamBoardRegistrationService examBoardRegistrationService;
     private final ExamBoardService examBoardService;
     private final GradeItemService gradeItemService;
 
     public MeExamBoardRegistrationController(
             CurrentStudentService currentStudentService,
-            SubjectSectionEnrollmentService subjectSectionEnrollmentService,
             ExamBoardRegistrationService examBoardRegistrationService,
             ExamBoardService examBoardService,
             GradeItemService gradeItemService) {
         this.currentStudentService = currentStudentService;
-        this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
         this.examBoardRegistrationService = examBoardRegistrationService;
         this.examBoardService = examBoardService;
         this.gradeItemService = gradeItemService;
@@ -70,12 +65,9 @@ public class MeExamBoardRegistrationController {
     @ResponseStatus(HttpStatus.CREATED)
     public ExamBoardRegistrationResponse register(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.get(request.programSectionEnrollmentId());
-        if (!enrollment.getStudent().getId().equals(student.getId())) {
-            throw new SectionEnrollmentNotFoundException(request.programSectionEnrollmentId());
-        }
         return ExamBoardRegistrationResponse.from(
-                examBoardRegistrationService.registerProgramEnrollment(request.examBoardId(), request.programSectionEnrollmentId()));
+                examBoardRegistrationService.registerProgramEnrollmentOfStudent(
+                        student.getId(), request.examBoardId(), request.programSectionEnrollmentId()));
     }
 
     @PostMapping("/exam-board-registrations/{id}/withdraw")

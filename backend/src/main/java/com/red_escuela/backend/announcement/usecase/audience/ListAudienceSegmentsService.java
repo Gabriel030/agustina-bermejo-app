@@ -1,6 +1,5 @@
 package com.red_escuela.backend.announcement.usecase.audience;
 
-import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.announcement.dto.AudienceSegmentResponse;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 import com.red_escuela.backend.announcement.entity.SectionType;
@@ -8,9 +7,7 @@ import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.announcement.service.audience.AudienceLabels;
 import com.red_escuela.backend.announcement.service.audience.AudienceService;
 import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
-import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,21 +16,16 @@ public class ListAudienceSegmentsService implements ListAudienceSegmentsUseCase 
 
     private final AudienceService audienceService;
     private final SectionMembership sectionMembership;
-    private final CurrentInstructorService currentInstructorService;
 
     public ListAudienceSegmentsService(AudienceService audienceService,
-                                       SectionMembership sectionMembership,
-                                       CurrentInstructorService currentInstructorService) {
+                                       SectionMembership sectionMembership) {
         this.audienceService = audienceService;
         this.sectionMembership = sectionMembership;
-        this.currentInstructorService = currentInstructorService;
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<AudienceSegmentResponse> list(SectionType sectionType, Long sectionId) {
-        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        sectionMembership.requireInstructorOf(sectionType, sectionId, instructor.getId());
+        sectionMembership.requireCurrentInstructorOf(sectionType, sectionId);
 
         SectionSnapshot section = audienceService.snapshotOf(sectionType, sectionId);
         return audienceService.availableKeys(section).stream()

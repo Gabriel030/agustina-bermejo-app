@@ -1,11 +1,15 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.transaction.TestTransaction;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -54,6 +58,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @Transactional
 abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest {
 
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
     @Autowired
     protected MockMvc mockMvc;
 
@@ -130,12 +136,16 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
     }
 
     protected Term persistTerm(LocalDateTime startDate, LocalDateTime endDate) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
-        term.setStartDate(startDate);
-        term.setEndDate(endDate);
+        if (startDate != null) {
+            term.setStartDate(startDate);
+        }
+        if (endDate != null) {
+            term.setEndDate(endDate);
+        }
         entityManager.persist(term);
         return term;
     }
@@ -238,6 +248,11 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
     }
 
     protected ResultActions getAs(Person actor, String path) throws Exception {
+        if (path.contains("/notifications")) {
+            AsyncNotifications.commitTestTransaction();
+            AsyncNotifications.awaitPublicationsOfDrained(jdbcTemplate, "%");
+            TestTransaction.start();
+        }
         return mockMvc.perform(get(path).header("Authorization", bearer(actor)));
     }
 

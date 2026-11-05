@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMiInscripcion, useDarmeDeBajaDeMateria } from '@/features/enrollment';
 import { useNotasDeMateria } from '@/features/evaluation';
-import { COLUMNAS_NOTAS, mapearNotasAColumnas } from '@/lib/notas';
-import { MateriaContenidoMock } from '@/features/workspace/components/MateriaContenidoMock';
+import { COLUMNAS_NOTAS, TIPO_NOTA_LABEL, mapearNotasAColumnas } from '@/lib/notas';
 import { SeccionAsistencia } from '@/features/attendance';
 
 const ESTADOS_QUE_ADMITEN_BAJA = new Set(['ENROLLED', 'IN_PROGRESS']);
@@ -19,6 +18,7 @@ const BADGE_ESTADO = {
   REGULAR: { label: 'Regular', tone: 'success' },
   IN_PROGRESS: { label: 'En curso', tone: 'accent' },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning' },
+  WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },
   ENROLLED: { label: 'Inscripto', tone: 'accent' },
   APPROVED: { label: 'Aprobada', tone: 'success' },
   FAILED: { label: 'Desaprobada', tone: 'danger' },
@@ -60,7 +60,7 @@ export function AlumnoMateriaDetalle() {
     );
   }
 
-  const badge = BADGE_ESTADO[inscripcion.status] ?? { label: inscripcion.status, tone: 'neutral' };
+  const badge = BADGE_ESTADO[inscripcion.status] ?? { label: 'Sin estado', tone: 'neutral' };
   const puedeDarseDeBaja = ESTADOS_QUE_ADMITEN_BAJA.has(inscripcion.status);
   const { columnas, extras } = mapearNotasAColumnas(notas);
 
@@ -106,12 +106,6 @@ export function AlumnoMateriaDetalle() {
         </div>
       </GlassCard>
 
-      {/* Objetivos/Temario/Cronograma — contenido mockeado (ver MateriaContenidoMock.jsx),
-          cards apiladas en vez de tabs internas (decisión de UX): es contenido liviano de
-          lectura secuencial, y agregar una segunda capa de navegación acá iría en contra
-          del pedido explícito del usuario de simplificar el flujo, no complicarlo más. */}
-      <MateriaContenidoMock subjectName={inscripcion.subjectName} />
-
       <SeccionAsistencia sectionEnrollmentId={id} />
 
       <GlassCard className="flex flex-col gap-4 p-5">
@@ -142,7 +136,7 @@ export function AlumnoMateriaDetalle() {
             </div>
             {extras.length > 0 && (
               <div className="mt-3 text-xs text-ink-faint">
-                Notas adicionales: {extras.map((g) => `${g.type} ${g.sequenceNumber ?? ''}: ${g.score ?? '—'}`).join(' · ')}
+                Notas adicionales: {extras.map((g) => `${TIPO_NOTA_LABEL[g.type] ?? 'Nota'} ${g.sequenceNumber ?? ''}: ${g.score ?? '—'}`).join(' · ')}
               </div>
             )}
           </>

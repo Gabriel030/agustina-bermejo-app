@@ -30,7 +30,7 @@ class MonetaryAdjustmentProperties {
         return PropertySettings.anyPercentage();
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void aNominalAdjustmentNeverAcceptsANegativeAmount(@ForAll("negative") BigDecimal amount, @ForAll("anyCurrency") Currency currency) {
         assertThatThrownBy(() -> new MonetaryAdjustment.Nominal(Money.of(amount, currency)))
                 .isInstanceOf(NegativeAdjustmentAmountException.class);
@@ -41,7 +41,7 @@ class MonetaryAdjustmentProperties {
         return PropertySettings.anyCurrency();
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void aNominalAdjustmentAppliesItsAmountIgnoringTheBase(@ForAll("nonNegative") BigDecimal amount, @ForAll("nonNegative") BigDecimal base,
                                                            @ForAll("anyCurrency") Currency currency) {
         MonetaryAdjustment adjustment = new MonetaryAdjustment.Nominal(Money.of(amount, currency));
@@ -50,7 +50,7 @@ class MonetaryAdjustmentProperties {
         assertThat(adjustment.applyTo(Money.of(base, currency)).isNegative()).isFalse();
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void aProportionalAdjustmentIsNeverNegativeNorAboveTheBase(@ForAll("nonNegative") BigDecimal base, @ForAll("percentages") Percentage rate,
                                                                @ForAll("anyCurrency") Currency currency) {
         Money baseMoney = Money.of(base, currency);
@@ -62,7 +62,7 @@ class MonetaryAdjustmentProperties {
         assertThat(applied).isEqualTo(baseMoney.times(rate));
     }
 
-    @Property(tries = PropertySettings.TRIES, seed = PropertySettings.SEED)
+    @Property(seed = PropertySettings.SEED)
     void anAdjustmentInAnotherCurrencyIsRejected(@ForAll("nonNegative") BigDecimal amount, @ForAll("anyCurrency") Currency first,
                                                  @ForAll("anyCurrency") Currency second) {
         net.jqwik.api.Assume.that(first != second);

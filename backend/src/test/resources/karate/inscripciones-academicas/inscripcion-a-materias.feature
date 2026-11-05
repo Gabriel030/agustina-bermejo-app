@@ -13,7 +13,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def nombreTerm = 'Ciclo QA materias ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2026, description: '#(nombreTerm)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTerm)', type: 'ANNUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     * def termId = response.id
@@ -45,7 +45,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión A', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión A', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -111,7 +111,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectAjenoId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión ajena', termId: '#(termId)', capacity: 10 }
+    And request { name: 'Comisión ajena', shift: 'MORNING', termId: '#(termId)', capacity: 10 }
     When method post
     Then status 201
     * def sectionAjenaId = response.id
@@ -150,7 +150,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectAvanzadaId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión avanzada', termId: '#(termId)', capacity: 10 }
+    And request { name: 'Comisión avanzada', shift: 'MORNING', termId: '#(termId)', capacity: 10 }
     When method post
     Then status 201
     * def sectionAvanzadaId = response.id
@@ -173,7 +173,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión B', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionBId = response.id
@@ -202,7 +202,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión C', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionCId = response.id
@@ -219,7 +219,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectOtraId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión de otra materia', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión de otra materia', shift: 'MORNING', termId: '#(termId)', capacity: 20 }
     When method post
     Then status 201
     * def sectionOtraMateriaId = response.id
@@ -260,7 +260,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión con cupo 1', termId: '#(termId)', capacity: 1 }
+    And request { name: 'Comisión con cupo 1', shift: 'MORNING', termId: '#(termId)', capacity: 1 }
     When method post
     Then status 201
     * def sectionCupoId = response.id
@@ -313,14 +313,14 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def nombreTermCerrado = 'Ciclo QA ventana cerrada ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2020, description: '#(nombreTermCerrado)', type: 'ANUAL', startDate: '2020-01-01T00:00:00', endDate: '2020-12-31T00:00:00', enrollmentStart: '2020-01-01T00:00:00', enrollmentEnd: '2020-02-01T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(nombreTermCerrado)', type: 'ANNUAL', startDate: '2020-01-01T00:00:00', endDate: '2020-12-31T00:00:00', enrollmentStart: '2020-01-01T00:00:00', enrollmentEnd: '2020-02-01T00:00:00' }
     When method post
     Then status 201
     * def termCerradoId = response.id
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión ciclo cerrado', termId: '#(termCerradoId)', capacity: 10 }
+    And request { name: 'Comisión ciclo cerrado', shift: 'MORNING', termId: '#(termCerradoId)', capacity: 10 }
     When method post
     Then status 201
     * def sectionCerradaId = response.id
@@ -416,5 +416,40 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/program-enrollments', programEnrollmentId, 'withdraw'
     And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 204
+
+  Scenario: Baja del legajo con una carrera activa — 409 hasta dar de baja la inscripción; el preceptor no puede dar de baja la inscripción
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: '#(programId)' }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+
+    Given path '/program-enrollments', programEnrollmentId, 'withdraw'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method post
+    Then status 403
+
+    Given path '/students', alumno.studentId, 'withdraw'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: 'ABANDONO' }
+    When method post
+    Then status 409
+    And match response.code == 'STUDENT_HAS_ACTIVE_ENROLLMENTS'
+
+    Given path '/program-enrollments', programEnrollmentId, 'withdraw'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 204
+
+    Given path '/students', alumno.studentId, 'withdraw'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: 'ABANDONO' }
     When method post
     Then status 204

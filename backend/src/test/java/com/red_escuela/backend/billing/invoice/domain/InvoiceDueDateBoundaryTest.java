@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceMarkedAsOverdueEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReviewReleasedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReversedEvent;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -42,9 +43,10 @@ class InvoiceDueDateBoundaryTest {
         late.releasePaymentReview(LocalDate.of(2028, 3, 1), 0, ACTOR, "rechazado");
 
         assertThat(onTime.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PENDING);
-        assertThat(onTime.pullRecordedDomainEvents()).isEmpty();
+        assertThat(onTime.pullRecordedDomainEvents()).containsExactly(new InvoicePaymentReviewReleasedEvent(8L, due));
         assertThat(late.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.OVERDUE);
-        assertThat(late.pullRecordedDomainEvents()).containsExactly(new InvoiceMarkedAsOverdueEvent(8L, due, LocalDate.of(2028, 3, 1)));
+        assertThat(late.pullRecordedDomainEvents()).containsExactly(new InvoicePaymentReviewReleasedEvent(8L, LocalDate.of(2028, 3, 1)),
+                new InvoiceMarkedAsOverdueEvent(8L, due, LocalDate.of(2028, 3, 1)));
     }
 
     @Test

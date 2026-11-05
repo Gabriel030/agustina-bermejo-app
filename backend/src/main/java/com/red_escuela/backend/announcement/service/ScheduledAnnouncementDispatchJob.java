@@ -8,6 +8,8 @@ import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
+import com.red_escuela.backend.shared.scheduling.ScheduledJobFailureCounter;
+import io.micrometer.core.instrument.MeterRegistry;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,19 +34,21 @@ public class ScheduledAnnouncementDispatchJob {
     private final ScheduledAnnouncementRowProcessor rowProcessor;
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final ObjectMapper objectMapper;
+    private final ScheduledJobFailureCounter failureCounter;
 
     public ScheduledAnnouncementDispatchJob(AnnouncementRepository announcementRepository,
                                             ScheduledAnnouncementRowProcessor rowProcessor,
                                             BatchExecutionLogRepository batchExecutionLogRepository,
-                                            ObjectMapper objectMapper) {
+                                            ObjectMapper objectMapper, MeterRegistry meterRegistry) {
         this.announcementRepository = announcementRepository;
         this.rowProcessor = rowProcessor;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.objectMapper = objectMapper;
+        this.failureCounter = new ScheduledJobFailureCounter(meterRegistry);
     }
 
     @Scheduled(cron = "0 */5 * * * *", zone = "${app.timezone}")
-    @SchedulerLock(name = "ScheduledAnnouncementDispatchJob", lockAtMostFor = "PT4M")
+    @SchedulerLock(name = "ScheduledAnnouncementDispatchJob", lockAtMostFor = "PT10M")
     public void run() {
         dispatchDue(LocalDateTime.now());
     }
@@ -75,6 +79,7 @@ public class ScheduledAnnouncementDispatchJob {
                             announcement.getAudienceSpec().getKey(), announcement.getScheduledFor(), recipients);
                 } catch (Exception e) {
                     failed++;
+                    failureCounter.record(JOB_NAME, e);
                     log.error("Falló el envío del aviso programado id={}: {}", announcement.getId(), e.getMessage(), e);
                     Map<String, Object> error = new LinkedHashMap<>();
                     error.put("announcementId", announcement.getId());

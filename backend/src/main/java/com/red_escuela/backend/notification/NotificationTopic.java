@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.api.PersonRecipientFinder;
 
 import java.util.List;
 
@@ -9,7 +9,12 @@ public enum NotificationTopic implements NotificationRecipient {
     DIRECTOR_APPROVALS(new RoleRecipient("DIRECTOR")),
     EVALUATION_CONFIG_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
     BILLING_CONFIGURATION_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
-    ENROLLMENT_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO"), new RoleRecipient("PRECEPTOR"));
+    DISCOUNT_SUPERVISION(new RoleRecipient("DIRECTOR")),
+    GRADUATION_SUPERVISION(new RoleRecipient("ADMINISTRATIVO"), new RoleRecipient("DIRECTOR")),
+    ENROLLMENT_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO"), new RoleRecipient("PRECEPTOR")),
+    PAYMENT_REVERSAL_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
+    BILLING_RUN_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
+    HOLIDAY_CALENDAR_ADMINISTRATION(new RoleRecipient("ADMINISTRATIVO"));
 
     private final List<NotificationRecipient> members;
 
@@ -18,9 +23,9 @@ public enum NotificationTopic implements NotificationRecipient {
     }
 
     @Override
-    public List<Person> resolve(PersonRepository personRepository) {
+    public List<Person> resolve(PersonRecipientFinder personRecipientFinder) {
         return members.stream()
-                .flatMap(member -> member.resolve(personRepository).stream())
+                .flatMap(member -> member.resolve(personRecipientFinder).stream())
                 .distinct()
                 .toList();
     }

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -184,7 +185,7 @@ describe('CarreraDetalle — plan de estudios', () => {
 
   it('shows the specific reason when the backend rejects the year', async () => {
     mockProgram({
-      onAdd: () => HttpResponse.json({ code: 'CURRICULAR_YEAR_OUT_OF_RANGE' }, { status: 400 }),
+      onAdd: () => HttpResponse.json(errorBody('CURRICULAR_YEAR_OUT_OF_RANGE'), { status: 400 }),
     });
     const user = userEvent.setup();
     mount();
@@ -211,9 +212,42 @@ describe('CarreraDetalle — plan de estudios', () => {
     await screen.findByText('Anatomía');
 
     await user.click(screen.getByRole('button', { name: 'Quitar Anatomía del plan' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('alertdialog');
     await user.click(within(dialog).getByRole('button', { name: 'Quitar del plan' }));
 
     await waitFor(() => expect(deactivated).toEqual(['134']));
+  });
+});
+
+describe('CarreraDetalle load failure', () => {
+  function renderPage() {
+    renderWithProviders(
+      <Routes>
+        <Route path="/administrativo/gestion-academica/carreras/:id" element={<CarreraDetalle />} />
+      </Routes>,
+      { route: '/administrativo/gestion-academica/carreras/9' },
+    );
+  }
+
+  it('shows a load error with retry instead of not found when the program request fails', async () => {
+    server.use(
+      http.get(`${API}/programs/9`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API}/programs/9/subjects`, () => HttpResponse.json([])),
+    );
+    renderPage();
+    await screen.findByText('No pudimos cargar la carrera');
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.queryByText('Carrera no encontrada')).not.toBeInTheDocument();
+  });
+
+  it('shows an error instead of an empty plan and hides add subject when the plan fails', async () => {
+    server.use(
+      http.get(`${API}/programs/9`, () => HttpResponse.json(PROGRAM)),
+      http.get(`${API}/programs/9/subjects`, () => new HttpResponse(null, { status: 500 })),
+    );
+    renderPage();
+    await screen.findByText('No pudimos cargar el plan de estudios');
+    expect(screen.queryByText('Plan de estudios vacío')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Agregar materia/ })).not.toBeInTheDocument();
   });
 });

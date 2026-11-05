@@ -1,4 +1,5 @@
 package com.red_escuela.backend.academicstructure.entity;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,8 +1,5 @@
 package com.red_escuela.backend.shared.mail;
 
-import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -12,6 +9,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 @Service
 @Profile("!test")
@@ -19,57 +17,79 @@ public class BrevoEmailService implements EmailService {
     private static final Logger log = LoggerFactory.getLogger(BrevoEmailService.class);
 
     private final JavaMailSender mailSender;
-    private final InstitutionRepository institutionRepository;
     private final String fromAddress;
 
-    public BrevoEmailService(JavaMailSender mailSender, InstitutionRepository institutionRepository,
+    public BrevoEmailService(JavaMailSender mailSender,
             @Value("${app.mail.from-address}") String fromAddress) {
         this.mailSender = mailSender;
-        this.institutionRepository = institutionRepository;
         this.fromAddress = fromAddress;
     }
 
     @Override
-    public void sendPasswordResetCode(Person person, String code) {
-        String institutionName = institutionRepository.findAll().stream()
-                .findFirst()
-                .map(Institution::getName)
-                .orElse("Red Escuela");
-
+    public void sendPasswordResetCode(MailRecipient recipient, String institutionName, String code) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(fromAddress);
-            helper.setTo(person.emailValue());
+            helper.setTo(recipient.email());
             helper.setSubject("Código para recuperar tu contraseña");
-            helper.setText(buildHtml(institutionName, person.getName(), code), true);
+            helper.setText(buildHtml(institutionName, recipient.name(), code), true);
             mailSender.send(message);
-            log.info("Código de recuperación enviado a person {}", person.getId());
-        } catch (MessagingException | RuntimeException e) {
-            log.error("No se pudo enviar el email de recuperación a person {}", person.getId(), e);
+            log.info("Código de recuperación enviado a person {}", recipient.personId());
+        } catch (MessagingException | RuntimeException e) { if (e instanceof com.red_escuela.backend.shared.exception.CircuitOpenException open) { throw open; }
+            log.error("No se pudo enviar el email de recuperación a person {}", recipient.personId(), e);
             throw new EmailDeliveryException("No se pudo enviar el email de recuperación", e);
         }
     }
 
     @Override
-    public void sendEmailVerification(Person person, String verificationLink) {
-        String institutionName = institutionRepository.findAll().stream()
-                .findFirst()
-                .map(Institution::getName)
-                .orElse("Red Escuela");
-
+    public void sendEmailVerification(MailRecipient recipient, String institutionName, String verificationLink) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(fromAddress);
-            helper.setTo(person.emailValue());
+            helper.setTo(recipient.email());
             helper.setSubject("Verificá tu email para completar tu preinscripción");
-            helper.setText(buildVerificationHtml(institutionName, person.getName(), verificationLink), true);
+            helper.setText(buildVerificationHtml(institutionName, recipient.name(), verificationLink), true);
             mailSender.send(message);
-            log.info("Email de verificación enviado a person {}", person.getId());
-        } catch (MessagingException | RuntimeException e) {
-            log.error("No se pudo enviar el email de verificación a person {}", person.getId(), e);
+            log.info("Email de verificación enviado a person {}", recipient.personId());
+        } catch (MessagingException | RuntimeException e) { if (e instanceof com.red_escuela.backend.shared.exception.CircuitOpenException open) { throw open; }
+            log.error("No se pudo enviar el email de verificación a person {}", recipient.personId(), e);
             throw new EmailDeliveryException("No se pudo enviar el email de verificación", e);
+        }
+    }
+
+    @Override
+    public void sendEmailChangeVerification(String recipientName, String newEmail, String verificationLink) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
+                + "<p>Se pidió usar esta dirección como email de tu cuenta. Confirmala con el botón de abajo. El link es válido por 48 horas.</p>"
+                + "<p><a href=\"" + HtmlUtils.htmlEscape(verificationLink) + "\">Confirmar nuevo email</a></p>"
+                + "<p>Si no fuiste vos, podés ignorar este email: no se cambia nada hasta que confirmes.</p>";
+        sendChangeMessage(newEmail, "Confirmá tu nuevo email", body);
+    }
+
+    @Override
+    public void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail) {
+        String body = "<p>Hola " + HtmlUtils.htmlEscape(recipientName) + ",</p>"
+                + "<p>Se pidió cambiar el email de tu cuenta a " + HtmlUtils.htmlEscape(newEmail)
+                + ". El cambio recién se aplica cuando se confirma desde esa dirección; hasta entonces seguís usando este email.</p>"
+                + "<p>Si no fuiste vos, avisá a la institución y cambiá tu contraseña.</p>";
+        sendChangeMessage(previousEmail, "Se pidió cambiar el email de tu cuenta", body);
+    }
+
+    private void sendChangeMessage(String recipient, String subject, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(recipient);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+            log.info("Aviso de cambio de email enviado");
+        } catch (MessagingException | RuntimeException e) { if (e instanceof com.red_escuela.backend.shared.exception.CircuitOpenException open) { throw open; }
+            log.error("No se pudo enviar el aviso de cambio de email", e);
+            throw new EmailDeliveryException("No se pudo enviar el aviso de cambio de email", e);
         }
     }
 

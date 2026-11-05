@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.service;
 
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestAccessDeniedException;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeOutcome;
@@ -161,7 +162,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static com.red_escuela.backend.billing.configuration.domain.ConfigurationValues valuesFor(ConfigurationTopic topic, boolean flag) {
-        return topic.scope() == ConfigurationScope.ALLOCATION ? new AllocationSettings(flag) : new IrregularTermTypes(flag ? List.of("Intensivo") : List.of());
+        return topic.scope() == ConfigurationScope.ALLOCATION ? new AllocationSettings(flag) : new IrregularTermTypes(flag ? List.of(TermType.INTENSIVE) : List.of());
     }
 
     private ConfigurationVersion publish(ConfigurationTopic topic, boolean flag, LocalDate start) {
@@ -233,7 +234,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
         assertThat(future.getAuthorizationRequestId()).isNull();
         assertThat(today.getStatus()).isEqualTo(ConfigurationVersionStatus.EFFECTIVE);
         assertThat(count("select count(*) from authorization_request where requested_by_id = ?", director.getId())).isZero();
-        assertThat(reader.findIrregularTermTypesEffectiveOn(TODAY).orElseThrow().types()).containsExactly("Intensivo");
+        assertThat(reader.findIrregularTermTypesEffectiveOn(TODAY).orElseThrow().types()).containsExactly(TermType.INTENSIVE);
     }
 
     @Test

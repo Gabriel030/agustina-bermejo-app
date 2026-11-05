@@ -30,6 +30,12 @@ const TITULO_DIA = {
   JUSTIFIED: 'Ausencia justificada',
 };
 
+const ESTADO_JUSTIFICACION = {
+  JUSTIFIED: { label: 'Aprobada', color: 'text-success' },
+  JUSTIFICATION_PENDING: { label: 'Pendiente de aprobación', color: 'text-warning' },
+  ABSENT: { label: 'Rechazada', color: 'text-danger' },
+};
+
 function agruparPorMes(registros) {
   const grupos = new Map();
   for (const r of [...registros].sort((a, b) => a.classDate.localeCompare(b.classDate))) {
@@ -61,7 +67,7 @@ function GraficoDeTorta({ porcentaje, enRiesgo }) {
 
 function InasistenciasJustificadas({ registros }) {
   const justificadas = (registros ?? [])
-    .filter((r) => r.status === 'JUSTIFICATION_PENDING' || r.status === 'JUSTIFIED')
+    .filter((r) => r.status === 'JUSTIFICATION_PENDING' || r.status === 'JUSTIFIED' || (r.status === 'ABSENT' && r.justificationRejectionReason))
     .sort((a, b) => b.classDate.localeCompare(a.classDate));
 
   if (justificadas.length === 0) return null;
@@ -71,13 +77,14 @@ function InasistenciasJustificadas({ registros }) {
       <div className="mb-2 text-xs font-semibold text-ink-faint">Inasistencias justificadas</div>
       <div className="flex flex-col gap-1.5">
         {justificadas.map((r) => (
-          <div key={r.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-[13px]">
-            <span className="text-ink">
-              {new Date(`${r.classDate}T00:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
-            <span className={`font-semibold ${r.status === 'JUSTIFIED' ? 'text-success' : 'text-warning'}`}>
-              {r.status === 'JUSTIFIED' ? 'Aprobada' : 'Pendiente de aprobación'}
-            </span>
+          <div key={r.id} className="flex flex-col gap-1 rounded-lg border border-border px-3 py-2 text-[13px]">
+            <div className="flex items-center justify-between">
+              <span className="text-ink">
+                {new Date(`${r.classDate}T00:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+              <span className={`font-semibold ${ESTADO_JUSTIFICACION[r.status].color}`}>{ESTADO_JUSTIFICACION[r.status].label}</span>
+            </div>
+            {r.status === 'ABSENT' && <div className="text-xs text-ink-faint">Motivo del rechazo: {r.justificationRejectionReason}</div>}
           </div>
         ))}
       </div>
@@ -192,7 +199,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
       <Dialog open={!!diaSeleccionado} onOpenChange={cerrarModal}>
         <DialogContent className="max-w-sm rounded-xl border border-border bg-surface p-6 text-ink backdrop-blur-[28px] backdrop-saturate-[1.6]">
           <DialogHeader>
-            <DialogTitle>Justificar inasistencia</DialogTitle>
+            <DialogTitle>{diaSeleccionado?.justificationRejectionReason ? 'Volver a justificar' : 'Justificar inasistencia'}</DialogTitle>
           </DialogHeader>
           {diaSeleccionado && (
             <p className="text-sm text-ink-faint">
@@ -202,6 +209,12 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
                 year: 'numeric',
               })}
             </p>
+          )}
+          {diaSeleccionado?.justificationRejectionReason && (
+            <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs text-danger">
+              <div className="font-semibold">Tu justificación fue rechazada</div>
+              <div>{diaSeleccionado.justificationRejectionReason}</div>
+            </div>
           )}
           <label
             className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed px-4 py-8 text-center transition-colors hover:bg-neutral-bg ${

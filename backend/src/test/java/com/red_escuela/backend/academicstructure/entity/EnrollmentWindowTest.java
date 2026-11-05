@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.shared.domain.TermEnrollmentWindowRequiredException;
 import com.red_escuela.backend.shared.domain.InvalidDateRangeException;
 import org.junit.jupiter.api.Test;
 
@@ -17,29 +18,21 @@ class EnrollmentWindowTest {
     private static final LocalDateTime AFTER = END.plusDays(1);
 
     @Test
-    void windowWithoutEndsIsAlwaysOpen() {
-        EnrollmentWindow window = EnrollmentWindow.unbounded();
-
-        assertThat(window.isOpenAt(BEFORE)).isTrue();
-        assertThat(window.isOpenAt(AFTER)).isTrue();
+    void windowWithoutStartIsRejected() {
+        assertThatThrownBy(() -> new EnrollmentWindow(null, END)).isInstanceOf(TermEnrollmentWindowRequiredException.class);
     }
 
     @Test
-    void windowWithOnlyAStartIsOpenFromThatInstant() {
-        EnrollmentWindow window = new EnrollmentWindow(START, null);
+    void windowWithoutEndIsRejected() {
+        assertThatThrownBy(() -> new EnrollmentWindow(START, null)).isInstanceOf(TermEnrollmentWindowRequiredException.class);
+    }
 
-        assertThat(window.isOpenAt(BEFORE)).isFalse();
+    @Test
+    void windowIsOpenAtBothBoundaryInstants() {
+        EnrollmentWindow window = new EnrollmentWindow(START, END);
+
         assertThat(window.isOpenAt(START)).isTrue();
-        assertThat(window.isOpenAt(AFTER)).isTrue();
-    }
-
-    @Test
-    void windowWithOnlyAnEndIsOpenUntilThatInstant() {
-        EnrollmentWindow window = new EnrollmentWindow(null, END);
-
-        assertThat(window.isOpenAt(BEFORE)).isTrue();
         assertThat(window.isOpenAt(END)).isTrue();
-        assertThat(window.isOpenAt(AFTER)).isFalse();
     }
 
     @Test
@@ -84,6 +77,23 @@ class EnrollmentWindowTest {
 
         term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
         assertThat(term.isEnrollmentOpenAt(AFTER)).isTrue();
+    }
+
+    @Test
+    void termCannotLoseItsEnrollmentWindowWhenNoneIsGiven() {
+        Term term = new Term();
+
+        assertThatThrownBy(() -> term.defineEnrollmentWindow(START, null)).isInstanceOf(TermEnrollmentWindowRequiredException.class);
+    }
+
+    @Test
+    void termKeepsItsWindowWhenOnlyOneEndIsRedefined() {
+        Term term = new Term();
+        term.defineEnrollmentWindow(START, END);
+
+        term.defineEnrollmentWindow(null, END.plusDays(5));
+
+        assertThat(term.enrollmentWindow()).isEqualTo(new EnrollmentWindow(START, END.plusDays(5)));
     }
 
     @Test

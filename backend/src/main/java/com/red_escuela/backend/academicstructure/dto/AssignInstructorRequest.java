@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
-import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;

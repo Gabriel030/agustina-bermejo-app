@@ -46,7 +46,7 @@ class OldestOverdueFirstAllocationStrategyProperties {
         return Arbitraries.longs().between(0, 100_000_000).map(cents -> NonNegativeMoney.of(BigDecimal.valueOf(cents, 2), Currency.ARS));
     }
 
-    @Property(tries = 1000)
+    @Property
     void theTotalPlannedNeverExceedsTheCreditAndEveryItemIsTheWholeOutstanding(@ForAll("openInvoices") List<OpenInvoiceView> open,
                                                                               @ForAll("credits") NonNegativeMoney credit) {
         List<PlannedInvoiceAllocation> plan = strategy.planFullInvoiceAllocations(credit, open);
@@ -57,7 +57,7 @@ class OldestOverdueFirstAllocationStrategyProperties {
                 .filter(invoice -> invoice.invoiceId().equals(planned.invoiceId())).findFirst().orElseThrow().outstandingAmount()));
     }
 
-    @Property(tries = 1000)
+    @Property
     void noUnallocatedInvoiceIsOlderThanAnAllocatedOne(@ForAll("openInvoices") List<OpenInvoiceView> open, @ForAll("credits") NonNegativeMoney credit) {
         List<Long> plannedIds = strategy.planFullInvoiceAllocations(credit, open).stream().map(PlannedInvoiceAllocation::invoiceId).toList();
         List<OpenInvoiceView> ordered = strategy.sortInAllocationOrder(open);
@@ -65,7 +65,7 @@ class OldestOverdueFirstAllocationStrategyProperties {
         assertThat(ordered.stream().limit(plannedIds.size()).map(OpenInvoiceView::invoiceId).toList()).isEqualTo(plannedIds);
     }
 
-    @Property(tries = 1000)
+    @Property
     void theNextInvoiceAfterThePlanDoesNotFitInTheRemainingCredit(@ForAll("openInvoices") List<OpenInvoiceView> open, @ForAll("credits") NonNegativeMoney credit) {
         List<PlannedInvoiceAllocation> plan = strategy.planFullInvoiceAllocations(credit, open);
         List<OpenInvoiceView> ordered = strategy.sortInAllocationOrder(open);

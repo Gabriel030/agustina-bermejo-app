@@ -13,6 +13,8 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
+import com.red_escuela.backend.shared.time.ApplicationTime;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,7 +24,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -170,7 +178,108 @@ class StaffControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("actualizado@example.com"))
+                .andExpect(jsonPath("$.email").value("editable2@example.com"))
                 .andExpect(jsonPath("$.dni").value("50999000"));
+    }
+
+    @Test
+    void staffRecordExposesEmailVerificationAndProviderButNoSecrets() throws Exception {
+        String token = tokenWithRole("director.record", "DIRECTOR");
+        Address address = new Address();
+        entityManager.persist(address);
+        Person teacher = new Person();
+        teacher.setUsername("verified.teacher");
+        teacher.setEmail("verified.teacher@example.com");
+        teacher.setAddress(address);
+        teacher.setStatus(StatusType.ACTIVE);
+        teacher.setEmailVerified(true);
+        teacher.getRoles().add(roleRepository.findByName("DOCENTE").orElseThrow());
+        entityManager.persist(teacher);
+        entityManager.flush();
+
+        mockMvc.perform(get("/staff/{id}", teacher.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailVerified").value(true))
+                .andExpect(jsonPath("$.authProvider").value("LOCAL"))
+                .andExpect(jsonPath("$.password").doesNotExist());
+        mockMvc.perform(get("/staff").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.id==" + teacher.getId() + ")].status").value("ACTIVE"));
+    }
+
+    @AfterEach
+    void restoreClock() {
+        ApplicationTime.useClock(Clock.systemDefaultZone());
+    }
+
+    private Person lockedTeacher(String username, LocalDateTime lockedUntil, int failedAttempts) {
+        Address address = new Address();
+        entityManager.persist(address);
+        Person teacher = new Person();
+        teacher.setUsername(username);
+        teacher.setEmail(username + "@example.com");
+        teacher.setAddress(address);
+        teacher.setStatus(StatusType.ACTIVE);
+        teacher.setLockedUntil(lockedUntil);
+        teacher.setFailedLoginAttempts(failedAttempts);
+        teacher.getRoles().add(roleRepository.findByName("DOCENTE").orElseThrow());
+        entityManager.persist(teacher);
+        entityManager.flush();
+        return teacher;
+    }
+
+    private void freezeClockAt(LocalDateTime now) {
+        ZoneId zone = ZoneId.systemDefault();
+        ApplicationTime.useClock(Clock.fixed(now.atZone(zone).toInstant(), zone));
+    }
+
+    @Test
+    void directorSeesActiveLockAndFailedAttemptsOfStaffMember() throws Exception {
+        LocalDateTime now = LocalDateTime.of(2026, 11, 4, 10, 0);
+        freezeClockAt(now);
+        String token = tokenWithRole("director.lock", "DIRECTOR");
+        Person teacher = lockedTeacher("locked.teacher", now.plusMinutes(10), 5);
+
+        mockMvc.perform(get("/staff/{id}", teacher.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lockedUntil").value("2026-11-04T10:10:00"))
+                .andExpect(jsonPath("$.failedLoginAttempts").value(5))
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+
+    @Test
+    void administrativeSeesActiveLockButNeverFailedAttempts() throws Exception {
+        LocalDateTime now = LocalDateTime.of(2026, 11, 4, 10, 0);
+        freezeClockAt(now);
+        String token = tokenWithRole("admin.lock", "ADMINISTRATIVO");
+        Person teacher = lockedTeacher("locked.teacher2", now.plusMinutes(10), 5);
+
+        mockMvc.perform(get("/staff/{id}", teacher.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lockedUntil").value("2026-11-04T10:10:00"))
+                .andExpect(jsonPath("$.failedLoginAttempts").doesNotExist());
+    }
+
+    @Test
+    void expiredLockIsNotExposed() throws Exception {
+        LocalDateTime now = LocalDateTime.of(2026, 11, 4, 10, 0);
+        freezeClockAt(now);
+        String token = tokenWithRole("director.expired", "DIRECTOR");
+        Person teacher = lockedTeacher("expired.teacher", now.minusMinutes(1), 3);
+
+        mockMvc.perform(get("/staff/{id}", teacher.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lockedUntil").doesNotExist())
+                .andExpect(jsonPath("$.failedLoginAttempts").value(3));
+    }
+
+    @Test
+    void lockExpiringExactlyNowIsNotExposed() throws Exception {
+        LocalDateTime now = LocalDateTime.of(2026, 11, 4, 10, 0);
+        freezeClockAt(now);
+        String token = tokenWithRole("director.boundary", "DIRECTOR");
+        Person teacher = lockedTeacher("boundary.teacher", now, 0);
+
+        mockMvc.perform(get("/staff/{id}", teacher.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.lockedUntil").doesNotExist());
     }
 }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Person;
@@ -77,7 +78,7 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(YearMonth first, YearMonth last) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
         term.setStartDate(first.atDay(1).atStartOfDay());
@@ -109,23 +110,5 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         var template = createTemplateUseCase.create(program.getId(), term.getId(), 4);
 
         assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).recurringFeeInvoicesCount()).isEqualTo(4);
-    }
-
-    @Test
-    @org.junit.jupiter.api.Tag("D-002")
-    void withoutTermDatesTheTemplateIsRejected() {
-        Person director = persistPerson("director.sinfechas." + System.nanoTime());
-        authenticateAs(director);
-        Program program = persistProgram("Carrera sin fechas " + System.nanoTime());
-        Term term = new Term();
-        term.setYear(2026);
-        term.setStatus(StatusType.ACTIVE);
-        term = termRepository.save(term);
-
-        Long termId = term.getId();
-
-        assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), termId, 999))
-                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
-                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).contains("TERM_WITHOUT_DATES"));
     }
 }

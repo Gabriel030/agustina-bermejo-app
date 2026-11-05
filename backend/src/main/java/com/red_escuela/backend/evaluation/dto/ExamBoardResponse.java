@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 
@@ -9,8 +10,9 @@ import com.red_escuela.backend.academicstructure.dto.InstructorSummaryResponse;
 
 public record ExamBoardResponse(
         Long id, Long subjectId, String subjectName, Long courseSubjectId, String courseSubjectName, Long termId,
-        LocalDateTime examDate, LocalDateTime registrationStart, LocalDateTime registrationEnd,
-        String classroom, String status, List<Long> tribunalInstructorIds, List<InstructorSummaryResponse> tribunal) {
+        LocalDateTime examDate, @Schema(nullable = true) LocalDateTime registrationStart, @Schema(nullable = true) LocalDateTime registrationEnd,
+        @Schema(nullable = true) String classroom, String status, List<Long> tribunalInstructorIds, List<InstructorSummaryResponse> tribunal,
+        @Schema(nullable = true) LocalDateTime canceledAt, @Schema(nullable = true) String cancelReason, @Schema(nullable = true) LocalDateTime rescheduledFrom) {
 
     public static ExamBoardResponse from(ExamBoard examBoard) {
         List<ExamBoardInstructor> asignaciones = examBoard.getTribunal() == null ? List.of() : examBoard.getTribunal();
@@ -30,6 +32,9 @@ public record ExamBoardResponse(
                 examBoard.getClassroom(),
                 examBoard.getStatus().name(),
                 tribunalIds,
-                tribunal);
+                tribunal,
+                examBoard.getCanceledAt(),
+                examBoard.getCancelReason(),
+                examBoard.getRescheduledFrom());
     }
 }

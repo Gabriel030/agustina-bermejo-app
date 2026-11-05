@@ -4,10 +4,12 @@ import com.red_escuela.backend.shared.domain.Currency;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class MetricSeriesBuilder {
 
@@ -15,6 +17,7 @@ public final class MetricSeriesBuilder {
     private final Currency currency;
     private final Map<String, MetricUnit> unitsByKey = new LinkedHashMap<>();
     private final Map<String, MetricValue[]> valuesByKey = new LinkedHashMap<>();
+    private final Set<String> keysWithoutDataAsNull = new HashSet<>();
 
     public MetricSeriesBuilder(MonthRange range, Currency currency) {
         this.range = Objects.requireNonNull(range, "range");
@@ -28,6 +31,11 @@ public final class MetricSeriesBuilder {
         }
         valuesByKey.computeIfAbsent(key, ignored -> new MetricValue[range.months().size()]);
         return this;
+    }
+
+    public MetricSeriesBuilder declareLeavingMonthsWithoutDataEmpty(String key, MetricUnit unit) {
+        keysWithoutDataAsNull.add(key);
+        return declare(key, unit);
     }
 
     public MetricSeriesBuilder put(String key, YearMonth month, MetricValue value) {
@@ -45,7 +53,7 @@ public final class MetricSeriesBuilder {
             MetricValue[] recorded = valuesByKey.get(key);
             List<MetricValue> values = new ArrayList<>();
             for (MetricValue value : recorded) {
-                values.add(value != null ? value : unit.valueWhenMonthHasNoActivity(currency));
+                values.add(value != null || keysWithoutDataAsNull.contains(key) ? value : unit.valueWhenMonthHasNoActivity(currency));
             }
             series.add(new MetricSeries(key, unit, values));
         });

@@ -1,12 +1,14 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.academicstructure.entity.RequirementType;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -24,7 +26,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -180,7 +182,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     private Term persistOpenTerm() {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-2C");
         term.setStatus(StatusType.ACTIVE);
@@ -427,13 +429,16 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         authenticateAsPerson("DIRECTOR_A0000010");
         approveDirectorApprovalRequestUseCase.approve(new DecideDirectorApprovalRequestCommand(request.getId(), "Por única vez"));
 
-        List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
-        assertThat(received).hasSize(1);
-        assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_APPROVED);
-        assertThat(received.get(0).getMessage())
-                .contains("Por única vez")
-                .contains(subject.getName())
-                .doesNotContain("Justificación interna");
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
+            assertThat(received).hasSize(1);
+            assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_APPROVED);
+            assertThat(received.get(0).getMessage())
+                    .contains("Por única vez")
+                    .contains(subject.getName())
+                    .doesNotContain("Justificación interna");
+        });
     }
 
     @Test
@@ -450,11 +455,14 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         authenticateAsPerson("DIRECTOR_A0000011");
         rejectDirectorApprovalRequestUseCase.reject(new DecideDirectorApprovalRequestCommand(request.getId(), "Falta el certificado"));
 
-        List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
-        assertThat(received).hasSize(1);
-        assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_REJECTED);
-        assertThat(received.get(0).getMessage())
-                .contains("Falta el certificado")
-                .doesNotContain("Justificación interna");
+        AsyncNotifications.commitTestTransaction();
+        AsyncNotifications.awaitAsserted(() -> {
+            List<Notification> received = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
+            assertThat(received).hasSize(1);
+            assertThat(received.get(0).getType()).isEqualTo(NotificationType.DIRECTOR_APPROVAL_REQUEST_REJECTED);
+            assertThat(received.get(0).getMessage())
+                    .contains("Falta el certificado")
+                    .doesNotContain("Justificación interna");
+        });
     }
 }

@@ -1,16 +1,10 @@
-import { Home, CheckCircle2, ClipboardCheck, Users, UserCog, BarChart2, BookOpen } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { menuItemsFor } from '@/routes/roleMenu';
+import { useVisibleMenuItems } from '@/routes/useVisibleMenuItems';
 
-const ITEMS = [
-  { to: '/director/inicio', label: 'Inicio', icon: Home },
-  { to: '/director/alumnos', label: 'Alumnos', icon: Users },
-  { to: '/director/personal', label: 'Personal', icon: UserCog },
-  { to: '/director/aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 },
-  { to: '/director/gestion-academica', label: 'Banco de materias', icon: BookOpen },
-  { to: '/director/esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
-  { to: '/director/financiero', label: 'Financiero', icon: BarChart2 },
-];
+const ITEMS = menuItemsFor('director');
 
 export function DirectorLayout() {
-  return <RoleShell titulo="Director" items={ITEMS} />;
+  const items = useVisibleMenuItems('director', ITEMS);
+  return <RoleShell titulo="Director" items={items} />;
 }

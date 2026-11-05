@@ -1,18 +1,23 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 
 import java.time.LocalDateTime;
 
 public record TermResponse(
-        Long id, Integer year, String description, String type, String status,
+        Long id, Integer year, @Schema(nullable = true) String description, TermType type, String status,
         LocalDateTime startDate, LocalDateTime endDate,
-        LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd, boolean enrollmentOpen) {
+        LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd, boolean enrollmentOpen,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) TermEnrollmentOverride enrollmentOverride) {
     public static TermResponse from(Term term) {
         return new TermResponse(
                 term.getId(), term.getYear(), term.getDescription(), term.getType(),
                 term.getStatus() == null ? null : term.getStatus().name(),
                 term.getStartDate(), term.getEndDate(), term.getEnrollmentStart(), term.getEnrollmentEnd(),
-                term.isEnrollmentOpenAt(LocalDateTime.now()));
+                term.isEnrollmentOpenAt(LocalDateTime.now()),
+                term.getEnrollmentOverride());
     }
 }

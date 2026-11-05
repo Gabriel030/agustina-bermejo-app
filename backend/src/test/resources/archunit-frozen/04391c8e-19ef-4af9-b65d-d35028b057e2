@@ -1,0 +1,5 @@
+Method <com.red_escuela.backend.billing.account.service.CurrentAccountLockConcurrencyIT.theSecondTransactionWaitsWhileTheFirstHoldsTheLock()> calls method <java.lang.Thread.sleep(long)> in (CurrentAccountLockConcurrencyIT.java:115)
+Method <com.red_escuela.backend.billing.payment.operation.IdempotencyKeyHandlerIT.awaitUntilABackendWaitsForALock()> calls method <java.lang.Thread.sleep(long)> in (IdempotencyKeyHandlerIT.java:357)
+Method <com.red_escuela.backend.billing.pricing.service.PriceChangeConcurrencyIT.thePriceChangeThatLosesTheRaceForTheSameDayIsAConflictWithItsOwnCode()> calls method <java.lang.Thread.sleep(long)> in (PriceChangeConcurrencyIT.java:155)
+Method <com.red_escuela.backend.config.TestDatabaseIsolation.drainAsyncExecutors(org.junit.jupiter.api.extension.ExtensionContext)> calls method <java.lang.Thread.sleep(long)> in (TestDatabaseIsolation.java:97)
+Method <com.red_escuela.backend.shared.event.ProcessedEffectGuardIntegrationTest.sleepBriefly()> calls method <java.lang.Thread.sleep(long)> in (ProcessedEffectGuardIntegrationTest.java:129)

@@ -14,5 +14,6 @@ public record UpdateAnnouncementCommand(
         boolean urgent,
         LocalDate expiresAt,
         LocalDateTime scheduledFor,
-        AudienceSpec audienceSpec) {
+        AudienceSpec audienceSpec,
+        boolean notifyRecipients) {
 }

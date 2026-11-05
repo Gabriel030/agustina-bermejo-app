@@ -160,6 +160,7 @@ class CreditNoteIssuingPoliciesTest {
         assertThat(allows(policy, context(command(CreditNoteReason.LATE_FEE_ANNULMENT, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isTrue();
         assertThat(allows(policy, context(command(CreditNoteReason.WITHDRAWAL, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
         assertThat(allows(policy, context(command(CreditNoteReason.CANCELLATION, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.LATE_FEE_CORRECTION, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
         assertThat(CreditNoteReason.valueOf("BILLING_ERROR")).isNotNull();
         assertThat(CreditNoteReason.values()).extracting(Enum::name).doesNotContain("RETROACTIVE_SCHOLARSHIP");
     }

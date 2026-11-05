@@ -90,6 +90,14 @@ class MoneyTest {
     }
 
     @Test
+    void multipliedByQuantityKeepsCurrencyAndScale() {
+        Money dollars = Money.of(new BigDecimal("33.33"), Currency.USD);
+        assertThat(dollars.multipliedBy(3)).isEqualTo(Money.of(new BigDecimal("99.99"), Currency.USD));
+        assertThat(dollars.multipliedBy(0)).isEqualTo(Money.zero(Currency.USD));
+        assertThat(dollars.multipliedBy(-2)).isEqualTo(Money.of(new BigDecimal("-66.66"), Currency.USD));
+    }
+
+    @Test
     void timesRejectsNullRate() {
         assertThatThrownBy(() -> ars("1").times(null)).isInstanceOf(NullPointerException.class);
     }

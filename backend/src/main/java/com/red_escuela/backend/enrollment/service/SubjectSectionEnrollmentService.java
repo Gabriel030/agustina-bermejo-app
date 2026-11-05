@@ -7,74 +7,82 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.academicstructure.entity.RequirementType;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
-import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
+import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
+import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
+import com.red_escuela.backend.academicstructure.api.ProgramSectionView;
+import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
+import com.red_escuela.backend.academicstructure.api.SectionFinder;
+import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowFinder;
+import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowView;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionChangeException;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
-import com.red_escuela.backend.shared.domain.InvalidDateRangeException;
 import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.identity.exception.StudentNotActiveException;
-import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramSubjectPrerequisiteRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.enrollment.dto.SectionEnrollmentResponse;
+
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class SubjectSectionEnrollmentService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final SubjectSectionRepository subjectSectionRepository;
-    private final ProgramSubjectRepository programSubjectRepository;
-    private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
+    private final SectionFinder sectionFinder;
+    private final TermEnrollmentWindowFinder termEnrollmentWindowFinder;
+    private final AcademicReferenceFinder academicReferenceFinder;
+    private final ProgramCurriculumFinder programCurriculumFinder;
     private final InvoiceRepository invoiceRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
+    private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramEnrollmentRepository programEnrollmentRepository,
-            SubjectSectionRepository subjectSectionRepository,
-            ProgramSubjectRepository programSubjectRepository,
-            ProgramSubjectPrerequisiteRepository prerequisiteRepository,
+            SectionFinder sectionFinder,
+            TermEnrollmentWindowFinder termEnrollmentWindowFinder,
+            AcademicReferenceFinder academicReferenceFinder,
+            ProgramCurriculumFinder programCurriculumFinder,
             InvoiceRepository invoiceRepository,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             EnrollmentFeeRequirementService enrollmentFeeRequirementService,
+            StudentEnrollmentEligibility studentEnrollmentEligibility,
             Clock clock) {
         this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
+        this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.subjectSectionRepository = subjectSectionRepository;
-        this.programSubjectRepository = programSubjectRepository;
-        this.prerequisiteRepository = prerequisiteRepository;
+        this.sectionFinder = sectionFinder;
+        this.termEnrollmentWindowFinder = termEnrollmentWindowFinder;
+        this.academicReferenceFinder = academicReferenceFinder;
+        this.programCurriculumFinder = programCurriculumFinder;
         this.invoiceRepository = invoiceRepository;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.clock = clock;
@@ -85,14 +93,16 @@ public class SubjectSectionEnrollmentService {
         ProgramEnrollment programEnrollment = findProgramEnrollmentOrThrow(programEnrollmentId);
         validateActiveProgramEnrollment(programEnrollment);
         Student student = programEnrollment.getStudent();
-        validateStudentEligible(student);
+        studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
-        SubjectSection section = subjectSectionRepository.findById(request.sectionId())
-                .orElseThrow(() -> new SectionNotFoundException(request.sectionId()));
-        validateEnrollmentWindow(section.getTerm());
-        enrollmentFeeRequirementService.requireForTerm(programEnrollment, section.getTerm());
+        ProgramSectionView section = sectionFinder.findProgramSection(request.sectionId());
+        validateEnrollmentWindow(section.termId());
+        enrollmentFeeRequirementService.requireForTerm(programEnrollment, academicReferenceFinder.findTerm(section.termId()));
 
-        Long subjectId = section.getSubject().getId();
+        programEnrollment = lockProgramEnrollmentOrThrow(programEnrollmentId);
+        validateActiveProgramEnrollment(programEnrollment);
+
+        Long subjectId = section.subjectId();
         List<SubjectSectionEnrollment> activasMismaMateria = subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                         programEnrollmentId, subjectId,
@@ -101,10 +111,10 @@ public class SubjectSectionEnrollmentService {
             throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
         }
 
-        validatePrerequisites(programEnrollment, section);
+        validatePrerequisites(programEnrollment, subjectId);
 
         Optional<SubjectSectionEnrollment> existente = subjectSectionEnrollmentRepository
-                .findByStudentIdAndSubjectSectionId(student.getId(), section.getId());
+                .findByStudentIdAndSubjectSectionId(student.getId(), section.id());
         if (existente.isPresent()) {
             if (existente.get().getStatus() != EnrollmentStatus.WITHDRAWN) {
                 throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
@@ -118,14 +128,14 @@ public class SubjectSectionEnrollmentService {
         SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
         nueva.setStudent(student);
         nueva.setProgramEnrollment(programEnrollment);
-        nueva.setSubjectSection(section);
+        nueva.setSubjectSection(sectionFinder.findProgramSectionEntity(section.id()));
         nueva.setStatus(calculateStatusByCapacity(section));
         nueva.setEnrolledAt(LocalDateTime.now(clock));
-        nueva.setAttemptNumber(calculateAttemptNumber(programEnrollmentId, subjectId, section));
+        nueva.setAttemptNumber(calculateAttemptNumber(programEnrollmentId, subjectId, section.termId()));
         return subjectSectionEnrollmentRepository.save(nueva);
     }
 
-    private int calculateAttemptNumber(Long programEnrollmentId, Long subjectId, SubjectSection nuevaSeccion) {
+    private int calculateAttemptNumber(Long programEnrollmentId, Long subjectId, Long newTermId) {
         List<SubjectSectionEnrollment> previas = subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                         programEnrollmentId, subjectId, List.of(EnrollmentStatus.FAILED, EnrollmentStatus.WITHDRAWN));
@@ -135,12 +145,13 @@ public class SubjectSectionEnrollmentService {
         SubjectSectionEnrollment ultima = previas.stream()
                 .max(Comparator.comparing(SubjectSectionEnrollment::getEnrolledAt))
                 .orElseThrow();
-        boolean mismoTerm = ultima.getSubjectSection().getTerm().getId().equals(nuevaSeccion.getTerm().getId());
+        boolean mismoTerm = ultima.termId().equals(newTermId);
         return mismoTerm ? ultima.getAttemptNumber() : ultima.getAttemptNumber() + 1;
     }
 
     @Transactional
     public void withdraw(Long id) {
+        sectionFinder.lockProgramSection(findSubjectSectionIdOrThrow(id));
         SubjectSectionEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
@@ -149,32 +160,33 @@ public class SubjectSectionEnrollmentService {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setDroppedAt(LocalDateTime.now(clock));
         subjectSectionEnrollmentRepository.save(enrollment);
-        promoteNextFromWaitlist(enrollment.getSubjectSection().getId());
+        promoteNextFromWaitlist(enrollment.subjectSectionId());
     }
 
     @Transactional
     public SubjectSectionEnrollment changeSection(Long id, ChangeSectionRequest request) {
+        lockProgramEnrollmentOrThrow(findProgramEnrollmentIdOrThrow(id));
+        lockSectionsInAscendingOrder(findSubjectSectionIdOrThrow(id), request.newSectionId());
         SubjectSectionEnrollment origen = findOrThrow(id);
         if (origen.getStatus() != EnrollmentStatus.ENROLLED && origen.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede cambiar de comisión");
         }
-        validateStudentEligible(origen.getStudent());
+        studentEnrollmentEligibility.requireConfirmedAndActive(origen.getStudent());
 
-        SubjectSection destino = subjectSectionRepository.findById(request.newSectionId())
-                .orElseThrow(() -> new SectionNotFoundException(request.newSectionId()));
-        if (!destino.getSubject().getId().equals(origen.getSubjectSection().getSubject().getId())) {
+        ProgramSectionView destino = sectionFinder.findProgramSection(request.newSectionId());
+        if (!destino.subjectId().equals(origen.subjectId())) {
             throw new InvalidSectionChangeException(
                     "La comisión destino tiene que ser de la misma materia que la comisión origen");
         }
-        if (destino.getId().equals(origen.getSubjectSection().getId())) {
+        if (destino.id().equals(origen.subjectSectionId())) {
             return origen;
         }
-        if (!destino.getTerm().getId().equals(origen.getSubjectSection().getTerm().getId())) {
+        if (!destino.termId().equals(origen.termId())) {
             throw new InvalidSectionChangeException(
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
-        validateEnrollmentWindow(destino.getTerm());
+        validateEnrollmentWindow(destino.termId());
 
         Student student = origen.getStudent();
         ProgramEnrollment programEnrollment = origen.getProgramEnrollment();
@@ -184,10 +196,10 @@ public class SubjectSectionEnrollmentService {
         origen.setStatus(EnrollmentStatus.WITHDRAWN);
         origen.setDroppedAt(now);
         subjectSectionEnrollmentRepository.save(origen);
-        promoteNextFromWaitlist(origen.getSubjectSection().getId());
+        promoteNextFromWaitlist(origen.subjectSectionId());
 
         Optional<SubjectSectionEnrollment> existenteDestino = subjectSectionEnrollmentRepository
-                .findByStudentIdAndSubjectSectionId(student.getId(), destino.getId());
+                .findByStudentIdAndSubjectSectionId(student.getId(), destino.id());
         if (existenteDestino.isPresent() && existenteDestino.get().getStatus() == EnrollmentStatus.WITHDRAWN) {
             SubjectSectionEnrollment reactivada = existenteDestino.get();
             reactivada.setStatus(calculateStatusByCapacity(destino));
@@ -198,7 +210,7 @@ public class SubjectSectionEnrollmentService {
         SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
         nueva.setStudent(student);
         nueva.setProgramEnrollment(programEnrollment);
-        nueva.setSubjectSection(destino);
+        nueva.setSubjectSection(sectionFinder.findProgramSectionEntity(destino.id()));
         nueva.setStatus(calculateStatusByCapacity(destino));
         nueva.setEnrolledAt(now);
         nueva.setAttemptNumber(attemptNumber);
@@ -206,25 +218,51 @@ public class SubjectSectionEnrollmentService {
     }
 
     public List<SubjectSectionEnrollment> listByEnrollment(Long programEnrollmentId) {
-        return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId);
+        return subjectSectionEnrollmentRepository.findDetailedByProgramEnrollmentId(programEnrollmentId);
     }
 
-    public List<SubjectSectionEnrollment> listByStudent(Long studentId) {
-        return subjectSectionEnrollmentRepository.findByStudentId(studentId);
+    public List<SectionEnrollmentResponse> listByStudent(Long studentId) {
+        List<SubjectSectionEnrollment> enrollments = subjectSectionEnrollmentRepository.findDetailedByStudentId(studentId);
+        Map<Long, ProgramSubjectView> positions = resolveCurricularPositions(enrollments);
+        return enrollments.stream()
+                .map(enrollment -> {
+                    ProgramSubjectView position = positions.get(enrollment.getId());
+                    return SectionEnrollmentResponse.from(
+                            enrollment,
+                            position == null ? null : position.curricularYear(),
+                            position == null ? null : position.curricularTerm());
+                })
+                .toList();
+    }
+
+    private Map<Long, ProgramSubjectView> resolveCurricularPositions(List<SubjectSectionEnrollment> enrollments) {
+        Map<Long, Map<Long, ProgramSubjectView>> subjectsByProgram = new HashMap<>();
+        Map<Long, ProgramSubjectView> positions = new HashMap<>();
+        for (SubjectSectionEnrollment enrollment : enrollments) {
+            Long programId = enrollment.getProgramEnrollment().getProgram().getId();
+            Map<Long, ProgramSubjectView> subjects = subjectsByProgram.computeIfAbsent(programId, id ->
+                    programCurriculumFinder.findProgramSubjects(id).stream()
+                            .collect(Collectors.toMap(ProgramSubjectView::subjectId, Function.identity(), (a, b) -> a)));
+            ProgramSubjectView view = subjects.get(enrollment.subjectId());
+            if (view != null) {
+                positions.put(enrollment.getId(), view);
+            }
+        }
+        return positions;
     }
 
     public Integer resolveCurricularYear(SubjectSectionEnrollment enrollment) {
-        return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularYear).orElse(null);
+        return resolveProgramSubject(enrollment).map(ProgramSubjectView::curricularYear).orElse(null);
     }
 
     public CurricularTerm resolveCurricularTerm(SubjectSectionEnrollment enrollment) {
-        return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularTerm).orElse(null);
+        return resolveProgramSubject(enrollment).map(ProgramSubjectView::curricularTerm).orElse(null);
     }
 
-    private Optional<ProgramSubject> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
-        return programSubjectRepository.findByProgramIdAndSubjectId(
+    private Optional<ProgramSubjectView> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
+        return programCurriculumFinder.findProgramSubject(
                 enrollment.getProgramEnrollment().getProgram().getId(),
-                enrollment.getSubjectSection().getSubject().getId());
+                enrollment.subjectId());
     }
 
     public SubjectSectionEnrollment get(Long id) {
@@ -232,8 +270,11 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void promoteNextFromWaitlist(Long sectionId) {
-        subjectSectionRepository.findByIdForUpdate(sectionId)
-                .orElseThrow(() -> new SectionNotFoundException(sectionId));
+        sectionFinder.lockProgramSection(sectionId);
+        ProgramSectionView section = sectionFinder.findProgramSection(sectionId);
+        if (countOccupiedSeats(sectionId) >= capacityOf(section)) {
+            return;
+        }
         subjectSectionEnrollmentRepository
                 .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {
@@ -242,40 +283,71 @@ public class SubjectSectionEnrollmentService {
                 });
     }
 
-    private EnrollmentStatus calculateStatusByCapacity(SubjectSection section) {
-        subjectSectionRepository.findByIdForUpdate(section.getId())
-                .orElseThrow(() -> new SectionNotFoundException(section.getId()));
-        int ocupadas = subjectSectionEnrollmentRepository
-                .findBySubjectSectionIdAndStatusIn(section.getId(),
-                        List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
-                .size();
-        return section.getCapacity() == null || ocupadas < section.getCapacity()
+    private EnrollmentStatus calculateStatusByCapacity(ProgramSectionView section) {
+        sectionFinder.lockProgramSection(section.id());
+        return countOccupiedSeats(section.id()) < capacityOf(section)
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
     }
 
-    private void validatePrerequisites(ProgramEnrollment programEnrollment, SubjectSection section) {
-        ProgramSubject programSubject = programSubjectRepository
-                .findByProgramIdAndSubjectId(programEnrollment.getProgram().getId(), section.getSubject().getId())
+    private int countOccupiedSeats(Long sectionId) {
+        return subjectSectionEnrollmentRepository
+                .findBySubjectSectionIdAndStatusIn(sectionId,
+                        List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
+                .size();
+    }
+
+    private int capacityOf(ProgramSectionView section) {
+        return section.capacity() == null ? Integer.MAX_VALUE : section.capacity();
+    }
+
+    private void lockSectionsInAscendingOrder(Long firstSectionId, Long secondSectionId) {
+        sectionFinder.lockProgramSection(Math.min(firstSectionId, secondSectionId));
+        sectionFinder.lockProgramSection(Math.max(firstSectionId, secondSectionId));
+    }
+
+    private ProgramEnrollment findProgramEnrollmentOrThrow(Long id) {
+        return programEnrollmentRepository.findById(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
+    }
+
+    private ProgramEnrollment lockProgramEnrollmentOrThrow(Long id) {
+        return programEnrollmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
+    }
+
+    private Long findProgramEnrollmentIdOrThrow(Long sectionEnrollmentId) {
+        return subjectSectionEnrollmentRepository.findProgramEnrollmentIdById(sectionEnrollmentId)
+                .orElseThrow(() -> new SectionEnrollmentNotFoundException(sectionEnrollmentId));
+    }
+
+    private Long findSubjectSectionIdOrThrow(Long sectionEnrollmentId) {
+        return subjectSectionEnrollmentRepository.findSubjectSectionIdById(sectionEnrollmentId)
+                .orElseThrow(() -> new SectionEnrollmentNotFoundException(sectionEnrollmentId));
+    }
+
+    private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId) {
+        ProgramSubjectView programSubject = programCurriculumFinder
+                .findProgramSubject(programEnrollment.getProgram().getId(), subjectId)
                 .orElseThrow(() -> new SubjectNotInProgramPlanException(
-                        section.getSubject().getId(), programEnrollment.getProgram().getId()));
+                        subjectId, programEnrollment.getProgram().getId()));
         if (directorApprovalRequestRepository.hasApproved(
-                programEnrollment.getId(), section.getSubject().getId(), ExceptionType.PREREQUISITE_WAIVER)) {
+                programEnrollment.getId(), subjectId, ExceptionType.PREREQUISITE_WAIVER)) {
             return;
         }
 
-        for (ProgramSubjectPrerequisite prereq : prerequisiteRepository.findByProgramSubjectId(programSubject.getId())) {
-            List<EnrollmentStatus> estadosQueSirven = prereq.getRequirementType() == RequirementType.APPROVED
+        for (PrerequisiteView prereq : programCurriculumFinder.findPrerequisites(programSubject.id())) {
+            List<EnrollmentStatus> estadosQueSirven = prereq.requirementType() == RequirementType.APPROVED
                     ? List.of(EnrollmentStatus.APPROVED)
                     : List.of(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
 
             boolean cumplida = !subjectSectionEnrollmentRepository
                     .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                            programEnrollment.getId(), prereq.getPrerequisiteProgramSubject().getSubject().getId(),
+                            programEnrollment.getId(), prereq.prerequisiteSubjectId(),
                             estadosQueSirven)
                     .isEmpty();
             if (!cumplida) {
                 throw new PrerequisiteNotMetException(
-                        "No se cumple la correlatividad: " + prereq.getPrerequisiteProgramSubject().getSubject().getName());
+                        "No se cumple la correlatividad: " + prereq.prerequisiteSubjectName());
             }
         }
     }
@@ -287,35 +359,19 @@ public class SubjectSectionEnrollmentService {
         }
     }
 
-    private void validateEnrollmentWindow(Term term) {
-        if (term.isEnrollmentClosedByOverride()) {
-            throw new TermEnrollmentOverrideClosedException(term.getId());
+    private void validateEnrollmentWindow(Long termId) {
+        TermEnrollmentWindowView window = termEnrollmentWindowFinder.findEnrollmentWindow(termId, LocalDateTime.now(clock));
+        if (window.closedByOverride()) {
+            throw new TermEnrollmentOverrideClosedException(termId);
         }
-        boolean open;
-        try {
-            open = term.isEnrollmentOpenAt(LocalDateTime.now(clock));
-        } catch (InvalidDateRangeException e) {
+        if (window.windowInverted()) {
             throw new InvalidWindowConfigurationException(
-                    "El Term " + term.getId() + " tiene la ventana de inscripción mal configurada "
+                    "El Term " + termId + " tiene la ventana de inscripción mal configurada "
                             + "(enrollmentStart posterior a enrollmentEnd)");
         }
-        if (!open) {
-            throw new EnrollmentWindowClosedException("Fuera de la ventana de inscripción del Term " + term.getId());
+        if (!window.open()) {
+            throw new EnrollmentWindowClosedException("Fuera de la ventana de inscripción del Term " + termId);
         }
-    }
-
-    private void validateStudentEligible(Student student) {
-        if (student.getOnboardingStatus() != StudentOnboardingStatus.CONFIRMADO) {
-            throw new StudentNotConfirmedException(student.getId());
-        }
-        if (student.getPerson().getStatus() != StatusType.ACTIVE) {
-            throw new StudentNotActiveException(student.getId());
-        }
-    }
-
-    private ProgramEnrollment findProgramEnrollmentOrThrow(Long id) {
-        return programEnrollmentRepository.findById(id)
-                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
     }
 
     private SubjectSectionEnrollment findOrThrow(Long id) {

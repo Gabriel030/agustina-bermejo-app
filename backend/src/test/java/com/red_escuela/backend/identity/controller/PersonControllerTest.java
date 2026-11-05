@@ -53,6 +53,9 @@ class PersonControllerTest extends AbstractIntegrationTest {
     @Autowired
     private PersonRepository personRepository;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     private Person persistPersonWithRole(String username, String dni, String roleName) {
         Address address = new Address();
         entityManager.persist(address);
@@ -63,6 +66,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         person.setUsername(username);
         person.setDni(dni);
         person.setEmail(username + "@example.com");
+        person.setPassword(passwordEncoder.encode("Correcta123"));
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
 
@@ -81,20 +85,20 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "nuevo.email@example.com", "1155556666", null, null, null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
+                "nuevo.email@example.com", "1155556666", null, null, null, "Calle Nueva", "10", null, "Ciudad", null, null, null, "Correcta123");
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("nuevo.email@example.com"))
+                .andExpect(jsonPath("$.email").value("propio1@example.com"))
                 .andExpect(jsonPath("$.telefono").value("1155556666"));
 
         entityManager.flush();
         entityManager.clear();
         Person propioActualizado = personRepository.findById(propio.getId()).orElseThrow();
-        assertThat(propioActualizado.emailValue()).isEqualTo("nuevo.email@example.com");
+        assertThat(propioActualizado.emailValue()).isEqualTo("propio1@example.com");
         assertThat(propioActualizado.getPhoneNumber()).isEqualTo("1155556666");
         assertThat(propioActualizado.getDni()).isEqualTo("60111222");
 
@@ -109,7 +113,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                null, null, null, "60999000", null, null, null, null, null, null, null, null);
+                null, null, null, "60999000", null, null, null, null, null, null, null, null, "Correcta123");
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -131,7 +135,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                null, null, null, "60111333", null, null, null, null, null, null, null, null);
+                null, null, null, "60111333", null, null, null, null, null, null, null, null, "Correcta123");
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -147,7 +151,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "emailowner@example.com", null, null, null, null, null, null, null, null, null, null, null);
+                "emailowner@example.com", null, null, null, null, null, null, null, null, null, null, null, "Correcta123");
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -211,7 +215,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     void rejectedAvatarUploadKeepsThePreviousPhoto() throws Exception {
         Person owner = persistPersonWithRole("avatar1", "60121212", "ALUMNO");
         String token = jwtService.generateAccessToken(owner);
-        byte[] previousPhoto = new byte[] {1, 2, 3, 4};
+        byte[] previousPhoto = new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 1};
 
         mockMvc.perform(multipart("/me/avatar")
                         .file(new MockMultipartFile("file", "foto.png", "image/png", previousPhoto))
@@ -228,6 +232,18 @@ class PersonControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(previousPhoto));
+    }
+
+    @Test
+    void avatarUploadWithoutDeclaredContentTypeIsRejectedAsUnsupportedFileTypeInsteadOfFailing() throws Exception {
+        Person owner = persistPersonWithRole("avatar3", "60141414", "ALUMNO");
+        String token = jwtService.generateAccessToken(owner);
+
+        mockMvc.perform(multipart("/me/avatar")
+                        .file(new MockMultipartFile("file", "foto.png", null, new byte[] {1, 2}))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_FILE_TYPE"));
     }
 
     @Test
@@ -248,6 +264,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
             body.put("documentType", documentType);
         }
         body.put("dni", number);
+        body.put("currentPassword", "Correcta123");
         var result = mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -267,7 +284,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content("{\"documentType\":\"PASSPORT\",\"dni\":\"ab123456\"}"))
+                        .content("{\"documentType\":\"PASSPORT\",\"dni\":\"ab123456\",\"currentPassword\":\"Correcta123\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.documentType").value("PASSPORT"))
                 .andExpect(jsonPath("$.dni").value("AB123456"));

@@ -30,10 +30,13 @@
 		<java.version>21</java.version>
 		<test.forkCount>2</test.forkCount>
 		<test.excludedGroups>docs</test.excludedGroups>
+		<test.exploration>pr</test.exploration>
+		<test.jqwik.tries>200</test.jqwik.tries>
 		<argLine></argLine>
 		<shedlock.version>6.10.0</shedlock.version>
 		<jqwik.version>1.9.3</jqwik.version>
 		<pitest.version>1.20.4</pitest.version>
+		<jacoco.version>0.8.13</jacoco.version>
 		<pitest-junit5.version>1.2.3</pitest-junit5.version>
 		<spring-modulith.version>1.4.13</spring-modulith.version>
 		<dependency-check.version>12.1.3</dependency-check.version>
@@ -221,6 +224,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.tngtech.archunit</groupId>
 			<artifactId>archunit</artifactId>
 			<version>1.4.2</version>
@@ -262,10 +270,31 @@
 						<include>**/*Properties.java</include>
 					</includes>
 					<excludedGroups>${test.excludedGroups}</excludedGroups>
+					<systemPropertyVariables>
+						<test.exploration>${test.exploration}</test.exploration>
+						<jqwik.tries.default>${test.jqwik.tries}</jqwik.tries.default>
+					</systemPropertyVariables>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
-					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
+					<forkedProcessExitTimeoutInSeconds>5</forkedProcessExitTimeoutInSeconds>
+					<systemPropertyVariables>
+						<test.fork>true</test.fork>
+					</systemPropertyVariables>
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>resolve-mockito-agent</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -303,6 +332,114 @@
 
 	<profiles>
 		<profile>
+			<id>exploration-nightly</id>
+			<activation>
+				<property>
+					<name>test.exploration</name>
+					<value>nightly</value>
+				</property>
+			</activation>
+			<properties>
+				<test.jqwik.tries>1000</test.jqwik.tries>
+			</properties>
+		</profile>
+		<profile>
+			<id>coverage</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>${jacoco.version}</version>
+						<configuration>
+							<excludes>
+								<exclude>com/red_escuela/backend/BackendApplication*</exclude>
+								<exclude>com/red_escuela/backend/config/**</exclude>
+								<exclude>**/dto/**</exclude>
+							</excludes>
+						</configuration>
+						<executions>
+							<execution>
+								<id>jacoco-agent</id>
+								<phase>initialize</phase>
+								<goals>
+									<goal>prepare-agent</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>jacoco-report</id>
+								<phase>test</phase>
+								<goals>
+									<goal>report</goal>
+								</goals>
+								<configuration>
+									<formats>
+										<format>XML</format>
+										<format>CSV</format>
+									</formats>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>coverage-merge</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>${jacoco.version}</version>
+						<configuration>
+							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+							<outputDirectory>${project.build.directory}/jacoco-merged-report</outputDirectory>
+							<excludes>
+								<exclude>com/red_escuela/backend/BackendApplication*</exclude>
+								<exclude>com/red_escuela/backend/config/**</exclude>
+								<exclude>**/dto/**</exclude>
+							</excludes>
+						</configuration>
+						<executions>
+							<execution>
+								<id>jacoco-merge-shards</id>
+								<phase>process-classes</phase>
+								<goals>
+									<goal>merge</goal>
+								</goals>
+								<configuration>
+									<destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+									<fileSets>
+										<fileSet>
+											<directory>${project.build.directory}/jacoco-shards</directory>
+											<includes>
+												<include>**/*.exec</include>
+											</includes>
+										</fileSet>
+									</fileSets>
+								</configuration>
+							</execution>
+							<execution>
+								<id>jacoco-report-merged</id>
+								<phase>process-classes</phase>
+								<goals>
+									<goal>report</goal>
+								</goals>
+								<configuration>
+									<formats>
+										<format>XML</format>
+										<format>CSV</format>
+										<format>HTML</format>
+									</formats>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
 			<id>mutation</id>
 			<build>
 				<plugins>
@@ -338,14 +475,22 @@
 								<param>com.red_escuela.backend.billing.planning.service.*</param>
 								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
 								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
+								<param>com.red_escuela.backend.billing.discount.domain.*</param>
+								<param>com.red_escuela.backend.billing.discount.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
 								<param>com.red_escuela.backend.billing.collections.domain.*</param>
+								<param>com.red_escuela.backend.billing.collections.operation.DailyReminderDigestPlanner</param>
+								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderImpactCalculator</param>
+								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderPlannedEventFactory</param>
 								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier</param>
 								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher</param>
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
+								<param>com.red_escuela.backend.notification.delivery.domain.*</param>
+								<param>com.red_escuela.backend.notification.delivery.policy.*</param>
+								<param>com.red_escuela.backend.shared.mail.MaskedEmailAddress</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
@@ -364,14 +509,22 @@
 								<param>com.red_escuela.backend.billing.planning.*</param>
 								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
 								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
+								<param>com.red_escuela.backend.billing.discount.domain.*</param>
+								<param>com.red_escuela.backend.billing.discount.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
 								<param>com.red_escuela.backend.billing.collections.domain.*</param>
+								<param>com.red_escuela.backend.billing.collections.operation.DailyReminderDigestPlannerTest</param>
+								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderImpactCalculatorTest</param>
+								<param>com.red_escuela.backend.billing.collections.operation.CollectionReminderPlannedEventFactoryTest</param>
 								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifierTest</param>
 								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcherTest</param>
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
+								<param>com.red_escuela.backend.notification.delivery.domain.*</param>
+								<param>com.red_escuela.backend.notification.delivery.policy.*</param>
+								<param>com.red_escuela.backend.shared.mail.MaskedEmailAddressTest</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>
@@ -384,7 +537,9 @@
 							<coverageThreshold>0</coverageThreshold>
 							<failWhenNoMutations>false</failWhenNoMutations>
 							<threads>4</threads>
-							<withHistory>true</withHistory>
+							<jvmArgs>
+								<value>-Djqwik.tries.default=1000</value>
+							</jvmArgs>
 							<historyInputFile>${project.build.directory}/pit-history/history.bin</historyInputFile>
 							<historyOutputFile>${project.build.directory}/pit-history/history.bin</historyOutputFile>
 							<outputFormats>

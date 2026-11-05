@@ -6,6 +6,7 @@ import com.red_escuela.backend.announcement.entity.SectionType;
 import com.red_escuela.backend.announcement.exception.SegmentNotAvailableForSectionException;
 import com.red_escuela.backend.announcement.exception.UnknownAudienceSegmentException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class AudienceService {
         this.resolvers = resolvers;
     }
 
+    @Transactional(readOnly = true)
     public SectionSnapshot snapshotOf(SectionType type, Long sectionId) {
         return snapshotLoader.load(type, sectionId);
     }

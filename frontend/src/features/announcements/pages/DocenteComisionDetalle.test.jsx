@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorBody } from '@/test/fixtures/errors';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -91,7 +92,7 @@ describe('DocenteComisionDetalle', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
-  it('un curso suelto no renderiza la barra de pestañas', async () => {
+  it('un curso suelto ofrece Avisos, Alumnos y Notas pero no Evaluación', async () => {
     server.use(
       http.get(`${API}/me/teaching-sections`, () =>
         HttpResponse.json([{ id: SECTION_ID, type: 'COURSE', subjectName: 'Illustrator', sectionName: 'Turno noche' }]),
@@ -101,7 +102,41 @@ describe('DocenteComisionDetalle', () => {
     montar(`/docente/mis-comisiones/${SECTION_ID}?type=COURSE`);
 
     expect(await screen.findByRole('heading', { name: 'Illustrator · Turno noche' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Avisos', 'Alumnos', 'Notas']);
+  });
+
+  it('con ?tab=alumnos muestra los alumnos con su riesgo de faltas', async () => {
+    mockearConfig();
+    server.use(
+      http.get(`${API}/program-sections/${SECTION_ID}/roster`, () =>
+        HttpResponse.json([
+          { enrollmentId: 1, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40111222', absenceCount: 3, attendancePercent: 75, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 0 },
+        ]),
+      ),
+    );
+    montar(`/docente/mis-comisiones/${SECTION_ID}?tab=alumnos`);
+
+    expect(await screen.findByText('Acosta, Joaquín')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Alumnos' })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByText('3 de 3 faltas permitidas')).toBeInTheDocument();
+    expect(screen.getByText('Al límite')).toBeInTheDocument();
+  });
+
+  it('con ?tab=notas muestra la grilla de notas de la comisión de carrera', async () => {
+    mockearConfig();
+    server.use(
+      http.get(`${API}/program-sections/${SECTION_ID}/grade-grid`, () =>
+        HttpResponse.json({
+          sectionId: SECTION_ID,
+          columns: [{ type: 'EXAM', sequenceNumber: 1, date: null }],
+          students: [{ enrollmentId: 3, lastname: 'Rossi', name: 'Camila', dni: '42114673', condition: 'IN_PROGRESS', finalEnabled: false, grades: [] }],
+        }),
+      ),
+    );
+    montar(`/docente/mis-comisiones/${SECTION_ID}?tab=notas`);
+
+    expect(await screen.findByLabelText('Parcial 1 de Rossi, Camila')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Notas' })).toHaveAttribute('data-state', 'active');
   });
 
   it('una comisión cerrada no ofrece acciones sobre los avisos', async () => {
@@ -232,7 +267,7 @@ describe('DocenteComisionDetalle', () => {
     mockearConfig(unaConfig({ status: 'DRAFT', canEdit: true, canSubmit: true, hasFinal: true }));
     server.use(
       http.put(`${API}/me/section-evaluation-configs/${SECTION_ID}`, () =>
-        HttpResponse.json({ code: 'EVALUATION_DATE_ON_HOLIDAY' }, { status: 400 }),
+        HttpResponse.json(errorBody('EVALUATION_DATE_ON_HOLIDAY'), { status: 400 }),
       ),
     );
     const user = userEvent.setup();

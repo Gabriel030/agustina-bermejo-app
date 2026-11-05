@@ -7,9 +7,8 @@ import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +18,13 @@ import java.util.List;
 public class EvaluationSchemeService {
 
     private final EvaluationSchemeRepository evaluationSchemeRepository;
-    private final SubjectSectionRepository subjectSectionRepository;
-    private final CourseSubjectSectionRepository courseSubjectSectionRepository;
+    private final SectionFinder sectionFinder;
 
     public EvaluationSchemeService(
             EvaluationSchemeRepository evaluationSchemeRepository,
-            SubjectSectionRepository subjectSectionRepository,
-            CourseSubjectSectionRepository courseSubjectSectionRepository) {
+            SectionFinder sectionFinder) {
         this.evaluationSchemeRepository = evaluationSchemeRepository;
-        this.subjectSectionRepository = subjectSectionRepository;
-        this.courseSubjectSectionRepository = courseSubjectSectionRepository;
+        this.sectionFinder = sectionFinder;
     }
 
     @Transactional
@@ -53,8 +49,7 @@ public class EvaluationSchemeService {
     }
 
     public boolean isInUse(Long id) {
-        return subjectSectionRepository.existsByEvaluationSchemeId(id)
-                || courseSubjectSectionRepository.existsByEvaluationSchemeId(id);
+        return sectionFinder.isEvaluationSchemeAssigned(id);
     }
 
     private void applyRequest(EvaluationScheme scheme, CreateEvaluationSchemeRequest request) {

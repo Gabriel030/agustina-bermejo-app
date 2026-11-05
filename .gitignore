@@ -13,3 +13,7 @@ frontend/coverage/
 
 # MacOS
 .DS_Store
+
+# Perf
+perf/out/
+perf/results.json

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,9 +15,9 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
-import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
@@ -24,7 +25,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.academicstructure.entity.RequirementType;
+import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -202,12 +203,12 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     private Term persistTerm(LocalDateTime enrollmentStart, LocalDateTime enrollmentEnd) {
-        Term term = new Term();
+        Term term = TermFixtures.newTerm();
         term.setYear(2026);
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
-        term.setEnrollmentStart(enrollmentStart);
-        term.setEnrollmentEnd(enrollmentEnd);
+        term.setEnrollmentStart(enrollmentStart != null ? enrollmentStart : TermFixtures.OPEN_WINDOW_START);
+        term.setEnrollmentEnd(enrollmentEnd != null ? enrollmentEnd : TermFixtures.OPEN_WINDOW_END);
         entityManager.persist(term);
         return term;
     }
@@ -698,7 +699,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         CourseSubject modulo = persistCourseSubject(course, "Módulo19");
         CourseSubjectSection seccion = persistCourseSubjectSection(modulo, term, null);
         entityManager.flush();
-        String token = tokenWithRole("preceptor-insc19", "PRECEPTOR");
+        String token = tokenWithRole("administrativo-insc19", "ADMINISTRATIVO");
 
         String primeraMatricula = mockMvc.perform(post("/students/{id}/course-enrollments", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -735,7 +736,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         CourseSubject modulo = persistCourseSubject(course, "Módulo20");
         CourseSubjectSection seccion = persistCourseSubjectSection(modulo, term, 1);
         entityManager.flush();
-        String token = tokenWithRole("preceptor-insc20", "PRECEPTOR");
+        String token = tokenWithRole("administrativo-insc20", "ADMINISTRATIVO");
 
         String matricula1 = mockMvc.perform(post("/students/{id}/course-enrollments", estudiante1.getId())
                         .contentType(MediaType.APPLICATION_JSON)

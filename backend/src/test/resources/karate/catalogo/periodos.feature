@@ -2,10 +2,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
 
   # Mismo criterio que carreras/cursos.feature — cubre lo que faltaba de TermController
   # además del alta (ya usada como setup en casi todos los dominios). El campo
-  # enrollmentOverride no se expone en TermResponse (ver TermResponse.from) — los
-  # endpoints de open/close/clear-override solo se verifican por status code, su efecto
-  # real sobre la ventana de inscripción ya está cubierto en el dominio Inscripciones
-  # académicas (decisión 5 de la spec de Procesos administrativos).
+  # TermResponse expone enrollmentOverride (null, OPEN o CLOSED) tras open/close/clear-override.
 
   Background:
     * url baseUrl
@@ -16,7 +13,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
     * def descripcionPeriodo = 'Karate - Periodo catálogo ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2027, description: '#(descripcionPeriodo)', type: 'ANUAL', startDate: '2027-01-01T00:00:00', endDate: '2027-12-31T00:00:00' }
+    And request { year: '#(fixtures.yearWithHolidays())', description: '#(descripcionPeriodo)', type: 'ANNUAL', startDate: '2027-01-01T00:00:00', endDate: '2027-12-31T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -80,15 +77,33 @@ Feature: Catálogo — Períodos lectivos (TermController)
     When method post
     Then status 204
 
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.enrollmentOverride == 'OPEN'
+
     Given path '/terms', termId, 'enrollment', 'close'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 204
 
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.enrollmentOverride == 'CLOSED'
+
     Given path '/terms', termId, 'enrollment', 'clear-override'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 204
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.enrollmentOverride == null
 
     # Sobre un período inexistente — 404
     Given path '/terms', 999999, 'enrollment', 'open'
@@ -105,7 +120,7 @@ Feature: Catálogo — Períodos lectivos (TermController)
     * def descripcionInvertida = 'Karate - Periodo invertido ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken
-    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00' }
+    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANNUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method post
     Then status 400
     And match response.code == 'INVALID_TERM_DATES'
@@ -133,6 +148,56 @@ Feature: Catálogo — Períodos lectivos (TermController)
 
     Given path '/terms', termId
     And header Authorization = 'Bearer ' + adminToken
-    And request { startDate: '2027-02-01T00:00:00', endDate: '2027-11-30T00:00:00' }
+    And request { startDate: '2027-02-01T00:00:00', endDate: '2027-11-30T00:00:00', enrollmentStart: '2000-01-01T00:00:00', enrollmentEnd: '2999-12-31T00:00:00' }
     When method put
     Then status 200
+
+  Scenario: Las fechas de inicio y fin del período son obligatorias al crear — 400 con código
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2032, description: 'Karate - Sin fechas', type: 'ANNUAL', enrollmentStart: '2031-12-01T00:00:00', enrollmentEnd: '2032-01-31T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_DATES_REQUIRED'
+
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2032, description: 'Karate - Sin fin', type: 'ANNUAL', startDate: '2032-03-01T00:00:00', enrollmentStart: '2031-12-01T00:00:00', enrollmentEnd: '2032-01-31T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_DATES_REQUIRED'
+
+  Scenario: La ventana de inscripción es obligatoria al crear y se valida al editar — 400 con código
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2031, description: 'Karate - Sin ventana', type: 'ANNUAL', startDate: '2031-01-01T00:00:00', endDate: '2031-12-31T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_ENROLLMENT_WINDOW_REQUIRED'
+
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2031, description: 'Karate - Ventana incompleta', type: 'ANNUAL', startDate: '2031-01-01T00:00:00', endDate: '2031-12-31T00:00:00', enrollmentStart: '2030-12-01T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'TERM_ENROLLMENT_WINDOW_REQUIRED'
+
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2031, description: 'Karate - Ventana invertida', type: 'ANNUAL', startDate: '2031-01-01T00:00:00', endDate: '2031-12-31T00:00:00', enrollmentStart: '2030-12-31T00:00:00', enrollmentEnd: '2030-12-01T00:00:00' }
+    When method post
+    Then status 400
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { enrollmentStart: '2026-01-01T00:00:00', enrollmentEnd: '2026-02-01T00:00:00' }
+    When method put
+    Then status 200
+    And match response.enrollmentStart == '2026-01-01T00:00:00'
+    And match response.enrollmentEnd == '2026-02-01T00:00:00'
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { enrollmentEnd: '2025-12-01T00:00:00' }
+    When method put
+    Then status 400

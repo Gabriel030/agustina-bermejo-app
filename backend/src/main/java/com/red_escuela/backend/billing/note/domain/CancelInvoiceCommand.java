@@ -2,15 +2,17 @@ package com.red_escuela.backend.billing.note.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.red_escuela.backend.billing.operation.DirectorApprovable;
+import com.red_escuela.backend.billing.operation.InvoiceTargetedRequest;
 import com.red_escuela.backend.billing.operation.ResumedFromAuthorizationRequest;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 
 public record CancelInvoiceCommand(Long invoiceId, CreditNoteReason reason, String justification, Long requestedByPersonId, boolean requestedByDirector,
                                    SystemCancellationOrigin systemOrigin, Long authorizationRequestId)
-        implements DirectorApprovable, ResumedFromAuthorizationRequest<CancelInvoiceCommand> {
+        implements DirectorApprovable, InvoiceTargetedRequest, ResumedFromAuthorizationRequest<CancelInvoiceCommand> {
 
     public CancelInvoiceCommand {
         Objects.requireNonNull(invoiceId, "invoiceId");
@@ -24,6 +26,11 @@ public record CancelInvoiceCommand(Long invoiceId, CreditNoteReason reason, Stri
     public static CancelInvoiceCommand bySystem(Long invoiceId, SystemCancellationOrigin origin, String justification) {
         Objects.requireNonNull(origin, "origin");
         return new CancelInvoiceCommand(invoiceId, CreditNoteReason.CANCELLATION, justification, null, false, origin, null);
+    }
+
+    @Override
+    public List<Long> targetedInvoiceIds() {
+        return List.of(invoiceId);
     }
 
     @Override

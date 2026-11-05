@@ -43,3 +43,41 @@ export function desdeAviso(aviso) {
     expiresAt: aviso.expiresAt,
   };
 }
+
+export function cambiosQueMerecenAviso(original, actual) {
+  const cambios = [];
+  if (original.title.trim() !== actual.title.trim()) cambios.push('el título');
+  if (original.urgent !== actual.urgent) cambios.push('la urgencia');
+  if ((caducidadAFecha(original) ?? null) !== (caducidadAFecha(actual) ?? null)) cambios.push('la caducidad');
+  const envioOriginal = original.cuando === 'programar' ? original.scheduledFor : null;
+  const envioActual = actual.cuando === 'programar' ? actual.scheduledFor : null;
+  if ((envioOriginal ?? null) !== (envioActual ?? null)) cambios.push('el envío programado');
+  return cambios;
+}
+
+export function unirCambios(cambios) {
+  if (cambios.length <= 1) return cambios.join('');
+  return `${cambios.slice(0, -1).join(', ')} y ${cambios[cambios.length - 1]}`;
+}
+
+const MENSAJES_DE_ERROR = {
+  EMPTY_AUDIENCE: 'Ese grupo no tiene ningún alumno hoy. Elegí otro grupo de destinatarios.',
+  SCHEDULED_DATE_IN_THE_PAST: 'La fecha de envío ya pasó. Elegí una fecha y hora futuras.',
+  ANNOUNCEMENT_ALREADY_SENT: 'Este aviso ya se envió, así que no se puede reprogramar.',
+};
+
+export function mensajeDeErrorDeAviso(error, fallback) {
+  return MENSAJES_DE_ERROR[error?.code] ?? fallback;
+}
+
+function pad(value) {
+  return String(value).padStart(2, '0');
+}
+
+export function fechaHoraLocalMinima(ahora = new Date()) {
+  return `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+}
+
+export function fechaLocalMinima(ahora = new Date()) {
+  return fechaHoraLocalMinima(ahora).slice(0, 10);
+}

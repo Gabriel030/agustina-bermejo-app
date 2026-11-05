@@ -3,6 +3,8 @@ package com.red_escuela.backend.billing.collections.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import com.red_escuela.backend.billing.collections.operation.LateFeeCorrectionSweepResult;
+import com.red_escuela.backend.billing.collections.operation.LateFeeWithdrawalCorrectionStep;
 import com.red_escuela.backend.billing.collections.operation.OverdueDetectionResult;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
@@ -31,11 +33,15 @@ class InvoiceOverdueSweepStatusTest {
     private final OverdueInvoiceDetectionStep step = mock(OverdueInvoiceDetectionStep.class);
     private final BatchExecutionLogRepository logRepository = mock(BatchExecutionLogRepository.class);
     private final LateFeeAccrualStep accrualStep = mock(LateFeeAccrualStep.class);
-    private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, accrualStep, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
+    private final LateFeeWithdrawalCorrectionStep correctionStep = mock(LateFeeWithdrawalCorrectionStep.class);
+    private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, accrualStep, correctionStep, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
+
+    private LateFeeCorrectionSweepResult correction = LateFeeCorrectionSweepResult.nothing();
 
     private BatchExecutionLog runWith(OverdueDetectionResult result) {
         when(step.detectOverdueInvoices(TODAY)).thenReturn(result);
         when(accrualStep.accrueLateFees(TODAY)).thenReturn(LateFeeAccrualResult.nothing());
+        when(correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(TODAY)).thenReturn(correction);
         sweep.run(TODAY);
         ArgumentCaptor<BatchExecutionLog> saved = ArgumentCaptor.forClass(BatchExecutionLog.class);
         verify(logRepository).save(saved.capture());
@@ -70,6 +76,7 @@ class InvoiceOverdueSweepStatusTest {
     void theSweepDetectsFirstThenAccruesAndWritesASingleLogWithBothResults() {
         when(step.detectOverdueInvoices(TODAY)).thenReturn(new OverdueDetectionResult(2, 2, 0, 0, List.of()));
         when(accrualStep.accrueLateFees(TODAY)).thenReturn(new LateFeeAccrualResult(3, 4, 1, List.of(Map.of("invoiceId", 5L))));
+        when(correctionStep.correctLateFeesChargedAfterTheEnrollmentEnd(TODAY)).thenReturn(LateFeeCorrectionSweepResult.nothing());
 
         sweep.run(TODAY);
 
@@ -82,5 +89,40 @@ class InvoiceOverdueSweepStatusTest {
         assertThat(saved.getValue().getProcessedCount()).isEqualTo(6);
         assertThat(saved.getValue().getFailedCount()).isEqualTo(1);
         assertThat(saved.getValue().getStatus()).isEqualTo(BatchExecutionStatus.PARTIAL_FAILURE);
+    }
+
+    @Test
+    @Tag("D-375")
+    void correctionsIssuedAreCountedAsProcessedAndASweepWithOnlyThemIsASuccess() {
+        correction = new LateFeeCorrectionSweepResult(3, 3, 0, 0, List.of());
+        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()));
+
+        assertThat(log.getStatus()).isEqualTo(BatchExecutionStatus.SUCCESS);
+        assertThat(log.getCandidateCount()).isEqualTo(3);
+        assertThat(log.getProcessedCount()).isEqualTo(3);
+        assertThat(log.getFailedCount()).isZero();
+    }
+
+    @Test
+    @Tag("D-375")
+    void aFailedCorrectionLeavesThePartialStatusItsErrorAndTheCounts() {
+        correction = new LateFeeCorrectionSweepResult(4, 2, 1, 1, List.of(Map.of("lateFeeChargeId", 77L, "message", "Boom")));
+        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()));
+
+        assertThat(log.getStatus()).isEqualTo(BatchExecutionStatus.PARTIAL_FAILURE);
+        assertThat(log.getCandidateCount()).isEqualTo(4);
+        assertThat(log.getProcessedCount()).isEqualTo(2);
+        assertThat(log.getFailedCount()).isEqualTo(1);
+        assertThat(log.getErrors()).contains("77");
+    }
+
+    @Test
+    @Tag("D-375")
+    void aSweepWhereOnlyCorrectionsFailedAndNothingElseWasProcessedIsAFailure() {
+        correction = new LateFeeCorrectionSweepResult(1, 0, 0, 1, List.of(Map.of("lateFeeChargeId", 5L, "message", "Boom")));
+        BatchExecutionLog log = runWith(new OverdueDetectionResult(0, 0, 0, 0, List.of()));
+
+        assertThat(log.getStatus()).isEqualTo(BatchExecutionStatus.FAILED);
+        assertThat(log.getErrors()).contains("5");
     }
 }
