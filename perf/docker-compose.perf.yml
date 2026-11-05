@@ -1,0 +1,11 @@
+services:
+  perf-pg:
+    image: postgres:16-alpine
+    container_name: perf-a0-pg
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+    environment:
+      POSTGRES_DB: perf
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5461:5432"
