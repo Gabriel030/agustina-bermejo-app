@@ -324,7 +324,7 @@ POST,/programs/{id}/year-billing-templates,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/promotions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/promotions/{id}/close,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/prospects,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
-POST,/prospects/by-staff,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/prospects/by-staff,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""nombre"":""x"",""apellido"":""x"",""email"":""x@example.com"",""telefono"":""1"",""institutionId"":1}"
 GET,/prospects,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/prospects/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/prospects/{id}/confirm,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
