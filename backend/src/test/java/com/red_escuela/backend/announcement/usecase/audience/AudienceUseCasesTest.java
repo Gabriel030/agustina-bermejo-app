@@ -1,7 +1,5 @@
 package com.red_escuela.backend.announcement.usecase.audience;
 
-import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
 import com.red_escuela.backend.announcement.dto.AudienceSegmentResponse;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
@@ -44,19 +42,14 @@ class AudienceUseCasesTest {
     private AudienceService audienceService;
     @Mock
     private SectionMembership sectionMembership;
-    @Mock
-    private CurrentInstructorService currentInstructorService;
 
     private PreviewAudienceService previewService;
     private ListAudienceSegmentsService listService;
 
     @BeforeEach
     void setUp() {
-        previewService = new PreviewAudienceService(audienceService, sectionMembership, currentInstructorService);
-        listService = new ListAudienceSegmentsService(audienceService, sectionMembership, currentInstructorService);
-        Instructor instructor = new Instructor();
-        instructor.setId(5L);
-        when(currentInstructorService.resolveCurrentInstructor()).thenReturn(instructor);
+        previewService = new PreviewAudienceService(audienceService, sectionMembership);
+        listService = new ListAudienceSegmentsService(audienceService, sectionMembership);
     }
 
     private static StudentSnapshot student(long id, Map<Integer, Double> exams, Map<Integer, Double> tps) {
@@ -87,7 +80,7 @@ class AudienceUseCasesTest {
     @Test
     void previewRejectsInstructorWhoDoesNotTeachTheSection() {
         doThrow(new NotSectionInstructorException(SECTION_ID)).when(sectionMembership)
-                .requireInstructorOf(SectionType.PROGRAM, SECTION_ID, 5L);
+                .requireCurrentInstructorOf(SectionType.PROGRAM, SECTION_ID);
 
         assertThatThrownBy(() -> previewService.preview(
                 new PreviewAudienceCommand(SectionType.PROGRAM, SECTION_ID, AudienceSpec.wholeSection())))
@@ -162,7 +155,7 @@ class AudienceUseCasesTest {
     @Test
     void listRejectsInstructorWhoDoesNotTeachTheSection() {
         doThrow(new NotSectionInstructorException(SECTION_ID)).when(sectionMembership)
-                .requireInstructorOf(SectionType.COURSE, SECTION_ID, 5L);
+                .requireCurrentInstructorOf(SectionType.COURSE, SECTION_ID);
 
         assertThatThrownBy(() -> listService.list(SectionType.COURSE, SECTION_ID)).isInstanceOf(NotSectionInstructorException.class);
         verify(audienceService, never()).availableKeys(any());

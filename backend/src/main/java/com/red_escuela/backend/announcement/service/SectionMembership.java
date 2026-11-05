@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.service;
 
+import com.red_escuela.backend.academicstructure.api.CurrentInstructorIdFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.announcement.entity.SectionType;
@@ -15,11 +16,18 @@ public class SectionMembership {
 
     private final SectionTeachingFinder sectionTeachingFinder;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
+    private final CurrentInstructorIdFinder currentInstructorIdFinder;
 
     public SectionMembership(SectionTeachingFinder sectionTeachingFinder,
-                             SectionEnrollmentFinder sectionEnrollmentFinder) {
+                             SectionEnrollmentFinder sectionEnrollmentFinder,
+                             CurrentInstructorIdFinder currentInstructorIdFinder) {
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
+        this.currentInstructorIdFinder = currentInstructorIdFinder;
+    }
+
+    public void requireCurrentInstructorOf(SectionType type, Long sectionId) {
+        requireInstructorOf(type, sectionId, currentInstructorIdFinder.currentInstructorId());
     }
 
     public void requireInstructorOf(SectionType type, Long sectionId, Long instructorId) {

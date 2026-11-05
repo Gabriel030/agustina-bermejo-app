@@ -1,6 +1,5 @@
 package com.red_escuela.backend.announcement.usecase.announcement;
 
-import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
@@ -8,9 +7,9 @@ import com.red_escuela.backend.announcement.exception.ScheduledDateInThePastExce
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.AnnouncementDispatcher;
 import com.red_escuela.backend.announcement.service.AnnouncementSectionAssigner;
+import com.red_escuela.backend.announcement.service.CurrentAnnouncementAuthor;
 import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.announcement.service.audience.AudienceLabels;
-import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,25 +26,24 @@ public class CreateAnnouncementService implements CreateAnnouncementUseCase {
     private final SectionMembership sectionMembership;
     private final AnnouncementSectionAssigner sectionAssigner;
     private final AnnouncementDispatcher dispatcher;
-    private final CurrentInstructorService currentInstructorService;
+    private final CurrentAnnouncementAuthor currentAuthor;
 
     public CreateAnnouncementService(AnnouncementRepository announcementRepository,
                                      SectionMembership sectionMembership,
                                      AnnouncementSectionAssigner sectionAssigner,
                                      AnnouncementDispatcher dispatcher,
-                                     CurrentInstructorService currentInstructorService) {
+                                     CurrentAnnouncementAuthor currentAuthor) {
         this.announcementRepository = announcementRepository;
         this.sectionMembership = sectionMembership;
         this.sectionAssigner = sectionAssigner;
         this.dispatcher = dispatcher;
-        this.currentInstructorService = currentInstructorService;
+        this.currentAuthor = currentAuthor;
     }
 
     @Override
     @Transactional
     public Announcement create(CreateAnnouncementCommand command) {
-        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        sectionMembership.requireInstructorOf(command.sectionType(), command.sectionId(), instructor.getId());
+        sectionMembership.requireCurrentInstructorOf(command.sectionType(), command.sectionId());
 
         LocalDateTime now = LocalDateTime.now();
         boolean scheduled = command.scheduledFor() != null;
@@ -62,7 +60,7 @@ public class CreateAnnouncementService implements CreateAnnouncementUseCase {
                 .expiresAt(command.expiresAt())
                 .audienceSpec(spec)
                 .audienceLabel(AudienceLabels.resolvedLabel(spec))
-                .createdBy(instructor.getPerson())
+                .createdBy(currentAuthor.currentAuthor())
                 .createdAt(now)
                 .status(scheduled ? AnnouncementStatus.SCHEDULED : AnnouncementStatus.SENT)
                 .scheduledFor(command.scheduledFor())

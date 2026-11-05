@@ -1,9 +1,8 @@
 package com.red_escuela.backend.announcement.usecase.announcement;
 
 import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.service.AnnouncementViewer;
 import com.red_escuela.backend.announcement.service.StudentAnnouncementFeedLoader;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;
@@ -12,17 +11,16 @@ import java.util.List;
 public class ListMyAnnouncementsService implements ListMyAnnouncementsUseCase {
 
     private final StudentAnnouncementFeedLoader feedLoader;
-    private final CurrentPersonService currentPersonService;
+    private final AnnouncementViewer announcementViewer;
 
     public ListMyAnnouncementsService(StudentAnnouncementFeedLoader feedLoader,
-                                      CurrentPersonService currentPersonService) {
+                                      AnnouncementViewer announcementViewer) {
         this.feedLoader = feedLoader;
-        this.currentPersonService = currentPersonService;
+        this.announcementViewer = announcementViewer;
     }
 
     @Override
     public List<Announcement> listForCurrentStudent() {
-        Person person = currentPersonService.resolveCurrentPerson();
-        return feedLoader.loadFeedOfPerson(person.getId());
+        return feedLoader.loadFeedOfPerson(announcementViewer.currentPersonId());
     }
 }
