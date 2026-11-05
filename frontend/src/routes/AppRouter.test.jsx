@@ -48,7 +48,7 @@ describe('AppRouter', () => {
     await user.type(screen.getByPlaceholderText('••••••••'), 'Test1234');
     await user.click(screen.getByRole('button', { name: /ingresar/i }));
 
-    expect(await screen.findByText('No autorizado')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Alta de alumno' })).toBeInTheDocument();
     expect(requestedStudents).not.toContain('nuevo');
   });
   async function signIn(user) {

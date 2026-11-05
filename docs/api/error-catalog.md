@@ -616,6 +616,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/late-payment-settings` | `LatePaymentSettingsController#create` |
+| POST | `/me/announcements/{id}/read` | `MeAnnouncementController#markRead` |
 | POST | `/me/annual-upfront-requests/{id}/discard` | `AnnualUpfrontRequestController#discardAnnualUpfrontRequest` |
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |

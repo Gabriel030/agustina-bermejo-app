@@ -108,6 +108,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
         Announcement announcement = createAnnouncement.create(aCommand(fixture.section.getId(), null));
         entityManager.flush();
 
+        assertThat(announcement.isReadTracked()).isTrue();
         awaitNotificationsFor(announcement.getId(), 3);
         List<Notification> notifications = notificationsFor(announcement.getId());
         assertThat(notifications).hasSize(3);
@@ -255,6 +256,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
 
         assertThat(announcement.getStatus()).isEqualTo(AnnouncementStatus.SCHEDULED);
         assertThat(announcement.getSentAt()).isNull();
+        assertThat(announcement.isReadTracked()).isTrue();
         assertThat(recipientRepository.findByAnnouncementId(announcement.getId())).isEmpty();
         assertThat(notificationsFor(announcement.getId())).isEmpty();
     }

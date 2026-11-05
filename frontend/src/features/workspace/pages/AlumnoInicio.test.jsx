@@ -29,6 +29,7 @@ function unAviso(extra = {}) {
     teacherName: 'Ana Docente',
     createdAt: HACE_1H,
     updatedAt: HACE_1H,
+    readAt: null,
     ...extra,
   };
 }
