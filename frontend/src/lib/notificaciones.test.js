@@ -62,6 +62,11 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_VERIFIED).toBe('accent2');
   });
 
+  it('labels and tones the graduation request blocked by debt', () => {
+    expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_DEBT_BLOCKED).toBe('Egreso detenido por deuda');
+    expect(TONO_NOTIFICACION.GRADUATION_REQUEST_DEBT_BLOCKED).toBe('warning');
+  });
+
   it('labels the real emitted types added in the audit', () => {
     expect(TIPO_NOTIFICACION_LABEL.ATTENDANCE_JUSTIFICATION_APPROVED).toBe('Justificación de inasistencia aprobada');
     expect(TIPO_NOTIFICACION_LABEL.ATTENDANCE_JUSTIFICATION_REJECTED).toBe('Justificación de inasistencia rechazada');
