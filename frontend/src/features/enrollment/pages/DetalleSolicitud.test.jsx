@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -146,6 +146,65 @@ describe('DetalleSolicitud', () => {
     expect(new URL(url).searchParams.get('type')).toBe('DNI_FRENTE');
     expect(opts.body.get('file').name).toBe('dni-frente.pdf');
   });
+  it('replaceWarnsThatTheFileReplacesTheOneInTheRecordAndCancelDoesNotOpenThePicker', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
+      ),
+      http.get(`${API}/me/documents`, () => HttpResponse.json([{ id: 1, type: 'DNI_FRENTE', uploadedAt: '2026-03-02T10:05:00' }])),
+    );
+    const user = userEvent.setup();
+    renderDetalle('1');
+    const pickerSpy = vi.spyOn(HTMLInputElement.prototype, 'click');
+
+    await user.click(await screen.findByRole('button', { name: 'Reemplazar DNI — frente' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/se guarda en tu legajo y reemplaza al anterior/)).toBeInTheDocument();
+    expect(pickerSpy).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(pickerSpy).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Reemplazar DNI — frente' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Elegir archivo nuevo' }));
+    await waitFor(() => expect(pickerSpy).toHaveBeenCalledTimes(1));
+    pickerSpy.mockRestore();
+  });
+
+  it('firstUploadOfADocumentDoesNotAskForConfirmation', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDetalle('1');
+
+    await user.click(await screen.findByRole('button', { name: 'Subir archivo de DNI — frente' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('lockedApplicationErrorExplainsThatDocumentsCannotChangeAnymore', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
+      ),
+      http.post(`${API}/me/program-enrollment-applications/1/documents`, () =>
+        HttpResponse.json(errorBody('APPLICATION_DOCUMENTS_LOCKED'), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDetalle('1');
+    const row = (await screen.findByText('DNI — frente')).closest('.border-b');
+
+    await user.upload(row.querySelector('input[type="file"]'), new File(['x'], 'dni.pdf', { type: 'application/pdf' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Recargá la página para ver su estado');
+    expect(screen.queryByText(/dni\.pdf · subido/)).not.toBeInTheDocument();
+  });
+
   it('does not ask an approved application to upload documents', async () => {
     server.use(
       http.get(`${API}/me/program-enrollment-applications`, () =>
