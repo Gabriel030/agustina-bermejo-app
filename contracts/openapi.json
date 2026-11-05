@@ -9133,12 +9133,30 @@
             "minimum" : 0,
             "type" : "number"
           },
+          "classesHeld" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "dni" : {
             "type" : "string"
           },
           "enrollmentId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "maxAbsenceRate" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "remainingAbsences" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           },
           "studentId" : {
             "format" : "int64",
