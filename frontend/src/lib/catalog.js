@@ -33,3 +33,32 @@ export function courseSummary(course) {
     .filter(Boolean)
     .join(' · ');
 }
+
+export function formatCredits(credits) {
+  return `${credits} ${credits === 1 ? 'crédito' : 'créditos'}`;
+}
+
+export function formatWeeklyWorkload(hours) {
+  return `${hours} h/semana`;
+}
+
+export const NO_YEAR_GROUP = 'none';
+
+export function groupSubjectsByYear(subjects) {
+  const groups = (subjects ?? []).reduce((acc, subject) => {
+    const key = subject.curricularYear ?? NO_YEAR_GROUP;
+    (acc[key] ??= []).push(subject);
+    return acc;
+  }, {});
+  return Object.entries(groups)
+    .sort(([a], [b]) => {
+      if (a === NO_YEAR_GROUP) return 1;
+      if (b === NO_YEAR_GROUP) return -1;
+      return Number(a) - Number(b);
+    })
+    .map(([year, items]) => ({
+      year,
+      label: year === NO_YEAR_GROUP ? 'Sin año asignado' : `Año ${year}`,
+      items,
+    }));
+}

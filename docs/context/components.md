@@ -78,6 +78,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `toast` / `Toaster` [ui: sonner] | Resultado de acciones (`toast.success/error`); nunca errores de mutación como párrafo inline | montado en `App.jsx` |
 | `Skeleton` [shared] | Carga (shimmer) | `className` |
+| `LoadErrorState` [shared] | Error de carga con Reintentar y 404 diferenciado; `bare` para usarlo dentro de un bloque | `error`, `onRetry`, `resource`, `backTo`, `backLabel`, `bare` |
+| `CatalogDetailLayout` / `CatalogEnrollAction` / `CatalogBlock` / `CatalogItemList` [domain: enrollment] | Detalle de carrera y curso del catálogo: cabecera con `<h1>`, CTA con motivo asociado (`aria-describedby`), bloque con carga y error propios, filas de plan/temario | ver `features/enrollment/components/` |
 | `EmptyState` [shared] | Listas/tablas vacías | `icon`, `title`, `description`, `action` |
 | `NotificationBell` [shared] | Campana con badge de no leídas | — |
 | `Dialog` [ui] | Confirmaciones y acciones breves; no para flujos de varios pasos | compound |
