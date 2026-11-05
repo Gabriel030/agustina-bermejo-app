@@ -7,6 +7,7 @@ const TYPE_MESSAGE = 'El archivo tiene que ser un PDF, JPG o PNG.';
 
 const MESSAGE_BY_CODE = {
   UNSUPPORTED_FILE_TYPE: TYPE_MESSAGE,
+  APPLICATION_DOCUMENTS_LOCKED: 'Esta solicitud ya no admite cambios de documentos. Recargá la página para ver su estado.',
   MAX_UPLOAD_SIZE_EXCEEDED: 'El archivo pesa más de 5 MB. Subí uno más liviano.',
 };
 

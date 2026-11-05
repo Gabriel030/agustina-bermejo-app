@@ -12,6 +12,7 @@ import { useMisSolicitudesCarrera, useMyDocuments } from '@/features/enrollment/
 import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { CircleCheck, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Stepper } from '@/components/Stepper';
 import { applicationProgress } from '@/lib/applicationProgress';
 import { DOCUMENT_ACCEPT, documentUploadErrorMessage, validateDocumentFile } from '@/lib/applicationDocumentUpload';
@@ -43,6 +44,7 @@ export function DetalleSolicitud() {
   const [subiendo, setSubiendo] = useState(null);
   const [errorSubida, setErrorSubida] = useState(null);
   const [uploadAnnouncement, setUploadAnnouncement] = useState('');
+  const [replaceTarget, setReplaceTarget] = useState(null);
   const fileInputRefs = useRef({});
 
   const solicitud = applications.data?.find((application) => String(application.id) === id) ?? null;
@@ -50,6 +52,20 @@ export function DetalleSolicitud() {
 
   function elegirArchivo(type) {
     fileInputRefs.current[type]?.click();
+  }
+
+  function requestFile(type, label, uploaded) {
+    if (uploaded) {
+      setReplaceTarget({ type, label });
+      return;
+    }
+    elegirArchivo(type);
+  }
+
+  function confirmReplace() {
+    const { type } = replaceTarget;
+    setReplaceTarget(null);
+    setTimeout(() => elegirArchivo(type), 0);
   }
 
   async function subirArchivo(type, label, input) {
@@ -284,7 +300,7 @@ export function DetalleSolicitud() {
                     variant="outline"
                     loading={subiendo === type}
                     aria-label={`${uploaded ? 'Reemplazar' : 'Subir archivo de'} ${label}`}
-                    onClick={() => elegirArchivo(type)}
+                    onClick={() => requestFile(type, label, uploaded)}
                   >
                     {uploaded ? 'Reemplazar' : 'Subir archivo'}
                   </Button>
@@ -294,6 +310,25 @@ export function DetalleSolicitud() {
           </GlassCard>
         </>
       )}
+
+      <Dialog open={Boolean(replaceTarget)} onOpenChange={(open) => !open && setReplaceTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Reemplazar {replaceTarget?.label}?</DialogTitle>
+            <DialogDescription>
+              Este archivo se guarda en tu legajo y reemplaza al anterior en todas tus solicitudes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setReplaceTarget(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={confirmReplace}>
+              Elegir archivo nuevo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

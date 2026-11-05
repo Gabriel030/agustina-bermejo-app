@@ -169,6 +169,14 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     And match conFactura.admissionInvoice.paymentStatus == 'PENDING'
     And match conFactura.admissionInvoice.total.amount == '50000.00'
 
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And param type = 'DNI_FRENTE'
+    And multipart file file = { value: '%PDF-1.4 reemplazo', filename: 'reemplazo.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 409
+    And match response.code == 'APPLICATION_DOCUMENTS_LOCKED'
+
   Scenario: Rechazar la solicitud no deja ninguna factura de matrícula
     Given path '/program-enrollment-applications', applicationId, 'reject'
     And header Authorization = 'Bearer ' + preceptorToken

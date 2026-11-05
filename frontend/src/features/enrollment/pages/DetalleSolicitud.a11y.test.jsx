@@ -69,6 +69,20 @@ describe('DetalleSolicitud accessibility', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('replaceConfirmationDialogHasNoAxeViolations', async () => {
+    server.use(
+      application(),
+      http.get(`${API}/me/documents`, () => HttpResponse.json([{ id: 1, type: 'DNI_FRENTE', uploadedAt: '2026-03-02T10:05:00' }])),
+    );
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Reemplazar DNI — frente' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(await axe(dialog)).toHaveNoViolations();
+  });
+
   it('loadErrorStateHasNoAxeViolations', async () => {
     server.use(http.get(`${API}/me/program-enrollment-applications`, () => new HttpResponse(null, { status: 500 })));
     const { container } = renderDetail();
