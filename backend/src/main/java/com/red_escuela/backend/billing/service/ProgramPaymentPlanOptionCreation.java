@@ -1,0 +1,33 @@
+package com.red_escuela.backend.billing.service;
+
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
+import com.red_escuela.backend.billing.entity.PaymentPlanOption;
+import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class ProgramPaymentPlanOptionCreation {
+
+    private final PaymentPlanOptionRepository paymentPlanOptionRepository;
+    private final ProgramRepository programRepository;
+    private final PaymentPlanOptionBuilder paymentPlanOptionBuilder;
+
+    public ProgramPaymentPlanOptionCreation(PaymentPlanOptionRepository paymentPlanOptionRepository, ProgramRepository programRepository,
+                                         PaymentPlanOptionBuilder paymentPlanOptionBuilder) {
+        this.paymentPlanOptionRepository = paymentPlanOptionRepository;
+        this.programRepository = programRepository;
+        this.paymentPlanOptionBuilder = paymentPlanOptionBuilder;
+    }
+
+    @Transactional
+    public PaymentPlanOption create(Long programId, CreatePaymentPlanOptionRequest request) {
+        Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
+        PaymentPlanOption option = paymentPlanOptionBuilder.build(request, program.getCurrency());
+        option.setProgram(program);
+        return paymentPlanOptionRepository.save(option);
+    }
+}

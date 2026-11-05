@@ -78,7 +78,7 @@ class MpWebhookRawEventStoreIT extends AbstractIntegrationTest {
             throw new AssertionError("The payment gateway must not be queried: " + mpPaymentId);
         };
         MpWebhookRawEventRecorder recorder = new MpWebhookRawEventRecorder(verifier, receivedEventRepository, clock);
-        return new MpWebhookController(new ProcessMpWebhookService(registrationPort, fetcherThatMustNotRun, verifier),
+        return new MpWebhookController(new ProcessMpWebhookService(new com.red_escuela.backend.billing.service.MercadoPagoWebhookRegistration(registrationPort, fetcherThatMustNotRun, verifier)),
                 new RecordMpWebhookEventService(currentBillingModePort, recorder));
     }
 
