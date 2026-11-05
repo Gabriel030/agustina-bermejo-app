@@ -47,38 +47,29 @@ com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCo
 com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.directorapproval.ApproveDirectorApprovalRequestService.approve(com.red_escuela.backend.enrollment.usecase.directorapproval.DecideDirectorApprovalRequestCommand) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.directorapproval.RejectDirectorApprovalRequestService.reject(com.red_escuela.backend.enrollment.usecase.directorapproval.DecideDirectorApprovalRequestCommand) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.directorapproval.RequestDirectorApprovalService.request(com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.enrollmentfee.GrantEnrollmentFeeExemptionService.grant(java.lang.Long, com.red_escuela.backend.enrollment.dto.GrantEnrollmentFeeExemptionRequest) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.enrollmentfee.RevokeEnrollmentFeeExemptionService.revoke(java.lang.Long, java.lang.String) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentService.add(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand) declares @Transactional
 com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationService.approve(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationCommand) declares @Transactional
-com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationService.request(com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationCommand) declares @Transactional
 com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigService.approve(com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigCommand) declares @Transactional
 com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.RejectSectionEvaluationConfigService.reject(com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.RejectSectionEvaluationConfigCommand) declares @Transactional
-com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSectionEvaluationConfigDraftService.save(com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSectionEvaluationConfigDraftCommand) declares @Transactional
 com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalService.submit(com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalCommand) declares @Transactional
 com.red_escuela.backend.graduation.usecase.graduationrequest.ApproveGraduationRequestService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationRequestService.reject(com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationRequestCommand) declares @Transactional
-com.red_escuela.backend.graduation.usecase.graduationrequest.RequestGraduationService.request(java.lang.Long) declares @Transactional
 com.red_escuela.backend.graduation.usecase.graduationrequest.VerifyGraduationRequestDebtService.verify(java.lang.Long) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.LoginService.login(com.red_escuela.backend.identity.usecase.auth.LoginCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.LoginWithGoogleService.login(java.lang.String) declares @Transactional
-com.red_escuela.backend.identity.usecase.auth.LogoutService.logout(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RefreshTokenService.refresh(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RegisterService.register(com.red_escuela.backend.identity.dto.RegisterRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService.register(com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.ResetPasswordService.reset(com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeService.verify(com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand) declares @Transactional
-com.red_escuela.backend.identity.usecase.emailverification.VerifyEmailService.verify(java.lang.String) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.ChangeOwnPasswordService.changePassword(com.red_escuela.backend.identity.dto.ChangePasswordRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.person.RevokeSessionByIdService.revokeById(java.lang.Long, com.red_escuela.backend.identity.entity.Person) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.UpdateNotificationPreferencesService.updatePreferences(com.red_escuela.backend.identity.dto.UpdateNotificationPreferencesRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileService.updateOwnProfile(com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest) declares @Transactional
 com.red_escuela.backend.identity.usecase.person.UploadAvatarService.upload(org.springframework.web.multipart.MultipartFile) declares @Transactional
 com.red_escuela.backend.identity.usecase.staff.CreateStaffService.create(com.red_escuela.backend.identity.dto.CreateStaffRequest) declares @Transactional
-com.red_escuela.backend.identity.usecase.staff.ReactivateStaffService.reactivate(java.lang.Long) declares @Transactional
 com.red_escuela.backend.identity.usecase.staff.UpdateStaffService.update(com.red_escuela.backend.identity.usecase.staff.UpdateStaffCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.staff.WithdrawStaffService.withdraw(java.lang.Long) declares @Transactional
 com.red_escuela.backend.identity.usecase.student.WithdrawStudentService.withdraw(com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand) declares @Transactional
