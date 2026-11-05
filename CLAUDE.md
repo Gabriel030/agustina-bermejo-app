@@ -41,8 +41,11 @@ y `~/.claude/instructions/workflow-git.md`):
   antes de crear una.
 - **Todo diseño o mockup pasa por el agente `ux-advisor`** antes de mostrarse, y no se
   codifica sin aprobación del diseño. Ver `docs/context/frontend.md`.
-- **Releases y hotfixes**: solo el usuario abre PRs contra `master` (`release/*` desde
-  develop, `hotfix/*` desde master). Un push a `master` que no venga de `release/*`
+- **Releases y hotfixes**: Claude puede abrir PRs contra `master` (`release/*` desde
+  develop, `hotfix/*` desde master). Cadencia obligatoria: con 15 PRs mergeados a develop
+  desde el último release, o al cierre de cada jornada si hay al menos 5, o antes de abrir
+  una ventana de migraciones, se abre un PR `release/*` y mergearlo pasa a ser prioridad
+  para que develop y master no se alejen. Un push a `master` que no venga de `release/*`
   dispara un PR automático "Backport" (rama `backport/*`, cherry-pick) hacia `develop`, salvo que venga de una rama `release/*`. No existe un PR
   automático develop → master.
 - **Mockups: siempre como Artifact** (skill `vidrio-liquido-mockup`), nunca un `.html` suelto.
