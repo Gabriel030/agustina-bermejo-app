@@ -1,4 +1,4 @@
-import { BellRing, CalendarClock, CalendarRange, Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2, CheckCircle2, Tag } from 'lucide-react';
+import { BellRing, CalendarClock, CalendarRange, CalendarDays, Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2, CheckCircle2, Tag } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
 
 const ITEMS = [
@@ -15,6 +15,7 @@ const ITEMS = [
   { to: '/administrativo/solicitudes-de-asistencia', label: 'Solicitudes de asistencia', icon: CalendarCheck },
   { to: '/administrativo/gestion-academica', label: 'Banco de materias', icon: BookOpen },
   { to: '/administrativo/periodos', label: 'Períodos', icon: CalendarRange },
+  { to: '/administrativo/feriados', label: 'Feriados', icon: CalendarDays },
 ];
 
 export function AdministrativoLayout() {
