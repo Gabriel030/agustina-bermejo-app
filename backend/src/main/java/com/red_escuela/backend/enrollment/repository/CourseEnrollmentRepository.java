@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.repository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,10 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<EnrollmentStatus> statuses);
 
     List<CourseEnrollment> findByStudentId(Long studentId);
+
+    @EntityGraph(attributePaths = {"student", "student.person", "course"})
+    @Query("select e from CourseEnrollment e where e.id in :ids")
+    List<CourseEnrollment> findAllWithStudentAndCourseByIdIn(@Param("ids") Collection<Long> ids);
 
     List<CourseEnrollment> findByStudentIdAndCourseIdAndStatusIn(
             Long studentId, Long courseId, List<EnrollmentStatus> statuses);

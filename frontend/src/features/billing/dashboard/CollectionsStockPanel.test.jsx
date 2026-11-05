@@ -64,7 +64,7 @@ function install({ requests = [], ...options } = {}) {
         totalsByCurrency: [{ totalDebt: money('295000.00'), monthlyProjected: money('1.00'), monthlyCollected: money('1.00'), monthlyDebt: money('1.00') }],
       }),
     ),
-    http.get(`${API}/financial-dashboard/debtors`, () => HttpResponse.json([])),
+    http.get(`${API}/financial-dashboard/debtors/page`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
     http.get(`${API}/billing/metrics/first-month`, () => HttpResponse.json({ month: '2020-01' })),
     http.get(`${API}/billing/metrics/:panel`, ({ request, params }) => {
       requests.push(new URL(request.url));

@@ -124,7 +124,7 @@ function remindersMetric(url, withGoal) {
   };
 }
 
-function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], reminderGoal = false, requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], discounts, firstMonth = '2020-01' } = {}) {
+function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], reminderGoal = false, requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], debtorPages = 1, discounts, firstMonth = '2020-01' } = {}) {
   server.use(
     http.get(`${API}/financial-dashboard`, () =>
       dashboardStatus !== 200 ? new HttpResponse(null, { status: dashboardStatus }) : HttpResponse.json({
@@ -138,11 +138,14 @@ function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, 
         })),
       }),
     ),
-    http.get(`${API}/financial-dashboard/debtors`, () => {
-      debtorRequests.push(1);
+    http.get(`${API}/financial-dashboard/debtors/page`, ({ request }) => {
+      const url = new URL(request.url);
+      debtorRequests.push(url);
+      const page = Number(url.searchParams.get('page'));
+      const debtor = (id, fullName) => ({ studentId: id, fullName, dni: '30111222', enrollmentName: 'Tecnicatura', totalDebt: money('150000.00'), debtAgeDays: 20 });
       return debtorsStatus !== 200
         ? new HttpResponse(null, { status: debtorsStatus })
-        : HttpResponse.json([{ studentId: 7, fullName: 'Ana Pérez', dni: '30111222', enrollmentName: 'Tecnicatura', totalDebt: money('150000.00'), debtAgeDays: 20 }]);
+        : HttpResponse.json({ items: [page === 0 ? debtor(7, 'Ana Pérez') : debtor(8, 'Beto Gómez')], page, size: 25, totalElements: debtorPages * 25 });
     }),
     http.get(`${API}/notification-metrics/collection-reminders`, ({ request }) => {
       requests.push(new URL(request.url));
@@ -591,6 +594,18 @@ describe('FinancialDashboardPage', () => {
     expect(debtorRequests.length).toBeGreaterThan(0);
     open.focus();
     expect(open).toHaveFocus();
+  });
+
+  it('asks for the next page of debtors when the director clicks "Siguiente"', async () => {
+    const debtorRequests = [];
+    install({ debtorRequests, debtorPages: 2 });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    await screen.findByRole('button', { name: 'Ana Pérez' });
+    await userEvent.click(screen.getByRole('button', { name: /Siguiente/ }));
+
+    expect(await screen.findByRole('button', { name: 'Beto Gómez' })).toBeInTheDocument();
+    expect(debtorRequests.at(-1).searchParams.get('page')).toBe('1');
   });
 
   it.each([403, 500])('shows an error with retry, never "no data", when the debtors list answers %i', async (status) => {

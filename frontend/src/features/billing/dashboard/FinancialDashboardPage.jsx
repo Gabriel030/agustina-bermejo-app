@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useCourses } from '@/features/academic-structure/hooks/useCourses';
 import { usePrograms } from '@/features/academic-structure/hooks/usePrograms';
-import { useDebtors, useFinancialDashboard, useFirstBillingMonth } from '@/features/billing/hooks/useFinancialDashboard';
+import { Paginador } from '@/components/Paginador';
+import { DEBTORS_PAGE_SIZE, useDebtors, useFinancialDashboard, useFirstBillingMonth } from '@/features/billing/hooks/useFinancialDashboard';
 import { FEE_TYPE_LABELS } from '@/lib/billing';
 import { formatMoney } from '@/lib/utils';
 import { DEFAULT_RANGE, RANGE_OPTIONS, currentMonth, formatLongMonth, rangeFor, shiftMonth } from './dashboardMetrics';
@@ -153,7 +154,9 @@ function DebtorsTable({ data, isLoading, isError, onRetry }) {
 
 function DebtorsSection() {
   const [sortBy, setSortBy] = useState('DEBT_AGE');
-  const { data, isLoading, isError, refetch } = useDebtors(sortBy);
+  const [page, setPage] = useState(0);
+  const { data, isLoading, isError, refetch } = useDebtors({ sortBy, page });
+  const totalPages = Math.ceil((data?.totalElements ?? 0) / DEBTORS_PAGE_SIZE);
 
   return (
     <GlassCard>
@@ -166,7 +169,10 @@ function DebtorsSection() {
         <select
           aria-label="Ordenar por"
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          onChange={(e) => {
+            setSortBy(e.target.value);
+            setPage(0);
+          }}
           className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           {SORT_OPTIONS.map((o) => (
@@ -176,7 +182,8 @@ function DebtorsSection() {
           ))}
         </select>
       </div>
-      <DebtorsTable data={data} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
+      <DebtorsTable data={data?.items} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
+      <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => setPage(next - 1)} />
     </GlassCard>
   );
 }
