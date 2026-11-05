@@ -64,3 +64,12 @@ Propiedades por nombre: `resilience.<nombre>.window`, `failure-threshold`, `wait
 |---|---|---|---|
 | `mercadopago` | `RESILIENCE_MERCADOPAGO_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | `MPException` (red/timeout) y `MPApiException` 5xx o 429; los 4xx no cuentan | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` |
 | `google` | `RESILIENCE_GOOGLE_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | `IOException` al verificar el token (`502 GOOGLE_SERVICE_UNAVAILABLE`); un token inválido no cuenta | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` |
+
+## Señales de fallo
+
+- `api.errors{status,code}`: contador de respuestas 5xx y de los 409/400 que salen de `IllegalStateException` / `IllegalArgumentException` (sospechosos de enmascarar bugs). El `code` sale del nombre de la excepción, así que la cardinalidad es acotada.
+- `scheduled.job.failures{job,cause}`: fallos de cada job con `@Scheduled` + `@SchedulerLock`.
+- `scheduled.job.last.success.epoch.seconds{job}`: instante de la última ejecución exitosa; permite detectar jobs que no corren.
+- `scheduled.job.duration{job,outcome}`: duración por resultado (`success` / `failure`).
+- Regla de alerta sugerida: `time() - scheduled_job_last_success_epoch_seconds{job="NightlyBillingJob"} > 90000`.
+- `ScheduledJobCoverageTest` falla si aparece un `@Scheduled` sin `@SchedulerLock` fuera de los barridos por instancia declarados en el test.

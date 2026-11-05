@@ -11,6 +11,9 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
+
 @Aspect
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -20,16 +23,23 @@ public class ScheduledJobFailureAspect {
 
     private final ScheduledJobFailureCounter failureCounter;
 
-    public ScheduledJobFailureAspect(MeterRegistry meterRegistry) {
+    private final ScheduledJobRunRecorder runRecorder;
+
+    public ScheduledJobFailureAspect(MeterRegistry meterRegistry, Clock clock) {
         this.failureCounter = new ScheduledJobFailureCounter(meterRegistry);
+        this.runRecorder = new ScheduledJobRunRecorder(meterRegistry, clock);
     }
 
     @Around("@annotation(org.springframework.scheduling.annotation.Scheduled) && @annotation(net.javacrumbs.shedlock.spring.annotation.SchedulerLock)")
     public Object countFailures(ProceedingJoinPoint joinPoint) throws Throwable {
+        String job = AopUtils.getTargetClass(joinPoint.getTarget()).getSimpleName();
+        long start = System.nanoTime();
         try {
-            return joinPoint.proceed();
+            Object result = joinPoint.proceed();
+            runRecorder.recordSuccess(job, Duration.ofNanos(System.nanoTime() - start));
+            return result;
         } catch (Throwable failure) {
-            String job = AopUtils.getTargetClass(joinPoint.getTarget()).getSimpleName();
+            runRecorder.recordFailure(job, Duration.ofNanos(System.nanoTime() - start));
             failureCounter.record(job, failure);
             log.error("Fallo la ejecucion programada job={}", job, failure);
             throw failure;
