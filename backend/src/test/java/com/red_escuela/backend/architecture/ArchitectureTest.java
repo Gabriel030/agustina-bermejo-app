@@ -43,7 +43,7 @@ class ArchitectureTest {
 
     @Test
     void sharedDoesNotDependOnFeatures() {
-        FreezingArchRule.freeze(ArchitectureRules.sharedDoesNotDependOnFeatures()).check(MAIN_CLASSES);
+        ArchitectureRules.sharedDoesNotDependOnFeatures().check(MAIN_CLASSES);
     }
 
     @Test
