@@ -56,7 +56,7 @@ jobs:
 
       - name: Record the verified tree of this pull request
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tested-tree
           path: ${{ runner.temp }}/tested-tree-out/tested-tree.json
@@ -201,7 +201,7 @@ jobs:
 
       - name: Upload the shard reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: shard-reports-${{ matrix.shard }}
           path: shard-out
@@ -210,7 +210,7 @@ jobs:
 
       - name: Upload the JaCoCo execution data of the shard
         if: always() && (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'coverage'))
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-exec-${{ matrix.shard }}
           path: |
@@ -263,7 +263,7 @@ jobs:
 
       - name: Upload the merged coverage report
         if: hashFiles('backend/target/jacoco-merged-report/jacoco.csv') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: |
@@ -372,7 +372,7 @@ jobs:
 
       - name: Upload the PIT report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pit-report
           path: backend/target/pit-reports
@@ -453,7 +453,7 @@ jobs:
 
       - name: Upload the report for the pull request comment
         if: github.event_name == 'pull_request' && hashFiles('report-out/report.md') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-report-comment
           path: report-out/report.md
@@ -469,7 +469,7 @@ jobs:
 
       - name: Publish the timings as the baseline for pull requests
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && (needs.backend-tests.result == 'success' || needs.changes.outputs.reuse_backend == 'true') && hashFiles('baseline-out/metrics.json') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-baseline
           path: baseline-out

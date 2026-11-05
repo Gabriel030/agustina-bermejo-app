@@ -99,7 +99,7 @@ jobs:
 
       - name: Upload the shard reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-reports-${{ matrix.shard }}
           path: shard-out
@@ -117,7 +117,7 @@ jobs:
           echo "${{ needs.decide.outputs.sha }}" > verified/sha
 
       - name: Upload the verified develop commit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-tests-verified
           path: verified
