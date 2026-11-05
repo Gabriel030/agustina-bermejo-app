@@ -5,6 +5,8 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { TopHeader } from '@/components/TopHeader';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorFallback } from '@/components/ErrorFallback';
 import { SkipToContent } from '@/components/SkipToContent';
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
@@ -81,7 +83,9 @@ export function RoleShell({ titulo, items }) {
               transition={{ duration: 0.15, ease: 'easeOut' }}
               className="flex min-w-0 flex-1 flex-col"
             >
-              {element}
+              <ErrorBoundary scope="screen" resetKey={location.pathname} fallback={(props) => <ErrorFallback {...props} />}>
+                {element}
+              </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </main>
