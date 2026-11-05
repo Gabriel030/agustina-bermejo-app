@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
-import { BandejaTramites } from '@/components/director/BandejaTramites';
+import { BandejaTramites } from '@/components/BandejaTramites';
 import { useEgresosPendientes, useHistorialEgresos } from '@/features/graduation/hooks/useGraduation';
 import { formatearFecha } from '@/lib/comisiones';
 import { ageLabel, ESTADO_TRAMITE_LABEL } from '@/lib/aprobaciones';

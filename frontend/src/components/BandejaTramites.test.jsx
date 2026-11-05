@@ -109,4 +109,24 @@ describe('BandejaTramites — load failure', () => {
 
     expect(refetch).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the back link and relabels the tabs when configured', () => {
+    renderWithProviders(
+      <BandejaTramites
+        titulo="Bandeja de prueba"
+        volverA={null}
+        etiquetaPendientes="Por verificar"
+        contadorHistorial={false}
+        useListaPendientes={() => ({ data: pending, isLoading: false, isError: false })}
+        useListaHistorial={() => ({ data: history, isLoading: false, isError: false })}
+        renderFila={(item) => <div key={item.id}>{item.name}</div>}
+        extraerTextoBusqueda={(item) => item.name}
+        extraerFecha={(item) => new Date(item.at)}
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: /Aprobaciones/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Por verificar (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Historial' })).toBeInTheDocument();
+  });
 });

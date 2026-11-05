@@ -60,6 +60,7 @@
   --color-success-ink: var(--success-ink);
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
+  --color-danger-ink: var(--danger-ink);
   --color-neutral-bg: var(--neutral-bg);
   --color-neutral-ink: var(--neutral-ink);
   --color-dialog-bg: var(--dialog-bg);
