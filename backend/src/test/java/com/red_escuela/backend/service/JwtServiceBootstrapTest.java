@@ -26,7 +26,7 @@ class JwtServiceBootstrapTest {
     void contextStartsOkIfJwtSecretIsSet() {
         contextRunner
                 .withPropertyValues(
-                        "jwt.secret=un-secret-de-prueba",
+                        "jwt.secret=un-secret-de-prueba-con-longitud-suficiente-0123",
                         "jwt.access-token-expiration-minutes=15")
                 .run(context -> assertThat(context).hasNotFailed());
     }

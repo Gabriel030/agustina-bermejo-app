@@ -25,7 +25,7 @@ public class JwtService {
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration-minutes}") long accessTokenExpirationMinutes) {
-        this.signingKey = deriveSigningKey(secret);
+        this.signingKey = deriveSigningKey(JwtSecretPolicy.requireStrong(secret));
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
     }
 

@@ -116,6 +116,8 @@ SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5544/smoke_empty SPRING_DATASO
 JWT_SECRET=smoke-secret-smoke-secret-smoke-secret-1234 ./mvnw spring-boot:run
 ```
 
+`JWT_SECRET` debe tener al menos 32 caracteres: con uno mas corto el backend no arranca (`JwtSecretPolicy`). Verificar el secreto de produccion antes de cortar el release.
+
 Sin el perfil `local` y sin `PLATFORM_PROVISIONING_INITIAL_BILLING_MODE`, `InitialBillingModeRunner` aplica el default `OFF` de `application.properties:188` sobre BILLING si nunca fue tocado (version 0 y sin filas en `feature_change_log`) y registra un cambio con actor SERVICE y motivo "Aprovisionamiento inicial del instituto". Verificar tras el arranque:
 
 ```bash
