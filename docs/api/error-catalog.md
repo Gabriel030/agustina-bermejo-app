@@ -103,6 +103,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_AD_HOC_FEE_TYPE` | no | `InvalidAdHocFeeTypeException` | billing |
 | `INVALID_ANNUAL_UPFRONT_SETTINGS` | no | `InvalidAnnualUpfrontSettingsException` | billing |
 | `INVALID_BILLING_RUN_RANGE` | no | `InvalidBillingRunRangeException` | billing |
+| `INVALID_CERTIFICATE_CODE` | no | `InvalidCertificateCodeException` | graduation |
 | `INVALID_COLLECTION_REMINDER_SCHEDULE` | no | `InvalidCollectionReminderScheduleException` | billing |
 | `INVALID_COLLECTION_REMINDER_SETTINGS` | no | `InvalidCollectionReminderSettingsException` | billing |
 | `INVALID_CONFIGURATION_VALUES` | no | `InvalidConfigurationValuesException` | billing |
@@ -249,6 +250,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_FOUND` | no | `ExamBoardRegistrationNotFoundException` | evaluation |
 | `GOOGLE_ACCOUNT_NOT_LINKED` | no | `GoogleAccountNotLinkedException` | identity |
 | `GRADE_ITEM_NOT_FOUND` | no | `GradeItemNotFoundException` | evaluation |
+| `GRADUATION_CERTIFICATE_NOT_FOUND` | no | `GraduationCertificateNotFoundException` | graduation |
 | `GRADUATION_REQUEST_NOT_FOUND` | no | `GraduationRequestNotFoundException` | graduation |
 | `HOLIDAY_NOT_FOUND` | no | `HolidayNotFoundException` | academicstructure |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
@@ -356,6 +358,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
+| `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
+| `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
 | `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
@@ -598,6 +602,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-boards/{id}/registrations` | `ExamBoardRegistrationController#register` |
 | POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
+| POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
