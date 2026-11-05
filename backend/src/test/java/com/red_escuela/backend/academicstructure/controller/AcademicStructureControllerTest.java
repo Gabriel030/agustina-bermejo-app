@@ -425,7 +425,8 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         if (!holidayRepository.existsByDate(date)) {
             var holiday = new com.red_escuela.backend.academicstructure.entity.Holiday();
             holiday.setDate(date);
-            holiday.setDescription("Año Nuevo");
+            holiday.setName("Año Nuevo");
+            holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
             holidayRepository.save(holiday);
         }
     }
@@ -455,7 +456,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/holidays")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + admin)
-                        .content("{\"date\":\"2078-01-01\",\"description\":\"Año Nuevo\"}"))
+                        .content("{\"date\":\"2078-01-01\",\"name\":\"Año Nuevo\",\"type\":\"NATIONAL\"}"))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/terms")
@@ -468,7 +469,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void loadingAHolidayTwiceOnTheSameDateReturns409() throws Exception {
         String admin = tokenWithRole("admin-holiday-dup", "ADMINISTRATIVO");
-        String body = "{\"date\":\"2079-05-01\",\"description\":\"Día del Trabajador\"}";
+        String body = "{\"date\":\"2079-05-01\",\"name\":\"Día del Trabajador\",\"type\":\"NATIONAL\"}";
 
         mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + admin).content(body)).andExpect(status().isCreated());
@@ -484,7 +485,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + token)
-                .content("{\"date\":\"2080-05-01\",\"description\":\"X\"}"))
+                .content("{\"date\":\"2080-05-01\",\"name\":\"X\",\"type\":\"NATIONAL\"}"))
                 .andExpect(status().isForbidden());
     }
 
@@ -493,7 +494,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         String admin = tokenWithRole("admin-holiday-del", "ADMINISTRATIVO");
         String response = mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + admin)
-                .content("{\"date\":\"2081-05-01\",\"description\":\"X\"}"))
+                .content("{\"date\":\"2081-05-01\",\"name\":\"X\",\"type\":\"NATIONAL\"}"))
                 .andReturn().getResponse().getContentAsString();
         long id = objectMapper.readTree(response).get("id").asLong();
 
@@ -501,6 +502,98 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + admin)).andExpect(status().isNoContent());
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/holidays/" + id)
                 .header("Authorization", "Bearer " + admin)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updatingAHolidayChangesNameTypeDateAndDescription() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd", "ADMINISTRATIVO");
+        long id = createHolidayAs(admin, "2082-05-01", "Original", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2082-05-02\",\"name\":\"Asueto\",\"type\":\"NON_WORKING_DAY\",\"description\":\"Por la peregrinacion\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.date").value("2082-05-02"))
+                .andExpect(jsonPath("$.name").value("Asueto"))
+                .andExpect(jsonPath("$.type").value("NON_WORKING_DAY"))
+                .andExpect(jsonPath("$.description").value("Por la peregrinacion"));
+    }
+
+    @Test
+    void updatingAHolidayKeepingItsOwnDateIsAllowed() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-same", "ADMINISTRATIVO");
+        long id = createHolidayAs(admin, "2083-05-01", "Original", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2083-05-01\",\"name\":\"Renombrado\",\"type\":\"BRIDGE\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Renombrado"))
+                .andExpect(jsonPath("$.type").value("BRIDGE"))
+                .andExpect(jsonPath("$.description").doesNotExist());
+    }
+
+    @Test
+    void updatingAHolidayToADateUsedByAnotherReturns409() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-dup", "ADMINISTRATIVO");
+        createHolidayAs(admin, "2084-05-01", "Uno", "NATIONAL");
+        long second = createHolidayAs(admin, "2084-05-02", "Dos", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + second).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2084-05-01\",\"name\":\"Dos\",\"type\":\"NATIONAL\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("HOLIDAY_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void updatingAMissingHolidayReturns404() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-missing", "ADMINISTRATIVO");
+
+        mockMvc.perform(put("/holidays/987654321").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2085-05-01\",\"name\":\"X\",\"type\":\"OTHER\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void holidayWithoutNameOrTypeIsRejected() throws Exception {
+        String admin = tokenWithRole("admin-holiday-invalid", "ADMINISTRATIVO");
+
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2086-05-01\",\"type\":\"NATIONAL\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2086-05-01\",\"name\":\"X\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + admin)
+                        .content("{\"date\":\"2086-05-01\",\"name\":\"X\",\"type\":\"INVENTED\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void preceptorCannotUpdateHolidays() throws Exception {
+        String admin = tokenWithRole("admin-holiday-upd-owner", "ADMINISTRATIVO");
+        String preceptor = tokenWithRole("preceptor-holiday-upd", "PRECEPTOR");
+        long id = createHolidayAs(admin, "2087-05-01", "Original", "NATIONAL");
+
+        mockMvc.perform(put("/holidays/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + preceptor)
+                        .content("{\"date\":\"2087-05-01\",\"name\":\"Hack\",\"type\":\"OTHER\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    private long createHolidayAs(String token, String date, String name, String type) throws Exception {
+        String response = mockMvc.perform(post("/holidays").contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"date\":\"" + date + "\",\"name\":\"" + name + "\",\"type\":\"" + type + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("id").asLong();
     }
 
     private Long createTermAs(String token, int year, String type) throws Exception {

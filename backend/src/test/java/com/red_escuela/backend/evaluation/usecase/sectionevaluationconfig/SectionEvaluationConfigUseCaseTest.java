@@ -272,7 +272,8 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         LocalDate holidayDate = nonHolidayDate(45);
         Holiday holiday = new Holiday();
         holiday.setDate(holidayDate);
-        holiday.setDescription("Feriado de prueba");
+        holiday.setName("Feriado de prueba");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
 
         Subject subject = persistSubject("MateriaFeriado");
@@ -545,7 +546,8 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     void savingAHolidayDateReportsItFallsOnAHoliday() {
         Holiday holiday = new Holiday();
         holiday.setDate(LocalDate.of(2020, 12, 9));
-        holiday.setDescription("Feriado de prueba 2020");
+        holiday.setName("Feriado de prueba 2020");
+        holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
         entityManager.persist(holiday);
         Instructor leadInstructor = persistInstructor("90000023");
         SubjectSection section = sectionInPastTermWithLead("MateriaFinalEnFeriado", leadInstructor);
