@@ -51,6 +51,18 @@ const INSTALLMENTS = [
   installment(62, '2026-10', '2026-10-10'),
 ];
 
+function enrollmentBilling(invoices) {
+  return {
+    paymentStatus: 'OVERDUE',
+    paymentStatusUpdatedAt: null,
+    invoices,
+    enrollmentType: 'COURSE',
+    enrollmentId: 9,
+    productName: 'Curso de prueba',
+    productId: 1,
+  };
+}
+
 function receiptOf(overrides = {}) {
   return {
     id: 302,
@@ -77,7 +89,7 @@ function renderTransfer({ receipts = [], invoices = INSTALLMENTS, invoiceId = 61
     http.get(`${API}/me/enrollment-payment-status`, () =>
       HttpResponse.json([{ enrollmentId: 9, enrollmentType: 'CourseEnrollment', paymentStatus: 'OVERDUE' }]),
     ),
-    http.get(`${API}/me/course-enrollments/9/invoices`, () => HttpResponse.json(invoices)),
+    http.get(`${API}/me/course-enrollments/9/invoices`, () => HttpResponse.json(enrollmentBilling(invoices))),
   );
   return renderWithProviders(
     <>
@@ -164,6 +176,23 @@ describe('AlumnoPagarTransferencia', () => {
     ]);
     expect(rows.map((row) => row.getAttribute('aria-pressed'))).toEqual(['true', 'true', 'false']);
     expect(screen.getByLabelText('Monto transferido')).toHaveValue('105.600,00');
+  });
+
+  it('offersEveryOpenInstallmentOrderedByDueDateWhenBackendReturnsEnrollmentObject', async () => {
+    const user = userEvent.setup();
+    renderTransfer({
+      invoiceId: 62,
+      invoices: [installment(63, '2026-11', '2026-11-10'), installment(61, '2026-09', '2026-09-10'), installment(62, '2026-10', '2026-10-10')],
+    });
+    await goToUploadStep(user);
+
+    const rows = within(screen.getByRole('list', { name: 'Cuotas que cubrís' })).getAllByRole('button');
+    expect(rows.map((row) => within(row).getByText(/Cuota mensual/).textContent)).toEqual([
+      'Cuota mensual · sep 2026',
+      'Cuota mensual · oct 2026',
+      'Cuota mensual · nov 2026',
+    ]);
+    expect(rows.map((row) => row.getAttribute('aria-pressed'))).toEqual(['true', 'true', 'false']);
   });
 
   it('selectingALaterInstallmentAlwaysIncludesTheOlderOnesAndSendsTheirIdsInOrder', async () => {
@@ -556,7 +585,7 @@ describe('AlumnoPagarTransferencia', () => {
     server.use(
       http.get(`${API}/me/course-enrollments/9/invoices`, () => {
         listLoads += 1;
-        return HttpResponse.json(INSTALLMENTS);
+        return HttpResponse.json(enrollmentBilling(INSTALLMENTS));
       }),
     );
     await goToUploadStep(user);
