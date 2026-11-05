@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarDays, Plus } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { PageContainer } from '@/components/PageContainer';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Skeleton } from '@/components/Skeleton';
@@ -61,7 +62,7 @@ export function AlumnoMisCursos() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
   const tab = TABS.includes(requestedTab) ? requestedTab : 'en-curso';
-  const { data: enrollments, isLoading } = useMisCursos();
+  const { data: enrollments, isLoading, isError, error, refetch } = useMisCursos();
 
   const inProgress = (enrollments ?? []).filter(isCourseEnrollmentInProgress);
   const finished = (enrollments ?? []).filter((enrollment) => !isCourseEnrollmentInProgress(enrollment));
@@ -90,6 +91,8 @@ export function AlumnoMisCursos() {
           <Skeleton className="h-44" />
           <Skeleton className="h-44" />
         </div>
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="tus cursos" />
       ) : visible.length === 0 ? (
         <GlassCard className="flex flex-1 flex-col p-12">
           {tab === 'en-curso' ? (
