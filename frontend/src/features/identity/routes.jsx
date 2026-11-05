@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom';
 import { Login } from '@/features/identity/pages/Login';
 import { Registrarse } from '@/features/identity/pages/Registrarse';
 import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
@@ -24,7 +23,6 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'personal', element: <GestionPersonal /> },
     { roles: ['administrativo', 'director'], path: 'personal/:id', element: <LegajoPersonal /> },
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/:id', element: <LegajoAlumno /> },
-    { roles: ['preceptor', 'administrativo'], path: 'alumnos/nuevo', element: <NuevoAlumno /> },
-    { roles: ['director'], path: 'alumnos/nuevo', element: <Navigate to="/no-autorizado" replace /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/nuevo', element: <NuevoAlumno /> },
   ],
 };

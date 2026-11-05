@@ -6,15 +6,21 @@ import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
+import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
+import { useStaffProspects } from '@/features/identity/hooks/useProspectos';
+import { missingDocumentsSummary } from '@/features/identity/lib/studentRegistration';
 
 const TABS = [
   { id: 'activos', label: 'Activos', params: { status: 'ACTIVE', onboardingStatus: 'CONFIRMADO' } },
   { id: 'prospectos', label: 'Prospectos', params: { onboardingStatus: 'PROSPECTO' } },
   { id: 'bajas', label: 'Bajas', params: { status: 'DELETED' } },
 ];
+
+const STAFF_REGISTRATION_ROLES = ['preceptor', 'administrativo', 'director'];
 
 const ESTADO_ONBOARDING = {
   CONFIRMADO: 'Confirmado',
@@ -53,6 +59,71 @@ function FilaAlumno({ alumno, onClick }) {
         <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
       </div>
     </button>
+  );
+}
+
+function normalizeSearch(text) {
+  return (text ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function FilaProspecto({ prospect, onClick }) {
+  const complete = prospect.missingDocuments.length === 0;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
+    >
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate text-[14px] font-medium text-ink">
+          {prospect.apellido}, {prospect.nombre}
+        </span>
+        <span className="text-[12px] text-ink-faint">{prospect.email}</span>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <span className={`text-[12px] ${complete ? 'text-success' : 'text-warning-ink'}`}>
+          {missingDocumentsSummary(prospect.missingDocuments)}
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
+      </div>
+    </button>
+  );
+}
+
+function ListaProspectos({ search, navigate, rolBase, tabActivo }) {
+  const { data, isLoading, isError, error, refetch } = useStaffProspects();
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-1">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-[60px] w-full rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
+  if (isError) return <LoadErrorState bare error={error} onRetry={refetch} resource="los prospectos" />;
+  const term = normalizeSearch(search);
+  const prospects = (data ?? []).filter(
+    (p) => !term || normalizeSearch(`${p.nombre} ${p.apellido} ${p.email}`).includes(term),
+  );
+  if (!prospects.length) {
+    return (
+      <EmptyState
+        title={term ? 'Ningún prospecto coincide con la búsqueda' : 'No hay prospectos'}
+        description={term ? 'Probá con otro nombre o email.' : 'Los alumnos dados de alta sin confirmar aparecen acá.'}
+      />
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      {prospects.map((prospect) => (
+        <FilaProspecto
+          key={prospect.id}
+          prospect={prospect}
+          onClick={() => navigate(`/${rolBase}/alumnos/${prospect.id}?tab=${tabActivo}`)}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -106,14 +177,14 @@ export function PadronAlumnos() {
   }
 
   const tabParams = TABS.find((t) => t.id === tabActivo)?.params ?? {};
-  const { data: alumnos, isLoading } = useAlumnos({ ...tabParams, search: searchDebounced || undefined });
+  const { data: alumnos, isLoading } = useAlumnos({ ...tabParams, search: searchDebounced || undefined, enabled: tabActivo !== 'prospectos' });
 
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Padrón de alumnos</h1>
-          {(rolBase === 'preceptor' || rolBase === 'administrativo') && (
+          {STAFF_REGISTRATION_ROLES.includes(rolBase) && (
             <Button variant="gradient" onClick={() => navigate(`/${rolBase}/alumnos/nuevo`)}>Nuevo alumno</Button>
           )}
         </div>
@@ -140,13 +211,22 @@ export function PadronAlumnos() {
 
             {TABS.map((tab) => (
               <TabsContent key={tab.id} value={tab.id} className="mt-2">
-                <ListaAlumnos
-                  alumnos={alumnos}
-                  isLoading={isLoading}
-                  navigate={navigate}
-                  rolBase={rolBase}
-                  tabActivo={tabActivo}
-                />
+                {tab.id === 'prospectos' ? (
+                  <ListaProspectos
+                    search={searchDebounced}
+                    navigate={navigate}
+                    rolBase={rolBase}
+                    tabActivo={tabActivo}
+                  />
+                ) : (
+                  <ListaAlumnos
+                    alumnos={alumnos}
+                    isLoading={isLoading}
+                    navigate={navigate}
+                    rolBase={rolBase}
+                    tabActivo={tabActivo}
+                  />
+                )}
               </TabsContent>
             ))}
           </Tabs>

@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/input';
+import { FormField, fieldProps } from '@/features/academic-structure';
 
 export function DatosBasicosStep({ register, errors, isLoading, locked }) {
   return (
@@ -10,50 +11,45 @@ export function DatosBasicosStep({ register, errors, isLoading, locked }) {
         </p>
       )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-[13px] font-medium text-ink">Nombre</label>
+        <FormField id="student-first-name" label="Nombre" required error={errors.nombre?.message}>
           <Input
             {...register('nombre')}
+            {...fieldProps('student-first-name', errors.nombre, true)}
             placeholder="Juan"
             disabled={isLoading}
             readOnly={locked}
           />
-          {errors.nombre && <p className="text-[12px] text-danger">{errors.nombre.message}</p>}
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-[13px] font-medium text-ink">Apellido</label>
+        </FormField>
+        <FormField id="student-last-name" label="Apellido" required error={errors.apellido?.message}>
           <Input
             {...register('apellido')}
+            {...fieldProps('student-last-name', errors.apellido, true)}
             placeholder="Pérez"
             disabled={isLoading}
             readOnly={locked}
           />
-          {errors.apellido && <p className="text-[12px] text-danger">{errors.apellido.message}</p>}
-        </div>
+        </FormField>
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-[13px] font-medium text-ink">Email</label>
+      <FormField id="student-email" label="Email" required error={errors.email?.message}>
         <Input
           {...register('email')}
+          {...fieldProps('student-email', errors.email, true)}
           type="email"
           placeholder="juan.perez@email.com"
           disabled={isLoading}
           readOnly={locked}
         />
-        {errors.email && <p className="text-[12px] text-danger">{errors.email.message}</p>}
-      </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-[13px] font-medium text-ink">
-          Teléfono <span className="text-muted-foreground font-normal">(opcional)</span>
-        </label>
+      </FormField>
+      <FormField id="student-phone" label="Teléfono (opcional)">
         <Input
           {...register('telefono')}
+          id="student-phone"
           type="tel"
           placeholder="1122334455"
           disabled={isLoading}
           readOnly={locked}
         />
-      </div>
+      </FormField>
     </div>
   );
 }
