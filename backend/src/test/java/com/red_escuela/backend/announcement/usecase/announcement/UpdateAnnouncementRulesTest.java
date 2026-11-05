@@ -1,9 +1,7 @@
 package com.red_escuela.backend.announcement.usecase.announcement;
 
-import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
@@ -19,6 +17,7 @@ import com.red_escuela.backend.announcement.exception.NotSectionInstructorExcept
 import com.red_escuela.backend.announcement.exception.ScheduledDateInThePastException;
 import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
+import com.red_escuela.backend.announcement.service.AnnouncementRenotifier;
 import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -52,8 +51,6 @@ class UpdateAnnouncementRulesTest {
     @Mock
     private SectionMembership sectionMembership;
     @Mock
-    private CurrentInstructorService currentInstructorService;
-    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private UpdateAnnouncementService service;
@@ -61,8 +58,8 @@ class UpdateAnnouncementRulesTest {
 
     @BeforeEach
     void setUp() {
-        service = new UpdateAnnouncementService(announcementRepository, recipientRepository, sectionMembership,
-                currentInstructorService, eventPublisher);
+        service = new UpdateAnnouncementService(announcementRepository, sectionMembership,
+                new AnnouncementRenotifier(recipientRepository, eventPublisher));
         Subject subject = new Subject();
         subject.setName("Matematica");
         section = new SubjectSection();
@@ -89,9 +86,6 @@ class UpdateAnnouncementRulesTest {
 
     private void givenInstructorAndAnnouncement(Announcement announcement) {
         when(announcementRepository.findById(1L)).thenReturn(java.util.Optional.of(announcement));
-        Instructor instructor = new Instructor();
-        instructor.setId(5L);
-        when(currentInstructorService.resolveCurrentInstructor()).thenReturn(instructor);
     }
 
     private static UpdateAnnouncementCommand command(String title, String body, LocalDateTime scheduledFor, AudienceSpec spec) {
@@ -122,7 +116,7 @@ class UpdateAnnouncementRulesTest {
     void updateIsForbiddenForInstructorsWhoDoNotTeachTheSection() {
         Announcement sent = announcement(AnnouncementStatus.SENT);
         givenInstructorAndAnnouncement(sent);
-        doThrow(new NotSectionInstructorException(60L)).when(sectionMembership).requireInstructorOf(SectionType.PROGRAM, 60L, 5L);
+        doThrow(new NotSectionInstructorException(60L)).when(sectionMembership).requireCurrentInstructorOf(SectionType.PROGRAM, 60L);
 
         assertThatThrownBy(() -> service.update(command("Nuevo", null, null, null))).isInstanceOf(NotSectionInstructorException.class);
         assertThat(sent.getTitle()).isEqualTo("Titulo original");
