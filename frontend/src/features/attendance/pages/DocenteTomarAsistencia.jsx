@@ -75,7 +75,7 @@ function agruparFechasPorMes(fechas) {
 
 const ESTADOS_QUE_CUENTAN_COMO_AUSENCIA = ['ABSENT', 'JUSTIFICATION_PENDING'];
 
-function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada }) {
+function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirModificacion }) {
   const config = estado ? ESTADO_POR_VALOR[estado] : null;
   const sumaAusenciaHoy = ESTADOS_QUE_CUENTAN_COMO_AUSENCIA.includes(estado);
   const inasistenciasAMostrar = alumno.absenceCount + (sumaAusenciaHoy ? 1 : 0);
@@ -100,6 +100,11 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada }) {
             {e.label}
           </button>
         ))}
+        {onPedirModificacion && (
+          <Button type="button" variant="outline" size="sm" onClick={onPedirModificacion}>
+            Pedir modificación
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -132,16 +137,21 @@ export function TabAsistencia({ type, sectionId }) {
   // Lo ya guardado para esta fecha puntual (si el docente ya la había cargado antes) —
   // se arma cruzando el roster (enrollmentId + studentId) con el historial (studentId +
   // estado por fecha), sin pegarle a un endpoint nuevo.
-  const estadosGuardados = useMemo(() => {
+  const celdasGuardadas = useMemo(() => {
     if (!historial) return {};
     const porStudentId = new Map(historial.rows.map((fila) => [fila.studentId, fila.cellsByDate[classDate]]));
     const resultado = {};
     for (const alumno of lista) {
       const celda = porStudentId.get(alumno.studentId);
-      if (celda) resultado[alumno.enrollmentId] = celda.status;
+      if (celda) resultado[alumno.enrollmentId] = celda;
     }
     return resultado;
   }, [historial, lista, classDate]);
+  const estadosGuardados = useMemo(
+    () => Object.fromEntries(Object.entries(celdasGuardadas).map(([enrollmentId, celda]) => [enrollmentId, celda.status])),
+    [celdasGuardadas],
+  );
+  const [modificacionPedida, setModificacionPedida] = useState(null);
   const hayAsistenciaGuardada = Object.keys(estadosGuardados).length > 0;
   const esClaseDeHoy = classDate === localIsoDate();
   const puedeCorregirGuardado = (enrollmentId) =>
@@ -327,6 +337,11 @@ export function TabAsistencia({ type, sectionId }) {
                 estado={estados[alumno.enrollmentId]}
                 onCambiarEstado={cambiarEstado}
                 deshabilitada={claseCancelada || (estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId))}
+                onPedirModificacion={
+                  !claseCancelada && estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId)
+                    ? () => setModificacionPedida({ attendanceId: celdasGuardadas[alumno.enrollmentId].attendanceId, status: estadosGuardados[alumno.enrollmentId] })
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -380,18 +395,39 @@ export function TabAsistencia({ type, sectionId }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {modificacionPedida && (
+        <ModalSolicitarModificacion
+          attendanceId={modificacionPedida.attendanceId}
+          estadoActual={modificacionPedida.status}
+          onClose={() => setModificacionPedida(null)}
+        />
+      )}
     </div>
   );
+}
+
+function requestErrorMessage(err) {
+  if (err.status === 403) return 'No tenés permiso para pedir la modificación en esta comisión.';
+  if (err.status === 404) return 'No encontramos ese registro de asistencia. Recargá la página y probá de nuevo.';
+  if (err.status === 400) return 'La solicitud no es válida. Revisá el estado elegido y el motivo.';
+  return 'No se pudo enviar la solicitud. Probá de nuevo.';
 }
 
 function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
   const [nuevoEstado, setNuevoEstado] = useState('PRESENT');
   const [motivo, setMotivo] = useState('');
+  const [error, setError] = useState(null);
   const solicitar = useSolicitarModificacion(attendanceId);
 
   async function enviar() {
-    await solicitar.mutateAsync({ requestedStatus: nuevoEstado, reason: motivo });
-    onClose();
+    setError(null);
+    try {
+      await solicitar.mutateAsync({ requestedStatus: nuevoEstado, reason: motivo });
+      onClose();
+    } catch (err) {
+      setError(requestErrorMessage(err));
+    }
   }
 
   return (
@@ -409,6 +445,7 @@ function ModalSolicitarModificacion({ attendanceId, estadoActual, onClose }) {
             </SelectContent>
           </Select>
           <Textarea placeholder="Motivo de la modificación..." value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">{error}</div>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
