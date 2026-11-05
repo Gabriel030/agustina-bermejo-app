@@ -6,12 +6,11 @@ import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepository;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceChangeRequestFinder;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.attendance.service.AttendanceChangeRequestDecisionRecorder;
 import com.red_escuela.backend.attendance.events.AttendanceChangeRequestApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.attendance.events.AttendanceStatusChangedEvent;
-import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 
 
@@ -21,18 +20,18 @@ public class ApproveAttendanceChangeRequestService implements ApproveAttendanceC
     private final AttendanceChangeRequestRepository attendanceChangeRequestRepository;
     private final AttendanceRepository attendanceRepository;
     private final AttendanceChangeRequestFinder finder;
-    private final CurrentPersonService currentPersonService;
+    private final AttendanceChangeRequestDecisionRecorder decisionRecorder;
     private final ApplicationEventPublisher eventPublisher;
 
     public ApproveAttendanceChangeRequestService(AttendanceChangeRequestRepository attendanceChangeRequestRepository,
                                                   AttendanceRepository attendanceRepository,
                                                   AttendanceChangeRequestFinder finder,
-                                                  CurrentPersonService currentPersonService,
+                                                  AttendanceChangeRequestDecisionRecorder decisionRecorder,
                                                   ApplicationEventPublisher eventPublisher) {
         this.attendanceChangeRequestRepository = attendanceChangeRequestRepository;
         this.attendanceRepository = attendanceRepository;
         this.finder = finder;
-        this.currentPersonService = currentPersonService;
+        this.decisionRecorder = decisionRecorder;
         this.eventPublisher = eventPublisher;
     }
 
@@ -41,17 +40,12 @@ public class ApproveAttendanceChangeRequestService implements ApproveAttendanceC
     public AttendanceChangeRequest approve(Long id) {
         AttendanceChangeRequest request = finder.findOrThrow(id);
         finder.requirePending(request);
-
         Attendance attendance = request.getAttendance();
         attendance.applyApprovedChange(request.getRequestedStatus());
         attendanceRepository.save(attendance);
         eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(attendance));
-
-        request.setStatus(AttendanceChangeRequestStatus.APPROVED);
-        request.setApprovedBy(currentPersonService.resolveCurrentPerson());
-        request.setApprovedAt(ApplicationTime.now());
+        decisionRecorder.recordDecisionByCurrentActor(request, AttendanceChangeRequestStatus.APPROVED);
         AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
-
         eventPublisher.publishEvent(AttendanceChangeRequestApprovedEvent.approvedFor(saved));
         return saved;
     }

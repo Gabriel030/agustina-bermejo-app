@@ -176,19 +176,19 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void requestingAChangeOfAnUnknownAttendanceReturnsNotFound() {
-        assertThatThrownBy(() -> requestChange.request(new RequestAttendanceChangeCommand(MISSING_ID, owner, changeToPresent())))
+        assertThatThrownBy(() -> requestChange.request(new RequestAttendanceChangeCommand(MISSING_ID, owner.getId(), changeToPresent())))
                 .isInstanceOf(AttendanceNotFoundException.class);
     }
 
     @Test
     void anInstructorOfAnotherSectionCannotRequestAChange() {
-        assertThatThrownBy(() -> requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), stranger, changeToPresent())))
+        assertThatThrownBy(() -> requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), stranger.getId(), changeToPresent())))
                 .isInstanceOf(NotOwnSectionException.class);
     }
 
     @Test
     void theOwnInstructorRequestsAChangeThatStartsPendingAndKeepsThePreviousStatus() {
-        AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner, changeToPresent()));
+        AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
 
         assertThat(request.getStatus()).isEqualTo(AttendanceChangeRequestStatus.PENDING);
         assertThat(request.getPreviousStatus()).isEqualTo(AttendanceStatus.ABSENT);
@@ -198,7 +198,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void rejectingAPendingChangeLeavesTheAttendanceUntouchedAndRecordsWhoRejected() {
-        AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner, changeToPresent()));
+        AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
         actAsStaffMember();
 
         AttendanceChangeRequest rejected = rejectChange.reject(request.getId());
@@ -211,7 +211,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void aChangeRequestAlreadyRejectedCannotBeRejectedAgain() {
-        AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner, changeToPresent()));
+        AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
         actAsStaffMember();
         rejectChange.reject(request.getId());
 
