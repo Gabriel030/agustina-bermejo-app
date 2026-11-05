@@ -54,19 +54,6 @@ class WithdrawStudentServiceTest extends AbstractIntegrationTest {
     @Autowired
     private StudentStatusChangeRepository studentStatusChangeRepository;
 
-    @AfterEach
-    void clearSecurityContext() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private Person authenticateAsActor(String username) {
-        Student actorStudent = persistStudentWithPassword(username, "Correcta123");
-        Person actor = actorStudent.getPerson();
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(String.valueOf(actor.getId()), null));
-        return actor;
-    }
-
     private Student persistStudentWithPassword(String username, String rawPassword) {
         Address address = new Address();
         entityManager.persist(address);
@@ -90,6 +77,18 @@ class WithdrawStudentServiceTest extends AbstractIntegrationTest {
         entityManager.persist(student);
         entityManager.flush();
         return student;
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private Person authenticateAsActor(String username) {
+        Person actor = persistStudentWithPassword(username, "Correcta123").getPerson();
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(String.valueOf(actor.getId()), null));
+        return actor;
     }
 
     @Test

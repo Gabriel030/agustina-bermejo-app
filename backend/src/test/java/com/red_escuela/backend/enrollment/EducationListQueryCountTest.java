@@ -103,7 +103,7 @@ class EducationListQueryCountTest extends AbstractIntegrationTest {
 
         List<StudentResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, STUDENT_LIST_QUERIES,
                 () -> listStudentsUseCase.list(new ListStudentsCommand(null, StudentOnboardingStatus.CONFIRMADO, null))
-                        .stream().map(StudentResponse::from).toList());
+                        .stream().map(student -> StudentResponse.from(student, false)).toList());
 
         assertThat(responses).hasSize(MANY);
         assertThat(responses).allSatisfy(response -> assertThat(response.dni()).isNotNull());
