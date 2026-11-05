@@ -15,6 +15,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
 import { confirmationDeadlineLabel, sameEmail } from '@/features/identity/emailChange';
+import { InstallPrompt } from '@/pwa/InstallPrompt';
 import { NotificationMatrix } from '@/features/identity/components/NotificationMatrix';
 import {
   usePerfilPropio,
@@ -620,6 +621,8 @@ export function MiPerfil() {
         <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">Mi perfil</h1>
         <p className="mt-1 text-[13px] text-ink-faint">Administrá tus datos personales, seguridad y notificaciones.</p>
       </div>
+
+      <InstallPrompt />
 
       <GlassCard className="flex flex-col gap-6 p-5 sm:p-7">
         <Tabs defaultValue="datos">

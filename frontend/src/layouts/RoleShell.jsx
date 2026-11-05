@@ -8,6 +8,7 @@ import { useBreadcrumb } from '@/hooks/useBreadcrumb';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import { SkipToContent } from '@/components/SkipToContent';
+import { SystemBar } from '@/pwa/SystemBar';
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
 // Lo que varía por rol (título, ítems de nav) lo define cada *Layout.jsx.
@@ -43,6 +44,7 @@ export function RoleShell({ titulo, items }) {
           suelta en el flex-row de arriba en vez de ocupar el resto del ancho. */}
       <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden">
         <TopHeader titulo={titulo} items={items} />
+        <SystemBar />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho
             intrínseco de su contenido (default min-width:auto) — con una
             pantalla de contenido ancho (ej. Catálogo, Épica 7 Fase 3) esto

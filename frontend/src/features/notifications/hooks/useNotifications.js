@@ -6,7 +6,7 @@ export function useMisNotificaciones() {
   return useQuery({
     queryKey: ['me', 'notifications'],
     queryFn: () => apiFetch('/me/notifications'),
-    refetchInterval: 15_000,
+    refetchInterval: () => (navigator.onLine ? 15_000 : false),
   });
 }
 
