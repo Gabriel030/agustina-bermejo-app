@@ -46,7 +46,8 @@ describe('DocenteMisComisiones', () => {
     expect(await screen.findByText('Bandeja de aprobación')).toBeInTheDocument();
     expect(within(tarjeta('Comisiones y cursos este período')).getByText('4')).toBeInTheDocument();
     expect(within(tarjeta('Pendientes de completar/aprobar')).getByText('2')).toBeInTheDocument();
-    expect(within(tarjeta('Días para el inicio de cursada')).getByText('Ya empezó')).toBeInTheDocument();
+    expect(screen.queryByText('Días para el inicio de cursada')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ya empezó')).not.toBeInTheDocument();
     const cerradas = screen.getByText('Cerradas').closest('div').parentElement;
     expect(within(cerradas).getByText(/Pedagogía/)).toBeInTheDocument();
   });

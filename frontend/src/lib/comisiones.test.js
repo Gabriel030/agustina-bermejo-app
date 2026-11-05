@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { agruparComisionesPorFase, diasHastaInicioDeCursadaMasProximo, formatearFecha } from '@/lib/comisiones';
+import { agruparComisionesPorFase, formatearFecha } from '@/lib/comisiones';
 
 globalThis.process.env.TZ ='America/Argentina/Buenos_Aires';
 
@@ -39,32 +39,5 @@ describe('agruparComisionesPorFase', () => {
     const { bandejaDeAprobacion, enCurso } = agruparComisionesPorFase([borrador, pendiente, aprobada, curso]);
     expect(bandejaDeAprobacion).toEqual([borrador, pendiente]);
     expect(enCurso).toEqual([aprobada, curso]);
-  });
-});
-
-describe('diasHastaInicioDeCursadaMasProximo', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 9, 3, 10, 0));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('marca como iniciada un borrador cuyo ciclo ya empezó', () => {
-    expect(diasHastaInicioDeCursadaMasProximo([{ status: 'DRAFT', termStartDate: '2026-03-02T00:00:00' }])).toBe('iniciada');
-  });
-
-  it('prioriza el inicio futuro más próximo', () => {
-    const comisiones = [
-      { status: 'DRAFT', termStartDate: '2026-03-02T00:00:00' },
-      { status: 'DRAFT', termStartDate: '2026-10-13T00:00:00' },
-    ];
-    expect(diasHastaInicioDeCursadaMasProximo(comisiones)).toBe(10);
-  });
-
-  it('no cuenta las rechazadas: se pueden reenviar aunque el ciclo haya empezado', () => {
-    expect(diasHastaInicioDeCursadaMasProximo([{ status: 'REJECTED', termStartDate: '2026-03-02T00:00:00' }])).toBeNull();
   });
 });
