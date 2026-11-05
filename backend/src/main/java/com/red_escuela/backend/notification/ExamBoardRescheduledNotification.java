@@ -19,7 +19,7 @@ public record ExamBoardRescheduledNotification(Long examBoardId, String subjectN
 
     @Override
     public String message() {
-        String room = classroom == null || classroom.isBlank() ? "" : " · Aula " + classroom;
+        String room = classroom == null || classroom.isBlank() ? "" : " · " + classroom;
         return "Se reprogramó la mesa de " + subjectName + ": del " + oldExamDate.format(FORMAT) + " al " + newExamDate.format(FORMAT) + room;
     }
 
