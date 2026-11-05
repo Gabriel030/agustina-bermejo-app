@@ -75,7 +75,7 @@ export function useMyOpenInvoices() {
     }),
   });
   const loading = loadingStandings || results.some((result) => result.isLoading);
-  const invoices = results.flatMap((result) => result.data ?? []);
+  const invoices = results.flatMap((result) => result.data?.invoices ?? []);
   return { invoices, isLoading: loading };
 }
 
