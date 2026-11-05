@@ -43,13 +43,28 @@ describe('LlamadosDisponibles', () => {
 
 describe('TabMesasDeExamen', () => {
   it('distingue una mesa cancelada de una inscripción dada de baja', async () => {
-    const mesa = { subjectName: 'Didáctica', examDate: '2026-12-01T09:00:00', classroom: null, subjectId: 3 };
+    const mesa = {
+      subjectName: 'Didáctica',
+      examDate: '2026-12-01T09:00:00',
+      classroom: 'Aula 1',
+      subjectId: 3,
+      courseSubjectId: 4,
+      courseSubjectName: 'Didáctica',
+      termId: 1,
+      registrationStart: '2026-11-01T09:00:00',
+      registrationEnd: '2026-11-20T09:00:00',
+      tribunal: [],
+      tribunalInstructorIds: [],
+      canceledAt: null,
+      cancelReason: null,
+      rescheduledFrom: null,
+    };
     server.use(
       http.get(`${API}/me/program-section-enrollments`, () => HttpResponse.json([])),
       http.get(`${API}/me/exam-board-registrations`, () =>
         HttpResponse.json([
-          { id: 1, status: 'WITHDRAWN', score: null, examBoard: { ...mesa, id: 10, status: 'CANCELED', cancelReason: 'Paro docente' } },
-          { id: 2, status: 'WITHDRAWN', score: null, examBoard: { ...mesa, id: 11, status: 'SCHEDULED' } },
+          { id: 1, enrollmentId: 9, status: 'WITHDRAWN', score: 0, examBoard: { ...mesa, id: 10, status: 'CANCELED', cancelReason: 'Paro docente' } },
+          { id: 2, enrollmentId: 9, status: 'WITHDRAWN', score: 0, examBoard: { ...mesa, id: 11, status: 'SCHEDULED' } },
         ]),
       ),
     );

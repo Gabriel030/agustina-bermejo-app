@@ -8850,7 +8850,7 @@
           "classroom" : {
             "maxLength" : 255,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "examDate" : {
             "format" : "date-time",
@@ -8858,14 +8858,14 @@
           },
           "registrationEnd" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "registrationStart" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "classroom", "examDate", "registrationEnd", "registrationStart" ],
+        "required" : [ "examDate" ],
         "type" : "object"
       },
       "ResetPasswordRequest" : {
