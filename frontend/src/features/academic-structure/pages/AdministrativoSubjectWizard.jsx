@@ -21,8 +21,6 @@ import {
   useSubmitForApproval,
 } from '@/features/academic-structure/hooks/useSubjects';
 
-const SUBJECT_BANK = '/administrativo/gestion-academica';
-
 const STEPS = [
   { key: 'identification', label: 'Identificación' },
   { key: 'programmaticDetail', label: 'Detalle programático' },
