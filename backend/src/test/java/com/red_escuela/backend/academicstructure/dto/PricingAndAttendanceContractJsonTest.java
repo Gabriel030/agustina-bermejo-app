@@ -72,7 +72,7 @@ class PricingAndAttendanceContractJsonTest {
     void rosterHistoryAndSummaryExposeAttendancePercentInPoints() throws Exception {
         Percentage half = Percentage.ofFraction(new BigDecimal("0.5"));
 
-        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false));
+        JsonNode roster = json(new RosterEntryResponse(1L, 2L, "Ana", "30", 1, half, false, 4, half, 1));
         JsonNode history = json(new AttendanceHistoryResponse.StudentHistoryRow(2L, "Ana", Map.of(), half));
         JsonNode summary = json(new SubjectAttendanceSummaryResponse("Matematica", half));
 

@@ -12,6 +12,8 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +76,19 @@ public class SectionRosterBuilder {
         boolean atRisk = riskCalculator.evaluate(maxAbsenceRate, total, absenceCount).libre();
         return new RosterEntryResponse(
                 enrollmentId, student.getId(), fullName(person), person.getDni(),
-                absenceCount, attendancePercent, atRisk);
+                absenceCount, attendancePercent, atRisk,
+                total, maxAbsenceRate, remainingAbsences(maxAbsenceRate, total, absenceCount));
+    }
+
+    private Integer remainingAbsences(Percentage maxAbsenceRate, long classesHeld, long absenceCount) {
+        if (maxAbsenceRate == null || classesHeld == 0) {
+            return null;
+        }
+        long allowed = maxAbsenceRate.fraction()
+                .multiply(BigDecimal.valueOf(classesHeld))
+                .setScale(0, RoundingMode.FLOOR)
+                .longValue();
+        return (int) Math.max(0, allowed - absenceCount);
     }
 
     private String fullName(Person person) {
