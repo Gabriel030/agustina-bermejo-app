@@ -8850,7 +8850,7 @@
           "classroom" : {
             "maxLength" : 255,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "examDate" : {
             "format" : "date-time",
@@ -8858,14 +8858,14 @@
           },
           "registrationEnd" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "registrationStart" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "classroom", "examDate", "registrationEnd", "registrationStart" ],
+        "required" : [ "examDate" ],
         "type" : "object"
       },
       "ResetPasswordRequest" : {
@@ -9893,6 +9893,10 @@
           "apellido" : {
             "type" : "string"
           },
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "detalleBaja" : {
             "type" : "string"
           },
@@ -9908,6 +9912,9 @@
           },
           "email" : {
             "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
           },
           "id" : {
             "format" : "int64",
@@ -9933,6 +9940,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "sexo" : {
             "type" : "string"
           },
@@ -9943,6 +9954,10 @@
             "type" : "string"
           },
           "username" : {
+            "type" : "string"
+          },
+          "withdrawnAt" : {
+            "format" : "date-time",
             "type" : "string"
           }
         },
@@ -9963,6 +9978,9 @@
           "emailVerified" : {
             "type" : "boolean"
           },
+          "hasAvatar" : {
+            "type" : "boolean"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -9978,10 +9996,21 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "status" : {
             "type" : "string"
           },
           "username" : {
+            "type" : "string"
+          },
+          "withdrawalReason" : {
+            "type" : "string"
+          },
+          "withdrawnAt" : {
+            "format" : "date-time",
             "type" : "string"
           }
         },

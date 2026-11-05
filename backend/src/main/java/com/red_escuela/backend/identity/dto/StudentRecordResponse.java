@@ -1,8 +1,12 @@
 package com.red_escuela.backend.identity.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.DocumentType;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record StudentRecordResponse(
         Long id,
@@ -21,9 +25,13 @@ public record StudentRecordResponse(
         String status,
         AddressResponse domicilio,
         String motivoBaja,
-        String detalleBaja) {
+        String detalleBaja,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean emailVerified,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate birthDate,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime registeredAt,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime withdrawnAt) {
 
-    public static StudentRecordResponse from(Student student) {
+    public static StudentRecordResponse from(Student student, boolean includeWithdrawalReason) {
         var p = student.getPerson();
         return new StudentRecordResponse(
                 student.getId(),
@@ -41,7 +49,12 @@ public record StudentRecordResponse(
                 student.getOnboardingStatus(),
                 p.getStatus() == null ? null : p.getStatus().name(),
                 p.getAddress() == null ? null : AddressResponse.from(p.getAddress()),
-                student.getWithdrawalReason() == null ? null : student.getWithdrawalReason().name(),
-                student.getWithdrawalDetail());
+                includeWithdrawalReason && student.getWithdrawalReason() != null
+                        ? student.getWithdrawalReason().name() : null,
+                includeWithdrawalReason ? student.getWithdrawalDetail() : null,
+                p.getEmailVerified(),
+                p.getBirthDate(),
+                student.getRegisteredAt(),
+                student.getWithdrawnAt());
     }
 }

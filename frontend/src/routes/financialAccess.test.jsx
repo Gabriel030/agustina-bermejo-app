@@ -32,6 +32,7 @@ function renderApp(initialPath) {
 async function signInAs(role, path) {
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json({ id: 2, nombre: 'Uno', apellido: 'Prueba', email: 'uno@demo.test', roles: [role] })),
+    http.get(`${API}/students`, () => HttpResponse.json([])),
     http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 1, studentsUpToDate: 2, totalsByCurrency: [] })),
     http.get(`${API}/financial-dashboard/debtors`, () => HttpResponse.json([])),
     http.get(`${API}/billing/metrics/:panel`, ({ params }) =>
@@ -48,6 +49,7 @@ async function signInAs(role, path) {
 describe('Financiero access by role', () => {
   it('d2-01 lets the administrative role open Financiero from the menu and see the page', async () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/inicio');
+    await screen.findByRole('heading', { name: 'Padrón de alumnos' });
 
     const links = await screen.findAllByRole('link', { name: 'Financiero' });
     await userEvent.click(links[0]);

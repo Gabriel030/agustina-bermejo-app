@@ -14,9 +14,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { formatearFecha } from '@/lib/comisiones';
-import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion } from '@/features/evaluation/hooks/useMesasDeExamen';
+import { ReprogramarMesaDialog } from '@/features/evaluation/components/ReprogramarMesaDialog';
+import { CancelarMesaDialog } from '@/features/evaluation/components/CancelarMesaDialog';
+import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
 
-const ESTADO_MESA = { SCHEDULED: { label: 'Agendada', tone: 'accent' }, CLOSED: { label: 'Cerrada', tone: 'neutral' } };
+const ESTADO_MESA = {
+  SCHEDULED: { label: 'Agendada', tone: 'accent' }, CLOSED: { label: 'Cerrada', tone: 'neutral' },
+  CANCELED: { label: 'Cancelada', tone: 'danger' },
+};
 const ESTADO_INSCRIPCION = {
   REGISTERED: { label: 'Anotado', tone: 'accent' },
   GRADED: { label: 'Rindió', tone: 'success' },
@@ -26,10 +31,18 @@ const ESTADO_INSCRIPCION = {
 const MENSAJES_ERROR_MESA = {
   EXAM_BOARD_NOT_YET_TAKEN: 'Todavía no se tomó el examen: el acta se cierra después de la fecha de la mesa.',
   EXAM_BOARD_CLOSED: 'La mesa ya está cerrada: no se puede modificar.',
+  EXAM_BOARD_HAS_GRADES: 'Hay alumnos con nota final cargada: no se puede reprogramar ni cancelar la mesa.',
+  EXAM_DATE_ON_HOLIDAY: 'La fecha elegida es feriado o no es un día hábil. Elegí otra fecha.',
   EXAM_BOARD_NOT_FOUND: 'No encontramos la mesa. Puede haber sido eliminada; actualizá la pantalla.',
   EXAM_BOARD_REGISTRATION_NOT_FOUND: 'No encontramos la inscripción. Actualizá la pantalla e intentá de nuevo.',
   EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE: 'Esta inscripción ya no se puede dar de baja.',
   INSTRUCTOR_NOT_FOUND: 'No encontramos al docente elegido. Probá con otro.',
+};
+
+const TITULO_VACIO = {
+  SCHEDULED: 'Todavía no hay mesas agendadas',
+  CLOSED: 'Todavía no hay mesas cerradas',
+  CANCELED: 'Todavía no hay mesas canceladas',
 };
 
 function mensajeErrorMesa(e) {
@@ -144,10 +157,14 @@ function DetalleMesa({ mesaId }) {
   const asignarTribunal = useAsignarTribunal(mesaId);
   const cerrarActa = useCerrarActa(mesaId);
   const darDeBaja = useDarDeBajaInscripcion(mesaId);
+  const reprogramar = useReprogramarMesa(mesaId);
+  const cancelar = useCancelarMesa(mesaId);
 
   const [modalTribunal, setModalTribunal] = useState(false);
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [cerrando, setCerrando] = useState(false);
+  const [reprogramando, setReprogramando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   if (cargandoMesa || cargandoAnotados || !mesa) {
     return (
@@ -158,9 +175,12 @@ function DetalleMesa({ mesaId }) {
     );
   }
 
-  const soloLectura = mesa.status === 'CLOSED';
+  const cancelada = mesa.status === 'CANCELED';
+  const soloLectura = mesa.status === 'CLOSED' || cancelada;
   const materia = mesa.subjectName ?? mesa.courseSubjectName ?? 'Materia';
   const inscriptos = (anotados ?? []).filter((a) => a.status !== 'WITHDRAWN').length;
+  const conNotaFinal = (anotados ?? []).some((a) => a.finalScore != null);
+  const modificable = mesa.status === 'SCHEDULED';
   const sinNota = (anotados ?? []).filter((a) => a.status === 'REGISTERED').length;
   const ahora = new Date();
   const examenPendiente = ahora < new Date(mesa.examDate);
@@ -182,15 +202,46 @@ function DetalleMesa({ mesaId }) {
     }
   }
 
+  function enviarReprogramacion(payload) {
+    reprogramar.mutate(payload, {
+      onSuccess: () => {
+        setReprogramando(false);
+        toast.success('Mesa reprogramada.');
+      },
+      onError: (e) => toast.error(mensajeErrorMesa(e)),
+    });
+  }
+
+  function enviarCancelacion(motivo) {
+    cancelar.mutate(motivo, {
+      onSuccess: () => {
+        setCancelando(false);
+        toast.success('Mesa cancelada.');
+      },
+      onError: (e) => toast.error(mensajeErrorMesa(e)),
+    });
+  }
+
   return (
     <div className="flex flex-col gap-4 pt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-heading text-xl font-bold text-ink">Mesa de examen · {materia}</h2>
           <p className="mt-0.5 text-sm text-ink-soft">{formatearFecha(mesa.examDate)}</p>
+          {mesa.rescheduledFrom && (
+            <p className="mt-0.5 text-[12.5px] text-ink-faint">Reprogramada · estaba fijada para el {formatearFecha(mesa.rescheduledFrom)}</p>
+          )}
         </div>
         <StatusPill tone={ESTADO_MESA[mesa.status]?.tone ?? 'neutral'}>{ESTADO_MESA[mesa.status]?.label ?? mesa.status}</StatusPill>
       </div>
+
+      {cancelada && (
+        <GlassCard className="flex flex-col gap-1 p-4" role="status">
+          <div className="text-[13px] font-bold uppercase tracking-wide text-danger">Mesa cancelada</div>
+          <div className="text-sm text-ink">{mesa.cancelReason}</div>
+          {mesa.canceledAt && <div className="text-[12.5px] text-ink-faint">Cancelada el {formatearFecha(mesa.canceledAt)}</div>}
+        </GlassCard>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="Inscriptos">
@@ -209,7 +260,13 @@ function DetalleMesa({ mesaId }) {
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="font-heading text-[16px] font-semibold text-ink">Alumnos anotados</div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
+              Reprogramar
+            </Button>
+            <Button variant="outline" size="sm" className="text-danger" disabled={!modificable || conNotaFinal} onClick={() => setCancelando(true)}>
+              Cancelar mesa
+            </Button>
             <Button variant="outline" size="sm" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
               Asignar tribunal
             </Button>
@@ -218,6 +275,11 @@ function DetalleMesa({ mesaId }) {
             </Button>
           </div>
         </div>
+        {modificable && conNotaFinal && (
+          <div className="text-[12px] font-semibold text-danger" role="alert">
+            Hay alumnos con nota final cargada: no se puede reprogramar ni cancelar la mesa.
+          </div>
+        )}
         {!soloLectura && examenPendiente && (
           <div className="text-[12px] text-ink-faint">El acta se cierra después del examen, cuando ya se pueden cargar las notas.</div>
         )}
@@ -228,6 +290,13 @@ function DetalleMesa({ mesaId }) {
           dandoDeBaja={darDeBaja.isPending}
         />
       </GlassCard>
+
+      {reprogramando && (
+        <ReprogramarMesaDialog open onClose={() => setReprogramando(false)} mesa={mesa} enviando={reprogramar.isPending} onConfirmar={enviarReprogramacion} />
+      )}
+      {cancelando && (
+        <CancelarMesaDialog open onClose={() => setCancelando(false)} enviando={cancelar.isPending} inscriptos={inscriptos} onConfirmar={enviarCancelacion} />
+      )}
 
       <ModalAsignarTribunal
         open={modalTribunal}
@@ -325,6 +394,7 @@ export function PreceptorMesaExamen() {
             <TabsList variant="segmented">
               <TabsTrigger value="SCHEDULED">Agendadas</TabsTrigger>
               <TabsTrigger value="CLOSED">Cerradas</TabsTrigger>
+              <TabsTrigger value="CANCELED">Canceladas</TabsTrigger>
             </TabsList>
           </Tabs>
           {!isLoading && lista.length > 0 && (
@@ -337,7 +407,7 @@ export function PreceptorMesaExamen() {
         <Skeleton className="h-40" />
       ) : lista.length === 0 ? (
         <GlassCard className="p-4">
-          <EmptyState title={tab === 'SCHEDULED' ? 'Todavía no hay mesas agendadas' : 'Todavía no hay mesas cerradas'} />
+          <EmptyState title={TITULO_VACIO[tab]} />
         </GlassCard>
       ) : !mesaId ? (
         <GlassCard className="p-4">

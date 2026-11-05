@@ -72,6 +72,38 @@ describe('AppRouter', () => {
     expect(screen.getAllByText('Plataforma').length).toBeGreaterThan(0);
   });
 
+  it.each([
+    ['DOCENTE', 'docente', 'Mis comisiones'],
+    ['PRECEPTOR', 'preceptor', 'Padrón de alumnos'],
+  ])('lands a %s without a home screen on its first real screen instead of a placeholder', async (role, slug, heading) => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json({ id: 5, nombre: 'Rol', apellido: 'Prueba', email: 'rol@demo.test', roles: [role] }),
+      ),
+      http.get(`${API}/students`, () => HttpResponse.json([])),
+    );
+    renderApp(`/${slug}/inicio`);
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
+    expect(screen.queryByText(/todavía no está implementada/)).not.toBeInTheDocument();
+  });
+
+  it('shows a readable title instead of the slug on a placeholder reached by URL', async () => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] }),
+      ),
+    );
+    renderApp('/administrativo/constancias');
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByText('Constancias')).toBeInTheDocument();
+    expect(screen.queryByText('constancias')).not.toBeInTheDocument();
+  });
+
   it('does not let a director open the platform screens', async () => {
     server.use(
       http.get(`${API}/me`, () =>

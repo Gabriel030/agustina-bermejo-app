@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.api;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -44,6 +45,8 @@ public class StudentOnboarding {
         student.setPerson(person);
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.PROSPECTO);
+        student.setRegisteredAt(ApplicationTime.now());
+        student.setRegisteredByPersonId(prospect.registeredByPersonId());
 
         return StudentOnboardingSummary.of(studentRepository.save(student));
     }

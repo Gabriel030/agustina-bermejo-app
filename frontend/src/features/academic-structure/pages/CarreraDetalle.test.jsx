@@ -218,3 +218,36 @@ describe('CarreraDetalle — plan de estudios', () => {
     await waitFor(() => expect(deactivated).toEqual(['134']));
   });
 });
+
+describe('CarreraDetalle load failure', () => {
+  function renderPage() {
+    renderWithProviders(
+      <Routes>
+        <Route path="/administrativo/gestion-academica/carreras/:id" element={<CarreraDetalle />} />
+      </Routes>,
+      { route: '/administrativo/gestion-academica/carreras/9' },
+    );
+  }
+
+  it('shows a load error with retry instead of not found when the program request fails', async () => {
+    server.use(
+      http.get(`${API}/programs/9`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API}/programs/9/subjects`, () => HttpResponse.json([])),
+    );
+    renderPage();
+    await screen.findByText('No pudimos cargar la carrera');
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.queryByText('Carrera no encontrada')).not.toBeInTheDocument();
+  });
+
+  it('shows an error instead of an empty plan and hides add subject when the plan fails', async () => {
+    server.use(
+      http.get(`${API}/programs/9`, () => HttpResponse.json(PROGRAM)),
+      http.get(`${API}/programs/9/subjects`, () => new HttpResponse(null, { status: 500 })),
+    );
+    renderPage();
+    await screen.findByText('No pudimos cargar el plan de estudios');
+    expect(screen.queryByText('Plan de estudios vacío')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Agregar materia/ })).not.toBeInTheDocument();
+  });
+});
