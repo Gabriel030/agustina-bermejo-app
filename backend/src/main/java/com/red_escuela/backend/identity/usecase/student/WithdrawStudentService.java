@@ -30,8 +30,9 @@ public class WithdrawStudentService implements WithdrawStudentUseCase {
                 .orElseThrow(() -> new StudentNotFoundException(command.studentId()));
         student.getPerson().setStatus(StatusType.DELETED);
         student.setWithdrawalReason(command.request().reason());
-        student.setWithdrawalDetail(command.request().detail());
-        studentStatusChangeRecorder.recordWithdrawal(student, command.request().detail());
+        String detail = command.request().detail();
+        student.setWithdrawalDetail(detail);
+        studentStatusChangeRecorder.recordWithdrawal(student, detail);
         studentRepository.save(student);
         revokeAllSessionsUseCase.revokeAll(student.getPerson());
     }
