@@ -28,10 +28,11 @@ public class CreditNoteCommandFactory {
     }
 
     @Transactional(readOnly = true)
-    public IssueCreditNoteCommand buildCommandForCurrentUser(Long invoiceId, CreditNoteReason reason, String justification, List<CreditNoteLineAmount> lines) {
+    public IssueCreditNoteCommand buildCommandForCurrentUser(Long invoiceId, CreditNoteReason reason, String justification, List<CreditNoteLineAmount> lines,
+                                                           String idempotencyKey) {
         Invoice invoice = invoices.findInvoice(invoiceId).orElseThrow(() -> new CreditNoteInvoiceNotFoundException(invoiceId));
         CreditNoteDestination destination = CreditNoteDestination.ofInvoiceStatus(invoice.getPaymentStatus());
         return new IssueCreditNoteCommand(invoiceId, reason, justification, lines, destination, actorResolver.currentPersonId(),
-                actorResolver.currentActorIsDirector(), null);
+                actorResolver.currentActorIsDirector(), null, idempotencyKey);
     }
 }

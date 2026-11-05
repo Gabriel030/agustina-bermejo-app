@@ -6,4 +6,8 @@ public interface IdempotencyKeyed {
     String idempotencyKey();
 
     StatusChangeActor actor();
+
+    default Object requestFingerprint() {
+        return this;
+    }
 }

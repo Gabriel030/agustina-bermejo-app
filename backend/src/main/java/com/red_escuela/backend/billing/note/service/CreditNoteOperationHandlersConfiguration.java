@@ -26,18 +26,31 @@ import com.red_escuela.backend.billing.note.policy.WithdrawalLineReductionContex
 import com.red_escuela.backend.billing.note.policy.WithdrawalReductionInvoiceUnpaidPolicy;
 import com.red_escuela.backend.billing.note.policy.WithdrawalReductionLeavesDebtPolicy;
 import com.red_escuela.backend.billing.note.policy.WithdrawalReductionLinesUnchangedPolicy;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.note.domain.CreditNote;
+import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
+import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
+import com.red_escuela.backend.billing.payment.operation.IdempotencyKeyHandler;
+import com.red_escuela.backend.billing.payment.operation.StoredResultMapping;
+import com.red_escuela.backend.billing.payment.service.IdempotencyRecordService;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class CreditNoteOperationHandlersConfiguration {
+    private static final String CREDIT_NOTE_ID_FIELD = "creditNoteId";
 
     @Bean
-    public OperationPreHandlers issueCreditNotePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler) {
-        return new OperationPreHandlers(BillingOperationType.ISSUE_CREDIT_NOTE, List.of(directorAuthorizationHandler));
+    public OperationPreHandlers issueCreditNotePreHandlers(DirectorAuthorizationHandler directorAuthorizationHandler, IdempotencyRecordService recordService,
+                                                           ObjectMapper objectMapper, CreditNoteRepository creditNotes) {
+        StoredResultMapping storedNote = new StoredResultMapping(note -> Map.of(CREDIT_NOTE_ID_FIELD, ((CreditNote) note).getId()),
+                stored -> creditNotes.findWithLinesById(stored.get(CREDIT_NOTE_ID_FIELD).asLong()).orElseThrow());
+        return new OperationPreHandlers(BillingOperationType.ISSUE_CREDIT_NOTE,
+                List.of(new IdempotencyKeyHandler<IssueCreditNoteCommand>(recordService, objectMapper, storedNote), directorAuthorizationHandler));
     }
 
     @Bean

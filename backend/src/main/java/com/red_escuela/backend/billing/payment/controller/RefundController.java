@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -51,11 +52,12 @@ public class RefundController {
     @PreAuthorize("hasRole('ALUMNO')")
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Pedido abierto en Aprobaciones; devuelve authorizationRequestId y las partes del reparto"),
-            @ApiResponse(responseCode = "400", description = "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"),
-            @ApiResponse(responseCode = "409", description = "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT")})
-    public ResponseEntity<RefundRequestResponse> requestOwnRefund(@Valid @RequestBody RequestRefundRequest request) {
+            @ApiResponse(responseCode = "400", description = "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED, IDEMPOTENCY_KEY_INVALID"),
+            @ApiResponse(responseCode = "409", description = "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264), REFUND_EXCEEDS_AVAILABLE_AMOUNT o IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido)")})
+    public ResponseEntity<RefundRequestResponse> requestOwnRefund(@RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                                                              @Valid @RequestBody RequestRefundRequest request) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return respondTo(requestRefundUseCase.requestOwnRefund(studentId, request));
+        return respondTo(requestRefundUseCase.requestOwnRefund(studentId, request, idempotencyKey));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
@@ -64,10 +66,12 @@ public class RefundController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Pedido cargado por el director: partes aprobadas directo (D-216)"),
             @ApiResponse(responseCode = "202", description = "Pedido del administrativo abierto en Aprobaciones"),
-            @ApiResponse(responseCode = "400", description = "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"),
-            @ApiResponse(responseCode = "409", description = "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT")})
-    public ResponseEntity<RefundRequestResponse> requestRefundOnBehalfOfStudent(@PathVariable Long studentId, @Valid @RequestBody RequestRefundRequest request) {
-        return respondTo(requestRefundUseCase.requestRefundOnBehalfOfStudent(studentId, request));
+            @ApiResponse(responseCode = "400", description = "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED, IDEMPOTENCY_KEY_INVALID"),
+            @ApiResponse(responseCode = "409", description = "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264), REFUND_EXCEEDS_AVAILABLE_AMOUNT o IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido)")})
+    public ResponseEntity<RefundRequestResponse> requestRefundOnBehalfOfStudent(@PathVariable Long studentId,
+                                                                          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                                                                          @Valid @RequestBody RequestRefundRequest request) {
+        return respondTo(requestRefundUseCase.requestRefundOnBehalfOfStudent(studentId, request, idempotencyKey));
     }
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)

@@ -15,12 +15,16 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.PreProcessingHandler;
 import com.red_escuela.backend.billing.operation.PreProcessingResult;
 import com.red_escuela.backend.billing.operation.PriorAuthorization;
+import com.red_escuela.backend.billing.payment.domain.CashPaymentLimits;
+import com.red_escuela.backend.billing.payment.exception.IdempotencyKeyInvalidException;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PreProcessingHandler<C> {
@@ -29,14 +33,24 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
 
     private final IdempotencyRecordService recordService;
     private final ObjectMapper canonicalMapper;
-    private final Class<?> responseType;
+    private final StoredResultMapping resultMapping;
+    private final boolean optionalKeyBeforeValidation;
 
     public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType) {
+        this(recordService, objectMapper, responseType, null);
+    }
+
+    public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, StoredResultMapping resultMapping) {
+        this(recordService, objectMapper, null, resultMapping);
+    }
+
+    private IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType, StoredResultMapping resultMapping) {
         this.recordService = recordService;
         this.canonicalMapper = objectMapper.copy()
                 .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
                 .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        this.responseType = responseType;
+        this.optionalKeyBeforeValidation = resultMapping != null;
+        this.resultMapping = resultMapping != null ? resultMapping : new StoredResultMapping(result -> result, node -> readJson(node.toString(), responseType));
     }
 
     @Override
@@ -45,7 +59,15 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
     }
 
     @Override
+    public boolean runsBeforeContextValidation() {
+        return optionalKeyBeforeValidation;
+    }
+
+    @Override
     public PreProcessingResult handleBeforeProcessing(BillingOperationType type, C context, PriorAuthorization priorAuthorization) {
+        if (isSkipped(context)) {
+            return PreProcessingResult.proceed();
+        }
         StoredIdempotentResponse stored = recordService.claimKeyOrFindStoredResponse(context.idempotencyKey(), type, hashOf(context), priorAuthorization);
         return switch (stored) {
             case StoredIdempotentResponse.KeyClaimed claimed -> PreProcessingResult.proceed();
@@ -55,11 +77,17 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
 
     @Override
     public void handleAfterProcessing(BillingOperationType type, C context, Object result) {
-        recordService.storeResponse(context.idempotencyKey(), IdempotencyRecordService.PROCESSED_STATUS, writeJson(result));
+        if (isSkipped(context)) {
+            return;
+        }
+        recordService.storeResponse(context.idempotencyKey(), IdempotencyRecordService.PROCESSED_STATUS, writeJson(resultMapping.toStorable().apply(result)));
     }
 
     @Override
     public void handleAwaitingAuthorization(BillingOperationType type, C context, Long authorizationRequestId) {
+        if (isSkipped(context)) {
+            return;
+        }
         String body = writeJson(canonicalMapper.createObjectNode().put(AUTHORIZATION_REQUEST_ID_FIELD, authorizationRequestId));
         recordService.storeResponse(context.idempotencyKey(), IdempotencyRecordService.AWAITING_AUTHORIZATION_STATUS, body);
     }
@@ -68,14 +96,28 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
         if (replayable.status() == IdempotencyRecordService.AWAITING_AUTHORIZATION_STATUS) {
             return new BillingOperationOutcome.AwaitingAuthorization<>(readJson(replayable.body(), JsonNode.class).get(AUTHORIZATION_REQUEST_ID_FIELD).asLong());
         }
-        return new BillingOperationOutcome.Processed<>(readJson(replayable.body(), responseType));
+        return new BillingOperationOutcome.Processed<>(resultMapping.fromStored().apply(readJson(replayable.body(), JsonNode.class)));
+    }
+
+    private boolean isSkipped(C context) {
+        if (!optionalKeyBeforeValidation) {
+            return false;
+        }
+        String key = context.idempotencyKey();
+        if (key == null) {
+            return true;
+        }
+        if (key.isBlank() || key.length() > CashPaymentLimits.MAX_IDEMPOTENCY_KEY_LENGTH) {
+            throw new IdempotencyKeyInvalidException(List.of(new PolicyViolation("IDEMPOTENCY_KEY_INVALID", "La clave de idempotencia tiene hasta 100 caracteres y no puede estar vacía.")));
+        }
+        return false;
     }
 
     private String hashOf(C context) {
         try {
             ObjectNode fingerprint = canonicalMapper.createObjectNode();
             fingerprint.set("actor", canonicalMapper.valueToTree(context.actor()));
-            fingerprint.set("request", withNormalizedNumbers(canonicalMapper.valueToTree(context)));
+            fingerprint.set("request", withNormalizedNumbers(canonicalMapper.valueToTree(context.requestFingerprint())));
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(writeJson(fingerprint).getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException exception) {

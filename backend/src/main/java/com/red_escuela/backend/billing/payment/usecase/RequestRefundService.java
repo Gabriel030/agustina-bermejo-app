@@ -16,13 +16,13 @@ public class RequestRefundService implements RequestRefundUseCase {
 
     @Override
     @PreAuthorize("hasRole('ALUMNO')")
-    public RefundRequestResult requestOwnRefund(Long studentId, RequestRefundRequest request) {
-        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), true);
+    public RefundRequestResult requestOwnRefund(Long studentId, RequestRefundRequest request, String idempotencyKey) {
+        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), true, idempotencyKey);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public RefundRequestResult requestRefundOnBehalfOfStudent(Long studentId, RequestRefundRequest request) {
-        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), false);
+    public RefundRequestResult requestRefundOnBehalfOfStudent(Long studentId, RequestRefundRequest request, String idempotencyKey) {
+        return operationRunner.runRefundRequest(studentId, request.amount(), request.destinationAccount(), request.destinationHolder(), false, idempotencyKey);
     }
 }
