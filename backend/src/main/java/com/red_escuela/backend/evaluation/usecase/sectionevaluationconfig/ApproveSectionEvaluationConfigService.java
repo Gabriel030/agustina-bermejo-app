@@ -5,14 +5,13 @@ import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
+import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigReviewer;
 import com.red_escuela.backend.evaluation.service.SectionFinalCallCreator;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.red_escuela.backend.shared.time.ApplicationTime;
 
 @UseCase
 public class ApproveSectionEvaluationConfigService implements ApproveSectionEvaluationConfigUseCase {
@@ -21,17 +20,20 @@ public class ApproveSectionEvaluationConfigService implements ApproveSectionEval
     private final SectionEvaluationConfigFinder configFinder;
     private final SectionEvaluationConfigInstructorAccess instructorAccess;
     private final SectionFinalCallCreator finalCallCreator;
+    private final SectionEvaluationConfigReviewer configReviewer;
     private final ApplicationEventPublisher eventPublisher;
 
     public ApproveSectionEvaluationConfigService(SectionEvaluationConfigRepository configRepository,
                                                   SectionEvaluationConfigFinder configFinder,
                                                   SectionEvaluationConfigInstructorAccess instructorAccess,
                                                   SectionFinalCallCreator finalCallCreator,
+                                                  SectionEvaluationConfigReviewer configReviewer,
                                                   ApplicationEventPublisher eventPublisher) {
         this.configRepository = configRepository;
         this.configFinder = configFinder;
         this.instructorAccess = instructorAccess;
         this.finalCallCreator = finalCallCreator;
+        this.configReviewer = configReviewer;
         this.eventPublisher = eventPublisher;
     }
 
@@ -42,9 +44,7 @@ public class ApproveSectionEvaluationConfigService implements ApproveSectionEval
         if (config.getStatus() != SectionEvaluationConfigStatus.PENDING_APPROVAL) {
             throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "aprobar");
         }
-        config.setStatus(SectionEvaluationConfigStatus.APPROVED);
-        config.setReviewedBy(command.actor());
-        config.setReviewedAt(ApplicationTime.now());
+        configReviewer.markReviewedByCurrentActor(config, SectionEvaluationConfigStatus.APPROVED);
         SectionEvaluationConfig saved = configRepository.save(config);
 
         finalCallCreator.createFinalCalls(config);
