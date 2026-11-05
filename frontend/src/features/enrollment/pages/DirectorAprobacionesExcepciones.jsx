@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
-import { BandejaTramites } from '@/components/director/BandejaTramites';
+import { BandejaTramites } from '@/components/BandejaTramites';
 import {
   useExcepcionesPendientes,
   useHistorialExcepciones,

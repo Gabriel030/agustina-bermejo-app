@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Buscador } from '@/components/Buscador';
 import { Paginador } from '@/components/Paginador';
@@ -27,6 +27,9 @@ export function BandejaTramites({
   extraerFecha,
   tituloVacioPendientes = 'Nada pendiente',
   tituloVacioHistorial = 'Todavía no decidiste nada',
+  etiquetaPendientes = 'Pendientes',
+  contadorHistorial = true,
+  recurso = 'los trámites',
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') === 'historial' ? 'historial' : 'pendientes';
@@ -94,26 +97,27 @@ export function BandejaTramites({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <Link
-        to={volverA}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
-      >
-        ← {volverLabel}
-      </Link>
+      {volverA && (
+        <Link
+          to={volverA}
+          className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
+        >
+          ← {volverLabel}
+        </Link>
+      )}
 
       <h1 className="font-heading text-2xl font-bold text-ink">{titulo}</h1>
 
-      <Tabs value={tab} onValueChange={(value) => updateParams({ tab: value === 'historial' ? 'historial' : '', orden: '' })}>
+      <Tabs className="gap-4" value={tab} onValueChange={(value) => updateParams({ tab: value === 'historial' ? 'historial' : '', orden: '' })}>
         <TabsList variant="segmented">
-          <TabsTrigger value="pendientes">Pendientes{pendientes ? ` (${pendientes.length})` : ""}</TabsTrigger>
-          <TabsTrigger value="historial">Historial{historial ? ` (${historial.length})` : ""}</TabsTrigger>
+          <TabsTrigger value="pendientes">{etiquetaPendientes}{pendientes ? ` (${pendientes.length})` : ''}</TabsTrigger>
+          <TabsTrigger value="historial">Historial{contadorHistorial && historial ? ` (${historial.length})` : ''}</TabsTrigger>
         </TabsList>
-      </Tabs>
 
       <div className="flex flex-wrap items-center gap-3">
         <Buscador value={search} onChange={(valor) => updateParams({ q: valor })} placeholder="Buscar por nombre…" />
         <Select value={orden} onValueChange={(value) => updateParams({ orden: value })}>
-          <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[220px]" aria-label="Ordenar"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="recientes">Más recientes primero</SelectItem>
             <SelectItem value="antiguos">Más antiguos primero</SelectItem>
@@ -141,6 +145,7 @@ export function BandejaTramites({
         </div>
       </div>
 
+      <TabsContent value={tab} className="mt-0">
       <StablePageHeight resetKey={`${tab}-${search}-${desde}-${hasta}`}>
       <GlassCard className="flex flex-col gap-1 p-4">
         {cargando ? (
@@ -149,7 +154,7 @@ export function BandejaTramites({
             <Skeleton className="h-12" />
           </div>
         ) : failed ? (
-          <LoadErrorState bare error={failure} onRetry={refetch} resource="los trámites" />
+          <LoadErrorState bare error={failure} onRetry={refetch} resource={recurso} />
         ) : filtrada.length === 0 ? (
           <EmptyState
             title={lista.length === 0 ? (tab === 'pendientes' ? tituloVacioPendientes : tituloVacioHistorial) : 'Nada coincide con la búsqueda'}
@@ -160,6 +165,8 @@ export function BandejaTramites({
         )}
       </GlassCard>
       </StablePageHeight>
+      </TabsContent>
+      </Tabs>
 
       <Paginador page={page} totalPages={totalPages} onChange={(value) => updateParams({ page: value > 1 ? String(value) : '' }, { resetPage: false })} />
     </div>
