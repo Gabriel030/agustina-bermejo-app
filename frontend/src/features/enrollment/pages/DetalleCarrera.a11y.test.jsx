@@ -15,7 +15,7 @@ function renderDetail() {
     <Routes>
       <Route path="/catalogo/carreras/:id" element={<DetalleCarrera />} />
     </Routes>,
-    { route: '/catalogo/carreras/1' },
+    { route: '/catalogo/carreras/1', withAuth: true },
   );
 }
 

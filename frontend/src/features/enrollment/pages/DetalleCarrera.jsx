@@ -7,7 +7,8 @@ import {
   useProgramaPlanDeEstudio,
 } from '@/features/enrollment/hooks/useCatalogo';
 import { formatMoney } from '@/lib/utils';
-import { formatCredits, groupSubjectsByYear, programSummary } from '@/lib/catalog';
+import { formatCredits, groupSubjectsByYear, isListedInCatalog, programSummary, subjectTag } from '@/lib/catalog';
+import { useProgramViewerStatus } from '@/features/enrollment/hooks/useCatalogViewer';
 import { CatalogBlock } from '@/features/enrollment/components/CatalogBlock';
 import { CatalogItemList } from '@/features/enrollment/components/CatalogItemList';
 import {
@@ -15,6 +16,7 @@ import {
   CatalogDetailLoadError,
   CatalogDetailLoading,
   CatalogEnrollAction,
+  CatalogViewerAction,
 } from '@/features/enrollment/components/CatalogDetailLayout';
 
 const CATALOG_PATH = '/catalogo?tab=carreras';
@@ -33,6 +35,7 @@ export function DetalleCarrera() {
   const pricingQuery = useProgramaPricing(id);
   const cohortsQuery = useOpenProgramCohorts(id);
   const planQuery = useProgramaPlanDeEstudio(id);
+  const viewer = useProgramViewerStatus(id);
   const programa = programQuery.data;
 
   if (programQuery.isError) {
@@ -45,8 +48,17 @@ export function DetalleCarrera() {
       />
     );
   }
-  if (programQuery.isLoading || !programa) {
+  if (programQuery.isLoading || !programa || viewer.loading) {
     return <CatalogDetailLoading />;
+  }
+  if (viewer.canApply && !isListedInCatalog(programa)) {
+    return (
+      <CatalogDetailLoadError
+        error={{ status: 404 }}
+        resource="la carrera"
+        backTo={CATALOG_PATH}
+      />
+    );
   }
 
   const pricing = pricingQuery.data;
@@ -57,11 +69,25 @@ export function DetalleCarrera() {
       title={programa.name}
       summary={programSummary(programa)}
       action={
-        <CatalogEnrollAction
-          onEnroll={() => navigate(`/catalogo/carreras/${id}/inscribirme`)}
-          disabled={!cohortsQuery.data?.length}
-          reason={enrollmentReason(cohortsQuery)}
-          onRetry={cohortsQuery.isError ? cohortsQuery.refetch : undefined}
+        <CatalogViewerAction
+          viewer={viewer}
+          previewText="Vista previa del catálogo"
+          notices={{
+            ENROLLED: { text: 'Ya cursás esta carrera.', to: '/alumno/mis-carreras', linkLabel: 'Ir a Mis carreras' },
+            PENDING_APPLICATION: {
+              text: 'Ya tenés una solicitud pendiente para esta carrera.',
+              to: `/mis-solicitudes/${viewer.applicationId}`,
+              linkLabel: 'Ver solicitud',
+            },
+          }}
+          enrollAction={
+            <CatalogEnrollAction
+              onEnroll={() => navigate(`/catalogo/carreras/${id}/inscribirme`)}
+              disabled={!cohortsQuery.data?.length}
+              reason={enrollmentReason(cohortsQuery)}
+              onRetry={cohortsQuery.isError ? cohortsQuery.refetch : undefined}
+            />
+          }
         />
       }
     >
@@ -95,6 +121,7 @@ export function DetalleCarrera() {
               id: subject.id,
               title: subject.subjectName,
               detail: formatCredits(subject.credits),
+              tag: subjectTag(subject),
             }))}
           />
         ))}

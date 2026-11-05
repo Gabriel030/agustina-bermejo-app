@@ -34,6 +34,26 @@ export function CatalogEnrollAction({ onEnroll, disabled, reason, reasonTone = '
   );
 }
 
+export function CatalogViewerNotice({ text, to, linkLabel }) {
+  return (
+    <div className="flex w-full flex-col items-start gap-1.5 md:w-auto md:items-end">
+      <p className="text-sm font-semibold text-ink">{text}</p>
+      {to && (
+        <Button asChild variant="outline" size="sm">
+          <Link to={to}>{linkLabel}</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function CatalogViewerAction({ viewer, previewText, notices, enrollAction }) {
+  if (viewer.loading) return <Skeleton className="h-11 w-full md:w-40" />;
+  const notice = viewer.state === 'PREVIEW' ? { text: previewText } : notices[viewer.state];
+  if (notice) return <CatalogViewerNotice text={notice.text} to={notice.to} linkLabel={notice.linkLabel} />;
+  return enrollAction;
+}
+
 export function CatalogDetailLayout({ backTo, title, summary, action, children }) {
   return (
     <PageContainer>
