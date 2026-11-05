@@ -156,6 +156,8 @@ GET,/holidays,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/holidays,DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""date"":""2026-01-15"",""name"":""x"",""type"":""NATIONAL""}"
 PUT,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,"{""date"":""2026-01-15"",""name"":""x"",""type"":""NATIONAL""}"
 DELETE,/holidays/{id},DENY,DENY,DENY,DENY,ALLOW,DENY,DENY,,
+GET,/institution/academic-settings,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+PUT,/institution/academic-settings,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""justificationDeadlineBusinessDays"":5,""evaluationConfigDueDays"":15}"
 GET,/institutions,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/instructors,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/invoices/{id}/price-breakdown,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
