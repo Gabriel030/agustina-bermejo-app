@@ -485,6 +485,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `GOOGLE_SERVICE_UNAVAILABLE` | sí | `GoogleServiceUnavailableException` | identity |
 | `MERCADO_PAGO_GATEWAY` | sí | `MercadoPagoGatewayException` | billing |
 | `TRANSACTIONAL_EMAIL_DELIVERY` | sí | `TransactionalEmailDeliveryException` | shared |
 
