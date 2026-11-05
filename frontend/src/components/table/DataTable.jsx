@@ -6,6 +6,7 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
@@ -14,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/Skeleton';
+import { Paginador } from '@/components/Paginador';
 import { EmptyState } from '@/components/EmptyState';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
@@ -74,7 +76,12 @@ function HeaderCell({ header, compact }) {
   'use no memo';
   const column = header.column;
   const meta = column.columnDef.meta ?? {};
-  const label = flexRender(column.columnDef.header, header.getContext());
+  const label =
+    column.columnDef.header === '' ? (
+      <span className="sr-only">Acciones</span>
+    ) : (
+      flexRender(column.columnDef.header, header.getContext())
+    );
   const sortDirection = column.getIsSorted();
   const ariaSort = sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : undefined;
 
@@ -260,6 +267,7 @@ export function DataTable({
   mobileLayout = 'cards',
   compact = false,
   initialColumnVisibility = {},
+  pageSize,
   className,
 }) {
   'use no memo';
@@ -286,13 +294,18 @@ export function DataTable({
     data: data ?? [],
     columns: allColumns,
     getRowId,
-    initialState: { sorting: initialSorting, columnVisibility: initialColumnVisibility },
+    initialState: {
+      sorting: initialSorting,
+      columnVisibility: initialColumnVisibility,
+      ...(pageSize ? { pagination: { pageIndex: 0, pageSize } } : {}),
+    },
     defaultColumn: { filterFn: multiSelectFilter, enableColumnFilter: false },
     getRowCanExpand: () => Boolean(renderExpanded),
     autoResetExpanded: false,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    ...(pageSize ? { getPaginationRowModel: getPaginationRowModel() } : {}),
     getExpandedRowModel: getExpandedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
@@ -328,6 +341,13 @@ export function DataTable({
   }
 
   const rows = table.getRowModel().rows;
+  const pager = pageSize ? (
+    <Paginador
+      page={table.getState().pagination.pageIndex + 1}
+      totalPages={table.getPageCount()}
+      onChange={(next) => table.setPageIndex(next - 1)}
+    />
+  ) : null;
 
   if (!rows.length) {
     return (
@@ -350,6 +370,7 @@ export function DataTable({
         {rows.map((row) => (
           <RowCard key={row.id} row={row} renderExpanded={renderExpanded} expandLabel={expandLabel} onRowClick={onRowClick} />
         ))}
+        {pager}
       </div>
     );
   }
@@ -407,7 +428,16 @@ export function DataTable({
     </Table>
   );
 
-  if (!compact) return tableNode;
+  if (!compact) {
+    return pager ? (
+      <div className="flex flex-col gap-2">
+        {tableNode}
+        {pager}
+      </div>
+    ) : (
+      tableNode
+    );
+  }
 
   return (
     <div className="relative">
@@ -428,6 +458,7 @@ export function DataTable({
       >
         <ChevronRight className="size-5" />
       </div>
+      {pager}
     </div>
   );
 }
