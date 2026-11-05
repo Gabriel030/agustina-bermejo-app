@@ -63,6 +63,8 @@ export const REQUEST_REFUND_ERRORS = {
   REFUND_EXCEEDS_AVAILABLE_AMOUNT: 'El monto supera lo que se puede devolver ahora. Actualizamos el máximo.',
   REFUND_BLOCKED_BY_OVERDUE_DEBT: 'No se puede devolver saldo a favor mientras haya deuda vencida.',
   REFUND_DESTINATION_REQUIRED: 'Indicá el CBU o alias y el titular de la cuenta a la que se devuelve el dinero.',
+  IDEMPOTENCY_KEY_CONFLICT: 'Este pedido ya se había enviado con otros datos. Revisá la sección Reembolsos del alumno antes de volver a pedirlo.',
+  IDEMPOTENCY_KEY_INVALID: 'No pudimos identificar el pedido. Volvé a entrar a la pantalla y pedilo de nuevo.',
   REFUND_DESTINATION_INVALID: `El CBU o alias tiene hasta ${ACCOUNT_MAX_LENGTH} caracteres y el titular hasta ${HOLDER_MAX_LENGTH}.`,
 };
 
