@@ -673,7 +673,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/programs/{id}/year-billing-templates` | `ProgramYearBillingTemplateController#create` |
 | POST | `/promotions/{id}/close` | `PromotionController#close` |
 | POST | `/prospects` | `ProspectController#createProspect` |
-| POST | `/prospects/by-staff` | `ProspectController#createProspectByStaff` |
+| POST | `/prospects/by-staff` | `ProspectStaffController#createProspectByStaff` |
 | POST | `/prospects/{id}/confirm` | `ProspectController#confirm` |
 | POST | `/prospects/{id}/documents` | `ProspectController#addDocument` |
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |

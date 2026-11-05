@@ -53360,7 +53360,7 @@
     },
     "/prospects" : {
       "get" : {
-        "operationId" : "Prospect_listProspects",
+        "operationId" : "ProspectStaff_listProspects",
         "responses" : {
           "200" : {
             "content" : {
@@ -53466,7 +53466,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "prospect-controller" ]
+        "tags" : [ "prospect-staff-controller" ]
       },
       "post" : {
         "operationId" : "Prospect_createProspect",
@@ -53587,7 +53587,7 @@
     },
     "/prospects/by-staff" : {
       "post" : {
-        "operationId" : "Prospect_createProspectByStaff",
+        "operationId" : "ProspectStaff_createProspectByStaff",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -53700,7 +53700,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "prospect-controller" ]
+        "tags" : [ "prospect-staff-controller" ]
       }
     },
     "/prospects/{id}" : {

@@ -2,7 +2,6 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
-import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
 import com.red_escuela.backend.enrollment.dto.ProspectResponse;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
@@ -39,19 +38,6 @@ public class ProspectController {
     @ResponseStatus(HttpStatus.CREATED)
     public ProspectResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
         return ProspectResponse.from(prospectService.createProspect(request));
-    }
-
-    @PostMapping("/by-staff")
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ProspectResponse createProspectByStaff(@Valid @RequestBody CreateProspectRequest request) {
-        return ProspectResponse.from(prospectService.createProspectByStaff(request));
-    }
-
-    @GetMapping
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<ProspectListItemResponse> listProspects() {
-        return prospectService.listProspects();
     }
 
     @PostMapping("/{id}/documents")
