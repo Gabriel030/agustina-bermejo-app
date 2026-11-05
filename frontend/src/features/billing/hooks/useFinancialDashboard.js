@@ -8,10 +8,13 @@ export function useFinancialDashboard() {
   });
 }
 
-export function useDebtors(sortBy = 'DEBT_AGE') {
+export const DEBTORS_PAGE_SIZE = 25;
+
+export function useDebtors({ sortBy = 'DEBT_AGE', page = 0, size = DEBTORS_PAGE_SIZE } = {}) {
   return useQuery({
-    queryKey: ['financial-dashboard', 'debtors', sortBy],
-    queryFn: () => apiFetch(`/financial-dashboard/debtors?sortBy=${sortBy}`),
+    queryKey: ['financial-dashboard', 'debtors', { sortBy, page, size }],
+    queryFn: () => apiFetch(`/financial-dashboard/debtors/page?sortBy=${sortBy}&page=${page}&size=${size}`),
+    placeholderData: (previous) => previous,
   });
 }
 

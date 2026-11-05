@@ -221,7 +221,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
 
         assertThat(totalsOf(after, Currency.ARS).totalDebt().minus(totalsOf(before, Currency.ARS).totalDebt())).isEqualTo(ars(10000));
         assertThat(totalsOf(after, Currency.USD).totalDebt().minus(totalsOf(before, Currency.USD).totalDebt())).isEqualTo(usd(100));
-        List<DebtorSummaryResponse> debtRows = listDebtorsUseCase.list("DEBT_AMOUNT", 0, 100).items().stream()
+        List<DebtorSummaryResponse> debtRows = listDebtorsUseCase.list("DEBT_AMOUNT").stream()
                 .filter(row -> row.studentId().equals(student.getId()))
                 .toList();
         assertThat(debtRows).extracting(DebtorSummaryResponse::totalDebt).containsExactlyInAnyOrder(ars(10000), usd(100));

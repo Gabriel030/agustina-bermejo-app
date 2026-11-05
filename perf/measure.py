@@ -13,6 +13,7 @@ STUDENT = 20001
 ENDPOINTS = [
     ("director", "financial-dashboard", "/financial-dashboard"),
     ("director", "financial-dashboard/debtors", "/financial-dashboard/debtors"),
+    ("director", "financial-dashboard/debtors/page", "/financial-dashboard/debtors/page?page=0&size=25"),
     ("director", "staff list", "/staff"),
     ("director", "students list", "/students"),
     ("director", "terms", "/terms"),

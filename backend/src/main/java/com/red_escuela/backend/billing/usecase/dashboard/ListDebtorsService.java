@@ -12,17 +12,15 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
-import com.red_escuela.backend.shared.pagination.PageResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @UseCase
 public class ListDebtorsService implements ListDebtorsUseCase {
-
-    private static final int MAX_PAGE_SIZE = 100;
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceViewLoader invoiceViewLoader;
@@ -36,12 +34,7 @@ public class ListDebtorsService implements ListDebtorsUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<DebtorSummaryResponse> list(String sortBy, int page, int size) {
-        int boundedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        return PageResponse.of(listAll(sortBy), Math.max(page, 0), boundedSize);
-    }
-
-    private List<DebtorSummaryResponse> listAll(String sortBy) {
+    public List<DebtorSummaryResponse> list(String sortBy) {
         Map<String, DebtorAccumulator> accumulators = new LinkedHashMap<>();
         for (InvoiceView view : invoiceViewLoader.loadInvoiceViews(invoiceRepository.findByPaymentStatusWithLines(InvoicePaymentStatus.OVERDUE))) {
             Invoice invoice = view.invoice();
@@ -63,7 +56,7 @@ public class ListDebtorsService implements ListDebtorsUseCase {
         return accumulators.values().stream()
                 .map(accumulator -> accumulator.toResponse(LocalDate.now(clock)))
                 .sorted(comparator)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private static class DebtorAccumulator {

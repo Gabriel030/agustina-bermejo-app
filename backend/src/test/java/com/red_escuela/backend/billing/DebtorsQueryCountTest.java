@@ -140,7 +140,7 @@ class DebtorsQueryCountTest extends AbstractIntegrationTest {
         Set<Long> studentIds = persistDebtors(MANY, 100);
 
         PageResponse<DebtorSummaryResponse> page = QueryCountAssertions.assertAtMostQueries(
-                entityManagerFactory, MAX_QUERIES, () -> listDebtors.list("DEBT_AGE", 0, PAGE_SIZE_MAX));
+                entityManagerFactory, MAX_QUERIES, () -> PageResponse.of(listDebtors.list("DEBT_AGE"), 0, PAGE_SIZE_MAX));
 
         assertThat(page.items()).extracting(DebtorSummaryResponse::studentId).containsAll(studentIds);
     }
@@ -148,11 +148,11 @@ class DebtorsQueryCountTest extends AbstractIntegrationTest {
     @Test
     void listDebtorsPagesAfterAggregationKeepingTotals() {
         Set<Long> studentIds = persistDebtors(30, 100);
-        long totalBefore = listDebtors.list("DEBT_AMOUNT", 0, PAGE_SIZE_MAX).totalElements();
+        long totalBefore = PageResponse.of(listDebtors.list("DEBT_AMOUNT"), 0, PAGE_SIZE_MAX).totalElements();
         assertThat(totalBefore).isGreaterThanOrEqualTo(30);
 
-        PageResponse<DebtorSummaryResponse> first = listDebtors.list("DEBT_AMOUNT", 0, PAGE_SIZE);
-        PageResponse<DebtorSummaryResponse> second = listDebtors.list("DEBT_AMOUNT", 1, PAGE_SIZE);
+        PageResponse<DebtorSummaryResponse> first = PageResponse.of(listDebtors.list("DEBT_AMOUNT"), 0, PAGE_SIZE);
+        PageResponse<DebtorSummaryResponse> second = PageResponse.of(listDebtors.list("DEBT_AMOUNT"), 1, PAGE_SIZE);
 
         assertThat(first.items()).hasSize(PAGE_SIZE);
         assertThat(first.totalElements()).isEqualTo(totalBefore);
@@ -165,7 +165,7 @@ class DebtorsQueryCountTest extends AbstractIntegrationTest {
     void listDebtorsSortsByDescendingAmountWithinCurrency() {
         persistDebtors(MANY, 100);
 
-        List<DebtorSummaryResponse> items = listDebtors.list("DEBT_AMOUNT", 0, PAGE_SIZE_MAX).items();
+        List<DebtorSummaryResponse> items = PageResponse.of(listDebtors.list("DEBT_AMOUNT"), 0, PAGE_SIZE_MAX).items();
 
         for (int i = 1; i < items.size(); i++) {
             DebtorSummaryResponse previous = items.get(i - 1);
@@ -180,7 +180,7 @@ class DebtorsQueryCountTest extends AbstractIntegrationTest {
     void listDebtorsKeepsDebtAgeOrderingByDefault() {
         persistDebtors(MANY, 100);
 
-        List<DebtorSummaryResponse> items = listDebtors.list("DEBT_AGE", 0, PAGE_SIZE_MAX).items();
+        List<DebtorSummaryResponse> items = PageResponse.of(listDebtors.list("DEBT_AGE"), 0, PAGE_SIZE_MAX).items();
 
         for (int i = 1; i < items.size(); i++) {
             assertThat(items.get(i - 1).debtAgeDays()).isGreaterThanOrEqualTo(items.get(i).debtAgeDays());
@@ -191,7 +191,7 @@ class DebtorsQueryCountTest extends AbstractIntegrationTest {
     void listDebtorsBoundsPageSizeAndNegativePage() {
         persistDebtors(MANY, 100);
 
-        PageResponse<DebtorSummaryResponse> page = listDebtors.list("DEBT_AGE", -3, 100000);
+        PageResponse<DebtorSummaryResponse> page = PageResponse.of(listDebtors.list("DEBT_AGE"), -3, 100000);
 
         assertThat(page.page()).isZero();
         assertThat(page.size()).isEqualTo(PAGE_SIZE_MAX);

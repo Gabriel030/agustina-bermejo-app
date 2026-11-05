@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiresModule(RequiresModule.BILLING)
 @RequestMapping("/financial-dashboard")
@@ -32,12 +34,20 @@ public class FinancialDashboardController {
         return getFinancialDashboard.execute();
     }
 
+    @Deprecated
     @GetMapping("/debtors")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public PageResponse<DebtorSummaryResponse> getDebtors(
+    public List<DebtorSummaryResponse> getDebtors(
+            @RequestParam(defaultValue = "DEBT_AGE") String sortBy) {
+        return listDebtors.list(sortBy);
+    }
+
+    @GetMapping("/debtors/page")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public PageResponse<DebtorSummaryResponse> getDebtorsPage(
             @RequestParam(defaultValue = "DEBT_AGE") String sortBy,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
-        return listDebtors.list(sortBy, page, size);
+        return PageResponse.of(listDebtors.list(sortBy), page, size);
     }
 }
