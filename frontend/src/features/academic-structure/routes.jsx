@@ -14,6 +14,7 @@ import { PreceptorDetalleCurso } from '@/features/academic-structure/pages/Prece
 import { PreceptorCalendario } from '@/features/academic-structure/pages/PreceptorCalendario';
 import { PreceptorPeriodos } from '@/features/academic-structure/pages/PreceptorPeriodos';
 import { PreceptorPeriodoForm } from '@/features/academic-structure/pages/PreceptorPeriodoForm';
+import { AdministrativoHolidays } from '@/features/academic-structure/pages/AdministrativoHolidays';
 import { PreceptorNuevoCiclo } from '@/features/academic-structure/pages/PreceptorNuevoCiclo';
 
 export const routes = {
@@ -29,6 +30,7 @@ export const routes = {
     { roles: ['administrativo'], path: 'gestion-academica/cursos/nueva', element: <CursoWizard /> },
     { roles: ['administrativo'], path: 'gestion-academica/cursos/:id', element: <CursoDetalle /> },
     { roles: ['administrativo'], path: 'gestion-academica/cursos/:id/editar', element: <CursoEditarDatos /> },
+    { roles: ['administrativo'], path: 'feriados', element: <AdministrativoHolidays /> },
     { roles: ['director'], path: 'gestion-academica', element: <DirectorSubjectReview /> },
     { roles: ['director'], path: 'financiero/anios-lectivos', element: <DirectorAniosLectivos /> },
     { roles: ['preceptor'], path: 'oferta-academica', element: <PreceptorOfertaAcademica /> },
