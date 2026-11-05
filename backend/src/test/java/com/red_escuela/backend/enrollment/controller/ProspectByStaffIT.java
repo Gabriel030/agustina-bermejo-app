@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,7 +158,7 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
     void directorCanConfirmAProspectWithoutAnyDocument() throws Exception {
         Long studentId = createByStaff("confirm-" + UUID.randomUUID() + "@example.com");
         String dni = Long.toString(10_000_000L + Math.abs(UUID.randomUUID().getMostSignificantBits() % 80_000_000L));
-        ConfirmProspectRequest request = new ConfirmProspectRequest(dni, null, "Calle", "123", null, "Ciudad", null, null, null);
+        ConfirmProspectRequest request = new ConfirmProspectRequest(dni, null, "Calle", "123", null, "Ciudad", null, null, null, java.time.LocalDate.of(2000, 1, 1), null, null, null, null);
 
         mockMvc.perform(post("/prospects/{id}/confirm", studentId)
                         .header("Authorization", "Bearer " + directorToken)
@@ -168,6 +169,66 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
 
         String status = jdbc.queryForObject("select onboarding_status from student where id = ?", String.class, studentId);
         assertThat(status).isEqualTo(StudentOnboardingStatus.CONFIRMADO.name());
+    }
+
+    private String confirmBody(String birthDate, String guardian, String emergencyContact) {
+        String dni = Long.toString(10_000_000L + Math.abs(UUID.randomUUID().getMostSignificantBits() % 80_000_000L));
+        return "{\"dni\":\"" + dni + "\",\"street\":\"Mitre\",\"city\":\"Rosario\",\"birthDate\":\"" + birthDate + "\","
+                + "\"sex\":\"F\",\"nationality\":\"Argentina\""
+                + (guardian == null ? "" : ",\"guardian\":" + guardian)
+                + (emergencyContact == null ? "" : ",\"emergencyContact\":" + emergencyContact) + "}";
+    }
+
+    private static final String GUARDIAN_JSON =
+            "{\"fullName\":\"Luis Paz\",\"documentNumber\":\"20111222\",\"relationship\":\"Padre\",\"phone\":\"+5493410000\",\"email\":\"luis@x.com\"}";
+    private static final String EMERGENCY_JSON =
+            "{\"name\":\"Marta Paz\",\"relationship\":\"Madre\",\"phone\":\"+5493411111\"}";
+
+    @Test
+    void confirmingAMinorWithoutGuardianIsRejectedAndLeavesTheProspectUnconfirmed() throws Exception {
+        Long studentId = createByStaff("minor-" + UUID.randomUUID() + "@example.com");
+
+        mockMvc.perform(post("/prospects/{id}/confirm", studentId)
+                        .header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(confirmBody(LocalDate.now().minusYears(10).toString(), null, EMERGENCY_JSON)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GUARDIAN_REQUIRED_FOR_MINOR"));
+
+        assertThat(jdbc.queryForObject("select onboarding_status from student where id = ?", String.class, studentId))
+                .isEqualTo(StudentOnboardingStatus.PROSPECTO.name());
+    }
+
+    @Test
+    void confirmingAMinorWithGuardianStoresItAndTheRecordExposesIt() throws Exception {
+        Long studentId = createByStaff("minor-ok-" + UUID.randomUUID() + "@example.com");
+
+        mockMvc.perform(post("/prospects/{id}/confirm", studentId)
+                        .header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(confirmBody(LocalDate.now().minusYears(10).toString(), GUARDIAN_JSON, EMERGENCY_JSON)))
+                .andExpect(status().isOk());
+
+        assertThat(jdbc.queryForObject("select guardian_dni from student where id = ?", String.class, studentId))
+                .isEqualTo("20111222");
+        mockMvc.perform(get("/students/{id}", studentId).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.minor").value(true))
+                .andExpect(jsonPath("$.guardian.fullName").value("Luis Paz"))
+                .andExpect(jsonPath("$.guardian.documentNumber").value("20111222"))
+                .andExpect(jsonPath("$.emergencyContact.relationship").value("Madre"));
+    }
+
+    @Test
+    void confirmingWithoutBirthDateIsRejectedAsBirthDateRequired() throws Exception {
+        Long studentId = createByStaff("nobirth-" + UUID.randomUUID() + "@example.com");
+
+        mockMvc.perform(post("/prospects/{id}/confirm", studentId)
+                        .header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dni\":\"30111222\",\"street\":\"Mitre\",\"city\":\"Rosario\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BIRTH_DATE_REQUIRED"));
     }
 
     @Test

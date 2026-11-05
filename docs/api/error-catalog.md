@@ -55,6 +55,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
+| `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
 | `CASH_PAYMENT_AMOUNT_INVALID` | no | `CashPaymentAmountInvalidException` | billing |
 | `CASH_PAYMENT_BACKDATE_REASON_INVALID` | no | `CashPaymentBackdateReasonInvalidException` | billing |
@@ -97,6 +98,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FEATURE_VALUE_INVALID` | no | `FeatureValueInvalidException` | platform |
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
+| `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
 | `INCOMPLETE_SUBJECT` | no | `IncompleteSubjectException` | academicstructure |
 | `INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `InstallmentCountOnlyForMonthlyInstallmentsException` | billing |
