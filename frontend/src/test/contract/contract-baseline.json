@@ -36,13 +36,6 @@
     ],
     "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
   },
-  "GET /bank-transfer-receipts": {
-    "source": "test-handlers",
-    "modules": [
-      "pages"
-    ],
-    "reason": "mock omits properties the contract marks required"
-  },
   "GET /billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS/versions": {
     "source": "test-handlers",
     "modules": [
