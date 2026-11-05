@@ -45,16 +45,6 @@ export function comisionCerrada(termEndDate) {
   return !!termEndDate && hoy() > new Date(termEndDate);
 }
 
-export function diasHastaInicioDeCursadaMasProximo(comisiones) {
-  const ahora = hoy();
-  const dias = comisiones
-    .filter((c) => c.status === 'DRAFT' && c.termStartDate)
-    .map((c) => Math.ceil((new Date(c.termStartDate) - ahora) / (1000 * 60 * 60 * 24)));
-  const futuros = dias.filter((d) => d >= 0);
-  if (futuros.length) return Math.min(...futuros);
-  return dias.length ? 'iniciada' : null;
-}
-
 export function parsearFecha(fechaIso) {
   if (!fechaIso) return null;
   const soloDia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaIso);
