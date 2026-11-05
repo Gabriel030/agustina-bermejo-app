@@ -10,7 +10,6 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useProgram,
   useProgramSubjects,
@@ -24,6 +23,7 @@ import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
 import { AniosLectivosSection } from '@/features/academic-structure/components/AniosLectivosSection';
 import { CohortesSection } from '@/features/academic-structure/components/CohortesSection';
+import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
 
 const CATEGORY_LABELS = {
   MANDATORY: 'Obligatoria',
@@ -191,6 +191,7 @@ export function CarreraDetalle() {
   const [panelYear, setPanelYear] = useState(null);
   const [panelSession, setPanelSession] = useState(0);
   const [subjectToRemove, setSubjectToRemove] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [correlativasOpen, setCorrelativasOpen] = useState(false);
   const [correlativaPs, setCorrelativaPs] = useState(null);
 
@@ -233,6 +234,7 @@ export function CarreraDetalle() {
           ? 'La carrera ahora aparece en el catálogo de inscripciones'
           : 'La carrera fue retirada del catálogo. Los alumnos actuales no se ven afectados.'
       );
+      setConfirmAction(null);
     } catch {
       toast.error('No se pudo cambiar la visibilidad en el catálogo.');
     }
@@ -244,6 +246,7 @@ export function CarreraDetalle() {
       if (isActive) {
         await deactivateProgram.mutateAsync(id);
         toast.success('Carrera desactivada');
+        setConfirmAction(null);
       } else {
         await activateProgram.mutateAsync(id);
         toast.success('Carrera activada');
@@ -339,7 +342,7 @@ export function CarreraDetalle() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleToggleStatus}
+                onClick={() => (isActive ? setConfirmAction('deactivate') : handleToggleStatus())}
                 loading={deactivateProgram.isPending || activateProgram.isPending}
                 className={isActive ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
               >
@@ -370,7 +373,7 @@ export function CarreraDetalle() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleToggleCatalog}
+              onClick={() => (program.visibleInCatalog ? setConfirmAction('retire') : handleToggleCatalog())}
               loading={setCatalogVisibility.isPending}
               className={program.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
             >
@@ -480,24 +483,35 @@ export function CarreraDetalle() {
         subjectName={correlativaPs?.subjectName}
       />
 
-      <Dialog open={subjectToRemove !== null} onOpenChange={(o) => !o && setSubjectToRemove(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Quitar materia del plan</DialogTitle>
-            <DialogDescription>
-              {subjectToRemove?.subjectName} va a quedar inactiva en el plan de estudios. Podés volver a agregarla más adelante.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSubjectToRemove(null)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" loading={deactivateProgramSubject.isPending} onClick={handleConfirmRemove}>
-              Quitar del plan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmActionDialog
+        open={subjectToRemove !== null}
+        onOpenChange={(o) => !o && setSubjectToRemove(null)}
+        title="Quitar materia del plan"
+        description={`${subjectToRemove?.subjectName} va a quedar inactiva en el plan de estudios. Podés volver a agregarla más adelante.`}
+        confirmLabel="Quitar del plan"
+        pending={deactivateProgramSubject.isPending}
+        onConfirm={handleConfirmRemove}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'deactivate'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Desactivar carrera"
+        description="La carrera va a quedar inactiva. Podés volver a activarla más adelante."
+        confirmLabel="Desactivar"
+        pending={deactivateProgram.isPending}
+        onConfirm={handleToggleStatus}
+      />
+
+      <ConfirmActionDialog
+        open={confirmAction === 'retire'}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+        title="Retirar del catálogo"
+        description="La carrera deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados."
+        confirmLabel="Retirar"
+        pending={setCatalogVisibility.isPending}
+        onConfirm={handleToggleCatalog}
+      />
     </PageContainer>
   );
 }

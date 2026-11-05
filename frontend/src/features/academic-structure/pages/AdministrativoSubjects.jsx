@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, ChevronRight, Globe, GlobeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -199,11 +201,15 @@ function PublishedProgramList({ navigate }) {
 
   const published = (data ?? []).filter((p) => p.visibleInCatalog);
 
-  async function handleRetire(id) {
+  const [toRetire, setToRetire] = useState(null);
+
+  async function handleConfirmRetire() {
     try {
-      await retireProgram.mutateAsync({ id, visible: false });
+      await retireProgram.mutateAsync({ id: toRetire.id, visible: false });
+      toast.success('La carrera fue retirada del catálogo');
+      setToRetire(null);
     } catch {
-      /* toast shown globally */
+      toast.error('No se pudo retirar la carrera del catálogo.');
     }
   }
 
@@ -223,16 +229,27 @@ function PublishedProgramList({ navigate }) {
     );
 
   return (
+    <>
     <div className="divide-y divide-neutral-bg">
       {published.map((p) => (
         <PublishedProgramRow
           key={p.id}
           program={p}
-          onRetire={handleRetire}
+          onRetire={() => setToRetire(p)}
           isRetiring={retireProgram.isPending && retireProgram.variables?.id === p.id}
         />
       ))}
     </div>
+    <ConfirmActionDialog
+      open={toRetire !== null}
+      onOpenChange={(o) => !o && setToRetire(null)}
+      title="Retirar del catálogo"
+      description={`${toRetire?.name} deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados.`}
+      confirmLabel="Retirar"
+      pending={retireProgram.isPending}
+      onConfirm={handleConfirmRetire}
+    />
+    </>
   );
 }
 
@@ -266,11 +283,15 @@ function PublishedCourseList({ navigate }) {
 
   const published = (data ?? []).filter((c) => c.visibleInCatalog);
 
-  async function handleRetire(id) {
+  const [toRetire, setToRetire] = useState(null);
+
+  async function handleConfirmRetire() {
     try {
-      await retireCourse.mutateAsync({ id, visible: false });
+      await retireCourse.mutateAsync({ id: toRetire.id, visible: false });
+      toast.success('El curso fue retirado del catálogo');
+      setToRetire(null);
     } catch {
-      /* toast shown globally */
+      toast.error('No se pudo retirar el curso del catálogo.');
     }
   }
 
@@ -290,16 +311,27 @@ function PublishedCourseList({ navigate }) {
     );
 
   return (
+    <>
     <div className="divide-y divide-neutral-bg">
       {published.map((c) => (
         <PublishedCourseRow
           key={c.id}
           course={c}
-          onRetire={handleRetire}
+          onRetire={() => setToRetire(c)}
           isRetiring={retireCourse.isPending && retireCourse.variables?.id === c.id}
         />
       ))}
     </div>
+    <ConfirmActionDialog
+      open={toRetire !== null}
+      onOpenChange={(o) => !o && setToRetire(null)}
+      title="Retirar del catálogo"
+      description={`${toRetire?.name} deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados.`}
+      confirmLabel="Retirar"
+      pending={retireCourse.isPending}
+      onConfirm={handleConfirmRetire}
+    />
+    </>
   );
 }
 
