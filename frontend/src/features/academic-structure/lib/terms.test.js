@@ -104,6 +104,11 @@ describe('terms error messages', () => {
     expect(message).toMatch(/Ya hay un período activo de este año y tipo/);
   });
 
+  it('explains that the holidays of the year are not loaded yet', () => {
+    const message = termErrorMessage({ status: 409, code: 'HOLIDAYS_NOT_LOADED_FOR_YEAR' }, 'x');
+    expect(message).toMatch(/todavía no hay feriados cargados para ese año/);
+  });
+
   it('falls back for unknown errors', () => {
     expect(termErrorMessage({ status: 500 }, 'Falló')).toBe('Falló');
   });

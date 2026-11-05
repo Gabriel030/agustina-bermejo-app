@@ -178,6 +178,9 @@ export function termErrorMessage(error, fallback) {
   if (error?.code === 'ACTIVE_TERM_ALREADY_EXISTS') {
     return 'Ya hay un período activo de este año y tipo. Desactivá el anterior o elegí otro tipo o año.';
   }
+  if (error?.code === 'HOLIDAYS_NOT_LOADED_FOR_YEAR') {
+    return 'No se puede crear el período: todavía no hay feriados cargados para ese año. Pedile al Administrativo que los cargue y volvé a intentar.';
+  }
   if (error?.status === 409) {
     return 'No se pudo guardar: el cambio entra en conflicto con cursadas, comisiones o la configuración de cobro ya cargadas.';
   }
