@@ -1,4 +1,5 @@
 import { roleRoutesFor } from '@/routes/featureRoutes';
+import { isBillingPath } from '@/routes/moduleGating';
 
 const PAGE_LABELS = {
   inicio: 'Inicio',
@@ -42,7 +43,23 @@ export function firstRealPage(role, pages) {
   return pages.find((slug) => hasRealScreen(role, slug)) ?? null;
 }
 
-export function visibleMenuItems(role, items) {
+function slugOf(role, item) {
   const prefix = `/${role}/`;
-  return items.filter((item) => !item.to.startsWith(prefix) || hasRealScreen(role, item.to.slice(prefix.length)));
+  return item.to.startsWith(prefix) ? item.to.slice(prefix.length) : null;
+}
+
+export function visibleMenuItems(role, items, { billingEnabled = true } = {}) {
+  return items.filter((item) => {
+    const slug = slugOf(role, item);
+    if (slug === null) return true;
+    if (!hasRealScreen(role, slug)) return false;
+    return billingEnabled || !isBillingPath(role, slug);
+  });
+}
+
+export function menuNeedsModules(role, items) {
+  return items.some((item) => {
+    const slug = slugOf(role, item);
+    return slug !== null && isBillingPath(role, slug);
+  });
 }
