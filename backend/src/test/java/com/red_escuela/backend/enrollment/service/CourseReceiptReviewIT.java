@@ -132,6 +132,7 @@ class CourseReceiptReviewIT extends AbstractIntegrationTest {
             term.setStatus(StatusType.ACTIVE);
             entityManager.persist(term);
             Course course = new Course();
+            course.setVisibleInCatalog(true);
             course.setName("Curso " + System.nanoTime());
             course.setTerm(term);
             course.setCapacity(20);

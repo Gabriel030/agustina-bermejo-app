@@ -60,7 +60,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
                 resolver, port, null, clock);
         CourseCatalogFinder courses = mock(CourseCatalogFinder.class);
         courseService = new CourseEnrollmentService(courseRepository, null, null, courses, mock(SectionFinder.class), mock(CourseSubjectSectionEnrollmentRepository.class), null, null,
-                resolver, port, clock);
+                resolver, port, null, clock);
         Student student = new Student();
         student.setId(STUDENT_ID);
         programEnrollment = new ProgramEnrollment();

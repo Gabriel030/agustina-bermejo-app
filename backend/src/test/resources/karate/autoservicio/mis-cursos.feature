@@ -27,6 +27,12 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     Then status 201
     * def courseId = response.id
 
+    Given path '/courses', courseId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
+
     * def alumno = fixtures.createConfirmedStudent(institutionId)
     Given path '/students', alumno.studentId, 'course-enrollments'
     And header Authorization = 'Bearer ' + adminToken

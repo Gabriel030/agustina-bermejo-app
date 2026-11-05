@@ -95,7 +95,7 @@ class CourseEnrollmentRulesTest {
     void setUp() {
         service = new CourseEnrollmentService(courseEnrollmentRepository, studentFinder, studentEnrollmentEligibility, courseCatalogFinder,
                 sectionFinder, subEnrollmentRepository, studentRoleGranter, enrollmentDebtGuard, withdrawalDateResolver,
-                withdrawalBillingPort, CLOCK);
+                withdrawalBillingPort, new CatalogAvailabilityGuard(), CLOCK);
         Person person = new Person();
         person.setId(70L);
         student = new Student();

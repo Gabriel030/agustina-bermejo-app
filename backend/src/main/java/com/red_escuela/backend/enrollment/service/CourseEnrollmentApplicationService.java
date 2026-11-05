@@ -69,7 +69,7 @@ public class CourseEnrollmentApplicationService {
             throw new DniRequiredException(student.getPerson().getId());
         }
         Course course = courseCatalogFinder.findCourseEntity(request.courseId());
-        courseEnrollmentService.validateCanEnroll(student, course.getId());
+        courseEnrollmentService.validateCanRequestAsStudent(student, course.getId());
         if (courseEnrollmentApplicationRepository.existsByStudentIdAndCourseIdAndPaymentReceiptStatus(
                 studentId, course.getId(), BankTransferReceiptStatus.PENDING_REVIEW)) {
             throw new PendingCourseEnrollmentApplicationException(studentId, course.getId());

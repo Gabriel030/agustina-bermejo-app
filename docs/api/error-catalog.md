@@ -325,6 +325,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
 | `COURSE_ADMISSION_ALREADY_CHARGED` | no | `CourseAdmissionAlreadyChargedException` | enrollment |
 | `COURSE_ADMISSION_CHARGE_REJECTED` | no | `CourseAdmissionChargeRejectedException` | enrollment |
+| `COURSE_NOT_AVAILABLE` | no | `CourseNotAvailableException` | enrollment |
 | `COURSE_PAYMENT_PLAN_ALREADY_SET` | no | `CoursePaymentPlanAlreadySetException` | billing |
 | `CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED` | no | `CreditNoteDirectorApprovalRequiredException` | billing |
 | `CREDIT_NOTE_DISTRIBUTION_MISMATCH` | no | `CreditNoteDistributionMismatchException` | billing |
@@ -425,6 +426,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
+| `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
 | `PROGRAM_YEAR_BILLING_TEMPLATE_MISMATCH` | no | `ProgramYearBillingTemplateMismatchException` | billing |
 | `PROMOTION_ALREADY_CLOSED` | no | `PromotionAlreadyClosedException` | billing |
