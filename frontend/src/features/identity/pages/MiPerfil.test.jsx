@@ -288,3 +288,24 @@ describe('MiPerfil — cambio seguro de email y documento', () => {
     expect(bodies[1]).toMatchObject({ email: 'nuevo@demo.test', currentPassword: 'Test1234' });
   });
 });
+
+describe('MiPerfil — load failure', () => {
+  it('does not mount the personal data form nor allow saving when the profile fails to load', async () => {
+    let puts = 0;
+    mockProfileEndpoints();
+    server.use(
+      http.get(`${API}/me`, () => new HttpResponse(null, { status: 500 })),
+      http.put(`${API}/me`, () => {
+        puts += 1;
+        return HttpResponse.json(PROFILE);
+      }),
+    );
+    renderProfile();
+
+    await screen.findByText('No pudimos cargar tus datos');
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Guardar cambios' })).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('')).not.toBeInTheDocument();
+    expect(puts).toBe(0);
+  });
+});

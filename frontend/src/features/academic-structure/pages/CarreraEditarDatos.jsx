@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useProgram, useUpdateProgram } from '@/features/academic-structure/hooks/usePrograms';
 
 const LEVEL_OPTIONS = [
@@ -46,32 +47,44 @@ function CampoSelect({ label, value, onChange, options }) {
 
 export function CarreraEditarDatos() {
   const { id } = useParams();
+  const { data: program, isError, error, refetch } = useProgram(id);
+
+  if (program) return <CarreraEditarDatosForm key={program.id} id={id} program={program} />;
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={error}
+          onRetry={refetch}
+          resource="la carrera"
+          backTo="/administrativo/gestion-academica?section=carreras"
+          backLabel="carreras"
+        />
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <Skeleton className="h-8 w-64 rounded-xl" />
+    </PageContainer>
+  );
+}
+
+function CarreraEditarDatosForm({ id, program }) {
   const navigate = useNavigate();
-  const { data: program, isLoading } = useProgram(id);
   const updateProgram = useUpdateProgram(id);
 
-  const [name, setName] = useState('');
-  const [totalYears, setTotalYears] = useState('');
-  const [level, setLevel] = useState('');
-  const [teachingMode, setTeachingMode] = useState('');
-  const [totalCreditsRequired, setTotalCreditsRequired] = useState('');
-  const [totalHoursRequired, setTotalHoursRequired] = useState('');
-  const [graduationProfile, setGraduationProfile] = useState('');
-  const [admissionRequirements, setAdmissionRequirements] = useState('');
+  const [name, setName] = useState(program.name ?? '');
+  const [totalYears, setTotalYears] = useState(program.totalYears?.toString() ?? '');
+  const [level, setLevel] = useState(program.level ?? '');
+  const [teachingMode, setTeachingMode] = useState(program.teachingMode ?? '');
+  const [totalCreditsRequired, setTotalCreditsRequired] = useState(program.totalCreditsRequired?.toString() ?? '');
+  const [totalHoursRequired, setTotalHoursRequired] = useState(program.totalHoursRequired?.toString() ?? '');
+  const [graduationProfile, setGraduationProfile] = useState(program.graduationProfile ?? '');
+  const [admissionRequirements, setAdmissionRequirements] = useState(program.admissionRequirements ?? '');
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (program) {
-      setName(program.name ?? '');
-      setTotalYears(program.totalYears?.toString() ?? '');
-      setLevel(program.level ?? '');
-      setTeachingMode(program.teachingMode ?? '');
-      setTotalCreditsRequired(program.totalCreditsRequired?.toString() ?? '');
-      setTotalHoursRequired(program.totalHoursRequired?.toString() ?? '');
-      setGraduationProfile(program.graduationProfile ?? '');
-      setAdmissionRequirements(program.admissionRequirements ?? '');
-    }
-  }, [program]);
 
   async function handleGuardar() {
     if (!name.trim()) {
@@ -105,14 +118,6 @@ export function CarreraEditarDatos() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <Skeleton className="h-8 w-64 rounded-xl" />
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
@@ -122,7 +127,7 @@ export function CarreraEditarDatos() {
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
-            {program?.name ?? 'Carrera'}
+            {program.name ?? 'Carrera'}
           </Link>
           <h1 className="font-heading text-xl font-bold text-ink">Editar datos</h1>
         </div>

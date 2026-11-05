@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -103,7 +104,7 @@ function SectionRow({ title }) {
 
 export function NotificationMatrix() {
   const { roles } = useAuth();
-  const { data, isLoading } = usePreferenciasNotificaciones();
+  const { data, isError, error, refetch } = usePreferenciasNotificaciones();
   const update = useActualizarPreferenciasNotificaciones();
   const [pending, setPending] = useState(null);
 
@@ -131,7 +132,11 @@ export function NotificationMatrix() {
     }
   }
 
-  if (isLoading) {
+  if (!data && isError) {
+    return <LoadErrorState bare error={error} onRetry={refetch} resource="tus preferencias de notificaciones" />;
+  }
+
+  if (!data) {
     return (
       <div className="flex flex-col gap-2">
         {[...Array(7)].map((_, i) => (

@@ -120,3 +120,29 @@ describe('NotificationMatrix', () => {
     expect(screen.getAllByText('Siempre te lo enviamos')).toHaveLength(4);
   });
 });
+
+describe('NotificationMatrix load failure', () => {
+  it('shows a load error with retry and no switches when the preferences fail to load', async () => {
+    let puts = 0;
+    let fail = true;
+    server.use(
+      http.get(`${API}/me/notification-preferences`, () =>
+        fail ? new HttpResponse(null, { status: 500 }) : HttpResponse.json({ preferences: {}, mandatoryChannels: {} }),
+      ),
+      http.put(`${API}/me/notification-preferences`, () => {
+        puts += 1;
+        return HttpResponse.json({});
+      }),
+    );
+    renderWithProviders(<NotificationMatrix />);
+
+    await screen.findByText('No pudimos cargar tus preferencias de notificaciones');
+    expect(screen.queryAllByRole('switch')).toHaveLength(0);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(puts).toBe(0);
+
+    fail = false;
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }));
+    await screen.findByText('Cobranza');
+  });
+});

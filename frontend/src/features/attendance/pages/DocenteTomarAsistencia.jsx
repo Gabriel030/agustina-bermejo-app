@@ -4,6 +4,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,13 +112,16 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
 }
 
 export function TabAsistencia({ type, sectionId }) {
-  const { data: roster, isLoading: cargandoRoster } = useRosterDeAsistencia(type, sectionId);
-  const { data: historial } = useHistorialAsistencia(type, sectionId);
+  const rosterQuery = useRosterDeAsistencia(type, sectionId);
+  const { data: roster, isLoading: cargandoRoster } = rosterQuery;
+  const historialQuery = useHistorialAsistencia(type, sectionId);
+  const { data: historial } = historialQuery;
   const guardar = useGuardarAsistencia(type, sectionId);
   const cancelar = useCancelarClase(type, sectionId);
 
   const [classDate, setClassDate] = useState(() => localIsoDate());
-  const { data: claseDelDia } = useClaseDelDia(type, sectionId, classDate);
+  const claseQuery = useClaseDelDia(type, sectionId, classDate);
+  const { data: claseDelDia } = claseQuery;
   const [busqueda, setBusqueda] = useState('');
   const [estados, setEstados] = useState({});
   const [topic, setTopic] = useState('');
@@ -250,12 +254,34 @@ export function TabAsistencia({ type, sectionId }) {
   const presentes = Object.values(estados).filter((s) => s === 'PRESENT').length;
   const ausentes = Object.values(estados).filter((s) => s === 'ABSENT').length;
 
+  const failedQueries = [
+    { query: rosterQuery, resource: 'los alumnos de la comisión' },
+    { query: historialQuery, resource: 'la asistencia ya guardada' },
+    { query: claseQuery, resource: 'los datos de la clase', ignoredStatus: 404 },
+  ].filter(({ query, ignoredStatus }) => query.isError && query.data === undefined && query.error?.status !== ignoredStatus);
+
   if (cargandoRoster) {
     return (
       <div className="flex flex-col gap-2 pt-4">
         <Skeleton className="h-10" />
         <Skeleton className="h-10" />
         <Skeleton className="h-10" />
+      </div>
+    );
+  }
+
+  if (failedQueries.length > 0) {
+    return (
+      <div className="flex flex-col gap-4 pt-4">
+        <Input type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} className="w-fit" />
+        <GlassCard className="p-4">
+          <LoadErrorState
+            bare
+            error={failedQueries[0].query.error}
+            resource={failedQueries[0].resource}
+            onRetry={() => failedQueries.forEach(({ query }) => query.refetch())}
+          />
+        </GlassCard>
       </div>
     );
   }

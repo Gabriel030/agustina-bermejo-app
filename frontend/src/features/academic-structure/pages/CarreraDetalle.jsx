@@ -6,6 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -165,8 +166,21 @@ function YearBlock({ year, totalYears, subjects, onAgregar, onCorrelativas, onRe
 export function CarreraDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: program, isLoading: loadingProgram } = useProgram(id);
-  const { data: subjects, isLoading: loadingSubjects } = useProgramSubjects(id);
+  const {
+    data: program,
+    isLoading: loadingProgram,
+    isError: programFailed,
+    error: programError,
+    refetch: refetchProgram,
+  } = useProgram(id);
+  const {
+    data: subjects,
+    isLoading: loadingSubjects,
+    isError: subjectsFailed,
+    error: subjectsError,
+    refetch: refetchSubjects,
+  } = useProgramSubjects(id);
+  const subjectsUnavailable = subjectsFailed && !subjects;
   const deactivateProgram = useDeactivateProgram();
   const activateProgram = useActivateProgram();
   const setCatalogVisibility = useSetProgramCatalogVisibility();
@@ -239,7 +253,7 @@ export function CarreraDetalle() {
     }
   }
 
-  if (loadingProgram) {
+  if (!program && (loadingProgram || !programFailed)) {
     return (
       <PageContainer>
         <Skeleton className="h-8 w-64 rounded-xl" />
@@ -250,7 +264,13 @@ export function CarreraDetalle() {
   if (!program) {
     return (
       <PageContainer>
-        <EmptyState title="Carrera no encontrada" />
+        <LoadErrorState
+          error={programError}
+          onRetry={refetchProgram}
+          resource="la carrera"
+          backTo="/administrativo/gestion-academica?section=carreras"
+          backLabel="carreras"
+        />
       </PageContainer>
     );
   }
@@ -389,14 +409,18 @@ export function CarreraDetalle() {
             <div className="flex flex-col gap-4 pt-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
-                <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Agregar materia
-                </Button>
+                {!subjectsUnavailable && (
+                  <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    Agregar materia
+                  </Button>
+                )}
               </div>
 
               {loadingSubjects ? (
                 <Skeleton rows={4} />
+              ) : subjectsUnavailable ? (
+                <LoadErrorState error={subjectsError} onRetry={refetchSubjects} resource="el plan de estudios" />
               ) : (
                 <div className="flex flex-col gap-3">
                   {yearBlocks.map((y) => (
