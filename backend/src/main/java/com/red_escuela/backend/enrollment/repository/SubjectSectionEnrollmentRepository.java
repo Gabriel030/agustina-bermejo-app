@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface SubjectSectionEnrollmentRepository extends JpaRepository<SubjectSectionEnrollment, Long> {
     List<SubjectSectionEnrollment> findByProgramEnrollmentId(Long programEnrollmentId);
 
+    List<SubjectSectionEnrollment> findByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<EnrollmentStatus> statuses);
+
     List<SubjectSectionEnrollment> findByStudentId(Long studentId);
 
     @Query("""
