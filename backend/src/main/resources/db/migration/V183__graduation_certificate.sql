@@ -12,7 +12,7 @@ CREATE TABLE graduation_certificate (
     issued_by_id BIGINT NOT NULL REFERENCES person(id),
     snapshot JSONB NOT NULL,
     template_ref VARCHAR(40) NOT NULL,
-    pdf_sha256 CHAR(64) NOT NULL,
+    pdf_sha256 VARCHAR(64) NOT NULL,
     pdf_path VARCHAR(300) NOT NULL,
     registry_number VARCHAR(20),
     revoked_at TIMESTAMP,

@@ -72,7 +72,7 @@ public class GraduationCertificate {
     @Column(name = "template_ref", nullable = false, length = 40, updatable = false)
     private String templateRef;
 
-    @Column(name = "pdf_sha256", nullable = false, length = 64, columnDefinition = "char(64)")
+    @Column(name = "pdf_sha256", nullable = false, length = 64)
     private String pdfSha256;
 
     @Column(name = "pdf_path", nullable = false, length = 300)
