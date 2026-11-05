@@ -1,4 +1,4 @@
-import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2 } from 'lucide-react';
+import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -75,7 +75,7 @@ export const ROLE_MENU = {
     certificates,
     periodos,
   ],
-  platform_admin: [{ ...inicio, hidden: true }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }],
+  platform_admin: [{ ...inicio, hidden: true }, { slug: 'modulos', label: 'Módulos', icon: Puzzle }, { slug: 'primer-director', label: 'Primer director', icon: UserPlus }],
 };
 
 export function pagesFor(role) {

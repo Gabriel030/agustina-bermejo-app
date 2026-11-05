@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.service.AnnouncementSectionNames;
@@ -15,9 +16,10 @@ public record MyAnnouncementResponse(
         boolean urgent,
         String teacherName,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime updatedAt,
+        @Schema(nullable = true) LocalDateTime readAt) {
 
-    public static MyAnnouncementResponse from(Announcement announcement) {
+    public static MyAnnouncementResponse from(Announcement announcement, LocalDateTime readAt) {
         String subjectName = announcement.getSubjectSection() != null
                 ? AnnouncementSectionNames.of(announcement.getSubjectSection())
                 : AnnouncementSectionNames.of(announcement.getCourseSubjectSection());
@@ -30,6 +32,7 @@ public record MyAnnouncementResponse(
                 announcement.isUrgent(),
                 announcement.getCreatedBy().getName() + " " + announcement.getCreatedBy().getLastname(),
                 announcement.getCreatedAt(),
-                announcement.getUpdatedAt());
+                announcement.getUpdatedAt(),
+                readAt);
     }
 }

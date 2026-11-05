@@ -23,6 +23,9 @@ describe('AvisoEditar accessibility', () => {
             urgent: false,
             expiresAt: null,
             audienceLabel: 'Toda la comisión',
+            recipientCount: 25,
+            readCount: 0,
+            readTracked: true,
             status: 'SENT',
             sentAt: '2026-10-03T10:00:00',
             scheduledFor: null,
@@ -30,7 +33,7 @@ describe('AvisoEditar accessibility', () => {
           },
         ]),
       ),
-      http.get(`${API}/announcements/10/recipients`, () => HttpResponse.json([{ studentId: 1, file: 'A-1', name: 'Lucía Pérez' }])),
+      http.get(`${API}/announcements/10/recipients`, () => HttpResponse.json([{ studentId: 1, file: 'A-1', name: 'Lucía Pérez', readAt: null }])),
       http.post(`${API}/subject-sections/49/audience-preview`, () =>
         HttpResponse.json({ count: 4, totalInSection: 4, label: 'Toda la comisión', hasUngradedInstances: false, students: [] }),
       ),
