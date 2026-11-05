@@ -161,3 +161,23 @@ describe('LegajoPersonal', () => {
     expect(toastMock.error).not.toHaveBeenCalled();
   });
 });
+
+describe('LegajoPersonal — load failure', () => {
+  it('shows the error state and loads the record again on retry', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/staff/89`, () => {
+        calls += 1;
+        return calls === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(record('PRECEPTOR'));
+      }),
+    );
+    const user = userEvent.setup();
+    mount();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar el legajo');
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Paz, Pedro')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

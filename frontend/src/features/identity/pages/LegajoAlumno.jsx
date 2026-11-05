@@ -4,6 +4,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { useWithdrawStudent, useResetStudentPassword } from '@/features/identity/hooks/useAccionesLegajo';
@@ -24,7 +25,7 @@ export function LegajoAlumno() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const { usuario } = useAuth();
-  const { data: legajo, isLoading, isError } = useLegajoAlumno(id);
+  const { data: legajo, isLoading, isError, error, refetch } = useLegajoAlumno(id);
 
   const [bajaOpen, setBajaOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -59,7 +60,7 @@ export function LegajoAlumno() {
           {isLoading ? (
             <Skeleton className="h-10 w-64" />
           ) : isError ? (
-            <p className="text-[14px] text-ink-faint">No se pudo cargar el legajo.</p>
+            <LoadErrorState error={error} onRetry={refetch} resource="el legajo" bare />
           ) : (
             <div className="flex items-center gap-3">
               <div>
@@ -74,6 +75,7 @@ export function LegajoAlumno() {
             </div>
           )}
 
+          {!isError && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList variant="segmented" className="w-full">
               <TabsTrigger value="datos-personales" className="flex-1">
@@ -120,6 +122,7 @@ export function LegajoAlumno() {
               <FinancieroTab studentId={id} puedeHabilitar={rolBase === 'director' || rolBase === 'administrativo'} roleBase={rolBase} />
             </TabsContent>
           </Tabs>
+          )}
         </GlassCard>
       </div>
 

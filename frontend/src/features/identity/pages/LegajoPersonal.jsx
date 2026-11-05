@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoPersonal } from '@/features/identity/hooks/useLegajoPersonal';
@@ -46,7 +47,7 @@ function Campo({ label, value }) {
 export function LegajoPersonal() {
   const { id } = useParams();
   const { usuario } = useAuth();
-  const { data: legajo, isLoading, isError } = useLegajoPersonal(id);
+  const { data: legajo, isLoading, isError, error, refetch } = useLegajoPersonal(id);
 
   const [bajaOpen, setBajaOpen] = useState(false);
   const [reactivarOpen, setReactivarOpen] = useState(false);
@@ -74,7 +75,7 @@ export function LegajoPersonal() {
           {isLoading ? (
             <Skeleton className="h-10 w-64" />
           ) : isError ? (
-            <p className="text-[14px] text-ink-faint">No se pudo cargar el legajo.</p>
+            <LoadErrorState error={error} onRetry={refetch} resource="el legajo" bare />
           ) : (
             <>
               <div className="flex items-center justify-between">
