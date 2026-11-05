@@ -143,7 +143,7 @@ export function AvisoEditar() {
       ) : (
         <GlassCard className="flex flex-col gap-3 p-5">
           <h2 className="font-heading text-[15px] font-semibold text-ink">Destinatarios</h2>
-          <Input readOnly className="cursor-default" value={aviso.audienceLabel} />
+          <Input readOnly aria-label="Destinatarios" className="cursor-default" value={aviso.audienceLabel} />
           <span className="text-[11.5px] text-ink-faint">
             {esCurso
               ? 'Un curso suelto no tiene esquema de evaluación, así que el aviso le llega a todo el curso.'
