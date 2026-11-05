@@ -4411,6 +4411,10 @@
           "code" : {
             "type" : "string"
           },
+          "details" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          },
           "requestId" : {
             "type" : "string"
           },
@@ -4998,6 +5002,24 @@
         "required" : [ "date", "enrollmentId", "examBoardId", "id", "score", "sequenceNumber", "type" ],
         "type" : "object"
       },
+      "GraduationDebtSummaryResponse" : {
+        "properties" : {
+          "installments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InstallmentResponse"
+            },
+            "type" : "array"
+          },
+          "mustCheckDebt" : {
+            "type" : "boolean"
+          },
+          "totalDue" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "installments", "mustCheckDebt", "totalDue" ],
+        "type" : "object"
+      },
       "GraduationRequestResponse" : {
         "properties" : {
           "decidedAt" : {
@@ -5197,6 +5219,25 @@
           }
         },
         "required" : [ "invoicesAwaitingPayment", "invoicesUnderPaymentReview", "openInvoices", "overdueInvoices", "paymentsPendingReconciliation", "pendingDraftInvoices", "refundsInProgress", "runsInProgress", "scheduledJobs" ],
+        "type" : "object"
+      },
+      "InstallmentResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "dueDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "period" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "dueDate", "period", "status" ],
         "type" : "object"
       },
       "InstitutionResponse" : {
@@ -30186,6 +30227,123 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GraduationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-request-controller" ]
+      }
+    },
+    "/graduation-requests/{id}/debt-summary" : {
+      "get" : {
+        "operationId" : "GraduationRequest_debtSummary",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationDebtSummaryResponse"
                 }
               }
             },
