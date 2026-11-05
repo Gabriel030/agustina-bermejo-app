@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatMoney } from '@/lib/billing';
+import { formatAmountEsAr } from '../components/cashAmount';
 import { inboxPath } from '../authorization/authorizationRequests';
 import { useRefundEligibility, useRefundPreview, useRequestRefund } from '../hooks/useRefunds';
 import { RefundBlockAlert } from './RefundBlockAlert';
@@ -183,13 +184,18 @@ export function RequestRefundPage() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="refund-amount">Monto</Label>
-                <span className="text-xs text-ink-faint">Podés pedir hasta {formatMoney(cap)}</span>
+                <span className="flex items-center gap-2 text-xs text-ink-faint">
+                  Podés pedir hasta {formatMoney(cap)}
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => updateField('amount', formatAmountEsAr(cap.amount))}>
+                    Usar el máximo
+                  </Button>
+                </span>
               </div>
               <Input
                 id="refund-amount"
                 inputMode="decimal"
                 autoComplete="off"
-                placeholder="Ej.: 80.000"
+                placeholder="Ej.: 80.000,50"
                 value={form.amount}
                 onChange={(event) => updateField('amount', event.target.value)}
                 onBlur={() => touch('amount')}
