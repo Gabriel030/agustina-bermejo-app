@@ -185,14 +185,24 @@ necesite de verdad.
 
 ## Manejo de errores
 
-- **`ErrorBoundary` de React en la raíz de `App.jsx`** (pendiente de agregar —
-  hoy no existe, es deuda de la Fase 1 detectada al escribir este doc). Cubre
-  errores de render que ninguna captura de `try/catch` en un handler puede
-  atajar. No confundir con el manejo de errores de red, que ya vive en
-  `apiFetch` (`AuthError`, `RateLimitedError`, mensaje genérico por status).
-- Los mensajes de error al usuario se arman en el frontend a partir del status
-  HTTP (ver `docs/context/backend.md` — el backend no manda body de error), nunca
-  se intenta parsear un mensaje que el backend no envía.
+- **`ApiError`** (`api/apiError.js`): todo error HTTP de `apiFetch` lo es, con
+  `status`, `code`, `retryable`, `requestId` y `violations` (cuerpo estándar del
+  catálogo `docs/api/error-catalog.md`).
+- **`describeError(error)`** (`api/describeError.js`) devuelve `{ kind, message,
+  retryable, requestId }` con el mensaje en castellano por código transversal. Un
+  test cruza `ERROR_MESSAGES` contra el catálogo: sumar un transversal en el backend
+  obliga a sumarlo acá. Los códigos de dominio siguen en cada feature (prioridad:
+  mensaje de la feature, luego `describeError`). Regla en mutaciones:
+  `toast.error(describeError(err).message)`.
+- **Timeouts**: 30 s por pedido (`timeoutMs` en las opciones lo cambia), 120 s para
+  `FormData` y descargas. Un timeout se trata como falla de red.
+- **`ErrorBoundary`** (`components/ErrorBoundary.jsx`) en la raíz de `App.jsx` y por
+  pantalla en `RoleShell` (se resetea al cambiar `resetKey`, la ruta). Muestra
+  `ErrorFallback`. Los errores de render los captura el boundary; los de red,
+  `apiFetch`.
+- **`reportClientError`** (`lib/reportClientError.js`) es el puerto de reporte: por
+  defecto solo `console.error`; se enchufa con `setClientErrorReporter` cuando
+  exista Sentry (Épica 17). También reporta los `unhandledrejection`.
 
 ## Naming
 

@@ -3,10 +3,15 @@
  * (ver Spec - Fundación técnica y login local, decisión 5).
  */
 import { createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
+import { ApiError } from '@/api/apiError';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 export { CircuitOpenError, NetworkError } from '@/api/retryPolicy';
+export { ApiError } from '@/api/apiError';
+
+const DEFAULT_TIMEOUT_MS = 30000;
+const UPLOAD_TIMEOUT_MS = 120000;
 
 export class RateLimitedError extends Error {
   constructor(retryAfterSeconds = null) {
@@ -43,9 +48,14 @@ function messageForStatus(status) {
 async function readErrorBody(response) {
   try {
     const body = await response.json();
-    return { code: body?.code ?? null, violations: Array.isArray(body?.violations) ? body.violations : [] };
+    return {
+      code: body?.code ?? null,
+      retryable: body?.retryable === true,
+      requestId: body?.requestId ?? null,
+      violations: Array.isArray(body?.violations) ? body.violations : [],
+    };
   } catch {
-    return { code: null, violations: [] };
+    return { code: null, retryable: false, requestId: null, violations: [] };
   }
 }
 
@@ -61,7 +71,14 @@ export function setSessionExpiredHandler(handler) {
   onSessionExpired = handler;
 }
 
+function timeoutFor(options) {
+  if (options.timeoutMs != null) return options.timeoutMs;
+  return options.body instanceof FormData ? UPLOAD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+}
+
 async function rawFetch(path, options) {
+  const fetchOptions = { ...options };
+  delete fetchOptions.timeoutMs;
   const headers = new Headers(options.headers);
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
@@ -72,7 +89,9 @@ async function rawFetch(path, options) {
   if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const timeout = AbortSignal.timeout(timeoutFor(options));
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  return fetch(`${API_BASE_URL}${path}`, { ...fetchOptions, headers, signal });
 }
 
 const circuits = new Map();
@@ -163,12 +182,8 @@ async function fetchWithAuth(path, options) {
   }
 
   if (!response.ok) {
-    const error = new Error(messageForStatus(response.status));
-    error.status = response.status;
     const body = await readErrorBody(response);
-    error.code = body.code;
-    error.violations = body.violations;
-    throw error;
+    throw new ApiError(messageForStatus(response.status), { status: response.status, ...body });
   }
 
   return response;
@@ -192,7 +207,7 @@ export async function apiFetchWithTotal(path, options = {}) {
 // Descarga de archivos (ej. exportar asistencia a PDF/XLS) — a diferencia de apiFetch, el body
 // de la respuesta no es JSON, así que no puede pasar por el mismo parseo.
 export async function apiFetchBlob(path, options = {}) {
-  const response = await fetchWithAuth(path, options);
+  const response = await fetchWithAuth(path, { timeoutMs: UPLOAD_TIMEOUT_MS, ...options });
   const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'archivo';
   const blob = await response.blob();
   return { blob, filename };
