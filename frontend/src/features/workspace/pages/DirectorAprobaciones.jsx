@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -10,6 +10,7 @@ import { useConfigsPendientes } from '@/features/evaluation';
 import { useEgresosPendientes } from '@/features/graduation';
 import { useExcepcionesPendientes } from '@/features/enrollment';
 import { useAuthorizationRequests } from '@/features/billing';
+import { ageLabel } from '@/lib/aprobaciones';
 import { TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 
 const PREVIEW = 3;
@@ -29,22 +30,33 @@ function PendingCounter({ query, count }) {
   return <div className="font-heading text-2xl font-bold text-ink">{query.isError ? '—' : (count ?? (query.data ?? []).length)}</div>;
 }
 
+function PreviewRow({ to, title, dateLabel, date }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-colors hover:bg-neutral-bg/60"
+    >
+      <div className="text-[13.5px] font-semibold text-ink">{title}</div>
+      <div className="text-[12px] text-ink-faint">{dateLabel} {formatearFecha(date) ?? '—'} · {ageLabel(date)}</div>
+    </Link>
+  );
+}
+
 function SeccionPreview({ titulo, ruta, cargando, fallo, items, tituloVacio, renderItem }) {
-  const navigate = useNavigate();
   const total = items.length;
 
   return (
-    <GlassCard
-      onClick={() => navigate(ruta)}
-      className="flex cursor-pointer flex-col gap-1 p-4 transition-colors hover:bg-neutral-bg/40"
-    >
-      <div className="flex items-center justify-between px-2 pb-2">
+    <GlassCard className="flex flex-col gap-1 p-4">
+      <Link
+        to={ruta}
+        className="flex items-center justify-between rounded-xl px-2 pb-2 transition-colors hover:bg-neutral-bg/40"
+      >
         <div className="font-heading text-[14.5px] font-semibold text-ink">{titulo}</div>
         <div className="flex items-center gap-1 text-[12.5px] font-semibold text-primary">
           {pendingLinkLabel(total, fallo)}
           <ChevronRight className="h-4 w-4" />
         </div>
-      </div>
+      </Link>
       {cargando ? (
         <div className="flex flex-col gap-2 p-2">
           <Skeleton className="h-12" />
@@ -75,22 +87,30 @@ export function DirectorAprobaciones() {
     <PageContainer>
       <div>
         <h1 className="font-heading text-2xl font-bold text-ink">Aprobaciones</h1>
-        <p className="mt-0.5 text-sm text-ink-soft">Trámites esperando tu decisión, y lo que ya decidiste</p>
+        <p className="mt-0.5 text-sm text-ink-soft">Trámites esperando tu decisión</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Egresos por aprobar">
-          <PendingCounter query={graduationsQuery} />
-        </StatCard>
-        <StatCard label="Excepciones por decidir">
-          <PendingCounter query={exceptionsQuery} />
-        </StatCard>
-        <StatCard label="Config. de evaluación pendientes">
-          <PendingCounter query={configsQuery} />
-        </StatCard>
-        <StatCard label="Operaciones de facturación">
-          <PendingCounter query={billingQuery} count={billingQuery.data?.totalElements} />
-        </StatCard>
+        <Link to="/director/aprobaciones/egresos" className="block rounded-[inherit]">
+          <StatCard label="Egresos por aprobar">
+            <PendingCounter query={graduationsQuery} />
+          </StatCard>
+        </Link>
+        <Link to="/director/aprobaciones/excepciones" className="block rounded-[inherit]">
+          <StatCard label="Excepciones por decidir">
+            <PendingCounter query={exceptionsQuery} />
+          </StatCard>
+        </Link>
+        <Link to="/director/aprobaciones/configuracion-evaluacion" className="block rounded-[inherit]">
+          <StatCard label="Config. de evaluación pendientes">
+            <PendingCounter query={configsQuery} />
+          </StatCard>
+        </Link>
+        <Link to="/director/aprobaciones/facturacion" className="block rounded-[inherit]">
+          <StatCard label="Operaciones de facturación">
+            <PendingCounter query={billingQuery} count={billingQuery.data?.totalElements} />
+          </StatCard>
+        </Link>
       </div>
 
       <SeccionPreview
@@ -101,12 +121,16 @@ export function DirectorAprobaciones() {
         items={listaBillingPendientes}
         tituloVacio="Nada de facturación esperando tu decisión"
         renderItem={(r) => (
-          <div key={r.id} className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5">
+          <Link
+            key={r.id}
+            to="/director/aprobaciones/facturacion"
+            className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-colors hover:bg-neutral-bg/60"
+          >
             <div className="text-[13.5px] font-semibold text-ink">
               {r.operationLabel} · {r.studentName ?? r.summary}
             </div>
             <div className="text-[12px] text-ink-faint">pedido por {r.requestedBy?.name ?? '—'}</div>
-          </div>
+          </Link>
         )}
       />
 
@@ -118,10 +142,13 @@ export function DirectorAprobaciones() {
         items={listaPendientes}
         tituloVacio="Nada pendiente"
         renderItem={(c) => (
-          <div key={c.id} className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5">
-            <div className="text-[13.5px] font-semibold text-ink">{c.subjectName} · {c.sectionName}</div>
-            <div className="text-[12px] text-ink-faint">enviada {formatearFecha(c.submittedAt) ?? '—'}</div>
-          </div>
+          <PreviewRow
+            key={c.id}
+            to={`/director/revisar-configuracion/${c.subjectSectionId}`}
+            title={`${c.subjectName} · ${c.sectionName}`}
+            dateLabel="enviada"
+            date={c.submittedAt}
+          />
         )}
       />
 
@@ -133,10 +160,13 @@ export function DirectorAprobaciones() {
         items={listaEgresosPendientes}
         tituloVacio="Ningún egreso esperando tu decisión"
         renderItem={(g) => (
-          <div key={g.id} className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5">
-            <div className="text-[13.5px] font-semibold text-ink">{g.studentName} · {g.programName}</div>
-            <div className="text-[12px] text-ink-faint">solicitado {formatearFecha(g.requestedAt) ?? '—'}</div>
-          </div>
+          <PreviewRow
+            key={g.id}
+            to={`/director/aprobaciones/egresos/${g.id}`}
+            title={`${g.studentName} · ${g.programName}`}
+            dateLabel="solicitado"
+            date={g.requestedAt}
+          />
         )}
       />
 
@@ -148,12 +178,13 @@ export function DirectorAprobaciones() {
         items={listaExcepcionesPendientes}
         tituloVacio="Ninguna excepción pendiente"
         renderItem={(e) => (
-          <div key={e.id} className="flex items-center justify-between gap-4 rounded-2xl px-4 py-2.5">
-            <div className="text-[13.5px] font-semibold text-ink">
-              {TIPO_EXCEPCION_LABEL[e.type] ?? e.type} · {e.studentName}
-            </div>
-            <div className="text-[12px] text-ink-faint">solicitado {formatearFecha(e.requestedAt) ?? '—'}</div>
-          </div>
+          <PreviewRow
+            key={e.id}
+            to={`/director/aprobaciones/excepciones/${e.id}`}
+            title={`${TIPO_EXCEPCION_LABEL[e.type] ?? e.type} · ${e.studentName}`}
+            dateLabel="solicitado"
+            date={e.requestedAt}
+          />
         )}
       />
     </PageContainer>

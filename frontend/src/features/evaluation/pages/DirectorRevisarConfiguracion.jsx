@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
-import { EmptyState } from '@/components/EmptyState';
+import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ModalMotivo } from '@/components/ModalMotivo';
+import { ModalAprobacion } from '@/components/director/ModalAprobacion';
+import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
 import { CalendarioConfiguracion } from '@/features/evaluation/components/CalendarioConfiguracion';
 import {
   useConfiguracionComisionStaff,
@@ -15,6 +18,9 @@ import {
 } from '@/features/evaluation/hooks/useEvaluationConfig';
 import { useHolidays } from '@/features/evaluation/hooks/useEvaluationConfig';
 import { ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL, formatearFecha } from '@/lib/comisiones';
+import { decisionErrorMessage, isAlreadyDecided, MIN_REJECTION_REASON_LENGTH } from '@/lib/aprobaciones';
+
+const CONFIG_TRAY = '/director/aprobaciones/configuracion-evaluacion';
 
 function ValorFecha({ label, valor }) {
   return (
@@ -30,30 +36,16 @@ const COLUMNAS_PARCIALES = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:gr
 export function DirectorRevisarConfiguracion() {
   const { sectionId } = useParams();
   const navigate = useNavigate();
-  const { data: config, isLoading, isError } = useConfiguracionComisionStaff(sectionId);
+  const { data: config, isLoading, isError, error: loadError, refetch } = useConfiguracionComisionStaff(sectionId);
   const { data: feriados } = useHolidays();
   const aprobar = useAprobarConfig(sectionId);
   const rechazar = useRechazarConfig(sectionId);
-  const [motivo, setMotivo] = useState('');
+  const [modalRechazo, setModalRechazo] = useState(false);
+  const [modalAprobacion, setModalAprobacion] = useState(false);
   const [error, setError] = useState(null);
 
   if (isError) {
-    return (
-      <PageContainer>
-        <GlassCard className="p-4">
-          <EmptyState
-            icon="🔎"
-            title="No encontramos esta configuración"
-            description="Puede que la comisión no exista o que el enlace esté mal."
-            action={
-              <Button variant="outline" asChild>
-                <Link to="/director/aprobaciones/configuracion-evaluacion">Volver a la bandeja</Link>
-              </Button>
-            }
-          />
-        </GlassCard>
-      </PageContainer>
-    );
+    return <UnavailableRequestState error={loadError} backTo={CONFIG_TRAY} backLabel="la bandeja" onRetry={refetch} />;
   }
 
   if (isLoading || !config) {
@@ -71,32 +63,50 @@ export function DirectorRevisarConfiguracion() {
   const camposParcial = Array.from({ length: cantidadParciales }, (_, i) => i + 1);
   const esDecidible = config.status === 'PENDING_APPROVAL';
 
+  const deciding = aprobar.isPending || rechazar.isPending;
+
+  function handleDecisionError(failure) {
+    setError(decisionErrorMessage(failure));
+    toast.error(decisionErrorMessage(failure));
+    if (isAlreadyDecided(failure)) {
+      setModalRechazo(false);
+      setModalAprobacion(false);
+    }
+  }
+
   async function aprobarComision() {
     setError(null);
     try {
       await aprobar.mutateAsync();
-      navigate('/director/aprobaciones');
-    } catch (e) {
-      setError(e.message);
+      setModalAprobacion(false);
+      toast.success('Configuración aprobada');
+      navigate(CONFIG_TRAY);
+      return true;
+    } catch (failure) {
+      handleDecisionError(failure);
+      return false;
     }
   }
 
-  async function rechazarComision() {
+  async function rechazarComision(motivo) {
     setError(null);
-    if (!motivo.trim()) {
-      setError('El motivo del rechazo es obligatorio.');
-      return;
-    }
     try {
       await rechazar.mutateAsync(motivo);
-      navigate('/director/aprobaciones');
-    } catch (e) {
-      setError(e.message);
+      setModalRechazo(false);
+      toast.success('Configuración rechazada');
+      navigate(CONFIG_TRAY);
+      return true;
+    } catch (failure) {
+      handleDecisionError(failure);
+      return false;
     }
   }
 
   return (
     <PageContainer>
+      <Link to={CONFIG_TRAY} className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
+        ← Configuración de evaluación
+      </Link>
       <div>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-heading text-2xl font-bold text-ink">
@@ -205,30 +215,20 @@ export function DirectorRevisarConfiguracion() {
         {esDecidible && (
           <>
             <div className="h-px bg-border" />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-ink-soft">Motivo del rechazo (obligatorio solo si rechazás)</label>
-              <textarea
-                value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Ej: faltan fechas de TP2 y TP3..."
-                rows={2}
-                className="rounded-lg border border-border bg-white/70 px-3 py-2 text-[13.5px] text-ink dark:bg-white/10"
-              />
-            </div>
-            {error && <div className="text-sm font-semibold text-danger">{error}</div>}
+            {error && <div role="alert" className="text-sm font-semibold text-danger">{error}</div>}
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
                 className="border-danger/40 text-danger"
-                onClick={rechazarComision}
-                disabled={rechazar.isPending}
+                onClick={() => setModalRechazo(true)}
+                disabled={deciding}
               >
                 Rechazar
               </Button>
               <Button
                 className="bg-success text-white hover:bg-success/90"
-                onClick={aprobarComision}
-                disabled={aprobar.isPending}
+                onClick={() => setModalAprobacion(true)}
+                disabled={deciding}
               >
                 Aprobar
               </Button>
@@ -236,6 +236,31 @@ export function DirectorRevisarConfiguracion() {
           </>
         )}
       </GlassCard>
+
+      <ModalAprobacion
+        open={modalAprobacion}
+        onClose={() => setModalAprobacion(false)}
+        confirmando={aprobar.isPending}
+        titulo="Aprobar configuración"
+        onConfirmar={aprobarComision}
+        resumen={
+          <>
+            <div className="font-semibold">{config.subjectName} · {config.sectionName}</div>
+            <div>{config.tpCount ?? 0} trabajos prácticos · {cantidadParciales} parciales · 2 llamados a final</div>
+          </>
+        }
+      />
+
+      <ModalMotivo
+        open={modalRechazo}
+        onClose={() => setModalRechazo(false)}
+        confirmando={rechazar.isPending}
+        requerido
+        minLength={MIN_REJECTION_REASON_LENGTH}
+        titulo="Rechazar configuración"
+        placeholder="Ej: faltan fechas de TP2 y TP3..."
+        onConfirmar={rechazarComision}
+      />
     </PageContainer>
   );
 }

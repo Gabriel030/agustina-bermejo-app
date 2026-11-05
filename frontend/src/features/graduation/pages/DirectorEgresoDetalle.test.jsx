@@ -110,8 +110,9 @@ describe('DirectorEgresoDetalle', () => {
     const approveButton = await screen.findByRole('button', { name: 'Aprobar egreso' });
     await waitFor(() => expect(approveButton).toBeEnabled());
     await user.click(approveButton);
+    await user.click(await screen.findByRole('button', { name: 'Aprobar' }));
 
-    expect(await screen.findByText('Otra persona de dirección ya decidió este trámite.')).toBeInTheDocument();
+    expect((await screen.findAllByText('Otra persona de dirección ya decidió este trámite.')).length).toBeGreaterThan(0);
     expect(await screen.findByText('Rechazado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aprobar egreso' })).not.toBeInTheDocument();
   });
@@ -124,8 +125,9 @@ describe('DirectorEgresoDetalle', () => {
     const approveButton = await screen.findByRole('button', { name: 'Aprobar egreso' });
     await waitFor(() => expect(approveButton).toBeEnabled());
     await user.click(approveButton);
+    await user.click(await screen.findByRole('button', { name: 'Aprobar' }));
 
-    expect(await screen.findByText('No se puede aprobar: la matrícula del alumno ya no está activa.')).toBeInTheDocument();
+    expect((await screen.findAllByText('No se puede aprobar: la matrícula del alumno ya no está activa.')).length).toBeGreaterThan(0);
   });
 
   it('explains that the student has unpaid installments when the backend blocks the approval', async () => {
@@ -136,7 +138,44 @@ describe('DirectorEgresoDetalle', () => {
     const approveButton = await screen.findByRole('button', { name: 'Aprobar egreso' });
     await waitFor(() => expect(approveButton).toBeEnabled());
     await user.click(approveButton);
+    await user.click(await screen.findByRole('button', { name: 'Aprobar' }));
 
-    expect(await screen.findByText('No se puede aprobar: el alumno tiene cuotas impagas.')).toBeInTheDocument();
+    expect((await screen.findAllByText('No se puede aprobar: el alumno tiene cuotas impagas.')).length).toBeGreaterThan(0);
+  });
+
+  it('approves the graduation after confirming the summary dialog', async () => {
+    mockGraduation();
+    const user = userEvent.setup();
+    renderDetail();
+
+    const approveButton = await screen.findByRole('button', { name: 'Aprobar egreso' });
+    await waitFor(() => expect(approveButton).toBeEnabled());
+    await user.click(approveButton);
+    expect(await screen.findByText('Aprobar egreso', { selector: '[data-slot="dialog-title"]' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aprobar' }));
+
+    expect(await screen.findByText('Bandeja de egresos')).toBeInTheDocument();
+  });
+
+  it('requires a rejection reason of at least 10 characters', async () => {
+    mockGraduation();
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    expect(await screen.findByText('Rechazar egreso')).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('Motivo del rechazo'), 'corto');
+    await user.click(screen.getAllByRole('button', { name: 'Rechazar' }).at(-1));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('al menos 10 caracteres');
+  });
+
+  it('blocks the approval and shows the error when the requirements check fails', async () => {
+    mockGraduation();
+    server.use(http.get(`${API}/program-enrollments/2/progress`, () => HttpResponse.json(errorBody('X'), { status: 500 })));
+    renderDetail();
+
+    expect(await screen.findByText(/No pudimos verificar los requisitos/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Aprobar egreso' })).toBeDisabled());
   });
 });
