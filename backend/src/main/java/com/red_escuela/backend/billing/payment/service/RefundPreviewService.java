@@ -22,6 +22,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -33,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class RefundPreviewService {
     private static final BigDecimal SMALLEST_REFUNDABLE_AMOUNT = new BigDecimal("0.01");
     private static final String DESTINATION_REQUIRED = "REFUND_DESTINATION_REQUIRED";

@@ -26,25 +26,6 @@ com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttend
 com.red_escuela.backend.billing.discount.usecase.ClosePromotionByLegacyContractService.closePromotion(java.lang.Long) declares @Transactional
 com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyContractService.createForCourse(java.lang.Long, com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest) declares @Transactional
 com.red_escuela.backend.billing.discount.usecase.CreatePromotionByLegacyContractService.createForProgram(java.lang.Long, com.red_escuela.backend.billing.discount.dto.CreatePromotionRequest) declares @Transactional
-com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentService.listCreditNotesOfStudent(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipService.listCreditNotesOfStudentWithAuthorship(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.note.usecase.PreviewInvoiceCancellationService.previewInvoiceCancellation(java.lang.Long, com.red_escuela.backend.billing.note.dto.CancelInvoiceRequest) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.DescribeStudentCreditBalanceService.describeCreditBalanceOfStudent(java.lang.Long, com.red_escuela.backend.shared.domain.Currency) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.DescribeStudentCreditBalanceService.describeOwnCreditBalance(java.lang.Long, com.red_escuela.backend.shared.domain.Currency) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentService.previewCashPayment(java.lang.Long, com.red_escuela.backend.shared.domain.Money) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewPaymentReversalService.previewApprovalRevocation(java.lang.Long, com.red_escuela.backend.billing.payment.dto.RevokeBankTransferApprovalRequest) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewPaymentReversalService.previewChargebackRegistration(java.lang.Long, com.red_escuela.backend.billing.payment.dto.RegisterChargebackRequest) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewPaymentReversalService.previewChargebackReversal(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewRefundService.describeOwnRefundEligibility(java.lang.Long, com.red_escuela.backend.shared.domain.Currency) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewRefundService.describeRefundEligibilityOfStudent(java.lang.Long, com.red_escuela.backend.shared.domain.Currency) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewRefundService.previewOwnRefund(java.lang.Long, com.red_escuela.backend.billing.payment.dto.RequestRefundRequest) declares @Transactional
-com.red_escuela.backend.billing.payment.usecase.PreviewRefundService.previewRefundOnBehalfOfStudent(java.lang.Long, com.red_escuela.backend.billing.payment.dto.RequestRefundRequest) declares @Transactional
-com.red_escuela.backend.billing.pricing.usecase.ListPriceVersionHistoryService.listPriceVersionHistory(java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.pricing.usecase.ListPricesService.listPrices(java.lang.Long, java.lang.Long) declares @Transactional
-com.red_escuela.backend.billing.pricing.usecase.ValidatePriceChangeService.validatePriceChange(java.lang.Long, com.red_escuela.backend.shared.domain.NonNegativeMoney, com.red_escuela.backend.billing.pricing.domain.MarketingDiscount, java.time.LocalDate, java.lang.String) declares @Transactional
-com.red_escuela.backend.billing.run.usecase.BillingRunAlertQueryService declares @Transactional on the class
-com.red_escuela.backend.billing.run.usecase.BillingRunQueryService declares @Transactional on the class
-com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunQueryService declares @Transactional on the class
 com.red_escuela.backend.billing.usecase.billingperiod.CreateBillingPeriodService.create(com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateProgramCohortRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService.create(java.lang.Long, java.lang.Long, java.lang.Integer, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
@@ -103,5 +84,4 @@ com.red_escuela.backend.identity.usecase.staff.UpdateStaffService.update(com.red
 com.red_escuela.backend.identity.usecase.staff.WithdrawStaffService.withdraw(java.lang.Long) declares @Transactional
 com.red_escuela.backend.identity.usecase.student.WithdrawStudentService.withdraw(com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand) declares @Transactional
 com.red_escuela.backend.identity.usecase.student.WithdrawStudentWithEnrollmentGuardService.withdraw(com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand) declares @Transactional
-com.red_escuela.backend.notification.delivery.usecase.ListSimulatedEmailsService.listSimulatedEmails(int, int) declares @Transactional
 com.red_escuela.backend.shared.event.ProcessedEffectGuard.runEffectOnce(com.red_escuela.backend.shared.event.DeduplicableDomainEvent, java.lang.String, java.lang.Runnable) declares @Transactional

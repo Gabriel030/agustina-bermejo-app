@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.payment.service.CashPaymentPreviewService
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class PreviewCashPaymentService implements PreviewCashPaymentUseCase {
@@ -17,7 +16,6 @@ public class PreviewCashPaymentService implements PreviewCashPaymentUseCase {
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    @Transactional(readOnly = true)
     public CashPaymentPreview previewCashPayment(Long studentId, Money amount) {
         return previewService.previewCashPaymentOfStudent(studentId, amount);
     }
