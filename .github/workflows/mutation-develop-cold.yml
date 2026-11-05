@@ -63,7 +63,7 @@ jobs:
 
       - name: Restore the Maven repository
         if: steps.decide.outputs.run == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -83,7 +83,7 @@ jobs:
 
       - name: Save the PIT history for the incremental runs of pull requests
         if: steps.decide.outputs.run == 'true' && (success() || failure()) && hashFiles('backend/target/pit-history/history.bin') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: backend/target/pit-history
           key: pit-history-develop-cold-${{ github.run_id }}-${{ github.run_attempt }}
