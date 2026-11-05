@@ -1,10 +1,16 @@
 package com.red_escuela.backend.billing.pricing.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.verify;
 
+import com.red_escuela.backend.billing.reporting.service.DebtorListingReader;
+import com.red_escuela.backend.billing.reporting.service.FinancialDashboardReader;
+import com.red_escuela.backend.billing.reporting.service.OwnCourseEnrollmentBillingStatusReader;
+import com.red_escuela.backend.billing.reporting.service.OwnProgramEnrollmentBillingStatusReader;
+import com.red_escuela.backend.billing.reporting.service.StudentBillingOverviewReader;
 import com.red_escuela.backend.billing.run.service.BillingRunReader;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.notification.delivery.service.SimulatedEmailListingReader;
@@ -29,6 +35,16 @@ class BillingReadersOutsideTransactionIT extends AbstractIntegrationTest {
     private BillingRunReader billingRunReader;
     @Autowired
     private SimulatedEmailListingReader simulatedEmailListingReader;
+    @Autowired
+    private FinancialDashboardReader financialDashboardReader;
+    @Autowired
+    private DebtorListingReader debtorListingReader;
+    @Autowired
+    private OwnCourseEnrollmentBillingStatusReader ownCourseEnrollmentBillingStatusReader;
+    @Autowired
+    private OwnProgramEnrollmentBillingStatusReader ownProgramEnrollmentBillingStatusReader;
+    @Autowired
+    private StudentBillingOverviewReader studentBillingOverviewReader;
     @MockitoSpyBean
     private PlatformTransactionManager transactionManager;
 
@@ -54,6 +70,41 @@ class BillingReadersOutsideTransactionIT extends AbstractIntegrationTest {
     @Test
     void listSimulatedEmailsOpensReadOnlyTransactionWhenCalledWithoutOne() {
         simulatedEmailListingReader.listSimulatedEmails(0, 10);
+
+        assertThat(requestedDefinitions()).anyMatch(TransactionDefinition::isReadOnly);
+    }
+
+    @Test
+    void readFinancialDashboardOpensReadOnlyTransactionWhenCalledWithoutOne() {
+        financialDashboardReader.readFinancialDashboard();
+
+        assertThat(requestedDefinitions()).anyMatch(TransactionDefinition::isReadOnly);
+    }
+
+    @Test
+    void listDebtorsOpensReadOnlyTransactionWhenCalledWithoutOne() {
+        debtorListingReader.listDebtors("DEBT_AGE");
+
+        assertThat(requestedDefinitions()).anyMatch(TransactionDefinition::isReadOnly);
+    }
+
+    @Test
+    void readOwnCourseEnrollmentBillingStatusOpensReadOnlyTransactionWhenCalledWithoutOne() {
+        assertThatThrownBy(() -> ownCourseEnrollmentBillingStatusReader.readOwnCourseEnrollmentBillingStatus(-1L, -1L)).isInstanceOf(RuntimeException.class);
+
+        assertThat(requestedDefinitions()).anyMatch(TransactionDefinition::isReadOnly);
+    }
+
+    @Test
+    void readOwnProgramEnrollmentBillingStatusOpensReadOnlyTransactionWhenCalledWithoutOne() {
+        assertThatThrownBy(() -> ownProgramEnrollmentBillingStatusReader.readOwnProgramEnrollmentBillingStatus(-1L, -1L)).isInstanceOf(RuntimeException.class);
+
+        assertThat(requestedDefinitions()).anyMatch(TransactionDefinition::isReadOnly);
+    }
+
+    @Test
+    void readStudentBillingOverviewOpensReadOnlyTransactionWhenCalledWithoutOne() {
+        assertThatThrownBy(() -> studentBillingOverviewReader.readStudentBillingOverview(-1L)).isInstanceOf(RuntimeException.class);
 
         assertThat(requestedDefinitions()).anyMatch(TransactionDefinition::isReadOnly);
     }
