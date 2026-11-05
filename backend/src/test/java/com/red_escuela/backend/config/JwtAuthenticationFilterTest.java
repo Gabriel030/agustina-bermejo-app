@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JwtAuthenticationFilterTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
-    private final JwtService jwtService = new JwtService(SECRET, 15);
+    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
     private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService));
 
     @AfterEach
