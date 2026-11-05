@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
@@ -74,5 +74,39 @@ describe('BandejaTramites', () => {
     mount();
 
     expect(screen.getByRole('link', { name: /Aprobaciones/ })).toHaveAttribute('href', '/director/aprobaciones');
+  });
+});
+
+describe('BandejaTramites — load failure', () => {
+  function mountFailing(refetch, route = '/tray') {
+    return renderWithProviders(
+      <Routes>
+        <Route
+          path="/tray"
+          element={
+            <BandejaTramites
+              titulo="Bandeja de prueba"
+              useListaPendientes={() => ({ data: undefined, isLoading: false, isError: true, error: new Error('boom'), refetch })}
+              useListaHistorial={() => ({ data: undefined, isLoading: false, isError: true, error: new Error('boom'), refetch })}
+              renderFila={(item) => <div key={item.id}>{item.name}</div>}
+              extraerTextoBusqueda={(item) => item.name}
+              extraerFecha={(item) => new Date(item.at)}
+            />
+          }
+        />
+      </Routes>,
+      { route },
+    );
+  }
+
+  it('shows the error state instead of the empty state and retries the pending list', async () => {
+    const refetch = vi.fn();
+    const user = userEvent.setup();
+    mountFailing(refetch);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('No pudimos cargar los trámites');
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });
