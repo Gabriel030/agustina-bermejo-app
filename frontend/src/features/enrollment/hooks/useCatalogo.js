@@ -106,3 +106,7 @@ export function useAgregarDocumentoSolicitudCarrera() {
     },
   });
 }
+
+export function useMyDocuments() {
+  return useQuery({ queryKey: ['me-documents'], queryFn: () => apiFetch('/me/documents') });
+}
