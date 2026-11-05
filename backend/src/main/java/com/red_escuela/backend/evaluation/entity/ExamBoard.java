@@ -9,6 +9,7 @@ import java.util.List;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 
 @Getter
@@ -52,6 +53,15 @@ public class ExamBoard {
     @Column(name = "status", nullable = false)
     private ExamBoardStatus status;
 
+    @Column(name = "canceled_at")
+    private LocalDateTime canceledAt;
+
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
+    @Column(name = "rescheduled_from")
+    private LocalDateTime rescheduledFrom;
+
     @OneToMany(mappedBy = "examBoard", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExamBoardInstructor> tribunal;
 
@@ -63,6 +73,28 @@ public class ExamBoard {
             throw new ExamBoardNotYetTakenException(id);
         }
         status = ExamBoardStatus.CLOSED;
+    }
+
+    public void reschedule(LocalDateTime newExamDate, LocalDateTime newRegistrationStart, LocalDateTime newRegistrationEnd, String newClassroom) {
+        requireScheduled();
+        rescheduledFrom = examDate;
+        examDate = newExamDate;
+        registrationStart = newRegistrationStart;
+        registrationEnd = newRegistrationEnd;
+        classroom = newClassroom;
+    }
+
+    public void cancel(LocalDateTime now, String reason) {
+        requireScheduled();
+        status = ExamBoardStatus.CANCELED;
+        canceledAt = now;
+        cancelReason = reason;
+    }
+
+    private void requireScheduled() {
+        if (status != ExamBoardStatus.SCHEDULED) {
+            throw new ExamBoardClosedException(id);
+        }
     }
 
     @PrePersist
