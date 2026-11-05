@@ -1,20 +1,22 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.graduation.dto.GraduationDebtSummaryResponse;
+import com.red_escuela.backend.graduation.service.GraduationDebtChecker;
 import com.red_escuela.backend.graduation.service.GraduationDebtSummary;
-import com.red_escuela.backend.graduation.service.GraduationDebtSummaryReader;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
 public class GetGraduationRequestDebtSummaryService implements GetGraduationRequestDebtSummaryUseCase {
 
-    private final GraduationDebtSummaryReader graduationDebtSummaryReader;
+    private final GraduationDebtChecker graduationDebtChecker;
 
-    public GetGraduationRequestDebtSummaryService(GraduationDebtSummaryReader graduationDebtSummaryReader) {
-        this.graduationDebtSummaryReader = graduationDebtSummaryReader;
+    public GetGraduationRequestDebtSummaryService(GraduationDebtChecker graduationDebtChecker) {
+        this.graduationDebtChecker = graduationDebtChecker;
     }
 
     @Override
-    public GraduationDebtSummary get(Long graduationRequestId) {
-        return graduationDebtSummaryReader.summaryOf(graduationRequestId);
+    public GraduationDebtSummaryResponse get(Long graduationRequestId) {
+        GraduationDebtSummary summary = graduationDebtChecker.summaryOf(graduationRequestId);
+        return GraduationDebtSummaryResponse.of(summary.mustCheckDebt(), summary.debt());
     }
 }

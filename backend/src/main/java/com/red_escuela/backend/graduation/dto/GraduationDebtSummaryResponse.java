@@ -1,7 +1,7 @@
 package com.red_escuela.backend.graduation.dto;
 
 import com.red_escuela.backend.billing.api.StudentDebtInstallmentView;
-import com.red_escuela.backend.graduation.service.GraduationDebtSummary;
+import com.red_escuela.backend.billing.api.StudentDebtView;
 import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;
@@ -16,8 +16,8 @@ public record GraduationDebtSummaryResponse(boolean mustCheckDebt, Money totalDu
         }
     }
 
-    public static GraduationDebtSummaryResponse from(GraduationDebtSummary summary) {
-        return new GraduationDebtSummaryResponse(summary.mustCheckDebt(), summary.debt().totalDue(),
-                summary.debt().installments().stream().map(InstallmentResponse::from).toList());
+    public static GraduationDebtSummaryResponse of(boolean mustCheckDebt, StudentDebtView debt) {
+        return new GraduationDebtSummaryResponse(mustCheckDebt, debt.totalDue(),
+                debt.installments().stream().map(InstallmentResponse::from).toList());
     }
 }

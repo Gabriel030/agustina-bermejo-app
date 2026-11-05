@@ -62,12 +62,16 @@ class GraduationDebtGateUseCasesTest {
                                 com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("18000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), "OVERDUE"))));
     }
 
+    private com.red_escuela.backend.graduation.service.GraduationDebtChecker debtChecker() {
+        return new com.red_escuela.backend.graduation.service.GraduationDebtChecker(debtGate, invoiceQueryService, finder, debtBlockPublisher);
+    }
+
     private VerifyGraduationRequestDebtService verifyService() {
-        return new VerifyGraduationRequestDebtService(finder, debtGate, invoiceQueryService, decisionRecorder, eventPublisher, debtBlockPublisher);
+        return new VerifyGraduationRequestDebtService(finder, debtChecker(), decisionRecorder, eventPublisher);
     }
 
     private ApproveGraduationRequestService approveService() {
-        return new ApproveGraduationRequestService(finder, approver, debtGate, invoiceQueryService, decisionRecorder, eventPublisher);
+        return new ApproveGraduationRequestService(finder, approver, debtChecker(), decisionRecorder, eventPublisher);
     }
 
     @Test

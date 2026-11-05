@@ -60,7 +60,7 @@ public class GraduationRequestController {
     @GetMapping("/graduation-requests/{id}/debt-summary")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public GraduationDebtSummaryResponse debtSummary(@PathVariable Long id) {
-        return GraduationDebtSummaryResponse.from(getGraduationRequestDebtSummaryUseCase.get(id));
+        return getGraduationRequestDebtSummaryUseCase.get(id);
     }
 
     @PostMapping("/graduation-requests/{id}/approve")
