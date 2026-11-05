@@ -21,7 +21,10 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: false,
       manifest,
-      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      },
       devOptions: { enabled: false },
     }),
   ],
