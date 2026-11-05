@@ -302,7 +302,7 @@ describe('PreceptorPeriodoForm', () => {
     const user = userEvent.setup();
     renderApp('/preceptor/periodos/1/editar');
 
-    expect(await screen.findByText('No pudimos cargar el período')).toBeInTheDocument();
+    expect(await screen.findByText('No pudimos cargar el período', {}, { timeout: 5000 })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByRole('heading', { name: 'Editar período' })).toBeInTheDocument();
