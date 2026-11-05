@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { useProgramCohorts } from '@/features/academic-structure/hooks/useCohorts';
 import { NuevaCohortDialog } from './NuevaCohortDialog';
@@ -65,14 +66,14 @@ function CohortCard({ cohort }) {
 }
 
 export function CohortesSection({ programId }) {
-  const { data: cohorts, isLoading } = useProgramCohorts(programId);
+  const { data: cohorts, isLoading, isError, error, refetch } = useProgramCohorts(programId);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Cohortes de ingreso</h2>
-        <Button variant="gradient" size="sm" onClick={() => setDialogOpen(true)}>
+        <Button variant="gradient" size="sm" disabled={isError} onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Nueva cohorte
         </Button>
@@ -80,6 +81,8 @@ export function CohortesSection({ programId }) {
 
       {isLoading ? (
         <Skeleton rows={2} />
+      ) : isError ? (
+        <LoadErrorState error={error} onRetry={refetch} resource="las cohortes" bare />
       ) : !cohorts?.length ? (
         <GlassCard className="p-6">
           <EmptyState

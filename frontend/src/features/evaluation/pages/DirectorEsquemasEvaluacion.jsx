@@ -4,6 +4,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -77,7 +78,7 @@ function ChipSelector({ opciones, valor, onChange }) {
 }
 
 export function DirectorEsquemasEvaluacion() {
-  const { data: esquemas, isLoading } = useEvaluationSchemes();
+  const { data: esquemas, isLoading, isError, error: loadError, refetch } = useEvaluationSchemes();
   const crearEsquema = useCrearEsquema();
   const editarEsquema = useEditarEsquema();
   const [form, setForm] = useState(FORM_INICIAL);
@@ -145,6 +146,8 @@ export function DirectorEsquemasEvaluacion() {
               <Skeleton className="h-8" />
               <Skeleton className="h-8" />
             </div>
+          ) : isError ? (
+            <LoadErrorState error={loadError} onRetry={refetch} resource="los esquemas" bare />
           ) : esquemas?.length === 0 ? (
             <EmptyState title="No hay esquemas todavía" description="Creá el primero con el formulario de al lado." className="p-6" />
           ) : (

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
 import {
   useAddProgramSubject,
@@ -77,9 +78,14 @@ function buildBody({ selectedSubjectId, category, curricularYear, curricularTerm
 }
 
 export function PanelAgregarMateria({ open, onClose, programId, defaultYear, totalYears }) {
-  const { data: subjects } = useSubjects('ACTIVE');
-  const { data: electiveGroups } = useElectiveGroups();
-  const { data: programElectiveGroups } = useProgramElectiveGroups(programId);
+  const { data: subjects, isError: subjectsFailed, error: subjectsError, refetch: refetchSubjects } = useSubjects('ACTIVE');
+  const { data: electiveGroups, isError: groupsFailed, refetch: refetchGroups } = useElectiveGroups();
+  const {
+    data: programElectiveGroups,
+    isError: programGroupsFailed,
+    refetch: refetchProgramGroups,
+  } = useProgramElectiveGroups(programId);
+  const electiveGroupsFailed = groupsFailed || programGroupsFailed;
   const addProgramSubject = useAddProgramSubject(programId);
 
   const [search, setSearch] = useState('');
@@ -103,7 +109,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
     value: String(g.electiveGroupId),
     label: groupNames.get(g.electiveGroupId) ?? `Grupo ${g.electiveGroupId}`,
   }));
-  const electiveWithoutGroups = category === 'ELECTIVE' && assignedGroups.length === 0;
+  const electiveWithoutGroups = category === 'ELECTIVE' && !electiveGroupsFailed && assignedGroups.length === 0;
 
   function handleClose() {
     setError(null);
@@ -134,7 +140,9 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
           <SheetTitle>Agregar materia</SheetTitle>
         </SheetHeader>
 
-        {!selectedSubject ? (
+        {subjectsFailed && !selectedSubject ? (
+          <LoadErrorState error={subjectsError} onRetry={refetchSubjects} resource="las materias" bare />
+        ) : !selectedSubject ? (
           <div className="flex flex-col gap-3">
             <Input
               placeholder="Buscar materia activa…"
@@ -231,7 +239,19 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
               />
             </div>
 
+            {category === 'ELECTIVE' && electiveGroupsFailed && (
+              <LoadErrorState
+                resource="los grupos electivos"
+                onRetry={() => {
+                  refetchGroups();
+                  refetchProgramGroups();
+                }}
+                bare
+              />
+            )}
+
             {category === 'ELECTIVE' &&
+              !electiveGroupsFailed &&
               (electiveWithoutGroups ? (
                 <p className="text-[13px] text-danger">
                   Esta carrera no tiene grupos electivos asignados, así que todavía no se le pueden agregar electivas.
@@ -255,7 +275,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear, tot
               <Button
                 variant="gradient"
                 loading={addProgramSubject.isPending}
-                disabled={electiveWithoutGroups}
+                disabled={electiveWithoutGroups || (category === 'ELECTIVE' && electiveGroupsFailed)}
                 onClick={handleAgregar}
               >
                 Agregar
