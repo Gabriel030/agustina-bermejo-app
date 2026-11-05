@@ -82,6 +82,8 @@ function MotivoDeshabilitado({ id, faltantes, visible }) {
 }
 
 const MENSAJES_ERROR_INSCRIPCION = {
+  PROGRAM_NOT_AVAILABLE: 'Esta carrera ya no está disponible para inscripción.',
+  COURSE_NOT_AVAILABLE: 'Este curso ya no está disponible para inscripción.',
   ALREADY_HAS_PENDING_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
   PENDING_COURSE_ENROLLMENT_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
   ALREADY_ENROLLED_IN_COURSE: 'Ya tenés una inscripción activa en este curso.',
