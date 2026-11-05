@@ -1,6 +1,5 @@
 package com.red_escuela.backend.identity.infrastructure;
 
-import com.red_escuela.backend.config.JwtSecretPolicy;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import io.jsonwebtoken.Claims;

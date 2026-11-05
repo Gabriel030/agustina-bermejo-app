@@ -1,4 +1,4 @@
-package com.red_escuela.backend.config;
+package com.red_escuela.backend.identity.infrastructure;
 
 public final class JwtSecretPolicy {
     public static final int MIN_LENGTH = 32;

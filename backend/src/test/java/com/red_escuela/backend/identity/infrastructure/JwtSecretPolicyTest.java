@@ -1,6 +1,5 @@
 package com.red_escuela.backend.identity.infrastructure;
 
-import com.red_escuela.backend.config.JwtSecretPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

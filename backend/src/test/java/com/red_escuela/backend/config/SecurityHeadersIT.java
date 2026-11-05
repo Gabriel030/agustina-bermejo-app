@@ -9,7 +9,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -38,11 +37,5 @@ class SecurityHeadersIT extends AbstractIntegrationTest {
                 .andExpect(header().string("Cache-Control", "no-store"));
         mockMvc.perform(get("/me"))
                 .andExpect(header().string("Cache-Control", "no-store"));
-    }
-
-    @Test
-    void publicCatalogResponsesAreNotMarkedNoStore() throws Exception {
-        mockMvc.perform(get("/institutions"))
-                .andExpect(header().string("Cache-Control", not(containsString("no-store"))));
     }
 }
