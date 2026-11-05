@@ -10,7 +10,7 @@ import com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.RejectAttendanceJustificationRequest;
 import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationCommand;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
-import com.red_escuela.backend.attendance.service.AttendanceExportService;
+import com.red_escuela.backend.attendance.dto.ExportedAttendanceFile;
 import com.red_escuela.backend.attendance.usecase.attendance.ApproveAttendanceJustificationUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateCourseEnrollmentAttendanceRiskUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
@@ -18,6 +18,10 @@ import com.red_escuela.backend.attendance.usecase.attendance.CancelCourseSection
 import com.red_escuela.backend.attendance.usecase.attendance.CancelCourseSectionClassSessionUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassSessionCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassSessionUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.ExportCourseSectionAttendanceCommand;
+import com.red_escuela.backend.attendance.usecase.attendance.ExportCourseSectionAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.ExportProgramSectionAttendanceCommand;
+import com.red_escuela.backend.attendance.usecase.attendance.ExportProgramSectionAttendanceUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAbsenceReportCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAbsenceReportUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.GetCourseSectionAttendanceHistoryCommand;
@@ -84,7 +88,8 @@ public class AttendanceController {
     private final GetCourseSectionAttendanceHistoryUseCase getCourseSectionAttendanceHistoryUseCase;
     private final GetProgramSectionAbsenceReportUseCase getProgramSectionAbsenceReportUseCase;
     private final GetCourseSectionAbsenceReportUseCase getCourseSectionAbsenceReportUseCase;
-    private final AttendanceExportService attendanceExportService;
+    private final ExportProgramSectionAttendanceUseCase exportProgramSectionAttendanceUseCase;
+    private final ExportCourseSectionAttendanceUseCase exportCourseSectionAttendanceUseCase;
     private final CurrentInstructorService currentInstructorService;
 
     public AttendanceController(
@@ -107,7 +112,8 @@ public class AttendanceController {
             GetCourseSectionAttendanceHistoryUseCase getCourseSectionAttendanceHistoryUseCase,
             GetProgramSectionAbsenceReportUseCase getProgramSectionAbsenceReportUseCase,
             GetCourseSectionAbsenceReportUseCase getCourseSectionAbsenceReportUseCase,
-            AttendanceExportService attendanceExportService,
+            ExportProgramSectionAttendanceUseCase exportProgramSectionAttendanceUseCase,
+            ExportCourseSectionAttendanceUseCase exportCourseSectionAttendanceUseCase,
             CurrentInstructorService currentInstructorService) {
         this.loadProgramSectionAttendanceUseCase = loadProgramSectionAttendanceUseCase;
         this.loadCourseSectionAttendanceUseCase = loadCourseSectionAttendanceUseCase;
@@ -128,7 +134,8 @@ public class AttendanceController {
         this.getCourseSectionAttendanceHistoryUseCase = getCourseSectionAttendanceHistoryUseCase;
         this.getProgramSectionAbsenceReportUseCase = getProgramSectionAbsenceReportUseCase;
         this.getCourseSectionAbsenceReportUseCase = getCourseSectionAbsenceReportUseCase;
-        this.attendanceExportService = attendanceExportService;
+        this.exportProgramSectionAttendanceUseCase = exportProgramSectionAttendanceUseCase;
+        this.exportCourseSectionAttendanceUseCase = exportCourseSectionAttendanceUseCase;
         this.currentInstructorService = currentInstructorService;
     }
 
@@ -275,7 +282,8 @@ public class AttendanceController {
     public ResponseEntity<byte[]> exportProgramSection(
             @PathVariable Long id, @RequestParam String format, @RequestParam String scope,
             @RequestParam(required = false) LocalDate classDate) {
-        return toPdfResponse(attendanceExportService.exportProgramSection(id, resolveInstructorIdIfTeacher(), scope, format, classDate));
+        return toPdfResponse(exportProgramSectionAttendanceUseCase.export(
+                new ExportProgramSectionAttendanceCommand(id, resolveInstructorIdIfTeacher(), scope, format, classDate)));
     }
 
     @GetMapping("/course-sections/{id}/attendance/export")
@@ -283,10 +291,11 @@ public class AttendanceController {
     public ResponseEntity<byte[]> exportCourseSection(
             @PathVariable Long id, @RequestParam String format, @RequestParam String scope,
             @RequestParam(required = false) LocalDate classDate) {
-        return toPdfResponse(attendanceExportService.exportCourseSection(id, resolveInstructorIdIfTeacher(), scope, format, classDate));
+        return toPdfResponse(exportCourseSectionAttendanceUseCase.export(
+                new ExportCourseSectionAttendanceCommand(id, resolveInstructorIdIfTeacher(), scope, format, classDate)));
     }
 
-    private ResponseEntity<byte[]> toPdfResponse(AttendanceExportService.ExportedFile file) {
+    private ResponseEntity<byte[]> toPdfResponse(ExportedAttendanceFile file) {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(file.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.filename() + "\"")
