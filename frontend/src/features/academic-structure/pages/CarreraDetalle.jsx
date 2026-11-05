@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, GitBranch, Globe, GlobeOff, Pencil, Power, PowerOff, Trash2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
@@ -24,6 +24,7 @@ import { PanelCorrelativas } from './PanelCorrelativas';
 import { AniosLectivosSection } from '@/features/academic-structure/components/AniosLectivosSection';
 import { CohortesSection } from '@/features/academic-structure/components/CohortesSection';
 import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
+import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 
 const CATEGORY_LABELS = {
   MANDATORY: 'Obligatoria',
@@ -42,12 +43,6 @@ const LEVEL_LABELS = {
   GRADUATE: 'Posgrado',
   EXTENSION: 'Extensión',
   DIPLOMA: 'Diplomatura',
-};
-
-const TEACHING_MODE_LABELS = {
-  IN_PERSON: 'Presencial',
-  ONLINE: 'Virtual',
-  HYBRID: 'Híbrido',
 };
 
 const STATUS_CONFIG = {
@@ -163,9 +158,14 @@ function YearBlock({ year, totalYears, subjects, onAgregar, onCorrelativas, onRe
   );
 }
 
+const DETAIL_TABS = ['plan', 'anios', 'cohortes'];
+
 export function CarreraDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = DETAIL_TABS.includes(requestedTab) ? requestedTab : 'plan';
   const {
     data: program,
     isLoading: loadingProgram,
@@ -401,7 +401,7 @@ export function CarreraDetalle() {
           </GlassCard>
         )}
 
-        <Tabs defaultValue="plan">
+        <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ tab }, { replace: true })}>
           <TabsList variant="segmented">
             <TabsTrigger value="plan">Plan de estudios</TabsTrigger>
             <TabsTrigger value="anios">Años lectivos</TabsTrigger>

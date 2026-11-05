@@ -5,29 +5,31 @@ import { AdministrativoLayout } from '@/layouts/AdministrativoLayout';
 import { DirectorLayout } from '@/layouts/DirectorLayout';
 import { PlatformLayout } from '@/layouts/PlatformLayout';
 
+import { pagesFor } from '@/routes/roleMenu';
+
 export const ROLE_CONFIG = {
   alumno: {
     Layout: AlumnoLayout,
-    pages: ['inicio', 'mis-cursos', 'mis-carreras', 'pagos', 'opciones'],
+    pages: pagesFor('alumno'),
   },
   docente: {
     Layout: DocenteLayout,
-    pages: ['inicio', 'mis-comisiones', 'tomar-asistencia'],
+    pages: pagesFor('docente'),
   },
   preceptor: {
     Layout: PreceptorLayout,
-    pages: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'solicitudes-de-asistencia', 'periodos'],
+    pages: pagesFor('preceptor'),
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'facturacion', 'descuentos', 'recordatorios-de-pago', 'corridas-de-facturacion', 'emision-mensual', 'aprobaciones', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica', 'feriados'],
+    pages: pagesFor('administrativo'),
   },
   director: {
     Layout: DirectorLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'facturacion', 'descuentos', 'recordatorios-de-pago', 'corridas-de-facturacion', 'emision-mensual', 'financiero', 'constancias'],
+    pages: pagesFor('director'),
   },
   platform_admin: {
     Layout: PlatformLayout,
-    pages: ['inicio', 'primer-director'],
+    pages: pagesFor('platform_admin'),
   },
 };

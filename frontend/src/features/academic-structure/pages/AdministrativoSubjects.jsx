@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { DataTable } from '@/components/table/DataTable';
 import { matchesSearch } from '@/lib/catalog';
+import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 import SubjectLifecycleAction from '@/features/academic-structure/components/SubjectLifecycleAction';
 import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
 import { usePrograms, useSetProgramCatalogVisibility } from '@/features/academic-structure/hooks/usePrograms';
@@ -52,12 +53,6 @@ const LEVEL_LABELS = {
   GRADUATE: 'Posgrado',
   EXTENSION: 'Extensión',
   DIPLOMA: 'Diplomatura',
-};
-
-const TEACHING_MODE_LABELS = {
-  IN_PERSON: 'Presencial',
-  ONLINE: 'Virtual',
-  HYBRID: 'Híbrido',
 };
 
 const COURSE_STATUS_CONFIG = {

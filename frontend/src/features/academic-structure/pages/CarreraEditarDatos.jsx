@@ -18,6 +18,8 @@ import {
   invalidFieldsSummary,
   validateProgramFields,
 } from '@/features/academic-structure/lib/offeringForm';
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
 
 const LEVEL_OPTIONS = [
   { value: '', label: 'Sin especificar' },
@@ -25,13 +27,6 @@ const LEVEL_OPTIONS = [
   { value: 'GRADUATE', label: 'Posgrado' },
   { value: 'EXTENSION', label: 'Extensión' },
   { value: 'DIPLOMA', label: 'Diplomatura' },
-];
-
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
 ];
 
 export function CarreraEditarDatos() {
@@ -75,6 +70,17 @@ function CarreraEditarDatosForm({ id, program }) {
   const [admissionRequirements, setAdmissionRequirements] = useState(program.admissionRequirements ?? '');
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
+
+  const dirty =
+    name !== (program.name ?? '') ||
+    totalYears !== (program.totalYears?.toString() ?? '') ||
+    level !== (program.level ?? '') ||
+    teachingMode !== (program.teachingMode ?? '') ||
+    totalCreditsRequired !== (program.totalCreditsRequired?.toString() ?? '') ||
+    totalHoursRequired !== (program.totalHoursRequired?.toString() ?? '') ||
+    graduationProfile !== (program.graduationProfile ?? '') ||
+    admissionRequirements !== (program.admissionRequirements ?? '');
+  const { requestNavigation, guardDialog } = useUnsavedChangesGuard(dirty);
 
   async function handleGuardar() {
     const found = validateProgramFields(
@@ -200,7 +206,7 @@ function CarreraEditarDatosForm({ id, program }) {
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
-              onClick={() => navigate(`/administrativo/gestion-academica/carreras/${id}`)}
+              onClick={() => requestNavigation(`/administrativo/gestion-academica/carreras/${id}`)}
             >
               Cancelar
             </Button>
@@ -209,6 +215,7 @@ function CarreraEditarDatosForm({ id, program }) {
             </Button>
           </div>
         </GlassCard>
+        {guardDialog}
       </div>
     </PageContainer>
   );
