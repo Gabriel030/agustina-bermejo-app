@@ -21,6 +21,19 @@ describe('index.html CSP', () => {
   });
 });
 
+describe('index.html fonts', () => {
+  it('allowsFontsOnlyFromSelfAndNoGoogleHosts', () => {
+    expect(html).toContain("font-src 'self'");
+    expect(html).not.toContain('googleapis');
+    expect(html).not.toContain('gstatic');
+  });
+
+  it('keepsStyleSrcWithoutExternalHosts', () => {
+    const styleSrc = html.match(/style-src ([^;]+);/)[1];
+    expect(styleSrc).toBe("'self' 'unsafe-inline'");
+  });
+});
+
 describe('resolveApiOrigin', () => {
   it('uses the configured API origin without path', () => {
     expect(resolveApiOrigin('https://api.escuela.example/v1')).toBe('https://api.escuela.example');
