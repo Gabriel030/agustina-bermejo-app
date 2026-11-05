@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { Stagger } from '@/components/Stagger';
 import { Buscador } from '@/components/Buscador';
@@ -17,7 +18,7 @@ const POR_PAGINA = 6;
 
 export function TabCursos({ search, onSearchChange, page, onPageChange }) {
   const navigate = useNavigate();
-  const { data: cursos, isLoading, isError } = useCatalogCourses();
+  const { data: cursos, isLoading, isError, refetch } = useCatalogCourses();
 
   const filtrados = useMemo(
     () => (cursos ?? []).filter((c) => matchesSearch(c.name, search)),
@@ -28,7 +29,7 @@ export function TabCursos({ search, onSearchChange, page, onPageChange }) {
   const pagina = filtrados.slice((currentPage - 1) * POR_PAGINA, currentPage * POR_PAGINA);
 
   if (isError) {
-    return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar los cursos. Probá recargar la página.</GlassCard>;
+    return <LoadErrorState onRetry={refetch} resource="los cursos" />;
   }
 
   return (

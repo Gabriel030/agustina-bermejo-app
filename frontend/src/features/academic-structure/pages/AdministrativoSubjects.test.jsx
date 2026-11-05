@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -28,5 +28,22 @@ describe('AdministrativoSubjects', () => {
 
     expect(await screen.findByText('Gestión de Datos Clínicos')).toBeInTheDocument();
     expect(screen.getByText('Rechazada')).toBeInTheDocument();
+  });
+
+  it('shows a retryable load error when the subject list fails', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/subjects`, () => {
+        calls += 1;
+        return calls === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json([]);
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AdministrativoSubjects />, { route: '/administrativo/gestion-academica' });
+
+    expect(await screen.findByText('No pudimos cargar las materias')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(screen.queryByText('No pudimos cargar las materias')).not.toBeInTheDocument());
   });
 });
