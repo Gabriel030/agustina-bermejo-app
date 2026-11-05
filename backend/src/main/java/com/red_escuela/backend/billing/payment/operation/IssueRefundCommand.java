@@ -18,6 +18,11 @@ public record IssueRefundCommand(Long studentId, Money amount, String destinatio
         Objects.requireNonNull(requestedByPersonId, "requestedByPersonId");
     }
 
+    public IssueRefundCommand(Long studentId, Money amount, String destinationAccount, String destinationHolder, Long requestedByPersonId,
+                              boolean requestedByDirector, Long authorizationRequestId) {
+        this(studentId, amount, destinationAccount, destinationHolder, requestedByPersonId, requestedByDirector, authorizationRequestId, null);
+    }
+
     @Override
     public StatusChangeActor actor() {
         return new StatusChangeActor(requestedByPersonId, null);
