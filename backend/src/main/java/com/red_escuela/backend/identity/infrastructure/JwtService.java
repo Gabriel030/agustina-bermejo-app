@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.infrastructure;
 
+import com.red_escuela.backend.config.JwtSecretPolicy;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import io.jsonwebtoken.Claims;
@@ -25,7 +26,7 @@ public class JwtService {
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration-minutes}") long accessTokenExpirationMinutes) {
-        this.signingKey = deriveSigningKey(secret);
+        this.signingKey = deriveSigningKey(JwtSecretPolicy.requireStrong(secret));
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
     }
 

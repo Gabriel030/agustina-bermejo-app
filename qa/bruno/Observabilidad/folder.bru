@@ -15,7 +15,7 @@ docs {
   Requiere el backend levantado con las credenciales de scraping:
 
   ```bash
-  JWT_SECRET=dev-secret SPRING_PROFILES_ACTIVE=local \
+  JWT_SECRET=dev-secret-local-solo-para-pruebas SPRING_PROFILES_ACTIVE=local \
     ACTUATOR_USER=scraper ACTUATOR_PASSWORD=local ./mvnw spring-boot:run
   ```
 
