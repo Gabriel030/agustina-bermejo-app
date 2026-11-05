@@ -1,28 +1,19 @@
 package com.red_escuela.backend.academicstructure.usecase.term;
 
-import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.academicstructure.service.TermFinder;
+import com.red_escuela.backend.academicstructure.service.TermEnrollmentOpening;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class OpenTermEnrollmentService implements OpenTermEnrollmentUseCase {
 
-    private final TermRepository termRepository;
-    private final TermFinder termFinder;
+    private final TermEnrollmentOpening termEnrollmentOpening;
 
-    public OpenTermEnrollmentService(TermRepository termRepository, TermFinder termFinder) {
-        this.termRepository = termRepository;
-        this.termFinder = termFinder;
+    public OpenTermEnrollmentService(TermEnrollmentOpening termEnrollmentOpening) {
+        this.termEnrollmentOpening = termEnrollmentOpening;
     }
 
     @Override
-    @Transactional
     public void open(Long id) {
-        Term term = termFinder.findOrThrow(id);
-        term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
-        termRepository.save(term);
+        termEnrollmentOpening.open(id);
     }
 }

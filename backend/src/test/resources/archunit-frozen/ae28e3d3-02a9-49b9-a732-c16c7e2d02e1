@@ -2,14 +2,6 @@ com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleService.appr
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService.reject(java.lang.Long, java.lang.String) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.cycle.SubmitCycleForApprovalService.submit(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.ActivateTermService.activate(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.ClearTermEnrollmentOverrideService.clear(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.CloseTermEnrollmentService.close(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.CreateTermService.create(com.red_escuela.backend.academicstructure.dto.CreateTermRequest) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.DeactivateTermService.deactivate(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.OpenTermEnrollmentService.open(java.lang.Long) declares @Transactional
-com.red_escuela.backend.academicstructure.usecase.term.UpdateTermService.update(com.red_escuela.backend.academicstructure.usecase.term.UpdateTermCommand) declares @Transactional
 com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand) declares @Transactional
 com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
 com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand) declares @Transactional
