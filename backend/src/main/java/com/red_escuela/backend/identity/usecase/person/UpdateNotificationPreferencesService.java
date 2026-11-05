@@ -7,7 +7,6 @@ import com.red_escuela.backend.identity.entity.NotificationPreference;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.NotificationPreferenceRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.identity.domain.EmittedNotificationEvents;
 import com.red_escuela.backend.identity.domain.MandatoryNotificationChannels;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +33,7 @@ public class UpdateNotificationPreferencesService implements UpdateNotificationP
 
         Map<String, Map<String, Boolean>> incoming = request.preferences();
 
-        for (NotificationEvent event : EmittedNotificationEvents.visible()) {
+        for (NotificationEvent event : com.red_escuela.backend.identity.domain.EmittedNotificationEvents.visible()) {
             Map<String, Boolean> channels = incoming.get(event.name());
             if (channels == null) continue;
 
