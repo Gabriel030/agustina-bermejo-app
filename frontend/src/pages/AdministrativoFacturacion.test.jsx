@@ -44,6 +44,9 @@ const pendingReceipt = {
   invoicePeriod: '2026-09',
   invoiceFeeType: 'MONTHLY_INSTALLMENT',
   productName: 'Profesorado de Educación Inicial',
+  declaredAmount: { amount: '45000.00', currency: 'ARS' },
+  operationNumber: 'OP-889',
+  transferDate: '2026-10-01',
 };
 
 function creditBalance(available = '0.00') {
@@ -60,7 +63,9 @@ function renderPage(route = '/', receipts = [pendingReceipt]) {
     http.get(`${API}/students`, () =>
       HttpResponse.json([{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO' }]),
     ),
-    http.get(`${API}/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
+    http.get(`${API}/bank-transfer-receipts`, () =>
+      receipts === null ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) : HttpResponse.json(receipts),
+    ),
     http.get(`${API}/students/2/payments`, () => HttpResponse.json([])),
     http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' })),
     http.get(`${API}/students/2/credit-notes`, () => HttpResponse.json([])),
@@ -162,6 +167,34 @@ describe('AdministrativoFacturacion — comprobantes', () => {
     expect(screen.queryByRole('link', { name: /Ver comprobante/ })).not.toBeInTheDocument();
   });
 
+  it('shows the declared amount and operation and asks for confirmation before approving', async () => {
+    let approvals = 0;
+    server.use(http.post(`${API}/bank-transfer-receipts/7/approve`, () => { approvals += 1; return HttpResponse.json({}); }));
+    const user = userEvent.setup();
+    renderPage();
+    await openReceiptsTab(user);
+
+    expect(screen.getByText(/Monto declarado .*45\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText('Operación OP-889')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Aprobar/ }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(/Martina Acosta.*operación OP-889/)).toBeInTheDocument();
+    expect(approvals).toBe(0);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await vi.waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(approvals).toBe(0);
+  });
+
+  it('shows a retryable error instead of "Sin comprobantes pendientes" when the list fails', async () => {
+    const user = userEvent.setup();
+    renderPage('/', null);
+    await user.click(await screen.findByRole('tab', { name: /Comprobantes/ }));
+
+    expect(await screen.findByText('No pudimos cargar los comprobantes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.queryByText('Sin comprobantes pendientes')).not.toBeInTheDocument();
+  });
+
   it('explains why a receipt cannot be approved when its installment was already paid at the counter', async () => {
     server.use(
       http.post(`${API}/bank-transfer-receipts/7/approve`, () =>
@@ -173,6 +206,7 @@ describe('AdministrativoFacturacion — comprobantes', () => {
     await openReceiptsTab(user);
 
     await user.click(screen.getByRole('button', { name: /Aprobar/ }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Aprobar comprobante' }));
 
     expect(
       await screen.findByText('La cuota de este comprobante ya está saldada (por ejemplo, se cobró en mostrador). Rechazalo indicando el motivo.'),

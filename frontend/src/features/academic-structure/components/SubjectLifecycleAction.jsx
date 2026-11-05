@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PowerOff, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import ConfirmActionDialog from '@/features/academic-structure/components/ConfirmActionDialog';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useActivateSubject, useDeactivateSubject } from '@/features/academic-structure/hooks/useSubjects';
 
 const LIFECYCLE_ERROR_MESSAGES = {

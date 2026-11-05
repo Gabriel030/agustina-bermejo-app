@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -74,7 +74,14 @@ function mockPreview(response = previewResponse(), onRequest) {
   );
 }
 
+async function submitAndConfirm(user, name) {
+  await user.click(screen.getByRole('button', { name }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.click(within(dialog).getByRole('button', { name }));
+}
+
 function renderPage() {
+  server.use(http.get(`${API}/students/7`, () => HttpResponse.json({ id: 7, nombre: 'Martina', apellido: 'Acosta' })));
   return renderWithProviders(
     <Routes>
       <Route path="/:role/alumnos/:id/reembolsos/nuevo" element={<RequestRefundPage />} />
@@ -213,6 +220,24 @@ describe('RequestRefundPage', () => {
     expect(created).toBe(false);
   });
 
+  it('names the student and asks for confirmation before sending, without sending on cancel', async () => {
+    let created = 0;
+    server.use(http.post(`${API}/students/7/refund-requests`, () => { created += 1; return HttpResponse.json({ authorizationRequestId: null, parts: [] }, { status: 201 }); }));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    expect(await screen.findByText(/Acosta, Martina · Reembolsable ahora/)).toBeInTheDocument();
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Pedir reembolso' }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(/Acosta, Martina/)).toBeInTheDocument();
+    expect(created).toBe(0);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(created).toBe(0);
+  });
+
   it('validates the amount and the destination lengths', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -241,7 +266,7 @@ describe('RequestRefundPage', () => {
     await screen.findByLabelText('Monto');
     expect(screen.getByText('Lo aprueba la dirección')).toBeInTheDocument();
     await fillForm(user, { amount: '40.000,50', account: ' 0170099220000067890123 ', holder: 'Florencia Ledesma' });
-    await user.click(screen.getByRole('button', { name: 'Pedir reembolso' }));
+    await submitAndConfirm(user, 'Pedir reembolso');
 
     await waitFor(() => expect(received).toEqual({
       amount: money('40000.50'),
@@ -270,7 +295,7 @@ describe('RequestRefundPage', () => {
     await screen.findByLabelText('Monto');
     expect(screen.getAllByText('Se aprueba ahora')).toHaveLength(2);
     await fillForm(user);
-    await user.click(screen.getByRole('button', { name: 'Registrar reembolso' }));
+    await submitAndConfirm(user, 'Registrar reembolso');
 
     expect(await screen.findByText('Ficha del alumno')).toBeInTheDocument();
     expect(toastMock.success).toHaveBeenCalledWith('Reembolso aprobado.', expect.anything());
@@ -284,7 +309,7 @@ describe('RequestRefundPage', () => {
     renderPage();
     await screen.findByLabelText('Monto');
     await fillForm(user);
-    await user.click(screen.getByRole('button', { name: 'Pedir reembolso' }));
+    await submitAndConfirm(user, 'Pedir reembolso');
 
     expect(await screen.findAllByText('El CBU o alias tiene hasta 50 caracteres y el titular hasta 120.')).toHaveLength(2);
     expect(screen.queryByText('Ficha del alumno')).not.toBeInTheDocument();
@@ -300,7 +325,7 @@ describe('RequestRefundPage', () => {
     renderPage();
     await screen.findByLabelText('Monto');
     await fillForm(user);
-    await user.click(screen.getByRole('button', { name: 'Pedir reembolso' }));
+    await submitAndConfirm(user, 'Pedir reembolso');
 
     expect(await screen.findByText(message)).toBeInTheDocument();
     expect(screen.getByLabelText('Monto')).toHaveValue('40.000');
@@ -314,7 +339,7 @@ describe('RequestRefundPage', () => {
     renderPage();
     await screen.findByLabelText('Monto');
     await fillForm(user);
-    await user.click(screen.getByRole('button', { name: 'Pedir reembolso' }));
+    await submitAndConfirm(user, 'Pedir reembolso');
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('No se puede devolver saldo a favor mientras haya deuda vencida.'));
   });
