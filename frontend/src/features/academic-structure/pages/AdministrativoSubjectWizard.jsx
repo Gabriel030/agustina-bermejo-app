@@ -1,6 +1,6 @@
 import { useReducer } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Clock, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Clock, Send, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -10,6 +10,7 @@ import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import SubjectLifecycleAction from '@/features/academic-structure/components/SubjectLifecycleAction';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   useSubject,
@@ -17,6 +18,8 @@ import {
   useUpdateSubject,
   useSubmitForApproval,
 } from '@/features/academic-structure/hooks/useSubjects';
+
+const SUBJECT_BANK = '/administrativo/gestion-academica';
 
 const STEPS = [
   { key: 'identification', label: 'Identificación' },
@@ -43,7 +46,7 @@ function mapApprovalStatus(subject) {
     DRAFT: 'draft',
     PENDING_APPROVAL: 'pending',
     ACTIVE: 'approved',
-    INACTIVE: 'approved',
+    INACTIVE: 'inactive',
     REJECTED: 'rejected',
   };
   return map[subject.status] ?? 'locked';
@@ -52,7 +55,7 @@ function mapApprovalStatus(subject) {
 function initialState(subject) {
   return {
     step: 'identification',
-    visitedSteps: ['identification'],
+    visitedSteps: subject ? STEPS.map((step) => step.key) : ['identification'],
     savedSubjectId: subject?.id ?? null,
     savedStatus: subject?.status ?? null,
     approvalStatus: mapApprovalStatus(subject),
@@ -88,6 +91,12 @@ function reducer(state, action) {
         },
         'approval',
       );
+    case 'STATUS_CHANGED':
+      return {
+        ...state,
+        savedStatus: action.status,
+        approvalStatus: mapApprovalStatus({ status: action.status }),
+      };
     case 'SUBMIT_SUCCESS':
       return { ...state, savedStatus: 'PENDING_APPROVAL', approvalStatus: 'pending', rejectionReason: null };
     default:
@@ -109,6 +118,15 @@ function computeValidity(state) {
     teachingEvaluation: !!state.gradeMode,
     approval: null,
   };
+}
+
+function missingFieldLabels(state) {
+  const missing = [];
+  if (!state.code.trim()) missing.push('el código');
+  if (!state.name.trim()) missing.push('el nombre');
+  if (!(Number(state.weeklyHours) > 0 || Number(state.weeklyHoursLab) > 0)) missing.push('las horas semanales (teóricas o prácticas)');
+  if (!state.gradeMode) missing.push('la modalidad de calificación');
+  return missing;
 }
 
 function stepperApprovalStatus(approvalStatus) {
@@ -248,7 +266,8 @@ function Step3DictadoEvaluacion({ state, dispatch }) {
   );
 }
 
-function Step4Aprobacion({ state, onSubmit, isSubmitting }) {
+function Step4Aprobacion({ state, onSubmit, isSubmitting, onStatusChanged }) {
+  const lifecycleSubject = { id: state.savedSubjectId, code: state.code, name: state.name, status: state.savedStatus };
   if (state.approvalStatus === 'locked') {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -305,6 +324,24 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting }) {
             <span className="font-bold">{state.code}</span> — {state.name} fue aprobada y está activa en el banco de materias.
           </p>
         </div>
+        <SubjectLifecycleAction subject={lifecycleSubject} size="default" onDone={() => onStatusChanged('INACTIVE')} />
+      </div>
+    );
+  }
+
+  if (state.approvalStatus === 'inactive') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-bg">
+          <PowerOff className="h-7 w-7 text-ink-faint" />
+        </div>
+        <div>
+          <p className="text-[16px] font-semibold text-ink">Materia inactiva</p>
+          <p className="mt-1 text-[13px] text-ink-faint">
+            <span className="font-bold">{state.code}</span> — {state.name} está dada de baja. Reactivala para volver a usarla desde el banco.
+          </p>
+        </div>
+        <SubjectLifecycleAction subject={lifecycleSubject} size="default" onDone={() => onStatusChanged('ACTIVE')} />
       </div>
     );
   }
@@ -330,13 +367,31 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting }) {
   return null;
 }
 
-function WizardContent({ state, dispatch, onSubmit, isSubmitting }) {
+function ReviewLockNotice() {
+  return (
+    <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
+      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+      <p className="text-[13px] text-ink">
+        Está en revisión de dirección: los datos no se pueden editar hasta que la apruebe o la rechace.
+      </p>
+    </div>
+  );
+}
+
+function WizardContent({ state, dispatch, onSubmit, isSubmitting, onStatusChanged }) {
+  const underReview = state.savedStatus === 'PENDING_APPROVAL';
+  const isFormStep = state.step !== 'approval';
   return (
     <>
-      {state.step === 'identification' && <Step1Identificacion state={state} dispatch={dispatch} />}
-      {state.step === 'programmaticDetail' && <Step2DetalleProgramatico state={state} dispatch={dispatch} />}
-      {state.step === 'teachingEvaluation' && <Step3DictadoEvaluacion state={state} dispatch={dispatch} />}
-      {state.step === 'approval' && <Step4Aprobacion state={state} onSubmit={onSubmit} isSubmitting={isSubmitting} />}
+      {underReview && isFormStep && <ReviewLockNotice />}
+      <fieldset disabled={underReview && isFormStep} className="min-w-0 border-0 p-0">
+        {state.step === 'identification' && <Step1Identificacion state={state} dispatch={dispatch} />}
+        {state.step === 'programmaticDetail' && <Step2DetalleProgramatico state={state} dispatch={dispatch} />}
+        {state.step === 'teachingEvaluation' && <Step3DictadoEvaluacion state={state} dispatch={dispatch} />}
+      </fieldset>
+      {state.step === 'approval' && (
+        <Step4Aprobacion state={state} onSubmit={onSubmit} isSubmitting={isSubmitting} onStatusChanged={onStatusChanged} />
+      )}
     </>
   );
 }
@@ -405,6 +460,8 @@ function WizardForm({ isEdit, existingSubject }) {
     }
   }
 
+  const bankPath = state.savedStatus ? `${SUBJECT_BANK}?tab=${state.savedStatus}` : SUBJECT_BANK;
+  const missing = missingFieldLabels(state);
   const isSaving = createSubject.isPending || updateSubject.isPending;
   const isSubmitting = submitForApproval.isPending;
 
@@ -412,7 +469,7 @@ function WizardForm({ isEdit, existingSubject }) {
     <PageContainer
       title={isEdit ? 'Editar materia' : 'Nueva materia'}
       action={
-        <Button variant="outline" onClick={() => navigate('/administrativo/gestion-academica')}>
+        <Button variant="outline" onClick={() => navigate(bankPath)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver al banco
         </Button>
@@ -430,7 +487,13 @@ function WizardForm({ isEdit, existingSubject }) {
         />
 
         <div className="mt-8 min-h-[240px]">
-          <WizardContent state={state} dispatch={dispatch} onSubmit={handleSubmitForApproval} isSubmitting={isSubmitting} />
+          <WizardContent
+            state={state}
+            dispatch={dispatch}
+            onSubmit={handleSubmitForApproval}
+            isSubmitting={isSubmitting}
+            onStatusChanged={(status) => dispatch({ type: 'STATUS_CHANGED', status })}
+          />
         </div>
 
         <div className="mt-8 flex items-center justify-between border-t border-neutral-bg pt-5">
@@ -443,7 +506,8 @@ function WizardForm({ isEdit, existingSubject }) {
             Anterior
           </Button>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col items-end gap-2">
+           <div className="flex gap-3">
             {isLastEditableStep && (
               <Button
                 variant="gradient"
@@ -462,9 +526,15 @@ function WizardForm({ isEdit, existingSubject }) {
             )}
 
             {isApprovalStep && (state.approvalStatus === 'approved' || state.approvalStatus === 'pending') && (
-              <Button variant="outline" onClick={() => navigate('/administrativo/gestion-academica')}>
+              <Button variant="outline" onClick={() => navigate(bankPath)}>
                 Ver banco de materias
               </Button>
+            )}
+           </div>
+            {isLastEditableStep && missing.length > 0 && (
+              <p role="status" className="max-w-sm text-right text-[12px] text-ink-faint">
+                Para guardar falta completar: {missing.join(', ')}.
+              </p>
             )}
           </div>
         </div>
@@ -472,8 +542,6 @@ function WizardForm({ isEdit, existingSubject }) {
     </PageContainer>
   );
 }
-
-const SUBJECT_BANK = '/administrativo/gestion-academica';
 
 function SubjectLoadFailure({ notFound, onRetry }) {
   return (
