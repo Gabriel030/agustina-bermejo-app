@@ -60,7 +60,7 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5]
     name: nightly-tests (${{ matrix.shard }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.decide.outputs.sha }}
 

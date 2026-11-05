@@ -39,7 +39,7 @@ jobs:
       reuse_pr: ${{ steps.changes.outputs.reuse_pr }}
       baseline_run: ${{ steps.baseline.outputs.run_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -84,7 +84,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.relevant == 'true' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check the OpenAPI contract for breaking changes
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'contract-break-approved') }}
@@ -111,7 +111,7 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Mark the shard start
         run: echo "SHARD_START=$(date +%s)" >> "$GITHUB_ENV"
@@ -227,7 +227,7 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -281,7 +281,7 @@ jobs:
         group: ${{ fromJson(needs.changes.outputs.extra_groups) }}
     name: backend-extra-tests (${{ matrix.group }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Pull the Postgres image in the background
         run: nohup docker pull -q postgres:16-alpine > "$RUNNER_TEMP/prepull.log" 2>&1 &
@@ -312,7 +312,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.relevant == 'true' && needs.changes.outputs.mutation == 'true' && needs.changes.outputs.reuse_mutation != 'true' && !(github.event_name == 'push' && github.ref == 'refs/heads/develop')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Mark the job start
         run: echo "PIT_START=$(date +%s)" >> "$GITHUB_ENV"
@@ -388,7 +388,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fetch the pull request base commit
         if: github.event_name == 'pull_request'
@@ -553,7 +553,7 @@ jobs:
         shard: [1, 2]
     name: frontend-tests (${{ matrix.shard }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -575,7 +575,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -609,7 +609,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
