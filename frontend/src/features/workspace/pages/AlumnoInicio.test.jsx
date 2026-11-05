@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { reiniciarAvisosMarcados } from '@/features/announcements';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION } from '@/lib/notificaciones';
 
@@ -215,5 +216,54 @@ describe('AlumnoInicio — matrícula de ingreso (D-227)', () => {
 
     expect(await screen.findByText('No tenés saldo pendiente.')).toBeInTheDocument();
     expect(screen.queryByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).not.toBeInTheDocument();
+  });
+});
+
+describe('AlumnoInicio — acuse de lectura', () => {
+  it('marksAnnouncementReadWhenOpenedOnlyOnce', async () => {
+    reiniciarAvisosMarcados();
+    const marcados = [];
+    mockearBase([unAviso({ id: 7, title: 'Sin abrir' })]);
+    server.use(
+      http.post(`${API}/me/announcements/:id/read`, ({ params }) => {
+        marcados.push(params.id);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    montar();
+    const titulo = await screen.findByRole('button', { name: /Sin abrir/ });
+    expect(screen.getByText('1 sin leer')).toBeInTheDocument();
+    await userEvent.click(titulo);
+    await userEvent.click(titulo);
+    await userEvent.click(titulo);
+    await waitFor(() => expect(screen.queryByText('1 sin leer')).not.toBeInTheDocument());
+    expect(marcados).toEqual(['7']);
+  });
+
+  it('doesNotMarkAlreadyReadAnnouncements', async () => {
+    reiniciarAvisosMarcados();
+    const marcados = [];
+    mockearBase([unAviso({ id: 8, title: 'Ya leído', readAt: HACE_1H })]);
+    server.use(
+      http.post(`${API}/me/announcements/:id/read`, ({ params }) => {
+        marcados.push(params.id);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    montar();
+    await userEvent.click(await screen.findByRole('button', { name: /Ya leído/ }));
+    expect(screen.queryByText(/sin leer/)).not.toBeInTheDocument();
+    expect(marcados).toEqual([]);
+  });
+
+  it('keepsReadingWhenMarkingFailsSilently', async () => {
+    reiniciarAvisosMarcados();
+    mockearBase([unAviso({ id: 9, title: 'Falla en silencio' })]);
+    server.use(http.post(`${API}/me/announcements/:id/read`, () => new HttpResponse(null, { status: 500 })));
+    montar();
+    const titulo = await screen.findByRole('button', { name: /Falla en silencio/ });
+    await userEvent.click(titulo);
+    expect(titulo).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('La clase del jueves se dicta en el Aula 204.')).toBeInTheDocument();
   });
 });
