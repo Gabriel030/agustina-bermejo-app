@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -8,13 +8,14 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { ModalMotivo } from '@/components/ModalMotivo';
+import { ModalAprobacion } from '@/components/director/ModalAprobacion';
 import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
 import { useEgreso, useAprobarEgreso, useRechazarEgreso } from '@/features/graduation/hooks/useGraduation';
 import { useProgresoStaff } from '@/features/enrollment';
 import { useAsistenciaPorMateria } from '@/features/attendance';
 import { useEstadoDePago } from '@/features/billing';
 import { formatearFecha } from '@/lib/comisiones';
-import { ESTADO_TRAMITE_LABEL, decisionErrorMessage, isAlreadyDecided } from '@/lib/aprobaciones';
+import { ESTADO_TRAMITE_LABEL, decisionErrorMessage, isAlreadyDecided, MIN_REJECTION_REASON_LENGTH } from '@/lib/aprobaciones';
 
 const ESTADO_PAGO_LABEL = {
   AL_DIA: { label: 'Al día', tone: 'success' },
@@ -27,16 +28,18 @@ const GRADUATIONS_TRAY = '/director/aprobaciones/egresos';
 export function DirectorEgresoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: egreso, isLoading: cargandoEgreso, isError, error } = useEgreso(id);
-  const { data: progreso, isLoading: cargandoProgreso } = useProgresoStaff(egreso?.programEnrollmentId);
+  const { data: egreso, isLoading: cargandoEgreso, isError, error, refetch } = useEgreso(id);
+  const { data: progreso, isLoading: cargandoProgreso, isError: progresoFailed, refetch: refetchProgreso } = useProgresoStaff(egreso?.programEnrollmentId);
   const { data: asistencia, isLoading: cargandoAsistencia } = useAsistenciaPorMateria(egreso?.programEnrollmentId);
   const { data: pago } = useEstadoDePago(egreso?.studentId);
   const aprobar = useAprobarEgreso(id);
   const rechazar = useRechazarEgreso(id);
   const [modalRechazo, setModalRechazo] = useState(false);
+  const [modalAprobacion, setModalAprobacion] = useState(false);
+  const [decisionError, setDecisionError] = useState(null);
 
   if (isError) {
-    return <UnavailableRequestState error={error} backTo={GRADUATIONS_TRAY} backLabel="Egresos" />;
+    return <UnavailableRequestState error={error} backTo={GRADUATIONS_TRAY} backLabel="Egresos" onRetry={refetch} />;
   }
 
   if (cargandoEgreso || !egreso) {
@@ -52,48 +55,54 @@ export function DirectorEgresoDetalle() {
   const pillEstadoTramite = ESTADO_TRAMITE_LABEL[egreso.status] ?? { label: egreso.status, tone: 'warning' };
   const pillPago = pago ? (ESTADO_PAGO_LABEL[pago.standing] ?? { label: pago.standing, tone: 'neutral' }) : null;
   const missingMandatorySubjects = progreso?.obligatoriasPendientes ?? [];
-  const meetsRequirements = progreso?.elegibleParaCompletar !== false;
+  const meetsRequirements = !progresoFailed && progreso?.elegibleParaCompletar !== false;
   const deciding = aprobar.isPending || rechazar.isPending;
 
-  function handleDecisionError(decisionError) {
-    toast.error(decisionErrorMessage(decisionError));
-    if (isAlreadyDecided(decisionError)) {
+  function handleDecisionError(failure) {
+    setDecisionError(decisionErrorMessage(failure));
+    toast.error(decisionErrorMessage(failure));
+    if (isAlreadyDecided(failure)) {
       setModalRechazo(false);
+      setModalAprobacion(false);
     }
   }
 
   async function confirmarAprobar() {
+    setDecisionError(null);
     try {
       await aprobar.mutateAsync();
+      setModalAprobacion(false);
       toast.success('Egreso aprobado');
       navigate(GRADUATIONS_TRAY);
-    } catch (decisionError) {
-      handleDecisionError(decisionError);
+      return true;
+    } catch (failure) {
+      handleDecisionError(failure);
+      return false;
     }
   }
 
   async function confirmarRechazar(motivo) {
     try {
+      setDecisionError(null);
       await rechazar.mutateAsync(motivo);
       setModalRechazo(false);
       toast.success('Egreso rechazado');
       navigate(GRADUATIONS_TRAY);
       return true;
-    } catch (decisionError) {
-      handleDecisionError(decisionError);
+    } catch (failure) {
+      handleDecisionError(failure);
       return false;
     }
   }
 
   return (
     <PageContainer>
-      <button
-        type="button"
-        onClick={() => navigate(GRADUATIONS_TRAY)}
+      <Link
+        to={GRADUATIONS_TRAY}
         className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
       >
         ← Egresos
-      </button>
+      </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -159,18 +168,24 @@ export function DirectorEgresoDetalle() {
 
       {!soloLectura && (
         <div className="flex flex-col items-end gap-2">
-          {!meetsRequirements && (
-            <div className="text-[13px] font-semibold text-danger">
+          {progresoFailed && (
+            <div role="alert" className="flex items-center gap-2 text-[13px] font-semibold text-danger">
+              No pudimos verificar los requisitos del plan, por eso no se puede aprobar.
+              <Button size="sm" variant="outline" onClick={() => refetchProgreso()}>Reintentar</Button>
+            </div>
+          )}
+          {!progresoFailed && !meetsRequirements && (
+            <div role="alert" className="text-[13px] font-semibold text-danger">
               No se puede aprobar: el alumno todavía no cumple los requisitos del plan para egresar.
             </div>
           )}
+          {decisionError && <div role="alert" className="text-[13px] font-semibold text-danger">{decisionError}</div>}
           <div className="flex justify-end gap-2">
             <Button variant="outline" disabled={deciding} onClick={() => setModalRechazo(true)}>Rechazar</Button>
             <Button
               variant="gradient"
-              loading={aprobar.isPending}
               disabled={deciding || cargandoProgreso || !meetsRequirements}
-              onClick={confirmarAprobar}
+              onClick={() => setModalAprobacion(true)}
             >
               Aprobar egreso
             </Button>
@@ -182,11 +197,28 @@ export function DirectorEgresoDetalle() {
         <div className="text-[13px] font-semibold text-danger">Motivo del rechazo: &ldquo;{egreso.rejectionReason}&rdquo;</div>
       )}
 
+      <ModalAprobacion
+        open={modalAprobacion}
+        onClose={() => setModalAprobacion(false)}
+        confirmando={aprobar.isPending}
+        titulo="Aprobar egreso"
+        onConfirmar={confirmarAprobar}
+        resumen={
+          <>
+            <div className="font-semibold">{egreso.studentName}</div>
+            <div>{egreso.programName}</div>
+            <div>Créditos: {progreso?.creditosAcumulados ?? 0} / {progreso?.creditosRequeridos ?? 0}</div>
+          </>
+        }
+      />
+
       <ModalMotivo
         open={modalRechazo}
         onClose={() => setModalRechazo(false)}
         confirmando={rechazar.isPending}
         requerido
+        minLength={MIN_REJECTION_REASON_LENGTH}
+        titulo="Rechazar egreso"
         onConfirmar={confirmarRechazar}
       />
     </PageContainer>

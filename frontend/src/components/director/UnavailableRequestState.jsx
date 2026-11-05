@@ -3,15 +3,23 @@ import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
+import { LoadErrorState } from '@/components/LoadErrorState';
 
-export function UnavailableRequestState({ error, backTo, backLabel }) {
+export function UnavailableRequestState({ error, backTo, backLabel, onRetry }) {
   const notFound = error?.status === 404 || error?.status === 400;
+  if (!notFound) {
+    return (
+      <PageContainer>
+        <LoadErrorState error={error} onRetry={onRetry} resource="el trámite" backTo={backTo} backLabel={backLabel} />
+      </PageContainer>
+    );
+  }
   return (
     <PageContainer>
       <GlassCard className="flex flex-1 flex-col p-12">
         <EmptyState
-          title={notFound ? 'Este trámite no existe o ya no está disponible' : 'No pudimos cargar el trámite'}
-          description={notFound ? 'Revisá el enlace o volvé a la bandeja.' : 'Probá recargar la página en un momento.'}
+          title="Este trámite no existe o ya no está disponible"
+          description="Revisá el enlace o volvé a la bandeja."
           action={
             <Button asChild variant="outline">
               <Link to={backTo}>Volver a {backLabel}</Link>
