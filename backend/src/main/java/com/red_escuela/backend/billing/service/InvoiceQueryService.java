@@ -2,6 +2,8 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
+import com.red_escuela.backend.billing.api.StudentDebtInstallmentView;
+import com.red_escuela.backend.billing.api.StudentDebtView;
 import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
@@ -36,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -154,6 +158,29 @@ public class InvoiceQueryService {
             }
         }
         return false;
+    }
+
+    public StudentDebtView debtOf(Long studentId) {
+        List<Invoice> unpaid = new ArrayList<>();
+        for (CourseEnrollment enrollment : invoiceViewLoader.findCourseEnrollmentsOfStudent(studentId)) {
+            unpaid.addAll(unpaidOf(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId())));
+        }
+        for (ProgramEnrollment enrollment : invoiceViewLoader.findProgramEnrollmentsOfStudent(studentId)) {
+            unpaid.addAll(unpaidOf(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())));
+        }
+        if (unpaid.isEmpty()) {
+            return StudentDebtView.none();
+        }
+        List<StudentDebtInstallmentView> installments = unpaid.stream()
+                .sorted(Comparator.comparing(Invoice::getPeriod).thenComparing(Invoice::getDueDate))
+                .map(i -> new StudentDebtInstallmentView(i.getPeriod(), i.getDueDate(), i.getAmounts().outstandingAmount().value(), i.getPaymentStatus().name()))
+                .toList();
+        Money total = installments.stream().map(StudentDebtInstallmentView::amount).reduce(Money::plus).orElseThrow();
+        return new StudentDebtView(total, installments);
+    }
+
+    private List<Invoice> unpaidOf(List<Invoice> invoices) {
+        return invoices.stream().filter(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE).toList();
     }
 
     public boolean hasOverdueDebt(Long studentId) {

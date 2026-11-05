@@ -10,23 +10,28 @@ import { Input } from '@/components/ui/input';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { useCreateCourse } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
+import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
+import { FormField, SelectField } from '@/features/academic-structure/components/FormField';
+import {
+  countErrors,
+  describeSaveError,
+  fieldProps,
+  invalidFieldsSummary,
+  validateCourseBasics,
+  validateCourseDetail,
+} from '@/features/academic-structure/lib/offeringForm';
+import { TEACHING_MODE_OPTIONS } from '@/lib/teachingMode';
 
 const PASOS = [
   { key: 'datos', label: 'Datos básicos' },
   { key: 'detalle', label: 'Detalle' },
 ];
 
-const TEACHING_MODE_OPTIONS = [
-  { value: '', label: 'Sin especificar' },
-  { value: 'IN_PERSON', label: 'Presencial' },
-  { value: 'ONLINE', label: 'Virtual' },
-  { value: 'HYBRID', label: 'Híbrido' },
-];
-
 function estadoInicial() {
   return {
     paso: 'datos',
     pasosVisitados: ['datos'],
+    showErrors: false,
     name: '',
     termId: '',
     capacity: '',
@@ -39,18 +44,6 @@ function estadoInicial() {
   };
 }
 
-const REGISTRATION_WINDOW_ERROR = 'El cierre de inscripción no puede ser anterior a la apertura.';
-
-function courseDetailError(state) {
-  if (!state.durationMonths || parseInt(state.durationMonths) < 1) {
-    return 'La duración en meses es obligatoria y tiene que ser al menos 1.';
-  }
-  if (state.registrationStart && state.registrationEnd && state.registrationEnd < state.registrationStart) {
-    return REGISTRATION_WINDOW_ERROR;
-  }
-  return null;
-}
-
 function visitado(state, paso) {
   return state.pasosVisitados.includes(paso) ? state.pasosVisitados : [...state.pasosVisitados, paso];
 }
@@ -59,6 +52,8 @@ function reducer(state, action) {
   switch (action.type) {
     case 'SET':
       return { ...state, [action.campo]: action.valor };
+    case 'SHOW_ERRORS':
+      return { ...state, showErrors: true };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso, pasosVisitados: visitado(state, action.paso) };
     default:
@@ -66,29 +61,9 @@ function reducer(state, action) {
   }
 }
 
-function CampoSelect({ label, value, onChange, options, required }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
 function Paso1Datos({ state, dispatch }) {
   const { data: terminos, isLoading: loadingTerms, isError: termsFailed, error: termsError, refetch: refetchTerms } = useTerminos();
-  const [error, setError] = useState(null);
+  const errors = state.showErrors ? validateCourseBasics(state) : {};
 
   const termOptions = [
     { value: '', label: 'Seleccionar período…' },
@@ -99,67 +74,52 @@ function Paso1Datos({ state, dispatch }) {
   ];
 
   function handleContinuar() {
-    if (!state.name.trim()) {
-      setError('El nombre es obligatorio.');
+    if (countErrors(validateCourseBasics(state)) > 0) {
+      dispatch({ type: 'SHOW_ERRORS' });
       return;
     }
-    if (!state.termId) {
-      setError('El período académico es obligatorio.');
-      return;
-    }
-    if (!state.capacity || parseInt(state.capacity) < 1) {
-      setError('El cupo debe ser al menos 1.');
-      return;
-    }
-    setError(null);
     dispatch({ type: 'IR_A_PASO', paso: 'detalle' });
   }
 
   return (
     <GlassCard className="flex flex-col gap-5 p-6">
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Nombre del curso <span className="text-danger">*</span>
-        </label>
+      <FormField id="course-name" label="Nombre del curso" required error={errors.name}>
         <Input
+          {...fieldProps('course-name', errors.name, true)}
           value={state.name}
           onChange={(e) => dispatch({ type: 'SET', campo: 'name', valor: e.target.value })}
           placeholder="Ej. Curso de Excel Avanzado"
         />
-      </div>
+      </FormField>
 
       {termsFailed ? (
         <LoadErrorState error={termsError} onRetry={refetchTerms} resource="los períodos académicos" bare />
       ) : (
-        <CampoSelect
-          label={
-            <span>
-              Período académico <span className="text-danger">*</span>
-            </span>
-          }
+        <SelectField
+          id="course-term"
+          label="Período académico"
+          required
+          error={errors.termId}
           value={state.termId}
           onChange={(v) => dispatch({ type: 'SET', campo: 'termId', valor: v })}
           options={loadingTerms ? [{ value: '', label: 'Cargando…' }] : termOptions}
-          required
         />
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Cupo <span className="text-danger">*</span>
-          </label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField id="course-capacity" label="Cupo" required error={errors.capacity}>
           <Input
+            {...fieldProps('course-capacity', errors.capacity, true)}
             type="number"
             min={1}
             value={state.capacity}
             onChange={(e) => dispatch({ type: 'SET', campo: 'capacity', valor: e.target.value })}
             placeholder="Ej. 30"
           />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Precio</label>
+        </FormField>
+        <FormField id="course-price" label="Precio" error={errors.price}>
           <Input
+            {...fieldProps('course-price', errors.price)}
             type="number"
             min={0}
             step={0.01}
@@ -167,17 +127,22 @@ function Paso1Datos({ state, dispatch }) {
             onChange={(e) => dispatch({ type: 'SET', campo: 'price', valor: e.target.value })}
             placeholder="Ej. 15000"
           />
-        </div>
+        </FormField>
       </div>
 
-      <CampoSelect
+      <SelectField
+        id="course-teaching-mode"
         label="Modalidad"
         value={state.teachingMode}
         onChange={(v) => dispatch({ type: 'SET', campo: 'teachingMode', valor: v })}
         options={TEACHING_MODE_OPTIONS}
       />
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {countErrors(errors) > 0 && (
+        <p role="alert" className="text-[13px] text-danger">
+          {invalidFieldsSummary(errors)}
+        </p>
+      )}
 
       <div className="flex justify-end">
         <Button variant="gradient" onClick={handleContinuar}>
@@ -190,19 +155,18 @@ function Paso1Datos({ state, dispatch }) {
 
 function Paso2Detalle({ state, dispatch }) {
   const createCourse = useCreateCourse();
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
   const navigate = useNavigate();
 
   async function handleCrear() {
-    const validationError = courseDetailError(state);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    setError(null);
+    const found = validateCourseDetail(state);
+    setErrors(found);
+    setSubmitError(null);
+    if (countErrors(found) > 0) return;
     try {
       const body = {
-        name: state.name,
+        name: state.name.trim(),
         termId: parseInt(state.termId),
         capacity: parseInt(state.capacity),
         ...(state.price && { price: { amount: String(parseFloat(state.price)), currency: 'ARS' } }),
@@ -216,62 +180,63 @@ function Paso2Detalle({ state, dispatch }) {
       toast.success('Curso creado');
       navigate(`/administrativo/gestion-academica/cursos/${result.id}`);
     } catch (err) {
-      setError(
-        err?.code === 'INVALID_REGISTRATION_WINDOW'
-          ? REGISTRATION_WINDOW_ERROR
-          : 'No se pudo crear el curso. Revisá los datos e intentá de nuevo.',
-      );
+      const failure = describeSaveError(err, 'No se pudo crear el curso. Revisá los datos e intentá de nuevo.');
+      if (failure.field === 'registrationEnd') setErrors({ registrationEnd: failure.message });
+      else setSubmitError(failure.message);
     }
   }
 
   return (
     <GlassCard className="flex flex-col gap-5 p-6">
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Horario</label>
+      <FormField id="course-schedule" label="Horario">
         <Input
+          id="course-schedule"
           value={state.schedule}
           onChange={(e) => dispatch({ type: 'SET', campo: 'schedule', valor: e.target.value })}
           placeholder="Ej. Lunes y miércoles 18–20 hs"
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Duración (meses) <span className="text-danger">*</span>
-        </label>
+      <FormField id="course-duration" label="Duración (meses)" required error={errors.durationMonths}>
         <Input
+          {...fieldProps('course-duration', errors.durationMonths, true)}
           type="number"
           min={1}
           value={state.durationMonths}
           onChange={(e) => dispatch({ type: 'SET', campo: 'durationMonths', valor: e.target.value })}
           placeholder="Ej. 3"
         />
-      </div>
+      </FormField>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Inicio de inscripción
-          </label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField id="course-registration-start" label="Inicio de inscripción">
           <Input
+            id="course-registration-start"
             type="datetime-local"
             value={state.registrationStart}
             onChange={(e) => dispatch({ type: 'SET', campo: 'registrationStart', valor: e.target.value })}
           />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Cierre de inscripción
-          </label>
+        </FormField>
+        <FormField id="course-registration-end" label="Cierre de inscripción" error={errors.registrationEnd}>
           <Input
+            {...fieldProps('course-registration-end', errors.registrationEnd)}
             type="datetime-local"
             value={state.registrationEnd}
             onChange={(e) => dispatch({ type: 'SET', campo: 'registrationEnd', valor: e.target.value })}
           />
-        </div>
+        </FormField>
       </div>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {countErrors(errors) > 0 && (
+        <p role="alert" className="text-[13px] text-danger">
+          {invalidFieldsSummary(errors)}
+        </p>
+      )}
+      {submitError && (
+        <p role="alert" className="text-[13px] text-danger">
+          {submitError}
+        </p>
+      )}
 
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'datos' })}>
@@ -285,8 +250,32 @@ function Paso2Detalle({ state, dispatch }) {
   );
 }
 
+const FIELD_KEYS = [
+  'name',
+  'termId',
+  'capacity',
+  'price',
+  'teachingMode',
+  'schedule',
+  'durationMonths',
+  'registrationStart',
+  'registrationEnd',
+];
+
 export function CursoWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
+  const initial = estadoInicial();
+  const dirty = FIELD_KEYS.some((key) => state[key] !== initial[key]);
+  const { guardDialog } = useUnsavedChangesGuard(dirty);
+
+  function handleStepClick(paso) {
+    if (paso !== 'datos' && countErrors(validateCourseBasics(state)) > 0) {
+      dispatch({ type: 'IR_A_PASO', paso: 'datos' });
+      dispatch({ type: 'SHOW_ERRORS' });
+      return;
+    }
+    dispatch({ type: 'IR_A_PASO', paso });
+  }
 
   return (
     <PageContainer>
@@ -306,11 +295,12 @@ export function CursoWizard() {
           pasos={PASOS}
           pasoActual={state.paso}
           pasosVisitados={state.pasosVisitados}
-          onStepClick={(key) => dispatch({ type: 'IR_A_PASO', paso: key })}
+          onStepClick={handleStepClick}
         />
 
         {state.paso === 'datos' && <Paso1Datos state={state} dispatch={dispatch} />}
         {state.paso === 'detalle' && <Paso2Detalle state={state} dispatch={dispatch} />}
+        {guardDialog}
       </div>
     </PageContainer>
   );

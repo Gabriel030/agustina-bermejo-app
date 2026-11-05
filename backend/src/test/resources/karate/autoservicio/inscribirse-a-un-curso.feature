@@ -31,6 +31,12 @@ Feature: Caso de uso — Inscribirse a un curso
     Then status 201
     * def courseId = response.id
 
+    Given path '/courses', courseId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
+
     # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(MONTHLY_INSTALLMENT) desde el
     # price de arriba — no hace falta un paso aparte.
 

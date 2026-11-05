@@ -10,7 +10,7 @@ export function LoadErrorState({ error, onRetry, resource = 'los datos', backTo,
       {!notFound && onRetry && <Button onClick={onRetry}>Reintentar</Button>}
       {backTo && (
         <Button asChild variant="outline">
-          <Link to={backTo}>Volver a {backLabel}</Link>
+          <Link to={backTo}>{backLabel?.startsWith('el ') ? `Volver al ${backLabel.slice(3)}` : `Volver a ${backLabel}`}</Link>
         </Button>
       )}
     </div>

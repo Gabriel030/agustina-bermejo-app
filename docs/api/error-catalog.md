@@ -4,7 +4,7 @@
 
 ## Cuerpo estándar
 
-Todo error de la API sale con `{"code": "...", "retryable": true|false, "requestId": "...", "violations": [...]}`. `code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, `requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas. Un `429` o `503` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).
+Todo error de la API sale con `{"code": "...", "retryable": true|false, "requestId": "...", "violations": [...], "details": {...}}`. `code` es estable (derivado del nombre de la excepción o fijo para los transversales), `retryable` indica si repetir el mismo pedido puede tener éxito, `requestId` (opcional) correlaciona con el log y `violations` (opcional) trae las reglas de negocio violadas y `details` (opcional, aditivo) trae datos estables del error: `PENDING_DEBT` informa `totalDue` (monto adeudado) e `installmentCount` (cuotas pendientes). Un `429` o `503` incluye además el header `Retry-After` en segundos. Los mensajes de las excepciones son internos y no se envían: el front traduce por `code`. Un `404` de una excepción que no declara código sale sin cuerpo a propósito (anti-enumeración: un recurso ajeno es indistinguible de uno inexistente).
 
 ## Política de reintentos
 
@@ -210,7 +210,6 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `AUTHORIZATION_REQUEST_ACCESS_DENIED` | no | `AuthorizationRequestAccessDeniedException` | billing |
 | `NOT_EXAM_BOARD_TRIBUNAL_MEMBER` | no | `NotExamBoardTribunalMemberException` | evaluation |
 | `NOT_OWN_ENROLLMENT` | no | `NotOwnEnrollmentException` | billing |
-| `NOT_OWN_NOTIFICATION` | no | `NotOwnNotificationException` | notification |
 | `NOT_OWN_SECTION` | no | `NotOwnSectionException` | academicstructure |
 | `NOT_SECTION_INSTRUCTOR` | no | `NotSectionInstructorException` | announcement |
 | `NOT_SECTION_LEAD_INSTRUCTOR` | no | `NotSectionLeadInstructorException` | evaluation |
@@ -309,6 +308,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED` | no | `AnnualUpfrontPlanCannotBeChangedException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_REJECTED` | no | `AnnualUpfrontRequestRejectedException` | billing |
 | `APPLICATION_DOCUMENTS_INCOMPLETE` | no | `ApplicationDocumentsIncompleteException` | enrollment |
+| `APPLICATION_DOCUMENTS_LOCKED` | no | `ApplicationDocumentsLockedException` | enrollment |
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
 | `AUTHORIZATION_PENDING` | no | `AuthorizationPendingException` | billing |
 | `BILLING_CONFIGURATION_FROZEN` | no | `BillingConfigurationFrozenException` | billing |
@@ -326,6 +326,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
 | `COURSE_ADMISSION_ALREADY_CHARGED` | no | `CourseAdmissionAlreadyChargedException` | enrollment |
 | `COURSE_ADMISSION_CHARGE_REJECTED` | no | `CourseAdmissionChargeRejectedException` | enrollment |
+| `COURSE_NOT_AVAILABLE` | no | `CourseNotAvailableException` | enrollment |
 | `COURSE_PAYMENT_PLAN_ALREADY_SET` | no | `CoursePaymentPlanAlreadySetException` | billing |
 | `CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED` | no | `CreditNoteDirectorApprovalRequiredException` | billing |
 | `CREDIT_NOTE_DISTRIBUTION_MISMATCH` | no | `CreditNoteDistributionMismatchException` | billing |
@@ -428,6 +429,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
+| `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
 | `PROGRAM_YEAR_BILLING_TEMPLATE_MISMATCH` | no | `ProgramYearBillingTemplateMismatchException` | billing |
 | `PROMOTION_ALREADY_CLOSED` | no | `PromotionAlreadyClosedException` | billing |
@@ -489,6 +491,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `GOOGLE_SERVICE_UNAVAILABLE` | sí | `GoogleServiceUnavailableException` | identity |
 | `MERCADO_PAGO_GATEWAY` | sí | `MercadoPagoGatewayException` | billing |
 | `TRANSACTIONAL_EMAIL_DELIVERY` | sí | `TransactionalEmailDeliveryException` | shared |
 

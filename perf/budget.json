@@ -1,0 +1,8 @@
+{
+  "/students": {"p95": 200, "queries": 3},
+  "/staff": {"p95": 120, "queries": 8},
+  "/me/section-enrollments": {"p95": 120, "queries": 8},
+  "/program-enrollments/{id}/attendance-summary": {"p95": 60, "queries": 6},
+  "/financial-dashboard": {"p95": 60, "queries": 8},
+  "/financial-dashboard/debtors/page": {"p95": 300, "queries": 12}
+}

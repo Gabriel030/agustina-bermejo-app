@@ -17,6 +17,9 @@ describe('menuAccess', () => {
     expect(hasRealScreen('docente', 'inicio')).toBe(false);
     expect(hasRealScreen('alumno', 'opciones')).toBe(false);
     expect(hasRealScreen('administrativo', 'constancias')).toBe(false);
+    expect(hasRealScreen('director', 'constancias')).toBe(false);
+    expect(ROLE_CONFIG.director.pages).toContain('constancias');
+    expect(ROLE_CONFIG.preceptor.pages).not.toContain('constancias');
   });
 
   it('picks the first page with a real screen as the landing page', () => {
@@ -38,7 +41,7 @@ describe('menuAccess', () => {
   });
 
   it('labels pages readably instead of using the slug', () => {
-    expect(pageLabel('gestion-academica')).toBe('Banco de materias');
+    expect(pageLabel('gestion-academica')).toBe('Gestión académica');
     expect(pageLabel('algo-nuevo')).toBe('Algo nuevo');
   });
 

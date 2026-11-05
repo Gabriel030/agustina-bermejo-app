@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Plus, ChevronRight, Globe, GlobeOff } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, Plus, ChevronRight, GlobeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -9,9 +11,16 @@ import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { DataTable } from '@/components/table/DataTable';
+import { matchesSearch } from '@/lib/catalog';
+import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
+import SubjectLifecycleAction from '@/features/academic-structure/components/SubjectLifecycleAction';
 import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
 import { usePrograms, useSetProgramCatalogVisibility } from '@/features/academic-structure/hooks/usePrograms';
 import { useCourses, useSetCourseCatalogVisibility } from '@/features/academic-structure/hooks/useCourses';
+
+const SUBJECTS_PAGE_SIZE = 10;
 
 const SUBJECT_TABS = [
   { id: 'ACTIVE', label: 'Activas' },
@@ -46,70 +55,103 @@ const LEVEL_LABELS = {
   DIPLOMA: 'Diplomatura',
 };
 
-const TEACHING_MODE_LABELS = {
-  IN_PERSON: 'Presencial',
-  ONLINE: 'Virtual',
-  HYBRID: 'Híbrido',
-};
-
 const COURSE_STATUS_CONFIG = {
   ACTIVE: { label: 'Activo', tone: 'success' },
   INACTIVE: { label: 'Inactivo', tone: 'neutral' },
 };
 
-function SubjectRow({ subject, navigate }) {
-  const cfg = SUBJECT_STATUS_CONFIG[subject.status] ?? { label: subject.status, tone: 'neutral' };
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(`/administrativo/gestion-academica/${subject.id}`)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
-    >
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{subject.code}</span>
+function buildSubjectColumns() {
+  return [
+    {
+      id: 'code',
+      header: 'Código',
+      accessorKey: 'code',
+      cell: ({ row }) => (
+        <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{row.original.code}</span>
+      ),
+    },
+    {
+      id: 'name',
+      header: 'Nombre',
+      accessorKey: 'name',
+      meta: { cardTitle: true },
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <Link
+            to={`/administrativo/gestion-academica/${row.original.id}`}
+            className="block truncate text-[14px] font-medium text-ink hover:underline"
+          >
+            {row.original.name}
+          </Link>
+          {row.original.status === 'REJECTED' && row.original.rejectionReason && (
+            <span className="block truncate text-[12px] text-danger">Motivo: {row.original.rejectionReason}</span>
+          )}
         </div>
-        <span className="block truncate text-[14px] font-medium text-ink">{subject.name}</span>
-        {subject.gradeMode && (
-          <span className="text-[12px] text-ink-faint">{GRADE_MODE_LABELS[subject.gradeMode] ?? subject.gradeMode}</span>
-        )}
-        {subject.status === 'REJECTED' && subject.rejectionReason && (
-          <span className="block truncate text-[12px] text-danger">Motivo: {subject.rejectionReason}</span>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
-        <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
-        <ChevronRight className="h-4 w-4 text-ink-faint" />
-      </div>
-    </button>
-  );
+      ),
+    },
+    {
+      id: 'weeklyHours',
+      header: 'Horas semanales',
+      accessorFn: (subject) => (subject.weeklyHours ?? 0) + (subject.weeklyHoursLab ?? 0),
+      meta: { align: 'right' },
+    },
+    {
+      id: 'gradeMode',
+      header: 'Calificación',
+      accessorKey: 'gradeMode',
+      enableColumnFilter: true,
+      meta: {
+        filterable: true,
+        filterTitle: 'Calificación',
+        filterLabel: (value) => GRADE_MODE_LABELS[value] ?? value,
+      },
+      cell: ({ row }) => GRADE_MODE_LABELS[row.original.gradeMode] ?? '—',
+    },
+    {
+      id: 'status',
+      header: 'Estado',
+      accessorKey: 'status',
+      cell: ({ row }) => {
+        const cfg = SUBJECT_STATUS_CONFIG[row.original.status] ?? { label: row.original.status, tone: 'neutral' };
+        return <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>;
+      },
+    },
+    {
+      id: 'actions',
+      header: '',
+      enableSorting: false,
+      cell: ({ row }) => <SubjectLifecycleAction subject={row.original} />,
+    },
+  ];
 }
 
+const SUBJECT_COLUMNS = buildSubjectColumns();
+
 function SubjectList({ status, search, navigate }) {
-  const { data, isLoading, isError } = useSubjects(status);
+  const { data, isLoading, isError, refetch } = useSubjects(status);
 
-  const filtered = (data ?? []).filter((s) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
-  });
+  const filtered = (data ?? []).filter(
+    (s) => !search || matchesSearch(s.name, search) || matchesSearch(s.code, search),
+  );
 
-  if (isLoading) return <Skeleton rows={5} />;
-  if (isError) return <EmptyState title="Error al cargar materias" description="Intentá de nuevo en unos momentos." />;
-  if (!filtered.length)
-    return (
-      <EmptyState
-        title="Sin resultados"
-        description={search ? 'Ninguna materia coincide con la búsqueda.' : 'No hay materias en esta categoría.'}
-      />
-    );
+  if (isError) return <LoadErrorState onRetry={refetch} resource="las materias" bare />;
 
   return (
-    <div className="divide-y divide-neutral-bg">
-      {filtered.map((s) => (
-        <SubjectRow key={s.id} subject={s} navigate={navigate} />
-      ))}
-    </div>
+    <DataTable
+      columns={SUBJECT_COLUMNS}
+      data={filtered}
+      getRowId={(subject) => String(subject.id)}
+      isLoading={isLoading}
+      onRowClick={(subject) => navigate(`/administrativo/gestion-academica/${subject.id}`)}
+      initialSorting={[{ id: 'name', desc: false }]}
+      pageSize={SUBJECTS_PAGE_SIZE}
+      emptyState={
+        <EmptyState
+          title="Sin resultados"
+          description={search ? 'Ninguna materia coincide con la búsqueda.' : 'No hay materias en esta categoría.'}
+        />
+      }
+    />
   );
 }
 
@@ -193,21 +235,25 @@ function PublishedProgramRow({ program, onRetire, isRetiring }) {
 }
 
 function PublishedProgramList({ navigate }) {
-  const { data, isLoading, isError } = usePrograms();
+  const { data, isLoading, isError, refetch } = usePrograms();
   const retireProgram = useSetProgramCatalogVisibility();
 
   const published = (data ?? []).filter((p) => p.visibleInCatalog);
 
-  async function handleRetire(id) {
+  const [toRetire, setToRetire] = useState(null);
+
+  async function handleConfirmRetire() {
     try {
-      await retireProgram.mutateAsync({ id, visible: false });
+      await retireProgram.mutateAsync({ id: toRetire.id, visible: false });
+      toast.success('La carrera fue retirada del catálogo');
+      setToRetire(null);
     } catch {
-      /* toast shown globally */
+      toast.error('No se pudo retirar la carrera del catálogo.');
     }
   }
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar carreras" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="las carreras" bare />;
   if (!published.length)
     return (
       <EmptyState
@@ -222,16 +268,27 @@ function PublishedProgramList({ navigate }) {
     );
 
   return (
+    <>
     <div className="divide-y divide-neutral-bg">
       {published.map((p) => (
         <PublishedProgramRow
           key={p.id}
           program={p}
-          onRetire={handleRetire}
+          onRetire={() => setToRetire(p)}
           isRetiring={retireProgram.isPending && retireProgram.variables?.id === p.id}
         />
       ))}
     </div>
+    <ConfirmActionDialog
+      open={toRetire !== null}
+      onOpenChange={(o) => !o && setToRetire(null)}
+      title="Retirar del catálogo"
+      description={`${toRetire?.name} deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados.`}
+      confirmLabel="Retirar"
+      pending={retireProgram.isPending}
+      onConfirm={handleConfirmRetire}
+    />
+    </>
   );
 }
 
@@ -260,21 +317,25 @@ function PublishedCourseRow({ course, onRetire, isRetiring }) {
 }
 
 function PublishedCourseList({ navigate }) {
-  const { data, isLoading, isError } = useCourses();
+  const { data, isLoading, isError, refetch } = useCourses();
   const retireCourse = useSetCourseCatalogVisibility();
 
   const published = (data ?? []).filter((c) => c.visibleInCatalog);
 
-  async function handleRetire(id) {
+  const [toRetire, setToRetire] = useState(null);
+
+  async function handleConfirmRetire() {
     try {
-      await retireCourse.mutateAsync({ id, visible: false });
+      await retireCourse.mutateAsync({ id: toRetire.id, visible: false });
+      toast.success('El curso fue retirado del catálogo');
+      setToRetire(null);
     } catch {
-      /* toast shown globally */
+      toast.error('No se pudo retirar el curso del catálogo.');
     }
   }
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar cursos" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="los cursos" bare />;
   if (!published.length)
     return (
       <EmptyState
@@ -289,29 +350,40 @@ function PublishedCourseList({ navigate }) {
     );
 
   return (
+    <>
     <div className="divide-y divide-neutral-bg">
       {published.map((c) => (
         <PublishedCourseRow
           key={c.id}
           course={c}
-          onRetire={handleRetire}
+          onRetire={() => setToRetire(c)}
           isRetiring={retireCourse.isPending && retireCourse.variables?.id === c.id}
         />
       ))}
     </div>
+    <ConfirmActionDialog
+      open={toRetire !== null}
+      onOpenChange={(o) => !o && setToRetire(null)}
+      title="Retirar del catálogo"
+      description={`${toRetire?.name} deja de aparecer en el catálogo de inscripciones. Los alumnos actuales no se ven afectados.`}
+      confirmLabel="Retirar"
+      pending={retireCourse.isPending}
+      onConfirm={handleConfirmRetire}
+    />
+    </>
   );
 }
 
 function CourseList({ search, navigate }) {
-  const { data, isLoading, isError } = useCourses();
+  const { data, isLoading, isError, refetch } = useCourses();
 
   const filtered = (data ?? []).filter((c) => {
     if (!search) return true;
-    return c.name.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch(c.name, search);
   });
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar cursos" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="los cursos" bare />;
   if (!filtered.length)
     return (
       <EmptyState
@@ -338,15 +410,15 @@ function CourseList({ search, navigate }) {
 }
 
 function ProgramList({ search, navigate }) {
-  const { data, isLoading, isError } = usePrograms();
+  const { data, isLoading, isError, refetch } = usePrograms();
 
   const filtered = (data ?? []).filter((p) => {
     if (!search) return true;
-    return p.name.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch(p.name, search);
   });
 
   if (isLoading) return <Skeleton rows={4} />;
-  if (isError) return <EmptyState title="Error al cargar carreras" description="Intentá de nuevo en unos momentos." />;
+  if (isError) return <LoadErrorState onRetry={refetch} resource="las carreras" bare />;
   if (!filtered.length)
     return (
       <EmptyState
@@ -398,13 +470,15 @@ export function AdministrativoSubjects() {
 
   const section = searchParams.get('section') ?? 'materias';
   const activeTab = searchParams.get('tab') ?? 'ACTIVE';
+  const [lastSubjectTab, setLastSubjectTab] = useState(activeTab);
 
   function handleSectionChange(s) {
-    setSearchParams({ section: s });
+    setSearchParams(s === 'materias' ? { section: s, tab: lastSubjectTab } : { section: s });
     setSearch('');
   }
 
   function handleTabChange(tab) {
+    setLastSubjectTab(tab);
     setSearchParams({ section: 'materias', tab });
     setSearch('');
   }
@@ -443,6 +517,7 @@ export function AdministrativoSubjects() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
               <Input
+                aria-label="Buscar"
                 placeholder={section === 'carreras' ? 'Buscar por nombre…' : 'Buscar por nombre o código…'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

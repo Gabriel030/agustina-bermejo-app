@@ -1,7 +1,6 @@
 package com.red_escuela.backend.notification.service;
 
 import com.red_escuela.backend.notification.entity.Notification;
-import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
 import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,7 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new NotificationNotFoundException(notificationId));
         if (!notification.getRecipient().getId().equals(personId)) {
-            throw new NotOwnNotificationException(notificationId);
+            throw new NotificationNotFoundException(notificationId);
         }
         notification.setRead(true);
         return notificationRepository.save(notification);

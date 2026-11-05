@@ -1,8 +1,8 @@
-import { UserPlus } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { menuItemsFor } from '@/routes/roleMenu';
 import { visibleMenuItems } from '@/routes/menuAccess';
 
-const ITEMS = [{ to: '/platform_admin/primer-director', label: 'Primer Director', icon: UserPlus }];
+const ITEMS = menuItemsFor('platform_admin');
 
 export function PlatformLayout() {
   return <RoleShell titulo="Plataforma" items={visibleMenuItems('platform_admin', ITEMS)} />;

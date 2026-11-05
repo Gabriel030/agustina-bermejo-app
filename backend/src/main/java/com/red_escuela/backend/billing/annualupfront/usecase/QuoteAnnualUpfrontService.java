@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontEligibi
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontQuoteService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class QuoteAnnualUpfrontService implements QuoteAnnualUpfrontUseCase {
@@ -16,14 +15,12 @@ public class QuoteAnnualUpfrontService implements QuoteAnnualUpfrontUseCase {
 
     @Override
     @PreAuthorize("hasRole('ALUMNO')")
-    @Transactional(readOnly = true)
     public AnnualUpfrontEligibility quoteAnnualUpfrontForCurrentStudent(Long programEnrollmentId) {
         return quoteService.quoteForCurrentStudent(programEnrollmentId);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    @Transactional(readOnly = true)
     public AnnualUpfrontEligibility quoteAnnualUpfrontForStaff(Long programEnrollmentId) {
         return quoteService.quoteForStaff(programEnrollmentId);
     }

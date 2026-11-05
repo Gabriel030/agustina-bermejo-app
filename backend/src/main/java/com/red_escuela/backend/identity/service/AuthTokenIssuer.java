@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
-import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;

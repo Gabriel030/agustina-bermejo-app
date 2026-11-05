@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
@@ -541,10 +543,11 @@ function ReceiptOrigin({ uploadedBy, currentPersonId }) {
 
 function TabComprobantes() {
   const { usuario } = useAuth();
-  const { data: comprobantes, isLoading } = useComprobantesAdmin();
+  const { data: comprobantes, isLoading, isError, refetch } = useComprobantesAdmin();
   const { mutate: aprobar, isPending: aprobando } = useAprobarComprobante();
   const [pendingApproveId, setPendingApproveId] = useState(null);
   const [rechazarModal, setRechazarModal] = useState(null);
+  const [approveCandidate, setApproveCandidate] = useState(null);
 
   if (isLoading) {
     return (
@@ -552,6 +555,10 @@ function TabComprobantes() {
         {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
       </div>
     );
+  }
+
+  if (isError) {
+    return <LoadErrorState resource="los comprobantes" onRetry={() => refetch()} />;
   }
 
   if (!comprobantes || comprobantes.length === 0) {
@@ -589,6 +596,13 @@ function TabComprobantes() {
                 {receipt.invoicePeriod && <span>{formatPeriod(receipt.invoicePeriod)}</span>}
                 <span>Subido {formatDate(receipt.uploadedAt)}</span>
               </div>
+              {(receipt.declaredAmount || receipt.operationNumber || receipt.transferDate) && (
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-soft">
+                  {receipt.declaredAmount && <span>Monto declarado {formatMoney(receipt.declaredAmount)}</span>}
+                  {receipt.operationNumber && <span>Operación {receipt.operationNumber}</span>}
+                  {receipt.transferDate && <span>Transferido {formatDate(receipt.transferDate)}</span>}
+                </div>
+              )}
               {receipt.filePath && (
                 <button
                   type="button"
@@ -604,19 +618,7 @@ function TabComprobantes() {
               <Button
                 variant="outline"
                 className="border-success text-success hover:bg-success-bg"
-                onClick={() => {
-                  setPendingApproveId(receipt.id);
-                  aprobar(receipt.id, {
-                    onSuccess: () => {
-                      setPendingApproveId(null);
-                      toast.success('Comprobante aprobado. El pago quedó acreditado.');
-                    },
-                    onError: (error) => {
-                      setPendingApproveId(null);
-                      toast.error(APPROVE_RECEIPT_ERRORS[error?.code] ?? error?.message ?? 'No pudimos aprobar el comprobante.');
-                    },
-                  });
-                }}
+                onClick={() => setApproveCandidate(receipt)}
                 disabled={aprobando && pendingApproveId === receipt.id}
               >
                 <CheckCircle size={14} className="mr-1" />
@@ -638,6 +640,38 @@ function TabComprobantes() {
       {rechazarModal && (
         <RechazarModal receipt={rechazarModal} onClose={() => setRechazarModal(null)} />
       )}
+
+      <ConfirmActionDialog
+        open={approveCandidate !== null}
+        onOpenChange={(open) => !open && setApproveCandidate(null)}
+        title="¿Aprobar el comprobante?"
+        description={
+          approveCandidate
+            ? `${approveCandidate.studentName ?? `Comprobante #${approveCandidate.id}`}${
+                approveCandidate.declaredAmount ? ` · ${formatMoney(approveCandidate.declaredAmount)}` : ''
+              }${approveCandidate.operationNumber ? ` · operación ${approveCandidate.operationNumber}` : ''}. El pago queda acreditado.`
+            : ''
+        }
+        confirmLabel="Aprobar comprobante"
+        confirmVariant="default"
+        pending={aprobando}
+        onConfirm={() => {
+          const receipt = approveCandidate;
+          setPendingApproveId(receipt.id);
+          aprobar(receipt.id, {
+            onSuccess: () => {
+              setPendingApproveId(null);
+              setApproveCandidate(null);
+              toast.success('Comprobante aprobado. El pago quedó acreditado.');
+            },
+            onError: (error) => {
+              setPendingApproveId(null);
+              setApproveCandidate(null);
+              toast.error(APPROVE_RECEIPT_ERRORS[error?.code] ?? error?.message ?? 'No pudimos aprobar el comprobante.');
+            },
+          });
+        }}
+      />
     </div>
   );
 }

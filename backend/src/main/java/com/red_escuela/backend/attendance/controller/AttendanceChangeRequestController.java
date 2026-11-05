@@ -57,7 +57,7 @@ public class AttendanceChangeRequestController {
     public AttendanceChangeRequestResponse create(@PathVariable Long id, @Valid @RequestBody CreateAttendanceChangeRequestRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         AttendanceChangeRequest created = requestAttendanceChangeUseCase.request(
-                new RequestAttendanceChangeCommand(id, instructor, request));
+                new RequestAttendanceChangeCommand(id, instructor.getId(), request));
         return toResponse(created);
     }
 

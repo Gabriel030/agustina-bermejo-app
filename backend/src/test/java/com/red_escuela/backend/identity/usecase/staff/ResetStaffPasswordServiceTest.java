@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
+import com.red_escuela.backend.identity.service.PasswordResetCodeRequester;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,10 +26,10 @@ class ResetStaffPasswordServiceTest {
     private static final Long TARGET_ID = 70L;
 
     private final PersonRepository personRepository = mock(PersonRepository.class);
-    private final RequestPasswordResetUseCase requestPasswordResetUseCase = mock(RequestPasswordResetUseCase.class);
+    private final PasswordResetCodeRequester passwordResetCodeRequester = mock(PasswordResetCodeRequester.class);
 
     private ResetStaffPasswordService serviceActingAs(String actorRole) {
-        return new ResetStaffPasswordService(personRepository, policyActingAs(actorRole), requestPasswordResetUseCase);
+        return new ResetStaffPasswordService(personRepository, policyActingAs(actorRole), passwordResetCodeRequester);
     }
 
     private Person target(String... roles) {
@@ -44,7 +44,7 @@ class ResetStaffPasswordServiceTest {
 
         serviceActingAs("DIRECTOR").resetPassword(TARGET_ID);
 
-        verify(requestPasswordResetUseCase).requestReset(person.emailValue());
+        verify(passwordResetCodeRequester).requestPasswordResetCode(person.emailValue());
     }
 
     @ParameterizedTest
@@ -54,7 +54,7 @@ class ResetStaffPasswordServiceTest {
 
         serviceActingAs("ADMINISTRATIVO").resetPassword(TARGET_ID);
 
-        verify(requestPasswordResetUseCase).requestReset(person.emailValue());
+        verify(passwordResetCodeRequester).requestPasswordResetCode(person.emailValue());
     }
 
     @Test
@@ -63,7 +63,7 @@ class ResetStaffPasswordServiceTest {
 
         assertThatThrownBy(() -> serviceActingAs("ADMINISTRATIVO").resetPassword(TARGET_ID))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
-        verifyNoInteractions(requestPasswordResetUseCase);
+        verifyNoInteractions(passwordResetCodeRequester);
     }
 
     @ParameterizedTest
@@ -73,7 +73,7 @@ class ResetStaffPasswordServiceTest {
 
         assertThatThrownBy(() -> serviceActingAs(actorRole).resetPassword(TARGET_ID))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
-        verifyNoInteractions(requestPasswordResetUseCase);
+        verifyNoInteractions(passwordResetCodeRequester);
     }
 
     @Test
@@ -82,7 +82,7 @@ class ResetStaffPasswordServiceTest {
 
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").resetPassword(TARGET_ID))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
-        verifyNoInteractions(requestPasswordResetUseCase);
+        verifyNoInteractions(passwordResetCodeRequester);
     }
 
     @Test
@@ -91,7 +91,7 @@ class ResetStaffPasswordServiceTest {
 
         serviceActingAs("ADMINISTRATIVO").resetPassword(TARGET_ID);
 
-        verify(requestPasswordResetUseCase).requestReset(person.emailValue());
+        verify(passwordResetCodeRequester).requestPasswordResetCode(person.emailValue());
     }
 
     @Test
@@ -99,7 +99,7 @@ class ResetStaffPasswordServiceTest {
         when(personRepository.findById(TARGET_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> serviceActingAs("ADMINISTRATIVO").resetPassword(TARGET_ID)).isInstanceOf(PersonNotFoundException.class);
-        verifyNoInteractions(requestPasswordResetUseCase);
+        verifyNoInteractions(passwordResetCodeRequester);
     }
 
     @ParameterizedTest
@@ -108,7 +108,7 @@ class ResetStaffPasswordServiceTest {
         target(role);
 
         assertThatThrownBy(() -> serviceActingAs("ADMINISTRATIVO").resetPassword(TARGET_ID)).isInstanceOf(PersonNotFoundException.class);
-        verify(requestPasswordResetUseCase, never()).requestReset(org.mockito.ArgumentMatchers.anyString());
+        verify(passwordResetCodeRequester, never()).requestPasswordResetCode(org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test

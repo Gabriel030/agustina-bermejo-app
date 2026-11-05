@@ -137,6 +137,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
             institution.setName("Instituto");
             entityManager.persist(institution);
             Program program = new Program();
+            program.setVisibleInCatalog(true);
             program.setName("Carrera " + System.nanoTime());
             program.setTotalYears(3);
             program.setTotalCreditsRequired(10);

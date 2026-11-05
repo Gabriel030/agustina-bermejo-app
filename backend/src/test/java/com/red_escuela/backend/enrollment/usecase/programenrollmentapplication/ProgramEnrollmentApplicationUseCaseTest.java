@@ -129,6 +129,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     private Program persistProgram(String nombre) {
         Program program = new Program();
+        program.setVisibleInCatalog(true);
         program.setName(nombre);
         program.setTotalYears(3);
         program.setTotalCreditsRequired(0);
@@ -353,10 +354,10 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         String mpPaymentId = "mp-" + System.nanoTime();
-        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(registrationPort,
+        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(new com.red_escuela.backend.billing.payment.service.MercadoPagoWebhookRegistration(registrationPort,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
                         new ReportedGatewayAllocation(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
-                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true));
+                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true)));
 
         service.process("", "req", mpPaymentId);
         entityManager.flush();

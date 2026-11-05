@@ -532,4 +532,43 @@ describe('InscripcionWizard validation with zod', () => {
     expect(await screen.findByText(/Alguno de los archivos es demasiado grande \(máximo 3 MB cada uno\)/)).toBeInTheDocument();
     expect(screen.queryByText('Solicitud enviada')).not.toBeInTheDocument();
   });
+
+  it('explains that the program is no longer available when the server answers PROGRAM_NOT_AVAILABLE', async () => {
+    server.use(
+      http.put(`${API}/me`, () => HttpResponse.json({})),
+      http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
+        HttpResponse.json(errorBody('PROGRAM_NOT_AVAILABLE'), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWizard('carrera');
+    await user.click(screen.getByRole('button', { name: /Cohorte marzo/ }));
+    await fillValidData(user);
+    const file = new File(['%PDF'], 'doc.pdf', { type: 'application/pdf' });
+    for (const input of container.querySelectorAll('input[type="file"]')) {
+      await user.upload(input, file);
+    }
+    const confirmButton = screen.getByRole('button', { name: 'Confirmar solicitud' });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+    await user.click(await screen.findByRole('button', { name: 'Sí, confirmar' }));
+
+    expect(await screen.findByText('Esta carrera ya no está disponible para inscripción.')).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos completar la inscripción. Probá de nuevo.')).not.toBeInTheDocument();
+  });
+
+  it('explains that the course is no longer available when the server answers COURSE_NOT_AVAILABLE', async () => {
+    server.use(
+      http.put(`${API}/me`, () => HttpResponse.json({})),
+      http.post(`${API}/me/course-enrollments`, () => HttpResponse.json(errorBody('COURSE_NOT_AVAILABLE'), { status: 409 })),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWizard('curso');
+    await goToPaymentStep(user);
+    await fillReceipt(user, container);
+    await user.click(sendButton());
+
+    expect(await screen.findByText('Este curso ya no está disponible para inscripción.')).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos completar la inscripción. Probá de nuevo.')).not.toBeInTheDocument();
+  });
 });

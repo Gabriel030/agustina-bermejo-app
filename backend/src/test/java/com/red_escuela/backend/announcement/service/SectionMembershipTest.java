@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.service;
 
+import com.red_escuela.backend.academicstructure.api.CurrentInstructorIdFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.announcement.entity.SectionType;
@@ -18,6 +19,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,9 +29,11 @@ class SectionMembershipTest {
     private SectionTeachingFinder sectionTeachingFinder;
     @Mock
     private SectionEnrollmentFinder sectionEnrollmentFinder;
+    @Mock
+    private CurrentInstructorIdFinder currentInstructorIdFinder;
 
     private SectionMembership membership() {
-        return new SectionMembership(sectionTeachingFinder, sectionEnrollmentFinder);
+        return new SectionMembership(sectionTeachingFinder, sectionEnrollmentFinder, currentInstructorIdFinder);
     }
 
     @Test
@@ -51,6 +55,24 @@ class SectionMembershipTest {
         when(sectionTeachingFinder.teaches(SectionKind.COURSE, 1L, 2L)).thenReturn(false);
 
         assertThatThrownBy(() -> membership().requireInstructorOf(SectionType.COURSE, 1L, 2L))
+                .isInstanceOf(NotSectionInstructorException.class);
+    }
+
+    @Test
+    void requireCurrentInstructorOfDelegatesWithTheResolvedInstructorId() {
+        when(currentInstructorIdFinder.currentInstructorId()).thenReturn(7L);
+        when(sectionTeachingFinder.teaches(SectionKind.COURSE, 3L, 7L)).thenReturn(true);
+
+        assertThatCode(() -> membership().requireCurrentInstructorOf(SectionType.COURSE, 3L)).doesNotThrowAnyException();
+        verify(sectionTeachingFinder).teaches(SectionKind.COURSE, 3L, 7L);
+    }
+
+    @Test
+    void rejectsWhenCurrentInstructorDoesNotTeachTheSection() {
+        when(currentInstructorIdFinder.currentInstructorId()).thenReturn(7L);
+        when(sectionTeachingFinder.teaches(SectionKind.PROGRAM, 3L, 7L)).thenReturn(false);
+
+        assertThatThrownBy(() -> membership().requireCurrentInstructorOf(SectionType.PROGRAM, 3L))
                 .isInstanceOf(NotSectionInstructorException.class);
     }
 

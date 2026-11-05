@@ -120,3 +120,23 @@ describe('AlumnoMisCarreras', () => {
     await waitFor(() => expect(requested).toEqual(['regular', 'approved-subjects']));
   });
 });
+
+describe('AlumnoMisCarreras — load failure', () => {
+  it('shows the error state and reloads the programs on retry', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/me/program-enrollments`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+      http.get(`${API}/*`, () => HttpResponse.json([])),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AlumnoMisCarreras />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar tus carreras');
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(calls).toBe(2));
+  });
+});

@@ -8,7 +8,6 @@ import com.red_escuela.backend.billing.payment.service.RefundPreviewService;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class PreviewRefundService implements PreviewRefundUseCase {
@@ -20,28 +19,24 @@ public class PreviewRefundService implements PreviewRefundUseCase {
 
     @Override
     @PreAuthorize("hasRole('ALUMNO')")
-    @Transactional(readOnly = true)
     public RefundPlanOutcome previewOwnRefund(Long currentStudentId, RequestRefundRequest request) {
         return previewService.previewRefundOf(currentStudentId, request.amount(), destinationOf(request));
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    @Transactional(readOnly = true)
     public RefundPlanOutcome previewRefundOnBehalfOfStudent(Long studentId, RequestRefundRequest request) {
         return previewService.previewRefundOfExistingStudent(studentId, request.amount(), destinationOf(request));
     }
 
     @Override
     @PreAuthorize("hasRole('ALUMNO')")
-    @Transactional(readOnly = true)
     public RefundEligibility describeOwnRefundEligibility(Long currentStudentId, Currency currency) {
         return previewService.describeEligibilityOf(currentStudentId, currency);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    @Transactional(readOnly = true)
     public RefundEligibility describeRefundEligibilityOfStudent(Long studentId, Currency currency) {
         return previewService.describeEligibilityOfExistingStudent(studentId, currency);
     }

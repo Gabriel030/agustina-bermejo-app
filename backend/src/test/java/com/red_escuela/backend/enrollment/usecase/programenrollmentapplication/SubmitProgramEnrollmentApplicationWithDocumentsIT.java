@@ -9,7 +9,10 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.ApplicationDocumentFiles;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
+import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
+import com.red_escuela.backend.enrollment.exception.ProgramNotAvailableException;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.exception.RequiredApplicationDocumentsMissingException;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -54,6 +57,7 @@ class SubmitProgramEnrollmentApplicationWithDocumentsIT extends AbstractIntegrat
     private static final byte[] NOT_A_PDF = "this is not a pdf".getBytes();
 
     @Autowired private SubmitProgramEnrollmentApplicationWithDocumentsUseCase useCase;
+    @Autowired private ProgramEnrollmentService programEnrollmentService;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private EntityManager entityManager;
     @Value("${app.uploads.directory}") private String uploadsDirectory;
@@ -91,6 +95,7 @@ class SubmitProgramEnrollmentApplicationWithDocumentsIT extends AbstractIntegrat
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
             Program program = new Program();
+            program.setVisibleInCatalog(true);
             program.setName("Carrera atomic " + System.nanoTime());
             program.setTotalYears(3);
             program.setTotalCreditsRequired(0);
@@ -128,6 +133,7 @@ class SubmitProgramEnrollmentApplicationWithDocumentsIT extends AbstractIntegrat
     void removeCommittedFixtures() {
         transaction.executeWithoutResult(status -> {
             entityManager.createNativeQuery("delete from student_document where student_id = :id").setParameter("id", studentId).executeUpdate();
+            entityManager.createNativeQuery("delete from program_enrollment where student_id = :id").setParameter("id", studentId).executeUpdate();
             entityManager.createNativeQuery("delete from program_enrollment_application where student_id = :id").setParameter("id", studentId).executeUpdate();
         });
         deleteStudentFiles();
@@ -183,6 +189,46 @@ class SubmitProgramEnrollmentApplicationWithDocumentsIT extends AbstractIntegrat
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Test
+    void studentRequestForProgramHiddenFromCatalogIsRejectedAndCreatesNothing() {
+        updateProgram("visible_in_catalog = false");
+
+        assertThatThrownBy(() -> useCase.submit(command(documents(PDF)))).isInstanceOf(ProgramNotAvailableException.class);
+
+        assertThat(applications()).isZero();
+        assertThat(storedDocuments()).isZero();
+    }
+
+    @Test
+    void studentRequestForInactiveProgramIsRejectedAndCreatesNothing() {
+        updateProgram("status = 'INACTIVE'");
+
+        assertThatThrownBy(() -> useCase.submit(command(documents(PDF)))).isInstanceOf(ProgramNotAvailableException.class);
+
+        assertThat(applications()).isZero();
+    }
+
+    @Test
+    void studentRequestForActiveProgramWithNullStatusIsAccepted() {
+        updateProgram("status = null");
+
+        assertThat(useCase.submit(command(documents(PDF))).status()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void staffEnrollmentIntoProgramHiddenAndInactiveIsStillAllowed() {
+        updateProgram("visible_in_catalog = false, status = 'INACTIVE'");
+
+        var enrollment = transaction.execute(status -> programEnrollmentService.enroll(studentId, new CreateProgramEnrollmentRequest(programId, cohortId)));
+
+        assertThat(enrollment.getId()).isNotNull();
+    }
+
+    private void updateProgram(String assignments) {
+        transaction.executeWithoutResult(status -> entityManager.createNativeQuery(
+                "update program set " + assignments + " where id = :id").setParameter("id", programId).executeUpdate());
     }
 
     @Test

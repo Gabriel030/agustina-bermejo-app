@@ -16,16 +16,20 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JwtService {
     private final SecretKey signingKey;
     private final long accessTokenExpirationMinutes;
+    private final String issuer;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-token-expiration-minutes}") long accessTokenExpirationMinutes) {
-        this.signingKey = deriveSigningKey(secret);
+            @Value("${jwt.access-token-expiration-minutes}") long accessTokenExpirationMinutes,
+            @Value("${jwt.issuer:agustina-bermejo-app}") String issuer) {
+        this.issuer = issuer;
+        this.signingKey = deriveSigningKey(JwtSecretPolicy.requireStrong(secret));
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
     }
 
@@ -43,6 +47,8 @@ public class JwtService {
         List<String> roles = person.getRoles().stream().map(Role::getName).sorted().toList();
 
         return Jwts.builder()
+                .issuer(issuer)
+                .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(person.getId()))
                 .claim("roles", roles)
                 .issuedAt(Date.from(now))
@@ -54,6 +60,7 @@ public class JwtService {
     public Claims validateAndParse(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)
+                .requireIssuer(issuer)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

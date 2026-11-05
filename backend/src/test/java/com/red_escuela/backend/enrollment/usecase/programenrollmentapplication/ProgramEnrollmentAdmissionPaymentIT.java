@@ -129,6 +129,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
             Program program = new Program();
+            program.setVisibleInCatalog(true);
             program.setName("Carrera " + System.nanoTime());
             program.setTotalYears(3);
             program.setTotalCreditsRequired(0);

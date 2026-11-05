@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -221,12 +222,13 @@ function TermForm({ initial, term }) {
 export function PreceptorPeriodoForm() {
   const { termId } = useParams();
   const editing = termId != null;
-  const { data: terms, isLoading, isError } = useAllTerms();
+  const { data: terms, isLoading, isError, refetch } = useAllTerms();
   const term = editing ? (terms ?? []).find((candidate) => String(candidate.id) === termId) : null;
 
   let body;
   if (editing && isLoading) body = <Skeleton className="h-64 w-full rounded-2xl" />;
-  else if (editing && (isError || !term)) body = <EmptyState title="No encontramos este período" />;
+  else if (editing && isError) body = <LoadErrorState onRetry={refetch} resource="el período" />;
+  else if (editing && !term) body = <EmptyState title="No encontramos este período" />;
   else if (editing) body = <TermForm key={term.id} initial={termToForm(term)} term={term} />;
   else body = <TermForm initial={emptyTermForm(new Date().getFullYear())} term={null} />;
 

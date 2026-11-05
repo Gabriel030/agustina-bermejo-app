@@ -41,19 +41,19 @@ export function useOpenProgramCohorts(id) {
 }
 
 export function useProgramaPlanDeEstudio(id) {
-  return useQuery({ queryKey: ['programa', id, 'subjects'], queryFn: () => apiFetch(`/programs/${id}/subjects`), enabled: !!id });
+  return useQuery({ queryKey: ['programa', id, 'subjects'], queryFn: () => apiFetch(`/programs/${id}/subjects?status=ACTIVE`), enabled: !!id });
 }
 
 export function useCursoTemario(id) {
-  return useQuery({ queryKey: ['curso', id, 'subjects'], queryFn: () => apiFetch(`/courses/${id}/subjects`), enabled: !!id });
+  return useQuery({ queryKey: ['curso', id, 'subjects'], queryFn: () => apiFetch(`/courses/${id}/subjects?status=ACTIVE`), enabled: !!id });
 }
 
-export function useMisSolicitudesCarrera() {
-  return useQuery({ queryKey: ['mis-solicitudes-carrera'], queryFn: () => apiFetch('/me/program-enrollment-applications') });
+export function useMisSolicitudesCarrera(enabled = true) {
+  return useQuery({ queryKey: ['mis-solicitudes-carrera'], queryFn: () => apiFetch('/me/program-enrollment-applications'), enabled });
 }
 
-export function useMisSolicitudesCurso() {
-  return useQuery({ queryKey: ['mis-solicitudes-curso'], queryFn: () => apiFetch('/me/course-enrollment-applications') });
+export function useMisSolicitudesCurso(enabled = true) {
+  return useQuery({ queryKey: ['mis-solicitudes-curso'], queryFn: () => apiFetch('/me/course-enrollment-applications'), enabled });
 }
 
 const PARTES_DOCUMENTOS_CARRERA = {
@@ -105,4 +105,8 @@ export function useAgregarDocumentoSolicitudCarrera() {
       });
     },
   });
+}
+
+export function useMyDocuments() {
+  return useQuery({ queryKey: ['me-documents'], queryFn: () => apiFetch('/me/documents') });
 }

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AccessTokenVerifierTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
-    private final JwtService jwtService = new JwtService(SECRET, 15);
+    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
     private final AccessTokenVerifier verifier = new AccessTokenVerifier(jwtService);
 
     @Test
@@ -39,7 +39,7 @@ class AccessTokenVerifierTest {
 
     @Test
     void tokenSignedWithAnotherSecretYieldsEmpty() {
-        JwtService other = new JwtService("another-secret-with-enough-length-0123456789-abcdef", 15);
+        JwtService other = new JwtService("another-secret-with-enough-length-0123456789-abcdef", 15, "agustina-bermejo-app");
         Person person = new Person();
         person.setId(1L);
         person.setRoles(new HashSet<>());

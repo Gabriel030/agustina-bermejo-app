@@ -1,8 +1,8 @@
 package com.red_escuela.backend.identity.usecase.staff;
 
+import com.red_escuela.backend.identity.service.StaffReactivation;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
-import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class ReactivateStaffServiceTest {
     private final PersonRepository personRepository = mock(PersonRepository.class);
 
     private ReactivateStaffService serviceActingAs(String actorRole) {
-        return new ReactivateStaffService(personRepository, policyActingAs(actorRole));
+        return new ReactivateStaffService(new StaffReactivation(personRepository, policyActingAs(actorRole)));
     }
 
     private Person target(StatusType status, String... roles) {
@@ -80,7 +80,7 @@ class ReactivateStaffServiceTest {
         Person administrative = target(StatusType.INACTIVE, "ADMINISTRATIVO");
 
         assertThatThrownBy(() -> serviceActingAs("ADMINISTRATIVO").reactivate(TARGET_ID))
-                .isInstanceOf(RoleNotAssignableByActorException.class);
+                .isInstanceOf(PersonNotFoundException.class);
         assertThat(administrative.getStatus()).isEqualTo(StatusType.INACTIVE);
         verify(personRepository, never()).save(any());
     }
@@ -90,7 +90,7 @@ class ReactivateStaffServiceTest {
         target(StatusType.INACTIVE, "DOCENTE");
 
         assertThatThrownBy(() -> serviceActingAs("DIRECTOR").reactivate(TARGET_ID))
-                .isInstanceOf(RoleNotAssignableByActorException.class);
+                .isInstanceOf(PersonNotFoundException.class);
         verify(personRepository, never()).save(any());
     }
 
@@ -99,7 +99,7 @@ class ReactivateStaffServiceTest {
         target(StatusType.INACTIVE, "PRECEPTOR");
 
         assertThatThrownBy(() -> serviceActingAs("DOCENTE").reactivate(TARGET_ID))
-                .isInstanceOf(RoleNotAssignableByActorException.class);
+                .isInstanceOf(PersonNotFoundException.class);
     }
 
     @Test

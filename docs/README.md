@@ -21,6 +21,13 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [test-users.md](context/test-users.md) | Usuarios de prueba y con cuál probar cada flujo | vigente |
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
 
+## Release (`docs/release/`)
+
+| Documento | Para qué | Estado |
+|---|---|---|
+| [release/migration-smoke.md](release/migration-smoke.md) | Pasos para probar la cadena de migraciones de master (V110) a develop sobre Postgres en Docker | vigente |
+| [../perf/README.md](../perf/README.md) | Como reproducir la medicion de rendimiento: Postgres con pg_stat_statements, perfil `perf`, presupuestos y k6 | vigente |
+
 ## Decisiones de arquitectura (`docs/adr/`)
 
 | Documento | Para qué | Estado |

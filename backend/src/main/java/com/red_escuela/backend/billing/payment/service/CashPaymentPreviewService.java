@@ -9,8 +9,10 @@ import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 public class CashPaymentPreviewService {
 
     private final PolicySet<CashPaymentCheck> previewRequestPolicies;

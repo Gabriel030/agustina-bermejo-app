@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
-import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
+import com.red_escuela.backend.identity.service.PasswordResetCodeRequester;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +16,14 @@ public class ResetStaffPasswordService implements ResetStaffPasswordUseCase {
 
     private final PersonRepository personRepository;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
-    private final RequestPasswordResetUseCase requestPasswordResetUseCase;
+    private final PasswordResetCodeRequester passwordResetCodeRequester;
 
     public ResetStaffPasswordService(PersonRepository personRepository,
                                      StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
-                                     RequestPasswordResetUseCase requestPasswordResetUseCase) {
+                                     PasswordResetCodeRequester passwordResetCodeRequester) {
         this.personRepository = personRepository;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
-        this.requestPasswordResetUseCase = requestPasswordResetUseCase;
+        this.passwordResetCodeRequester = passwordResetCodeRequester;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class ResetStaffPasswordService implements ResetStaffPasswordUseCase {
         }
         staffRoleAssignmentPolicy.requireCanAssign(staffRole);
         staffRoleAssignmentPolicy.requireNoEmailChangeInFlight(person);
-        requestPasswordResetUseCase.requestReset(person.emailValue());
+        passwordResetCodeRequester.requestPasswordResetCode(person.emailValue());
         log.info("Reset de contraseña solicitado: personId={}", personId);
     }
 }

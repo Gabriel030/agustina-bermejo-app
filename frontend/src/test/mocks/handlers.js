@@ -68,6 +68,7 @@ export const handlers = [
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
   http.post(`${API}/me/program-enrollment-applications`, () =>
     HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
   ),
@@ -100,6 +101,20 @@ export const handlers = [
   http.get(`${API}/me/enrollment-payment-status`, () => HttpResponse.json([])),
   http.get(`${API}/payment-config`, () =>
     HttpResponse.json({ bankAlias: null, bankCbu: null, accountHolder: null, qrImageUrl: null, mpEnabled: false }),
+  ),
+  http.get(`${API}/me/modules`, () =>
+    HttpResponse.json({
+      billing: { mode: 'FULL' },
+      fiscalInvoicing: { enabled: false },
+      analytics: { enabled: false },
+      paymentMethods: [
+        { code: 'CASH', available: true },
+        { code: 'BANK_TRANSFER', available: true },
+        { code: 'GATEWAY', available: false },
+      ],
+      billingNotifications: { enabled: false },
+      externalBilling: { enabled: false },
+    }),
   ),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
 ];

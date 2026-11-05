@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionType;
 import com.red_escuela.backend.billing.discount.domain.PromotionClosureTarget;
 import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,6 +24,7 @@ public class PromotionContractCloser {
         this.translator = translator;
     }
 
+    @Transactional
     public void closePromotionAndItsSiblings(Long promotionId) {
         DiscountDefinition definition = PromotionClosureTarget.requireOpenPromotion(promotionId, repository.findById(promotionId)).definition();
         List<DiscountDefinition> active = repository.findCatalog(DiscountDefinitionType.COHORT_PROMOTION, DiscountDefinitionStatus.ACTIVE);

@@ -212,7 +212,7 @@ describe('CarreraDetalle — plan de estudios', () => {
     await screen.findByText('Anatomía');
 
     await user.click(screen.getByRole('button', { name: 'Quitar Anatomía del plan' }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('alertdialog');
     await user.click(within(dialog).getByRole('button', { name: 'Quitar del plan' }));
 
     await waitFor(() => expect(deactivated).toEqual(['134']));

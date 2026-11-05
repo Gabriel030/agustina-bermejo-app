@@ -1,14 +1,14 @@
 package com.red_escuela.backend.enrollment.service;
 import java.time.Clock;
-import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
-import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.identity.api.ConfirmedProspect;
+import com.red_escuela.backend.identity.api.EmailVerificationSender;
 import com.red_escuela.backend.identity.api.NewProspect;
+import com.red_escuela.backend.identity.api.PasswordResetCodeIssuer;
 import com.red_escuela.backend.identity.api.ProspectDraft;
 import com.red_escuela.backend.identity.api.StudentFinder;
 import com.red_escuela.backend.identity.api.StudentOnboarding;
@@ -34,23 +34,23 @@ public class ProspectService {
     private final StudentDocumentRepository studentDocumentRepository;
     private final FileStorageService fileStorageService;
     private final TransactionBoundFileCleanup transactionBoundFileCleanup;
-    private final RequestPasswordResetUseCase requestPasswordResetUseCase;
-    private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
+    private final PasswordResetCodeIssuer passwordResetCodeIssuer;
+    private final EmailVerificationSender emailVerificationSender;
     private final Clock clock;
 
     public ProspectService(StudentFinder studentFinder, StudentOnboarding studentOnboarding,
             StudentDocumentRepository studentDocumentRepository,
             FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
-            RequestPasswordResetUseCase requestPasswordResetUseCase,
-            SendEmailVerificationUseCase sendEmailVerificationUseCase,
+            PasswordResetCodeIssuer passwordResetCodeIssuer,
+            EmailVerificationSender emailVerificationSender,
             Clock clock) {
         this.studentFinder = studentFinder;
         this.studentOnboarding = studentOnboarding;
         this.studentDocumentRepository = studentDocumentRepository;
         this.fileStorageService = fileStorageService;
         this.transactionBoundFileCleanup = transactionBoundFileCleanup;
-        this.requestPasswordResetUseCase = requestPasswordResetUseCase;
-        this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
+        this.passwordResetCodeIssuer = passwordResetCodeIssuer;
+        this.emailVerificationSender = emailVerificationSender;
         this.clock = clock;
     }
 
@@ -62,7 +62,7 @@ public class ProspectService {
         boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
                 instanceof AnonymousAuthenticationToken;
         if (isAnonymous) {
-            sendEmailVerificationUseCase.sendVerification(prospect.studentId());
+            emailVerificationSender.sendVerificationToStudent(prospect.studentId());
         }
 
         return prospect;
@@ -76,7 +76,7 @@ public class ProspectService {
 
     public void sendVerification(Long studentId) {
         findStudentOrThrow(studentId);
-        sendEmailVerificationUseCase.sendVerification(studentId);
+        emailVerificationSender.sendVerificationToStudent(studentId);
     }
 
     @Transactional
@@ -111,7 +111,7 @@ public class ProspectService {
                 request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
                 request.city(), request.state(), request.postalCode(), request.country()));
 
-        requestPasswordResetUseCase.requestReset(confirmed.email());
+        passwordResetCodeIssuer.issuePasswordResetCode(confirmed.email());
 
         return confirmed;
     }

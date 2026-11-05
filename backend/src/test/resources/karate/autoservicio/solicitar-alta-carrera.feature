@@ -27,6 +27,12 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match response.status == 'ACTIVE'
     * def programId = response.id
 
+    Given path '/programs', programId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
+
     * def descripcionPeriodoCarrera = 'Karate - Periodo carrera ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken

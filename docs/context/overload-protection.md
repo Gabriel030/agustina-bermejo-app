@@ -55,3 +55,21 @@ Un archivo mayor al límite responde `400 MAX_UPLOAD_SIZE_EXCEEDED`. Spring solo
 ## Cola de eventos de Modulith
 
 `EventPublicationResubmissionJob` reintenta cada 5 minutos las publicaciones incompletas con más de 5 minutos. Cada reintento se cuenta en `event_publication_attempt`. Al llegar a `app.event-publication.resubmission.max-attempts` (`EVENT_RESUBMISSION_MAX_ATTEMPTS`, default 100, unas 8 horas) la publicación se mueve a `event_publication_dead_letter` (con el evento serializado, para reinyectarlo a mano) y se registra un `ERROR` con id, listener y tipo. Con facturación en `OFF`/`MIRROR` los listeners de billing se saltean y completan (`ModuleGuardAspect`), por lo que no acumulan publicaciones.
+
+## Circuit breakers
+
+Propiedades por nombre: `resilience.<nombre>.window`, `failure-threshold`, `wait-open`; `enabled` hereda `resilience.default.enabled` (`RESILIENCE_ENABLED`, default `false`). En producción poner `RESILIENCE_ENABLED=true`.
+
+| Nombre | Propiedades | Cuenta como fallo | Respuesta con el circuito abierto |
+|---|---|---|---|
+| `mercadopago` | `RESILIENCE_MERCADOPAGO_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | `MPException` (red/timeout) y `MPApiException` 5xx o 429; los 4xx no cuentan | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` |
+| `google` | `RESILIENCE_GOOGLE_WINDOW` (10), `_FAILURE_THRESHOLD` (5), `_WAIT_OPEN` (30s) | `IOException` al verificar el token (`502 GOOGLE_SERVICE_UNAVAILABLE`); un token inválido no cuenta | `503 EXTERNAL_SERVICE_UNAVAILABLE` + `Retry-After` |
+
+## Señales de fallo
+
+- `api.errors{status,code}`: contador de respuestas 5xx y de los 409/400 que salen de `IllegalStateException` / `IllegalArgumentException` (sospechosos de enmascarar bugs). El `code` sale del nombre de la excepción, así que la cardinalidad es acotada.
+- `scheduled.job.failures{job,cause}`: fallos de cada job con `@Scheduled` + `@SchedulerLock`.
+- `scheduled.job.last.success.epoch.seconds{job}`: instante de la última ejecución exitosa; permite detectar jobs que no corren.
+- `scheduled.job.duration{job,outcome}`: duración por resultado (`success` / `failure`).
+- Regla de alerta sugerida: `time() - scheduled_job_last_success_epoch_seconds{job="NightlyBillingJob"} > 90000`.
+- `ScheduledJobCoverageTest` falla si aparece un `@Scheduled` sin `@SchedulerLock` fuera de los barridos por instancia declarados en el test.

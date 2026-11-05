@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.exception;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -222,5 +223,44 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/data-integrity"))
                 .andExpect(jsonPath("$.code").value("DATA_INTEGRITY_VIOLATION"))
                 .andExpect(content().string(not(containsString("uk_person_email"))));
+    }
+
+    private MockMvc countingMockMvc(SimpleMeterRegistry registry) {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        handler.setApiErrorCounter(new ApiErrorCounter(registry));
+        return MockMvcBuilders.standaloneSetup(new ThrowingController()).setControllerAdvice(handler).build();
+    }
+
+    @Test
+    void unexpectedExceptionIncrementsTheApiErrorCounterWithStatus500() throws Exception {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+        countingMockMvc(registry).perform(get("/unexpected")).andExpect(status().isInternalServerError());
+
+        assertThat(registry.counter("api.errors", "status", "500", "code", "INTERNAL_ERROR").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void illegalStateIsCountedAs409WithItsCode() throws Exception {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+        countingMockMvc(registry).perform(get("/illegal-state")).andExpect(status().isConflict());
+
+        assertThat(registry.counter("api.errors", "status", "409", "code", "ILLEGAL_STATE").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void aHandlerWithoutCounterStillAnswersNormally() throws Exception {
+        mockMvc.perform(get("/illegal-state")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ILLEGAL_STATE"));
+    }
+
+    @Test
+    void clientErrorsOutsideTheSuspiciousFamiliesAreNotCounted() throws Exception {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+        countingMockMvc(registry).perform(get("/business-conflict")).andExpect(status().isConflict());
+
+        assertThat(registry.getMeters()).isEmpty();
     }
 }

@@ -1,0 +1,18 @@
+title = "agustina-bermejo-app"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Contraseña de las cuentas demo y locales, documentada en docs/context/test-users.md"
+regexes = ['''Test1234''']
+
+[[allowlists]]
+description = "Fixtures de test y documentación de perf con valores ficticios; los secretos reales no viven ahí"
+paths = [
+  '''(^|/)backend/src/test/''',
+  '''(^|/)frontend/src/.*\.test\.jsx?$''',
+  '''(^|/)perf/README\.md$''',
+  '''(^|/)target/''',
+  '''(^|/)node_modules/''',
+]

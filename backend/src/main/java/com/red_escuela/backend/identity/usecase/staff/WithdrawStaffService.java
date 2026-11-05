@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
-import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
+import com.red_escuela.backend.identity.service.SessionRevoker;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,14 +19,14 @@ public class WithdrawStaffService implements WithdrawStaffUseCase {
 
     private final PersonRepository personRepository;
     private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
-    private final RevokeAllSessionsUseCase revokeAllSessionsUseCase;
+    private final SessionRevoker sessionRevoker;
 
     public WithdrawStaffService(PersonRepository personRepository,
                                 StaffRoleAssignmentPolicy staffRoleAssignmentPolicy,
-                                RevokeAllSessionsUseCase revokeAllSessionsUseCase) {
+                                SessionRevoker sessionRevoker) {
         this.personRepository = personRepository;
         this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
-        this.revokeAllSessionsUseCase = revokeAllSessionsUseCase;
+        this.sessionRevoker = sessionRevoker;
     }
 
     @Override
@@ -35,10 +35,10 @@ public class WithdrawStaffService implements WithdrawStaffUseCase {
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new PersonNotFoundException(personId));
         String staffRole = staffRole(person);
-        staffRoleAssignmentPolicy.requireCanAssign(staffRole);
+        staffRoleAssignmentPolicy.requireManageableOrNotFound(personId, staffRole);
         person.setStatus(StatusType.INACTIVE);
         personRepository.save(person);
-        revokeAllSessionsUseCase.revokeAll(person);
+        sessionRevoker.revokeAllSessions(person);
         log.info("Personal dado de baja: personId={}, role={}", personId, staffRole);
     }
 

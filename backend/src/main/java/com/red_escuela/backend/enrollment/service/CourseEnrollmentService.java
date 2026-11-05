@@ -51,6 +51,7 @@ public class CourseEnrollmentService {
     private final EnrollmentDebtGuard enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
+    private final CatalogAvailabilityGuard catalogAvailabilityGuard;
     private final Clock clock;
 
     public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
@@ -62,6 +63,7 @@ public class CourseEnrollmentService {
             StudentRoleGranter studentRoleGranter, EnrollmentDebtGuard enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
+            CatalogAvailabilityGuard catalogAvailabilityGuard,
             Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentFinder = studentFinder;
@@ -73,6 +75,7 @@ public class CourseEnrollmentService {
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
+        this.catalogAvailabilityGuard = catalogAvailabilityGuard;
         this.clock = clock;
     }
 
@@ -108,6 +111,11 @@ public class CourseEnrollmentService {
         }
 
         return savedEnrollment;
+    }
+
+    CourseRegistrationView validateCanRequestAsStudent(Student student, Long courseId) {
+        catalogAvailabilityGuard.requireCourseListed(courseCatalogFinder.findCourseEntity(courseId));
+        return validateCanEnroll(student, courseId);
     }
 
     CourseRegistrationView validateCanEnroll(Student student, Long courseId) {

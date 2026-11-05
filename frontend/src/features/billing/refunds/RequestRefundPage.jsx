@@ -4,13 +4,16 @@ import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatMoney } from '@/lib/billing';
+import { formatAmountEsAr } from '../components/cashAmount';
 import { inboxPath } from '../authorization/authorizationRequests';
+import { useStudentHeader } from '../hooks/useCreditNotes';
 import { useRefundEligibility, useRefundPreview, useRequestRefund } from '../hooks/useRefunds';
 import { RefundBlockAlert } from './RefundBlockAlert';
 import { RefundSplitPreview } from './RefundSplitPreview';
@@ -61,6 +64,9 @@ export function RequestRefundPage() {
   const [touched, setTouched] = useState({});
   const [serverErrors, setServerErrors] = useState({});
   const mutation = useRequestRefund(studentId);
+  const { data: student } = useStudentHeader(studentId);
+  const [pendingPayload, setPendingPayload] = useState(null);
+  const studentName = student ? `${student.apellido}, ${student.nombre}` : 'el alumno';
 
   const debouncedForm = useDebouncedValue(form, PREVIEW_DEBOUNCE_MS);
   const previewPayload = useMemo(
@@ -118,7 +124,11 @@ export function RequestRefundPage() {
     setTouched({ amount: true, account: true, holder: true });
     setServerErrors({});
     if (Object.keys(clientErrors).length > 0) return;
-    const payload = buildPreviewPayload(form, eligibility.currency);
+    setPendingPayload(buildPreviewPayload(form, eligibility.currency));
+  }
+
+  async function handleConfirm() {
+    const payload = pendingPayload;
     try {
       const result = await mutation.mutateAsync(payload);
       const awaitingAuthorization = result?.authorizationRequestId != null;
@@ -132,11 +142,12 @@ export function RequestRefundPage() {
       }
       navigate(studentPath);
     } catch (error) {
+      setPendingPayload(null);
       applyServerError(error);
     }
   }
 
-  const description = cap ? `Reembolsable ahora ${formatMoney(cap)}` : undefined;
+  const description = cap ? `${student ? `${studentName} · ` : ''}Reembolsable ahora ${formatMoney(cap)}` : undefined;
   const typedAmount = hasValidAmount
     ? formatMoney({ amount: parseAmountInput(form.amount), currency: eligibility?.currency ?? 'ARS' })
     : 'Reembolso';
@@ -183,13 +194,18 @@ export function RequestRefundPage() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="refund-amount">Monto</Label>
-                <span className="text-xs text-ink-faint">Podés pedir hasta {formatMoney(cap)}</span>
+                <span className="flex items-center gap-2 text-xs text-ink-faint">
+                  Podés pedir hasta {formatMoney(cap)}
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => updateField('amount', formatAmountEsAr(cap.amount))}>
+                    Usar el máximo
+                  </Button>
+                </span>
               </div>
               <Input
                 id="refund-amount"
                 inputMode="decimal"
                 autoComplete="off"
-                placeholder="Ej.: 80.000"
+                placeholder="Ej.: 80.000,50"
                 value={form.amount}
                 onChange={(event) => updateField('amount', event.target.value)}
                 onBlur={() => touch('amount')}
@@ -264,6 +280,22 @@ export function RequestRefundPage() {
           {isDirector ? 'Registrar reembolso' : 'Pedir reembolso'}
         </Button>
       </GlassCard>
+      <ConfirmActionDialog
+        open={pendingPayload !== null}
+        onOpenChange={(open) => !open && setPendingPayload(null)}
+        title={isDirector ? `¿Registrar el reembolso de ${studentName}?` : `¿Pedir el reembolso de ${studentName}?`}
+        description={
+          pendingPayload
+            ? `${formatMoney(pendingPayload.amount)} a la cuenta ${pendingPayload.destinationAccount ?? ''}. ${
+                isDirector ? 'Se aprueba ahora y la plata queda reservada.' : 'Queda pendiente de la dirección y la plata queda reservada.'
+              }`
+            : ''
+        }
+        confirmLabel={isDirector ? 'Registrar reembolso' : 'Pedir reembolso'}
+        confirmVariant="default"
+        pending={mutation.isPending}
+        onConfirm={handleConfirm}
+      />
     </PageContainer>
   );
 }

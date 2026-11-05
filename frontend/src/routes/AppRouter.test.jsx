@@ -87,7 +87,7 @@ describe('AppRouter', () => {
     await signIn(userEvent.setup());
 
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
-    expect(screen.queryByText(/todavía no está implementada/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
   });
 
   it('shows a readable title instead of the slug on a placeholder reached by URL', async () => {
@@ -101,7 +101,60 @@ describe('AppRouter', () => {
     await signIn(userEvent.setup());
 
     expect(await screen.findByText('Constancias')).toBeInTheDocument();
+    expect(screen.getByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
     expect(screen.queryByText('constancias')).not.toBeInTheDocument();
+  });
+
+  it('shows the disabled-module screen on a direct billing URL when billing is OFF instead of redirecting', async () => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] }),
+      ),
+      http.get(`${API}/me/modules`, () =>
+        HttpResponse.json({
+          billing: { mode: 'OFF' },
+          fiscalInvoicing: { enabled: false },
+          analytics: { enabled: false },
+          paymentMethods: [{ code: 'CASH', available: false }],
+          billingNotifications: { enabled: false },
+          externalBilling: { enabled: false },
+        }),
+      ),
+    );
+    renderApp('/administrativo/facturacion');
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByText('Este módulo no está habilitado en tu instituto')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a Inicio' })).toHaveAttribute('href', '/administrativo/inicio');
+  });
+
+  it('keeps a direct billing URL closed when the modules query fails', async () => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] }),
+      ),
+      http.get(`${API}/me/modules`, () => new HttpResponse(null, { status: 500 })),
+    );
+    renderApp('/administrativo/descuentos');
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByText('No pudimos cargar los módulos de tu instituto')).toBeInTheDocument();
+  });
+
+  it('lets a director reach the certificates section', async () => {
+    server.use(
+      http.get(`${API}/me`, () =>
+        HttpResponse.json({ id: 6, nombre: 'Dora', apellido: 'Dir', email: 'dora@demo.test', roles: ['DIRECTOR'] }),
+      ),
+    );
+    renderApp('/director/constancias');
+
+    await signIn(userEvent.setup());
+
+    expect(await screen.findByText('Constancias')).toBeInTheDocument();
+    expect(screen.getByText(/Próximamente vas a poder gestionar esta sección/)).toBeInTheDocument();
   });
 
   it('does not let a director open the platform screens', async () => {

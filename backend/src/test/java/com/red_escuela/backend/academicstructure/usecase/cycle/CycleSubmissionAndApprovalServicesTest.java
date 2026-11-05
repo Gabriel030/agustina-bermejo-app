@@ -20,6 +20,7 @@ import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycl
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.service.CycleSubmission;
 import com.red_escuela.backend.academicstructure.service.AcademicOfferingCycleReader;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
 import com.red_escuela.backend.identity.entity.Person;
@@ -78,7 +79,7 @@ class CycleSubmissionAndApprovalServicesTest {
     }
 
     private SubmitCycleForApprovalService submitService() {
-        return new SubmitCycleForApprovalService(cycleRepository, subjectSectionRepository, courseSectionRepository);
+        return new SubmitCycleForApprovalService(new CycleSubmission(cycleRepository, subjectSectionRepository, courseSectionRepository));
     }
 
     private ApproveCycleService approveService() {

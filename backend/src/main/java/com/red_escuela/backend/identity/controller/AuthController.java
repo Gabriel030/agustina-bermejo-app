@@ -13,7 +13,7 @@ import com.red_escuela.backend.identity.dto.VerifyResetCodeRequest;
 import com.red_escuela.backend.identity.dto.VerifyResetCodeResponse;
 import com.red_escuela.backend.identity.exception.RateLimitExceededException;
 import com.red_escuela.backend.identity.infrastructure.LoginRateLimiter;
-import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
 import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
 import com.red_escuela.backend.identity.usecase.auth.LoginWithGoogleUseCase;

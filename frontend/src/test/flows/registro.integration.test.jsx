@@ -76,6 +76,7 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     // a bytes, sin que MSW tenga que reparsearlo.
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
+    let applicationSubmitted = false;
     server.use(
       http.get(`${API}/me`, () =>
         HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', roles: [] }),
@@ -92,8 +93,9 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
       http.put(`${API}/me`, () =>
         HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', dni: '30111222', roles: [] }),
       ),
-      http.post(`${API}/me/program-enrollment-applications/with-documents`, () =>
-        HttpResponse.json(
+      http.post(`${API}/me/program-enrollment-applications/with-documents`, () => {
+        applicationSubmitted = true;
+        return HttpResponse.json(
           {
             id: 42,
             studentId: 9,
@@ -108,10 +110,10 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
             programEnrollmentId: 1,
           },
           { status: 201 },
-        ),
-      ),
+        );
+      }),
       http.get(`${API}/me/program-enrollment-applications`, () =>
-        HttpResponse.json([{ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
+        HttpResponse.json(!applicationSubmitted ? [] : [{ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
       ),
       http.get(`${API}/me/course-enrollment-applications`, () => HttpResponse.json([])),
     );

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Toaster, toast } from 'sonner';
 import { http, HttpResponse } from 'msw';
@@ -107,7 +107,7 @@ describe('AvisoEditar', () => {
     expect(screen.getByText(/Para enviarlo ahora, creá un aviso nuevo/)).toBeInTheDocument();
   });
 
-  const NOTIFY_LABEL = 'Notificar el cambio a los destinatarios';
+  const NOTIFY_LABEL = 'Avisar a los alumnos de este cambio';
 
   function savedAnnouncement() {
     return {
@@ -141,6 +141,7 @@ describe('AvisoEditar', () => {
 
     expect(await screen.findByRole('checkbox', { name: NOTIFY_LABEL })).not.toBeChecked();
     expect(screen.queryByText(/vuelven a recibir/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Nadie recibe una notificación/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(await screen.findByText('Volvió a la comisión')).toBeInTheDocument();
@@ -160,7 +161,7 @@ describe('AvisoEditar', () => {
 
     await user.click(await screen.findByRole('checkbox', { name: NOTIFY_LABEL }));
     expect(screen.getByText(/vuelven a recibir/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Guardar y notificar' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar y avisar' }));
     expect(await screen.findByText(/Al guardar se volverá a notificar a todos los destinatarios/)).toBeInTheDocument();
     expect(guardados).toBe(0);
   });
@@ -176,9 +177,9 @@ describe('AvisoEditar', () => {
     });
 
     await user.click(await screen.findByRole('checkbox', { name: NOTIFY_LABEL }));
-    await user.click(screen.getByRole('button', { name: 'Guardar y notificar' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar y avisar' }));
     const dialog = await screen.findByRole('dialog');
-    await user.click(within(dialog).getByRole('button', { name: 'Guardar y notificar' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar y avisar' }));
 
     expect(await screen.findByText('Volvió a la comisión')).toBeInTheDocument();
     expect(bodies[0].notify).toBe(true);
@@ -195,9 +196,95 @@ describe('AvisoEditar', () => {
     });
 
     await user.click(await screen.findByRole('checkbox', { name: NOTIFY_LABEL }));
-    await user.click(screen.getByRole('button', { name: 'Guardar y notificar' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar y avisar' }));
     await user.click(await screen.findByRole('button', { name: 'Seguir editando' }));
     expect(screen.queryByText(/Al guardar se volverá a notificar/)).not.toBeInTheDocument();
     expect(guardados).toBe(0);
+  });
+
+  it.each([
+    ['el título', async (user) => user.type(screen.getByLabelText(/^Título/), ' nuevo')],
+    ['la urgencia', async (user) => user.click(screen.getByRole('button', { name: 'Marcar como urgente' }))],
+  ])('cambiar %s tilda la casilla sola y el botón pasa a Guardar y avisar', async (motivo, cambiar) => {
+    const user = userEvent.setup();
+    montar([aviso()]);
+
+    const casilla = await screen.findByRole('checkbox', { name: NOTIFY_LABEL });
+    expect(casilla).not.toBeChecked();
+    await cambiar(user);
+
+    expect(casilla).toBeChecked();
+    expect(screen.getByText(`Se tildó solo porque cambiaste ${motivo}.`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar y avisar' })).toBeInTheDocument();
+    expect(screen.getByText(/vuelven a recibir/)).toBeInTheDocument();
+  });
+
+  it('cambiar solo el mensaje no tilda la casilla', async () => {
+    const user = userEvent.setup();
+    montar([aviso()]);
+
+    const casilla = await screen.findByRole('checkbox', { name: NOTIFY_LABEL });
+    await user.type(screen.getByLabelText(/^Mensaje/), ' más');
+
+    expect(casilla).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeInTheDocument();
+  });
+
+  it('si el docente destilda a mano después de un cambio, se respeta aunque siga habiendo cambios', async () => {
+    const bodies = [];
+    const user = userEvent.setup();
+    montar([aviso()], {
+      onPut: async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json(savedAnnouncement());
+      },
+    });
+
+    const casilla = await screen.findByRole('checkbox', { name: NOTIFY_LABEL });
+    await user.type(screen.getByLabelText(/^Título/), ' nuevo');
+    await user.click(casilla);
+    expect(casilla).not.toBeChecked();
+    expect(screen.getByText('Elegiste no avisar a mano.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/^Título/), ' otra vez');
+    expect(casilla).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByText('Volvió a la comisión')).toBeInTheDocument();
+    expect(bodies[0].notify).toBe(false);
+  });
+
+  it('un aviso programado no muestra la casilla ni cambia el botón', async () => {
+    const user = userEvent.setup();
+    montar([aviso({ status: 'SCHEDULED', sentAt: null, scheduledFor: '2099-01-01T10:00:00' })]);
+
+    await screen.findByRole('button', { name: 'Cambiar fechas' });
+    await user.type(screen.getByLabelText(/^Título/), ' nuevo');
+    expect(screen.queryByRole('checkbox', { name: NOTIFY_LABEL })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeInTheDocument();
+  });
+});
+
+describe('AvisoEditar — load failure', () => {
+  it('shows the error state with a way back and reloads the announcement on retry', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/subject-sections/${SECTION_ID}/announcements`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/docente/mis-comisiones/:sectionId/avisos/:avisoId/editar" element={<AvisoEditar />} />
+      </Routes>,
+      { route: `/docente/mis-comisiones/${SECTION_ID}/avisos/10/editar` },
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar el aviso');
+    expect(screen.getByRole('link', { name: /Volver a los avisos/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(calls).toBe(2));
   });
 });

@@ -17,7 +17,7 @@ function renderDetalle(id = '1') {
     <Routes>
       <Route path="/catalogo/carreras/:id" element={<DetalleCarrera />} />
     </Routes>,
-    { route: `/catalogo/carreras/${id}` },
+    { route: `/catalogo/carreras/${id}`, withAuth: true },
   );
 }
 
@@ -112,8 +112,8 @@ describe('DetalleCarrera', () => {
     server.use(http.get(`${API}/programs/9999`, () => new HttpResponse(null, { status: 404 })));
     renderDetalle('9999');
 
-    expect(await screen.findByText('Esta carrera no existe o ya no está disponible.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '← Catálogo' })).toBeInTheDocument();
+    expect(await screen.findByText('No encontramos lo que buscabas')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute('href', '/catalogo?tab=carreras');
   });
 
   it('Inscribirme navega a una página propia, no abre un modal', async () => {

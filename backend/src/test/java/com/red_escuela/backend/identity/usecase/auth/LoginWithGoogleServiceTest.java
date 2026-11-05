@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.identity.dto.AuthTokens;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;

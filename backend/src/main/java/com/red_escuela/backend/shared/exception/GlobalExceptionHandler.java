@@ -4,6 +4,7 @@ import com.red_escuela.backend.shared.logging.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +27,19 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String REQUEST_ID_KEY = "requestId";
     private static final String USER_ID_KEY = "userId";
+
+    private ApiErrorCounter apiErrorCounter;
+
+    @Autowired(required = false)
+    void setApiErrorCounter(ApiErrorCounter apiErrorCounter) {
+        this.apiErrorCounter = apiErrorCounter;
+    }
+
+    private void count(HttpStatus status, String code) {
+        if (apiErrorCounter != null) {
+            apiErrorCounter.record(status.value(), code);
+        }
+    }
 
     @ExceptionHandler(UnauthorizedException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -79,7 +93,9 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorCodeResponse handleIllegalArgument(IllegalArgumentException exception) {
         log.warn("Argumento inválido [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
-        return ErrorCodeResponse.of(exception);
+        ErrorCodeResponse response = ErrorCodeResponse.of(exception);
+        count(HttpStatus.BAD_REQUEST, response.code());
+        return response;
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -118,6 +134,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorCodeResponse> handleCircuitOpen(CircuitOpenException exception) {
         long retryAfterSeconds = Math.max(1, exception.retryAfter().toSeconds());
         log.warn("Servicio externo no disponible {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(), exception.getMessage());
+        count(HttpStatus.SERVICE_UNAVAILABLE, ErrorCodeResponse.codeOf(exception.getClass()));
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds))
                 .body(ErrorCodeResponse.of(exception));
@@ -128,6 +145,7 @@ public class GlobalExceptionHandler {
     public ErrorCodeResponse handleExternalService(ExternalServiceException exception) {
         log.error("Falla de servicio externo {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(),
                 LogSanitizer.sanitize(exception.getMessage()), exception);
+        count(HttpStatus.BAD_GATEWAY, ErrorCodeResponse.codeOf(exception.getClass()));
         return ErrorCodeResponse.of(exception);
     }
 
@@ -136,6 +154,7 @@ public class GlobalExceptionHandler {
     public ErrorCodeResponse handleDataIntegrityBroken(DataIntegrityBrokenException exception) {
         log.error("Integridad de datos rota {} [{}]: {}", ErrorCodeResponse.codeOf(exception.getClass()), correlation(),
                 LogSanitizer.sanitize(exception.getMessage()), exception);
+        count(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodeResponse.INTERNAL_ERROR_CODE);
         return new ErrorCodeResponse(ErrorCodeResponse.INTERNAL_ERROR_CODE);
     }
 
@@ -144,6 +163,7 @@ public class GlobalExceptionHandler {
     public ErrorCodeResponse handleIllegalState(IllegalStateException exception) {
         ErrorCodeResponse response = ErrorCodeResponse.of(exception);
         log.warn("Conflicto de estado {} [{}]: {}", response.code(), correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
+        count(HttpStatus.CONFLICT, response.code());
         return response;
     }
 
@@ -160,6 +180,7 @@ public class GlobalExceptionHandler {
     public ErrorCodeResponse handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException exception) {
         log.warn("Conflicto de concurrencia (optimistic lock) [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()),
                 exception);
+        count(HttpStatus.CONFLICT, ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE);
         return new ErrorCodeResponse(ErrorCodeResponse.CONCURRENT_MODIFICATION_CODE);
     }
 
@@ -173,6 +194,7 @@ public class GlobalExceptionHandler {
             throw exception;
         }
         log.error("Error inesperado [{}]: {}", correlation(), LogSanitizer.sanitize(exception.getMessage()), exception);
+        count(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodeResponse.INTERNAL_ERROR_CODE);
         return new ErrorCodeResponse(ErrorCodeResponse.INTERNAL_ERROR_CODE);
     }
 

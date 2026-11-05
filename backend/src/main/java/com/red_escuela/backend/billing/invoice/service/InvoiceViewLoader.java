@@ -41,10 +41,10 @@ public class InvoiceViewLoader {
         if (invoices.isEmpty()) {
             return List.of();
         }
-        Map<Long, ProgramEnrollment> programs = programEnrollmentRepository.findAllById(invoices.stream()
+        Map<Long, ProgramEnrollment> programs = programEnrollmentRepository.findAllWithStudentAndProgramByIdIn(invoices.stream()
                 .flatMap(invoice -> invoice.findProgramEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(ProgramEnrollment::getId, Function.identity()));
-        Map<Long, CourseEnrollment> courses = courseEnrollmentRepository.findAllById(invoices.stream()
+        Map<Long, CourseEnrollment> courses = courseEnrollmentRepository.findAllWithStudentAndCourseByIdIn(invoices.stream()
                 .flatMap(invoice -> invoice.findCourseEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(CourseEnrollment::getId, Function.identity()));
         List<Long> invoiceIds = invoices.stream().map(Invoice::getId).toList();

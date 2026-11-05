@@ -62,8 +62,8 @@ public class LocalSeedRunner implements ApplicationRunner {
                     .orElseThrow(() -> new IllegalStateException("Falta el rol " + cuenta.rol() + " (migración de roles no corrió)"));
             person.getRoles().add(role);
             personRepository.save(person);
-            log.info("Seed local: cuenta demo creada — username={}, password={}, rol={}",
-                    cuenta.username(), PASSWORD_DEMO, cuenta.rol());
+            log.info("Seed local: cuenta demo creada — username={}, rol={}",
+                    cuenta.username(), cuenta.rol());
         }
     }
 }

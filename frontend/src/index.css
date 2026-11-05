@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./theme/fonts.css";
 @import "./theme/tokens.css";
 
 /*
@@ -13,8 +14,8 @@
  * la variable.
  */
 @theme inline {
-  --font-sans: 'Manrope', system-ui, sans-serif;
-  --font-heading: 'Sora', system-ui, sans-serif;
+  --font-sans: 'Manrope Variable', system-ui, sans-serif;
+  --font-heading: 'Sora Variable', system-ui, sans-serif;
 
   --color-background: var(--bg1);
   --color-foreground: var(--ink);
@@ -59,6 +60,7 @@
   --color-success-ink: var(--success-ink);
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
+  --color-danger-ink: var(--danger-ink);
   --color-neutral-bg: var(--neutral-bg);
   --color-neutral-ink: var(--neutral-ink);
   --color-dialog-bg: var(--dialog-bg);

@@ -4,10 +4,9 @@ import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepository;
 import com.red_escuela.backend.attendance.service.AttendanceChangeRequestFinder;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.attendance.service.AttendanceChangeRequestDecisionRecorder;
 import com.red_escuela.backend.attendance.events.AttendanceChangeRequestRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,16 +16,16 @@ public class RejectAttendanceChangeRequestService implements RejectAttendanceCha
 
     private final AttendanceChangeRequestRepository attendanceChangeRequestRepository;
     private final AttendanceChangeRequestFinder finder;
-    private final CurrentPersonService currentPersonService;
+    private final AttendanceChangeRequestDecisionRecorder decisionRecorder;
     private final ApplicationEventPublisher eventPublisher;
 
     public RejectAttendanceChangeRequestService(AttendanceChangeRequestRepository attendanceChangeRequestRepository,
                                                  AttendanceChangeRequestFinder finder,
-                                                 CurrentPersonService currentPersonService,
+                                                 AttendanceChangeRequestDecisionRecorder decisionRecorder,
                                                  ApplicationEventPublisher eventPublisher) {
         this.attendanceChangeRequestRepository = attendanceChangeRequestRepository;
         this.finder = finder;
-        this.currentPersonService = currentPersonService;
+        this.decisionRecorder = decisionRecorder;
         this.eventPublisher = eventPublisher;
     }
 
@@ -35,12 +34,8 @@ public class RejectAttendanceChangeRequestService implements RejectAttendanceCha
     public AttendanceChangeRequest reject(Long id) {
         AttendanceChangeRequest request = finder.findOrThrow(id);
         finder.requirePending(request);
-
-        request.setStatus(AttendanceChangeRequestStatus.REJECTED);
-        request.setApprovedBy(currentPersonService.resolveCurrentPerson());
-        request.setApprovedAt(ApplicationTime.now());
+        decisionRecorder.recordDecisionByCurrentActor(request, AttendanceChangeRequestStatus.REJECTED);
         AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
-
         eventPublisher.publishEvent(AttendanceChangeRequestRejectedEvent.rejectedFor(saved));
         return saved;
     }

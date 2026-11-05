@@ -3,7 +3,7 @@ package com.red_escuela.backend.identity;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.EmailVerificationIssuedEvent;
+import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;

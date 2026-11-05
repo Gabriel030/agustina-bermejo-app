@@ -71,7 +71,7 @@ Revisar también los PRs abiertos que agreguen migraciones (`gh pr list --state 
 
 ## 6. Releases, hotfixes y Backport
 
-Solo el usuario abre PRs contra `master`. Hay dos caminos:
+Claude puede abrir PRs contra `master`. Cadencia obligatoria de releases: con 15 PRs mergeados a `develop` desde el último release, o al cierre de cada jornada si hay al menos 5, o antes de abrir una ventana de migraciones, se abre un PR `release/*` y se prioriza mergearlo para que `develop` y `master` no se acumulen (en el release de noviembre de 2026 la distancia llegó a 1.909 commits y 63 migraciones). Cada release corre antes el smoke de migración (`docs/release/migration-smoke.md`). Hay dos caminos:
 - **Release (develop → master):** rama `release/<version>` cortada desde `origin/develop`, PR contra `master`. No hay PR automático develop → master.
 - **Hotfix (urgente, solo master):** rama `hotfix/<slug>` cortada desde `origin/master`, PR contra `master` (con CI local previo, como cualquier PR).
 
@@ -86,3 +86,11 @@ Solo el usuario abre PRs contra `master`. Hay dos caminos:
 ## 7. CI de GitHub (costo)
 
 `ci.yml` corre en PRs y en push a `develop`/`master`, cancela corridas viejas del mismo PR y **no corre si el cambio es solo `.md` o `docs/`**. Si se activan checks requeridos en la protección de rama, revisar que el filtro de paths no deje el check "omitido" y bloquee el merge de PRs de docs.
+
+### Seguridad de dependencias y secretos
+
+- `.github/dependabot.yml` abre PRs semanales contra `develop` para Maven, npm y GitHub Actions (máx. 5 abiertos por ecosistema).
+- `security-nightly.yml` (07:00 UTC y `workflow_dispatch`) corre `dependency-check` (falla con CVSS >= 7, usa el secreto `NVD_API_KEY`), `npm run audit:prod` (falla con severidad alta; `audit:all` es informativo) y `gitleaks` sobre todo el historial.
+- `ci.yml` suma `secret-scan-pr`: gitleaks sobre los commits de cada PR. La configuración es `.gitleaks.toml` (permite solo la contraseña demo `Test1234`).
+- Local: `cd backend && ./mvnw -B -ntp -Pdependency-check verify -DskipTests` (lento sin `NVD_API_KEY`), `cd frontend && npm run audit:prod`, `docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --config /repo/.gitleaks.toml --no-banner`.
+- `ProductionProfileHardeningIT` verifica que sin perfil `local`/`demo` no hay seeds, Swagger ni `simulated-emails`, y que el actuator no expone `env`/`heapdump`.

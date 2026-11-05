@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,6 +115,11 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         person.setStatus(StatusType.ACTIVE);
         entityManager.persist(person);
         return person;
+    }
+
+    private void authenticateAs(Person person) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(person.getId().toString(), null));
     }
 
     private Person persistPersonWithRole(String dni, String roleName) {
@@ -381,6 +387,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000008");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000009", "DIRECTOR");
+        authenticateAs(actor);
         entityManager.flush();
 
         LocalDate finalCall1 = nonHolidayDate(80);
@@ -390,9 +397,11 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
                         nonHolidayDate(45), nonHolidayDate(60), null, null, finalCall1, finalCall2)));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
-        SectionEvaluationConfig approved = approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor));
+        SectionEvaluationConfig approved = approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId()));
 
         assertThat(approved.getStatus()).isEqualTo(SectionEvaluationConfigStatus.APPROVED);
+        assertThat(approved.getReviewedBy()).isEqualTo(actor);
+        assertThat(approved.getReviewedAt()).isNotNull();
         List<ExamBoard> examBoards = examBoardRepository.findBySubjectIdAndStatus(subject.getId(), com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
         assertThat(examBoards).hasSize(2);
         AsyncNotifications.commitTestTransaction();
@@ -413,6 +422,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000024");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000025", "DIRECTOR");
+        authenticateAs(actor);
         LocalDate finalCall1 = LocalDate.of(2099, 12, 2);
         LocalDate finalCall2 = LocalDate.of(2099, 12, 7);
         Classroom classroom = new Classroom();
@@ -432,7 +442,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
                 new UpdateSectionEvaluationConfigRequest(1, LocalDate.of(2099, 4, 24), null, null,
                         LocalDate.of(2099, 5, 15), LocalDate.of(2099, 9, 11), null, null, finalCall1, finalCall2)));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
-        approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor));
+        approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId()));
 
         List<ExamBoard> examBoards = examBoardRepository.findBySubjectIdAndStatus(subject.getId(), com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
         assertThat(examBoards).extracting(ExamBoard::getExamDate)
@@ -455,15 +465,17 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000010");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000011", "DIRECTOR");
+        authenticateAs(actor);
         entityManager.flush();
 
         saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
                 validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
-        SectionEvaluationConfig rejected = rejectSectionEvaluationConfigUseCase.reject(new RejectSectionEvaluationConfigCommand(section.getId(), actor,
+        SectionEvaluationConfig rejected = rejectSectionEvaluationConfigUseCase.reject(new RejectSectionEvaluationConfigCommand(section.getId(),
                 new RejectSectionEvaluationConfigRequest("Faltan fechas de TP")));
         assertThat(rejected.getStatus()).isEqualTo(SectionEvaluationConfigStatus.REJECTED);
+        assertThat(rejected.getReviewedBy()).isEqualTo(actor);
         assertThat(rejected.getRejectionReason()).isEqualTo("Faltan fechas de TP");
 
         SectionEvaluationConfig updated = saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
@@ -565,9 +577,10 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         SubjectSection section = subjectSectionService.create(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Person actor = persistPersonWithRole("90000012", "DIRECTOR");
+        authenticateAs(actor);
         entityManager.flush();
 
-        assertThatThrownBy(() -> approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor)))
+        assertThatThrownBy(() -> approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId())))
                 .isInstanceOf(InvalidSectionEvaluationConfigTransitionException.class);
     }
 }

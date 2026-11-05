@@ -64,6 +64,19 @@
         "required" : [ "allocations" ],
         "type" : "object"
       },
+      "ActorSummaryResponse" : {
+        "properties" : {
+          "fullName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "fullName", "id" ],
+        "type" : "object"
+      },
       "AddCorequisiteRequest" : {
         "properties" : {
           "corequisiteProgramSubjectId" : {
@@ -4398,6 +4411,10 @@
           "code" : {
             "type" : "string"
           },
+          "details" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          },
           "requestId" : {
             "type" : "string"
           },
@@ -4618,6 +4635,70 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "FeatureChangeResponse" : {
+        "properties" : {
+          "actor" : {
+            "$ref" : "#/components/schemas/ActorSummaryResponse"
+          },
+          "actorKind" : {
+            "type" : "string"
+          },
+          "after" : {
+            "$ref" : "#/components/schemas/FeatureStateViewResponse"
+          },
+          "before" : {
+            "$ref" : "#/components/schemas/FeatureStateViewResponse"
+          },
+          "changedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "code" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "actor", "actorKind", "after", "before", "changedAt", "code", "id", "reason" ],
+        "type" : "object"
+      },
+      "FeatureDetailResponse" : {
+        "properties" : {
+          "code" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "lastReason" : {
+            "type" : "string"
+          },
+          "mode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "updatedBy" : {
+            "$ref" : "#/components/schemas/ActorSummaryResponse"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "code", "enabled", "lastReason", "mode", "updatedAt", "updatedBy", "version" ],
+        "type" : "object"
+      },
       "FeatureStateResponse" : {
         "properties" : {
           "code" : {
@@ -4637,6 +4718,19 @@
           }
         },
         "required" : [ "code", "enabled", "mode", "version" ],
+        "type" : "object"
+      },
+      "FeatureStateViewResponse" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "mode" : {
+            "enum" : [ "OFF", "MIRROR", "FULL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "enabled", "mode" ],
         "type" : "object"
       },
       "FeatureTransitionPreviewResponse" : {
@@ -4908,42 +5002,22 @@
         "required" : [ "date", "enrollmentId", "examBoardId", "id", "score", "sequenceNumber", "type" ],
         "type" : "object"
       },
-      "GraduationCertificateResponse" : {
+      "GraduationDebtSummaryResponse" : {
         "properties" : {
-          "code" : {
-            "type" : "string"
+          "installments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InstallmentResponse"
+            },
+            "type" : "array"
           },
-          "graduationDate" : {
-            "format" : "date",
-            "type" : "string"
+          "mustCheckDebt" : {
+            "type" : "boolean"
           },
-          "holderFullName" : {
-            "type" : "string"
-          },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "issuedAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "kind" : {
-            "enum" : [ "PROGRAM", "COURSE" ],
-            "type" : "string"
-          },
-          "status" : {
-            "enum" : [ "VALID", "REVOKED" ],
-            "type" : "string"
-          },
-          "titleName" : {
-            "type" : "string"
-          },
-          "verificationUrl" : {
-            "type" : "string"
+          "totalDue" : {
+            "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "code", "graduationDate", "holderFullName", "id", "issuedAt", "kind", "status", "titleName", "verificationUrl" ],
+        "required" : [ "installments", "mustCheckDebt", "totalDue" ],
         "type" : "object"
       },
       "GraduationRequestResponse" : {
@@ -5145,6 +5219,25 @@
           }
         },
         "required" : [ "invoicesAwaitingPayment", "invoicesUnderPaymentReview", "openInvoices", "overdueInvoices", "paymentsPendingReconciliation", "pendingDraftInvoices", "refundsInProgress", "runsInProgress", "scheduledJobs" ],
+        "type" : "object"
+      },
+      "InstallmentResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "dueDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "period" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "dueDate", "period", "status" ],
         "type" : "object"
       },
       "InstitutionResponse" : {
@@ -5402,20 +5495,6 @@
           }
         },
         "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "productRef", "studentDni", "studentId", "subjectId", "totalAmount" ],
-        "type" : "object"
-      },
-      "IssueGraduationCertificateRequest" : {
-        "properties" : {
-          "enrollmentId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "kind" : {
-            "enum" : [ "PROGRAM", "COURSE" ],
-            "type" : "string"
-          }
-        },
-        "required" : [ "enrollmentId", "kind" ],
         "type" : "object"
       },
       "ItemResponse" : {
@@ -6719,6 +6798,123 @@
           }
         },
         "required" : [ "accumulatedCredits", "eligible", "graduated", "pendingMandatorySubjects", "programEnrollmentId", "programName", "request", "requiredCredits", "unfulfilledElectiveGroups" ],
+        "type" : "object"
+      },
+      "PageFeatureChangeResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FeatureChangeResponse"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PageResponseDebtorSummaryResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DebtorSummaryResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "page", "size", "totalElements" ],
+        "type" : "object"
+      },
+      "Pageable" : {
+        "properties" : {
+          "page" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "sort" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PageableObject" : {
+        "properties" : {
+          "offset" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pageNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "paged" : {
+            "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "unpaged" : {
+            "type" : "boolean"
+          }
+        },
         "type" : "object"
       },
       "PaymentActionAvailabilityResponse" : {
@@ -8978,12 +9174,30 @@
             "minimum" : 0,
             "type" : "number"
           },
+          "classesHeld" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "dni" : {
             "type" : "string"
           },
           "enrollmentId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "maxAbsenceRate" : {
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "remainingAbsences" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           },
           "studentId" : {
             "format" : "int64",
@@ -9406,6 +9620,20 @@
           }
         },
         "required" : [ "classroomId", "classroomName", "dayOfWeek", "endTime", "startTime" ],
+        "type" : "object"
+      },
+      "SortObject" : {
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "sorted" : {
+            "type" : "boolean"
+          },
+          "unsorted" : {
+            "type" : "boolean"
+          }
+        },
         "type" : "object"
       },
       "StaffAssignmentResponse" : {
@@ -29490,6 +29718,7 @@
     },
     "/financial-dashboard/debtors" : {
       "get" : {
+        "deprecated" : true,
         "operationId" : "FinancialDashboard_getDebtors",
         "parameters" : [ {
           "in" : "query",
@@ -29608,133 +29837,33 @@
         "tags" : [ "financial-dashboard-controller" ]
       }
     },
-    "/graduation-certificates" : {
-      "post" : {
-        "operationId" : "GraduationCertificate_issue",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/IssueGraduationCertificateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/GraduationCertificateResponse"
-                }
-              }
-            },
-            "description" : "Created"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Too Many Requests"
-          },
-          "500" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Internal Server Error"
-          },
-          "502" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Gateway"
-          },
-          "503" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Service Unavailable"
-          }
-        },
-        "tags" : [ "graduation-certificate-controller" ]
-      }
-    },
-    "/graduation-certificates/{id}/pdf" : {
+    "/financial-dashboard/debtors/page" : {
       "get" : {
-        "operationId" : "GraduationCertificate_pdf",
+        "operationId" : "FinancialDashboard_getDebtorsPage",
         "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
+          "in" : "query",
+          "name" : "sortBy",
+          "required" : false,
           "schema" : {
-            "format" : "int64",
+            "default" : "DEBT_AGE",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 25,
+            "format" : "int32",
             "type" : "integer"
           }
         } ],
@@ -29743,8 +29872,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
+                  "$ref" : "#/components/schemas/PageResponseDebtorSummaryResponse"
                 }
               }
             },
@@ -29841,7 +29969,7 @@
             "description" : "Service Unavailable"
           }
         },
-        "tags" : [ "graduation-certificate-controller" ]
+        "tags" : [ "financial-dashboard-controller" ]
       }
     },
     "/graduation-requests" : {
@@ -30099,6 +30227,123 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GraduationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-request-controller" ]
+      }
+    },
+    "/graduation-requests/{id}/debt-summary" : {
+      "get" : {
+        "operationId" : "GraduationRequest_debtSummary",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationDebtSummaryResponse"
                 }
               }
             },
@@ -42959,6 +43204,241 @@
           }
         },
         "tags" : [ "payment-reversal-preview-controller" ]
+      }
+    },
+    "/platform/features" : {
+      "get" : {
+        "operationId" : "PlatformFeature_listFeatures",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FeatureDetailResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "platform-feature-controller" ]
+      }
+    },
+    "/platform/features/changes" : {
+      "get" : {
+        "operationId" : "PlatformFeature_listFeatureChanges",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "code",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageFeatureChangeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "platform-feature-controller" ]
       }
     },
     "/platform/features/{code}" : {

@@ -94,6 +94,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
     private Program persistProgram() {
         Program program = new Program();
+        program.setVisibleInCatalog(true);
         program.setName("Diseño Gráfico " + System.nanoTime());
         program.setTotalYears(3);
         program.setTotalCreditsRequired(0);
@@ -142,6 +143,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         term = termRepository.save(term);
 
         Course course = new Course();
+        course.setVisibleInCatalog(true);
         course.setName("Illustrator desde cero " + System.nanoTime());
         course.setTerm(term);
         course.setCapacity(capacity);

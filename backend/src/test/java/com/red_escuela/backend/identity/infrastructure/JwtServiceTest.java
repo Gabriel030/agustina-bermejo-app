@@ -32,7 +32,7 @@ class JwtServiceTest {
 
     @Test
     void generatesAndParsesAValidTokenWithTheSameSubAndRoles() {
-        JwtService jwtService = new JwtService(SECRET, 15);
+        JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
         Person person = personWithRoles("DOCENTE", "PRECEPTOR");
 
         String token = jwtService.generateAccessToken(person);
@@ -44,7 +44,7 @@ class JwtServiceTest {
 
     @Test
     void expiredTokenFailsValidation() {
-        JwtService expiredService = new JwtService(SECRET, -1);
+        JwtService expiredService = new JwtService(SECRET, -1, "agustina-bermejo-app");
         String token = expiredService.generateAccessToken(personWithRoles("ALUMNO"));
 
         assertThatThrownBy(() -> expiredService.validateAndParse(token))
@@ -53,8 +53,8 @@ class JwtServiceTest {
 
     @Test
     void tokenSignedWithAnotherSecretFailsValidation() {
-        JwtService serviceA = new JwtService(SECRET, 15);
-        JwtService serviceB = new JwtService("otro-secret-completamente-distinto", 15);
+        JwtService serviceA = new JwtService(SECRET, 15, "agustina-bermejo-app");
+        JwtService serviceB = new JwtService("otro-secret-completamente-distinto", 15, "agustina-bermejo-app");
 
         String token = serviceA.generateAccessToken(personWithRoles("ALUMNO"));
 

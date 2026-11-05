@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DocenteConfiguracionEvaluacion, TeacherGradeGrid } from '@/features/evaluation';
 import { useComisionesDictadas } from '@/features/academic-structure';
 import { useConfiguracionComision } from '@/features/evaluation';
+import { TabAlumnos } from '@/features/attendance';
 import { comisionCerrada, ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL } from '@/lib/comisiones';
 import { TablaAvisos } from '../components/TablaAvisos';
 import { useAvisos } from '../hooks/useAvisos';
@@ -23,8 +24,8 @@ export function DocenteComisionDetalle() {
   const esCurso = tipo === 'COURSE';
   const requestedTab = searchParams.get('tab');
   const tab = esCurso
-    ? (requestedTab === 'notas' ? 'notas' : 'avisos')
-    : (['evaluacion', 'avisos', 'notas'].includes(requestedTab) ? requestedTab : 'evaluacion');
+    ? (['alumnos', 'notas'].includes(requestedTab) ? requestedTab : 'avisos')
+    : (['evaluacion', 'avisos', 'alumnos', 'notas'].includes(requestedTab) ? requestedTab : 'evaluacion');
   const [gradesDirty, setGradesDirty] = useState(false);
 
   const { data: config, isLoading: cargandoConfig, isError: sinConfig } = useConfiguracionComision(esCurso ? undefined : sectionId);
@@ -116,11 +117,14 @@ export function DocenteComisionDetalle() {
         <TabsList variant="segmented">
           {!esCurso && <TabsTrigger value="evaluacion">Evaluación</TabsTrigger>}
           <TabsTrigger value="avisos">Avisos</TabsTrigger>
+          <TabsTrigger value="alumnos">Alumnos</TabsTrigger>
           <TabsTrigger value="notas">Notas</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {tab === 'notas' ? (
+      {tab === 'alumnos' ? (
+        <TabAlumnos type={tipo} sectionId={sectionId} />
+      ) : tab === 'notas' ? (
         <TeacherGradeGrid sectionId={sectionId} kind={tipo} onDirtyChange={setGradesDirty} />
       ) : tab === 'evaluacion' ? (
         sinConfig ? (
