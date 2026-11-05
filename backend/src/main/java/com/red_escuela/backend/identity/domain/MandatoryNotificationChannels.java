@@ -19,7 +19,7 @@ public final class MandatoryNotificationChannels {
 
     public static Map<String, List<String>> channelNamesByEventName() {
         Map<String, List<String>> byEvent = new LinkedHashMap<>();
-        for (NotificationEvent event : NotificationEvent.values()) {
+        for (NotificationEvent event : EmittedNotificationEvents.visible()) {
             List<String> channels = new ArrayList<>();
             for (NotificationChannel channel : NotificationChannel.values()) {
                 if (cannotBeTurnedOff(event, channel)) {

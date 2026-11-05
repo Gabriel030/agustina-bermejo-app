@@ -33,7 +33,7 @@ public class UpdateNotificationPreferencesService implements UpdateNotificationP
 
         Map<String, Map<String, Boolean>> incoming = request.preferences();
 
-        for (NotificationEvent event : NotificationEvent.values()) {
+        for (NotificationEvent event : com.red_escuela.backend.identity.domain.EmittedNotificationEvents.visible()) {
             Map<String, Boolean> channels = incoming.get(event.name());
             if (channels == null) continue;
 

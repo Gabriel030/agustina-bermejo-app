@@ -37,7 +37,7 @@ public class GetNotificationPreferencesService implements GetNotificationPrefere
         }
 
         Map<String, Map<String, Boolean>> result = new HashMap<>();
-        for (NotificationEvent event : NotificationEvent.values()) {
+        for (NotificationEvent event : com.red_escuela.backend.identity.domain.EmittedNotificationEvents.visible()) {
             Map<String, Boolean> channels = new HashMap<>();
             for (NotificationChannel channel : NotificationChannel.values()) {
                 channels.put(channel.name(), MandatoryNotificationChannels.cannotBeTurnedOff(event, channel) || disabledByKey.getOrDefault(key(event, channel), true));
