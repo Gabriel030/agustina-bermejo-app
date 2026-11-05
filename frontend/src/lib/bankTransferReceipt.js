@@ -1,5 +1,6 @@
 import { formatMoney, invoiceTitle, isInvoicePayable } from '@/lib/billing';
 import { moneyValue } from '@/lib/utils';
+import { parseAmountInput as cashParseAmountInput } from '@/features/billing/components/cashAmount';
 
 export const CBU_PATTERN = /^\d{22}$/;
 export const ALIAS_PATTERN = /^[a-zA-Z0-9.-]{6,20}$/;
@@ -45,18 +46,8 @@ export function orderedPayableInvoices(invoices) {
 }
 
 export function parseAmountInput(text) {
-  const cleaned = String(text ?? '').replace(/[^\d.,]/g, '');
-  if (!cleaned) return NaN;
-  const hasComma = cleaned.includes(',');
-  let normalized;
-  if (hasComma) {
-    normalized = cleaned.replace(/\./g, '').replace(',', '.');
-  } else if (/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
-    normalized = cleaned.replace(/\./g, '');
-  } else {
-    normalized = cleaned;
-  }
-  return Number(normalized);
+  const parsed = cashParseAmountInput(text);
+  return parsed.value === undefined ? NaN : Number(parsed.value);
 }
 
 export function formatAmountInput(value) {

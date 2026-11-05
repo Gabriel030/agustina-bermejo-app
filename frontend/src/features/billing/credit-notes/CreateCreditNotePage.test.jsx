@@ -21,6 +21,8 @@ vi.mock('@/context/AuthContext', () => ({
 let invoice;
 let issueBodies;
 let balance;
+let balanceFails;
+let balanceDelay;
 
 function twoLineInvoice(overrides = {}) {
   const base = invoiceFixture({ id: 62, period: '2026-04', dueDate: '2026-04-10', total: '48000.00', paymentStatus: 'OVERDUE', ...overrides });
@@ -38,7 +40,11 @@ function mockServer({ issue } = {}) {
     http.get(`${API}/students/2/billing-overview`, () =>
       HttpResponse.json([{ enrollmentType: 'PROGRAM', enrollmentId: 2, productName: 'Profesorado', paymentStatus: 'OVERDUE', invoices: [invoice] }]),
     ),
-    http.get(`${API}/students/2/credit-balance`, () => HttpResponse.json(balance)),
+    http.get(`${API}/students/2/credit-balance`, async () => {
+      if (balanceFails) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+      if (balanceDelay) await balanceDelay;
+      return HttpResponse.json(balance);
+    }),
     http.post(`${API}/invoices/:id/credit-notes`, async ({ request, params }) => {
       issueBodies.push({ id: params.id, body: await request.json() });
       return issue ? issue() : HttpResponse.json(creditNoteFixture({ id: 9, creditNoteNumber: 'NC-0000142' }), { status: 201 });
@@ -78,6 +84,8 @@ beforeEach(() => {
   auth.roles = ['DIRECTOR'];
   invoice = twoLineInvoice();
   balance = creditBalanceFixture('0.00');
+  balanceFails = false;
+  balanceDelay = null;
 });
 
 describe('Nota de crédito — paso 1 (importes)', () => {
@@ -158,6 +166,61 @@ describe('Nota de crédito — paso 1 (importes)', () => {
     expect(await screen.findByText('Crédito a favor hoy')).toBeInTheDocument();
     expect(screen.getByText('$ 1.000,00')).toBeInTheDocument();
     expect(screen.getByText('$ 4.000,00')).toBeInTheDocument();
+  });
+});
+
+describe('Nota de crédito — saldo a favor sin dato', () => {
+  async function typeSecureAmountOnPaidInvoice(user) {
+    invoice = twoLineInvoice({ paymentStatus: 'PAID', paid: '48000.00' });
+    await typeAmount(user, 'Seguro escolar', '3000');
+  }
+
+  it('never shows a made-up zero credit while the balance is failing and blocks the review', async () => {
+    balanceFails = true;
+    mockServer();
+    const user = userEvent.setup();
+    renderPage();
+    await typeSecureAmountOnPaidInvoice(user);
+
+    expect(await screen.findByText('No pudimos cargar el crédito a favor')).toBeInTheDocument();
+    expect(screen.queryByText('Crédito a favor hoy')).not.toBeInTheDocument();
+    expect(screen.queryByText('$ 0,00')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Revisar la nota' })).toBeDisabled();
+  });
+
+  it('recovers with Reintentar and then shows the real credit and enables the review', async () => {
+    balanceFails = true;
+    balance = creditBalanceFixture('1000.00');
+    mockServer();
+    const user = userEvent.setup();
+    renderPage();
+    await typeSecureAmountOnPaidInvoice(user);
+    await screen.findByText('No pudimos cargar el crédito a favor');
+
+    balanceFails = false;
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('$ 1.000,00')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Justificación/), 'Se cobró de más el seguro escolar.');
+    expect(screen.getByRole('button', { name: 'Revisar la nota' })).toBeEnabled();
+  });
+
+  it('keeps the review blocked while the balance is still loading', async () => {
+    let release;
+    balanceDelay = new Promise((resolve) => {
+      release = resolve;
+    });
+    mockServer();
+    const user = userEvent.setup();
+    renderPage();
+    await typeSecureAmountOnPaidInvoice(user);
+    await user.type(screen.getByLabelText(/Justificación/), 'Se cobró de más el seguro escolar.');
+
+    expect(screen.queryByText('Crédito a favor hoy')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Revisar la nota' })).toBeDisabled();
+    release();
+    await screen.findByText('Crédito a favor hoy');
+    expect(screen.getByRole('button', { name: 'Revisar la nota' })).toBeEnabled();
   });
 });
 
