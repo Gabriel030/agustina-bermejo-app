@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { moneyValue } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useCourse, useUpdateCourse } from '@/features/academic-structure/hooks/useCourses';
 
 const TEACHING_MODE_OPTIONS = [
@@ -43,32 +44,44 @@ function isoToDatetimeLocal(iso) {
 
 export function CursoEditarDatos() {
   const { id } = useParams();
+  const { data: course, isError, error, refetch } = useCourse(id);
+
+  if (course) return <CursoEditarDatosForm key={course.id} id={id} course={course} />;
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <LoadErrorState
+          error={error}
+          onRetry={refetch}
+          resource="el curso"
+          backTo="/administrativo/gestion-academica?section=cursos"
+          backLabel="cursos"
+        />
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <Skeleton className="h-8 w-64 rounded-xl" />
+    </PageContainer>
+  );
+}
+
+function CursoEditarDatosForm({ id, course }) {
   const navigate = useNavigate();
-  const { data: course, isLoading } = useCourse(id);
   const updateCourse = useUpdateCourse(id);
 
-  const [name, setName] = useState('');
-  const [capacity, setCapacity] = useState('');
-  const [price, setPrice] = useState('');
-  const [teachingMode, setTeachingMode] = useState('');
-  const [schedule, setSchedule] = useState('');
-  const [durationMonths, setDurationMonths] = useState('');
-  const [registrationStart, setRegistrationStart] = useState('');
-  const [registrationEnd, setRegistrationEnd] = useState('');
+  const [name, setName] = useState(course.name ?? '');
+  const [capacity, setCapacity] = useState(course.capacity?.toString() ?? '');
+  const [price, setPrice] = useState(course.price ? String(moneyValue(course.price)) : '');
+  const [teachingMode, setTeachingMode] = useState(course.teachingMode ?? '');
+  const [schedule, setSchedule] = useState(course.schedule ?? '');
+  const [durationMonths, setDurationMonths] = useState(course.durationMonths?.toString() ?? '');
+  const [registrationStart, setRegistrationStart] = useState(isoToDatetimeLocal(course.registrationStart));
+  const [registrationEnd, setRegistrationEnd] = useState(isoToDatetimeLocal(course.registrationEnd));
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (course) {
-      setName(course.name ?? '');
-      setCapacity(course.capacity?.toString() ?? '');
-      setPrice(course.price ? String(moneyValue(course.price)) : '');
-      setTeachingMode(course.teachingMode ?? '');
-      setSchedule(course.schedule ?? '');
-      setDurationMonths(course.durationMonths?.toString() ?? '');
-      setRegistrationStart(isoToDatetimeLocal(course.registrationStart));
-      setRegistrationEnd(isoToDatetimeLocal(course.registrationEnd));
-    }
-  }, [course]);
 
   async function handleGuardar() {
     if (!name.trim()) {
@@ -106,14 +119,6 @@ export function CursoEditarDatos() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <Skeleton className="h-8 w-64 rounded-xl" />
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
@@ -123,7 +128,7 @@ export function CursoEditarDatos() {
             className="mb-1 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
-            {course?.name ?? 'Curso'}
+            {course.name ?? 'Curso'}
           </Link>
           <h1 className="font-heading text-xl font-bold text-ink">Editar datos</h1>
         </div>

@@ -57,7 +57,7 @@ public class ProspectService {
     @Transactional
     public StudentOnboardingSummary createProspect(CreateProspectRequest request) {
         StudentOnboardingSummary prospect = studentOnboarding.registerProspect(new NewProspect(
-                request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId()));
+                request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null));
 
         boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
                 instanceof AnonymousAuthenticationToken;

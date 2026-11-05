@@ -282,3 +282,42 @@ describe('TabAsistencia', () => {
     await vi.waitFor(() => expect(localStorage.getItem(draftKey())).toBeNull());
   });
 });
+
+describe('TabAsistencia load failure', () => {
+  function failing(failedPath) {
+    server.use(
+      http.get(`${API}/program-sections/5/roster`, () =>
+        failedPath === 'roster' ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(ROSTER),
+      ),
+      http.get(`${API}/program-sections/5/attendance/history`, () =>
+        failedPath === 'history' ? new HttpResponse(null, { status: 500 }) : HttpResponse.json({ rows: [] }),
+      ),
+      http.get(`${API}/program-sections/5/class-sessions/:date`, () =>
+        failedPath === 'session' ? new HttpResponse(null, { status: 500 }) : new HttpResponse(null, { status: 404 }),
+      ),
+    );
+  }
+
+  it.each([
+    ['roster', 'No pudimos cargar los alumnos de la comisión'],
+    ['history', 'No pudimos cargar la asistencia ya guardada'],
+    ['session', 'No pudimos cargar los datos de la clase'],
+  ])('shows a load error and no save controls when %s fails', async (failedPath, message) => {
+    let posts = 0;
+    failing(failedPath);
+    server.use(
+      http.post(`${API}/program-sections/5/attendance`, () => {
+        posts += 1;
+        return HttpResponse.json({});
+      }),
+    );
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText(message);
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.queryByText('No hay alumnos para mostrar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Todavía no se tomó asistencia esta fecha')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar/ })).not.toBeInTheDocument();
+    expect(posts).toBe(0);
+  });
+});

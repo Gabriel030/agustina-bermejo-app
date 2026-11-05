@@ -1,5 +1,6 @@
 import { Home, CalendarCheck, ClipboardList } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { visibleMenuItems } from '@/routes/menuAccess';
 
 const ITEMS = [
   { to: '/docente/inicio', label: 'Inicio', icon: Home },
@@ -8,5 +9,5 @@ const ITEMS = [
 ];
 
 export function DocenteLayout() {
-  return <RoleShell titulo="Docente" items={ITEMS} />;
+  return <RoleShell titulo="Docente" items={visibleMenuItems('docente', ITEMS)} />;
 }

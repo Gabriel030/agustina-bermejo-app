@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { ChangeDiffTable } from '@/features/identity/components/ChangeDiffTable';
 import { confirmationDeadlineLabel, sameEmail } from '@/features/identity/emailChange';
@@ -172,7 +173,22 @@ function sensitiveChanges(perfil, valores) {
 }
 
 function TabDatosPropios() {
-  const { data: perfil, isLoading } = usePerfilPropio();
+  const { data: perfil, isError, error, refetch } = usePerfilPropio();
+
+  if (perfil) return <TabDatosPropiosForm key={perfil.id} perfil={perfil} />;
+
+  if (isError) return <LoadErrorState bare error={error} onRetry={refetch} resource="tus datos" />;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {[...Array(6)].map((_, i) => (
+        <Skeleton key={i} className="h-10 w-full" />
+      ))}
+    </div>
+  );
+}
+
+function TabDatosPropiosForm({ perfil }) {
   const actualizar = useActualizarPerfil();
 
   const [form, setForm] = useState(null);
@@ -263,16 +279,6 @@ function TabDatosPropios() {
           : (err.message ?? 'No se pudo reenviar el enlace.'),
       );
     }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-3">
-        {[...Array(6)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
   }
 
   return (

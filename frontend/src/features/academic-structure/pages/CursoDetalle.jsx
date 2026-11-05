@@ -7,6 +7,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,8 +60,21 @@ function ModuleRow({ mod }) {
 export function CursoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: course, isLoading: loadingCourse } = useCourse(id);
-  const { data: modules, isLoading: loadingModules } = useCourseSubjects(id);
+  const {
+    data: course,
+    isLoading: loadingCourse,
+    isError: courseFailed,
+    error: courseError,
+    refetch: refetchCourse,
+  } = useCourse(id);
+  const {
+    data: modules,
+    isLoading: loadingModules,
+    isError: modulesFailed,
+    error: modulesError,
+    refetch: refetchModules,
+  } = useCourseSubjects(id);
+  const modulesUnavailable = modulesFailed && !modules;
   const { data: terminos } = useTerminos();
   const deactivateCourse = useDeactivateCourse();
   const activateCourse = useActivateCourse();
@@ -99,7 +113,7 @@ export function CursoDetalle() {
     }
   }
 
-  if (loadingCourse) {
+  if (!course && (loadingCourse || !courseFailed)) {
     return (
       <PageContainer>
         <Skeleton className="h-8 w-64 rounded-xl" />
@@ -110,7 +124,13 @@ export function CursoDetalle() {
   if (!course) {
     return (
       <PageContainer>
-        <EmptyState title="Curso no encontrado" />
+        <LoadErrorState
+          error={courseError}
+          onRetry={refetchCourse}
+          resource="el curso"
+          backTo="/administrativo/gestion-academica?section=cursos"
+          backLabel="cursos"
+        />
       </PageContainer>
     );
   }
@@ -222,14 +242,18 @@ export function CursoDetalle() {
 
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Temario</h2>
-          <Button variant="gradient" size="sm" onClick={() => setPanelOpen(true)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Agregar módulo
-          </Button>
+          {!modulesUnavailable && (
+            <Button variant="gradient" size="sm" onClick={() => setPanelOpen(true)}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Agregar módulo
+            </Button>
+          )}
         </div>
 
         {loadingModules ? (
           <Skeleton rows={3} />
+        ) : modulesUnavailable ? (
+          <LoadErrorState error={modulesError} onRetry={refetchModules} resource="el temario" />
         ) : sortedModules.length === 0 ? (
           <GlassCard className="p-6">
             <EmptyState

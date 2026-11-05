@@ -1,5 +1,6 @@
 import { Home, Users, BookMarked, FileCheck2, CalendarRange, CalendarCheck } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
+import { visibleMenuItems } from '@/routes/menuAccess';
 
 const ITEMS = [
   { to: '/preceptor/inicio', label: 'Inicio', icon: Home },
@@ -11,5 +12,5 @@ const ITEMS = [
 ];
 
 export function PreceptorLayout() {
-  return <RoleShell titulo="Preceptor" items={ITEMS} />;
+  return <RoleShell titulo="Preceptor" items={visibleMenuItems('preceptor', ITEMS)} />;
 }

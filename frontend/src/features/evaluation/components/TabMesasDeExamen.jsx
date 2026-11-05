@@ -222,15 +222,18 @@ export function TabMesasDeExamen({ carreraId }) {
                   {formatearFecha(mia.examBoard.examDate)}
                   {mia.examBoard.classroom && ` · ${mia.examBoard.classroom}`}
                 </div>
+                {mia.examBoard.status === 'CANCELED' && mia.examBoard.cancelReason && (
+                  <div className="text-xs text-danger">Motivo: {mia.examBoard.cancelReason}</div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 {mia.score != null && <span className="font-heading text-base font-bold text-ink">{mia.score}</span>}
                 {/* El status de la inscripción a mesa nunca pasa a GRADED en el backend — "ya
                     rindió" se deriva de si hay nota, no del status. */}
-                <StatusPill tone={mia.status === 'WITHDRAWN' ? 'neutral' : mia.score != null ? 'success' : 'accent'}>
-                  {mia.status === 'WITHDRAWN' ? 'De baja' : mia.score != null ? 'Rendido' : 'Inscripto'}
+                <StatusPill tone={mia.examBoard.status === 'CANCELED' ? 'danger' : mia.status === 'WITHDRAWN' ? 'neutral' : mia.score != null ? 'success' : 'accent'}>
+                  {mia.examBoard.status === 'CANCELED' ? 'Mesa cancelada' : mia.status === 'WITHDRAWN' ? 'De baja' : mia.score != null ? 'Rendido' : 'Inscripto'}
                 </StatusPill>
-                {mia.status === 'REGISTERED' && mia.score == null && (
+                {mia.status === 'REGISTERED' && mia.score == null && mia.examBoard.status !== 'CANCELED' && (
                   <Button variant="outline" className="text-danger" onClick={() => darmeDeBaja.mutate(mia.id)} disabled={darmeDeBaja.isPending}>
                     Darme de baja
                   </Button>
