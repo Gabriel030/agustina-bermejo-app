@@ -21,6 +21,12 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Then status 201
     * def programId = response.id
 
+    Given path '/programs', programId, 'catalog-visibility'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { visible: true }
+    When method put
+    Then status 200
+
     * def descripcionPeriodoCarreraDocs = 'Karate - Periodo carrera docs ' + java.lang.System.nanoTime()
     Given path '/terms'
     And header Authorization = 'Bearer ' + adminToken

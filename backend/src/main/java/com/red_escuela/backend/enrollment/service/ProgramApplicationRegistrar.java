@@ -22,23 +22,27 @@ public class ProgramApplicationRegistrar {
     private final ProgramSubjectReferenceFinder programSubjectReferenceFinder;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ProgramCohortService programCohortService;
+    private final CatalogAvailabilityGuard catalogAvailabilityGuard;
     private final Clock clock;
 
     public ProgramApplicationRegistrar(ProgramEnrollmentApplicationRepository applicationRepository,
                                        ProgramSubjectReferenceFinder programSubjectReferenceFinder,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramCohortService programCohortService,
+                                       CatalogAvailabilityGuard catalogAvailabilityGuard,
                                        Clock clock) {
         this.applicationRepository = applicationRepository;
         this.programSubjectReferenceFinder = programSubjectReferenceFinder;
         this.programEnrollmentService = programEnrollmentService;
         this.programCohortService = programCohortService;
+        this.catalogAvailabilityGuard = catalogAvailabilityGuard;
         this.clock = clock;
     }
 
     @Transactional
     public ProgramEnrollmentApplication register(Student student, Long programId, Long cohortId) {
         var program = programSubjectReferenceFinder.findProgram(programId);
+        catalogAvailabilityGuard.requireProgramListed(program);
         ProgramCohort cohort = programCohortService.findOrThrow(cohortId);
         programEnrollmentService.validateAdmissionWindow(cohort);
 

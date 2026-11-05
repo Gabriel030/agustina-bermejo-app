@@ -42,6 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
+import com.red_escuela.backend.enrollment.exception.CourseNotAvailableException;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 
 import java.math.BigDecimal;
@@ -129,6 +131,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         entityManager.persist(term);
 
         Course course = new Course();
+        course.setVisibleInCatalog(true);
         course.setName("Illustrator desde cero " + System.nanoTime());
         course.setTerm(term);
         course.setCapacity(capacity);
@@ -255,6 +258,32 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null),
                 new CourseTransferReceiptForm(null, null, null, null, null, null, null, null), newIdempotencyKey()))
                 .isInstanceOf(BankTransferDetailsRequiredException.class);
+    }
+
+    @Test
+    void studentRequestForCourseHiddenFromCatalogIsRejected() {
+        Student student = persistStudent("82134010");
+        Course course = persistCourse(20);
+        course.setVisibleInCatalog(false);
+        persistPriceRevision(course, BigDecimal.valueOf(15000), persistPersonBase("DIR" + System.nanoTime()));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null),
+                transferReceiptOf(15000), newIdempotencyKey()))
+                .isInstanceOf(CourseNotAvailableException.class);
+    }
+
+    @Test
+    void studentRequestForInactiveCourseIsRejected() {
+        Student student = persistStudent("82134011");
+        Course course = persistCourse(20);
+        course.setIsActive(StatusType.INACTIVE);
+        persistPriceRevision(course, BigDecimal.valueOf(15000), persistPersonBase("DIR" + System.nanoTime()));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(signedInAs(student), new CreateCourseEnrollmentRequest(course.getId(), null),
+                transferReceiptOf(15000), newIdempotencyKey()))
+                .isInstanceOf(CourseNotAvailableException.class);
     }
 
     @Test
