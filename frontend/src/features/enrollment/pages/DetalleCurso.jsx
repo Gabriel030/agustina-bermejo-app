@@ -62,6 +62,7 @@ export function DetalleCurso() {
   return (
     <CatalogDetailLayout
       backTo={CATALOG_PATH}
+      hiddenNotice={viewer.state === 'PREVIEW' && !isListedInCatalog(curso) ? 'Curso no visible en el catálogo' : null}
       title={curso.name}
       summary={courseSummary(curso)}
       action={

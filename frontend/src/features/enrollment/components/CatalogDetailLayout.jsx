@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, EyeOff } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -54,13 +54,20 @@ export function CatalogViewerAction({ viewer, previewText, notices, enrollAction
   return enrollAction;
 }
 
-export function CatalogDetailLayout({ backTo, title, summary, action, children }) {
+export function CatalogDetailLayout({ backTo, title, summary, action, hiddenNotice, children }) {
   return (
     <PageContainer>
       <Link to={backTo} className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink">
         <ArrowLeft className="size-3.5" aria-hidden="true" />
         Catálogo
       </Link>
+
+      {hiddenNotice && (
+        <div role="status" className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm font-semibold text-ink">
+          <EyeOff className="size-4 shrink-0 text-warning" aria-hidden="true" />
+          {hiddenNotice}
+        </div>
+      )}
 
       <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-brand/20 to-accent-2/20 flex items-center justify-center">
         <span className="text-sm font-semibold text-ink-faint">Video introductorio próximamente</span>
