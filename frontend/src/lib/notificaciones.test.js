@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION } from './notificaciones';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from './notificaciones';
 
 describe('notificaciones', () => {
   it('etiqueta y da tono a la nota de credito emitida', () => {
@@ -60,5 +60,46 @@ describe('notificaciones', () => {
     expect(TIPO_NOTIFICACION_LABEL.GRADUATION_REQUEST_VERIFIED).toBe('Egreso verificado por Administración');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_PENDING_REVIEW).toBe('warning');
     expect(TONO_NOTIFICACION.GRADUATION_REQUEST_VERIFIED).toBe('accent2');
+  });
+
+  it('labels the real emitted types added in the audit', () => {
+    expect(TIPO_NOTIFICACION_LABEL.ATTENDANCE_JUSTIFICATION_APPROVED).toBe('Justificación de inasistencia aprobada');
+    expect(TIPO_NOTIFICACION_LABEL.ATTENDANCE_JUSTIFICATION_REJECTED).toBe('Justificación de inasistencia rechazada');
+    expect(TIPO_NOTIFICACION_LABEL.ENROLLMENT_FEE_EXEMPTION_GRANTED).toBe('Matrícula exonerada');
+    expect(TIPO_NOTIFICACION_LABEL.ENROLLMENT_FEE_EXEMPTION_REVOKED).toBe('Exoneración de matrícula revocada');
+    expect(TIPO_NOTIFICACION_LABEL.PAYMENT_CHARGED_BACK).toBe('Pago revertido por contracargo');
+    expect(TONO_NOTIFICACION.PAYMENT_CHARGED_BACK).toBe('danger');
+  });
+
+  it('falls back to a generic Spanish label for unknown types', () => {
+    expect(etiquetaNotificacion('SOME_FUTURE_TYPE')).toBe('Notificación');
+    expect(etiquetaNotificacion('CREDIT_NOTE_ISSUED')).toBe('Nota de crédito emitida');
+  });
+
+  describe('tiempoRelativo', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-11-05T12:00:00'));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('handles recent, hours and days', () => {
+      expect(tiempoRelativo('2026-11-05T11:30:00')).toBe('hace 30 min');
+      expect(tiempoRelativo('2026-11-05T09:00:00')).toBe('hace 3 h');
+      expect(tiempoRelativo('2026-11-02T12:00:00')).toBe('hace 3 d');
+    });
+
+    it('shows an absolute date from seven days', () => {
+      expect(tiempoRelativo('2026-10-01T10:00:00')).toBe('01/10/2026');
+    });
+
+    it('never shows negative values for future dates', () => {
+      expect(tiempoRelativo('2026-11-06T12:00:00')).toBe('recién');
+    });
+
+    it('returns empty text for invalid or missing dates', () => {
+      expect(tiempoRelativo('not-a-date')).toBe('');
+      expect(tiempoRelativo(undefined)).toBe('');
+    });
   });
 });

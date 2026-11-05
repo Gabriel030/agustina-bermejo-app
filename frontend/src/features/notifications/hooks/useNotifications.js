@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { apiFetch } from '@/api/client';
 
 export function useMisNotificaciones() {
@@ -14,5 +15,6 @@ export function useMarcarNotificacionLeida() {
   return useMutation({
     mutationFn: (id) => apiFetch(`/me/notifications/${id}/read`, { method: 'POST' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'notifications'] }),
+    onError: () => toast.error('No pudimos marcar la notificación como leída. Probá de nuevo.'),
   });
 }
