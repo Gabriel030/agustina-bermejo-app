@@ -33,6 +33,33 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          const chunkPackages = {
+            recharts: ['recharts', 'victory-vendor', 'd3-', 'internmap', 'es-toolkit', '@reduxjs', 'react-redux', 'immer', 'reselect', 'decimal.js-light', 'eventemitter3'],
+            'react-vendor': ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'],
+            query: ['@tanstack'],
+            radix: ['radix-ui', '@radix-ui'],
+            icons: ['lucide-react'],
+            motion: ['motion', 'framer-motion', 'motion-dom', 'motion-utils'],
+            utils: ['clsx', 'tailwind-merge', 'class-variance-authority', 'tiny-invariant', 'use-sync-external-store'],
+            forms: ['react-hook-form', 'zod', '@hookform'],
+          }
+          const path = id.split('node_modules/').pop().split('/')
+          const packageName = path[0].startsWith('@') ? `${path[0]}/${path[1]}` : path[0]
+          return Object.keys(chunkPackages).find((chunk) =>
+            chunkPackages[chunk].some(
+              (name) => packageName === name || packageName.startsWith(`${name}/`) || (name.endsWith('-') && packageName.startsWith(name)),
+            ),
+          )
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     environmentOptions: {

@@ -4,11 +4,12 @@ import { Registrarse } from '@/features/identity/pages/Registrarse';
 import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
 import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
 import { NoAutorizado } from '@/pages/NoAutorizado';
-import { MiPerfil } from '@/features/identity/pages/MiPerfil';
-import { LegajoAlumno } from '@/features/identity/pages/LegajoAlumno';
-import { NuevoAlumno } from '@/features/identity/pages/NuevoAlumno';
-import { GestionPersonal } from '@/features/identity/pages/GestionPersonal';
-import { LegajoPersonal } from '@/features/identity/pages/LegajoPersonal';
+import { lazyPage } from '@/routes/lazyPage';
+const MiPerfil = lazyPage(() => import('@/features/identity/pages/MiPerfil'), 'MiPerfil');
+const LegajoAlumno = lazyPage(() => import('@/features/identity/pages/LegajoAlumno'), 'LegajoAlumno');
+const NuevoAlumno = lazyPage(() => import('@/features/identity/pages/NuevoAlumno'), 'NuevoAlumno');
+const GestionPersonal = lazyPage(() => import('@/features/identity/pages/GestionPersonal'), 'GestionPersonal');
+const LegajoPersonal = lazyPage(() => import('@/features/identity/pages/LegajoPersonal'), 'LegajoPersonal');
 
 export const routes = {
   public: [

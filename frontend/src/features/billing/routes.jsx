@@ -1,26 +1,27 @@
-import { AlumnoPagos } from '@/pages/AlumnoPagos';
-import { AlumnoPagoDetalle } from '@/pages/AlumnoPagoDetalle';
-import { AlumnoPagarSeleccion } from '@/pages/AlumnoPagarSeleccion';
-import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
-import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
-import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
-import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
-import { AdministrativoCargarComprobante } from '@/pages/AdministrativoCargarComprobante';
-import { RequestRefundPage } from '@/features/billing/refunds/RequestRefundPage';
-import { AuthorizationInboxPage } from '@/features/billing/authorization/AuthorizationInboxPage';
-import { AuthorizationRequestDetailPage } from '@/features/billing/authorization/AuthorizationRequestDetailPage';
-import { CreateCreditNotePage } from '@/features/billing/credit-notes/CreateCreditNotePage';
-import { MyCreditNotesPage } from '@/features/billing/credit-notes/MyCreditNotesPage';
-import { FinancialDashboardPage } from '@/features/billing/dashboard/FinancialDashboardPage';
-import { DiscountsPage } from '@/features/billing/discounts/DiscountsPage';
-import { DiscountDefinitionFormPage } from '@/features/billing/discounts/DiscountDefinitionFormPage';
-import { DiscountDefinitionDetailPage } from '@/features/billing/discounts/DiscountDefinitionDetailPage';
-import { GrantDiscountPage } from '@/features/billing/discounts/GrantDiscountPage';
+import { lazyPage } from '@/routes/lazyPage';
+const AlumnoPagos = lazyPage(() => import('@/pages/AlumnoPagos'), 'AlumnoPagos');
+const AlumnoPagoDetalle = lazyPage(() => import('@/pages/AlumnoPagoDetalle'), 'AlumnoPagoDetalle');
+const AlumnoPagarSeleccion = lazyPage(() => import('@/pages/AlumnoPagarSeleccion'), 'AlumnoPagarSeleccion');
+const AlumnoPagarTransferencia = lazyPage(() => import('@/pages/AlumnoPagarTransferencia'), 'AlumnoPagarTransferencia');
+const AlumnoPagarOnline = lazyPage(() => import('@/pages/AlumnoPagarOnline'), 'AlumnoPagarOnline');
+const AlumnoPagoEstado = lazyPage(() => import('@/pages/AlumnoPagoEstado'), 'AlumnoPagoEstado');
+const AdministrativoFacturacion = lazyPage(() => import('@/pages/AdministrativoFacturacion'), 'AdministrativoFacturacion');
+const AdministrativoCargarComprobante = lazyPage(() => import('@/pages/AdministrativoCargarComprobante'), 'AdministrativoCargarComprobante');
+const RequestRefundPage = lazyPage(() => import('@/features/billing/refunds/RequestRefundPage'), 'RequestRefundPage');
+const AuthorizationInboxPage = lazyPage(() => import('@/features/billing/authorization/AuthorizationInboxPage'), 'AuthorizationInboxPage');
+const AuthorizationRequestDetailPage = lazyPage(() => import('@/features/billing/authorization/AuthorizationRequestDetailPage'), 'AuthorizationRequestDetailPage');
+const CreateCreditNotePage = lazyPage(() => import('@/features/billing/credit-notes/CreateCreditNotePage'), 'CreateCreditNotePage');
+const MyCreditNotesPage = lazyPage(() => import('@/features/billing/credit-notes/MyCreditNotesPage'), 'MyCreditNotesPage');
+const FinancialDashboardPage = lazyPage(() => import('@/features/billing/dashboard/FinancialDashboardPage'), 'FinancialDashboardPage');
+const DiscountsPage = lazyPage(() => import('@/features/billing/discounts/DiscountsPage'), 'DiscountsPage');
+const DiscountDefinitionFormPage = lazyPage(() => import('@/features/billing/discounts/DiscountDefinitionFormPage'), 'DiscountDefinitionFormPage');
+const DiscountDefinitionDetailPage = lazyPage(() => import('@/features/billing/discounts/DiscountDefinitionDetailPage'), 'DiscountDefinitionDetailPage');
+const GrantDiscountPage = lazyPage(() => import('@/features/billing/discounts/GrantDiscountPage'), 'GrantDiscountPage');
 
-import { MonthlyRunPage } from '@/features/billing/monthly-run/MonthlyRunPage';
-import { BillingRunsPage } from '@/features/billing/runs/BillingRunsPage';
-import { SimulatedMailsPage } from '@/features/billing/reminders/SimulatedMailsPage';
-import { ReminderSettingsPage } from '@/features/billing/reminders/ReminderSettingsPage';
+const MonthlyRunPage = lazyPage(() => import('@/features/billing/monthly-run/MonthlyRunPage'), 'MonthlyRunPage');
+const BillingRunsPage = lazyPage(() => import('@/features/billing/runs/BillingRunsPage'), 'BillingRunsPage');
+const SimulatedMailsPage = lazyPage(() => import('@/features/billing/reminders/SimulatedMailsPage'), 'SimulatedMailsPage');
+const ReminderSettingsPage = lazyPage(() => import('@/features/billing/reminders/ReminderSettingsPage'), 'ReminderSettingsPage');
 
 export const routes = {
   public: [],

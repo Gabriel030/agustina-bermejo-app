@@ -1,12 +1,14 @@
 import '@testing-library/jest-dom/vitest';
-import { afterAll, afterEach, beforeAll, expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, expect, vi } from 'vitest';
 import * as axeMatchers from 'vitest-axe/matchers';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { server } from './mocks/server';
 import { resetCircuits, setCircuitOptions, setRetrySleep } from '../api/client';
 import { warmUpContract } from './contract/validateAgainstContract';
 import { formatContractDeviations, takeContractDeviations } from './contract/withContract';
 
+configure({ asyncUtilTimeout: 10000 });
+vi.setConfig({ testTimeout: 20000 });
 expect.extend(axeMatchers);
 
 // El localStorage de jsdom en este entorno queda como un objeto sin sus

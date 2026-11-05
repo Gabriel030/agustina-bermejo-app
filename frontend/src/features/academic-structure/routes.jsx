@@ -1,21 +1,22 @@
-import { AdministrativoSubjects } from '@/features/academic-structure/pages/AdministrativoSubjects';
-import { AdministrativoSubjectWizard } from '@/features/academic-structure/pages/AdministrativoSubjectWizard';
-import { CarreraWizard } from '@/features/academic-structure/pages/CarreraWizard';
-import { DirectorAniosLectivos } from '@/features/academic-structure/pages/DirectorAniosLectivos';
-import { CarreraDetalle } from '@/features/academic-structure/pages/CarreraDetalle';
-import { CarreraEditarDatos } from '@/features/academic-structure/pages/CarreraEditarDatos';
-import { CursoWizard } from '@/features/academic-structure/pages/CursoWizard';
-import { CursoDetalle } from '@/features/academic-structure/pages/CursoDetalle';
-import { CursoEditarDatos } from '@/features/academic-structure/pages/CursoEditarDatos';
-import { DirectorSubjectReview } from '@/features/academic-structure/pages/DirectorSubjectReview';
-import { PreceptorOfertaAcademica } from '@/features/academic-structure/pages/PreceptorOfertaAcademica';
-import { PreceptorDetalleCarrera } from '@/features/academic-structure/pages/PreceptorDetalleCarrera';
-import { PreceptorDetalleCurso } from '@/features/academic-structure/pages/PreceptorDetalleCurso';
-import { PreceptorCalendario } from '@/features/academic-structure/pages/PreceptorCalendario';
-import { PreceptorPeriodos } from '@/features/academic-structure/pages/PreceptorPeriodos';
-import { PreceptorPeriodoForm } from '@/features/academic-structure/pages/PreceptorPeriodoForm';
-import { AdministrativoHolidays } from '@/features/academic-structure/pages/AdministrativoHolidays';
-import { PreceptorNuevoCiclo } from '@/features/academic-structure/pages/PreceptorNuevoCiclo';
+import { lazyPage } from '@/routes/lazyPage';
+const AdministrativoSubjects = lazyPage(() => import('@/features/academic-structure/pages/AdministrativoSubjects'), 'AdministrativoSubjects');
+const AdministrativoSubjectWizard = lazyPage(() => import('@/features/academic-structure/pages/AdministrativoSubjectWizard'), 'AdministrativoSubjectWizard');
+const CarreraWizard = lazyPage(() => import('@/features/academic-structure/pages/CarreraWizard'), 'CarreraWizard');
+const DirectorAniosLectivos = lazyPage(() => import('@/features/academic-structure/pages/DirectorAniosLectivos'), 'DirectorAniosLectivos');
+const CarreraDetalle = lazyPage(() => import('@/features/academic-structure/pages/CarreraDetalle'), 'CarreraDetalle');
+const CarreraEditarDatos = lazyPage(() => import('@/features/academic-structure/pages/CarreraEditarDatos'), 'CarreraEditarDatos');
+const CursoWizard = lazyPage(() => import('@/features/academic-structure/pages/CursoWizard'), 'CursoWizard');
+const CursoDetalle = lazyPage(() => import('@/features/academic-structure/pages/CursoDetalle'), 'CursoDetalle');
+const CursoEditarDatos = lazyPage(() => import('@/features/academic-structure/pages/CursoEditarDatos'), 'CursoEditarDatos');
+const DirectorSubjectReview = lazyPage(() => import('@/features/academic-structure/pages/DirectorSubjectReview'), 'DirectorSubjectReview');
+const PreceptorOfertaAcademica = lazyPage(() => import('@/features/academic-structure/pages/PreceptorOfertaAcademica'), 'PreceptorOfertaAcademica');
+const PreceptorDetalleCarrera = lazyPage(() => import('@/features/academic-structure/pages/PreceptorDetalleCarrera'), 'PreceptorDetalleCarrera');
+const PreceptorDetalleCurso = lazyPage(() => import('@/features/academic-structure/pages/PreceptorDetalleCurso'), 'PreceptorDetalleCurso');
+const PreceptorCalendario = lazyPage(() => import('@/features/academic-structure/pages/PreceptorCalendario'), 'PreceptorCalendario');
+const PreceptorPeriodos = lazyPage(() => import('@/features/academic-structure/pages/PreceptorPeriodos'), 'PreceptorPeriodos');
+const PreceptorPeriodoForm = lazyPage(() => import('@/features/academic-structure/pages/PreceptorPeriodoForm'), 'PreceptorPeriodoForm');
+const AdministrativoHolidays = lazyPage(() => import('@/features/academic-structure/pages/AdministrativoHolidays'), 'AdministrativoHolidays');
+const PreceptorNuevoCiclo = lazyPage(() => import('@/features/academic-structure/pages/PreceptorNuevoCiclo'), 'PreceptorNuevoCiclo');
 
 export const routes = {
   public: [],
