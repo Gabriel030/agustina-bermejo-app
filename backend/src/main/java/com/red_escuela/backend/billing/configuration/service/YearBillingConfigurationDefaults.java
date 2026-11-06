@@ -5,10 +5,17 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 
 @Component
 public class YearBillingConfigurationDefaults {
     private static final int DEFAULT_ENROLLMENT_FEE_LEAD_MONTHS = 1;
+    private static final int DEFAULT_INSTALLMENTS_COUNT = 10;
+
+    public int defaultInstallmentsCount(LocalDateTime termStart, LocalDateTime termEnd) {
+        return (termStart == null || termEnd == null) ? DEFAULT_INSTALLMENTS_COUNT
+                : (int) ChronoUnit.MONTHS.between(YearMonth.from(termStart), YearMonth.from(termEnd)) + 1;
+    }
 
     public YearBillingConfigurationRequest completeForCreation(LocalDateTime termStart, YearBillingConfigurationRequest request) {
         YearBillingConfigurationRequest base = request != null ? request : YearBillingConfigurationRequest.defaults();

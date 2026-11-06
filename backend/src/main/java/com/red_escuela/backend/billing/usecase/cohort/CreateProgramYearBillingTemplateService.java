@@ -17,8 +17,6 @@ import com.red_escuela.backend.billing.configuration.service.DirectConfiguration
 import com.red_escuela.backend.billing.configuration.service.YearBillingTermsOverlay;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.configuration.service.ConfigurationPolicyEvaluator;
@@ -32,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateProgramYearBillingTemplateService implements CreateProgramYearBillingTemplateUseCase {
     private static final String INITIAL_VERSION_REASON = "Versión inicial del año lectivo";
     private static final int INITIAL_PAYMENT_DEADLINE_HOURS = 48;
-    private static final int DEFAULT_INSTALLMENTS_COUNT = 10;
 
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final ProgramRepository programRepository;
@@ -75,7 +72,7 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
         Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
         Term term = termRepository.findById(termId).orElseThrow(() -> new TermNotFoundException(termId));
         Person actor = currentPersonService.resolveCurrentPerson();
-        Integer recurringFeeInvoicesCount = requestedInstallmentsCount != null ? requestedInstallmentsCount : defaultInstallmentsCountOf(term);
+        Integer recurringFeeInvoicesCount = requestedInstallmentsCount != null ? requestedInstallmentsCount : configurationDefaults.defaultInstallmentsCount(term.getStartDate(), term.getEndDate());
         YearBillingConfigurationRequest effectiveConfiguration = configurationDefaults.completeForCreation(term.getStartDate(), configuration);
         policyEvaluator.requireCoherentYearConfiguration(changeLoader.loadCreation(term.getStartDate(), term.getEndDate(), recurringFeeInvoicesCount, effectiveConfiguration));
 
@@ -87,11 +84,6 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
         publishInitialVersions(saved, term, termsOverlay.overlay(YearBillingTerms.initial(recurringFeeInvoicesCount), effectiveConfiguration), actor.getId());
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(programId));
         return saved;
-    }
-
-    private static int defaultInstallmentsCountOf(Term term) {
-        return (term.getStartDate() == null || term.getEndDate() == null) ? DEFAULT_INSTALLMENTS_COUNT
-                : (int) ChronoUnit.MONTHS.between(YearMonth.from(term.getStartDate()), YearMonth.from(term.getEndDate())) + 1;
     }
 
     private void publishInitialVersions(ProgramYearBillingTemplate template, Term term, YearBillingTerms terms, Long actorId) {
