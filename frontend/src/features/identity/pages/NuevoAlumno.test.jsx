@@ -445,12 +445,16 @@ describe('NuevoAlumno', () => {
     });
 
     it('shows BIRTH_DATE_REQUIRED under the birth date field', async () => {
-      mockOnboarding({ onDraft: () => HttpResponse.json(errorBody('BIRTH_DATE_REQUIRED'), { status: 400 }) });
+      let draftCalls = 0;
+      mockOnboarding({ onDraft: () => { draftCalls += 1; return HttpResponse.json(errorBody('BIRTH_DATE_REQUIRED'), { status: 400 }); } });
       const user = userEvent.setup();
       renderWithProviders(<NuevoAlumno />);
       await fillAndAdvance(user, '1990-05-10');
 
-      const message = await screen.findByText('Ingresá la fecha de nacimiento.', {}, { timeout: 5000 });
+      const message = await screen.findByText('Ingresá la fecha de nacimiento.', {}, { timeout: 5000 }).catch((e) => {
+        console.log('DIAG node=' + process.version + ' draftCalls=' + draftCalls + ' form=' + document.querySelector('form').textContent + ' alerts=' + [...document.querySelectorAll('[role=alert]')].map((n) => n.textContent).join('|') + ' invalid=' + [...document.querySelectorAll('[aria-invalid=true]')].map((n) => n.id).join(','));
+        throw e;
+      });
       expect(message).toHaveAttribute('role', 'alert');
       expect(screen.getByLabelText(/Fecha de nacimiento/)).toHaveAttribute('aria-invalid', 'true');
     });
