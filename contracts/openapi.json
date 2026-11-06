@@ -1001,14 +1001,14 @@
             "type" : "integer"
           },
           "justifiable" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "justificationAttachmentUrl" : {
             "type" : "string"
           },
           "justificationDeadline" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justificationReason" : {
             "type" : "string"
@@ -1024,7 +1024,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "classDate", "enrollmentId", "id", "justifiable", "justificationAttachmentUrl", "justificationDeadline", "justificationReason", "justificationRejectionReason", "justifiedAt", "status" ],
+        "required" : [ "classDate", "enrollmentId", "id", "justificationAttachmentUrl", "justificationReason", "justificationRejectionReason", "justifiedAt", "status" ],
         "type" : "object"
       },
       "AttendanceRiskResponse" : {
