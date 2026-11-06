@@ -139,4 +139,17 @@ class SdkMercadoPagoPaymentFetcherTest {
 
         assertThat(MercadoPagoConfig.getAccessToken()).isEqualTo("test-token-xyz");
     }
+
+    @Test
+    void nonNumericExternalReferenceYieldsEmptyInsteadOfThrowing() {
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "abc", "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "12 3", "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "99999999999999999999", "10.00", 1), "999")).isEmpty();
+    }
+
+    @Test
+    void nullOrBlankExternalReferenceYieldsEmpty() {
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", null, "10.00", 1), "999")).isEmpty();
+        assertThat(fetchWith(payment("approved", "ARS", "credit_card", "", "10.00", 1), "999")).isEmpty();
+    }
 }

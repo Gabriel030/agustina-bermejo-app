@@ -9,9 +9,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.regex.Pattern;
+
 @RestController
 @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.OFF)
 public class MpWebhookController {
+
+    private static final Pattern NUMERIC_ID = Pattern.compile("^\\d{1,20}$");
 
     private final ProcessMpWebhookUseCase processMpWebhookUseCase;
 
@@ -27,6 +31,9 @@ public class MpWebhookController {
             @RequestHeader(value = "x-signature", required = false, defaultValue = "") String xSignature,
             @RequestHeader(value = "x-request-id", required = false, defaultValue = "") String xRequestId,
             @RequestParam(value = "data.id") String mpPaymentId) {
+        if (!NUMERIC_ID.matcher(mpPaymentId).matches()) {
+            throw new IllegalArgumentException("Identificador de pago inválido");
+        }
         if (recordMpWebhookEventUseCase.recordWhenBillingDoesNotRegisterPayments(xSignature, xRequestId, mpPaymentId)) {
             return;
         }
