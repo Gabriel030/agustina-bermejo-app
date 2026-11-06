@@ -12,5 +12,6 @@ public record GradeGridCellResponse(
         Integer sequenceNumber,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Grade score,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) LocalDateTime date,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String comments) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String comments,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean published) {
 }

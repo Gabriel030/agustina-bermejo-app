@@ -9,7 +9,13 @@ import java.math.BigDecimal;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.evaluation.api.GradeItemFinder;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
+import com.red_escuela.backend.evaluation.dto.PublishedGradesSummary;
+import com.red_escuela.backend.evaluation.exception.GradeItemPublishedLockedException;
+import com.red_escuela.backend.evaluation.exception.GradeItemTypeNotPublishableException;
+import com.red_escuela.backend.evaluation.exception.NoPendingGradesToPublishException;
 import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -73,6 +79,15 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private GradeItemService gradeItemService;
+
+    @Autowired
+    private SectionGradeItemPublisher sectionGradeItemPublisher;
+
+    @Autowired
+    private GradeItemFinder gradeItemFinder;
+
+    @Autowired
+    private TeacherGradeGridBuilder teacherGradeGridBuilder;
 
     @Autowired
     private EntityManager entityManager;
@@ -218,6 +233,156 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
         return enrollment;
+    }
+
+    private SubjectSection publicationSection(Instructor instructor, String name) {
+        Subject subject = persistSubject(name);
+        SubjectSection section = persistSection(subject, persistTerm(), persistScheme(2, 0, false));
+        assignInstructor(section, instructor);
+        return section;
+    }
+
+    private SubjectSectionEnrollment enrollInSection(String dni, SubjectSection section) {
+        Student student = persistStudent(dni, persistInstitution());
+        return persistEnrollment(student, persistProgramEnrollment(student, persistProgram("Carrera " + dni)), section);
+    }
+
+    private void loadExam(SubjectSectionEnrollment enrollment, Instructor instructor, int sequence, double score) {
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, sequence, null, LocalDateTime.now(), BigDecimal.valueOf(score), null, null));
+    }
+
+    private PublishedGradesSummary publishExam(SubjectSection section, Instructor instructor, int sequence) {
+        return sectionGradeItemPublisher.publish(SectionKind.PROGRAM, section.getId(), instructor.getId(),
+                instructor.getPerson().getId(), GradeItemType.EXAM, sequence);
+    }
+
+    @Test
+    void publishingAnItemCountsItsGradesAndStudents() {
+        Instructor instructor = persistInstructor("72000001");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarConteo");
+        SubjectSectionEnrollment first = enrollInSection("72000002", section);
+        SubjectSectionEnrollment second = enrollInSection("72000003", section);
+        enrollInSection("72000004", section);
+        loadExam(first, instructor, 1, 7.0);
+        loadExam(second, instructor, 1, 8.0);
+        loadExam(second, instructor, 2, 6.0);
+        entityManager.flush();
+
+        PublishedGradesSummary summary = publishExam(section, instructor, 1);
+
+        assertThat(summary).isEqualTo(new PublishedGradesSummary(2, 2));
+    }
+
+    @Test
+    void publishingTheSameItemTwiceFailsWithNoPendingGrades() {
+        Instructor instructor = persistInstructor("72000005");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarDoble");
+        loadExam(enrollInSection("72000006", section), instructor, 1, 7.0);
+        entityManager.flush();
+        publishExam(section, instructor, 1);
+
+        assertThatThrownBy(() -> publishExam(section, instructor, 1)).isInstanceOf(NoPendingGradesToPublishException.class);
+    }
+
+    @Test
+    void publishingAnItemWithoutLoadedGradesFails() {
+        Instructor instructor = persistInstructor("72000007");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarVacia");
+        enrollInSection("72000008", section);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> publishExam(section, instructor, 1)).isInstanceOf(NoPendingGradesToPublishException.class);
+    }
+
+    @Test
+    void publishingFromAnotherInstructorSectionFails() {
+        Instructor owner = persistInstructor("72000009");
+        Instructor stranger = persistInstructor("72000010");
+        SubjectSection section = publicationSection(owner, "MateriaPublicarAjena");
+        loadExam(enrollInSection("72000011", section), owner, 1, 7.0);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> sectionGradeItemPublisher.publish(SectionKind.PROGRAM, section.getId(), stranger.getId(), stranger.getPerson().getId(), GradeItemType.EXAM, 1)).isInstanceOf(NotOwnSectionException.class);
+    }
+
+    @Test
+    void finalGradesCannotBePublishedByItem() {
+        Instructor instructor = persistInstructor("72000012");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarFinal");
+        entityManager.flush();
+
+        assertThatThrownBy(() -> sectionGradeItemPublisher.publish(SectionKind.PROGRAM, section.getId(),
+                instructor.getId(), instructor.getPerson().getId(), GradeItemType.FINAL, 1))
+                .isInstanceOf(GradeItemTypeNotPublishableException.class);
+    }
+
+    @Test
+    void loadingOrEditingAPublishedItemIsLockedEvenForStudentsWithoutGrade() {
+        Instructor instructor = persistInstructor("72000013");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarBloqueo");
+        SubjectSectionEnrollment graded = enrollInSection("72000014", section);
+        SubjectSectionEnrollment absent = enrollInSection("72000015", section);
+        loadExam(graded, instructor, 1, 7.0);
+        entityManager.flush();
+        publishExam(section, instructor, 1);
+
+        assertThatThrownBy(() -> loadExam(graded, instructor, 1, 9.0)).isInstanceOf(GradeItemPublishedLockedException.class);
+        assertThatThrownBy(() -> loadExam(absent, instructor, 1, 5.0)).isInstanceOf(GradeItemPublishedLockedException.class);
+        assertThat(gradeItemService.listByProgramEnrollment(graded.getId()).get(0).getScore())
+                .isEqualTo(Grade.of(BigDecimal.valueOf(7.0)));
+    }
+
+    @Test
+    void anotherItemOfTheSameSectionStaysEditableAfterPublishing() {
+        Instructor instructor = persistInstructor("72000016");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarOtroItem");
+        SubjectSectionEnrollment enrollment = enrollInSection("72000017", section);
+        loadExam(enrollment, instructor, 1, 7.0);
+        entityManager.flush();
+        publishExam(section, instructor, 1);
+
+        loadExam(enrollment, instructor, 2, 6.0);
+
+        assertThat(gradeItemService.listByProgramEnrollment(enrollment.getId())).hasSize(2);
+    }
+
+    @Test
+    void studentSeesAnItemOnlyAfterItIsPublished() {
+        Instructor instructor = persistInstructor("72000018");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarAlumno");
+        SubjectSectionEnrollment enrollment = enrollInSection("72000019", section);
+        loadExam(enrollment, instructor, 1, 7.0);
+        loadExam(enrollment, instructor, 2, 6.0);
+        entityManager.flush();
+        assertThat(gradeItemFinder.findPublishedByProgramEnrollment(enrollment.getId())).isEmpty();
+
+        publishExam(section, instructor, 2);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(gradeItemFinder.findPublishedByProgramEnrollment(enrollment.getId()))
+                .extracting(view -> view.sequenceNumber()).containsExactly(2);
+    }
+
+    @Test
+    void gradeGridFlagsPublishedColumnsAndCells() {
+        Instructor instructor = persistInstructor("72000020");
+        SubjectSection section = publicationSection(instructor, "MateriaPublicarGrilla");
+        SubjectSectionEnrollment enrollment = enrollInSection("72000021", section);
+        loadExam(enrollment, instructor, 1, 7.0);
+        loadExam(enrollment, instructor, 2, 6.0);
+        entityManager.flush();
+        publishExam(section, instructor, 1);
+        entityManager.flush();
+        entityManager.clear();
+
+        var grid = teacherGradeGridBuilder.buildForProgramSection(section.getId(), instructor.getId());
+
+        assertThat(grid.columns()).extracting(column -> column.published()).containsExactly(true, false);
+        assertThat(grid.columns().get(0).publishedAt()).isNotNull();
+        assertThat(grid.columns().get(1).publishedAt()).isNull();
+        assertThat(grid.students().get(0).grades()).extracting(cell -> cell.published()).containsExactly(true, false);
     }
 
     @Test
