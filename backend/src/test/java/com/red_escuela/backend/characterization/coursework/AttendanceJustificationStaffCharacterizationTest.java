@@ -211,7 +211,7 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
                 .andExpect(status().isOk());
 
         postJson(preceptor, "/attendance/" + attendanceId + "/justify",
-                new com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest("Certificado presentado en mostrador", null))
+                new com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest("Certificado presentado en mostrador", null, "Presentado fuera de plazo"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("JUSTIFIED"))
                 .andExpect(jsonPath("$.justificationRejectionReason").doesNotExist());
@@ -236,19 +236,19 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
     }
 
     @Test
-    void anInstructorOfAnotherSectionCannotJustifyAnAbsenceAndItStaysAbsent() throws Exception {
+    void anInstructorCannotJustifyAnAbsenceThroughTheStaffEndpointAndItStaysAbsent() throws Exception {
         Classroom classroom = classroom("jus10", "7700010");
         Classroom other = classroom("jus10b", "7700011");
         long attendanceId = recordedAbsence(classroom, 2);
 
-        postJson(other.teacher(), "/attendance/" + attendanceId + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+        postJson(other.teacher(), "/attendance/" + attendanceId + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, null))
                 .andExpect(status().isForbidden());
 
         assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
     }
 
     @Test
-    void theOwnInstructorPreceptorAndAdministrativeCanJustifyAndTheStudentCannot() throws Exception {
+    void preceptorAndAdministrativeCanJustifyAndTheInstructorAndTheStudentCannot() throws Exception {
         Classroom classroom = classroom("jus11", "7700012");
         Person preceptor = persistPerson("jus11.preceptor", "77000127", "PRECEPTOR");
         Person administrative = persistPerson("jus11.admin", "77000128", "ADMINISTRATIVO");
@@ -257,17 +257,17 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
         long byAdministrative = recordedAbsence(classroom, 4);
         long byStudent = recordedAbsence(classroom, 5);
 
-        postJson(classroom.student(), "/attendance/" + byStudent + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+        postJson(classroom.student(), "/attendance/" + byStudent + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, null))
                 .andExpect(status().isForbidden());
-        postJson(classroom.teacher(), "/attendance/" + byTeacher + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("JUSTIFIED"));
-        postJson(preceptor, "/attendance/" + byPreceptor + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+        postJson(classroom.teacher(), "/attendance/" + byTeacher + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, null))
+                .andExpect(status().isForbidden());
+        postJson(preceptor, "/attendance/" + byPreceptor + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, "Fuera de plazo"))
                 .andExpect(status().isOk());
-        postJson(administrative, "/attendance/" + byAdministrative + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null))
+        postJson(administrative, "/attendance/" + byAdministrative + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, "Fuera de plazo"))
                 .andExpect(status().isOk());
 
         assertThat(storedStatus(byStudent)).isEqualTo(AttendanceStatus.ABSENT);
-        assertThat(storedStatus(byTeacher)).isEqualTo(AttendanceStatus.JUSTIFIED);
+        assertThat(storedStatus(byTeacher)).isEqualTo(AttendanceStatus.ABSENT);
         assertThat(storedStatus(byPreceptor)).isEqualTo(AttendanceStatus.JUSTIFIED);
         assertThat(storedStatus(byAdministrative)).isEqualTo(AttendanceStatus.JUSTIFIED);
     }
@@ -279,14 +279,14 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
         long attendanceId = recordedAbsence(classroom, 2);
         String path = "/attendance/" + attendanceId + "/justify";
 
-        postJson(preceptor, path, new JustificarAsistenciaRequest("x".repeat(501), null)).andExpect(status().isBadRequest());
-        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "../../etc/passwd")).andExpect(status().isBadRequest());
-        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/../../x.pdf")).andExpect(status().isBadRequest());
-        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_" + "a".repeat(300) + ".pdf"))
+        postJson(preceptor, path, new JustificarAsistenciaRequest("x".repeat(501), null, null)).andExpect(status().isBadRequest());
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "../../etc/passwd", null)).andExpect(status().isBadRequest());
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/../../x.pdf", null)).andExpect(status().isBadRequest());
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_" + "a".repeat(300) + ".pdf", null))
                 .andExpect(status().isBadRequest());
 
         assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
-        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_3f2c-ab.pdf"))
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_3f2c-ab.pdf", "Fuera de plazo"))
                 .andExpect(status().isOk());
     }
 }

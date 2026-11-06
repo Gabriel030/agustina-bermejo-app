@@ -889,7 +889,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
                 new TestingAuthenticationToken(instructor.getPerson().getId().toString(), null));
         Attendance absence = attendanceRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).stream()
                 .filter(a -> a.getStatus() == AttendanceStatus.ABSENT).findFirst().orElseThrow();
-        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(absence.getId(), null, "certificado médico", null));
+        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(absence.getId(), "certificado médico", null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);

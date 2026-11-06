@@ -310,7 +310,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        assertThatThrownBy(() -> justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), null, "motivo", null)))
+        assertThatThrownBy(() -> justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), "motivo", null, null)))
                 .isInstanceOf(CannotJustifyException.class);
     }
 
@@ -336,7 +336,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        Attendance justificada = justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), null, "motivo médico", null));
+        Attendance justificada = justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(attendance.getId(), "motivo médico", null, null));
         assertThat(justificada.getStatus()).isEqualTo(AttendanceStatus.JUSTIFIED);
         assertThat(justificada.getJustificationReason()).isEqualTo("motivo médico");
         assertThat(justificada.getJustifiedAt()).isNotNull();
@@ -746,7 +746,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Attendance first = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         Person preceptor = persistPersonBase("80000050");
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
-        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), null, "certificado médico", null));
+        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), "certificado médico", null, null));
         entityManager.flush();
 
         List<RosterEntryResponse> roster = getProgramSectionRosterUseCase.get(

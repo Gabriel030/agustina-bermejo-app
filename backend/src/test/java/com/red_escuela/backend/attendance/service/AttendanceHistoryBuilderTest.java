@@ -38,9 +38,11 @@ class AttendanceHistoryBuilderTest {
     private ClassSessionRepository classSessionRepository;
     @Mock
     private SectionEnrollmentFinder sectionEnrollmentFinder;
+    private final JustificationDeadlinePolicy deadlinePolicy =
+            JustificationDeadlinePolicyTest.policy(LocalDate.of(2026, 3, 11), 5);
 
     private AttendanceHistoryBuilder builder() {
-        return new AttendanceHistoryBuilder(attendanceRepository, classSessionRepository, sectionEnrollmentFinder);
+        return new AttendanceHistoryBuilder(attendanceRepository, classSessionRepository, sectionEnrollmentFinder, deadlinePolicy);
     }
 
     private static Student student(long id, String name, String lastname) {
@@ -210,5 +212,24 @@ class AttendanceHistoryBuilderTest {
 
         assertThat(row.attendancePercent()).isNull();
         assertThat(row.cellsByDate()).isEmpty();
+    }
+
+    @Test
+    void absentCellIsJustifiableOnlyWhileTheDeadlineIsOpenAndExposesTheDeadline() {
+        var ana = programEnrollment(1L, student(10L, "Ana", "Perez"));
+        when(classSessionRepository.findBySubjectSectionId(SECTION_ID)).thenReturn(List.of());
+        when(attendanceRepository.findByProgramSubjectSectionEnrollment_SubjectSection_Id(SECTION_ID)).thenReturn(List.of(
+                programAttendance(100L, ana, LocalDate.of(2026, 3, 6), AttendanceStatus.ABSENT),
+                programAttendance(101L, ana, LocalDate.of(2026, 2, 27), AttendanceStatus.ABSENT),
+                programAttendance(102L, ana, LocalDate.of(2026, 3, 9), AttendanceStatus.PRESENT)));
+        when(sectionEnrollmentFinder.findActiveInProgramSection(SECTION_ID)).thenReturn(List.of(ana));
+
+        var cells = builder().buildForProgramSection(SECTION_ID).rows().get(0).cellsByDate();
+
+        assertThat(cells.get(LocalDate.of(2026, 3, 6)).justifiable()).isTrue();
+        assertThat(cells.get(LocalDate.of(2026, 3, 6)).justificationDeadline()).isEqualTo(LocalDate.of(2026, 3, 13));
+        assertThat(cells.get(LocalDate.of(2026, 2, 27)).justifiable()).isFalse();
+        assertThat(cells.get(LocalDate.of(2026, 2, 27)).justificationDeadline()).isEqualTo(LocalDate.of(2026, 3, 6));
+        assertThat(cells.get(LocalDate.of(2026, 3, 9)).justifiable()).isFalse();
     }
 }
