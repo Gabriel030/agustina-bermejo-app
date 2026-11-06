@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from '@/test/axe';
 import { errorBody } from '@/test/fixtures/errors';
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
@@ -342,5 +343,134 @@ describe('RequestRefundPage', () => {
     await submitAndConfirm(user, 'Pedir reembolso');
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('No se puede devolver saldo a favor mientras haya deuda vencida.'));
+  });
+});
+
+describe('RequestRefundPage — clave de idempotencia', () => {
+  beforeEach(() => {
+    auth.roles = ['ADMINISTRATIVO'];
+    toastMock.success.mockClear();
+    toastMock.error.mockClear();
+    mockEligibility();
+    mockPreview();
+  });
+
+  function mockRequest(responses) {
+    const keys = [];
+    let calls = 0;
+    server.use(
+      http.post(`${API}/students/7/refund-requests`, ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        const response = responses[Math.min(calls, responses.length - 1)];
+        calls += 1;
+        return response();
+      }),
+    );
+    return keys;
+  }
+
+  const created = () => HttpResponse.json({ authorizationRequestId: 31, parts: [] }, { status: 202 });
+  const failed = () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+
+  it('sends an Idempotency-Key header', async () => {
+    const keys = mockRequest([created]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+
+    await screen.findByText('Ficha del alumno');
+    expect(keys).toHaveLength(1);
+    expect(keys[0]).toMatch(/\S{16,}/);
+  });
+
+  it('retries after an unknown outcome with the same key', async () => {
+    const keys = mockRequest([failed, created]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(/No pudimos confirmar si se emitió el pedido/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Reintentar' }));
+
+    await screen.findByText('Ficha del alumno');
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('uses a new key when the request content changes', async () => {
+    const keys = mockRequest([failed, created]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    await user.type(screen.getByLabelText('Titular de la cuenta'), ' Jr');
+    await submitAndConfirm(user, 'Pedir reembolso');
+
+    await screen.findByText('Ficha del alumno');
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  it('uses a new key when the form is opened again', async () => {
+    const keys = mockRequest([failed]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+    await screen.findByText(/No pudimos confirmar si se emitió el pedido/);
+    cleanup();
+
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+    await screen.findByText(/No pudimos confirmar si se emitió el pedido/);
+
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  it('has no accessibility violations while showing the retry action', async () => {
+    mockRequest([failed]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+    await screen.findByRole('button', { name: 'Reintentar' });
+
+    expect(await axe(document.body)).toHaveNoViolations();
+  });
+
+  it('shows the Spanish message of an IDEMPOTENCY_KEY_CONFLICT', async () => {
+    mockRequest([() => HttpResponse.json(errorBody('IDEMPOTENCY_KEY_CONFLICT'), { status: 409 })]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining('ya se había enviado con otros datos')));
+  });
+
+  it('shows the Spanish message of an IDEMPOTENCY_KEY_INVALID', async () => {
+    mockRequest([() => HttpResponse.json(errorBody('IDEMPOTENCY_KEY_INVALID'), { status: 400 })]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Monto');
+    await fillForm(user);
+    await submitAndConfirm(user, 'Pedir reembolso');
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining('No pudimos identificar el pedido')));
   });
 });

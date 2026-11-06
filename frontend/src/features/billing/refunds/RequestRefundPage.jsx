@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
@@ -15,6 +15,7 @@ import { formatAmountEsAr } from '../components/cashAmount';
 import { inboxPath } from '../authorization/authorizationRequests';
 import { useStudentHeader } from '../hooks/useCreditNotes';
 import { useRefundEligibility, useRefundPreview, useRequestRefund } from '../hooks/useRefunds';
+import { isUnknownOutcome, useIdempotencyKey } from '../idempotency';
 import { RefundBlockAlert } from './RefundBlockAlert';
 import { RefundSplitPreview } from './RefundSplitPreview';
 import {
@@ -50,6 +51,9 @@ function buildPreviewPayload(form, currency) {
   };
 }
 
+const UNKNOWN_OUTCOME_MESSAGE =
+  'No pudimos confirmar si se emitió el pedido. Si reintentás desde acá, no se duplica. También podés revisar la sección Reembolsos del alumno.';
+
 export function RequestRefundPage() {
   const { id: studentId } = useParams();
   const navigate = useNavigate();
@@ -66,6 +70,9 @@ export function RequestRefundPage() {
   const mutation = useRequestRefund(studentId);
   const { data: student } = useStudentHeader(studentId);
   const [pendingPayload, setPendingPayload] = useState(null);
+  const [unknownOutcome, setUnknownOutcome] = useState(false);
+  const keyFor = useIdempotencyKey();
+  const submitting = useRef(false);
   const studentName = student ? `${student.apellido}, ${student.nombre}` : 'el alumno';
 
   const debouncedForm = useDebouncedValue(form, PREVIEW_DEBOUNCE_MS);
@@ -128,9 +135,12 @@ export function RequestRefundPage() {
   }
 
   async function handleConfirm() {
+    if (submitting.current) return;
+    submitting.current = true;
     const payload = pendingPayload;
+    setUnknownOutcome(false);
     try {
-      const result = await mutation.mutateAsync(payload);
+      const result = await mutation.mutateAsync({ payload, idempotencyKey: keyFor(payload) });
       const awaitingAuthorization = result?.authorizationRequestId != null;
       if (awaitingAuthorization) {
         toast.success('Pedido enviado a la dirección.', {
@@ -142,8 +152,14 @@ export function RequestRefundPage() {
       }
       navigate(studentPath);
     } catch (error) {
+      if (isUnknownOutcome(error)) {
+        setUnknownOutcome(true);
+        return;
+      }
       setPendingPayload(null);
       applyServerError(error);
+    } finally {
+      submitting.current = false;
     }
   }
 
@@ -282,16 +298,23 @@ export function RequestRefundPage() {
       </GlassCard>
       <ConfirmActionDialog
         open={pendingPayload !== null}
-        onOpenChange={(open) => !open && setPendingPayload(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingPayload(null);
+            setUnknownOutcome(false);
+          }
+        }}
         title={isDirector ? `¿Registrar el reembolso de ${studentName}?` : `¿Pedir el reembolso de ${studentName}?`}
         description={
-          pendingPayload
+          unknownOutcome
+            ? UNKNOWN_OUTCOME_MESSAGE
+            : pendingPayload
             ? `${formatMoney(pendingPayload.amount)} a la cuenta ${pendingPayload.destinationAccount ?? ''}. ${
                 isDirector ? 'Se aprueba ahora y la plata queda reservada.' : 'Queda pendiente de la dirección y la plata queda reservada.'
               }`
             : ''
         }
-        confirmLabel={isDirector ? 'Registrar reembolso' : 'Pedir reembolso'}
+        confirmLabel={unknownOutcome ? 'Reintentar' : isDirector ? 'Registrar reembolso' : 'Pedir reembolso'}
         confirmVariant="default"
         pending={mutation.isPending}
         onConfirm={handleConfirm}

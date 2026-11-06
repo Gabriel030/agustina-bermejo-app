@@ -31,8 +31,12 @@ export function useRefundPreview(studentId, payload) {
 export function useRequestRefund(studentId) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) =>
-      apiFetch(`/students/${studentId}/refund-requests`, { method: 'POST', body: JSON.stringify(payload) }),
+    mutationFn: ({ payload, idempotencyKey }) =>
+      apiFetch(`/students/${studentId}/refund-requests`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['students'] }),
   });
 }
