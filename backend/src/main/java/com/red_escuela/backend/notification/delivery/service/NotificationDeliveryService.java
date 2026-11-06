@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.delivery.service;
 
 import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
+import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,16 +18,22 @@ public class NotificationDeliveryService {
     private final InAppDeliveryChannel inAppChannel;
     private final EmailDeliveryChannel emailChannel;
     private final NotificationDeliveryRepository deliveryRepository;
+    private final BillingNotificationsPolicy billingNotificationsPolicy;
 
     public NotificationDeliveryService(InAppDeliveryChannel inAppChannel, EmailDeliveryChannel emailChannel,
-                                       NotificationDeliveryRepository deliveryRepository) {
+                                       NotificationDeliveryRepository deliveryRepository, BillingNotificationsPolicy billingNotificationsPolicy) {
         this.inAppChannel = inAppChannel;
         this.emailChannel = emailChannel;
         this.deliveryRepository = deliveryRepository;
+        this.billingNotificationsPolicy = billingNotificationsPolicy;
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void enqueue(DeliveryRequest request) {
+        if (request.envelope().category().isBillingFamily() && !billingNotificationsPolicy.areBillingNotificationsEffective()) {
+            log.info("notification_suppressed reason=billing_notifications_off dedup={} category={}", request.envelope().dedupKey(), request.envelope().category());
+            return;
+        }
         if (request.sendsInApp()) {
             enqueueOnce(request, DeliveryChannel.IN_APP, () -> inAppChannel.deliver(request));
         }

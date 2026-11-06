@@ -6,6 +6,7 @@ import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import com.red_escuela.backend.notification.entity.NotificationType;
+import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,10 +33,37 @@ class NotificationDeliveryServiceTest {
     private final InAppDeliveryChannel inApp = mock(InAppDeliveryChannel.class);
     private final EmailDeliveryChannel email = mock(EmailDeliveryChannel.class);
     private final NotificationDeliveryRepository repository = mock(NotificationDeliveryRepository.class);
-    private final NotificationDeliveryService service = new NotificationDeliveryService(inApp, email, repository);
+    private final BillingNotificationsPolicy policy = mock(BillingNotificationsPolicy.class);
+    private final NotificationDeliveryService service = new NotificationDeliveryService(inApp, email, repository, policy);
+
+    {
+        when(policy.areBillingNotificationsEffective()).thenReturn(true);
+    }
 
     private DeliveryRequest bothChannels() {
         return new DeliveryRequest(ENVELOPE, NotificationType.COLLECTION_REMINDER, IN_APP, EMAIL, true);
+    }
+
+    @Test
+    void aBillingFamilyRequestIsDiscardedWhenBillingNotificationsAreNotEffective() {
+        when(policy.areBillingNotificationsEffective()).thenReturn(false);
+
+        service.enqueue(bothChannels());
+
+        verify(inApp, never()).deliver(any());
+        verify(email, never()).enqueue(any());
+    }
+
+    @Test
+    void anAnnouncementRequestIsDeliveredEvenWhenBillingNotificationsAreNotEffective() {
+        when(policy.areBillingNotificationsEffective()).thenReturn(false);
+        DeliveryEnvelope announcement = new DeliveryEnvelope("announcement:1:7", DeliveryCategory.ANNOUNCEMENT, "ANNOUNCEMENT", 3, 7L, "Announcement", 11L, LocalDate.of(2026, 3, 9));
+        DeliveryRequest request = new DeliveryRequest(announcement, NotificationType.ANNOUNCEMENT_PUBLISHED, IN_APP, EMAIL, false);
+
+        service.enqueue(request);
+
+        verify(inApp).deliver(request);
+        verify(email).enqueue(request);
     }
 
     @Test

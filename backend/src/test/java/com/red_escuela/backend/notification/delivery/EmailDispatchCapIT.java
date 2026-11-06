@@ -29,6 +29,7 @@ import com.red_escuela.backend.notification.delivery.service.EmailDispatchSettin
 import com.red_escuela.backend.notification.delivery.service.EmailDispatchSource;
 import com.red_escuela.backend.notification.delivery.service.NotificationDeliveryService;
 import com.red_escuela.backend.notification.entity.NotificationType;
+import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -82,6 +83,8 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     private CircuitBreakerFactory circuitBreakerFactory;
     @Autowired
     private NotificationDeliveryService deliveryService;
+    @Autowired
+    private BillingNotificationsPolicy billingNotificationsPolicy;
     @Autowired
     private NotificationDeliveryRepository deliveryRepository;
     @Autowired
@@ -186,7 +189,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     }
 
     private EmailDeliveryDispatchJob jobWith(EmailDispatchSettingsSource settings, EmailDeliveryChannel channel) {
-        EmailDispatchPlanningService planning = new EmailDispatchPlanningService(deliveryRepository, source(), MutableClock.INSTANCE, transactionTemplate);
+        EmailDispatchPlanningService planning = new EmailDispatchPlanningService(deliveryRepository, source(), MutableClock.INSTANCE, transactionTemplate, billingNotificationsPolicy);
         return new EmailDeliveryDispatchJob(deliveryRepository, planning, settings, channel, calendar, MutableClock.INSTANCE, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }
 
