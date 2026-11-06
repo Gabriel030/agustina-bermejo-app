@@ -51,6 +51,7 @@ describe('AppRouter', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     setOfflineSessionMode(false);
     vi.unstubAllGlobals();
   });
@@ -244,7 +245,8 @@ describe('AppRouter', () => {
     await signIn(userEvent.setup());
 
     expect(await screen.findByText('Usuario o contraseña incorrectos.')).toBeInTheDocument();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval'] });
+    await vi.advanceTimersByTimeAsync(10000);
     expect(profileRequests).toBeLessThanOrEqual(2);
     expect(refreshRequests).toBeLessThanOrEqual(1);
   });

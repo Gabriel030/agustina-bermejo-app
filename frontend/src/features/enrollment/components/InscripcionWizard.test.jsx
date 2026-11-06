@@ -241,7 +241,7 @@ describe('InscripcionWizard validation with zod', () => {
     await user.click(sendButton());
     expect(screen.queryByRole('button', { name: 'Sí, confirmar' })).not.toBeInTheDocument();
 
-    expect(await screen.findByText('Solicitud enviada', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
     expect(profileBody).toEqual({
       email: 'ana@demo.test',
       documentType: 'DNI',
@@ -318,7 +318,7 @@ describe('InscripcionWizard validation with zod', () => {
     await user.click(confirmButton);
     await user.click(await screen.findByRole('button', { name: 'Sí, confirmar' }));
 
-    expect(await screen.findByText('Solicitud enviada', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
     const [, options] = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/me/program-enrollment-applications/with-documents'));
     expect(options.body.get('programId')).toBe('5');
     expect(options.body.get('cohortId')).toBe('11');
@@ -353,7 +353,7 @@ describe('InscripcionWizard validation with zod', () => {
     await fillReceipt(user, container);
     await user.click(sendButton());
 
-    expect(await screen.findByText('Solicitud enviada', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
     expect(profileCalls).toBe(0);
   });
 
@@ -388,7 +388,7 @@ describe('InscripcionWizard validation with zod', () => {
     await user.type(screen.getByLabelText('Banco de origen (opcional)'), 'Banco Nación');
     await user.click(sendButton());
 
-    expect(await screen.findByText('Solicitud enviada', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
     expect(submittedEnrollment(fetchSpy).get('bankName')).toBe('Banco Nación');
   });
 
@@ -483,7 +483,7 @@ describe('InscripcionWizard validation with zod', () => {
     await fillReceipt(user, container);
     await user.click(sendButton());
 
-    expect(await screen.findByText(/quedaste en lista de espera/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(/quedaste en lista de espera/)).toBeInTheDocument();
     expect(screen.queryByText(/vas a quedar inscripto en el curso/)).not.toBeInTheDocument();
   });
 
@@ -498,7 +498,7 @@ describe('InscripcionWizard validation with zod', () => {
     await fillReceipt(user, container);
     await user.click(sendButton());
 
-    expect(await screen.findByText(/vas a quedar inscripto en el curso/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(/vas a quedar inscripto en el curso/)).toBeInTheDocument();
   });
 
   it('warns informatively before sending when the course is full', async () => {
