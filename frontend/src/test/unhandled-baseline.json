@@ -27,7 +27,8 @@
     "GET /platform/provisioning/first-director/status": 2
   },
   "src/pages/AdministrativoFacturacion.test.jsx": {
-    "GET /collection-reminders/contact-list": 171
+    "GET /collection-reminders/contact-list": 171,
+    "GET /students": 2
   },
   "src/pages/AlumnoPagos.loadError.test.jsx": {
     "GET /me/credit-balance": 1
