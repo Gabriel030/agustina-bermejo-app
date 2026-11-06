@@ -96,6 +96,20 @@ class CourseSectionEnrollmentReaderTest {
     }
 
     @Test
+    void schedulesQueryOnlyActiveStatusesAndMapTitularAndSchedule() {
+        CourseSubjectSectionEnrollment enrollment = enrollmentOf(10L, 3L, 100L);
+        enrollment.getCourseSubjectSection().setSchedule("Lun 18:00");
+        when(repository.findByStudentIdAndStatusInOrderByIdAsc(3L, List.of(
+                EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR)))
+                .thenReturn(List.of(enrollment));
+        when(sectionInstructorFinder.findCourseSectionInstructors(7L)).thenReturn(List.of(
+                new SectionInstructorView(1L, 11L, "Ana Perez", InstructorRole.LEAD)));
+
+        assertThat(reader.listActiveScheduleOfStudent(3L)).containsExactly(
+                new CourseSectionScheduleView(10L, "Curso X", "Comision A", "Modulo 1", "Lun 18:00", "Ana Perez"));
+    }
+
+    @Test
     void readingAnUnknownEnrollmentIsNotFound() {
         when(repository.findById(10L)).thenReturn(Optional.empty());
 

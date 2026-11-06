@@ -23,6 +23,8 @@ public interface CourseSubjectSectionEnrollmentRepository extends JpaRepository<
 
     List<CourseSubjectSectionEnrollment> findByStudentIdOrderByIdAsc(Long studentId);
 
+    List<CourseSubjectSectionEnrollment> findByStudentIdAndStatusInOrderByIdAsc(Long studentId, List<EnrollmentStatus> statuses);
+
     List<CourseSubjectSectionEnrollment> findByStudentIdAndCourseEnrollmentIdOrderByIdAsc(Long studentId, Long courseEnrollmentId);
 
     List<CourseSubjectSectionEnrollment> findByCourseSubjectSectionIdAndStatusIn(
