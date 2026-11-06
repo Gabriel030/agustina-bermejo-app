@@ -128,6 +128,11 @@ public class RegularStudentCertificate {
         }
     }
 
+    public void replacePdf(String newSha256, String newPath) {
+        this.pdfSha256 = newSha256;
+        this.pdfPath = newPath;
+    }
+
     public Long enrollmentId() {
         return kind == RegularityKind.PROGRAM ? programEnrollmentId : courseEnrollmentId;
     }
