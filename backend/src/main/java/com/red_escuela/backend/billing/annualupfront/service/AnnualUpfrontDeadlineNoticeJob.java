@@ -16,7 +16,7 @@ public class AnnualUpfrontDeadlineNoticeJob {
 
     @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @Scheduled(cron = "0 0 * * * *", zone = "${app.timezone}")
-    @SchedulerLock(name = "AnnualUpfrontDeadlineNoticeJob", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
+    @SchedulerLock(name = "AnnualUpfrontDeadlineNoticeJob", lockAtMostFor = "PT2H", lockAtLeastFor = "PT1M")
     public void planDeadlineNotices() {
         planner.planDeadlineNotices();
     }
