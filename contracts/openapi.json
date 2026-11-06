@@ -4282,6 +4282,7 @@
             "type" : "string"
           },
           "invoiceIds" : {
+            "description" : "Ids de los borradores del grupo. Una factura con líneas en más de un grupo aparece en cada uno de ellos: el cliente debe deduplicar los ids al combinar grupos. Aprobar o descartar cualquiera de esos ids afecta a la factura completa, y volver a enviarla en otro grupo da 409 DRAFT_NOT_PENDING.",
             "items" : {
               "format" : "int64",
               "type" : "integer"

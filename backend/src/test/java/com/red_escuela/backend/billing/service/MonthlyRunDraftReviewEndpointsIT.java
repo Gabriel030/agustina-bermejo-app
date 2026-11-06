@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -49,6 +50,9 @@ class MonthlyRunDraftReviewEndpointsIT extends AbstractInvoiceSequenceScenarioTe
     private MonthlyInvoiceRunRepository runRepository;
     @Autowired
     private MonthlyInvoiceRunItemRepository itemRepository;
+
+    @Autowired
+    private FeatureSnapshotHolder snapshotHolder;
 
     private String administrative;
     private String preceptor;
@@ -219,6 +223,7 @@ class MonthlyRunDraftReviewEndpointsIT extends AbstractInvoiceSequenceScenarioTe
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
         assertThat(documentStatusOf(ids.get(0))).isEqualTo("DISCARDED");
         assertThat(documentStatusOf(ids.get(1))).isEqualTo("DISCARDED");
+        assertThat(jdbcTemplate.queryForObject("select count(*) from invoice_line where invoice_id in (" + ids.get(0) + "," + ids.get(1) + ") and charge_key_released_at is null", Long.class)).isZero();
         assertThat(runRepository.findById(run.getId()).orElseThrow().getStatus()).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
     }
 
@@ -245,5 +250,113 @@ class MonthlyRunDraftReviewEndpointsIT extends AbstractInvoiceSequenceScenarioTe
         assertThat(approve(run.getId(), ids, key(), preceptor).getResponse().getStatus()).isEqualTo(403);
         assertThat(discard(run.getId(), ids, "Motivo", preceptor).getResponse().getStatus()).isEqualTo(403);
         assertThat(documentStatusOf(ids.get(0))).isEqualTo("DRAFT");
+    }
+
+    private void setBillingMode(boolean enabled, String mode) {
+        jdbcTemplate.update("update platform_feature set enabled = ?, mode = ? where code = 'BILLING'", enabled, mode);
+        snapshotHolder.refresh();
+    }
+
+    private List<Long> idsOfGroup(JsonNode groups, String feeType) {
+        for (JsonNode group : groups) {
+            if (group.get("feeType").asString("").equals(feeType)) {
+                return group.get("invoiceIds").valueStream().map(JsonNode::asLong).sorted().toList();
+            }
+        }
+        throw new IllegalStateException("No group of " + feeType);
+    }
+
+    @Test
+    void aDraftWithLinesInTwoGroupsIsIssuedWholeAndAllowsNoSecondBatch() throws Exception {
+        MonthlyInvoiceRun run = reviewRunWithDrafts(3);
+        List<Long> ids = draftIdsOf(run);
+        jdbcTemplate.update("insert into invoice_line (invoice_id, currency, line_number, fee_type, concept, period, program_enrollment_id, course_enrollment_id, charge_key, amount, amount_currency, "
+                + "discount_amount, discount_amount_currency, credited_amount, credited_amount_currency, free_credited_amount, free_credited_amount_currency) "
+                + "select invoice_id, currency, 2, 'ADMINISTRATIVE_FEE', concept, period, program_enrollment_id, course_enrollment_id, charge_key || '-extra', amount, amount_currency, "
+                + "discount_amount, discount_amount_currency, credited_amount, credited_amount_currency, free_credited_amount, free_credited_amount_currency from invoice_line where invoice_id = ? and line_number = 1", ids.get(0));
+        JsonNode groups = jsonOf(mockMvc.perform(get("/monthly-invoice-runs/" + run.getId() + "/draft-invoices").header("Authorization", "Bearer " + administrative)).andReturn());
+        List<Long> smallGroup = idsOfGroup(groups, "ADMINISTRATIVE_FEE");
+        List<Long> bigGroup = idsOfGroup(groups, "MONTHLY_INSTALLMENT");
+        today(date(2026, 4, 5));
+
+        MvcResult first = approve(run.getId(), smallGroup, key(), administrative);
+        MvcResult second = approve(run.getId(), bigGroup, key(), administrative);
+
+        assertThat(smallGroup).containsExactly(ids.get(0));
+        assertThat(bigGroup).containsExactlyElementsOf(ids);
+        assertThat(first.getResponse().getStatus()).isEqualTo(200);
+        assertThat(documentStatusOf(ids.get(0))).isEqualTo("ISSUED");
+        assertThat(jdbcTemplate.queryForObject("select count(*) from invoice_line where invoice_id = ?", Long.class, ids.get(0))).isEqualTo(2L);
+        assertThat(second.getResponse().getStatus()).isEqualTo(409);
+        assertThat(jsonOf(second).get("code").asString("")).isEqualTo("DRAFT_NOT_PENDING");
+        assertThat(documentStatusOf(ids.get(1))).isEqualTo("DRAFT");
+        assertThat(documentStatusOf(ids.get(2))).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void whileBillingIsOffOrMirroredNeitherEndpointRunsAnything() throws Exception {
+        MonthlyInvoiceRun run = reviewRunWithDrafts(1);
+        List<Long> ids = draftIdsOf(run);
+        today(date(2026, 4, 5));
+        Long recordsBefore = jdbcTemplate.queryForObject("select count(*) from idempotency_record", Long.class);
+        try {
+            for (String[] mode : new String[][] {{"false", "OFF"}, {"true", "MIRROR"}}) {
+                setBillingMode(Boolean.parseBoolean(mode[0]), mode[1]);
+
+                assertThat(approve(run.getId(), ids, key(), administrative).getResponse().getStatus()).as(mode[1]).isEqualTo(404);
+                assertThat(discard(run.getId(), ids, "Motivo", administrative).getResponse().getStatus()).as(mode[1]).isEqualTo(404);
+            }
+        } finally {
+            setBillingMode(true, "FULL");
+        }
+        assertThat(documentStatusOf(ids.get(0))).isEqualTo("DRAFT");
+        assertThat(jdbcTemplate.queryForObject("select count(*) from idempotency_record", Long.class)).isEqualTo(recordsBefore);
+    }
+
+    @Test
+    void retryingWhileTheRunStillAwaitsReviewReplaysWithoutTouchingTheRemainingDraft() throws Exception {
+        MonthlyInvoiceRun run = reviewRunWithDrafts(3);
+        List<Long> ids = draftIdsOf(run);
+        today(date(2026, 4, 5));
+        String key = key();
+
+        MvcResult first = approve(run.getId(), ids.subList(0, 2), key, administrative);
+        MvcResult retry = approve(run.getId(), ids.subList(0, 2), key, administrative);
+
+        assertThat(retry.getResponse().getStatus()).isEqualTo(200);
+        assertThat(jsonOf(retry)).isEqualTo(jsonOf(first));
+        assertThat(documentStatusOf(ids.get(2))).isEqualTo("DRAFT");
+        assertThat(runRepository.findById(run.getId()).orElseThrow().getStatus()).isEqualTo(MonthlyInvoiceRunStatus.AWAITING_REVIEW);
+    }
+
+    @Test
+    void theKeyIsFreeAgainAfterADraftNotPendingConflict() throws Exception {
+        MonthlyInvoiceRun run = reviewRunWithDrafts(3);
+        List<Long> ids = draftIdsOf(run);
+        today(date(2026, 4, 5));
+        discard(run.getId(), ids.subList(2, 3), "Cargo duplicado", administrative);
+        String key = key();
+
+        MvcResult rejected = approve(run.getId(), ids, key, administrative);
+        MvcResult accepted = approve(run.getId(), ids.subList(0, 1), key, administrative);
+
+        assertThat(rejected.getResponse().getStatus()).isEqualTo(409);
+        assertThat(jsonOf(rejected).get("code").asString("")).isEqualTo("DRAFT_NOT_PENDING");
+        assertThat(accepted.getResponse().getStatus()).isEqualTo(200);
+        assertThat(documentStatusOf(ids.get(0))).isEqualTo("ISSUED");
+    }
+
+    @Test
+    void theSameKeyFromAnotherUserIsAConflictBecauseTheActorIsPartOfTheFingerprint() throws Exception {
+        MonthlyInvoiceRun run = reviewRunWithDrafts(2);
+        List<Long> ids = draftIdsOf(run);
+        today(date(2026, 4, 5));
+        String key = key();
+        approve(run.getId(), ids.subList(0, 1), key, administrative);
+
+        MvcResult otherUser = approve(run.getId(), ids.subList(0, 1), key, tokenWithRole("DIRECTOR"));
+
+        assertThat(otherUser.getResponse().getStatus()).isEqualTo(409);
+        assertThat(jsonOf(otherUser).get("code").asString("")).isEqualTo("IDEMPOTENCY_KEY_CONFLICT");
     }
 }
