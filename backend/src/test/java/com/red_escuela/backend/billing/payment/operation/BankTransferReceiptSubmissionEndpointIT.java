@@ -33,10 +33,10 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(march, april), "160000.00").request()).andExpect(status().isCreated()).andReturn();
 
         JsonNode body = bodyOf(result);
-        assertThat(body.get("receiptStatus").asText()).isEqualTo("PENDING_REVIEW");
-        assertThat(body.get("paymentStatus").asText()).isEqualTo("PENDING");
-        assertThat(new java.math.BigDecimal(body.get("declaredAmount").get("amount").asText())).isEqualByComparingTo("160000.00");
-        assertThat(body.get("uploadDate").asText()).isEqualTo("2027-03-09");
+        assertThat(body.get("receiptStatus").asString("")).isEqualTo("PENDING_REVIEW");
+        assertThat(body.get("paymentStatus").asString("")).isEqualTo("PENDING");
+        assertThat(new java.math.BigDecimal(body.get("declaredAmount").get("amount").asString(""))).isEqualByComparingTo("160000.00");
+        assertThat(body.get("uploadDate").asString("")).isEqualTo("2027-03-09");
         assertThat(body.get("items")).hasSize(2);
         assertThat(body.get("items").get(0).get("invoiceId").asLong()).isEqualTo(march);
         assertThat(body.get("items").get(0).get("position").asInt()).isEqualTo(1);
@@ -92,8 +92,8 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(march), "80000.00").without(missingField).request()).andExpect(status().isBadRequest()).andReturn();
 
         JsonNode body = bodyOf(result);
-        assertThat(body.get("code").asText()).isEqualTo("BANK_TRANSFER_DETAILS_REQUIRED");
-        assertThat(StreamSupport.stream(body.get("violations").spliterator(), false).map(violation -> violation.get("code").asText())).containsExactly(expectedViolation);
+        assertThat(body.get("code").asString("")).isEqualTo("BANK_TRANSFER_DETAILS_REQUIRED");
+        assertThat(StreamSupport.stream(body.get("violations").spliterator(), false).map(violation -> violation.get("code").asString(""))).containsExactly(expectedViolation);
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
         assertThat(paymentsOf(debtor.accountId())).isZero();
         assertThat(filesStoredFor(debtor.studentId())).isZero();
@@ -111,7 +111,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
                 .andExpect(status().isBadRequest()).andReturn();
         mockMvc.perform(ownSubmission(debtor, List.of(march), "80000.00").withTransferDate("2027-03-01").request()).andExpect(status().isCreated());
 
-        assertThat(bodyOf(future).get("violations").get(0).get("code").asText()).isEqualTo("BANK_TRANSFER_DATE_IN_FUTURE");
+        assertThat(bodyOf(future).get("violations").get(0).get("code").asString("")).isEqualTo("BANK_TRANSFER_DATE_IN_FUTURE");
         assertThat(paymentStatusOfInvoice(april)).isEqualTo("PENDING");
     }
 
@@ -128,7 +128,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
         MvcResult duplicate = mockMvc.perform(ownSubmission(second, List.of(secondInvoice), "80000.00").withOperationNumber(operationNumber).request())
                 .andExpect(status().isConflict()).andReturn();
 
-        assertThat(bodyOf(duplicate).get("code").asText()).isEqualTo("POSSIBLE_DUPLICATE_BANK_TRANSFER");
+        assertThat(bodyOf(duplicate).get("code").asString("")).isEqualTo("POSSIBLE_DUPLICATE_BANK_TRANSFER");
         assertThat(filesStoredFor(second.studentId())).isZero();
         assertThat(paymentStatusOfInvoice(secondInvoice)).isEqualTo("PENDING");
     }
@@ -181,7 +181,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
 
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(march, april), "160000.00").request()).andExpect(status().isConflict()).andReturn();
 
-        assertThat(bodyOf(result).get("code").asText()).isEqualTo("LEGACY_RECEIPT_PENDING_ON_INVOICE");
+        assertThat(bodyOf(result).get("code").asString("")).isEqualTo("LEGACY_RECEIPT_PENDING_ON_INVOICE");
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
         assertThat(paymentStatusOfInvoice(april)).isEqualTo("PENDING");
         assertThat(paymentsOf(debtor.accountId())).isZero();
@@ -200,7 +200,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
 
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(overdue), "80000.00").request()).andExpect(status().isConflict()).andReturn();
 
-        assertThat(bodyOf(result).get("code").asText()).isEqualTo("LEGACY_RECEIPT_PENDING_ON_INVOICE");
+        assertThat(bodyOf(result).get("code").asString("")).isEqualTo("LEGACY_RECEIPT_PENDING_ON_INVOICE");
     }
 
     @Test
@@ -247,7 +247,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
         MvcResult conflict = mockMvc.perform(ownSubmission(debtor, List.of(march), "80000.00").withFile(pdfFile("dos")).withKey(key).withOperationNumber(operationNumber).request())
                 .andExpect(status().isConflict()).andReturn();
 
-        assertThat(bodyOf(conflict).get("code").asText()).isEqualTo("IDEMPOTENCY_KEY_CONFLICT");
+        assertThat(bodyOf(conflict).get("code").asString("")).isEqualTo("IDEMPOTENCY_KEY_CONFLICT");
         assertThat(filesStoredFor(debtor.studentId())).isEqualTo(1);
     }
 
@@ -258,7 +258,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
 
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(march), "80000.00").without("idempotencyKey").request()).andExpect(status().isBadRequest()).andReturn();
 
-        assertThat(bodyOf(result).get("code").asText()).isEqualTo("IDEMPOTENCY_KEY_INVALID");
+        assertThat(bodyOf(result).get("code").asString("")).isEqualTo("IDEMPOTENCY_KEY_INVALID");
         assertThat(filesStoredFor(debtor.studentId())).isZero();
     }
 
@@ -276,7 +276,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
 
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(march), "80000.00").withFile(spoofed).request()).andExpect(status().isBadRequest()).andReturn();
 
-        assertThat(bodyOf(result).get("violations").get(0).get("code").asText()).isEqualTo(expectedViolation);
+        assertThat(bodyOf(result).get("violations").get(0).get("code").asString("")).isEqualTo(expectedViolation);
         assertThat(filesStoredFor(debtor.studentId())).isZero();
         assertThat(paymentsOf(debtor.accountId())).isZero();
         assertThat(paymentStatusOfInvoice(march)).isEqualTo("PENDING");
@@ -291,7 +291,7 @@ class BankTransferReceiptSubmissionEndpointIT extends AbstractBankTransferReceip
         MvcResult result = mockMvc.perform(ownSubmission(debtor, List.of(march), "80000.00").withFile(new MockMultipartFile("file", "vacio.pdf", "application/pdf", new byte[0])).request())
                 .andExpect(status().isBadRequest()).andReturn();
 
-        assertThat(bodyOf(result).get("violations").get(0).get("code").asText()).isEqualTo("BANK_TRANSFER_RECEIPT_FILE_REQUIRED");
+        assertThat(bodyOf(result).get("violations").get(0).get("code").asString("")).isEqualTo("BANK_TRANSFER_RECEIPT_FILE_REQUIRED");
     }
 
     @Test

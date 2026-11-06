@@ -49,14 +49,14 @@ class RefundRequestIT extends AbstractRefundIT {
         JsonNode parts = response.get("parts");
         assertThat(parts).hasSize(2);
         assertThat(parts.get(0).get("paymentId").asLong()).isEqualTo(cash);
-        assertThat(parts.get(0).get("methodType").asText()).isEqualTo("CASH");
+        assertThat(parts.get(0).get("methodType").asString("")).isEqualTo("CASH");
         assertThat(decimalOf(parts.get(0).get("amount"))).isEqualByComparingTo("250000.00");
-        assertThat(parts.get(0).get("destinationAccount").asText()).isEqualTo(REQUEST_ACCOUNT);
+        assertThat(parts.get(0).get("destinationAccount").asString("")).isEqualTo(REQUEST_ACCOUNT);
         assertThat(parts.get(1).get("paymentId").asLong()).isEqualTo(transfer);
-        assertThat(parts.get(1).get("methodType").asText()).isEqualTo("BANK_TRANSFER");
+        assertThat(parts.get(1).get("methodType").asString("")).isEqualTo("BANK_TRANSFER");
         assertThat(decimalOf(parts.get(1).get("amount"))).isEqualByComparingTo("50000.00");
-        assertThat(parts.get(1).get("destinationAccount").asText()).isEqualTo(ORIGIN_ACCOUNT);
-        assertThat(parts.get(1).get("destinationHolder").asText()).isEqualTo(ORIGIN_HOLDER);
+        assertThat(parts.get(1).get("destinationAccount").asString("")).isEqualTo(ORIGIN_ACCOUNT);
+        assertThat(parts.get(1).get("destinationHolder").asString("")).isEqualTo(ORIGIN_HOLDER);
         assertThat(parts.findValues("status")).extracting(JsonNode::asText).containsOnly("APPROVED");
         assertThat(parts.findValues("refundRequestId").stream().map(JsonNode::asLong).distinct()).hasSize(1);
         assertThat(unallocatedCredit(debtor.accountId())).isEqualByComparingTo("450000.00");
@@ -78,7 +78,7 @@ class RefundRequestIT extends AbstractRefundIT {
         assertThat(authorizationType(authorizationRequestId)).isEqualTo(BillingOperationType.ISSUE_REFUND);
         assertThat(authorizationStatus(authorizationRequestId)).isEqualTo("PENDING");
         assertThat(response.get("parts")).hasSize(1);
-        assertThat(response.get("parts").get(0).get("status").asText()).isEqualTo("REQUESTED");
+        assertThat(response.get("parts").get(0).get("status").asString("")).isEqualTo("REQUESTED");
         assertThat(unallocatedCredit(debtor.accountId())).isEqualByComparingTo("100000.00");
         invariants.assertAllBillingInvariantsHold();
     }
@@ -406,6 +406,6 @@ class RefundRequestIT extends AbstractRefundIT {
         MvcResult result = mockMvc.perform(refundRequest("/me/refund-requests", studentAndDirector, "10000.00", REQUEST_ACCOUNT, REQUEST_HOLDER)).andReturn();
 
         assertThat(result.getResponse().getStatus()).isEqualTo(202);
-        assertThat(bodyOf(result).get("parts").get(0).get("status").asText()).isEqualTo("REQUESTED");
+        assertThat(bodyOf(result).get("parts").get(0).get("status").asString("")).isEqualTo("REQUESTED");
     }
 }

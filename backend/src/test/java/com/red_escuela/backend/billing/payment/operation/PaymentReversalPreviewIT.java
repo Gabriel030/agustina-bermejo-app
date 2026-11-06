@@ -68,7 +68,7 @@ class PaymentReversalPreviewIT extends AbstractRefundIT {
     }
 
     private String blockedCode(JsonNode preview) {
-        return preview.get("blockedBy").get("code").asText();
+        return preview.get("blockedBy").get("code").asString("");
     }
 
     private JsonNode paymentRow(JsonNode list, long paymentId) {
@@ -122,7 +122,7 @@ class PaymentReversalPreviewIT extends AbstractRefundIT {
 
         assertThat(preview.get("allowed").asBoolean()).isTrue();
         assertThat(preview.get("blockedBy").isNull()).isTrue();
-        assertThat(preview.get("paymentStatus").asText()).isEqualTo("APPROVED");
+        assertThat(preview.get("paymentStatus").asString("")).isEqualTo("APPROVED");
         assertThat(decimalOf(preview.get("creditToReverse"))).isEqualByComparingTo("80000.00");
         assertThat(preview.get("invoiceIdsFundedByPayment")).extracting(JsonNode::asLong).containsExactly(march);
         assertThat(preview.get("effects").get("calculated").asBoolean()).isTrue();
@@ -166,7 +166,7 @@ class PaymentReversalPreviewIT extends AbstractRefundIT {
             assertThat(preview.get("allowed").asBoolean()).isFalse();
             assertThat(blockedCode(preview)).isEqualTo("PAYMENT_HAS_PENDING_REFUND");
             assertThat(preview.get("pendingRefunds")).hasSize(1);
-            assertThat(preview.get("pendingRefunds").get(0).get("status").asText()).isEqualTo("REQUESTED");
+            assertThat(preview.get("pendingRefunds").get(0).get("status").asString("")).isEqualTo("REQUESTED");
             assertThat(decimalOf(preview.get("pendingRefunds").get(0).get("amount"))).isEqualByComparingTo("40000.00");
         }
         assertThat(stateFingerprint(debtor)).isEqualTo(before);
@@ -203,7 +203,7 @@ class PaymentReversalPreviewIT extends AbstractRefundIT {
         JsonNode open = payload(reversalPreview(chargebackId, administrative));
 
         assertThat(open.get("allowed").asBoolean()).isTrue();
-        assertThat(open.get("paymentStatus").asText()).isEqualTo("CHARGED_BACK");
+        assertThat(open.get("paymentStatus").asString("")).isEqualTo("CHARGED_BACK");
         assertThat(decimalOf(open.get("creditToReverse"))).isEqualByComparingTo("80000.00");
         assertThat(stateFingerprint(debtor)).isEqualTo(before);
         mockMvc.perform(reversal(chargebackId, administrative)).andExpect(status().isOk());
@@ -232,29 +232,29 @@ class PaymentReversalPreviewIT extends AbstractRefundIT {
                 .andExpect(status().isOk()).andReturn());
 
         JsonNode chargedBackRow = paymentRow(list, chargedBack);
-        assertThat(chargedBackRow.get("status").asText()).isEqualTo("CHARGED_BACK");
+        assertThat(chargedBackRow.get("status").asString("")).isEqualTo("CHARGED_BACK");
         assertThat(chargedBackRow.get("chargeback").get("chargebackId").asLong()).isEqualTo(chargebackId);
-        assertThat(chargedBackRow.get("chargeback").get("chargedBackOn").asText()).isEqualTo("2027-03-09");
-        assertThat(chargedBackRow.get("chargeback").get("reference").asText()).isEqualTo("BANCO-1");
+        assertThat(chargedBackRow.get("chargeback").get("chargedBackOn").asString("")).isEqualTo("2027-03-09");
+        assertThat(chargedBackRow.get("chargeback").get("reference").asString("")).isEqualTo("BANCO-1");
         assertThat(chargedBackRow.get("chargeback").get("reversedOn").isNull()).isTrue();
         assertThat(chargedBackRow.get("pendingRefunds").get("count").asInt()).isZero();
         assertThat(chargedBackRow.get("actions").get("reverseChargeback").get("allowed").asBoolean()).isTrue();
         assertThat(chargedBackRow.get("actions").get("registerChargeback").get("allowed").asBoolean()).isFalse();
-        assertThat(chargedBackRow.get("actions").get("registerChargeback").get("blockedBy").get("code").asText()).isEqualTo("ILLEGAL_PAYMENT_STATUS_TRANSITION");
+        assertThat(chargedBackRow.get("actions").get("registerChargeback").get("blockedBy").get("code").asString("")).isEqualTo("ILLEGAL_PAYMENT_STATUS_TRANSITION");
 
         JsonNode pendingRow = paymentRow(list, withPendingRefund);
         assertThat(pendingRow.get("chargeback").isNull()).isTrue();
         assertThat(pendingRow.get("pendingRefunds").get("count").asInt()).isEqualTo(1);
         assertThat(decimalOf(pendingRow.get("pendingRefunds").get("amount"))).isEqualByComparingTo("40000.00");
-        assertThat(pendingRow.get("pendingRefunds").get("parts").get(0).get("status").asText()).isEqualTo("REQUESTED");
-        assertThat(pendingRow.get("actions").get("registerChargeback").get("blockedBy").get("code").asText()).isEqualTo("PAYMENT_HAS_PENDING_REFUND");
-        assertThat(pendingRow.get("actions").get("revokeApproval").get("blockedBy").get("code").asText()).isEqualTo("PAYMENT_HAS_PENDING_REFUND");
-        assertThat(pendingRow.get("actions").get("reverseChargeback").get("blockedBy").get("code").asText()).isEqualTo("CHARGEBACK_NOT_FOUND");
+        assertThat(pendingRow.get("pendingRefunds").get("parts").get(0).get("status").asString("")).isEqualTo("REQUESTED");
+        assertThat(pendingRow.get("actions").get("registerChargeback").get("blockedBy").get("code").asString("")).isEqualTo("PAYMENT_HAS_PENDING_REFUND");
+        assertThat(pendingRow.get("actions").get("revokeApproval").get("blockedBy").get("code").asString("")).isEqualTo("PAYMENT_HAS_PENDING_REFUND");
+        assertThat(pendingRow.get("actions").get("reverseChargeback").get("blockedBy").get("code").asString("")).isEqualTo("CHARGEBACK_NOT_FOUND");
 
         JsonNode cashRow = paymentRow(list, plainCash);
         assertThat(cashRow.get("pendingRefunds").get("count").asInt()).isZero();
         assertThat(cashRow.get("actions").get("registerChargeback").get("allowed").asBoolean()).isTrue();
-        assertThat(cashRow.get("actions").get("revokeApproval").get("blockedBy").get("code").asText()).isEqualTo("ILLEGAL_PAYMENT_STATUS_TRANSITION");
+        assertThat(cashRow.get("actions").get("revokeApproval").get("blockedBy").get("code").asString("")).isEqualTo("ILLEGAL_PAYMENT_STATUS_TRANSITION");
     }
 
     @Test

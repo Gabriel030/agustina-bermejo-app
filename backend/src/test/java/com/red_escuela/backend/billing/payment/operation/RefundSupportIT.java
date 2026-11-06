@@ -63,11 +63,11 @@ class RefundSupportIT extends AbstractRefundIT {
         assertThat(previewParts).hasSize(2);
         assertThat(previewParts.get(0).get("paymentId").asLong()).isEqualTo(cash);
         assertThat(decimalOf(previewParts.get(0).get("amount"))).isEqualByComparingTo("250000.00");
-        assertThat(previewParts.get(0).get("destinationAccount").asText()).isEqualTo(REQUEST_ACCOUNT);
+        assertThat(previewParts.get(0).get("destinationAccount").asString("")).isEqualTo(REQUEST_ACCOUNT);
         assertThat(previewParts.get(1).get("paymentId").asLong()).isEqualTo(transfer);
         assertThat(decimalOf(previewParts.get(1).get("amount"))).isEqualByComparingTo("50000.00");
-        assertThat(previewParts.get(1).get("destinationAccount").asText()).isEqualTo(ORIGIN_ACCOUNT);
-        assertThat(previewParts.get(1).get("destinationHolder").asText()).isEqualTo(ORIGIN_HOLDER);
+        assertThat(previewParts.get(1).get("destinationAccount").asString("")).isEqualTo(ORIGIN_ACCOUNT);
+        assertThat(previewParts.get(1).get("destinationHolder").asString("")).isEqualTo(ORIGIN_HOLDER);
         assertThat(previewParts.findValues("destinationComplete")).extracting(JsonNode::asBoolean).containsOnly(true);
 
         JsonNode real = bodyOf(mockMvc.perform(requestOnBehalf(debtor, director, "300000.00")).andExpect(status().isCreated()).andReturn()).get("parts");
@@ -75,9 +75,9 @@ class RefundSupportIT extends AbstractRefundIT {
         assertThat(real).hasSize(previewParts.size());
         for (int index = 0; index < real.size(); index++) {
             assertThat(real.get(index).get("paymentId").asLong()).isEqualTo(previewParts.get(index).get("paymentId").asLong());
-            assertThat(real.get(index).get("methodType").asText()).isEqualTo(previewParts.get(index).get("methodType").asText());
+            assertThat(real.get(index).get("methodType").asString("")).isEqualTo(previewParts.get(index).get("methodType").asString(""));
             assertThat(decimalOf(real.get(index).get("amount"))).isEqualByComparingTo(decimalOf(previewParts.get(index).get("amount")));
-            assertThat(real.get(index).get("destinationAccount").asText()).isEqualTo(previewParts.get(index).get("destinationAccount").asText());
+            assertThat(real.get(index).get("destinationAccount").asString("")).isEqualTo(previewParts.get(index).get("destinationAccount").asString(""));
         }
     }
 
@@ -90,7 +90,7 @@ class RefundSupportIT extends AbstractRefundIT {
         JsonNode preview = previewOnBehalf(debtor, staffToken("ADMINISTRATIVO"), "40000.00", null, null);
 
         assertThat(preview.get("allowed").asBoolean()).isFalse();
-        assertThat(preview.get("blockedBy").get("code").asText()).isEqualTo("REFUND_DESTINATION_REQUIRED");
+        assertThat(preview.get("blockedBy").get("code").asString("")).isEqualTo("REFUND_DESTINATION_REQUIRED");
         assertThat(preview.get("parts")).hasSize(1);
         assertThat(preview.get("parts").get(0).get("paymentId").asLong()).isEqualTo(cash);
         assertThat(preview.get("parts").get(0).get("destinationComplete").asBoolean()).isFalse();
@@ -106,9 +106,9 @@ class RefundSupportIT extends AbstractRefundIT {
         JsonNode preview = previewOnBehalf(debtor, staffToken("ADMINISTRATIVO"), "40000.00", null, null);
 
         assertThat(preview.get("allowed").asBoolean()).isFalse();
-        assertThat(preview.get("blockedBy").get("code").asText()).isEqualTo("REFUND_DESTINATION_REQUIRED");
+        assertThat(preview.get("blockedBy").get("code").asString("")).isEqualTo("REFUND_DESTINATION_REQUIRED");
         assertThat(preview.get("parts")).hasSize(1);
-        assertThat(preview.get("parts").get(0).get("destinationAccount").asText()).isEqualTo(ORIGIN_ACCOUNT);
+        assertThat(preview.get("parts").get(0).get("destinationAccount").asString("")).isEqualTo(ORIGIN_ACCOUNT);
         assertThat(preview.get("parts").get(0).get("destinationComplete").asBoolean()).isTrue();
     }
 
@@ -122,18 +122,18 @@ class RefundSupportIT extends AbstractRefundIT {
         onlinePayment(debtor, "200000.00", EARLY_MARCH);
         String director = staffToken("DIRECTOR");
 
-        assertThat(previewOnBehalf(debtor, director, "0.00", REQUEST_ACCOUNT, REQUEST_HOLDER).get("blockedBy").get("code").asText()).isEqualTo("REFUND_AMOUNT_INVALID");
-        assertThat(previewOnBehalf(debtor, director, "300000.01", REQUEST_ACCOUNT, REQUEST_HOLDER).get("blockedBy").get("code").asText())
+        assertThat(previewOnBehalf(debtor, director, "0.00", REQUEST_ACCOUNT, REQUEST_HOLDER).get("blockedBy").get("code").asString("")).isEqualTo("REFUND_AMOUNT_INVALID");
+        assertThat(previewOnBehalf(debtor, director, "300000.01", REQUEST_ACCOUNT, REQUEST_HOLDER).get("blockedBy").get("code").asString(""))
                 .isEqualTo("INSUFFICIENT_ACCOUNT_CREDIT");
         JsonNode aboveManualPayments = previewOnBehalf(debtor, director, "150000.00", REQUEST_ACCOUNT, REQUEST_HOLDER);
-        assertThat(aboveManualPayments.get("blockedBy").get("code").asText()).isEqualTo("REFUND_EXCEEDS_AVAILABLE_AMOUNT");
+        assertThat(aboveManualPayments.get("blockedBy").get("code").asString("")).isEqualTo("REFUND_EXCEEDS_AVAILABLE_AMOUNT");
         assertThat(aboveManualPayments.get("parts")).isEmpty();
         assertThat(previewOnBehalf(debtor, director, "100000.00", REQUEST_ACCOUNT, REQUEST_HOLDER).get("allowed").asBoolean()).isTrue();
 
         issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "5000.00", TODAY.minusDays(1));
         JsonNode overdue = previewOnBehalf(debtor, director, "10000.00", REQUEST_ACCOUNT, REQUEST_HOLDER);
         assertThat(overdue.get("allowed").asBoolean()).isFalse();
-        assertThat(overdue.get("blockedBy").get("code").asText()).isEqualTo("REFUND_BLOCKED_BY_OVERDUE_DEBT");
+        assertThat(overdue.get("blockedBy").get("code").asString("")).isEqualTo("REFUND_BLOCKED_BY_OVERDUE_DEBT");
         assertThat(codeOf(mockMvc.perform(requestOnBehalf(debtor, director, "10000.00")).andExpect(status().isConflict()).andReturn()))
                 .isEqualTo("REFUND_BLOCKED_BY_OVERDUE_DEBT");
     }
@@ -150,7 +150,7 @@ class RefundSupportIT extends AbstractRefundIT {
         JsonNode exactlyWhatIsLeft = previewOnBehalf(debtor, director, "60000.00", REQUEST_ACCOUNT, REQUEST_HOLDER);
         JsonNode eligibility = getJson("/students/" + debtor.studentId() + "/refund-eligibility", director);
 
-        assertThat(tooMuch.get("blockedBy").get("code").asText()).isEqualTo("INSUFFICIENT_ACCOUNT_CREDIT");
+        assertThat(tooMuch.get("blockedBy").get("code").asString("")).isEqualTo("INSUFFICIENT_ACCOUNT_CREDIT");
         assertThat(exactlyWhatIsLeft.get("allowed").asBoolean()).isTrue();
         assertThat(decimalOf(eligibility.get("unallocatedCredit"))).isEqualByComparingTo("100000.00");
         assertThat(decimalOf(eligibility.get("reservedByPendingRefunds"))).isEqualByComparingTo("40000.00");
@@ -175,21 +175,21 @@ class RefundSupportIT extends AbstractRefundIT {
 
         JsonNode eligibility = getJson("/students/" + debtor.studentId() + "/refund-eligibility", staffToken("ADMINISTRATIVO"));
 
-        assertThat(eligibility.get("currency").asText()).isEqualTo("ARS");
+        assertThat(eligibility.get("currency").asString("")).isEqualTo("ARS");
         assertThat(decimalOf(eligibility.get("unallocatedCredit"))).isEqualByComparingTo("500000.00");
         assertThat(decimalOf(eligibility.get("availableToRefund"))).isEqualByComparingTo("500000.00");
         assertThat(eligibility.get("hasOverdueDebt").asBoolean()).isFalse();
         JsonNode payments = eligibility.get("payments");
         assertThat(payments).hasSize(2);
         assertThat(payments.get(0).get("paymentId").asLong()).isEqualTo(cash);
-        assertThat(payments.get(0).get("methodType").asText()).isEqualTo("CASH");
-        assertThat(payments.get(0).get("paidOn").asText()).isEqualTo(EARLY_MARCH.toString());
+        assertThat(payments.get(0).get("methodType").asString("")).isEqualTo("CASH");
+        assertThat(payments.get(0).get("paidOn").asString("")).isEqualTo(EARLY_MARCH.toString());
         assertThat(payments.get(0).get("receiptDestinationAccount").isNull()).isTrue();
         assertThat(payments.get(1).get("paymentId").asLong()).isEqualTo(transfer);
-        assertThat(payments.get(1).get("methodType").asText()).isEqualTo("BANK_TRANSFER");
+        assertThat(payments.get(1).get("methodType").asString("")).isEqualTo("BANK_TRANSFER");
         assertThat(decimalOf(payments.get(1).get("refundableNow"))).isEqualByComparingTo("200000.00");
-        assertThat(payments.get(1).get("receiptDestinationAccount").asText()).isEqualTo(ORIGIN_ACCOUNT);
-        assertThat(payments.get(1).get("receiptDestinationHolder").asText()).isEqualTo(ORIGIN_HOLDER);
+        assertThat(payments.get(1).get("receiptDestinationAccount").asString("")).isEqualTo(ORIGIN_ACCOUNT);
+        assertThat(payments.get(1).get("receiptDestinationHolder").asString("")).isEqualTo(ORIGIN_HOLDER);
     }
 
     @Test
@@ -209,12 +209,12 @@ class RefundSupportIT extends AbstractRefundIT {
         JsonNode noAccount = getJson("/students/" + studentWithoutAccount + "/refund-eligibility", staff);
 
         assertThat(overdue.get("hasOverdueDebt").asBoolean()).isTrue();
-        assertThat(overdue.get("blockedBy").get("code").asText()).isEqualTo("REFUND_BLOCKED_BY_OVERDUE_DEBT");
+        assertThat(overdue.get("blockedBy").get("code").asString("")).isEqualTo("REFUND_BLOCKED_BY_OVERDUE_DEBT");
         assertThat(decimalOf(overdue.get("availableToRefund"))).isEqualByComparingTo("100000.00");
-        assertThat(noManualPayment.get("blockedBy").get("code").asText()).isEqualTo("REFUND_EXCEEDS_AVAILABLE_AMOUNT");
+        assertThat(noManualPayment.get("blockedBy").get("code").asString("")).isEqualTo("REFUND_EXCEEDS_AVAILABLE_AMOUNT");
         assertThat(decimalOf(noManualPayment.get("availableToRefund"))).isEqualByComparingTo("80000.00");
         assertThat(noManualPayment.get("payments")).isEmpty();
-        assertThat(noAccount.get("blockedBy").get("code").asText()).isEqualTo("INSUFFICIENT_ACCOUNT_CREDIT");
+        assertThat(noAccount.get("blockedBy").get("code").asString("")).isEqualTo("INSUFFICIENT_ACCOUNT_CREDIT");
         assertThat(decimalOf(noAccount.get("availableToRefund"))).isEqualByComparingTo("0.00");
         assertThat(noAccount.get("payments")).isEmpty();
     }
@@ -266,7 +266,7 @@ class RefundSupportIT extends AbstractRefundIT {
         assertThat(twoParts.get("parts")).hasSize(2);
         assertThat(twoParts.get("parts").findValues("paymentId")).extracting(JsonNode::asLong).containsExactly(cash, transfer);
         assertThat(twoParts.get("parts").findValues("refundRequestId").stream().map(JsonNode::asLong).distinct()).containsExactly(twoParts.get("refundRequestId").asLong());
-        assertThat(twoParts.get("requestedOn").asText()).isEqualTo(EARLY_MARCH.minusDays(10).toString());
+        assertThat(twoParts.get("requestedOn").asString("")).isEqualTo(EARLY_MARCH.minusDays(10).toString());
         assertThat(decimalOf(twoParts.get("totalAmount"))).isEqualByComparingTo("300000.00");
         assertThat(decimalOf(twoParts.get("completedAmount"))).isEqualByComparingTo("250000.00");
         assertThat(decimalOf(twoParts.get("pendingAmount"))).isEqualByComparingTo("50000.00");
@@ -288,7 +288,7 @@ class RefundSupportIT extends AbstractRefundIT {
 
         assertThat(mine).hasSize(1);
         assertThat(mine.get(0).get("authorizationRequestId").asLong()).isEqualTo(authorizationRequestId);
-        assertThat(mine.get(0).get("parts").get(0).get("status").asText()).isEqualTo("REQUESTED");
+        assertThat(mine.get(0).get("parts").get(0).get("status").asString("")).isEqualTo("REQUESTED");
         assertThat(decimalOf(mine.get(0).get("pendingAmount"))).isEqualByComparingTo("40000.00");
         assertThat(getJson("/me/refund-requests", studentTokenOf(debtor()))).isEmpty();
         assertThat(getJson("/me/refunds", studentTokenOf(own))).hasSize(1);

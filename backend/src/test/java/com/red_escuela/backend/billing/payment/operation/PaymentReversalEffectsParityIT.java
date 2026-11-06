@@ -296,8 +296,8 @@ class PaymentReversalEffectsParityIT extends AbstractRefundIT {
         assertThat(effects.get("reopenedInvoices")).hasSize(1);
         JsonNode reopened = effects.get("reopenedInvoices").get(0);
         assertThat(reopened.get("invoiceId").asLong()).isEqualTo(march);
-        assertThat(reopened.get("paymentStatusBefore").asText()).isEqualTo("PAID");
-        assertThat(reopened.get("paymentStatusAfter").asText()).isEqualTo("PENDING");
+        assertThat(reopened.get("paymentStatusBefore").asString("")).isEqualTo("PAID");
+        assertThat(reopened.get("paymentStatusAfter").asString("")).isEqualTo("PENDING");
         assertThat(decimalOf(reopened.get("outstandingBefore"))).isEqualByComparingTo("0.00");
         assertThat(decimalOf(reopened.get("outstandingAfter"))).isEqualByComparingTo("80000.00");
         assertThat(decimalOf(reopened.get("creditReversed"))).isEqualByComparingTo("80000.00");

@@ -79,7 +79,7 @@ class OpenApiSnapshotTest extends AbstractIntegrationTest {
         Set<String> operationIds = new HashSet<>();
         for (Map.Entry<String, JsonNode> path : MAPPER.readTree(first).get("paths").properties()) {
             for (Map.Entry<String, JsonNode> operation : path.getValue().properties()) {
-                String operationId = operation.getValue().path("operationId").asText();
+                String operationId = operation.getValue().path("operationId").asString("");
                 assertThat(operationIds.add(operationId))
                         .as("operationId duplicado: %s", operationId)
                         .isTrue();
@@ -117,9 +117,9 @@ class OpenApiSnapshotTest extends AbstractIntegrationTest {
     @Test
     void bearerAuthSecuritySchemeIsDeclared() throws Exception {
         JsonNode scheme = MAPPER.readTree(fetchNormalizedSpec()).at("/components/securitySchemes/bearerAuth");
-        assertThat(scheme.path("type").asText()).isEqualTo("http");
-        assertThat(scheme.path("scheme").asText()).isEqualTo("bearer");
-        assertThat(scheme.path("bearerFormat").asText()).isEqualTo("JWT");
+        assertThat(scheme.path("type").asString("")).isEqualTo("http");
+        assertThat(scheme.path("scheme").asString("")).isEqualTo("bearer");
+        assertThat(scheme.path("bearerFormat").asString("")).isEqualTo("JWT");
     }
 
     private String fetchNormalizedSpec() throws Exception {

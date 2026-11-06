@@ -124,7 +124,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
     }
 
     String fingerprintOf(Long studentId, String amount) throws Exception {
-        return previewOf(studentId, "ARS", amount, administrative).get("previewFingerprint").asText();
+        return previewOf(studentId, "ARS", amount, administrative).get("previewFingerprint").asString("");
     }
 
     MvcResult register(Long studentId, String key, ObjectNode body, String token) throws Exception {
@@ -138,14 +138,14 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
     String codeOf(MvcResult result) {
         try {
-            return jsonOf(result).get("code").asText();
+            return jsonOf(result).get("code").asString("");
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }
     }
 
     BigDecimal decimalOf(JsonNode money) {
-        return new BigDecimal(money.get("amount").asText());
+        return new BigDecimal(money.get("amount").asString(""));
     }
 
     JsonNode jsonOf(MvcResult result) throws Exception {
@@ -206,7 +206,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         assertThat(preview.get("coveredInvoices")).hasSize(1);
         assertThat(preview.get("coveredInvoices").get(0).get("invoiceId").asLong()).isEqualTo(march);
         assertThat(decimalOf(preview.get("unallocatedAfterwards"))).isEqualByComparingTo("20000.00");
-        ObjectNode body = bodyOf("ARS", "100000.00", null, "R-1", null, preview.get("previewFingerprint").asText());
+        ObjectNode body = bodyOf("ARS", "100000.00", null, "R-1", null, preview.get("previewFingerprint").asString(""));
         body.putArray("invoiceIds").add(april);
 
         MvcResult result = register(debtor.studentId(), "key-surplus", body, administrative);
@@ -235,7 +235,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         Long march = issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
         JsonNode preview = previewOf(debtor.studentId(), "ARS", "80000.00", administrative);
 
-        MvcResult result = register(debtor.studentId(), "key-source", bodyOf("ARS", "80000.00", null, "R-S", null, preview.get("previewFingerprint").asText()), administrative);
+        MvcResult result = register(debtor.studentId(), "key-source", bodyOf("ARS", "80000.00", null, "R-S", null, preview.get("previewFingerprint").asString("")), administrative);
 
         assertThat(result.getResponse().getStatus()).isEqualTo(201);
         long paymentId = jsonOf(result).get("paymentId").asLong();
@@ -275,11 +275,11 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         long entriesAfterTransfer = entriesOf(debtor.accountId());
         long paymentsAfterTransfer = paymentsOf(debtor.accountId());
 
-        MvcResult outdated = register(debtor.studentId(), "key-outdated", bodyOf("ARS", "80000.00", null, null, null, preview.get("previewFingerprint").asText()),
+        MvcResult outdated = register(debtor.studentId(), "key-outdated", bodyOf("ARS", "80000.00", null, null, null, preview.get("previewFingerprint").asString("")),
                 administrative);
 
         assertThat(outdated.getResponse().getStatus()).isEqualTo(409);
-        assertThat(jsonOf(outdated).get("code").asText()).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
+        assertThat(jsonOf(outdated).get("code").asString("")).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(paymentsAfterTransfer);
         assertThat(entriesOf(debtor.accountId())).isEqualTo(entriesAfterTransfer);
         assertThat(jdbc.queryForObject("select count(*) from idempotency_record where idempotency_key = ?", Long.class, "key-outdated")).isZero();
@@ -287,7 +287,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
         JsonNode fresh = previewOf(debtor.studentId(), "ARS", "80000.00", administrative);
         assertThat(fresh.get("coveredInvoices").get(0).get("invoiceId").asLong()).isEqualTo(april);
-        MvcResult confirmed = register(debtor.studentId(), "key-fresh", bodyOf("ARS", "80000.00", null, null, null, fresh.get("previewFingerprint").asText()),
+        MvcResult confirmed = register(debtor.studentId(), "key-fresh", bodyOf("ARS", "80000.00", null, null, null, fresh.get("previewFingerprint").asString("")),
                 administrative);
 
         assertThat(confirmed.getResponse().getStatus()).isEqualTo(201);
@@ -310,7 +310,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         MvcResult result = register(debtor.studentId(), "key-amount", bodyOf("ARS", "90000.00", null, null, null, fingerprintFor100k), administrative);
 
         assertThat(result.getResponse().getStatus()).isEqualTo(409);
-        assertThat(jsonOf(result).get("code").asText()).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
+        assertThat(jsonOf(result).get("code").asString("")).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(paymentsBefore);
     }
 
@@ -329,10 +329,10 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
         assertThat(fiveDaysBack.getResponse().getStatus()).isEqualTo(201);
         assertThat(sixDaysBack.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(sixDaysBack).get("code").asText()).isEqualTo("CASH_PAYMENT_DATE_TOO_OLD");
+        assertThat(jsonOf(sixDaysBack).get("code").asString("")).isEqualTo("CASH_PAYMENT_DATE_TOO_OLD");
         assertThat(paymentsOf(daySix.accountId())).isZero();
         assertThat(tomorrow.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(tomorrow).get("code").asText()).isEqualTo("PAYMENT_DATE_IN_FUTURE");
+        assertThat(jsonOf(tomorrow).get("code").asString("")).isEqualTo("PAYMENT_DATE_IN_FUTURE");
         assertThat(paymentsOf(future.accountId())).isZero();
         invariants.assertAllBillingInvariantsHold();
     }
@@ -350,12 +350,12 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         MvcResult invalid = registerArs(tooLong.studentId(), "key-long-reason", "1000.00", "2027-04-09", "m".repeat(501), director);
 
         assertThat(missing.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(missing).get("code").asText()).isEqualTo("CASH_PAYMENT_BACKDATE_REASON_REQUIRED");
+        assertThat(jsonOf(missing).get("code").asString("")).isEqualTo("CASH_PAYMENT_BACKDATE_REASON_REQUIRED");
         assertThat(provided.getResponse().getStatus()).isEqualTo(201);
         assertThat(reasonOf(jsonOf(provided).get("paymentId").asLong()))
                 .isEqualTo("Recibo cargado tarde");
         assertThat(invalid.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(invalid).get("code").asText()).isEqualTo("CASH_PAYMENT_BACKDATE_REASON_INVALID");
+        assertThat(jsonOf(invalid).get("code").asString("")).isEqualTo("CASH_PAYMENT_BACKDATE_REASON_INVALID");
         assertThat(paymentsOf(withoutReason.accountId()) + paymentsOf(tooLong.accountId())).isZero();
     }
 
@@ -391,7 +391,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
                 administrative);
 
         assertThat(other.getResponse().getStatus()).isEqualTo(409);
-        assertThat(jsonOf(other).get("code").asText()).isEqualTo("IDEMPOTENCY_KEY_CONFLICT");
+        assertThat(jsonOf(other).get("code").asString("")).isEqualTo("IDEMPOTENCY_KEY_CONFLICT");
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(1);
     }
 
@@ -465,7 +465,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         assertThat(preview.get("coveredByRemainingCredit")).hasSize(1);
         assertThat(preview.get("coveredByRemainingCredit").get(0).get("invoiceId").asLong()).isEqualTo(online);
 
-        MvcResult result = register(debtor.studentId(), "key-second-pass", bodyOf("ARS", "160000.00", null, null, null, preview.get("previewFingerprint").asText()),
+        MvcResult result = register(debtor.studentId(), "key-second-pass", bodyOf("ARS", "160000.00", null, null, null, preview.get("previewFingerprint").asString("")),
                 administrative);
 
         assertThat(result.getResponse().getStatus()).isEqualTo(201);
@@ -502,7 +502,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
     void anAccountOfAnotherCurrencyIsNotTouchedAndARequestWithoutCurrencyIsRejected() throws Exception {
         Debtor debtor = debtor();
         Long arsInvoice = issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
-        String usdFingerprint = previewOf(debtor.studentId(), "USD", "100.00", administrative).get("previewFingerprint").asText();
+        String usdFingerprint = previewOf(debtor.studentId(), "USD", "100.00", administrative).get("previewFingerprint").asString("");
 
         MvcResult usd = register(debtor.studentId(), "key-usd", bodyOf("USD", "100.00", null, null, null, usdFingerprint), administrative);
 
@@ -546,11 +546,11 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         MvcResult hugeAmount = register(debtor.studentId(), "key-huge", bodyOf("ARS", "10000000000.00", null, null, null, fingerprint), administrative);
 
         assertThat(longKey.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(longKey).get("code").asText()).isEqualTo("IDEMPOTENCY_KEY_INVALID");
+        assertThat(jsonOf(longKey).get("code").asString("")).isEqualTo("IDEMPOTENCY_KEY_INVALID");
         assertThat(longReceipt.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(longReceipt).get("code").asText()).isEqualTo("CASH_PAYMENT_RECEIPT_NUMBER_INVALID");
+        assertThat(jsonOf(longReceipt).get("code").asString("")).isEqualTo("CASH_PAYMENT_RECEIPT_NUMBER_INVALID");
         assertThat(hugeAmount.getResponse().getStatus()).isEqualTo(400);
-        assertThat(jsonOf(hugeAmount).get("code").asText()).isEqualTo("CASH_PAYMENT_AMOUNT_INVALID");
+        assertThat(jsonOf(hugeAmount).get("code").asString("")).isEqualTo("CASH_PAYMENT_AMOUNT_INVALID");
         assertThat(paymentsOf(debtor.accountId())).isZero();
     }
 
@@ -562,7 +562,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         MvcResult result = register(999_999_999L, "key-missing-student", body, administrative);
 
         assertThat(result.getResponse().getStatus()).isEqualTo(404);
-        assertThat(jsonOf(result).get("code").asText()).isEqualTo("STUDENT_NOT_FOUND");
+        assertThat(jsonOf(result).get("code").asString("")).isEqualTo("STUDENT_NOT_FOUND");
     }
 
     @Test
@@ -656,7 +656,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
         assertThat(results).extracting(result -> result.getResponse().getStatus()).containsExactlyInAnyOrder(201, 409);
         MvcResult rejected = results.stream().filter(result -> result.getResponse().getStatus() == 409).findFirst().orElseThrow();
-        assertThat(jsonOf(rejected).get("code").asText()).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
+        assertThat(jsonOf(rejected).get("code").asString("")).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED");
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(1);
         invariants.assertAllBillingInvariantsHold();
     }

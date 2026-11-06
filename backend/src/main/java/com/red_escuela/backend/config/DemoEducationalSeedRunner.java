@@ -86,7 +86,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private boolean alreadySeeded(DemoApiClient api) {
         for (JsonNode program : api.get(ADMIN, "/programs")) {
-            if (PROGRAM_NAME.equals(program.path("name").asText())) {
+            if (PROGRAM_NAME.equals(program.path("name").asString(""))) {
                 return true;
             }
         }
@@ -156,7 +156,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private long findTeacherInstructorId(DemoApiClient api) {
         for (JsonNode instructor : api.get(ADMIN, "/instructors")) {
-            if (TEACHER_FULL_NAME.equals(instructor.path("name").asText())) {
+            if (TEACHER_FULL_NAME.equals(instructor.path("name").asString(""))) {
                 return instructor.get("id").asLong();
             }
         }
@@ -237,7 +237,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private void justifyFirstAbsence(DemoApiClient api, long sectionEnrollmentId) {
         for (JsonNode record : api.get(REGULAR_STUDENT, "/me/section-enrollments/" + sectionEnrollmentId + "/attendance")) {
-            if ("ABSENT".equals(record.path("status").asText())) {
+            if ("ABSENT".equals(record.path("status").asString(""))) {
                 api.postFile(REGULAR_STUDENT, "/me/attendance/" + record.get("id").asLong() + "/justify",
                         "Certificado médico", "certificado.pdf", MEDICAL_CERTIFICATE_PDF);
                 return;

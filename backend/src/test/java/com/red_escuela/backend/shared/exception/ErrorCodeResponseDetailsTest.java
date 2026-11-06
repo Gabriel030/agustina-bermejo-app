@@ -23,7 +23,7 @@ class ErrorCodeResponseDetailsTest {
 
         assertThat(PendingDebtException.TOTAL_DUE_KEY).isEqualTo("totalDue");
         assertThat(PendingDebtException.INSTALLMENT_COUNT_KEY).isEqualTo("installmentCount");
-        assertThat(body.get("code").asText()).isEqualTo("PENDING_DEBT");
+        assertThat(body.get("code").asString("")).isEqualTo("PENDING_DEBT");
         assertThat(body.get("details").get("totalDue").decimalValue()).isEqualByComparingTo("33000.00");
         assertThat(body.get("details").get("installmentCount").asInt()).isEqualTo(2);
     }

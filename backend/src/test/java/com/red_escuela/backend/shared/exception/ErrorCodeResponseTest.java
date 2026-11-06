@@ -24,7 +24,7 @@ class ErrorCodeResponseTest {
         tools.jackson.databind.JsonNode json = new tools.jackson.databind.ObjectMapper()
                 .valueToTree(ErrorCodeResponse.of(new CohortAdmissionWindowClosedException(1L)));
 
-        assertThat(json.get("code").asText()).isEqualTo("COHORT_ADMISSION_WINDOW_CLOSED");
+        assertThat(json.get("code").asString("")).isEqualTo("COHORT_ADMISSION_WINDOW_CLOSED");
         assertThat(json.get("retryable").asBoolean()).isFalse();
         assertThat(json.has("violations")).isFalse();
     }

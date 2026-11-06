@@ -23,7 +23,7 @@ public class FeatureChangeJsonReader {
         try {
             JsonNode node = objectMapper.readTree(json);
             JsonNode mode = node.get("mode");
-            BillingMode billingMode = mode == null || mode.isNull() ? null : BillingMode.valueOf(mode.asText());
+            BillingMode billingMode = mode == null || mode.isNull() ? null : BillingMode.valueOf(mode.asString(""));
             return new FeatureStateView(node.get("enabled").asBoolean(), billingMode);
         } catch (JacksonException e) {
             throw new IllegalStateException("No se pudo leer el estado registrado de la feature", e);

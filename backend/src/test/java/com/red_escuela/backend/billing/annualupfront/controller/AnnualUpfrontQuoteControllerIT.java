@@ -187,13 +187,13 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
         assertThat(quote.get("eligible").asBoolean()).isTrue();
         assertThat(quote.get("lectiveYear").asInt()).isEqualTo(2027);
-        assertThat(quote.get("requestDeadline").asText()).isEqualTo("2027-02-28");
+        assertThat(quote.get("requestDeadline").asString("")).isEqualTo("2027-02-28");
         assertThat(quote.get("quote").get("lines")).hasSize(10);
-        assertThat(quote.get("quote").get("lines").get(0).get("period").asText()).isEqualTo("2027-03");
-        assertThat(quote.get("quote").get("lines").get(9).get("period").asText()).isEqualTo("2027-12");
-        assertThat(new BigDecimal(quote.get("quote").get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
+        assertThat(quote.get("quote").get("lines").get(0).get("period").asString("")).isEqualTo("2027-03");
+        assertThat(quote.get("quote").get("lines").get(9).get("period").asString("")).isEqualTo("2027-12");
+        assertThat(new BigDecimal(quote.get("quote").get("total").get("amount").asString(""))).isEqualByComparingTo("800000.00");
         assertThat(quote.get("quote").get("discount").isNull()).isTrue();
-        assertThat(quote.get("quote").get("paymentDeadline").asText()).isEqualTo("2027-02-12T12:00:00");
+        assertThat(quote.get("quote").get("paymentDeadline").asString("")).isEqualTo("2027-02-12T12:00:00");
     }
 
     @Test
@@ -202,9 +202,9 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
         JsonNode quote = studentQuote().get("quote");
 
-        assertThat(quote.get("lines")).allSatisfy(line -> assertThat(new BigDecimal(line.get("discountAmount").get("amount").asText())).isEqualByComparingTo("8000.00"));
-        assertThat(new BigDecimal(quote.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
-        assertThat(new BigDecimal(quote.get("discount").get("totalSaving").get("amount").asText())).isEqualByComparingTo("80000.00");
+        assertThat(quote.get("lines")).allSatisfy(line -> assertThat(new BigDecimal(line.get("discountAmount").get("amount").asString(""))).isEqualByComparingTo("8000.00"));
+        assertThat(new BigDecimal(quote.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
+        assertThat(new BigDecimal(quote.get("discount").get("totalSaving").get("amount").asString(""))).isEqualByComparingTo("80000.00");
     }
 
     @Test
@@ -225,7 +225,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         JsonNode closed = studentQuote();
 
         assertThat(closed.get("eligible").asBoolean()).isFalse();
-        assertThat(closed.get("reasonCode").asText()).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
+        assertThat(closed.get("reasonCode").asString("")).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
         assertThat(closed.get("quote").isNull()).isTrue();
     }
 
@@ -236,7 +236,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         JsonNode blocked = studentQuote();
 
         assertThat(blocked.get("eligible").asBoolean()).isFalse();
-        assertThat(blocked.get("reasonCode").asText()).isEqualTo("ANNUAL_UPFRONT_NOT_AVAILABLE_WITH_SCHOLARSHIP");
+        assertThat(blocked.get("reasonCode").asString("")).isEqualTo("ANNUAL_UPFRONT_NOT_AVAILABLE_WITH_SCHOLARSHIP");
         jdbc.update("update student_discount set status = 'REVOKED', revoked_at = now(), revoked_by_id = ?, revocation_reason = 'Fin de la beca', revoked_from_period = '2027-03-01' where id = ?",
                 director.getId(), scholarshipId);
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
@@ -250,7 +250,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
         today(LocalDate.of(2027, 2, 21));
         JsonNode blocked = studentQuote();
-        assertThat(blocked.get("reasonCode").asText()).isEqualTo("OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT");
+        assertThat(blocked.get("reasonCode").asString("")).isEqualTo("OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT");
 
         jdbc.update("update invoice set payment_status = 'PAID', paid_amount = total, outstanding_amount = 0 where id = ?", invoiceId);
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
@@ -263,7 +263,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         JsonNode quote = studentQuote();
 
         assertThat(quote.get("eligible").asBoolean()).isFalse();
-        assertThat(quote.get("reasonCode").asText()).isEqualTo("ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED");
+        assertThat(quote.get("reasonCode").asString("")).isEqualTo("ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED");
         assertThat(quote.get("existingRequestInvoiceId").asLong()).isEqualTo(annualInvoiceId);
     }
 
@@ -275,7 +275,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
         JsonNode quote = studentQuote();
 
-        assertThat(quote.get("reasonCode").asText()).isEqualTo("NO_MONTHS_LEFT_FOR_ANNUAL_UPFRONT");
+        assertThat(quote.get("reasonCode").asString("")).isEqualTo("NO_MONTHS_LEFT_FOR_ANNUAL_UPFRONT");
     }
 
     @Test
@@ -316,8 +316,8 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         JsonNode quote = studentQuote().get("quote");
 
         assertThat(quote.get("lines")).hasSize(10);
-        assertThat(quote.get("lines")).allSatisfy(line -> assertThat(new BigDecimal(line.get("baseAmount").get("amount").asText())).isEqualByComparingTo("90000.00"));
-        assertThat(new BigDecimal(quote.get("total").get("amount").asText())).isEqualByComparingTo("900000.00");
+        assertThat(quote.get("lines")).allSatisfy(line -> assertThat(new BigDecimal(line.get("baseAmount").get("amount").asString(""))).isEqualByComparingTo("90000.00"));
+        assertThat(new BigDecimal(quote.get("total").get("amount").asString(""))).isEqualByComparingTo("900000.00");
     }
 
     @Test
@@ -333,7 +333,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
                 .header("Authorization", "Bearer " + tokenOf(administrative))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
 
         assertThat(quote.get("eligible").asBoolean()).isFalse();
-        assertThat(quote.get("reasonCode").asText()).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
+        assertThat(quote.get("reasonCode").asString("")).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
     }
 
     @Test
@@ -348,7 +348,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
 
         today(LocalDate.of(2027, 2, 25));
         JsonNode blocked = studentQuote();
-        assertThat(blocked.get("reasonCode").asText()).isEqualTo("OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT");
+        assertThat(blocked.get("reasonCode").asString("")).isEqualTo("OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT");
     }
 
     @Test
@@ -357,14 +357,14 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
 
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.SUSPENDED);
-        assertThat(studentQuote().get("reasonCode").asText()).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        assertThat(studentQuote().get("reasonCode").asString("")).isEqualTo("ENROLLMENT_NOT_ACTIVE");
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(studentQuote().get("reasonCode").asText()).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+        assertThat(studentQuote().get("reasonCode").asString("")).isEqualTo("ENROLLMENT_NOT_ACTIVE");
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.UP_TO_DATE);
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
         for (String status : List.of("PAUSED", "COMPLETED", "WITHDRAWN")) {
             jdbc.update("update program_enrollment set status = ? where id = ?", status, learner.programEnrollmentId());
-            assertThat(studentQuote().get("reasonCode").asText()).as(status).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+            assertThat(studentQuote().get("reasonCode").asString("")).as(status).isEqualTo("ENROLLMENT_NOT_ACTIVE");
         }
     }
 

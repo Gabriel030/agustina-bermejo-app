@@ -92,9 +92,9 @@ class PricingAndAttendanceContractJsonTest {
         JsonNode programJson = json(ProgramResponse.from(program));
 
         assertThat(courseJson.get("price")).isEqualTo(json(Money.of(new BigDecimal("18000"), Currency.USD)));
-        assertThat(programJson.get("price").get("amount").asText()).isEqualTo("45000.00");
-        assertThat(programJson.get("price").get("currency").asText()).isEqualTo("ARS");
-        assertThat(programJson.get("enrollmentFeeAmount").get("amount").asText()).isEqualTo("30000.00");
+        assertThat(programJson.get("price").get("amount").asString("")).isEqualTo("45000.00");
+        assertThat(programJson.get("price").get("currency").asString("")).isEqualTo("ARS");
+        assertThat(programJson.get("enrollmentFeeAmount").get("amount").asString("")).isEqualTo("30000.00");
     }
 
     @Test

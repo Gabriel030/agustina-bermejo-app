@@ -257,7 +257,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
 
     protected static JsonNode seriesOf(JsonNode metric, String key) {
         for (JsonNode series : metric.get("series")) {
-            if (series.get("key").asText().equals(key)) {
+            if (series.get("key").asString("").equals(key)) {
                 return series;
             }
         }
@@ -266,7 +266,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
 
     protected static boolean hasSeries(JsonNode metric, String key) {
         for (JsonNode series : metric.get("series")) {
-            if (series.get("key").asText().equals(key)) {
+            if (series.get("key").asString("").equals(key)) {
                 return true;
             }
         }

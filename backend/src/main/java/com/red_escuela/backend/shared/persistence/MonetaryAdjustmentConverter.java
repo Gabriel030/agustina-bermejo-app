@@ -79,6 +79,6 @@ public class MonetaryAdjustmentConverter implements AttributeConverter<MonetaryA
         if (value == null || value.isNull()) {
             throw new IllegalStateException("Missing field " + field + " in monetary adjustment: " + json);
         }
-        return value.asText();
+        return value.asString("");
     }
 }

@@ -81,7 +81,7 @@ class CourseEnrollmentWithTransferReceiptIT extends AbstractBankTransferReceiptH
         MvcResult result = mockMvc.perform(enrollment(student, course, true)).andExpect(status().isCreated()).andReturn();
 
         JsonNode body = bodyOf(result);
-        assertThat(body.get("paymentStatus").asText()).isEqualTo("PENDING_REVIEW");
+        assertThat(body.get("paymentStatus").asString("")).isEqualTo("PENDING_REVIEW");
         assertThat(body.get("courseEnrollmentId").isNull()).isTrue();
         Long invoiceId = admissionInvoiceOf(body);
         Long paymentId = jdbc.queryForObject("select payment_id from bank_transfer_receipt where invoice_id = ?", Long.class, invoiceId);
@@ -101,7 +101,7 @@ class CourseEnrollmentWithTransferReceiptIT extends AbstractBankTransferReceiptH
 
         MvcResult result = mockMvc.perform(enrollment(student, course, false)).andExpect(status().isBadRequest()).andReturn();
 
-        assertThat(bodyOf(result).get("code").asText()).isEqualTo("BANK_TRANSFER_DETAILS_REQUIRED");
+        assertThat(bodyOf(result).get("code").asString("")).isEqualTo("BANK_TRANSFER_DETAILS_REQUIRED");
         assertThat(jdbc.queryForObject("select count(*) from course_enrollment_application where student_id = ?", Long.class, student.studentId())).isZero();
         assertThat(jdbc.queryForObject("select count(*) from invoice where student_current_account_id = ?", Long.class, student.accountId())).isZero();
         assertThat(filesStoredFor(student.studentId())).isZero();
@@ -117,7 +117,7 @@ class CourseEnrollmentWithTransferReceiptIT extends AbstractBankTransferReceiptH
 
         MvcResult result = mockMvc.perform(enrollment(student, course, true)).andExpect(status().isConflict()).andReturn();
 
-        assertThat(bodyOf(result).get("code").asText()).isEqualTo("RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST");
+        assertThat(bodyOf(result).get("code").asString("")).isEqualTo("RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST");
         assertThat(jdbc.queryForObject("select count(*) from course_enrollment_application where student_id = ?", Long.class, student.studentId())).isZero();
         assertThat(paymentsOf(student.accountId())).isZero();
     }

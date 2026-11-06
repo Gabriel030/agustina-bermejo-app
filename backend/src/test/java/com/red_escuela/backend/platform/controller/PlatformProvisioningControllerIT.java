@@ -148,7 +148,7 @@ class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
         String verified = mockMvc.perform(post("/auth/verify-reset-code").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"dir@example.com\",\"code\":\"" + code + "\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        String resetToken = objectMapper.readTree(verified).get("resetToken").asText();
+        String resetToken = objectMapper.readTree(verified).get("resetToken").asString("");
         mockMvc.perform(post("/auth/reset-password").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"resetToken\":\"" + resetToken + "\",\"newPassword\":\"" + NEW_PASSWORD + "\"}"))
                 .andExpect(status().isNoContent());

@@ -64,7 +64,7 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
     private long countByName(JsonNode items, String name) {
         long matches = 0;
         for (JsonNode item : items) {
-            if (name.equals(item.path("name").asText())) {
+            if (name.equals(item.path("name").asString(""))) {
                 matches++;
             }
         }

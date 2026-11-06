@@ -35,7 +35,7 @@ class PaymentMethodDetailsJsonTest {
         String json = mapper.writeValueAsString(details);
 
         assertThat(mapper.readValue(json, PaymentMethodDetails.class)).isEqualTo(details);
-        assertThat(mapper.readTree(json).get("type").asText()).isEqualTo(details.methodType().name());
+        assertThat(mapper.readTree(json).get("type").asString("")).isEqualTo(details.methodType().name());
     }
 
     @Test
@@ -49,6 +49,6 @@ class PaymentMethodDetailsJsonTest {
     void theTransferDateIsWrittenAsAnIsoDate() throws Exception {
         JsonNode json = mapper.readTree(mapper.writeValueAsString(everyVariant().toList().get(1)));
 
-        assertThat(json.get("transferDate").asText()).isEqualTo("2027-03-10");
+        assertThat(json.get("transferDate").asString("")).isEqualTo("2027-03-10");
     }
 }

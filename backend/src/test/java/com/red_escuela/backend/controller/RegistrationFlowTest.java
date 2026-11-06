@@ -236,7 +236,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andReturn().getResponse().getContentAsString();
 
-        String accessToken = objectMapper.readTree(response).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(response).get("accessToken").asString("");
 
         mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
@@ -296,7 +296,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("carrera", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
         giveDni("carrera");
 
         String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
@@ -357,7 +357,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("sindni", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
 
         mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
@@ -385,7 +385,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("pasaporte", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -415,7 +415,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("dnibad", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -443,7 +443,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("rechazo", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
         giveDni("rechazo");
 
         String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
@@ -485,7 +485,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("selfapprove", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
         giveDni("selfapprove");
 
         String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
@@ -510,7 +510,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRegistration("curso", institutionId))))
                 .andReturn().getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asString("");
         giveDni("curso");
 
         mockMvc.perform(multipart("/me/course-enrollments")

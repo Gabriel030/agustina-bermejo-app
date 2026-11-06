@@ -151,9 +151,9 @@ class CollectionsStockMetricIT extends AbstractMonthlyMetricsIT {
         JsonNode arsAskedWithUsdProgram = metric(directorToken, "collections-stock", "from=2022-03&to=2022-03&currency=ARS&programId=" + usdProgram);
 
         assertThat(amountOf(ars, "amount.TOTAL", 0)).isEqualTo(90000.00);
-        assertThat(seriesOf(ars, "amount.TOTAL").get("values").get(0).get("currency").asText()).isEqualTo("ARS");
+        assertThat(seriesOf(ars, "amount.TOTAL").get("values").get(0).get("currency").asString("")).isEqualTo("ARS");
         assertThat(amountOf(usd, "amount.TOTAL", 0)).isEqualTo(120.00);
-        assertThat(seriesOf(usd, "amount.TOTAL").get("values").get(0).get("currency").asText()).isEqualTo("USD");
+        assertThat(seriesOf(usd, "amount.TOTAL").get("values").get(0).get("currency").asString("")).isEqualTo("USD");
         assertThat(amountOf(arsAskedWithUsdProgram, "amount.TOTAL", 0)).isEqualTo(0.0);
     }
 

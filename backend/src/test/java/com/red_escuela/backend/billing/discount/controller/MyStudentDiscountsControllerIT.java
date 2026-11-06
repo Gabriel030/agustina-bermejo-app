@@ -78,7 +78,7 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
     private List<String> texts(JsonNode array, String field) {
         List<String> values = new ArrayList<>();
         for (JsonNode element : array) {
-            values.add(field == null ? element.asText() : element.get(field).asText());
+            values.add(field == null ? element.asString("") : element.get(field).asString(""));
         }
         return values;
     }
@@ -94,7 +94,7 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
         assertThat(mine).hasSize(1);
         assertThat(mine.get(0).get("id").asLong()).isEqualTo(own.getId());
         assertThat(mine.get(0).get("programEnrollmentId").asLong()).isEqualTo(learner.programEnrollmentId());
-        assertThat(mine.get(0).get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(mine.get(0).get("status").asString("")).isEqualTo("ACTIVE");
     }
 
     @Test
@@ -179,9 +179,9 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
         programEnrollmentService.withdraw(learner.programEnrollmentId(), EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.of(2027, 3, 1), director.getId()));
 
         JsonNode mine = read("/me/student-discounts", studentToken(learner.studentId()));
-        assertThat(discountNode(mine, active).get("status").asText()).isEqualTo("ENDED");
-        assertThat(discountNode(mine, revoked).get("status").asText()).isEqualTo("REVOKED");
-        assertThat(discountNode(mine, alreadyEnded).get("status").asText()).isEqualTo("ENDED");
+        assertThat(discountNode(mine, active).get("status").asString("")).isEqualTo("ENDED");
+        assertThat(discountNode(mine, revoked).get("status").asString("")).isEqualTo("REVOKED");
+        assertThat(discountNode(mine, alreadyEnded).get("status").asString("")).isEqualTo("ENDED");
         assertThat(jdbc.queryForObject("select count(*) from student_discount_status_change where student_discount_id = ?", Integer.class, alreadyEnded.getId()))
                 .isEqualTo(historyOfEndedBefore);
         assertThat(jdbc.queryForList("select event from student_discount_status_change where student_discount_id = ? order by id", String.class, revoked.getId()))
@@ -205,10 +205,10 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
         assertThat(node.get("grantedById").isNull()).isTrue();
         assertThat(node.get("authorizationRequestId").isNull()).isTrue();
         assertThat(node.get("revocationReason").isNull()).isTrue();
-        assertThat(node.get("status").asText()).isEqualTo("REVOKED");
-        assertThat(node.get("endCause").asText()).isEqualTo("INSTITUTION_DECISION");
-        assertThat(node.get("endCauseText").asText()).isEqualTo("Decisión de la institución");
-        assertThat(node.get("revokedFromPeriod").asText()).isEqualTo("2027-03");
+        assertThat(node.get("status").asString("")).isEqualTo("REVOKED");
+        assertThat(node.get("endCause").asString("")).isEqualTo("INSTITUTION_DECISION");
+        assertThat(node.get("endCauseText").asString("")).isEqualTo("Decisión de la institución");
+        assertThat(node.get("revokedFromPeriod").asString("")).isEqualTo("2027-03");
     }
 
     @Test
@@ -225,7 +225,7 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
         assertThat(node.get("reason").isNull()).isTrue();
         assertThat(node.get("grantedById").isNull()).isTrue();
         assertThat(node.get("authorizationRequestId").isNull()).isTrue();
-        assertThat(node.get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(node.get("status").asString("")).isEqualTo("ACTIVE");
     }
 
     @Test
@@ -236,10 +236,10 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
 
         JsonNode node = discountNode(read("/program-enrollments/" + learner.programEnrollmentId() + "/student-discounts", directorToken()), revoked);
 
-        assertThat(node.get("revocationReason").asText()).isEqualTo("Motivo interno del director");
-        assertThat(node.get("reason").asText()).isEqualTo("Situación económica");
+        assertThat(node.get("revocationReason").asString("")).isEqualTo("Motivo interno del director");
+        assertThat(node.get("reason").asString("")).isEqualTo("Situación económica");
         assertThat(node.get("grantedById").asLong()).isEqualTo(director.getId());
-        assertThat(node.get("endCause").asText()).isEqualTo("INSTITUTION_DECISION");
+        assertThat(node.get("endCause").asString("")).isEqualTo("INSTITUTION_DECISION");
     }
 
     @Test
@@ -252,9 +252,9 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
 
         JsonNode mine = read("/me/student-discounts", studentToken(learner.studentId()));
         JsonNode node = discountNode(mine, active);
-        assertThat(node.get("status").asText()).isEqualTo("ENDED");
-        assertThat(node.get("endCause").asText()).isEqualTo("ENROLLMENT_ENDED");
-        assertThat(node.get("endCauseText").asText()).isEqualTo("Finalizó la inscripción");
+        assertThat(node.get("status").asString("")).isEqualTo("ENDED");
+        assertThat(node.get("endCause").asString("")).isEqualTo("ENROLLMENT_ENDED");
+        assertThat(node.get("endCauseText").asString("")).isEqualTo("Finalizó la inscripción");
         assertThat(jdbc.queryForObject("select status from student_discount where id = ?", String.class, stays.getId())).isEqualTo("ACTIVE");
     }
 
@@ -277,9 +277,9 @@ class MyStudentDiscountsControllerIT extends AbstractStudentDiscountIssuingIT {
 
         JsonNode mine = read("/me/student-discounts", studentToken(learner.studentId()));
 
-        assertThat(discountNode(mine, scholarship).get("enrollmentName").asText()).isEqualTo(programName);
-        assertThat(discountNode(mine, scholarship).get("definitionName").asText()).isEqualTo(definitionName);
-        assertThat(discountNode(mine, individual).get("enrollmentName").asText()).isEqualTo(programName);
+        assertThat(discountNode(mine, scholarship).get("enrollmentName").asString("")).isEqualTo(programName);
+        assertThat(discountNode(mine, scholarship).get("definitionName").asString("")).isEqualTo(definitionName);
+        assertThat(discountNode(mine, individual).get("enrollmentName").asString("")).isEqualTo(programName);
         assertThat(discountNode(mine, individual).get("definitionName").isNull()).isTrue();
         assertThat(discountNode(mine, scholarship).get("studentName").isNull()).isTrue();
     }

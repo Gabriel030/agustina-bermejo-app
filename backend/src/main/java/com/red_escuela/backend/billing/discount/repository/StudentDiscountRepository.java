@@ -72,5 +72,5 @@ public interface StudentDiscountRepository extends JpaRepository<StudentDiscount
             where r.program_enrollment_id = :programEnrollmentId and r.status in ('AWAITING_PAYMENT', 'PAYMENT_UNDER_REVIEW', 'CONFIRMED')
             order by l.period
             """, nativeQuery = true)
-    List<java.sql.Date> findPeriodsOfLiveAnnualUpfrontRequests(@Param("programEnrollmentId") Long programEnrollmentId);
+    List<java.time.LocalDate> findPeriodsOfLiveAnnualUpfrontRequests(@Param("programEnrollmentId") Long programEnrollmentId);
 }

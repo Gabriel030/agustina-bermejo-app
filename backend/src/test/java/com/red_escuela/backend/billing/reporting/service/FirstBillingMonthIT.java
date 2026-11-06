@@ -44,8 +44,8 @@ class FirstBillingMonthIT extends AbstractMonthlyMetricsIT {
         seed(arsAccountId, Currency.ARS, LocalDate.of(2001, 4, 1));
         seed(usdAccountId, Currency.USD, LocalDate.of(2002, 1, 2));
 
-        assertThat(firstMonth(directorToken).get("month").asText()).isEqualTo("2001-04");
-        assertThat(firstMonth(newStaff("ADMINISTRATIVO").token()).get("month").asText()).isEqualTo("2001-04");
+        assertThat(firstMonth(directorToken).get("month").asString("")).isEqualTo("2001-04");
+        assertThat(firstMonth(newStaff("ADMINISTRATIVO").token()).get("month").asString("")).isEqualTo("2001-04");
     }
 
     @Test

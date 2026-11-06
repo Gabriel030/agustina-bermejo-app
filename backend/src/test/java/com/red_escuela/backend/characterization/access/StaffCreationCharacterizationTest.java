@@ -131,7 +131,7 @@ class StaffCreationCharacterizationTest extends AccessCharacterizationSupport {
         String body = postJson("/auth/verify-reset-code",
                 new com.red_escuela.backend.identity.dto.VerifyResetCodeRequest(created.emailValue(), code))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        String resetToken = objectMapper.readTree(body).get("resetToken").asText();
+        String resetToken = objectMapper.readTree(body).get("resetToken").asString("");
         postJson("/auth/reset-password",
                 new com.red_escuela.backend.identity.dto.ResetPasswordRequest(resetToken, "PrimerClave123"))
                 .andExpect(status().isNoContent());

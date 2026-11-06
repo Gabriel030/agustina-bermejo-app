@@ -260,8 +260,8 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
         var listed = java.util.stream.StreamSupport.stream(items.spliterator(), false)
                 .filter(item -> item.get("id").asLong() == withDocument)
                 .findFirst().orElseThrow();
-        assertThat(listed.get("email").asText()).isEqualTo(email);
-        assertThat(listed.get("telefono").asText()).isEqualTo("1155550000");
+        assertThat(listed.get("email").asString("")).isEqualTo(email);
+        assertThat(listed.get("telefono").asString("")).isEqualTo("1155550000");
         assertThat(listed.get("emailVerified").asBoolean()).isFalse();
         assertThat(objectMapper.convertValue(listed.get("missingDocuments"), java.util.List.class))
                 .containsExactlyInAnyOrder("DNI_DORSO", "ANALITICO_SECUNDARIO");

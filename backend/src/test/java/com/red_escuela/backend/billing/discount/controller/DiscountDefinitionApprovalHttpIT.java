@@ -138,7 +138,7 @@ class DiscountDefinitionApprovalHttpIT extends AbstractIntegrationTest {
     private JsonNode catalogEntry(String name) throws Exception {
         JsonNode catalog = objectMapper.readTree(mockMvc.perform(get(BASE).header("Authorization", "Bearer " + tokenOf(director))).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString());
-        return StreamSupport.stream(catalog.spliterator(), false).filter(entry -> name.equals(entry.get("name").asText())).findFirst().orElse(null);
+        return StreamSupport.stream(catalog.spliterator(), false).filter(entry -> name.equals(entry.get("name").asString(""))).findFirst().orElse(null);
     }
 
     @Test
@@ -151,7 +151,7 @@ class DiscountDefinitionApprovalHttpIT extends AbstractIntegrationTest {
 
         JsonNode approved = catalogEntry("a09 aprobada por http");
         assertThat(approved).isNotNull();
-        assertThat(approved.get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(approved.get("status").asString("")).isEqualTo("ACTIVE");
         assertThat(approved.get("directPublication").asBoolean()).isFalse();
         assertThat(approved.get("authorizationRequestId").asLong()).isEqualTo(requestId);
         assertThat(approved.get("createdById").asLong()).isEqualTo(administrative.getId());
@@ -182,12 +182,12 @@ class DiscountDefinitionApprovalHttpIT extends AbstractIntegrationTest {
         Long requestId = objectMapper.readTree(postJson(BASE + "/" + definitionId + "/closure", administrative, reason).andExpect(status().isAccepted())
                 .andReturn().getResponse().getContentAsString()).get("authorizationRequestId").asLong();
 
-        assertThat(catalogEntry("cierre propuesto").get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(catalogEntry("cierre propuesto").get("status").asString("")).isEqualTo("ACTIVE");
         decide("approve", requestId, director).andExpect(status().isOk());
 
         JsonNode closed = catalogEntry("cierre propuesto");
-        assertThat(closed.get("status").asText()).isEqualTo("CLOSED");
-        assertThat(closed.get("closureReason").asText()).isEqualTo("Cambio de política");
+        assertThat(closed.get("status").asString("")).isEqualTo("CLOSED");
+        assertThat(closed.get("closureReason").asString("")).isEqualTo("Cambio de política");
         assertThat(closed.get("closedById").asLong()).isEqualTo(director.getId());
     }
 }

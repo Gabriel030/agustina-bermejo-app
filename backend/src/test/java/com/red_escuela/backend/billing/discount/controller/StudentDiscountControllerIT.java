@@ -117,7 +117,7 @@ class StudentDiscountControllerIT extends AbstractIntegrationTest {
     void theDirectorGrantsAScholarshipImmediatelyAndTheAdministrativeLeavesAPendingRequest() throws Exception {
         JsonNode granted = readBody(postJson(grantPath(), directorToken, scholarshipBody("50", "2027-04", "2027-08")).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("ACTIVE")).andExpect(jsonPath("$.type").value("SCHOLARSHIP")).andExpect(jsonPath("$.applicableInvoiceType").value("MONTHLY_INSTALLMENT")));
-        assertThat(granted.get("fromPeriod").asText()).isEqualTo("2027-04");
+        assertThat(granted.get("fromPeriod").asString("")).isEqualTo("2027-04");
 
         JsonNode pending = readBody(postJson(grantPath(), administrativeToken, scholarshipBody("25", "2027-09", "2027-12")).andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.authorizationRequestId").isNumber()));

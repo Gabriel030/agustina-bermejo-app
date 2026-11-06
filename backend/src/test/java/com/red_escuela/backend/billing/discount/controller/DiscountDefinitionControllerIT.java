@@ -173,12 +173,12 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
     }
 
     private JsonNode entryNamed(JsonNode catalog, String name) {
-        return StreamSupport.stream(catalog.spliterator(), false).filter(entry -> name.equals(entry.get("name").asText())).findFirst()
+        return StreamSupport.stream(catalog.spliterator(), false).filter(entry -> name.equals(entry.get("name").asString(""))).findFirst()
                 .orElseThrow(() -> new AssertionError("The catalog has no definition named " + name));
     }
 
     private boolean catalogHas(String name) throws Exception {
-        return StreamSupport.stream(catalog("").spliterator(), false).anyMatch(entry -> name.equals(entry.get("name").asText()));
+        return StreamSupport.stream(catalog("").spliterator(), false).anyMatch(entry -> name.equals(entry.get("name").asString("")));
     }
 
     private long countDefinitions() {
@@ -206,10 +206,10 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
         JsonNode created = createdAsDirector(annualUpfront("a10 directa"));
 
-        assertThat(created.get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(created.get("status").asString("")).isEqualTo("ACTIVE");
         assertThat(created.get("directPublication").asBoolean()).isTrue();
         assertThat(created.get("authorizationRequestId").isNull()).isTrue();
-        assertThat(created.get("calculation").get("type").asText()).isEqualTo("PROPORTIONAL");
+        assertThat(created.get("calculation").get("type").asString("")).isEqualTo("PROPORTIONAL");
         assertThat(created.get("calculation").get("ratePercent").decimalValue()).isEqualByComparingTo("15");
         assertThat(jdbc.queryForObject("select count(*) from authorization_request", Long.class)).isEqualTo(requestsBefore);
         assertThat(entryNamed(catalog("?status=ACTIVE"), "a10 directa").get("id").asLong()).isEqualTo(created.get("id").asLong());
@@ -258,22 +258,22 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
         JsonNode today = catalog("?type=COHORT_PROMOTION");
 
-        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("60000.00");
-        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCost").get("currency").asText()).isEqualTo("ARS");
-        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCostStatus").asText()).isEqualTo("ESTIMATED");
+        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("60000.00");
+        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCost").get("currency").asString("")).isEqualTo("ARS");
+        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCostStatus").asString("")).isEqualTo("ESTIMATED");
         assertThat(entryNamed(today, "a08 sin cupo").get("estimatedQuotaCost").isNull()).isTrue();
-        assertThat(entryNamed(today, "a08 sin cupo").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_QUOTA");
+        assertThat(entryNamed(today, "a08 sin cupo").get("estimatedQuotaCostStatus").asString("")).isEqualTo("NO_QUOTA");
         assertThat(entryNamed(today, "a08 sin cuotas").get("estimatedQuotaCost").isNull()).isTrue();
-        assertThat(entryNamed(today, "a08 sin cuotas").get("estimatedQuotaCostStatus").asText()).isEqualTo("NOT_APPLICABLE");
-        assertThat(entryNamed(today, "a08 matricula").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("500000.00");
-        assertThat(entryNamed(today, "a08 fijo con tope").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("24000.00");
+        assertThat(entryNamed(today, "a08 sin cuotas").get("estimatedQuotaCostStatus").asString("")).isEqualTo("NOT_APPLICABLE");
+        assertThat(entryNamed(today, "a08 matricula").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("500000.00");
+        assertThat(entryNamed(today, "a08 fijo con tope").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("24000.00");
 
         MutableClock.INSTANCE.setDate(TODAY.plusMonths(1));
         JsonNode afterTheIncrease = catalog("?type=COHORT_PROMOTION");
 
-        assertThat(entryNamed(afterTheIncrease, "a08 con cupo").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("72000.00");
-        assertThat(entryNamed(afterTheIncrease, "a08 matricula").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("500000.00");
-        assertThat(entryNamed(afterTheIncrease, "a08 fijo con tope").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("24000.00");
+        assertThat(entryNamed(afterTheIncrease, "a08 con cupo").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("72000.00");
+        assertThat(entryNamed(afterTheIncrease, "a08 matricula").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("500000.00");
+        assertThat(entryNamed(afterTheIncrease, "a08 fijo con tope").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("24000.00");
     }
 
     @Test
@@ -289,10 +289,10 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         MutableClock.INSTANCE.setDate(IssuingScenarioFactory.INITIAL_PRICE_FROM);
         JsonNode onTheFirstDay = entryNamed(catalog("?type=COHORT_PROMOTION"), "a08 sin precio vigente");
 
-        assertThat(beforeThePrice.get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_EFFECTIVE_PRICE");
+        assertThat(beforeThePrice.get("estimatedQuotaCostStatus").asString("")).isEqualTo("NO_EFFECTIVE_PRICE");
         assertThat(beforeThePrice.get("estimatedQuotaCost").isNull()).isTrue();
-        assertThat(onTheFirstDay.get("estimatedQuotaCostStatus").asText()).isEqualTo("ESTIMATED");
-        assertThat(onTheFirstDay.get("estimatedQuotaCost").get("amount").asText()).isEqualTo("60000.00");
+        assertThat(onTheFirstDay.get("estimatedQuotaCostStatus").asString("")).isEqualTo("ESTIMATED");
+        assertThat(onTheFirstDay.get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("60000.00");
     }
 
     @Test
@@ -311,9 +311,9 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
         JsonNode catalog = catalog("?type=COHORT_PROMOTION");
 
-        assertThat(entryNamed(catalog, "a08 curso con precio").get("estimatedQuotaCostStatus").asText()).isEqualTo("ESTIMATED");
-        assertThat(entryNamed(catalog, "a08 curso con precio").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("48000.00");
-        assertThat(entryNamed(catalog, "a08 curso sin precio").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_EFFECTIVE_PRICE");
+        assertThat(entryNamed(catalog, "a08 curso con precio").get("estimatedQuotaCostStatus").asString("")).isEqualTo("ESTIMATED");
+        assertThat(entryNamed(catalog, "a08 curso con precio").get("estimatedQuotaCost").get("amount").asString("")).isEqualTo("48000.00");
+        assertThat(entryNamed(catalog, "a08 curso sin precio").get("estimatedQuotaCostStatus").asString("")).isEqualTo("NO_EFFECTIVE_PRICE");
     }
 
     @Test
@@ -332,7 +332,7 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
     void aDefinitionWithoutAnOfferingScopeCannotHaveQuotaSoItReportsNoQuota() throws Exception {
         createdAsDirector(annualUpfront("pago anual sin alcance"));
 
-        assertThat(entryNamed(catalog(""), "pago anual sin alcance").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_QUOTA");
+        assertThat(entryNamed(catalog(""), "pago anual sin alcance").get("estimatedQuotaCostStatus").asString("")).isEqualTo("NO_QUOTA");
     }
 
     private Long persistCourse(boolean withPrice) {
@@ -369,9 +369,9 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
         JsonNode catalog = catalog("?type=ANNUAL_UPFRONT");
 
-        assertThat(entryNamed(catalog, "disponibilidad futura").get("availability").asText()).isEqualTo("UPCOMING");
-        assertThat(entryNamed(catalog, "disponibilidad hasta hoy").get("availability").asText()).isEqualTo("AVAILABLE");
-        assertThat(entryNamed(catalog, "disponibilidad vencida").get("availability").asText()).isEqualTo("EXPIRED");
+        assertThat(entryNamed(catalog, "disponibilidad futura").get("availability").asString("")).isEqualTo("UPCOMING");
+        assertThat(entryNamed(catalog, "disponibilidad hasta hoy").get("availability").asString("")).isEqualTo("AVAILABLE");
+        assertThat(entryNamed(catalog, "disponibilidad vencida").get("availability").asString("")).isEqualTo("EXPIRED");
     }
 
     @Test
@@ -384,9 +384,9 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         JsonNode active = catalog("?type=ANNUAL_UPFRONT&status=ACTIVE");
         JsonNode otherType = catalog("?type=SCHOLARSHIP");
 
-        assertThat(StreamSupport.stream(closed.spliterator(), false).map(entry -> entry.get("name").asText())).contains("filtro cerrada").doesNotContain("filtro activa");
-        assertThat(StreamSupport.stream(active.spliterator(), false).map(entry -> entry.get("name").asText())).contains("filtro activa").doesNotContain("filtro cerrada");
-        assertThat(StreamSupport.stream(otherType.spliterator(), false).map(entry -> entry.get("discountType").asText())).containsOnly("SCHOLARSHIP");
+        assertThat(StreamSupport.stream(closed.spliterator(), false).map(entry -> entry.get("name").asString(""))).contains("filtro cerrada").doesNotContain("filtro activa");
+        assertThat(StreamSupport.stream(active.spliterator(), false).map(entry -> entry.get("name").asString(""))).contains("filtro activa").doesNotContain("filtro cerrada");
+        assertThat(StreamSupport.stream(otherType.spliterator(), false).map(entry -> entry.get("discountType").asString(""))).containsOnly("SCHOLARSHIP");
         assertThat(otherType.size()).isGreaterThanOrEqualTo(1);
     }
 
@@ -514,8 +514,8 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         send("POST", "/" + proposedId + "/closure", administrativeToken, Map.of("reason", "Cambio de política")).andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.authorizationRequestId").isNumber());
 
-        assertThat(entryNamed(catalog(""), "cierre propuesto").get("status").asText()).isEqualTo("ACTIVE");
-        assertThat(entryNamed(catalog(""), "cierre directo").get("status").asText()).isEqualTo("CLOSED");
+        assertThat(entryNamed(catalog(""), "cierre propuesto").get("status").asString("")).isEqualTo("ACTIVE");
+        assertThat(entryNamed(catalog(""), "cierre directo").get("status").asString("")).isEqualTo("CLOSED");
     }
 
     @Test
@@ -563,11 +563,11 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
     private String promotionStatusOn(LocalDate date, String name) throws Exception {
         MutableClock.INSTANCE.setDate(date);
-        return entryNamed(catalog("?type=COHORT_PROMOTION"), name).get("cohortPromotionStatus").asText();
+        return entryNamed(catalog("?type=COHORT_PROMOTION"), name).get("cohortPromotionStatus").asString("");
     }
 
     private List<String> namesOf(JsonNode catalog) {
-        return StreamSupport.stream(catalog.spliterator(), false).map(entry -> entry.get("name").asText()).toList();
+        return StreamSupport.stream(catalog.spliterator(), false).map(entry -> entry.get("name").asString("")).toList();
     }
 
     @Test
@@ -583,18 +583,18 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
         assertThat(countDefinitions()).isEqualTo(before);
         JsonNode created = createdAsDirector(body);
-        assertThat(created.get("discountType").asText()).isEqualTo("COHORT_PROMOTION");
-        assertThat(created.get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(created.get("discountType").asString("")).isEqualTo("COHORT_PROMOTION");
+        assertThat(created.get("status").asString("")).isEqualTo("ACTIVE");
         assertThat(created.get("directPublication").asBoolean()).isTrue();
         assertThat(created.get("quota").asInt()).isEqualTo(2);
         assertThat(created.get("priority").asInt()).isEqualTo(3);
         assertThat(created.get("programId").asLong()).isEqualTo(offering.programId());
         assertThat(created.get("programCohortId").asLong()).isEqualTo(cohortId);
         assertThat(created.get("installmentsTotal").asInt()).isEqualTo(4);
-        assertThat(created.get("enrollmentWindowFrom").asText()).isEqualTo(TODAY.plusDays(10).toString());
-        assertThat(created.get("enrollmentWindowTo").asText()).isEqualTo(TODAY.plusDays(20).toString());
-        assertThat(created.get("availableUntil").asText()).isEqualTo(TODAY.plusDays(60).toString());
-        assertThat(created.get("capPerInvoice").get("amount").asText()).isEqualTo("4000.00");
+        assertThat(created.get("enrollmentWindowFrom").asString("")).isEqualTo(TODAY.plusDays(10).toString());
+        assertThat(created.get("enrollmentWindowTo").asString("")).isEqualTo(TODAY.plusDays(20).toString());
+        assertThat(created.get("availableUntil").asString("")).isEqualTo(TODAY.plusDays(60).toString());
+        assertThat(created.get("capPerInvoice").get("amount").asString("")).isEqualTo("4000.00");
     }
 
     @Test
@@ -643,7 +643,7 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         body.put("applicableInvoiceType", invoiceType);
         body.put("installmentsTotal", installments);
 
-        assertThat(createdAsDirector(body).get("applicableInvoiceType").asText()).isEqualTo(invoiceType);
+        assertThat(createdAsDirector(body).get("applicableInvoiceType").asString("")).isEqualTo(invoiceType);
     }
 
     @Test
@@ -706,8 +706,8 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         assertThat(namesOf(catalog("?type=COHORT_PROMOTION"))).contains("filtro abierta", "filtro próxima", "filtro inscripción cerrada", "filtro cerrada");
         JsonNode detail = readBody(send("GET", "/" + openId, administrativeToken, null).andExpect(status().isOk()));
         assertThat(detail.get("id").asLong()).isEqualTo(openId);
-        assertThat(detail.get("cohortPromotionStatus").asText()).isEqualTo("OPEN");
-        assertThat(readBody(send("GET", "/" + closedId, directorToken, null).andExpect(status().isOk())).get("cohortPromotionStatus").asText()).isEqualTo("CLOSED");
+        assertThat(detail.get("cohortPromotionStatus").asString("")).isEqualTo("OPEN");
+        assertThat(readBody(send("GET", "/" + closedId, directorToken, null).andExpect(status().isOk())).get("cohortPromotionStatus").asString("")).isEqualTo("CLOSED");
     }
 
     @Test

@@ -175,7 +175,7 @@ class LateFeeUnderReviewOnWithdrawalCancellationIT extends AbstractInvoiceCancel
         assertThat(preview.get("allowed").asBoolean()).isTrue();
         assertThat(preview.get("lateFeesToAnnul")).hasSize(1);
         assertThat(preview.get("lateFeesToAnnul").get(0).get("debitNoteId").asLong()).isEqualTo(lateFee);
-        BigDecimal previewed = new BigDecimal(preview.get("lateFeesToAnnul").get(0).get("amountToAnnul").get("amount").asText());
+        BigDecimal previewed = new BigDecimal(preview.get("lateFeesToAnnul").get(0).get("amountToAnnul").get("amount").asString(""));
         assertThat(previewed).isPositive();
 
         requestCancellation(fee, director, cancellationBody("BILLING_ERROR", "cargo mal emitido"), 201);

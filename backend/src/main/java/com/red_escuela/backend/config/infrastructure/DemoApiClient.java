@@ -63,6 +63,6 @@ public class DemoApiClient {
                 .body(Map.of("username", username, "password", DEMO_PASSWORD))
                 .retrieve()
                 .body(JsonNode.class);
-        return response.get("accessToken").asText();
+        return response.get("accessToken").asString("");
     }
 }

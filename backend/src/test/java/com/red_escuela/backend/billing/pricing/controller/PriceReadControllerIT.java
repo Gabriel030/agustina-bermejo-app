@@ -184,7 +184,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
     }
 
     private static void assertAmount(JsonNode version, String expected) {
-        assertThat(new BigDecimal(version.at("/finalAmount/amount").asText())).isEqualByComparingTo(expected);
+        assertThat(new BigDecimal(version.at("/finalAmount/amount").asString(""))).isEqualByComparingTo(expected);
     }
 
     private long idOf(ResultActions result) throws Exception {
@@ -211,7 +211,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
             assertThat(monthly.get("openProposal").isNull()).isTrue();
             assertThat(monthly.get("programId").asLong()).isEqualTo(programId);
             assertThat(monthly.get("courseId").isNull()).isTrue();
-            assertThat(monthly.get("currency").asText()).isEqualTo("ARS");
+            assertThat(monthly.get("currency").asString("")).isEqualTo("ARS");
         }
     }
 
@@ -227,7 +227,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         JsonNode before = monthlyInstallmentSummary();
         assertAmount(before.get("currentVersion"), "100000");
         assertAmount(before.get("nextScheduledVersion"), "110000");
-        assertThat(before.at("/nextScheduledVersion/effectiveFrom").asText()).isEqualTo("2027-09-01");
+        assertThat(before.at("/nextScheduledVersion/effectiveFrom").asString("")).isEqualTo("2027-09-01");
 
         activateDueVersionsOn(septemberFirst);
 
