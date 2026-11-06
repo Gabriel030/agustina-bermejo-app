@@ -113,7 +113,7 @@ describe('InscribirAlumno', () => {
       http.post(`${API}/students/9/program-enrollments`, async ({ request }) => {
         body = await request.json();
         return HttpResponse.json(
-          { id: 1, studentId: 9, programId: 3, programName: PROGRAM.name, status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
+          { id: 1, studentId: 9, programId: 3, programName: PROGRAM.name, status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
           { status: 201 },
         );
       }),
@@ -168,7 +168,7 @@ describe('InscribirAlumno', () => {
       http.post(`${API}/students/9/course-enrollments`, async ({ request }) => {
         body = await request.json();
         return HttpResponse.json(
-          { id: 2, studentId: 9, courseId: 5, courseName: COURSE.name, status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
+          { id: 2, studentId: 9, courseId: 5, courseName: COURSE.name, status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
           { status: 201 },
         );
       }),
@@ -210,7 +210,7 @@ describe('InscribirAlumno', () => {
       http.post(`${API}/students/9/course-enrollments`, async ({ request }) => {
         body = await request.json();
         return HttpResponse.json(
-          { id: 2, studentId: 9, courseId: 5, courseName: COURSE.name, status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
+          { id: 2, studentId: 9, courseId: 5, courseName: COURSE.name, status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
           { status: 201 },
         );
       }),
@@ -256,7 +256,7 @@ describe('InscribirAlumno', () => {
     server.use(
       http.post(`${API}/students/9/course-enrollments`, () =>
         HttpResponse.json(
-          { id: 2, studentId: 9, courseId: 5, courseName: COURSE.name, status: 'WAITLISTED', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
+          { id: 2, studentId: 9, courseId: 5, courseName: COURSE.name, status: 'WAITLISTED', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
           { status: 201 },
         ),
       ),
