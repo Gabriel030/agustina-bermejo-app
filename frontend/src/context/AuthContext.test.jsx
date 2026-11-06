@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, restoreStoredSession, useAuth } from './AuthContext';
-import { OFFLINE_CACHE_KEY, OFFLINE_OWNER_KEY, OFFLINE_PROFILE_KEY } from '@/api/offlinePersistence';
+import {
+  OFFLINE_CACHE_KEY,
+  OFFLINE_OWNER_KEY,
+  OFFLINE_PROFILE_KEY,
+  readOfflineProfile,
+  storeOfflineProfile,
+} from '@/api/offlinePersistence';
 import { apiFetch, setOfflineSessionMode } from '@/api/client';
 
 const store = new Map();
@@ -15,6 +21,7 @@ vi.mock('idb-keyval', () => ({
   del: vi.fn(async (key) => {
     store.delete(key);
   }),
+  keys: vi.fn(async () => [...store.keys()]),
 }));
 
 vi.mock('@/api/client', () => ({
@@ -133,6 +140,11 @@ describe('offline cache lifecycle', () => {
   });
 });
 
+async function seedProfile(profile, ownerId = 1) {
+  store.set(OFFLINE_OWNER_KEY, ownerId);
+  await storeOfflineProfile(profile);
+}
+
 describe('session restore failures', () => {
   let auth;
   let queryClient;
@@ -235,6 +247,7 @@ describe('session restore failures', () => {
   });
 
   it('sessionRecoversWithBoundedBackoffRetries', async () => {
+    const realSetTimeout = globalThis.setTimeout;
     vi.useFakeTimers();
     const restoreNetwork = failRefreshWith(new TypeError('Failed to fetch'));
     renderProvider();
@@ -246,6 +259,10 @@ describe('session restore failures', () => {
     restoreNetwork();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => realSetTimeout(resolve, 100));
     });
 
     expect(screen.getByText('user-7')).toBeInTheDocument();
@@ -306,11 +323,11 @@ describe('session restore failures', () => {
       await auth.login('ana', 'x');
     });
 
-    expect(store.get(OFFLINE_PROFILE_KEY)).toEqual({ nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
+    expect(await readOfflineProfile()).toEqual({ nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
   });
 
   it('storedProfileIsExposedWhilePendingAndDoesNotEnableAuthenticatedCalls', async () => {
-    store.set(OFFLINE_PROFILE_KEY, { nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
     failRefreshWith(new TypeError('Failed to fetch'));
 
     renderProvider();
@@ -322,7 +339,7 @@ describe('session restore failures', () => {
   });
 
   it('realProfileReplacesTheStoredOneWhenTheNetworkReturns', async () => {
-    store.set(OFFLINE_PROFILE_KEY, { nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
     const restoreNetwork = failRefreshWith(new TypeError('Failed to fetch'));
     renderProvider();
     await screen.findByText('pending');
@@ -334,12 +351,12 @@ describe('session restore failures', () => {
 
     await screen.findByText('user-7');
     expect(auth.usuario.roles).toEqual([]);
-    expect(store.get(OFFLINE_PROFILE_KEY)).toEqual({ nombre: undefined, apellido: undefined, roles: [] });
+    expect(await readOfflineProfile()).toEqual({ nombre: undefined, apellido: undefined, roles: [] });
     expect(setOfflineSessionMode).toHaveBeenLastCalledWith(false);
   });
 
   it('logoutPurgesTheStoredProfile', async () => {
-    store.set(OFFLINE_PROFILE_KEY, { nombre: 'Ana', apellido: 'Paz', roles: [] });
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: [] });
     failRefreshWith(new TypeError('Failed to fetch'));
     renderProvider();
     await screen.findByText('pending');
@@ -352,7 +369,7 @@ describe('session restore failures', () => {
   });
 
   it('rejectedRefreshPurgesTheStoredProfile', async () => {
-    store.set(OFFLINE_PROFILE_KEY, { nombre: 'Ana', apellido: 'Paz', roles: [] });
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: [] });
     failRefreshWith(Object.assign(new Error('unauthorized'), { status: 401 }));
 
     renderProvider();
@@ -363,7 +380,7 @@ describe('session restore failures', () => {
 
   it('ownerChangePurgesTheStoredProfileOfThePreviousOwner', async () => {
     store.set(OFFLINE_OWNER_KEY, 1);
-    store.set(OFFLINE_PROFILE_KEY, { nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
+    await seedProfile({ nombre: 'Ana', apellido: 'Paz', roles: ['DIRECTOR'] });
     apiFetch.mockImplementation(async (path) => {
       if (path === '/auth/refresh') return { accessToken: 'a', refreshToken: 'r' };
       return { id: 2, nombre: 'Beto', apellido: 'Gil', roles: [] };
@@ -372,6 +389,6 @@ describe('session restore failures', () => {
     renderProvider();
 
     await screen.findByText('user-2');
-    expect(store.get(OFFLINE_PROFILE_KEY)).toEqual({ nombre: 'Beto', apellido: 'Gil', roles: [] });
+    expect(await readOfflineProfile()).toEqual({ nombre: 'Beto', apellido: 'Gil', roles: [] });
   });
 });
