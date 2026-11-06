@@ -75,6 +75,15 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     List<Long> findOpenIssuedInvoiceIdsByAccountOrderedById(@Param("accountId") Long accountId);
 
+    @Query("""
+            select distinct i from Invoice i join fetch i.lines
+            where i.documentStatus = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus.ISSUED
+              and i.paymentStatus in (com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PENDING,
+                                      com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.OVERDUE,
+                                      com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAYMENT_UNDER_REVIEW)
+            """)
+    List<Invoice> findAllOpenIssuedWithLines();
+
     @Query("select distinct l.invoice.studentCurrentAccountId from InvoiceLine l where l.programEnrollmentId = :programEnrollmentId or l.courseEnrollmentId = :courseEnrollmentId")
     List<Long> findAccountIdsOfEnrollment(@Param("programEnrollmentId") Long programEnrollmentId, @Param("courseEnrollmentId") Long courseEnrollmentId);
 
