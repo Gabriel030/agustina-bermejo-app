@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route, useLocation } from 'react-router-dom';
@@ -61,8 +61,7 @@ describe('AdmissionInvoicePendingCard', () => {
 
   it('no muestra nada cuando no hay matrículas impagas', async () => {
     const { container } = montar([solicitud(3, 'Diseño Gráfico', { paymentStatus: 'PAID' }), solicitud(4, 'Otra', null, 'PENDING')]);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    expect(container).toBeEmptyDOMElement();
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
   it('muestra el título, el monto, el vencimiento y los días que quedan', async () => {
