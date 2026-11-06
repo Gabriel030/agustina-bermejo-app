@@ -2,12 +2,15 @@ package com.red_escuela.backend.announcement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.service.AnnouncementReadCounter;
+import com.red_escuela.backend.announcement.service.StaffAnnouncementListing;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.SectionType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record AnnouncementResponse(
         Long id,
@@ -28,6 +31,17 @@ public record AnnouncementResponse(
         long recipientCount,
         long readCount,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean readTracked) {
+
+    public static List<AnnouncementResponse> fromListing(StaffAnnouncementListing listing) {
+        return listing.announcements().stream()
+                .map(announcement -> {
+                    AnnouncementReadCounter.ReadCount count = listing.counts().get(announcement.getId());
+                    return count == null
+                            ? from(announcement, 0, 0)
+                            : from(announcement, count.recipientCount(), count.readCount());
+                })
+                .toList();
+    }
 
     public static AnnouncementResponse from(Announcement announcement, long recipientCount, long readCount) {
         return new AnnouncementResponse(
