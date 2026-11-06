@@ -30,12 +30,15 @@ function catalog({ billingMode = 'FULL', overrides = {} } = {}) {
   return Object.values({ ...base, ...overrides });
 }
 
+const emptyPage = { content: [], empty: true, first: true, last: true, number: 0, numberOfElements: 0, size: 25, totalElements: 0, totalPages: 0 };
+
 const listFeatures = (data) => http.get(FEATURES_URL, () => HttpResponse.json(data));
 
 describe('ModulosPlataforma', () => {
   beforeEach(() => {
     resetCircuits();
     setRetrySleep(async () => {});
+    server.use(http.get(`${FEATURES_URL}/changes`, () => HttpResponse.json(emptyPage)));
   });
 
   it('listsTheEightModulesInTwoGroupsWithTheirStatus', async () => {

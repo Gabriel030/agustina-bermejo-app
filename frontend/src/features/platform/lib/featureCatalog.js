@@ -34,7 +34,7 @@ export const BILLING_EFFECT_QUESTIONS = ['Calcula y emite las cuotas', 'Cobra a 
 
 export function modeAvailability(currentMode, targetMode) {
   if (currentMode === targetMode) return { available: true };
-  if (currentMode === 'FULL') return { available: false, reason: 'Requiere la verificación previa' };
+  if (currentMode === 'FULL') return { available: true, requiresPreview: true };
   if (targetMode === 'FULL') return { available: false, reason: 'Requiere el proceso de corte' };
   return { available: true };
 }

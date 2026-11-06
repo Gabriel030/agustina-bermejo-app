@@ -28,7 +28,19 @@ export function isSameState(code, current, target) {
   return code === BILLING_CODE ? current.mode === target.mode : current.enabled === target.enabled;
 }
 
-export function toChangeRequest(code, target, reason) {
-  if (code === BILLING_CODE) return { enabled: target.mode !== 'OFF', mode: target.mode, reason: reason.trim() };
+export function toChangeRequest(code, target, reason, previewConfirmationToken) {
+  if (code === BILLING_CODE) {
+    const request = { enabled: target.mode !== 'OFF', mode: target.mode, reason: reason.trim() };
+    return previewConfirmationToken ? { ...request, previewConfirmationToken } : request;
+  }
   return { enabled: target.enabled, reason: reason.trim() };
+}
+
+export function describeState(code, state) {
+  if (code === BILLING_CODE) return BILLING_MODE_INFO[state.mode]?.label ?? state.mode;
+  return state.enabled ? 'Habilitado' : 'Deshabilitado';
+}
+
+export function requiresPreview(code, current, target) {
+  return code === BILLING_CODE && current.mode === 'FULL' && target.mode !== 'FULL';
 }

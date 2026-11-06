@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { BillingModePanel } from '@/features/platform/components/BillingModePanel';
 import { FeatureChangeDialog } from '@/features/platform/components/FeatureChangeDialog';
+import { FeatureChangesHistory } from '@/features/platform/components/FeatureChangesHistory';
 import { FeatureRow } from '@/features/platform/components/FeatureRow';
 import { usePlatformFeatures } from '@/features/platform/hooks/usePlatformFeatures';
 import { BILLING_CODE, FEATURE_CATALOG, FEATURE_GROUPS, isFeatureAvailable } from '@/features/platform/lib/featureCatalog';
@@ -84,6 +85,7 @@ export function ModulosPlataforma() {
             </section>
           );
         })}
+        <FeatureChangesHistory />
       </div>
       <FeatureChangeDialog
         key={pending ? `${pending.code}-${JSON.stringify(pending.target)}` : 'none'}
