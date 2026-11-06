@@ -199,9 +199,9 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         LocalDateTime oldStart = transactionTemplate.execute(status -> entityManager.find(Term.class, year.termId()).getStartDate());
 
         assertThatThrownBy(() -> updateTerm.update(new UpdateTermCommand(year.termId(),
-                new UpdateTermRequest(null, LocalDateTime.of(2027, 4, 1, 0, 0), null, null, null))))
+                new UpdateTermRequest(null, LocalDateTime.of(2027, 2, 1, 0, 0), null, null, null))))
                 .isInstanceOfSatisfying(BillingConfigurationFrozenException.class,
-                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE"));
+                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("LECTIVE_YEAR_START_FROZEN"));
 
         LocalDateTime startAfter = transactionTemplate.execute(status -> entityManager.find(Term.class, year.termId()).getStartDate());
         assertThat(startAfter).isEqualTo(oldStart);
@@ -216,29 +216,99 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         assertThatThrownBy(() -> updateTerm.update(new UpdateTermCommand(year.termId(),
                 new UpdateTermRequest(null, null, LocalDateTime.of(2027, 10, 31, 23, 59), null, null))))
                 .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
-                        e -> assertThat(codes(e)).containsExactly("INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
+                        e -> assertThat(codes(e)).containsExactly("LECTIVE_YEAR_CALENDAR_NOT_SUPPORTED", "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
     }
 
     @Test
     @Tag("D-002")
     void aTemplateCreatedWithoutConfigurationPersistsTheFirstFeeMonthBeforeTheTermStart() {
         Career career = newCareer();
-        Long januaryTermId = transactionTemplate.execute(status -> {
+        Long februaryTermId = transactionTemplate.execute(status -> {
             Term term = TermFixtures.newTerm();
             term.setYear(2027);
-            term.setDescription("enero");
+            term.setDescription("febrero");
             term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
-            term.setStartDate(LocalDateTime.of(2027, 1, 1, 0, 0));
+            term.setStartDate(LocalDateTime.of(2027, 2, 1, 0, 0));
             term.setEndDate(LocalDateTime.of(2027, 12, 31, 23, 59));
             entityManager.persist(term);
             return term.getId();
         });
         authenticateAsNewPerson();
 
-        ProgramYearBillingTemplate januaryTemplate = createTemplate.create(career.programId(), januaryTermId, 10);
+        ProgramYearBillingTemplate februaryTemplate = createTemplate.create(career.programId(), februaryTermId, 10);
 
-        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(januaryTemplate).enrollmentFeeCount()).isEqualTo(1);
-        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(januaryTemplate).firstEnrollmentFeeMonth()).isEqualTo(12);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(februaryTemplate).enrollmentFeeCount()).isEqualTo(1);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(februaryTemplate).firstEnrollmentFeeMonth()).isEqualTo(1);
+    }
+
+    private Long persistTermStartingIn(int startMonth) {
+        return transactionTemplate.execute(status -> {
+            Term term = TermFixtures.newTerm();
+            term.setYear(2031);
+            term.setDescription("mes " + startMonth);
+            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            term.setStartDate(LocalDateTime.of(2031, startMonth, 1, 0, 0));
+            term.setEndDate(LocalDateTime.of(2031, 12, 31, 23, 59));
+            entityManager.persist(term);
+            return term.getId();
+        });
+    }
+
+    @Test
+    @Tag("D-524")
+    void aTemplateForATermStartingInAprilIsRejectedWithTheCalendarCodeAndCreatesNothing() {
+        Career career = newCareer();
+        Long termId = persistTermStartingIn(4);
+        authenticateAsNewPerson();
+
+        assertThatThrownBy(() -> createTemplate.create(career.programId(), termId, 9))
+                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
+                        e -> assertThat(codes(e)).containsExactly("LECTIVE_YEAR_CALENDAR_NOT_SUPPORTED"));
+        assertThat(templateRepository.findByProgramIdAndTermId(career.programId(), termId)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-524")
+    void aTemplateForATermStartingInFebruaryIsAcceptedWithElevenInstallmentsAndTheMarchDefaultStaysTen() {
+        Career career = newCareer();
+        Long februaryTermId = persistTermStartingIn(2);
+        Long marchTermId = persistTermStartingIn(3);
+        authenticateAsNewPerson();
+
+        ProgramYearBillingTemplate february = createTemplate.create(career.programId(), februaryTermId, 11);
+        ProgramYearBillingTemplate march = createTemplate.create(career.programId(), marchTermId, 10);
+
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(february).recurringFeeInvoicesCount()).isEqualTo(11);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(february).firstEnrollmentFeeMonth()).isEqualTo(1);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(march).recurringFeeInvoicesCount()).isEqualTo(10);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(march).firstEnrollmentFeeMonth()).isEqualTo(2);
+    }
+
+    @Test
+    @Tag("D-524")
+    void withoutAnInstallmentsCountTheTemplateTakesItFromTheTermSpan() {
+        Career career = newCareer();
+        Long februaryTermId = persistTermStartingIn(2);
+        Long marchTermId = persistTermStartingIn(3);
+        authenticateAsNewPerson();
+
+        ProgramYearBillingTemplate february = createTemplate.create(career.programId(), februaryTermId, null);
+        ProgramYearBillingTemplate march = createTemplate.create(career.programId(), marchTermId, null);
+
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(february).recurringFeeInvoicesCount()).isEqualTo(11);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(march).recurringFeeInvoicesCount()).isEqualTo(10);
+    }
+
+    @Test
+    @Tag("D-524")
+    void aFebruaryTermCannotHaveTwelveInstallmentsBecauseTheSpanIsElevenMonths() {
+        Career career = newCareer();
+        Long termId = persistTermStartingIn(2);
+        authenticateAsNewPerson();
+
+        assertThatThrownBy(() -> createTemplate.create(career.programId(), termId, 12))
+                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
+                        e -> assertThat(codes(e)).containsExactly("INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
     }
 
     @Test
@@ -283,7 +353,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         assertThatThrownBy(() -> updateYearConfiguration.update(shortYear.templateId(), config(2, 4, 8, null)))
                 .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
                         e -> assertThat(codes(e)).containsExactly(
-                                "FIRST_ENROLLMENT_FEE_AFTER_TERM_START", "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
+                                "LECTIVE_YEAR_CALENDAR_NOT_SUPPORTED", "FIRST_ENROLLMENT_FEE_AFTER_TERM_START", "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
     }
 
     @Test

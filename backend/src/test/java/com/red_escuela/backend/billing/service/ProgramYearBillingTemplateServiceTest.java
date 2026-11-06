@@ -91,10 +91,9 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.tope." + System.nanoTime());
         authenticateAs(director);
         Program program = persistProgram("Carrera cuatrimestral " + System.nanoTime());
-        YearMonth base = YearMonth.now();
-        Term term = persistTerm(base, base.plusMonths(3));
+        Term term = persistTerm(YearMonth.of(2027, 3), YearMonth.of(2027, 12));
 
-        assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), term.getId(), 5))
+        assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), term.getId(), 11))
                 .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
                         e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
     }
@@ -104,11 +103,10 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.exacto." + System.nanoTime());
         authenticateAs(director);
         Program program = persistProgram("Carrera cuatrimestral exacta " + System.nanoTime());
-        YearMonth base = YearMonth.now();
-        Term term = persistTerm(base, base.plusMonths(3));
+        Term term = persistTerm(YearMonth.of(2027, 3), YearMonth.of(2027, 12));
 
-        var template = createTemplateUseCase.create(program.getId(), term.getId(), 4);
+        var template = createTemplateUseCase.create(program.getId(), term.getId(), 10);
 
-        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).recurringFeeInvoicesCount()).isEqualTo(4);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).recurringFeeInvoicesCount()).isEqualTo(10);
     }
 }
