@@ -16,13 +16,13 @@ public class AcademicRecordGradeItemFinder {
     }
 
     public List<StudentGradeItemResponse> listProgramEnrollmentGradeItems(Long enrollmentId) {
-        return gradeItemFinder.findByProgramEnrollment(enrollmentId).stream()
+        return gradeItemFinder.findPublishedByProgramEnrollment(enrollmentId).stream()
                 .map(StudentGradeItemResponse::from)
                 .toList();
     }
 
     public List<StudentGradeItemResponse> listCourseEnrollmentGradeItems(Long enrollmentId) {
-        return gradeItemFinder.findByCourseEnrollment(enrollmentId).stream()
+        return gradeItemFinder.findPublishedByCourseEnrollment(enrollmentId).stream()
                 .map(StudentGradeItemResponse::from)
                 .toList();
     }
