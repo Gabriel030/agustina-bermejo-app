@@ -99,7 +99,7 @@ export function FeatureChangeDialog({ change, features, onClose, onRefresh }) {
     );
   }
 
-  const confirmLabel = alreadyThere ? 'Cerrar' : stale ? 'Ver estado actual' : onImpactStep ? 'Continuar' : 'Confirmar';
+  const confirmLabel = alreadyThere ? 'Cerrar' : stale ? 'Recargar y reintentar' : onImpactStep ? 'Continuar' : 'Confirmar';
   const confirmDisabled = alreadyThere || stale ? false : onImpactStep ? !preview.data || expired : !reasonValid;
 
   return (
@@ -123,7 +123,7 @@ export function FeatureChangeDialog({ change, features, onClose, onRefresh }) {
       <div className="flex flex-col gap-3">
         {stale && (
           <div role="alert" className="rounded-xl bg-warning-bg p-3 text-sm text-warning">
-            <b>{featureErrorMessage(mutation.error)}</b> Mirá cómo quedó antes de decidir; tu motivo se conserva.
+            <b>{featureErrorMessage(mutation.error)}</b> Recargá para ver cómo quedó; tu motivo se conserva.
           </div>
         )}
         {alreadyThere && (
