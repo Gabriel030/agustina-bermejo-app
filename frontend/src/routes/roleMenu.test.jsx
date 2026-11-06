@@ -43,4 +43,9 @@ describe('role menu manifest', () => {
     expect(label('administrativo')).toBe('Gestión académica');
     expect(label('director')).toBe('Gestión académica');
   });
+
+  it('gives the director the academic offering and keeps the administrative out of it', () => {
+    expect(pagesFor('director')).toContain('oferta-academica');
+    expect(pagesFor('administrativo')).not.toContain('oferta-academica');
+  });
 });
