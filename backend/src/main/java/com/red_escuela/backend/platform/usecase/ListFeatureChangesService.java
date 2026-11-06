@@ -18,6 +18,6 @@ public class ListFeatureChangesService implements ListFeatureChangesUseCase {
 
     @Override
     public Page<FeatureChangeEntry> list(FeatureChangeFilter filter, Pageable pageable) {
-        return changeEntryReader.readPage(filter.code(), pageable);
+        return changeEntryReader.readPage(filter, pageable);
     }
 }

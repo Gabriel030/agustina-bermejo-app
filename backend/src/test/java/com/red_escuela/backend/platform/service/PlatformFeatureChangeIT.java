@@ -9,7 +9,7 @@ import com.red_escuela.backend.platform.api.FeatureQuery;
 import com.red_escuela.backend.platform.domain.BillingModeChangeClearance;
 import com.red_escuela.backend.platform.domain.FeatureChange;
 import com.red_escuela.backend.platform.domain.FeatureState;
-import com.red_escuela.backend.platform.entity.FeatureChangeActorKind;
+import com.red_escuela.backend.platform.model.FeatureChangeActorKind;
 import com.red_escuela.backend.platform.entity.FeatureChangeLog;
 import com.red_escuela.backend.platform.exception.FeatureAlreadyInRequestedStateException;
 import com.red_escuela.backend.platform.exception.FeatureChangeReasonInvalidException;

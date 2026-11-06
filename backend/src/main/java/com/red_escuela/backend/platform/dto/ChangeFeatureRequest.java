@@ -7,8 +7,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record ChangeFeatureRequest(
-        Boolean enabled,
-        BillingMode mode,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean enabled,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) BillingMode mode,
         @NotBlank @Size(min = FeatureChangeReasonValidator.MIN_LENGTH, max = FeatureChangeReasonValidator.MAX_LENGTH) String reason,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @Size(max = 200) String previewConfirmationToken) {
 }
