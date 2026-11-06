@@ -45,6 +45,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -85,6 +86,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void seedAbsenceInAnOwnedSection() {
+        MutableClock.INSTANCE.setDate(CLASS_DAY.plusDays(1));
         fixtures = new CycleTestFixtures(entityManager);
         Term term = fixtures.term(2040 + (int) (System.nanoTime() % 50));
         var cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);

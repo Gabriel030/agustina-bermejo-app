@@ -18,7 +18,8 @@ GET,/attendance/justifications,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/approve-justification,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/change-requests,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,
 GET,/attendance/{id}/justification-attachment,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
-POST,/attendance/{id}/justify,DENY,DENY,OWNER,ALLOW,ALLOW,DENY,DENY,attendance-section-instructor,"{""reason"":""Motivo suficiente""}"
+POST,/attendance/{id}/justification-proof,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,attendance-section-instructor,
+POST,/attendance/{id}/justify,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/attendance/{id}/reject-justification,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/auth/forgot-password,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/auth/google,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,

@@ -407,6 +407,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVOICE_LINE_NOT_ALLOWED_FOR_INVOICE_TYPE` | no | `InvoiceLineNotAllowedForInvoiceTypeException` | billing |
 | `INVOICE_NOT_PAYABLE` | no | `InvoiceNotPayableException` | billing |
 | `ISSUED_INVOICE_CANNOT_BE_MODIFIED` | no | `IssuedInvoiceCannotBeModifiedException` | billing |
+| `JUSTIFICATION_DEADLINE_EXPIRED` | no | `JustificationDeadlineExpiredException` | attendance |
 | `LATE_FEE_CORRECTION_REJECTED` | no | `LateFeeCorrectionRejectedException` | billing |
 | `LATE_FEE_ISSUING_REJECTED` | no | `LateFeeIssuingRejectedException` | billing |
 | `LEGACY_RECEIPT_PENDING_ON_INVOICE` | no | `LegacyReceiptPendingOnInvoiceException` | billing |
@@ -552,6 +553,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/attendance/change-requests/{id}/reject` | `AttendanceChangeRequestController#reject` |
 | POST | `/attendance/{id}/approve-justification` | `AttendanceController#approveJustification` |
 | POST | `/attendance/{id}/change-requests` | `AttendanceChangeRequestController#create` |
+| POST | `/attendance/{id}/justification-proof` | `AttendanceController#submitJustificationProof` |
 | POST | `/attendance/{id}/justify` | `AttendanceController#justify` |
 | POST | `/attendance/{id}/reject-justification` | `AttendanceController#rejectJustification` |
 | POST | `/auth/forgot-password` | `AuthController#forgotPassword` |

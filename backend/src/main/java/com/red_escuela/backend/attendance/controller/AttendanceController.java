@@ -40,6 +40,8 @@ import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionRo
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionRosterUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.SubmitTeacherAttendanceProofCommand;
+import com.red_escuela.backend.attendance.usecase.attendance.SubmitTeacherAttendanceProofUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.ListCourseEnrollmentAttendanceUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceCommand;
@@ -60,6 +62,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -72,6 +76,7 @@ public class AttendanceController {
     private final LoadProgramSectionAttendanceUseCase loadProgramSectionAttendanceUseCase;
     private final LoadCourseSectionAttendanceUseCase loadCourseSectionAttendanceUseCase;
     private final JustifyAttendanceUseCase justifyAttendanceUseCase;
+    private final SubmitTeacherAttendanceProofUseCase submitTeacherAttendanceProofUseCase;
     private final ApproveAttendanceJustificationUseCase approveAttendanceJustificationUseCase;
     private final RejectAttendanceJustificationUseCase rejectAttendanceJustificationUseCase;
     private final ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase;
@@ -96,6 +101,7 @@ public class AttendanceController {
             LoadProgramSectionAttendanceUseCase loadProgramSectionAttendanceUseCase,
             LoadCourseSectionAttendanceUseCase loadCourseSectionAttendanceUseCase,
             JustifyAttendanceUseCase justifyAttendanceUseCase,
+            SubmitTeacherAttendanceProofUseCase submitTeacherAttendanceProofUseCase,
             ApproveAttendanceJustificationUseCase approveAttendanceJustificationUseCase,
             RejectAttendanceJustificationUseCase rejectAttendanceJustificationUseCase,
             ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase,
@@ -118,6 +124,7 @@ public class AttendanceController {
         this.loadProgramSectionAttendanceUseCase = loadProgramSectionAttendanceUseCase;
         this.loadCourseSectionAttendanceUseCase = loadCourseSectionAttendanceUseCase;
         this.justifyAttendanceUseCase = justifyAttendanceUseCase;
+        this.submitTeacherAttendanceProofUseCase = submitTeacherAttendanceProofUseCase;
         this.approveAttendanceJustificationUseCase = approveAttendanceJustificationUseCase;
         this.rejectAttendanceJustificationUseCase = rejectAttendanceJustificationUseCase;
         this.listProgramEnrollmentAttendanceUseCase = listProgramEnrollmentAttendanceUseCase;
@@ -160,11 +167,20 @@ public class AttendanceController {
     }
 
     @PostMapping("/attendance/{id}/justify")
-    @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public AttendanceResponse justify(@PathVariable Long id, @Valid @RequestBody JustificarAsistenciaRequest request) {
         request.requireValidLimits();
         return AttendanceResponse.from(
-                justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(id, resolveInstructorIdIfTeacher(), request.reason(), request.attachmentUrl())));
+                justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(id, request.reason(), request.attachmentUrl(), request.exceptionReason())));
+    }
+
+    @PostMapping(value = "/attendance/{id}/justification-proof", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('DOCENTE')")
+    public AttendanceResponse submitJustificationProof(
+            @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile proof) {
+        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
+        return submitTeacherAttendanceProofUseCase.submit(
+                new SubmitTeacherAttendanceProofCommand(id, instructor.getId(), reason, proof));
     }
 
     @PostMapping("/attendance/{id}/approve-justification")

@@ -13,6 +13,8 @@ import com.red_escuela.backend.identity.service.DemoLearnerAccountsSeeder;
 import com.red_escuela.backend.identity.service.LocalSeedRunner;
 import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.testsupport.SlowTest;
+import com.red_escuela.backend.shared.time.MutableClock;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
@@ -53,6 +55,7 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
     private DemoApiClient api;
 
     private void seed() {
+        MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 18));
         DefaultApplicationArguments arguments = new DefaultApplicationArguments();
         LocalSeedRunner localSeedRunner = new LocalSeedRunner(personRepository, roleRepository, personFactory, passwordEncoder);
         new DemoLearnerAccountsSeeder(localSeedRunner, personRepository, roleRepository, personFactory, passwordEncoder,
