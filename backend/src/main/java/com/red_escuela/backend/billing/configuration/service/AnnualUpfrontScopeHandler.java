@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
+import com.red_escuela.backend.billing.planning.service.MonthlyInstallmentDueDateCalculator;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -20,6 +21,7 @@ public class AnnualUpfrontScopeHandler implements ConfigurationScopeHandler {
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final BillingConfigurationReader configurationReader;
     private final Clock clock;
+    private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
 
     public AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
                                      BillingConfigurationReader configurationReader, Clock clock) {
@@ -46,7 +48,7 @@ public class AnnualUpfrontScopeHandler implements ConfigurationScopeHandler {
                 .termStartDate().toLocalDate();
         LocalDate firstInstallmentDueDate = configurationReader.findYearTermsEffectiveOn(topic.programId(), topic.termId(), LocalDate.now(clock))
                 .map(YearBillingTerms::recurringFeeDueDays)
-                .map(dueDays -> termStart.withDayOfMonth(1).plusDays(dueDays))
+                .map(dueDays -> dueDateCalculator.calculateInstallmentDueDate(termStart.withDayOfMonth(1), dueDays))
                 .orElse(termStart);
         policyEvaluator.requireCoherentAnnualUpfrontSettings(new AnnualUpfrontCheck((AnnualUpfrontSettings) values, termStart, firstInstallmentDueDate));
     }
