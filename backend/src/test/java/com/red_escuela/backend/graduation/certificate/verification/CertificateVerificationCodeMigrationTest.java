@@ -88,7 +88,7 @@ class CertificateVerificationCodeMigrationTest {
         try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("193")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.execute("alter table graduation_certificate disable trigger all");
-            for (int i = 1; i <= 200; i++) {
+            for (int i = 1; i <= 2000; i++) {
                 jdbc.update("insert into graduation_certificate (code, kind, program_enrollment_id, student_id, status, graduation_date, "
                         + "issued_at, issued_by_id, snapshot, template_ref, pdf_sha256, pdf_path) values (?, 'PROGRAM', ?, 1, 'REVOKED', "
                         + "'2026-07-15', '2026-11-05 10:00:00', 1, '{}'::jsonb, 'BUILT_IN_V1', repeat('a', 64), 'x.pdf')",
@@ -98,11 +98,14 @@ class CertificateVerificationCodeMigrationTest {
             migrate(dataSource);
 
             List<String> codes = jdbc.queryForList("select code from graduation_certificate order by id", String.class);
-            assertThat(new HashSet<>(codes)).hasSize(200);
+            assertThat(new HashSet<>(codes)).hasSize(2000);
             assertThat(codes).allMatch(code -> code.matches(CODE_FORMAT));
-            Set<Character> firstCharacters = new HashSet<>();
-            codes.forEach(code -> firstCharacters.add(code.charAt(0)));
-            assertThat(firstCharacters.size()).isGreaterThan(10);
+            for (int position = 0; position < 26; position++) {
+                final int index = position;
+                Set<Character> seen = new HashSet<>();
+                codes.forEach(code -> seen.add(code.charAt(index)));
+                assertThat(seen.size()).as("distinct characters at position " + position).isGreaterThanOrEqualTo(30);
+            }
             Set<Character> allCharacters = new HashSet<>();
             codes.forEach(code -> code.chars().forEach(c -> allCharacters.add((char) c)));
             assertThat(allCharacters).hasSize(32);

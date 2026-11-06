@@ -27,7 +27,7 @@ public class PublicVerificationRateLimiter {
     }
 
     public void acquire(String clientKey) {
-        KeyedRateLimiter.Decision decision = limiter.tryConsume(clientKey);
+        KeyedRateLimiter.Decision decision = limiter.tryConsume(keyOf(clientKey));
         if (!decision.allowed()) {
             throw new RequestRateLimitExceededException(decision.retryAfter());
         }
@@ -35,7 +35,22 @@ public class PublicVerificationRateLimiter {
 
     public void chargeMiss(String clientKey) {
         for (int extra = 1; extra < missCost; extra++) {
-            limiter.tryConsume(clientKey);
+            limiter.tryConsume(keyOf(clientKey));
+        }
+    }
+
+    public static String keyOf(String clientAddress) {
+        if (clientAddress == null || clientAddress.indexOf(':') < 0) {
+            return clientAddress;
+        }
+        try {
+            byte[] bytes = java.net.InetAddress.getByName(clientAddress).getAddress();
+            if (bytes.length != 16) {
+                return clientAddress;
+            }
+            return java.util.HexFormat.of().formatHex(bytes, 0, 8) + "::/64";
+        } catch (java.net.UnknownHostException exception) {
+            return clientAddress;
         }
     }
 }

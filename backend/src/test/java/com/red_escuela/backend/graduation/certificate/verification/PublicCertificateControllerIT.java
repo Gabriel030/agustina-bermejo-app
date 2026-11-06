@@ -242,6 +242,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("REQUEST_RATE_LIMIT_EXCEEDED"))
                 .andReturn();
         assertThat(Long.parseLong(limited.getResponse().getHeader("Retry-After"))).isPositive();
+        assertThat(limited.getResponse().getHeader("Cache-Control")).isEqualTo("no-store");
         mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient()))).andExpect(status().isOk());
     }
 
@@ -256,5 +257,28 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/public/certificates/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void noLogLineOfThePublicRouteContainsTheFullCode() throws Exception {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender = new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            String code = insertGraduation("VALID", null);
+            String unknown = CertificateCode.generate(new SecureRandom()).value();
+            String client = freshClient();
+            for (int i = 0; i < 21; i++) {
+                mockMvc.perform(get("/public/certificates/{code}", i % 2 == 0 ? code : unknown).with(from(client)));
+            }
+            mockMvc.perform(get("/public/certificates/{code}", unknown).with(from(client)));
+            String logs = appender.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            assertThat(logs).contains("public_verification_rate_limited").doesNotContain(code).doesNotContain(unknown)
+                    .doesNotContain(new CertificateCode(code).formatted());
+        } finally {
+            root.detachAppender(appender);
+        }
     }
 }

@@ -47,7 +47,7 @@ public class GraduationCertificatePdfProvider {
         if (stored.isPresent()) {
             return new GraduationCertificatePdf(certificate.getCode(), stored.get());
         }
-        log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getCode());
+        log.warn("El PDF del certificado {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
         CertificateCode code = certificate.certificateCode();
         byte[] regenerated = renderer.render(templateResolver.resolve(certificate.getKind(), null), certificate.getSnapshot(),
                 code, verificationUrl.of(code));

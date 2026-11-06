@@ -143,4 +143,14 @@ class PublicCertificateLookupTest {
 
         assertThat(queried).isEmpty();
     }
+
+    @Test
+    void ipv6AddressesOfTheSameSlash64ShareOneBucket() {
+        PublicCertificateLookup lookup = lookupWith(1, 1);
+        lookup.verify(KNOWN, "2001:db8:1:2:aaaa::1");
+
+        assertThatThrownBy(() -> lookup.verify(KNOWN, "2001:db8:1:2:bbbb::9")).isInstanceOf(RequestRateLimitExceededException.class);
+        assertThat(lookup.verify(KNOWN, "2001:db8:1:3::1").status()).isEqualTo(PublicCertificateStatus.VALID);
+        assertThat(PublicVerificationRateLimiter.keyOf("203.0.113.7")).isEqualTo("203.0.113.7");
+    }
 }

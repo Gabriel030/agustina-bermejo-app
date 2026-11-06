@@ -29,6 +29,9 @@ public record CertificateCode(String value) {
         if (raw == null) {
             throw new InvalidCertificateCodeException();
         }
+        if (!raw.chars().allMatch(c -> c < 128)) {
+            throw new InvalidCertificateCodeException();
+        }
         String normalized = raw.replace("-", "").replaceAll("\\s", "").toUpperCase(Locale.ROOT);
         return new CertificateCode(normalized);
     }

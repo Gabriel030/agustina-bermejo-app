@@ -69,4 +69,10 @@ class CertificateCodeTest {
     void charactersOutsideTheAlphabetAreRejected() {
         assertThatThrownBy(() -> CertificateCode.parse("7QK3M9XH2VBN4T8L5W6YZ0A1B2")).isInstanceOf(InvalidCertificateCodeException.class);
     }
+
+    @Test
+    void nonAsciiCharactersAreRejectedInsteadOfBeingUppercasedIntoTheAlphabet() {
+        assertThat("\u017F".toUpperCase(java.util.Locale.ROOT)).isEqualTo("S");
+        assertThatThrownBy(() -> CertificateCode.parse("7QK3M9XH2VBN4T8R5W6YZ0A1B\u017F")).isInstanceOf(InvalidCertificateCodeException.class);
+    }
 }
