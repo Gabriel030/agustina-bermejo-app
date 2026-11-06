@@ -1,10 +1,12 @@
 package com.red_escuela.backend.announcement.usecase.announcement;
 
-import com.red_escuela.backend.announcement.service.StaffAnnouncementListing;
+import com.red_escuela.backend.announcement.dto.AnnouncementResponse;
+
+import java.util.List;
 
 public interface ListStaffSectionAnnouncementsUseCase {
 
-    StaffAnnouncementListing listForProgramSection(Long sectionId);
+    List<AnnouncementResponse> listForProgramSection(Long sectionId);
 
-    StaffAnnouncementListing listForCourseSection(Long sectionId);
+    List<AnnouncementResponse> listForCourseSection(Long sectionId);
 }

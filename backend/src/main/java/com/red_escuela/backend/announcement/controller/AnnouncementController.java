@@ -9,8 +9,6 @@ import com.red_escuela.backend.announcement.dto.CreateAnnouncementRequest;
 import com.red_escuela.backend.announcement.dto.UpdateAnnouncementRequest;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.SectionType;
-import com.red_escuela.backend.announcement.service.AnnouncementReadCounter;
-import com.red_escuela.backend.announcement.service.StaffAnnouncementListing;
 import com.red_escuela.backend.announcement.usecase.announcement.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.usecase.announcement.CountAnnouncementReadsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
@@ -106,13 +104,13 @@ public class AnnouncementController {
     @GetMapping("/subject-sections/{sectionId}/announcements/read-receipts")
     @PreAuthorize("hasAnyRole('PRECEPTOR', 'DIRECTOR')")
     public List<AnnouncementResponse> listReadReceiptsForSubjectSection(@PathVariable Long sectionId) {
-        return toResponses(listStaffSectionAnnouncements.listForProgramSection(sectionId));
+        return listStaffSectionAnnouncements.listForProgramSection(sectionId);
     }
 
     @GetMapping("/course-sections/{sectionId}/announcements/read-receipts")
     @PreAuthorize("hasAnyRole('PRECEPTOR', 'DIRECTOR')")
     public List<AnnouncementResponse> listReadReceiptsForCourseSection(@PathVariable Long sectionId) {
-        return toResponses(listStaffSectionAnnouncements.listForCourseSection(sectionId));
+        return listStaffSectionAnnouncements.listForCourseSection(sectionId);
     }
 
     @GetMapping("/subject-sections/{sectionId}/audience-segments")
@@ -173,17 +171,6 @@ public class AnnouncementController {
                 .map(announcement -> {
                     AnnouncementReadCount count = counts.getOrDefault(announcement.getId(), AnnouncementReadCount.EMPTY);
                     return AnnouncementResponse.from(announcement, count.recipientCount(), count.readCount());
-                })
-                .toList();
-    }
-
-    private List<AnnouncementResponse> toResponses(StaffAnnouncementListing listing) {
-        return listing.announcements().stream()
-                .map(announcement -> {
-                    AnnouncementReadCounter.ReadCount count = listing.counts().get(announcement.getId());
-                    return count == null
-                            ? AnnouncementResponse.from(announcement, 0, 0)
-                            : AnnouncementResponse.from(announcement, count.recipientCount(), count.readCount());
                 })
                 .toList();
     }

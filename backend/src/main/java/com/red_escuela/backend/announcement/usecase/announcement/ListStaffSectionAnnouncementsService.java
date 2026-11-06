@@ -1,8 +1,10 @@
 package com.red_escuela.backend.announcement.usecase.announcement;
 
-import com.red_escuela.backend.announcement.service.StaffAnnouncementListing;
+import com.red_escuela.backend.announcement.dto.AnnouncementResponse;
 import com.red_escuela.backend.announcement.service.StaffSectionAnnouncementReader;
 import com.red_escuela.backend.shared.UseCase;
+
+import java.util.List;
 
 @UseCase
 public class ListStaffSectionAnnouncementsService implements ListStaffSectionAnnouncementsUseCase {
@@ -14,12 +16,12 @@ public class ListStaffSectionAnnouncementsService implements ListStaffSectionAnn
     }
 
     @Override
-    public StaffAnnouncementListing listForProgramSection(Long sectionId) {
-        return announcementReader.listForProgramSection(sectionId);
+    public List<AnnouncementResponse> listForProgramSection(Long sectionId) {
+        return AnnouncementResponse.fromListing(announcementReader.listForProgramSection(sectionId));
     }
 
     @Override
-    public StaffAnnouncementListing listForCourseSection(Long sectionId) {
-        return announcementReader.listForCourseSection(sectionId);
+    public List<AnnouncementResponse> listForCourseSection(Long sectionId) {
+        return AnnouncementResponse.fromListing(announcementReader.listForCourseSection(sectionId));
     }
 }
