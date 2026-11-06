@@ -2,6 +2,7 @@ package com.red_escuela.backend.service;
 import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.shared.mail.EmailService;
 import com.red_escuela.backend.identity.dto.AuthTokens;
+import com.red_escuela.backend.identity.dto.ClientContext;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
 import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
@@ -257,7 +258,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("sesiones1@example.com", "999999"));
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
 
-        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken(), ClientContext.of("test-agent", "127.0.0.1")))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 }
