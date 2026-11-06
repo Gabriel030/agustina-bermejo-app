@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createQueryClient } from './queryClient'
+import { OFFLINE_MAX_AGE_MS } from './offlinePersistence'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -16,5 +17,9 @@ describe('createQueryClient', () => {
 
   it('queriesDefaultToOfflineFirst', () => {
     expect(createQueryClient().getDefaultOptions().queries.networkMode).toBe('offlineFirst')
+  })
+
+  it('queriesKeepCacheForTheWholeOfflineWindow', () => {
+    expect(createQueryClient().getDefaultOptions().queries.gcTime).toBe(OFFLINE_MAX_AGE_MS)
   })
 })
