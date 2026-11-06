@@ -17,12 +17,17 @@ public class InstitutionAcademicSettingsWriter {
     }
 
     @Transactional
-    public InstitutionAcademicSettings write(int justificationDeadlineBusinessDays, int evaluationConfigDueDays) {
+    public InstitutionAcademicSettings write(int justificationDeadlineBusinessDays, int evaluationConfigDueDays,
+                                          Boolean announcementEmailEnabled) {
         Institution institution = institutionRepository.findAll().stream().findFirst()
                 .orElseThrow(InstitutionNotFoundException::new);
         institution.setJustificationDeadlineBusinessDays(justificationDeadlineBusinessDays);
         institution.setEvaluationConfigDueDays(evaluationConfigDueDays);
+        if (announcementEmailEnabled != null) {
+            institution.setAnnouncementEmailEnabled(announcementEmailEnabled);
+        }
         institutionRepository.save(institution);
-        return new InstitutionAcademicSettings(justificationDeadlineBusinessDays, evaluationConfigDueDays);
+        return new InstitutionAcademicSettings(justificationDeadlineBusinessDays, evaluationConfigDueDays,
+                institution.isAnnouncementEmailEnabled());
     }
 }

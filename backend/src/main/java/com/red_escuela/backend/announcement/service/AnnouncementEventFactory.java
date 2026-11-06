@@ -13,11 +13,11 @@ public final class AnnouncementEventFactory {
     }
 
     public static AnnouncementPublishedEvent publishedEventOf(Announcement announcement, String sectionName, List<Student> students) {
-        return AnnouncementPublishedEvent.publishedFor(announcement.getId(), sectionName, personIdsOf(students));
+        return AnnouncementPublishedEvent.publishedFor(announcement.getId(), sectionName, personIdsOf(students), announcement.isUrgent(), announcement.getTitle());
     }
 
     public static AnnouncementUpdatedEvent updatedEventOf(Announcement announcement, String sectionName, List<Student> students) {
-        return AnnouncementUpdatedEvent.updatedFor(announcement.getId(), sectionName, personIdsOf(students));
+        return AnnouncementUpdatedEvent.updatedFor(announcement.getId(), sectionName, personIdsOf(students), announcement.isUrgent(), announcement.getTitle());
     }
 
     private static List<Long> personIdsOf(List<Student> students) {

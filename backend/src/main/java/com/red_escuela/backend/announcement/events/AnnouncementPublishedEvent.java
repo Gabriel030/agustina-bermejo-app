@@ -7,9 +7,9 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import java.time.Instant;
 import java.util.List;
 
-public record AnnouncementPublishedEvent(String correlationId, Instant occurredAt, Long announcementId, String sectionName, List<Long> studentPersonIds) implements DomainEvent {
+public record AnnouncementPublishedEvent(String correlationId, Instant occurredAt, Long announcementId, String sectionName, List<Long> studentPersonIds, boolean urgent, String title) implements DomainEvent {
 
-    public static AnnouncementPublishedEvent publishedFor(Long announcementId, String sectionName, List<Long> studentPersonIds) {
-        return new AnnouncementPublishedEvent(CorrelationIds.current(), ApplicationTime.instant(), announcementId, sectionName, studentPersonIds);
+    public static AnnouncementPublishedEvent publishedFor(Long announcementId, String sectionName, List<Long> studentPersonIds, boolean urgent, String title) {
+        return new AnnouncementPublishedEvent(CorrelationIds.current(), ApplicationTime.instant(), announcementId, sectionName, studentPersonIds, urgent, title);
     }
 }

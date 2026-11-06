@@ -230,30 +230,30 @@ class DomainEventNotificationListenersAsyncIT extends AbstractIntegrationTest {
     @Test
     void aFailureNotifyingAPublishedAnnouncementDoesNotRollBackTheOperationAndIsRedelivered() {
         assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
-                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 11L, "Algebra", List.of(personId)),
+                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 11L, "Algebra", List.of(personId), false, "Aviso"),
                 NotificationType.ANNOUNCEMENT_PUBLISHED);
     }
 
     @Test
     void aFailureNotifyingAnUpdatedAnnouncementDoesNotRollBackTheOperationAndIsRedelivered() {
         assertAFailingListenerDoesNotRollBackThePublisherAndTheRegistryRedeliversIt(
-                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 12L, "Algebra", List.of(personId)),
+                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 12L, "Algebra", List.of(personId), false, "Aviso"),
                 NotificationType.ANNOUNCEMENT_UPDATED);
     }
 
     @Test
     void twoAnnouncementUpdatesWithTheSameValuesNotifyTwiceAndARedeliveryOfOneNotifiesOnce() {
         assertTwoOccurrencesNotifyTwiceAndARedeliveryOfOneNotifiesOnce(
-                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 13L, "Algebra", List.of(personId)),
-                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 13L, "Algebra", List.of(personId)),
+                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 13L, "Algebra", List.of(personId), false, "Aviso"),
+                personId -> new AnnouncementUpdatedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 13L, "Algebra", List.of(personId), false, "Aviso"),
                 NotificationType.ANNOUNCEMENT_UPDATED);
     }
 
     @Test
     void twoAnnouncementPublicationsWithTheSameValuesNotifyTwiceAndARedeliveryOfOneNotifiesOnce() {
         assertTwoOccurrencesNotifyTwiceAndARedeliveryOfOneNotifiesOnce(
-                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 14L, "Algebra", List.of(personId)),
-                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 14L, "Algebra", List.of(personId)),
+                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), FIRST_OCCURRENCE, 14L, "Algebra", List.of(personId), false, "Aviso"),
+                personId -> new AnnouncementPublishedEvent(CorrelationIds.current(), SECOND_OCCURRENCE, 14L, "Algebra", List.of(personId), false, "Aviso"),
                 NotificationType.ANNOUNCEMENT_PUBLISHED);
     }
 }

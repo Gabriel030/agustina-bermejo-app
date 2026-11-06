@@ -56,7 +56,7 @@ class InstitutionAcademicSettingsControllerIT extends AbstractIntegrationTest {
                 entityManager.persist(institution);
                 entityManager.flush();
             }
-            jdbc.update("update institution set justification_deadline_business_days = 5, evaluation_config_due_days = 15");
+            jdbc.update("update institution set justification_deadline_business_days = 5, evaluation_config_due_days = 15, announcement_email_enabled = false");
             directorToken = jwtService.generateAccessToken(persistPerson("DIRECTOR"));
             teacherToken = jwtService.generateAccessToken(persistPerson("DOCENTE"));
         });
@@ -81,6 +81,35 @@ class InstitutionAcademicSettingsControllerIT extends AbstractIntegrationTest {
         assertThat(storedSettings()).isEqualTo("3-30");
         mockMvc.perform(get("/institution/academic-settings").header("Authorization", "Bearer " + teacherToken))
                 .andExpect(jsonPath("$.evaluationConfigDueDays").value(30));
+    }
+
+    @Test
+    void theEmailSwitchIsPersistedReadBackAndKeptWhenOmitted() throws Exception {
+        mockMvc.perform(get("/institution/academic-settings").header("Authorization", "Bearer " + teacherToken))
+                .andExpect(jsonPath("$.announcementEmailEnabled").value(false));
+        mockMvc.perform(put("/institution/academic-settings").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"justificationDeadlineBusinessDays\":5,\"evaluationConfigDueDays\":15,\"announcementEmailEnabled\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.announcementEmailEnabled").value(true));
+        assertThat(storedEmailSwitch()).isTrue();
+
+        mockMvc.perform(put("/institution/academic-settings").header("Authorization", "Bearer " + directorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"justificationDeadlineBusinessDays\":4,\"evaluationConfigDueDays\":15}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.announcementEmailEnabled").value(true));
+        assertThat(storedEmailSwitch()).isTrue();
+    }
+
+    @Test
+    void aTeacherCannotTurnTheEmailSwitchOn() throws Exception {
+        mockMvc.perform(put("/institution/academic-settings").header("Authorization", "Bearer " + teacherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"justificationDeadlineBusinessDays\":5,\"evaluationConfigDueDays\":15,\"announcementEmailEnabled\":true}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(storedEmailSwitch()).isFalse();
     }
 
     @Test
@@ -122,6 +151,10 @@ class InstitutionAcademicSettingsControllerIT extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    private boolean storedEmailSwitch() {
+        return Boolean.TRUE.equals(jdbc.queryForObject("select announcement_email_enabled from institution", Boolean.class));
     }
 
     private String storedSettings() {

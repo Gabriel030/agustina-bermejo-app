@@ -27,9 +27,10 @@ class UpdateAcademicSettingsServiceTest {
         Institution institution = new Institution();
         when(repository.findAll()).thenReturn(List.of(institution));
 
-        AcademicSettingsResponse response = service.update(new AcademicSettingsRequest(7, 40));
+        AcademicSettingsResponse response = service.update(new AcademicSettingsRequest(7, 40, true));
 
-        assertThat(response).isEqualTo(new AcademicSettingsResponse(7, 40));
+        assertThat(response).isEqualTo(new AcademicSettingsResponse(7, 40, true));
+        assertThat(institution.isAnnouncementEmailEnabled()).isTrue();
         assertThat(institution.getJustificationDeadlineBusinessDays()).isEqualTo(7);
         assertThat(institution.getEvaluationConfigDueDays()).isEqualTo(40);
         verify(repository).save(institution);
@@ -39,7 +40,19 @@ class UpdateAcademicSettingsServiceTest {
     void updateFailsWhenThereIsNoInstitution() {
         when(repository.findAll()).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.update(new AcademicSettingsRequest(7, 40)))
+        assertThatThrownBy(() -> service.update(new AcademicSettingsRequest(7, 40, null)))
                 .isInstanceOf(InstitutionNotFoundException.class);
+    }
+
+    @Test
+    void updateWithoutTheEmailSwitchKeepsTheStoredValue() {
+        Institution institution = new Institution();
+        institution.setAnnouncementEmailEnabled(true);
+        when(repository.findAll()).thenReturn(List.of(institution));
+
+        AcademicSettingsResponse response = service.update(new AcademicSettingsRequest(7, 40, null));
+
+        assertThat(response.announcementEmailEnabled()).isTrue();
+        assertThat(institution.isAnnouncementEmailEnabled()).isTrue();
     }
 }

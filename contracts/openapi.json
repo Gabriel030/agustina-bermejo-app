@@ -54,6 +54,9 @@
       },
       "AcademicSettingsRequest" : {
         "properties" : {
+          "announcementEmailEnabled" : {
+            "type" : "boolean"
+          },
           "evaluationConfigDueDays" : {
             "format" : "int32",
             "maximum" : 120,
@@ -72,6 +75,9 @@
       },
       "AcademicSettingsResponse" : {
         "properties" : {
+          "announcementEmailEnabled" : {
+            "type" : "boolean"
+          },
           "evaluationConfigDueDays" : {
             "format" : "int32",
             "type" : "integer"
@@ -81,7 +87,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "evaluationConfigDueDays", "justificationDeadlineBusinessDays" ],
+        "required" : [ "announcementEmailEnabled", "evaluationConfigDueDays", "justificationDeadlineBusinessDays" ],
         "type" : "object"
       },
       "AccountCreditAllocationResponse" : {
