@@ -17,6 +17,8 @@ import com.red_escuela.backend.billing.payment.service.IdempotencyRecordService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.red_escuela.backend.billing.payment.domain.AnnualUpfrontCashPaymentResult;
+
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +31,12 @@ public class PaymentOperationHandlersConfiguration {
     public OperationPreHandlers registerPaymentPreHandlers(IdempotencyRecordService recordService, ObjectMapper objectMapper) {
         return new OperationPreHandlers(BillingOperationType.REGISTER_PAYMENT,
                 List.of(new IdempotencyKeyHandler<RegisterCashPaymentCommand>(recordService, objectMapper, CashPaymentRegistrationResult.class)));
+    }
+
+    @Bean
+    public OperationPreHandlers registerAnnualUpfrontCashPaymentPreHandlers(IdempotencyRecordService recordService, ObjectMapper objectMapper) {
+        return new OperationPreHandlers(BillingOperationType.REGISTER_ANNUAL_UPFRONT_CASH_PAYMENT,
+                List.of(new IdempotencyKeyHandler<RegisterAnnualUpfrontCashPaymentCommand>(recordService, objectMapper, AnnualUpfrontCashPaymentResult.class)));
     }
 
     @Bean
