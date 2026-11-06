@@ -8,6 +8,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | InconsistencyStaysLocalPolicy | GLOBAL_ACCOUNT_INCONSISTENCY | D-356, D-489 |
 
+## Momento ANNUAL_UPFRONT_APPROVAL
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontReceiptPaysExactTotalPolicy | ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL | D-138 |
+
 ## Momento ANNUAL_UPFRONT_IDEMPOTENCY_KEY
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -19,6 +25,16 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | AnnualUpfrontPlanCannotBeChangedPolicy | ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED | D-168 |
+
+## Momento ANNUAL_UPFRONT_RECEIPT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontPaymentNotExpiredPolicy | ANNUAL_UPFRONT_PAYMENT_EXPIRED | D-155, D-521 |
+| 2 | AnnualUpfrontPaymentNotAlreadyInitiatedPolicy | ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED | D-155 |
+| 3 | AnnualUpfrontReceiptPaysOnlyTheAnnualInvoicePolicy | ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE | D-138 |
+| 4 | AnnualUpfrontReceiptPaysExactTotalPolicy | ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL | D-138 |
+| 5 | AnnualUpfrontReceiptWithinPaymentDeadlinePolicy | ANNUAL_UPFRONT_RECEIPT_LATE | D-155, D-154 |
 
 ## Momento ANNUAL_UPFRONT_REQUEST
 
@@ -850,7 +866,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación APPROVE_PENDING_BANK_TRANSFER_PAYMENT
 
-- Validaciones (momentos): PAYMENT_REVIEW
+- Validaciones (momentos): PAYMENT_REVIEW, ANNUAL_UPFRONT_APPROVAL
 - Pre-procesamiento (en orden): —
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
@@ -1051,7 +1067,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación SUBMIT_BANK_TRANSFER_RECEIPT
 
-- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, BANK_TRANSFER_RECEIPT_DETAILS, BANK_TRANSFER_RECEIPT_REGISTRATION, BANK_TRANSFER_RECEIPT_PROTECTION
+- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, BANK_TRANSFER_RECEIPT_DETAILS, BANK_TRANSFER_RECEIPT_REGISTRATION, BANK_TRANSFER_RECEIPT_PROTECTION, ANNUAL_UPFRONT_RECEIPT
 - Pre-procesamiento (en orden): IdempotencyKeyHandler
 - Eventos que publica: BankTransferReceiptSubmittedEvent
 - Post-procesamiento de BankTransferReceiptSubmittedEvent: —

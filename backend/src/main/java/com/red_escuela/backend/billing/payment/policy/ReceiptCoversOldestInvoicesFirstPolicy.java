@@ -25,7 +25,7 @@ public final class ReceiptCoversOldestInvoicesFirstPolicy implements Policy<Bank
         }
         List<ReceiptInvoiceFact> selectable = BankTransferReceiptSelectionPlanner.selectableInOrder(check.openInvoicesOfAccount()).stream()
                 .filter(invoice -> !invoice.programAdmission()).toList();
-        Set<Long> selectedIds = check.selectedInvoices().stream().filter(invoice -> !invoice.programAdmission()).map(ReceiptInvoiceFact::invoiceId)
+        Set<Long> selectedIds = check.selectedInvoices().stream().filter(invoice -> !invoice.programAdmission() && !invoice.annualUpfrontAwaitingPayment()).map(ReceiptInvoiceFact::invoiceId)
                 .collect(Collectors.toSet());
         Set<Long> oldestPrefixIds = selectable.stream().limit(selectedIds.size()).map(ReceiptInvoiceFact::invoiceId).collect(Collectors.toSet());
         return oldestPrefixIds.equals(selectedIds)

@@ -5,11 +5,13 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Objects;
 
 public record ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, Currency currency, boolean issued, InvoicePaymentStatus paymentStatus,
-                                 LocalDate dueDate, Money outstanding, boolean programAdmission) {
+                                 LocalDate dueDate, Money outstanding, boolean programAdmission, boolean annualUpfrontAwaitingPayment,
+                                 LocalDateTime paymentDeadline) {
 
     public static final Comparator<ReceiptInvoiceFact> OLDEST_DUE_FIRST = Comparator
             .comparing(ReceiptInvoiceFact::dueDate, Comparator.nullsLast(Comparator.naturalOrder()))
@@ -24,6 +26,11 @@ public record ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, C
     public ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, Currency currency, boolean issued, InvoicePaymentStatus paymentStatus,
                               LocalDate dueDate, Money outstanding) {
         this(invoiceId, studentCurrentAccountId, currency, issued, paymentStatus, dueDate, outstanding, false);
+    }
+
+    public ReceiptInvoiceFact(Long invoiceId, Long studentCurrentAccountId, Currency currency, boolean issued, InvoicePaymentStatus paymentStatus,
+                              LocalDate dueDate, Money outstanding, boolean programAdmission) {
+        this(invoiceId, studentCurrentAccountId, currency, issued, paymentStatus, dueDate, outstanding, programAdmission, false, null);
     }
 
     public boolean isUnderReview() {

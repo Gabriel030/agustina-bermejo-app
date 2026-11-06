@@ -51,6 +51,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ADMISSION_WINDOW_CLOSED` | no | `AdmissionWindowClosedException` | enrollment |
 | `AMBIGUOUS_SECTION` | no | `AmbiguousSectionException` | enrollment |
 | `ANNUAL_UPFRONT_IDEMPOTENCY_KEY_INVALID` | no | `AnnualUpfrontIdempotencyKeyInvalidException` | billing |
+| `ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL` | no | `AnnualUpfrontReceiptAmountMustBeTotalException` | billing |
+| `ANNUAL_UPFRONT_RECEIPT_LATE` | no | `AnnualUpfrontReceiptLateException` | billing |
+| `ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE` | no | `AnnualUpfrontReceiptMustBeAloneException` | billing |
 | `ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED` | no | `AnnualUpfrontTermsNotAcceptedException` | billing |
 | `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
@@ -311,6 +314,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ALREADY_REGISTERED_IN_EXAM_BOARD` | no | `AlreadyRegisteredInExamBoardException` | evaluation |
 | `ANNOUNCEMENT_ALREADY_SENT` | no | `AnnouncementAlreadySentException` | announcement |
 | `ANNUAL_UPFRONT_OF_PROGRAM_MUST_USE_REQUEST_ENDPOINT` | no | `AnnualUpfrontOfProgramMustUseRequestEndpointException` | billing |
+| `ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED` | no | `AnnualUpfrontPaymentAlreadyInitiatedException` | billing |
+| `ANNUAL_UPFRONT_PAYMENT_EXPIRED` | no | `AnnualUpfrontPaymentExpiredException` | billing |
 | `ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED` | no | `AnnualUpfrontPlanCannotBeChangedException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_REJECTED` | no | `AnnualUpfrontRequestRejectedException` | billing |
 | `APPLICATION_DOCUMENTS_INCOMPLETE` | no | `ApplicationDocumentsIncompleteException` | enrollment |

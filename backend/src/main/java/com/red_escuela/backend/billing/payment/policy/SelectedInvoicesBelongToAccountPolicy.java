@@ -22,7 +22,7 @@ public final class SelectedInvoicesBelongToAccountPolicy implements Policy<BankT
             if (invoice.currency() != check.declaredCurrency()) {
                 return PolicyVerdict.deny(ruleName(), "INVOICE_CURRENCY_MISMATCH", "El monto y las facturas tienen que estar en la misma moneda.");
             }
-            if (!invoice.isOpenToReceipt() && !invoice.isUnderReview()) {
+            if (!invoice.isOpenToReceipt() && !invoice.isUnderReview() && !invoice.annualUpfrontAwaitingPayment()) {
                 return PolicyVerdict.deny(ruleName(), "INVOICE_NOT_PAYABLE_BY_RECEIPT", "La factura no está emitida o ya no tiene saldo por pagar.");
             }
         }
