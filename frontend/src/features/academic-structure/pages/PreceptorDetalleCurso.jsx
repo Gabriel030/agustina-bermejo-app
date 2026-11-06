@@ -186,9 +186,11 @@ export function PreceptorDetalleCurso() {
           </Link>
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-xl font-bold text-ink">{curso?.name}</h1>
-            <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
-              Iniciar alta de ciclo
-            </Button>
+            {basePath !== '/director' && (
+              <Button variant="gradient" onClick={() => navigate(`${basePath}/oferta-academica/nuevo-ciclo`)}>
+                Iniciar alta de ciclo
+              </Button>
+            )}
           </div>
           <div className="mt-0.5 text-[13px] text-ink-faint">{formatCourseDuration(curso?.durationMonths)}</div>
         </div>

@@ -167,4 +167,13 @@ describe('StaffSectionRoster', () => {
     expect(link).toHaveAttribute('href', '/administrativo/oferta-academica/carreras/6');
     expect(screen.getByRole('link', { name: 'Oferta académica' })).toHaveAttribute('href', '/administrativo/oferta-academica');
   });
+
+  it('opens the announcements and read receipts of the section from the header button', async () => {
+    mockBackend();
+    renderRoster('director');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Avisos y lectura' }));
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/director/oferta-academica/ciclos/15/comisiones/31/avisos');
+  });
 });
