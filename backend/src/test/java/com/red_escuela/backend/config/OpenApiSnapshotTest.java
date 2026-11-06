@@ -1,9 +1,10 @@
 package com.red_escuela.backend.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OpenApiSnapshotTest extends AbstractIntegrationTest {
 
     private static final Path SNAPSHOT = Path.of("..", "contracts", "openapi.json");
-    private static final ObjectMapper MAPPER = new ObjectMapper()
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-            .enable(SerializationFeature.INDENT_OUTPUT);
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .build();
 
     @Autowired
     private MockMvc mockMvc;
@@ -77,7 +79,7 @@ class OpenApiSnapshotTest extends AbstractIntegrationTest {
         Set<String> operationIds = new HashSet<>();
         for (Map.Entry<String, JsonNode> path : MAPPER.readTree(first).get("paths").properties()) {
             for (Map.Entry<String, JsonNode> operation : path.getValue().properties()) {
-                String operationId = operation.getValue().path("operationId").asText();
+                String operationId = operation.getValue().path("operationId").asString("");
                 assertThat(operationIds.add(operationId))
                         .as("operationId duplicado: %s", operationId)
                         .isTrue();
@@ -115,9 +117,9 @@ class OpenApiSnapshotTest extends AbstractIntegrationTest {
     @Test
     void bearerAuthSecuritySchemeIsDeclared() throws Exception {
         JsonNode scheme = MAPPER.readTree(fetchNormalizedSpec()).at("/components/securitySchemes/bearerAuth");
-        assertThat(scheme.path("type").asText()).isEqualTo("http");
-        assertThat(scheme.path("scheme").asText()).isEqualTo("bearer");
-        assertThat(scheme.path("bearerFormat").asText()).isEqualTo("JWT");
+        assertThat(scheme.path("type").asString("")).isEqualTo("http");
+        assertThat(scheme.path("scheme").asString("")).isEqualTo("bearer");
+        assertThat(scheme.path("bearerFormat").asString("")).isEqualTo("JWT");
     }
 
     private String fetchNormalizedSpec() throws Exception {

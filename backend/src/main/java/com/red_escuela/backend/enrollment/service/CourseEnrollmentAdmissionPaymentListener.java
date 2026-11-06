@@ -1,8 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -59,7 +59,7 @@ public class CourseEnrollmentAdmissionPaymentListener {
         try {
             return objectMapper.readValue(sectionOverridesJson, new TypeReference<Map<Long, Long>>() {
             });
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new InvalidSectionOverridesException(sectionOverridesJson, e);
         }
     }

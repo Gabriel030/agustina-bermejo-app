@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -38,9 +38,9 @@ class AnnualUpfrontRequestControllerIT extends AbstractAnnualUpfrontRequestIT {
 
         JsonNode body = objectMapper.readTree(request(true, "v1", 201).getResponse().getContentAsString());
 
-        assertThat(body.get("status").asText()).isEqualTo("AWAITING_PAYMENT");
-        assertThat(body.get("paymentDeadline").asText()).isEqualTo("2027-03-04T10:00:00");
-        assertThat(new BigDecimal(body.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
+        assertThat(body.get("status").asString("")).isEqualTo("AWAITING_PAYMENT");
+        assertThat(body.get("paymentDeadline").asString("")).isEqualTo("2027-03-04T10:00:00");
+        assertThat(new BigDecimal(body.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
         Long invoiceId = body.get("invoiceId").asLong();
         assertThat(count("select count(*) from invoice_line where invoice_id = " + invoiceId + " and fee_type = 'MONTHLY_INSTALLMENT'")).isEqualTo(10);
         assertThat(count("select count(*) from invoice_line where invoice_id = " + invoiceId + " and fee_type = 'ENROLLMENT_FEE'")).isZero();
@@ -155,7 +155,7 @@ class AnnualUpfrontRequestControllerIT extends AbstractAnnualUpfrontRequestIT {
             }
             start.countDown();
             for (Future<String> outcome : outcomes) {
-                totals.add(new BigDecimal(objectMapper.readTree(outcome.get(60, TimeUnit.SECONDS)).get("total").get("amount").asText()));
+                totals.add(new BigDecimal(objectMapper.readTree(outcome.get(60, TimeUnit.SECONDS)).get("total").get("amount").asString("")));
             }
         } finally {
             executor.shutdownNow();
@@ -169,7 +169,7 @@ class AnnualUpfrontRequestControllerIT extends AbstractAnnualUpfrontRequestIT {
     void requestingWithoutAnyPromotionCreatesTheRequestAtFullPrice() throws Exception {
         JsonNode body = objectMapper.readTree(request(true, "v1", 201).getResponse().getContentAsString());
 
-        assertThat(new BigDecimal(body.get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
+        assertThat(new BigDecimal(body.get("total").get("amount").asString(""))).isEqualByComparingTo("800000.00");
         assertThat(count("select count(*) from student_discount where origin = 'ANNUAL_UPFRONT_REQUEST'")).isZero();
     }
 }

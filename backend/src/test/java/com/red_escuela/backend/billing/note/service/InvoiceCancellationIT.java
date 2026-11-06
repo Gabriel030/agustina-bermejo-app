@@ -162,7 +162,7 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
 
         String body = mockMvc.perform(post("/invoices/" + invoiceId + "/cancellations/preview").header("Authorization", "Bearer " + director.token())
                 .contentType(APPLICATION_JSON).content(cancellationBody("BILLING_ERROR", "Error"))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        com.fasterxml.jackson.databind.JsonNode released = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("discountConsumptionReleased");
+        tools.jackson.databind.JsonNode released = new tools.jackson.databind.ObjectMapper().readTree(body).get("discountConsumptionReleased");
 
         assertThat(released).hasSize(1);
         assertThat(released.get(0).get("studentDiscountId").asLong()).isEqualTo(studentDiscountId);

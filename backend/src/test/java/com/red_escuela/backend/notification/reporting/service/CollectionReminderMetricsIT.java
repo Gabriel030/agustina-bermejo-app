@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification.reporting.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.api.PaymentArrival;
 import com.red_escuela.backend.billing.api.PaymentFactsQuery;
 import com.red_escuela.backend.billing.note.service.AbstractCreditNoteIT;
@@ -91,7 +91,7 @@ class CollectionReminderMetricsIT extends AbstractCreditNoteIT {
 
     private static JsonNode seriesOf(JsonNode metric, String key) {
         for (JsonNode series : metric.get("series")) {
-            if (series.get("key").asText().equals(key)) {
+            if (series.get("key").asString("").equals(key)) {
                 return series;
             }
         }
@@ -123,7 +123,7 @@ class CollectionReminderMetricsIT extends AbstractCreditNoteIT {
 
         JsonNode metric = panel(director, MARCH_2031);
 
-        assertThat(metric.get("panel").asText()).isEqualTo("collection-reminders");
+        assertThat(metric.get("panel").asString("")).isEqualTo("collection-reminders");
         assertThat(metric.get("months")).extracting(JsonNode::asText).containsExactly("2031-02", "2031-03", "2031-04");
         assertThat(countAt(metric, "sent", 0)).isEqualTo(9);
         assertThat(countAt(metric, "sent", 1)).isEqualTo(620);
@@ -242,7 +242,7 @@ class CollectionReminderMetricsIT extends AbstractCreditNoteIT {
         for (String query : List.of("from=2031-03&to=2034-12", "from=2031-04&to=2031-03")) {
             String body = mockMvc.perform(get(PATH + "?" + query).header("Authorization", "Bearer " + director)).andExpect(status().isBadRequest())
                     .andReturn().getResponse().getContentAsString();
-            assertThat(JSON.readTree(body).get("code").asText()).isEqualTo("INVALID_MONTH_RANGE");
+            assertThat(JSON.readTree(body).get("code").asString("")).isEqualTo("INVALID_MONTH_RANGE");
         }
     }
 

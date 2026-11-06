@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.annualupfront;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.annualupfront.service.RegisteredAnnualUpfrontRequest;
 import com.red_escuela.backend.billing.annualupfront.service.RequestAnnualUpfrontCommand;
 import com.red_escuela.backend.billing.operation.BillingOperationType;

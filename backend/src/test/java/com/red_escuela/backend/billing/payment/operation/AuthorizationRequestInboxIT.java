@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
@@ -130,15 +130,15 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
 
         for (long id : List.of(unreadable, undescribed)) {
             JsonNode detail = jsonOf("/authorization-requests/" + id, director);
-            assertThat(detail.get("detailBlock").get("type").asText()).isEqualTo("NONE");
+            assertThat(detail.get("detailBlock").get("type").asString("")).isEqualTo("NONE");
             assertThat(detail.get("effectLines")).isEmpty();
             assertThat(detail.get("requestLines").findValues("label")).extracting(JsonNode::asText).containsExactly("Operación", "Motivo");
             assertThat(detail.get("request").get("studentName").isNull()).isTrue();
             assertThat(detail.get("request").get("amount").isNull()).isTrue();
             assertThat(detail.toString()).doesNotContain("operationPayload");
         }
-        assertThat(jsonOf("/authorization-requests/" + undescribed, director).get("request").get("summary").asText()).isEqualTo("Contracargo");
-        assertThat(jsonOf("/authorization-requests/" + undescribed, director).get("request").get("familyLabel").asText()).isEqualTo("Pagos y contracargos");
+        assertThat(jsonOf("/authorization-requests/" + undescribed, director).get("request").get("summary").asString("")).isEqualTo("Contracargo");
+        assertThat(jsonOf("/authorization-requests/" + undescribed, director).get("request").get("familyLabel").asString("")).isEqualTo("Pagos y contracargos");
     }
 
     @Test
@@ -153,43 +153,43 @@ class AuthorizationRequestInboxIT extends AbstractRefundIT {
         JsonNode pending = jsonOf("/authorization-requests/" + requestId, directorToken);
 
         JsonNode request = pending.get("request");
-        assertThat(request.get("operationType").asText()).isEqualTo("ISSUE_REFUND");
-        assertThat(request.get("family").asText()).isEqualTo("REFUNDS");
-        assertThat(request.get("status").asText()).isEqualTo("PENDING");
-        assertThat(request.get("requiredRole").asText()).isEqualTo("DIRECTOR");
+        assertThat(request.get("operationType").asString("")).isEqualTo("ISSUE_REFUND");
+        assertThat(request.get("family").asString("")).isEqualTo("REFUNDS");
+        assertThat(request.get("status").asString("")).isEqualTo("PENDING");
+        assertThat(request.get("requiredRole").asString("")).isEqualTo("DIRECTOR");
         assertThat(request.get("requestedBy").get("id").asLong()).isEqualTo(administrative.getId());
-        assertThat(request.get("requestedBy").get("name").asText()).isNotBlank();
+        assertThat(request.get("requestedBy").get("name").asString("")).isNotBlank();
         assertThat(request.get("requestedBy").get("roles")).extracting(JsonNode::asText).contains("ADMINISTRATIVO");
-        assertThat(request.get("studentName").asText()).isNotBlank();
+        assertThat(request.get("studentName").asString("")).isNotBlank();
         assertThat(decimalOf(request.get("amount"))).isEqualByComparingTo("40000.00");
-        assertThat(request.get("summary").asText()).isEqualTo("Devolver saldo a favor, 1 pago");
-        assertThat(pending.get("reason").asText()).isNotBlank();
+        assertThat(request.get("summary").asString("")).isEqualTo("Devolver saldo a favor, 1 pago");
+        assertThat(pending.get("reason").asString("")).isNotBlank();
         assertThat(pending.get("requestLines").findValues("label")).extracting(JsonNode::asText).containsExactly("Alumno", "Pedido", "Destino");
-        assertThat(pending.get("requestLines").get(1).get("value").asText()).isEqualTo("Reembolso de $40.000");
-        assertThat(pending.get("requestLines").get(2).get("value").asText()).isEqualTo(REQUEST_ACCOUNT + " · " + REQUEST_HOLDER);
+        assertThat(pending.get("requestLines").get(1).get("value").asString("")).isEqualTo("Reembolso de $40.000");
+        assertThat(pending.get("requestLines").get(2).get("value").asString("")).isEqualTo(REQUEST_ACCOUNT + " · " + REQUEST_HOLDER);
         assertThat(pending.get("effectLines")).hasSize(3);
-        assertThat(pending.get("effectLines").get(0).get("tone").asText()).isEqualTo("SUCCESS");
+        assertThat(pending.get("effectLines").get(0).get("tone").asString("")).isEqualTo("SUCCESS");
         JsonNode block = pending.get("detailBlock");
-        assertThat(block.get("type").asText()).isEqualTo("REFUND_PARTS");
+        assertThat(block.get("type").asString("")).isEqualTo("REFUND_PARTS");
         assertThat(block.get("refundParts")).hasSize(1);
-        assertThat(block.get("refundParts").get(0).get("status").asText()).isEqualTo("REQUESTED");
-        assertThat(block.get("refundParts").get(0).get("methodType").asText()).isEqualTo("CASH");
+        assertThat(block.get("refundParts").get(0).get("status").asString("")).isEqualTo("REQUESTED");
+        assertThat(block.get("refundParts").get(0).get("methodType").asString("")).isEqualTo("CASH");
         assertThat(decimalOf(block.get("refundParts").get(0).get("amount"))).isEqualByComparingTo("40000.00");
         assertThat(pending.get("statusChanges")).hasSize(1);
-        assertThat(pending.get("statusChanges").get(0).get("toStatus").asText()).isEqualTo("PENDING");
+        assertThat(pending.get("statusChanges").get(0).get("toStatus").asString("")).isEqualTo("PENDING");
         assertThat(pending.get("statusChanges").get(0).get("actorPersonId").asLong()).isEqualTo(administrative.getId());
 
         mockMvc.perform(decision("approve", requestId, directorToken)).andExpect(status().isOk());
         JsonNode approved = jsonOf("/authorization-requests/" + requestId, administrativeToken);
 
-        assertThat(approved.get("request").get("status").asText()).isEqualTo("APPROVED");
-        assertThat(approved.get("request").get("resumeOutcome").asText()).isEqualTo("PROCESSED");
+        assertThat(approved.get("request").get("status").asString("")).isEqualTo("APPROVED");
+        assertThat(approved.get("request").get("resumeOutcome").asString("")).isEqualTo("PROCESSED");
         assertThat(approved.get("effectLines")).isEmpty();
-        assertThat(approved.get("detailBlock").get("refundParts").get(0).get("status").asText()).isEqualTo("APPROVED");
+        assertThat(approved.get("detailBlock").get("refundParts").get(0).get("status").asString("")).isEqualTo("APPROVED");
         assertThat(approved.get("decidedBy").get("id").asLong()).isEqualTo(director.getId());
-        assertThat(approved.get("decisionReason").asText()).isEqualTo("decisión de prueba");
+        assertThat(approved.get("decisionReason").asString("")).isEqualTo("decisión de prueba");
         assertThat(approved.get("statusChanges")).hasSize(2);
-        assertThat(approved.get("statusChanges").get(1).get("toStatus").asText()).isEqualTo("APPROVED");
+        assertThat(approved.get("statusChanges").get(1).get("toStatus").asString("")).isEqualTo("APPROVED");
     }
 
     @Test

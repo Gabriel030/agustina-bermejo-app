@@ -1,18 +1,21 @@
 package com.red_escuela.backend.billing.collections.domain;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
 final class CollectionReminderMessagesJson {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules()
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .findAndAddModules()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .build();
 
     private CollectionReminderMessagesJson() {
     }
@@ -20,7 +23,7 @@ final class CollectionReminderMessagesJson {
     static String write(List<?> values) {
         try {
             return MAPPER.writeValueAsString(values);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The collection reminder values cannot be serialized", e);
         }
     }
@@ -28,7 +31,7 @@ final class CollectionReminderMessagesJson {
     static <T> List<T> read(String json, TypeReference<List<T>> type) {
         try {
             return MAPPER.readValue(json, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The stored collection reminder values cannot be read", e);
         }
     }

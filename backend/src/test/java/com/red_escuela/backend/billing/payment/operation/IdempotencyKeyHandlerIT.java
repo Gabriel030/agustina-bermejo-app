@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.operation.IdempotencyKeyed;
 import com.red_escuela.backend.billing.payment.exception.IdempotencyKeyConflictException;
 import com.red_escuela.backend.billing.payment.service.IdempotencyRecordCleanupJob;
 import com.red_escuela.backend.billing.payment.service.IdempotencyRecordService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;

@@ -66,7 +66,7 @@ class PaymentReversalIT extends AbstractBankTransferReceiptHttpIT {
     }
 
     private String codeOf(MvcResult result) throws Exception {
-        return bodyOf(result).get("code").asText();
+        return bodyOf(result).get("code").asString("");
     }
 
     private String paymentStatus(long paymentId) {

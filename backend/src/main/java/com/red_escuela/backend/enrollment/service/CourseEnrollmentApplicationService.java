@@ -1,8 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -110,7 +110,7 @@ public class CourseEnrollmentApplicationService {
         }
         try {
             return objectMapper.writeValueAsString(sectionOverrides);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new InvalidSectionOverridesException(String.valueOf(sectionOverrides), e);
         }
     }

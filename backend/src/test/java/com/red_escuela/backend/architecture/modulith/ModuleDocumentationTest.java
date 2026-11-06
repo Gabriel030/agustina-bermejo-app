@@ -30,7 +30,7 @@ class ModuleDocumentationTest {
         String outputFolder = Boolean.getBoolean(UPDATE_PROPERTY) ? COMMITTED_FOLDER : SCRATCH_FOLDER;
         ApplicationModules modules = ImportedApplicationClasses.modules();
 
-        new Documenter(modules, outputFolder)
+        new Documenter(modules, Documenter.Options.defaults().withOutputFolder(outputFolder))
                 .writeModulesAsPlantUml()
                 .writeIndividualModulesAsPlantUml()
                 .writeModuleCanvases();

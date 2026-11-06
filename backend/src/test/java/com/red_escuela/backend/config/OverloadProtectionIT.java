@@ -4,10 +4,10 @@ import com.red_escuela.backend.enrollment.service.RequiredApplicationDocumentsGu
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.data.autoconfigure.web.DataWebProperties;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
+import org.springframework.boot.servlet.autoconfigure.MultipartProperties;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
@@ -39,7 +39,7 @@ class OverloadProtectionIT extends AbstractIntegrationTest {
     @Autowired
     private HikariDataSource dataSource;
     @Autowired
-    private SpringDataWebProperties springDataWebProperties;
+    private DataWebProperties springDataWebProperties;
     @Autowired
     private RequestMappingHandlerAdapter handlerAdapter;
 
@@ -71,8 +71,8 @@ class OverloadProtectionIT extends AbstractIntegrationTest {
         assertThat(MultipartRequestSizeFilter.DEFAULT_MAX_REQUEST_BYTES).isEqualTo(DataSize.ofMegabytes(6).toBytes());
         assertThat(MultipartRequestSizeFilter.PROGRAM_APPLICATION_MAX_REQUEST_BYTES).isEqualTo(DataSize.ofMegabytes(10).toBytes());
         assertThat(RequiredApplicationDocumentsGuard.MAX_DOCUMENT_BYTES).isEqualTo(DataSize.ofMegabytes(3).toBytes());
-        assertThat(serverProperties.getTomcat().getMaxSwallowSize()).isEqualTo(DataSize.ofMegabytes(2));
-        assertThat(serverProperties.getTomcat().getMaxHttpFormPostSize()).isEqualTo(DataSize.ofMegabytes(2));
+        assertThat(environment.getProperty("server.tomcat.max-swallow-size", DataSize.class)).isEqualTo(DataSize.ofMegabytes(2));
+        assertThat(environment.getProperty("server.tomcat.max-http-form-post-size", DataSize.class)).isEqualTo(DataSize.ofMegabytes(2));
         assertThat(springDataWebProperties.getPageable().getMaxPageSize()).isEqualTo(200);
         assertThat(handlerAdapter.getArgumentResolvers()).anyMatch(PageableHandlerMethodArgumentResolver.class::isInstance);
     }

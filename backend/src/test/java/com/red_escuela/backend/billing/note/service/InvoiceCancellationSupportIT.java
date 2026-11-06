@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.note.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.domain.PendingInvoiceAuthorization;
 import com.red_escuela.backend.billing.authorization.service.PendingInvoiceAuthorizationReader;
 import com.red_escuela.backend.testsupport.SlowTest;
@@ -35,7 +35,7 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
     }
 
     private static java.math.BigDecimal amountOf(JsonNode money) {
-        return new java.math.BigDecimal(money.get("amount").asText());
+        return new java.math.BigDecimal(money.get("amount").asString(""));
     }
 
     private JsonNode getJson(String path, Staff staff, int expectedStatus) throws Exception {
@@ -91,10 +91,10 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
         JsonNode blockedByJustification = preview(unpaidInvoice("100.00").invoiceId(), director, cancellationBody("BILLING_ERROR", null));
 
         assertThat(blockedByPayment.get("allowed").asBoolean()).isFalse();
-        assertThat(blockedByPayment.get("blockedBy").findValuesAsText("code")).contains("ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION");
+        assertThat(blockedByPayment.get("blockedBy").findValues("code").stream().map(tools.jackson.databind.JsonNode::asString).toList()).contains("ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION");
         requestCancellation(paid.invoiceId(), director, cancellationBody("BILLING_ERROR", "error"), 409);
         assertThat(blockedByJustification.get("allowed").asBoolean()).isFalse();
-        assertThat(blockedByJustification.get("blockedBy").findValuesAsText("code")).contains("CREDIT_NOTE_JUSTIFICATION_REQUIRED");
+        assertThat(blockedByJustification.get("blockedBy").findValues("code").stream().map(tools.jackson.databind.JsonNode::asString).toList()).contains("CREDIT_NOTE_JUSTIFICATION_REQUIRED");
     }
 
     @Test
@@ -149,14 +149,14 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
         JsonNode studentNotes = getJson("/me/credit-notes", studentStaff(scenario.studentId()), 200);
 
         assertThat(staffNotes).hasSize(1);
-        assertThat(staffNotes.get(0).get("requestedByName").asText()).isNotBlank();
-        assertThat(staffNotes.get(0).get("authorizedByName").asText()).isNotBlank();
-        assertThat(staffNotes.get(0).get("requestedByName").asText()).contains("Requester");
-        assertThat(staffNotes.get(0).get("authorizedByName").asText()).contains("Authorizer");
+        assertThat(staffNotes.get(0).get("requestedByName").asString("")).isNotBlank();
+        assertThat(staffNotes.get(0).get("authorizedByName").asString("")).isNotBlank();
+        assertThat(staffNotes.get(0).get("requestedByName").asString("")).contains("Requester");
+        assertThat(staffNotes.get(0).get("authorizedByName").asString("")).contains("Authorizer");
         assertThat(staffNotes.get(0).get("authorizedAt").isNull()).isFalse();
         assertThat(staffNotes.get(0).get("authorizationRequestId").asLong()).isEqualTo(requestId);
         assertThat(studentNotes).hasSize(1);
-        assertThat(staffNotes.get(0).get("justification").asText()).isEqualTo("baja");
+        assertThat(staffNotes.get(0).get("justification").asString("")).isEqualTo("baja");
         assertThat(studentNotes.get(0).get("justification").isNull()).isTrue();
         assertThat(studentNotes.get(0).get("requestedByName").isNull()).isTrue();
         assertThat(studentNotes.get(0).get("authorizedByName").isNull()).isTrue();
@@ -171,7 +171,7 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
 
         JsonNode notes = getJson("/students/" + scenario.studentId() + "/credit-notes", director, 200);
 
-        assertThat(notes.get(0).get("requestedByName").asText()).isNotBlank();
+        assertThat(notes.get(0).get("requestedByName").asString("")).isNotBlank();
         assertThat(notes.get(0).get("authorizedByName").isNull()).isTrue();
         assertThat(notes.get(0).get("authorizedAt").isNull()).isTrue();
     }

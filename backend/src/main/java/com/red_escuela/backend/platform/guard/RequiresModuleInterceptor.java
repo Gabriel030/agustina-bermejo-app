@@ -24,7 +24,7 @@ public class RequiresModuleInterceptor implements HandlerInterceptor {
         if (handler instanceof HandlerMethod handlerMethod) {
             RequiresModule requirement = requirementOf(handlerMethod);
             if (requirement != null && !moduleGuard.permits(requirement)) {
-                throw new NoResourceFoundException(HttpMethod.valueOf(request.getMethod()), request.getRequestURI());
+                throw new NoResourceFoundException(HttpMethod.valueOf(request.getMethod()), request.getRequestURI(), request.getRequestURI());
             }
         }
         return true;

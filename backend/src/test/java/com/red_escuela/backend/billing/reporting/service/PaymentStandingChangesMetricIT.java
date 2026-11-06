@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.reporting.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -244,9 +244,9 @@ class PaymentStandingChangesMetricIT extends AbstractMonthlyMetricsIT {
 
     @Test
     void theRangeIsLimitedToThirtySixMonthsAndTheCurrencyIsRequiredWithTwoCurrencies() throws Exception {
-        assertThat(errorOf(directorToken, "/billing/metrics/payment-standing-changes?currency=ARS&from=2018-01&to=2022-01", 400).get("code").asText())
+        assertThat(errorOf(directorToken, "/billing/metrics/payment-standing-changes?currency=ARS&from=2018-01&to=2022-01", 400).get("code").asString(""))
                 .isEqualTo("INVALID_MONTH_RANGE");
-        assertThat(errorOf(directorToken, "/billing/metrics/payment-standing-changes?from=2022-04&to=2022-04", 400).get("code").asText())
+        assertThat(errorOf(directorToken, "/billing/metrics/payment-standing-changes?from=2022-04&to=2022-04", 400).get("code").asString(""))
                 .isEqualTo("CURRENCY_REQUIRED");
     }
 }

@@ -2015,6 +2015,7 @@
             "type" : "string"
           },
           "endTime" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "overlapsInDates" : {
@@ -2024,6 +2025,7 @@
             "$ref" : "#/components/schemas/OccupyingSection"
           },
           "startTime" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "term" : {
@@ -2129,9 +2131,11 @@
             "type" : "integer"
           },
           "emailWindowEnd" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "emailWindowStart" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "postWithdrawalSummaryMonths" : {
@@ -2747,6 +2751,7 @@
       "CreateCourseRequest" : {
         "properties" : {
           "capacity" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -2755,6 +2760,7 @@
             "type" : "string"
           },
           "durationMonths" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -2838,6 +2844,7 @@
       "CreateCycleSectionRequest" : {
         "properties" : {
           "capacity" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -3327,6 +3334,7 @@
             "$ref" : "#/components/schemas/YearBillingConfigurationRequest"
           },
           "recurringFeeInvoicesCount" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -3419,6 +3427,7 @@
       "CreateSectionRequest" : {
         "properties" : {
           "capacity" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -3521,6 +3530,7 @@
             "type" : "string"
           },
           "maxFinalExamAttempts" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -3530,10 +3540,12 @@
           },
           "weeklyHours" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "weeklyHoursLab" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           }
         },
@@ -9350,9 +9362,11 @@
             "type" : "integer"
           },
           "emailWindowEnd" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "emailWindowStart" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "postWithdrawalSummaryMonths" : {
@@ -9605,9 +9619,11 @@
             "type" : "string"
           },
           "endTime" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "startTime" : {
+            "format" : "time-local",
             "type" : "string"
           }
         },
@@ -9921,6 +9937,7 @@
       "ShiftRangeRequest" : {
         "properties" : {
           "endTime" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "shift" : {
@@ -9928,6 +9945,7 @@
             "type" : "string"
           },
           "startTime" : {
+            "format" : "time-local",
             "type" : "string"
           }
         },
@@ -9937,6 +9955,7 @@
       "ShiftRangeResponse" : {
         "properties" : {
           "endTime" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "shift" : {
@@ -9944,6 +9963,7 @@
             "type" : "string"
           },
           "startTime" : {
+            "format" : "time-local",
             "type" : "string"
           }
         },
@@ -10045,9 +10065,11 @@
             "type" : "string"
           },
           "endTime" : {
+            "format" : "time-local",
             "type" : "string"
           },
           "startTime" : {
+            "format" : "time-local",
             "type" : "string"
           }
         },
@@ -10913,10 +10935,12 @@
       "UpdateCourseRequest" : {
         "properties" : {
           "capacity" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
           "durationMonths" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -11306,6 +11330,7 @@
             "type" : "string"
           },
           "maxFinalExamAttempts" : {
+            "exclusiveMinimum" : 0,
             "format" : "int32",
             "type" : "integer"
           },
@@ -11314,10 +11339,12 @@
           },
           "weeklyHours" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           },
           "weeklyHoursLab" : {
             "format" : "int32",
+            "minimum" : 0,
             "type" : "integer"
           }
         },
@@ -64491,6 +64518,7 @@
           "name" : "startTime",
           "required" : true,
           "schema" : {
+            "format" : "time-local",
             "type" : "string"
           }
         }, {
@@ -64498,6 +64526,7 @@
           "name" : "endTime",
           "required" : true,
           "schema" : {
+            "format" : "time-local",
             "type" : "string"
           }
         }, {

@@ -50,7 +50,7 @@ class RefundCompletionIT extends AbstractRefundIT {
 
         MvcResult result = mockMvc.perform(completion(refundId, administrative, "2027-03-09", "TRF-001", "CASH")).andExpect(status().isOk()).andReturn();
 
-        assertThat(bodyOf(result).get("status").asText()).isEqualTo("COMPLETED");
+        assertThat(bodyOf(result).get("status").asString("")).isEqualTo("COMPLETED");
         assertThat(refundStatus(refundId)).isEqualTo("COMPLETED");
         assertThat(refundRow(refundId).get("completion_reference")).isEqualTo("TRF-001");
         assertThat(entriesOfType(debtor.accountId(), "REFUND_PAID")).isEqualTo(1L);

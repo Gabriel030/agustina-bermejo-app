@@ -2,7 +2,7 @@ package com.red_escuela.backend.testsupport.system;
 
 import com.red_escuela.backend.BackendApplication;
 import org.springframework.boot.SpringApplication;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,22 +23,22 @@ public final class SystemTestApplication {
 
     public static void main(String[] args) {
         System.setProperty("spring.devtools.restart.enabled", "false");
-        PostgreSQLContainer<?> postgres = startPostgres();
+        PostgreSQLContainer postgres = startPostgres();
         Runtime.getRuntime().addShutdownHook(new Thread(postgres::stop));
         SpringApplication.from(BackendApplication::main)
                 .with(SystemTestSeedConfiguration.class)
                 .run(systemTestArguments(postgres, args));
     }
 
-    static PostgreSQLContainer<?> startPostgres() {
-        PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+    static PostgreSQLContainer startPostgres() {
+        PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")
                 .withTmpFs(Map.of("/var/lib/postgresql/data", "rw"))
                 .withCommand("postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off");
         postgres.start();
         return postgres;
     }
 
-    static String[] systemTestArguments(PostgreSQLContainer<?> postgres, String[] passedArguments) {
+    static String[] systemTestArguments(PostgreSQLContainer postgres, String[] passedArguments) {
         List<String> arguments = new ArrayList<>(List.of(
                 "--spring.profiles.active=local",
                 "--spring.datasource.url=" + postgres.getJdbcUrl(),

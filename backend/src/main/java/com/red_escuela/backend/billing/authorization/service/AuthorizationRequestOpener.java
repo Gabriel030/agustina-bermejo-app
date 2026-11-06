@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.authorization.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.events.AuthorizationRequestedEvent;
@@ -50,7 +50,7 @@ public class AuthorizationRequestOpener implements AuthorizationRequestPort {
     private String serialize(Object context) {
         try {
             return objectMapper.writeValueAsString(context);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Operation context cannot be serialized for an authorization request", e);
         }
     }

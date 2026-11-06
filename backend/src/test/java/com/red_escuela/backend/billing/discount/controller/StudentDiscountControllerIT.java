@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.discount.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -117,7 +117,7 @@ class StudentDiscountControllerIT extends AbstractIntegrationTest {
     void theDirectorGrantsAScholarshipImmediatelyAndTheAdministrativeLeavesAPendingRequest() throws Exception {
         JsonNode granted = readBody(postJson(grantPath(), directorToken, scholarshipBody("50", "2027-04", "2027-08")).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("ACTIVE")).andExpect(jsonPath("$.type").value("SCHOLARSHIP")).andExpect(jsonPath("$.applicableInvoiceType").value("MONTHLY_INSTALLMENT")));
-        assertThat(granted.get("fromPeriod").asText()).isEqualTo("2027-04");
+        assertThat(granted.get("fromPeriod").asString("")).isEqualTo("2027-04");
 
         JsonNode pending = readBody(postJson(grantPath(), administrativeToken, scholarshipBody("25", "2027-09", "2027-12")).andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.authorizationRequestId").isNumber()));

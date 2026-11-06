@@ -1,10 +1,10 @@
 package com.red_escuela.backend.security;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,7 +39,7 @@ final class MinimalRequestBodies {
         Map<String, String> fields = new LinkedHashMap<>();
         multipartProperties(method, path).forEach((name, schema) -> {
             if (!isBinary(resolve(schema))) {
-                fields.put(name, sample(schema, 0).asText());
+                fields.put(name, sample(schema, 0).asString(""));
             }
         });
         return fields;
@@ -66,10 +66,10 @@ final class MinimalRequestBodies {
     }
 
     private boolean isBinary(JsonNode schema) {
-        if ("binary".equals(schema.path("format").asText())) {
+        if ("binary".equals(schema.path("format").asString(""))) {
             return true;
         }
-        return "array".equals(schema.path("type").asText()) && isBinary(resolve(schema.path("items")));
+        return "array".equals(schema.path("type").asString("")) && isBinary(resolve(schema.path("items")));
     }
 
     private Optional<JsonNode> contentSchema(String method, String path, String mediaType) {
@@ -83,7 +83,7 @@ final class MinimalRequestBodies {
         if (reference.isMissingNode()) {
             return schema;
         }
-        String name = reference.asText().substring(reference.asText().lastIndexOf('/') + 1);
+        String name = reference.asString("").substring(reference.asString("").lastIndexOf('/') + 1);
         return specification.path("components").path("schemas").path(name);
     }
 
@@ -128,8 +128,8 @@ final class MinimalRequestBodies {
         JsonNode type = schema.path("type");
         if (type.isArray()) {
             for (JsonNode candidate : type) {
-                if (!"null".equals(candidate.asText())) {
-                    return candidate.asText();
+                if (!"null".equals(candidate.asString(""))) {
+                    return candidate.asString("");
                 }
             }
         }
@@ -144,9 +144,9 @@ final class MinimalRequestBodies {
         JsonNode required = schema.path("required");
         JsonNode properties = schema.path("properties");
         for (JsonNode requiredName : required) {
-            JsonNode property = properties.path(requiredName.asText());
+            JsonNode property = properties.path(requiredName.asString(""));
             if (!property.isMissingNode()) {
-                object.set(requiredName.asText(), formattedTextByName(requiredName.asText(), property)
+                object.set(requiredName.asString(""), formattedTextByName(requiredName.asString(""), property)
                         .<JsonNode>map(NODES::textNode)
                         .orElseGet(() -> sample(property, depth + 1)));
             }
@@ -156,7 +156,7 @@ final class MinimalRequestBodies {
 
     private Optional<String> formattedTextByName(String name, JsonNode property) {
         JsonNode schema = resolve(property);
-        boolean plainText = "string".equals(schema.path("type").asText()) && !schema.has("format") && !schema.has("enum");
+        boolean plainText = "string".equals(schema.path("type").asString("")) && !schema.has("format") && !schema.has("enum");
         if (!plainText) {
             return Optional.empty();
         }
@@ -195,10 +195,11 @@ final class MinimalRequestBodies {
     }
 
     private String sampleText(JsonNode schema) {
-        if ("^\\d{4}-\\d{2}$".equals(schema.path("pattern").asText())) {
+        if ("^\\d{4}-\\d{2}$".equals(schema.path("pattern").asString(""))) {
             return "2026-01";
         }
         return switch (schema.path("format").asText("")) {
+            case "time-local", "time" -> "10:00:00";
             case "date" -> "2026-01-15";
             case "date-time" -> "2099-01-15T10:00:00Z";
             case "email" -> "matrix@example.com";

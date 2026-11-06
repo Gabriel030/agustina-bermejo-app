@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing;
 
 import com.red_escuela.backend.testsupport.MigrationTestDatabase;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import org.flywaydb.core.Flyway;

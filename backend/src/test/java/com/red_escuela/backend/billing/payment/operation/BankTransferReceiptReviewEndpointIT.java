@@ -40,7 +40,7 @@ class BankTransferReceiptReviewEndpointIT extends AbstractBankTransferReceiptHtt
     }
 
     private String codeOf(MvcResult result) throws Exception {
-        return bodyOf(result).get("code").asText();
+        return bodyOf(result).get("code").asString("");
     }
 
     @ParameterizedTest
@@ -149,7 +149,7 @@ class BankTransferReceiptReviewEndpointIT extends AbstractBankTransferReceiptHtt
 
         MvcResult rejected = mockMvc.perform(review("reject", submitted.receiptId(), token, "{\"rejectionReason\":\"" + "m".repeat(500) + "\"}"))
                 .andExpect(status().isOk()).andReturn();
-        assertThat(bodyOf(rejected).get("rejectionCode").asText()).isEqualTo("REVIEWER_REJECTION");
+        assertThat(bodyOf(rejected).get("rejectionCode").asString("")).isEqualTo("REVIEWER_REJECTION");
         assertThat(jdbc.queryForObject("select length(rejection_reason) from bank_transfer_receipt where id = ?", Integer.class, submitted.receiptId())).isEqualTo(500);
         assertThat(jdbc.queryForObject("select length(rejection_reason) from payment where id = ?", Integer.class, submitted.paymentId())).isEqualTo(500);
     }

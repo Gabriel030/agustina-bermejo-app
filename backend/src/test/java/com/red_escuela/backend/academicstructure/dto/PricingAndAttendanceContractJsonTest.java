@@ -1,8 +1,8 @@
 package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.testsupport.TermFixtures;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -92,9 +92,9 @@ class PricingAndAttendanceContractJsonTest {
         JsonNode programJson = json(ProgramResponse.from(program));
 
         assertThat(courseJson.get("price")).isEqualTo(json(Money.of(new BigDecimal("18000"), Currency.USD)));
-        assertThat(programJson.get("price").get("amount").asText()).isEqualTo("45000.00");
-        assertThat(programJson.get("price").get("currency").asText()).isEqualTo("ARS");
-        assertThat(programJson.get("enrollmentFeeAmount").get("amount").asText()).isEqualTo("30000.00");
+        assertThat(programJson.get("price").get("amount").asString("")).isEqualTo("45000.00");
+        assertThat(programJson.get("price").get("currency").asString("")).isEqualTo("ARS");
+        assertThat(programJson.get("enrollmentFeeAmount").get("amount").asString("")).isEqualTo("30000.00");
     }
 
     @Test

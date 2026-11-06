@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.billing.payment.service.OverdueReceiptReviewAlerter;
@@ -50,7 +50,7 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
     }
 
     private static BigDecimal amountOf(JsonNode money) {
-        return new BigDecimal(money.get("amount").asText());
+        return new BigDecimal(money.get("amount").asString(""));
     }
 
     private JsonNode queueEntryOf(Long receiptId, String token) throws Exception {
@@ -89,11 +89,11 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         JsonNode beforeAlert = queueEntryOf(submitted.receiptId(), token);
 
         assertThat(amountOf(beforeAlert.get("declaredAmount"))).isEqualByComparingTo("80000.00");
-        assertThat(beforeAlert.get("declaredAmount").get("currency").asText()).isEqualTo("ARS");
-        assertThat(beforeAlert.get("transferDate").asText()).isEqualTo("2027-03-15");
-        assertThat(beforeAlert.get("operationNumber").asText()).isEqualTo("OP-QUEUE-1");
-        assertThat(beforeAlert.get("originAccount").asText()).isEqualTo("0170099220000067797370");
-        assertThat(beforeAlert.get("holderName").asText()).isEqualTo("Ana Pérez");
+        assertThat(beforeAlert.get("declaredAmount").get("currency").asString("")).isEqualTo("ARS");
+        assertThat(beforeAlert.get("transferDate").asString("")).isEqualTo("2027-03-15");
+        assertThat(beforeAlert.get("operationNumber").asString("")).isEqualTo("OP-QUEUE-1");
+        assertThat(beforeAlert.get("originAccount").asString("")).isEqualTo("0170099220000067797370");
+        assertThat(beforeAlert.get("holderName").asString("")).isEqualTo("Ana Pérez");
         assertThat(beforeAlert.get("invoices")).hasSize(2);
         assertThat(beforeAlert.get("invoices").get(0).get("invoiceId").asLong()).isEqualTo(march);
         assertThat(amountOf(beforeAlert.get("invoices").get(0).get("totalAmount"))).isEqualByComparingTo("50000.00");
@@ -109,7 +109,7 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         JsonNode afterAlert = queueEntryOf(submitted.receiptId(), token);
 
         assertThat(afterAlert.get("reviewAlertSent").asBoolean()).isTrue();
-        assertThat(afterAlert.get("reviewAlertSentAt").asText()).startsWith("2027-03-18T09:00");
+        assertThat(afterAlert.get("reviewAlertSentAt").asString("")).startsWith("2027-03-18T09:00");
     }
 
     @Test
@@ -164,9 +164,9 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
                 .contentType(MediaType.APPLICATION_JSON).content("{\"rejectionReason\":\"No coincide\"}")).andExpect(status().isOk()).andReturn();
 
         JsonNode body = bodyOf(result);
-        assertThat(body.get("status").asText()).isEqualTo("REJECTED");
+        assertThat(body.get("status").asString("")).isEqualTo("REJECTED");
         assertThat(body.get("pendingBusinessDays").isNull()).isTrue();
-        assertThat(body.get("operationNumber").asText()).isEqualTo("OP-QUEUE-3");
+        assertThat(body.get("operationNumber").asString("")).isEqualTo("OP-QUEUE-3");
         assertThat(body.get("invoices")).hasSize(1);
     }
 
@@ -201,8 +201,8 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         JsonNode entry = ownEntryOf(submitted.receiptId(), studentTokenOf(debtor));
 
         assertThat(amountOf(entry.get("declaredAmount"))).isEqualByComparingTo("80000.00");
-        assertThat(entry.get("transferDate").asText()).isEqualTo("2027-03-15");
-        assertThat(entry.get("operationNumber").asText()).isEqualTo("OP-OWN-1");
+        assertThat(entry.get("transferDate").asString("")).isEqualTo("2027-03-15");
+        assertThat(entry.get("operationNumber").asString("")).isEqualTo("OP-OWN-1");
         assertThat(entry.get("invoices")).hasSize(2);
         assertThat(entry.get("invoices").get(0).get("invoiceId").asLong()).isEqualTo(march);
         assertThat(amountOf(entry.get("invoices").get(0).get("totalAmount"))).isEqualByComparingTo("50000.00");
@@ -257,8 +257,8 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         JsonNode uploader = queueEntryOf(bodyOf(uploaded).get("receiptId").asLong(), staffToken).get("uploadedBy");
 
         assertThat(uploader.get("personId").asLong()).isEqualTo(staff.getId());
-        assertThat(uploader.get("name").asText()).isEqualTo(staff.getName() + " " + staff.getLastname());
-        assertThat(uploader.get("role").asText()).isEqualTo(role);
+        assertThat(uploader.get("name").asString("")).isEqualTo(staff.getName() + " " + staff.getLastname());
+        assertThat(uploader.get("role").asString("")).isEqualTo(role);
         assertThat(uploader.get("internal").asBoolean()).isTrue();
     }
 
@@ -273,7 +273,7 @@ class BankTransferReceiptReviewQueueIT extends AbstractBankTransferReceiptHttpIT
         JsonNode uploader = queueEntryOf(bodyOf(uploaded).get("receiptId").asLong(), staffToken("ADMINISTRATIVO")).get("uploadedBy");
 
         assertThat(uploader.get("personId").asLong()).isEqualTo(personOf(debtor).getId());
-        assertThat(uploader.get("role").asText()).isEqualTo("ALUMNO");
+        assertThat(uploader.get("role").asString("")).isEqualTo("ALUMNO");
         assertThat(uploader.get("internal").asBoolean()).isFalse();
     }
 
