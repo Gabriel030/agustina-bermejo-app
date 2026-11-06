@@ -67,6 +67,22 @@ export const handlers = [
       { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
     ]),
   ),
+  http.get(`${API}/programs`, () => HttpResponse.json([])),
+  http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),
+  http.get(`${API}/academic-offering-cycles/:id/occupancy`, ({ params }) => HttpResponse.json({ cycleId: Number(params.id), sections: [] })),
+  http.get(`${API}/course-subjects/:id/sections`, () => HttpResponse.json([])),
+  http.post(`${API}/students/:id/program-enrollments`, ({ params }) =>
+    HttpResponse.json(
+      { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
+      { status: 201 },
+    ),
+  ),
+  http.post(`${API}/students/:id/course-enrollments`, ({ params }) =>
+    HttpResponse.json(
+      { id: 1, studentId: Number(params.id), courseId: 1, courseName: 'Curso de prueba', status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
+      { status: 201 },
+    ),
+  ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>
