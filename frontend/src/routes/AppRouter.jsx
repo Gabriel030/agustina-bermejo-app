@@ -6,6 +6,8 @@ import { ROLE_CONFIG } from '@/routes/roleConfig';
 import { firstRealPage, pageLabel } from '@/routes/menuAccess';
 import { ModuleGate } from '@/routes/ModuleGate';
 import { PUBLIC_ROUTES, SHARED_ROUTES, roleRoutesFor } from '@/routes/featureRoutes';
+import { GlassCard } from '@/components/GlassCard';
+import { OfflineState } from '@/pwa/OfflineState';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
 import { PublicLayout } from '@/layouts/PublicLayout';
@@ -36,9 +38,19 @@ function renderRoleRoutes(role, pages) {
 }
 
 export function AppRouter() {
-  const { cargando, usuario } = useAuth();
+  const { cargando, usuario, sessionPending, retrySession } = useAuth();
 
   if (cargando) return <CargaInicial />;
+
+  if (sessionPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <GlassCard className="w-full max-w-md p-6">
+          <OfflineState onRetry={retrySession} />
+        </GlassCard>
+      </div>
+    );
+  }
 
   return (
     <Routes>

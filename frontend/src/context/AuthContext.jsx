@@ -5,6 +5,12 @@ import { claimOfflineCache, purgeOfflineData } from '@/api/offlinePersistence';
 
 const AuthContext = createContext(null);
 
+const RESTORE_RETRY_DELAYS_MS = [2000, 5000, 15000, 30000, 60000];
+
+function isSessionRejected(error) {
+  return error?.status === 401 || error?.status === 403 || error?.name === 'AuthError';
+}
+
 let storedSessionRestoration = null;
 
 export function restoreStoredSession() {
@@ -32,6 +38,8 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [loggedOut, setLoggedOut] = useState(false);
+  const [sessionPending, setSessionPending] = useState(false);
+  const [restoreAttempts, setRestoreAttempts] = useState(0);
   const queryClient = useContext(QueryClientContext);
 
   const limpiarSesion = useCallback(() => {
@@ -59,21 +67,55 @@ export function AuthProvider({ children }) {
     setSessionExpiredHandler(limpiarSesion);
   }, [limpiarSesion]);
 
+  const attemptRestore = useCallback(async () => {
+    try {
+      const perfil = await restoreStoredSession();
+      if (perfil) {
+        await claimOfflineCache(perfil.id, queryClient);
+        setUsuario(perfil);
+      }
+      setSessionPending(false);
+      setRestoreAttempts(0);
+    } catch (error) {
+      if (isSessionRejected(error)) {
+        setSessionPending(false);
+        limpiarSesion();
+      } else {
+        setSessionPending(true);
+        setRestoreAttempts((attempts) => attempts + 1);
+      }
+    } finally {
+      setCargando(false);
+    }
+  }, [queryClient, limpiarSesion]);
+
   useEffect(() => {
     if (!localStorage.getItem('refreshToken')) {
       setCargando(false);
       return;
     }
-    restoreStoredSession()
-      .then(async (perfil) => {
-        if (!perfil) return;
-        await claimOfflineCache(perfil.id, queryClient);
-        setUsuario(perfil);
-      })
-      .catch(limpiarSesion)
-      .finally(() => setCargando(false));
+    attemptRestore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!sessionPending || restoreAttempts === 0 || restoreAttempts > RESTORE_RETRY_DELAYS_MS.length) return undefined;
+    const timer = setTimeout(attemptRestore, RESTORE_RETRY_DELAYS_MS[restoreAttempts - 1]);
+    return () => clearTimeout(timer);
+  }, [sessionPending, restoreAttempts, attemptRestore]);
+
+  useEffect(() => {
+    if (!sessionPending) return undefined;
+    const retryWhenVisible = () => {
+      if (document.visibilityState === 'visible') attemptRestore();
+    };
+    window.addEventListener('online', attemptRestore);
+    document.addEventListener('visibilitychange', retryWhenVisible);
+    return () => {
+      window.removeEventListener('online', attemptRestore);
+      document.removeEventListener('visibilitychange', retryWhenVisible);
+    };
+  }, [sessionPending, attemptRestore]);
 
   const login = useCallback(async (username, password) => {
     const tokens = await apiFetch('/auth/login', {
@@ -138,8 +180,8 @@ export function AuthProvider({ children }) {
   }, [limpiarSesion]);
 
   const value = useMemo(
-    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut }),
-    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut],
+    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionPending, retrySession: attemptRestore }),
+    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionPending, attemptRestore],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

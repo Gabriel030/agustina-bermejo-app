@@ -30,6 +30,17 @@ function renderApp(initialPath) {
 }
 
 describe('AppRouter', () => {
+  it('showsTheOfflineStateInsteadOfLoginWhenTheStoredSessionCannotBeRefreshed', async () => {
+    localStorage.setItem('refreshToken', 'stored');
+    server.use(http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 503 })));
+    renderApp('/director/inicio');
+
+    expect(await screen.findByText('Sin conexión', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('DNI o email')).not.toBeInTheDocument();
+    expect(localStorage.getItem('refreshToken')).toBe('stored');
+    localStorage.clear();
+  }, 15000);
+
   it('does not treat /director/alumnos/nuevo as the record of a student called "nuevo"', async () => {
     const requestedStudents = [];
     server.use(
