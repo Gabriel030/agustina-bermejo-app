@@ -5,9 +5,12 @@ import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { OfflineAwareButton } from '@/components/offline/OfflineAwareButton';
+import { StaleStamp } from '@/components/offline/StaleStamp';
+import { useOnlineStatus } from '@/pwa/useOnlineStatus';
 import {
   useMiAsistencia,
-  useMiRiesgoDeAsistencia,
+  useMyAttendanceSummary,
   useJustificarInasistencia,
 } from '@/features/attendance/hooks/useStudentAttendance';
 
@@ -94,13 +97,17 @@ function InasistenciasJustificadas({ registros }) {
 }
 
 export function SeccionAsistencia({ sectionEnrollmentId }) {
-  const { data: registros, isLoading: cargandoAsistencia } = useMiAsistencia(sectionEnrollmentId);
-  const { data: riesgo, isLoading: cargandoRiesgo } = useMiRiesgoDeAsistencia(sectionEnrollmentId);
+  const online = useOnlineStatus();
+  const { data: resumen, isLoading: cargandoResumen, isError: errorResumen, isFetching: actualizandoResumen, dataUpdatedAt } =
+    useMyAttendanceSummary(sectionEnrollmentId);
+  const { data: detalle } = useMiAsistencia(sectionEnrollmentId, { enabled: online });
+  const registros = detalle ?? resumen?.days;
+  const riesgo = resumen?.risk;
   const justificar = useJustificarInasistencia();
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [archivo, setArchivo] = useState(null);
 
-  if (cargandoAsistencia || cargandoRiesgo) {
+  if (cargandoResumen) {
     return (
       <GlassCard className="flex flex-col gap-4 p-5">
         <div className="font-heading text-[15px] font-semibold text-ink">Asistencia</div>
@@ -132,7 +139,10 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
 
   return (
     <GlassCard className="flex flex-col gap-5 p-5">
-      <div className="font-heading text-[15px] font-semibold text-ink">Asistencia</div>
+      <div className="flex items-center gap-2">
+        <div className="font-heading text-[15px] font-semibold text-ink">Asistencia</div>
+        <StaleStamp dataUpdatedAt={dataUpdatedAt} isFetching={actualizandoResumen} isError={errorResumen} hasData={resumen !== undefined} />
+      </div>
 
       {total === 0 ? (
         <div className="text-sm text-ink-faint">Todavía no hay clases registradas para esta materia.</div>
@@ -238,9 +248,9 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
             <Button variant="outline" className="rounded-xl" onClick={() => cerrarModal(false)}>
               Cancelar
             </Button>
-            <Button variant="gradient" onClick={confirmarJustificacion} disabled={!archivo || justificar.isPending}>
+            <OfflineAwareButton variant="gradient" onClick={confirmarJustificacion} disabled={!archivo || justificar.isPending}>
               {justificar.isPending ? 'Subiendo…' : 'Justificar'}
-            </Button>
+            </OfflineAwareButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

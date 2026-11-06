@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -75,15 +76,28 @@ class InvoiceFactoryTest {
         } }).isInstanceOf(InvoiceLineNotAllowedForInvoiceTypeException.class);
     }
 
-    @Test
-    void anAnnualUpfrontInvoiceAcceptsTenMonthlyLinesAndRejectsAnEleventh() {
-        Invoice annual = annualDraft(10);
+    @Tag("D-524")
+    @ParameterizedTest(name = "{0} renglones")
+    @ValueSource(ints = {10, 11})
+    void anAnnualUpfrontInvoiceAcceptsTheInstallmentsOfTheConfiguredLectiveYear(int installments) {
+        Invoice annual = annualDraft(installments);
 
-        assertThat(annual.getLines()).hasSize(10);
-        assertThat(annual.getAmounts().total()).isEqualTo(ars("10000.00"));
-        assertThatThrownBy(() -> annual.addChargeLineToDraft(monthlyLine("1000.00", "ELEVENTH")))
+        assertThat(annual.getLines()).hasSize(installments);
+        assertThat(annual.getAmounts().total()).isEqualTo(ars(installments + "000.00"));
+        annual.addChargeLineToDraft(monthlyLine("1000.00", "NEXT"));
+        assertThat(annual.getLines()).hasSize(installments + 1);
+    }
+
+    @Tag("D-524")
+    @Test
+    void anAnnualUpfrontInvoiceAcceptsTwelveLinesAndRejectsAThirteenth() {
+        Invoice annual = annualDraft(12);
+
+        assertThat(annual.getLines()).hasSize(12);
+        assertThatThrownBy(() -> annual.addChargeLineToDraft(monthlyLine("1000.00", "THIRTEENTH")))
                 .isInstanceOf(InvoiceLineNotAllowedForInvoiceTypeException.class);
-        assertThat(annual.getLines()).hasSize(10);
+        assertThat(annual.getLines()).hasSize(12);
+        assertThatThrownBy(() -> annualDraft(13)).isInstanceOf(InvoiceLineNotAllowedForInvoiceTypeException.class);
     }
 
     @Test

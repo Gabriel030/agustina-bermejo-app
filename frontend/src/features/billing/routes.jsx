@@ -1,4 +1,5 @@
 import { lazyPage } from '@/routes/lazyPage';
+import { RequiresConnection } from '@/components/offline/RequiresConnection';
 const AlumnoPagos = lazyPage(() => import('@/pages/AlumnoPagos'), 'AlumnoPagos');
 const AlumnoPagoDetalle = lazyPage(() => import('@/pages/AlumnoPagoDetalle'), 'AlumnoPagoDetalle');
 const AlumnoPagarSeleccion = lazyPage(() => import('@/pages/AlumnoPagarSeleccion'), 'AlumnoPagarSeleccion');
@@ -27,14 +28,14 @@ export const routes = {
   public: [],
   shared: [],
   role: [
-    { roles: ['alumno'], path: 'pagos', element: <AlumnoPagos /> },
-    { roles: ['alumno'], path: 'pagos/estado', element: <AlumnoPagoEstado /> },
-    { roles: ['alumno'], path: 'pagos/notas-de-credito', element: <MyCreditNotesPage /> },
-    { roles: ['alumno'], path: 'pagos/curso/:enrollmentId', element: <AlumnoPagoDetalle /> },
-    { roles: ['alumno'], path: 'pagos/carrera/:enrollmentId', element: <AlumnoPagoDetalle /> },
-    { roles: ['alumno'], path: 'pagos/:invoiceId/seleccion', element: <AlumnoPagarSeleccion /> },
-    { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <AlumnoPagarTransferencia /> },
-    { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <AlumnoPagarOnline /> },
+    { roles: ['alumno'], path: 'pagos', element: <RequiresConnection><AlumnoPagos /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/estado', element: <RequiresConnection><AlumnoPagoEstado /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/notas-de-credito', element: <RequiresConnection><MyCreditNotesPage /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/curso/:enrollmentId', element: <RequiresConnection><AlumnoPagoDetalle /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/carrera/:enrollmentId', element: <RequiresConnection><AlumnoPagoDetalle /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/:invoiceId/seleccion', element: <RequiresConnection><AlumnoPagarSeleccion /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <RequiresConnection><AlumnoPagarTransferencia /></RequiresConnection> },
+    { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <RequiresConnection><AlumnoPagarOnline /></RequiresConnection> },
     { roles: ['administrativo', 'director'], path: 'facturacion', element: <AdministrativoFacturacion /> },
     { roles: ['administrativo', 'director'], path: 'facturacion/alumnos/:studentId/cargar-comprobante', element: <AdministrativoCargarComprobante /> },
     { roles: ['administrativo', 'director'], path: 'facturacion/cuotas/:invoiceId/nota-de-credito', element: <CreateCreditNotePage /> },
