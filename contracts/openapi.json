@@ -1402,6 +1402,10 @@
           "studentDni" : {
             "type" : "string"
           },
+          "studentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "studentName" : {
             "type" : "string"
           },
@@ -1417,7 +1421,7 @@
             "$ref" : "#/components/schemas/ReceiptUploader"
           }
         },
-        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentName", "transferDate", "uploadedAt", "uploadedBy" ],
+        "required" : [ "declaredAmount", "filePath", "holderName", "id", "invoiceFeeType", "invoiceId", "invoiceIds", "invoicePeriod", "invoices", "operationNumber", "originAccount", "pendingBusinessDays", "productName", "rejectionCode", "rejectionReason", "reviewAlertSent", "reviewAlertSentAt", "status", "studentDni", "studentId", "studentName", "transferDate", "uploadedAt", "uploadedBy" ],
         "type" : "object"
       },
       "BankTransferReceiptSubmissionResponse" : {
