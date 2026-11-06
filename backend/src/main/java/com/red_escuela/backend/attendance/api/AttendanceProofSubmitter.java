@@ -6,7 +6,7 @@ import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.exception.JustificationDeadlineExpiredException;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
-import com.red_escuela.backend.attendance.service.JustificationDeadlinePolicy;
+import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

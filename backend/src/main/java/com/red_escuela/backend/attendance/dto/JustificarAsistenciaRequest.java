@@ -1,11 +1,12 @@
 package com.red_escuela.backend.attendance.dto;
 
 import com.red_escuela.backend.attendance.exception.InvalidJustificationInputException;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 import java.util.regex.Pattern;
 
-public record JustificarAsistenciaRequest(@NotBlank String reason, String attachmentUrl, String exceptionReason) {
+public record JustificarAsistenciaRequest(@NotBlank String reason, String attachmentUrl, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String exceptionReason) {
 
     private static final int REASON_MAX_LENGTH = 500;
     private static final int ATTACHMENT_MAX_LENGTH = 255;

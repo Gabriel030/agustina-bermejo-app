@@ -7,7 +7,7 @@ import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceActorResolver;
 import com.red_escuela.backend.attendance.service.AttendanceFinder;
 import com.red_escuela.backend.attendance.service.AttendanceJustificationRecorder;
-import com.red_escuela.backend.attendance.service.JustificationDeadlinePolicyTest;
+import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicyTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -31,8 +31,8 @@ class JustifyAttendanceServiceTest {
 
     private JustifyAttendanceService serviceOn(LocalDate today) {
         return new JustifyAttendanceService(
-                attendanceRepository, attendanceFinder, new AttendanceJustificationRecorder(actorResolver),
-                JustificationDeadlinePolicyTest.policy(today, 5), mock(ApplicationEventPublisher.class));
+                attendanceRepository, attendanceFinder, new AttendanceJustificationRecorder(actorResolver, JustificationDeadlinePolicyTest.policy(today, 5)),
+                mock(ApplicationEventPublisher.class));
     }
 
     private Attendance absence() {

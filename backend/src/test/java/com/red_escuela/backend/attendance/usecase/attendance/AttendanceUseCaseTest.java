@@ -45,6 +45,7 @@ import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -112,6 +113,11 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private GetProgramSectionRosterUseCase getProgramSectionRosterUseCase;
+
+    @BeforeEach
+    void pinApplicationClockJustAfterTheClassDay() {
+        MutableClock.INSTANCE.setDate(CLASS_DAY.plusDays(1));
+    }
 
     @AfterEach
     void clearSecurityContext() {
@@ -746,7 +752,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Attendance first = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         Person preceptor = persistPersonBase("80000050");
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
-        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), "certificado médico", null, null));
+        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), "certificado médico", null, "Presentado fuera de plazo"));
         entityManager.flush();
 
         List<RosterEntryResponse> roster = getProgramSectionRosterUseCase.get(

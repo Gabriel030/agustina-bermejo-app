@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.service;
 
+import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicyTest;
 import com.red_escuela.backend.attendance.api.AttendanceProofSubmitter;
 import com.red_escuela.backend.attendance.dto.AttendanceResponse;
 import com.red_escuela.backend.attendance.entity.Attendance;

@@ -6,7 +6,7 @@ import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.exception.JustificationDeadlineExpiredException;
-import com.red_escuela.backend.attendance.service.JustificationDeadlinePolicyTest;
+import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicyTest;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

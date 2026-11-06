@@ -9,12 +9,16 @@ import com.red_escuela.backend.attendance.dto.RejectAttendanceJustificationReque
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.identity.entity.Person;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import com.red_escuela.backend.shared.time.MutableClock;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import org.springframework.mock.web.MockMultipartFile;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -36,6 +40,11 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
 
     private Classroom classroom(String key, String dniBase) {
         return persistClassroom(key, dniBase, persistScheme(2, true, null), null, 10, 10, InstructorRole.LEAD);
+    }
+
+    @BeforeEach
+    void pinApplicationClockInsideTheJustificationDeadline() {
+        MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 6));
     }
 
     private long pendingJustification(Classroom classroom, int day) throws Exception {
@@ -211,7 +220,7 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
                 .andExpect(status().isOk());
 
         postJson(preceptor, "/attendance/" + attendanceId + "/justify",
-                new com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest("Certificado presentado en mostrador", null, "Presentado fuera de plazo"))
+                new com.red_escuela.backend.attendance.dto.JustificarAsistenciaRequest("Certificado presentado en mostrador", null, null))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("JUSTIFIED"))
                 .andExpect(jsonPath("$.justificationRejectionReason").doesNotExist());
@@ -261,9 +270,9 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
                 .andExpect(status().isForbidden());
         postJson(classroom.teacher(), "/attendance/" + byTeacher + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, null))
                 .andExpect(status().isForbidden());
-        postJson(preceptor, "/attendance/" + byPreceptor + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, "Fuera de plazo"))
+        postJson(preceptor, "/attendance/" + byPreceptor + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, null))
                 .andExpect(status().isOk());
-        postJson(administrative, "/attendance/" + byAdministrative + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, "Fuera de plazo"))
+        postJson(administrative, "/attendance/" + byAdministrative + "/justify", new JustificarAsistenciaRequest("Certificado presentado", null, null))
                 .andExpect(status().isOk());
 
         assertThat(storedStatus(byStudent)).isEqualTo(AttendanceStatus.ABSENT);
@@ -286,7 +295,47 @@ class AttendanceJustificationStaffCharacterizationTest extends CourseworkCharact
                 .andExpect(status().isBadRequest());
 
         assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
-        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_3f2c-ab.pdf", "Fuera de plazo"))
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", "students/1/justificaciones-asistencia_3f2c-ab.pdf", null))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void justifyingAnAbsenceOlderThanTheDeadlineRequiresAnExceptionReason() throws Exception {
+        Classroom classroom = classroom("jus13", "7700014");
+        Person preceptor = persistPerson("jus13.preceptor", "77000147", "PRECEPTOR");
+        long attendanceId = recordedAbsence(classroom, 2);
+        MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 20));
+        String path = "/attendance/" + attendanceId + "/justify";
+
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", null, null)).andExpect(status().isBadRequest());
+        assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
+
+        postJson(preceptor, path, new JustificarAsistenciaRequest("Certificado", null, "Internación prolongada"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("JUSTIFIED"))
+                .andExpect(jsonPath("$.justificationReason").value("Certificado [Excepción fuera de plazo: Internación prolongada]"));
+    }
+
+    @Test
+    void theOwnInstructorSubmitsAProofThatLeavesTheAbsencePendingAndAnotherInstructorCannot() throws Exception {
+        Classroom classroom = classroom("jus14", "7700015");
+        Classroom other = classroom("jus14b", "7700016");
+        long attendanceId = recordedAbsence(classroom, 2);
+        MockMultipartFile proof = new MockMultipartFile(
+                "proof", "certificado.pdf", "application/pdf", "%PDF-1.4 certificado".getBytes());
+        String path = "/attendance/" + attendanceId + "/justification-proof";
+
+        mockMvc.perform(multipart(path).file(proof)
+                        .header("Authorization", bearer(other.teacher())))
+                .andExpect(status().isForbidden());
+        assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.ABSENT);
+
+        mockMvc.perform(multipart(path).file(proof)
+                        .param("reason", "Certificado médico")
+                        .header("Authorization", bearer(classroom.teacher())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("JUSTIFICATION_PENDING"))
+                .andExpect(jsonPath("$.justificationReason").value("Certificado médico"));
+        assertThat(storedStatus(attendanceId)).isEqualTo(AttendanceStatus.JUSTIFICATION_PENDING);
     }
 }

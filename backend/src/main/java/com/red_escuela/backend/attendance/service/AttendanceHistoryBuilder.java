@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.service;
 
+import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicy;
 import com.red_escuela.backend.attendance.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
