@@ -4,7 +4,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "INVALID_ANNUAL_UPFRONT_SETTINGS", decisions = {"D-155", "D-156"})
+@PolicyRule(violationCodes = "INVALID_ANNUAL_UPFRONT_SETTINGS", decisions = {"D-155", "D-156", "D-522"})
 public final class AnnualUpfrontSettingsCoherencePolicy implements Policy<AnnualUpfrontCheck> {
     private static final String CODE = "INVALID_ANNUAL_UPFRONT_SETTINGS";
 
@@ -16,8 +16,8 @@ public final class AnnualUpfrontSettingsCoherencePolicy implements Policy<Annual
         if (check.settings().paymentDeadlineHours() < 1) {
             return PolicyVerdict.deny(ruleName(), CODE, "El plazo de pago debe ser de al menos 1 hora.");
         }
-        if (check.settings().requestDeadline().isAfter(check.termStart())) {
-            return PolicyVerdict.deny(ruleName(), CODE, "La fecha límite no puede ser posterior a la primera cuota del año lectivo.");
+        if (check.settings().requestDeadline().isAfter(check.firstInstallmentDueDate())) {
+            return PolicyVerdict.deny(ruleName(), CODE, "La fecha límite no puede ser posterior al vencimiento de la primera cuota del año lectivo.");
         }
         if (check.settings().requestDeadline().getYear() < check.termStart().getYear() - 1) {
             return PolicyVerdict.deny(ruleName(), CODE, "La fecha límite debe caer dentro del año lectivo o del año anterior.");

@@ -30,14 +30,14 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 4 | AnnualUpfrontBlockedByOverdueDebtPolicy | OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT | D-152, D-292 |
 | 5 | OnlyOneAnnualUpfrontRequestPolicy | ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED | D-131 |
 | 6 | AnnualUpfrontMonthsStillAvailablePolicy | NO_MONTHS_LEFT_FOR_ANNUAL_UPFRONT | D-131 |
-| 7 | AnnualUpfrontLineCountSupportedPolicy | ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED | D-131 |
+| 7 | AnnualUpfrontLineCountSupportedPolicy | ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED | D-131, D-524 |
 | 8 | AnnualUpfrontPriceAvailablePolicy | NO_EFFECTIVE_PRICE_FOR_ANNUAL_UPFRONT | D-439 |
 
 ## Momento ANNUAL_UPFRONT_SETTINGS
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | AnnualUpfrontSettingsCoherencePolicy | INVALID_ANNUAL_UPFRONT_SETTINGS | D-155, D-156 |
+| 1 | AnnualUpfrontSettingsCoherencePolicy | INVALID_ANNUAL_UPFRONT_SETTINGS | D-155, D-156, D-522 |
 
 ## Momento ANNUAL_UPFRONT_TERMS
 
