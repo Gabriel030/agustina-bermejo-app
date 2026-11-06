@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.reporting.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;

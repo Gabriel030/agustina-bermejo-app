@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.authorization.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperation;
@@ -35,7 +35,7 @@ public class AuthorizedOperationResumer {
     private Object deserializeContext(BillingOperation<Object, Object> operation, String payload) {
         try {
             return objectMapper.readValue(payload, operation.contextType());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Stored operation context cannot be read for " + operation.type(), e);
         }
     }

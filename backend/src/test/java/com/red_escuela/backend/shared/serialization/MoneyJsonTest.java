@@ -1,6 +1,6 @@
 package com.red_escuela.backend.shared.serialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.Money;
@@ -44,7 +44,7 @@ class MoneyJsonTest {
     @Test
     void moneyWithoutCurrencyIsRejected() {
         assertThatThrownBy(() -> objectMapper.readValue("{ \"amount\": \"10.00\" }", Money.class))
-                .isInstanceOf(com.fasterxml.jackson.databind.exc.MismatchedInputException.class);
+                .isInstanceOf(tools.jackson.databind.exc.MismatchedInputException.class);
     }
 
     @Test

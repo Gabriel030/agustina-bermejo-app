@@ -1,6 +1,6 @@
 package com.red_escuela.backend.testsupport.system;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.infrastructure.DemoApiClient;
 import com.red_escuela.backend.config.DemoEducationalSeedRunner;

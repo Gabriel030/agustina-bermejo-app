@@ -1,6 +1,6 @@
 package com.red_escuela.backend.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.config.infrastructure.DemoApiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

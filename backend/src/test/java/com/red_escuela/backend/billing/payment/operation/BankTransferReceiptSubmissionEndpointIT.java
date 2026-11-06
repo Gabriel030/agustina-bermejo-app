@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

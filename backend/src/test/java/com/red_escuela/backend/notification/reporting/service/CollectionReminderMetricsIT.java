@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification.reporting.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.api.PaymentArrival;
 import com.red_escuela.backend.billing.api.PaymentFactsQuery;
 import com.red_escuela.backend.billing.note.service.AbstractCreditNoteIT;

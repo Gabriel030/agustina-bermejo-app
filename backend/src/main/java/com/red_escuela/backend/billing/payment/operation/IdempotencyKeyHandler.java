@@ -3,14 +3,14 @@ package com.red_escuela.backend.billing.payment.operation;
 import com.red_escuela.backend.billing.operation.IdempotencyKeyed;
 import com.red_escuela.backend.billing.payment.service.IdempotencyRecordService;
 import com.red_escuela.backend.billing.payment.service.StoredIdempotentResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
+import tools.jackson.databind.SerializationFeature;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.PreProcessingHandler;
@@ -24,8 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 
 public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PreProcessingHandler<C> {
 
@@ -50,9 +49,10 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
                                   PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
         this.keyFormatPolicies = keyFormatPolicies;
         this.recordService = recordService;
-        this.canonicalMapper = objectMapper.copy()
+        this.canonicalMapper = objectMapper.rebuild()
                 .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
-                .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+                .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+                .build();
         this.optionalKeyBeforeValidation = resultMapping != null;
         this.resultMapping = resultMapping != null ? resultMapping : new StoredResultMapping(result -> result, body -> readJson(body, responseType));
     }
@@ -129,14 +129,12 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
 
     private JsonNode withNormalizedNumbers(JsonNode node) {
         if (node.isNumber()) {
-            return TextNode.valueOf(node.decimalValue().stripTrailingZeros().toPlainString());
+            return StringNode.valueOf(node.decimalValue().stripTrailingZeros().toPlainString());
         }
         if (node.isObject()) {
             ObjectNode object = (ObjectNode) node;
-            Iterator<Map.Entry<String, JsonNode>> fields = object.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                field.setValue(withNormalizedNumbers(field.getValue()));
+            for (String name : List.copyOf(object.propertyNames())) {
+                object.set(name, withNormalizedNumbers(object.get(name)));
             }
         }
         if (node.isArray()) {
@@ -151,7 +149,7 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
     private String writeJson(Object value) {
         try {
             return canonicalMapper.writeValueAsString(value);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("The idempotent payload could not be serialized", exception);
         }
     }
@@ -159,7 +157,7 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
     private <T> T readJson(String json, Class<T> type) {
         try {
             return canonicalMapper.readValue(json, type);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("The stored idempotent response could not be read", exception);
         }
     }

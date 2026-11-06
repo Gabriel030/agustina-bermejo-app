@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.authorization.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
@@ -105,7 +105,7 @@ public class AllocateAccountCreditWhenInvoiceRequestIsClosedObserver implements 
         try {
             JsonNode root = objectMapper.readTree(payload);
             return root.has("invoiceId") ? root.path("invoiceId").asLong() : root.path("items").path(0).path("invoiceId").asLong();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Stored operation context cannot be read for the authorization request " + requestId, e);
         }
     }

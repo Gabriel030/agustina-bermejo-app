@@ -1,8 +1,8 @@
 package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.testsupport.TermFixtures;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.RegisterRequest;
 import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplicationRequest;
@@ -30,7 +30,7 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import org.springframework.http.MediaType;

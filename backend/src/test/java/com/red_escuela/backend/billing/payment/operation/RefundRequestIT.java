@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.authorization.service.AuthorizationRequestExpirer;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.testsupport.SlowTest;

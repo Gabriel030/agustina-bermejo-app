@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.testsupport.TermFixtures;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;

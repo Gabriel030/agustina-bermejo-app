@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.note.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.domain.PendingInvoiceAuthorization;
 import com.red_escuela.backend.billing.authorization.service.PendingInvoiceAuthorizationReader;
 import com.red_escuela.backend.testsupport.SlowTest;
@@ -91,10 +91,10 @@ class InvoiceCancellationSupportIT extends AbstractInvoiceCancellationIT {
         JsonNode blockedByJustification = preview(unpaidInvoice("100.00").invoiceId(), director, cancellationBody("BILLING_ERROR", null));
 
         assertThat(blockedByPayment.get("allowed").asBoolean()).isFalse();
-        assertThat(blockedByPayment.get("blockedBy").findValuesAsText("code")).contains("ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION");
+        assertThat(blockedByPayment.get("blockedBy").findValues("code").stream().map(tools.jackson.databind.JsonNode::asString).toList()).contains("ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION");
         requestCancellation(paid.invoiceId(), director, cancellationBody("BILLING_ERROR", "error"), 409);
         assertThat(blockedByJustification.get("allowed").asBoolean()).isFalse();
-        assertThat(blockedByJustification.get("blockedBy").findValuesAsText("code")).contains("CREDIT_NOTE_JUSTIFICATION_REQUIRED");
+        assertThat(blockedByJustification.get("blockedBy").findValues("code").stream().map(tools.jackson.databind.JsonNode::asString).toList()).contains("CREDIT_NOTE_JUSTIFICATION_REQUIRED");
     }
 
     @Test

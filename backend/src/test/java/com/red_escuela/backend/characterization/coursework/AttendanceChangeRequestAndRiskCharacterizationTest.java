@@ -2,7 +2,7 @@ package com.red_escuela.backend.characterization.coursework;
 
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import org.springframework.test.context.transaction.TestTransaction;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;

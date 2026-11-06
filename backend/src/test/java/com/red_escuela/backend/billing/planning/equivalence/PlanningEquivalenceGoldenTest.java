@@ -1,8 +1,9 @@
 package com.red_escuela.backend.billing.planning.equivalence;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import com.red_escuela.backend.billing.planning.domain.MonthlyInvoicePlan;
 import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
 import com.red_escuela.backend.billing.planning.service.CourseMonthlyInvoicePlanner;
@@ -24,8 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-051")
 class PlanningEquivalenceGoldenTest {
     private static final Path GOLDEN = Path.of("src/test/resources/billing/planning/planning-equivalence-golden.json");
-    private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS).enable(SerializationFeature.INDENT_OUTPUT);
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS).enable(SerializationFeature.INDENT_OUTPUT).build();
 
     private final ProgramMonthlyInvoicePlanner programPlanner = new ProgramMonthlyInvoicePlanner();
     private final CourseMonthlyInvoicePlanner coursePlanner = new CourseMonthlyInvoicePlanner();

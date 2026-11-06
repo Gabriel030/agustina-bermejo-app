@@ -1,10 +1,10 @@
 package com.red_escuela.backend.billing.payment.domain;
 
+import tools.jackson.databind.json.JsonMapper;
 import com.red_escuela.backend.billing.operation.CardPaymentType;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-082")
 class PaymentMethodDetailsJsonTest {
 
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = JsonMapper.builder().build();
 
     static Stream<PaymentMethodDetails> everyVariant() {
         return Stream.of(
@@ -42,7 +42,7 @@ class PaymentMethodDetailsJsonTest {
     void theCashDetailsCarryNeitherInstallmentsNorCardType() throws Exception {
         JsonNode json = mapper.readTree(mapper.writeValueAsString(new CashPaymentDetails("R-100")));
 
-        assertThat(json.fieldNames()).toIterable().containsExactlyInAnyOrder("type", "receiptNumber");
+        assertThat(json.propertyNames()).containsExactlyInAnyOrder("type", "receiptNumber");
     }
 
     @Test

@@ -1,7 +1,8 @@
 package com.red_escuela.backend.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
@@ -24,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MoneyWireSchemaCustomizerTest {
 
-    private static final ObjectMapper WIRE_MAPPER = new ObjectMapper().registerModule(new ValueObjectJacksonModule());
+    private static final ObjectMapper WIRE_MAPPER = JsonMapper.builder().addModule(new ValueObjectJacksonModule()).build();
     private static final ObjectMapper SCHEMA_MAPPER = new ObjectMapper();
     private static final Path SNAPSHOT = Path.of("..", "contracts", "openapi.json");
 
@@ -42,7 +43,7 @@ class MoneyWireSchemaCustomizerTest {
 
     private static List<String> fieldNames(JsonNode node) {
         List<String> names = new ArrayList<>();
-        node.fieldNames().forEachRemaining(names::add);
+        names.addAll(node.propertyNames());
         return names;
     }
 

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.AdminInvoiceResponse;
 import com.red_escuela.backend.billing.dto.MeInvoiceResponse;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
@@ -23,7 +23,7 @@ import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,12 +78,12 @@ class InvoiceResponseContractTest {
         return InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header, line, Optional.of(discount), ACTOR);
     }
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new ValueObjectJacksonModule())
-            .registerModule(new JavaTimeModule());
+    private final JsonMapper objectMapper = JsonMapper.builder()
+            .addModule(new ValueObjectJacksonModule())
+            .build();
 
     private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new ContractController())
-            .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+            .setMessageConverters(new JacksonJsonHttpMessageConverter(objectMapper))
             .build();
 
     @Test

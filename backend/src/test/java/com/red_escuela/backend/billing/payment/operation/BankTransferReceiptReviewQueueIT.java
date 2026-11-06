@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.billing.payment.service.OverdueReceiptReviewAlerter;

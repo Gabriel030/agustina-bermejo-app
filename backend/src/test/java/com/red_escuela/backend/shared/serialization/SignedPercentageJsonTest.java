@@ -1,6 +1,7 @@
 package com.red_escuela.backend.shared.serialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.SignedPercentageWireSchemaCustomizer;
 import com.red_escuela.backend.shared.domain.SignedPercentage;
 import io.swagger.v3.oas.models.Components;
@@ -16,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SignedPercentageJsonTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new ValueObjectJacksonModule());
+    private static final ObjectMapper MAPPER = JsonMapper.builder().addModule(new ValueObjectJacksonModule()).build();
 
     @Test
     void signedPercentageIsWrittenAsAPointsNumberKeepingTheSign() throws Exception {

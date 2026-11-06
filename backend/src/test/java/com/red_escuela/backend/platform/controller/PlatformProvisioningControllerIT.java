@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
@@ -279,7 +279,7 @@ class PlatformProvisioningControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.institutionName").value("Instituto Demo"))
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat(objectMapper.readTree(body).fieldNames()).toIterable().containsExactlyInAnyOrder("directorExists", "institutionName");
+        assertThat(objectMapper.readTree(body).propertyNames()).containsExactlyInAnyOrder("directorExists", "institutionName");
         assertThat(body).doesNotContain("dir@example.com").doesNotContain("30111222");
     }
 

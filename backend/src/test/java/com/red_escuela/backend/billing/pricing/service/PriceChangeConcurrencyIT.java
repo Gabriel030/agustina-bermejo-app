@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.pricing.service;
 
 import com.red_escuela.backend.testsupport.SlowTest;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;

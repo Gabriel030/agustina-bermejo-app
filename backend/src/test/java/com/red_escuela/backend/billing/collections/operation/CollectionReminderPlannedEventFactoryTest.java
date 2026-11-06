@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.collections.operation;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.domain.DailyReminderDigest;
 import com.red_escuela.backend.billing.collections.domain.ReminderContentTerms;
 import com.red_escuela.backend.billing.collections.domain.NonBusinessDays;
@@ -107,7 +107,7 @@ class CollectionReminderPlannedEventFactoryTest {
 
     @Test
     void theEventSurvivesAJsonRoundTrip() throws Exception {
-        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        ObjectMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
         CollectionReminderPlannedEvent event = CollectionReminderPlannedEventFactory.plannedEventOf(55L, 70L, digestOf1203(), ReminderContentTerms.none());
 
         CollectionReminderPlannedEvent read = mapper.readValue(mapper.writeValueAsString(event), CollectionReminderPlannedEvent.class);

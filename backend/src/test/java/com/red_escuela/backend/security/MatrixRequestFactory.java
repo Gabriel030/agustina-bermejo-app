@@ -6,7 +6,7 @@ import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,13 +37,13 @@ final class MatrixRequestFactory {
         this.minimalBodies = minimalBodies;
     }
 
-    MockHttpServletRequestBuilder build(MappedEndpoint endpoint, String bodyOverride, String bearerToken) {
+    AbstractMockHttpServletRequestBuilder<?> build(MappedEndpoint endpoint, String bodyOverride, String bearerToken) {
         return build(endpoint, bodyOverride, bearerToken, MISSING_ID);
     }
 
-    MockHttpServletRequestBuilder build(MappedEndpoint endpoint, String bodyOverride, String bearerToken, Long resourceId) {
+    AbstractMockHttpServletRequestBuilder<?> build(MappedEndpoint endpoint, String bodyOverride, String bearerToken, Long resourceId) {
         String uri = expandPathVariables(endpoint, resourceId);
-        MockHttpServletRequestBuilder request = isMultipart(endpoint)
+        AbstractMockHttpServletRequestBuilder<?> request = isMultipart(endpoint)
                 ? multipartRequest(endpoint, uri)
                 : MockMvcRequestBuilders.request(HttpMethod.valueOf(endpoint.method()), uri);
         addRequiredQueryParametersAndHeaders(endpoint, request);
@@ -59,7 +59,7 @@ final class MatrixRequestFactory {
         return request;
     }
 
-    private MockHttpServletRequestBuilder multipartRequest(MappedEndpoint endpoint, String uri) {
+    private AbstractMockHttpServletRequestBuilder<?> multipartRequest(MappedEndpoint endpoint, String uri) {
         var multipart = MockMvcRequestBuilders.multipart(HttpMethod.valueOf(endpoint.method()), uri);
         Set<String> fileParts = new LinkedHashSet<>();
         minimalBodies.multipartFilePartFor(endpoint.method(), endpoint.path()).ifPresent(fileParts::add);
@@ -114,7 +114,7 @@ final class MatrixRequestFactory {
         return uri;
     }
 
-    private void addRequiredQueryParametersAndHeaders(MappedEndpoint endpoint, MockHttpServletRequestBuilder request) {
+    private void addRequiredQueryParametersAndHeaders(MappedEndpoint endpoint, AbstractMockHttpServletRequestBuilder<?> request) {
         for (MethodParameter parameter : endpoint.handler().getMethodParameters()) {
             RequestParam queryParameter = parameter.getParameterAnnotation(RequestParam.class);
             if (queryParameter != null && queryParameter.required()

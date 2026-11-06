@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.service;
 
 import java.time.Clock;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.operation.CollectionsDailySnapshotStep;
 import com.red_escuela.backend.billing.collections.operation.EnrollmentComplianceSweepPort;
 import com.red_escuela.backend.billing.collections.operation.EnrollmentPaymentStandingStep;
@@ -108,7 +108,7 @@ public class EnrollmentBillingComplianceSweepService implements EnrollmentCompli
     private String serialize(List<Map<String, Object>> errors) {
         try {
             return objectMapper.writeValueAsString(errors);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return errors.toString();
         }
     }
