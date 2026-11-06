@@ -71,6 +71,17 @@ class AnnualUpfrontScopeHandlerTest {
     }
 
     @Test
+    void forAFebruaryYearTheDeadlineIsComparedWithTheFebruaryDueDateAndNotWithMarch() {
+        AnnualUpfrontSettingsCoherencePolicy policy = new AnnualUpfrontSettingsCoherencePolicy();
+
+        AnnualUpfrontCheck onTheDay = validate(LocalDate.of(2027, 2, 1), Optional.of(termsWithDueDays(10)), LocalDate.of(2027, 2, 11));
+        AnnualUpfrontCheck marchDeadline = new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 3, 1), 48), onTheDay.termStart(), onTheDay.firstInstallmentDueDate());
+
+        assertThat(policy.evaluateRule(onTheDay).allowed()).isTrue();
+        assertThat(policy.evaluateRule(marchDeadline).allowed()).isFalse();
+    }
+
+    @Test
     void theDeadlineIsAcceptedOnTheExactDueDateAndRejectedTheNextDay() {
         AnnualUpfrontSettingsCoherencePolicy policy = new AnnualUpfrontSettingsCoherencePolicy();
         LocalDate dueDate = LocalDate.of(2027, 3, 11);

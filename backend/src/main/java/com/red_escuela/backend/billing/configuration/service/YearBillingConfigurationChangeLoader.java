@@ -53,7 +53,7 @@ public class YearBillingConfigurationChangeLoader {
             issuedPeriods.addAll(issuedChargeQueryService.findIssuedInstallmentPeriods(
                     template.programId(), YearMonth.from(template.termStartDate()), YearMonth.from(template.termEndDate())));
         }
-        return new YearBillingConfigurationChange(current, proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods);
+        return new YearBillingConfigurationChange(current, proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods, monthOf(template.termStartDate()));
     }
 
     private YearBillingTerms currentTermsOf(ProgramYearBillingTemplate template) {

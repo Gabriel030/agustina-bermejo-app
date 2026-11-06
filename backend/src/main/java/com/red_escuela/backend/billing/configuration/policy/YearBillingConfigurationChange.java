@@ -10,11 +10,18 @@ public record YearBillingConfigurationChange(
         Optional<YearMonth> termStart,
         Optional<YearMonth> termEnd,
         Set<Integer> issuedEnrollmentFeeSlots,
-        Set<YearMonth> issuedInstallmentPeriods) {
+        Set<YearMonth> issuedInstallmentPeriods,
+        Optional<YearMonth> currentTermStart) {
 
     public YearBillingConfigurationChange {
         issuedEnrollmentFeeSlots = Set.copyOf(issuedEnrollmentFeeSlots);
         issuedInstallmentPeriods = Set.copyOf(issuedInstallmentPeriods);
+    }
+
+    public YearBillingConfigurationChange(ProgramYearBillingTemplateSnapshot current, ProgramYearBillingTemplateSnapshot proposed,
+                                          Optional<YearMonth> termStart, Optional<YearMonth> termEnd,
+                                          Set<Integer> issuedEnrollmentFeeSlots, Set<YearMonth> issuedInstallmentPeriods) {
+        this(current, proposed, termStart, termEnd, issuedEnrollmentFeeSlots, issuedInstallmentPeriods, Optional.empty());
     }
 
     public static YearBillingConfigurationChange forCreation(ProgramYearBillingTemplateSnapshot proposed,

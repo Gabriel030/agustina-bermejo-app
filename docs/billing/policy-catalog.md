@@ -606,10 +606,11 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | TermHasDatesPolicy | TERM_WITHOUT_DATES | D-002 |
-| 2 | SecondEnrollmentFeeAfterFirstPolicy | SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST | D-002 |
-| 3 | FirstEnrollmentFeeNotAfterTermStartPolicy | FIRST_ENROLLMENT_FEE_AFTER_TERM_START | D-002 |
-| 4 | SecondEnrollmentFeeWithinTermPolicy | SECOND_ENROLLMENT_FEE_OUTSIDE_TERM | D-002 |
-| 5 | InstallmentCountWithinTermSpanPolicy | INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN | D-034 |
+| 2 | LectiveYearCalendarSupportedPolicy | LECTIVE_YEAR_CALENDAR_NOT_SUPPORTED | D-524, D-001 |
+| 3 | SecondEnrollmentFeeAfterFirstPolicy | SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST | D-002 |
+| 4 | FirstEnrollmentFeeNotAfterTermStartPolicy | FIRST_ENROLLMENT_FEE_AFTER_TERM_START | D-002 |
+| 5 | SecondEnrollmentFeeWithinTermPolicy | SECOND_ENROLLMENT_FEE_OUTSIDE_TERM | D-002 |
+| 6 | InstallmentCountWithinTermSpanPolicy | INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN | D-034 |
 
 ## Momento YEAR_BILLING_CONFIGURATION_FREEZE
 
@@ -619,6 +620,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 2 | EnrollmentFeeMonthFrozenPolicy | ENROLLMENT_FEE_MONTH_FROZEN | D-036 |
 | 3 | EnrollmentFeeLeadMonthsFrozenPolicy | ENROLLMENT_FEE_LEAD_MONTHS_FROZEN | D-201 |
 | 4 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |
+| 5 | LectiveYearStartFrozenPolicy | LECTIVE_YEAR_START_FROZEN | D-036, D-524 |
 
 ## Máquinas de estado
 
@@ -997,6 +999,15 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): IdempotencyKeyHandler, DirectorAuthorizationHandler
 - Eventos que publica: RefundApprovedEvent
 - Post-procesamiento de RefundApprovedEvent: —
+
+## Operación REGISTER_ANNUAL_UPFRONT_CASH_PAYMENT
+
+- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, ANNUAL_UPFRONT_RECEIPT
+- Pre-procesamiento (en orden): IdempotencyKeyHandler
+- Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentApprovedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación REGISTER_CHARGEBACK
 

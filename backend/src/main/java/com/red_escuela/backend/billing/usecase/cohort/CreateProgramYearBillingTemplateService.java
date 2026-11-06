@@ -68,10 +68,11 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
 
     @Override
     @Transactional
-    public ProgramYearBillingTemplate create(Long programId, Long termId, Integer recurringFeeInvoicesCount, YearBillingConfigurationRequest configuration) {
+    public ProgramYearBillingTemplate create(Long programId, Long termId, Integer requestedInstallmentsCount, YearBillingConfigurationRequest configuration) {
         Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
         Term term = termRepository.findById(termId).orElseThrow(() -> new TermNotFoundException(termId));
         Person actor = currentPersonService.resolveCurrentPerson();
+        Integer recurringFeeInvoicesCount = requestedInstallmentsCount != null ? requestedInstallmentsCount : configurationDefaults.defaultInstallmentsCount(term);
         YearBillingConfigurationRequest effectiveConfiguration = configurationDefaults.completeForCreation(term.getStartDate(), configuration);
         policyEvaluator.requireCoherentYearConfiguration(changeLoader.loadCreation(term.getStartDate(), term.getEndDate(), recurringFeeInvoicesCount, effectiveConfiguration));
 
