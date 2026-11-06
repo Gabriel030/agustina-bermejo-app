@@ -18,6 +18,9 @@ public class LastDigitalPaymentMethodRequiredException extends ConflictException
 
     @Override
     public Map<String, Object> details() {
+        if (openOnlineInvoices <= 0) {
+            return Map.of();
+        }
         return Map.of(OPEN_ONLINE_INVOICES_KEY, openOnlineInvoices);
     }
 }
