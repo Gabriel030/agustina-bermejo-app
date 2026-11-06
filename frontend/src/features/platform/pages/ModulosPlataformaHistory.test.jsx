@@ -118,6 +118,61 @@ describe('ModulosPlataforma history and previous check', () => {
     await waitFor(() => expect(urls).toContain('?page=0&size=25&code=ANALYTICS'));
   });
 
+  it('sendsActorKindAndDateRangeAndResetsThePage', async () => {
+    const urls = [];
+    server.use(
+      http.get(FEATURES_URL, () => HttpResponse.json(features())),
+      http.get(`${FEATURES_URL}/changes`, ({ request }) => {
+        urls.push(new URL(request.url).search);
+        return HttpResponse.json(page([change(1)], { number: Number(new URL(request.url).searchParams.get('page')), totalPages: 2 }));
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<ModulosPlataforma />);
+
+    await screen.findByText('Prueba de cálculo');
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await waitFor(() => expect(urls).toContain('?page=1&size=25'));
+    await user.selectOptions(screen.getByLabelText('Quién'), 'SERVICE');
+    await waitFor(() => expect(urls).toContain('?page=0&size=25&actorKind=SERVICE'));
+    await user.type(screen.getByLabelText('Desde'), '2026-11-01');
+    await user.type(screen.getByLabelText('Hasta'), '2026-11-03');
+    await waitFor(() => expect(urls).toContain('?page=0&size=25&actorKind=SERVICE&from=2026-11-01&to=2026-11-03'));
+  });
+
+  it('doesNotQueryWhenTheRangeIsInverted', async () => {
+    const urls = [];
+    server.use(
+      http.get(FEATURES_URL, () => HttpResponse.json(features())),
+      http.get(`${FEATURES_URL}/changes`, ({ request }) => {
+        urls.push(new URL(request.url).search);
+        return HttpResponse.json(page([change(1)]));
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<ModulosPlataforma />);
+
+    await screen.findByText('Prueba de cálculo');
+    await user.type(screen.getByLabelText('Desde'), '2026-11-05');
+    await user.type(screen.getByLabelText('Hasta'), '2026-11-01');
+    expect(await screen.findByText(/no puede ser posterior/)).toBeInTheDocument();
+    expect(urls.some((search) => search.includes('to=2026-11-01') && search.includes('from=2026-11-05'))).toBe(false);
+  });
+
+  it('showsAFilteredEmptyStateWithoutHidingTheFilters', async () => {
+    server.use(
+      http.get(FEATURES_URL, () => HttpResponse.json(features())),
+      http.get(`${FEATURES_URL}/changes`, ({ request }) => HttpResponse.json(page(new URL(request.url).searchParams.has('actorKind') ? [] : [change(1)]))),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<ModulosPlataforma />);
+
+    await screen.findByText('Prueba de cálculo');
+    await user.selectOptions(screen.getByLabelText('Quién'), 'SERVICE');
+    expect(await screen.findByText('Sin cambios con esos filtros')).toBeInTheDocument();
+    expect(screen.getByLabelText('Quién')).toBeInTheDocument();
+  });
+
   it('showsTheEmptyStateAndTheLoadErrorWithRetry', async () => {
     let calls = 0;
     server.use(
