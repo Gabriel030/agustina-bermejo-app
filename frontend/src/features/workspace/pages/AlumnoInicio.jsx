@@ -11,6 +11,8 @@ import { useAuth } from '@/context/AuthContext';
 import { usePaymentStanding, AdmissionInvoicePendingCard, useAdmissionInvoicesPending } from '@/features/billing';
 import { useMisCursos } from '@/features/enrollment';
 import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
+import { ScheduleCard } from '@/features/schedule';
+import { StaleStamp } from '@/components/offline/StaleStamp';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
 import { tiempoRelativo } from '@/lib/notificaciones';
 
@@ -132,7 +134,7 @@ export function AlumnoInicio() {
   const { data: standing, isLoading: cargandoStanding } = usePaymentStanding();
   const { data: cursos } = useMisCursos();
   const { pendientes: matriculasPendientes } = useAdmissionInvoicesPending();
-  const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, refetch: refetchNovedades } = useNovedades();
+  const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, isFetching: actualizandoNovedades, refetch: refetchNovedades, dataUpdatedAt: novedadesActualizadas } = useNovedades();
   const [searchParams] = useSearchParams();
   const [verTodos, setVerTodos] = useState(false);
   const marcarLeido = useMarcarAvisoLeido();
@@ -187,6 +189,8 @@ export function AlumnoInicio() {
         )}
       </GlassCard>
 
+      <ScheduleCard />
+
       {cursosActivos.length + cursosEnEspera.length > 0 && (
         <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
           <span className="text-[13px] font-semibold text-ink-soft">{resumenDeCursos(cursosActivos.length, cursosEnEspera.length)}</span>
@@ -199,7 +203,10 @@ export function AlumnoInicio() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
         <GlassCard className="flex flex-col p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="font-heading text-[15px] font-semibold text-ink">Novedades</div>
+            <div className="flex items-center gap-2">
+              <div className="font-heading text-[15px] font-semibold text-ink">Novedades</div>
+              <StaleStamp dataUpdatedAt={novedadesActualizadas} isFetching={actualizandoNovedades} isError={errorNovedades} hasData={novedadesRaw !== undefined} />
+            </div>
             {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
           </div>
           {cargandoNovedades ? (
