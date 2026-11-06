@@ -72,6 +72,7 @@ class RefreshReuseIT extends AbstractIntegrationTest {
         String tokenA = authTokenIssuer.issueTokens(person).refreshToken();
         String otherDevice = authTokenIssuer.issueTokens(person).refreshToken();
         AuthTokens rotated = refreshTokenUseCase.refresh(tokenA, CLIENT);
+        MutableClock.INSTANCE.advance(Duration.ofSeconds(GRACE_SECONDS + 1));
 
         assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokenA, CLIENT)).isInstanceOf(InvalidRefreshTokenException.class);
 
