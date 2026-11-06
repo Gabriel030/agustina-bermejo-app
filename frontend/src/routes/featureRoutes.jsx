@@ -9,6 +9,7 @@ import { routes as announcements } from '@/features/announcements/routes';
 import { routes as notifications } from '@/features/notifications/routes';
 import { routes as workspace } from '@/features/workspace/routes';
 import { routes as platform } from '@/features/platform/routes';
+import { routes as institution } from '@/features/institution/routes';
 
 export const FEATURE_ROUTES = {
   identity,
@@ -22,6 +23,7 @@ export const FEATURE_ROUTES = {
   notifications,
   workspace,
   platform,
+  institution,
 };
 
 const collect = (kind) => Object.values(FEATURE_ROUTES).flatMap((featureRoutes) => featureRoutes[kind]);

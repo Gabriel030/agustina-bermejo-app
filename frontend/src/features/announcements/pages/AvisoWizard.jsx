@@ -15,7 +15,7 @@ import { TiraDeConsecuencias } from '../components/TiraDeConsecuencias';
 import { RosterSegmento } from '../components/RosterSegmento';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
-import { useAnnouncementEmailSetting } from '../hooks/useAnnouncementEmailSetting';
+import { useAnnouncementEmailSetting } from '@/features/institution';
 import { useCrearAviso } from '../hooks/useCrearAviso';
 import { aPayload, mensajeDeErrorDeAviso, SPEC_INICIAL, VALORES_INICIALES } from '../lib/formularioDeAviso';
 

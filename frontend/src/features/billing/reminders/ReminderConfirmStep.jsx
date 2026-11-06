@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { InfoTip } from '@/components/charts/InfoTip';
+import { ChangesTable } from '@/components/ChangesTable';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
@@ -46,33 +47,6 @@ function buildConfirmRows(kind, base, draft) {
     }
     return { ...row, today: row.today ? describeNotice(row.today) : '—', next: row.next ? describeNotice(row.next) : '—' };
   });
-}
-
-function ChangesTable({ rows }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="hidden grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 text-xs font-semibold uppercase tracking-wide text-ink-faint sm:grid" aria-hidden="true">
-        <span />
-        <span>Hoy</span>
-        <span>Nuevo</span>
-        <span>Diferencia</span>
-      </div>
-      {rows.map((row) => (
-        <div key={`${row.kind}-${row.key}`} role="group" aria-label={row.label} className="grid gap-1 border-t border-border pt-3 first:border-t-0 first:pt-0 sm:grid-cols-[1.2fr_1fr_1fr_0.8fr] sm:gap-3">
-          <span className="font-medium text-ink">{row.label}</span>
-          <span className="text-sm text-ink-soft">
-            <span className="mr-2 text-xs text-ink-faint sm:hidden">Hoy</span>
-            {row.today ?? '—'}
-          </span>
-          <span className="text-sm text-ink">
-            <span className="mr-2 text-xs text-ink-faint sm:hidden">Nuevo</span>
-            {row.next ?? '—'}
-          </span>
-          <span className="text-sm font-semibold text-ink">{KIND_LABELS[row.kind]}</span>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function ImpactBlock({ kind, impact }) {
@@ -168,7 +142,7 @@ export function ReminderConfirmStep({ kind, scope, base, draft, isDirector, onBa
     <div className="flex flex-col gap-5">
       <GlassCard className="flex flex-col gap-4 p-5">
         <h2 className="font-heading text-lg font-semibold text-ink">Qué cambia</h2>
-        {rows.length === 0 ? <p className="text-sm text-ink-soft">No hay cambios para confirmar.</p> : <ChangesTable rows={rows} />}
+        {rows.length === 0 ? <p className="text-sm text-ink-soft">No hay cambios para confirmar.</p> : <ChangesTable rows={rows.map((row) => ({ ...row, difference: KIND_LABELS[row.kind] }))} />}
       </GlassCard>
       <GlassCard className="flex flex-col gap-4 p-5">
         <div className="grid gap-4 sm:grid-cols-2">
