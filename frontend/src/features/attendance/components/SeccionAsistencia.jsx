@@ -1,3 +1,4 @@
+import { ERROR_MESSAGES } from '@/api/describeError';
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Upload } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -228,7 +229,9 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
           </label>
           {justificar.isError && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
-              No pudimos subir el comprobante. Confirmá que sea un PDF y probá de nuevo.
+              {justificar.error?.code === 'JUSTIFICATION_DEADLINE_EXPIRED'
+                ? ERROR_MESSAGES.JUSTIFICATION_DEADLINE_EXPIRED
+                : 'No pudimos subir el comprobante. Confirmá que sea un PDF y probá de nuevo.'}
             </div>
           )}
           <DialogFooter>
