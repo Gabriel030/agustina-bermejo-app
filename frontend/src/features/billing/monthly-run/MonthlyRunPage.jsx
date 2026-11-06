@@ -15,6 +15,7 @@ import { MonthlyRunHistoryTable } from './MonthlyRunHistoryTable';
 import { MonthlyRunItemsTable } from './MonthlyRunItemsTable';
 import { RunCounterCards } from './RunCounterCards';
 import { RunProgressCard } from './RunProgressCard';
+import { RunReviewBanner } from './RunReviewBanner';
 import { RunSupervisionBanner } from './RunSupervisionBanner';
 import { countProblemItems, currentPeriod, findRealRun, formatPeriod, periodOf } from './monthlyRunLabels';
 
@@ -76,6 +77,7 @@ export function MonthlyRunPage() {
       {periodRuns.isSuccess && (
         <>
           <RunSupervisionBanner period={period} run={run} isCurrentPeriod={period === maxPeriod} />
+          <RunReviewBanner period={period} run={run} />
           {simulationOpen && (
             <ManualIssuanceSimulationPanel
               period={period}
