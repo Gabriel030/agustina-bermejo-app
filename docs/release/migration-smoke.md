@@ -131,3 +131,9 @@ Esperado: `BILLING|f|OFF|1` y una fila `SERVICE`. Si el entorno de produccion de
 ```bash
 docker rm -f smoke-pg
 ```
+
+## 8. Requisitos de despliegue de la verificación pública de certificados
+
+- `FORWARD_HEADERS_STRATEGY=native` y `TRUSTED_PROXIES_REGEX` exacto a la IP del proxy; sin eso el rate limit de `/public/certificates/{code}` es un único bucket global (ver `docs/context/overload-protection.md`).
+- Desactivar o enmascarar los logs de acceso de Tomcat y del proxy para `/public/certificates/` y `/verificar/` (la URL lleva el código de verificación).
+- La migración V194 regeneró los códigos: los PDFs viejos quedan huérfanos en disco como `<códigoViejo>.pdf` con datos personales; pendiente un runbook o job de limpieza.

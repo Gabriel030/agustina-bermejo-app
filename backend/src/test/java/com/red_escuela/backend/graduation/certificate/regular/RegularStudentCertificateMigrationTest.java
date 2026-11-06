@@ -62,9 +62,9 @@ class RegularStudentCertificateMigrationTest {
             assertThatThrownBy(() -> insertRequest(jdbc, null, null)).isInstanceOf(DataIntegrityViolationException.class);
             assertThatThrownBy(() -> insertRequest(jdbc, 1L, 1L)).isInstanceOf(DataIntegrityViolationException.class);
             long requestId = insertRequest(jdbc, 1L, null);
-            assertThatThrownBy(() -> insertCertificate(jdbc, "AAAAAAAAAAAAAAAA", null, null, "VALID", requestId, "BILLING_VERIFIED", null))
+            assertThatThrownBy(() -> insertCertificate(jdbc, "AAAAAAAAAAAAAAAAAAAAAAAAAA", null, null, "VALID", requestId, "BILLING_VERIFIED", null))
                     .isInstanceOf(DataIntegrityViolationException.class);
-            assertThatThrownBy(() -> insertCertificate(jdbc, "AAAAAAAAAAAAAAAA", 1L, 1L, "VALID", requestId, "BILLING_VERIFIED", null))
+            assertThatThrownBy(() -> insertCertificate(jdbc, "AAAAAAAAAAAAAAAAAAAAAAAAAA", 1L, 1L, "VALID", requestId, "BILLING_VERIFIED", null))
                     .isInstanceOf(DataIntegrityViolationException.class);
         }
     }
@@ -75,14 +75,14 @@ class RegularStudentCertificateMigrationTest {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
             long requestId = insertRequest(jdbc, 1L, null);
 
-            insertCertificate(jdbc, "AAAAAAAAAAAAAAAA", 1L, null, "EXPIRED", requestId, "BILLING_VERIFIED", null);
-            insertCertificate(jdbc, "BBBBBBBBBBBBBBBB", 1L, null, "EXPIRED", requestId, "BILLING_VERIFIED", null);
-            insertCertificate(jdbc, "CCCCCCCCCCCCCCCC", 1L, null, "VALID", requestId, "BILLING_VERIFIED", null);
-            insertCertificate(jdbc, "DDDDDDDDDDDDDDDD", 2L, null, "VALID", requestId, "BILLING_VERIFIED", null);
+            insertCertificate(jdbc, "AAAAAAAAAAAAAAAAAAAAAAAAAA", 1L, null, "EXPIRED", requestId, "BILLING_VERIFIED", null);
+            insertCertificate(jdbc, "BBBBBBBBBBBBBBBBBBBBBBBBBB", 1L, null, "EXPIRED", requestId, "BILLING_VERIFIED", null);
+            insertCertificate(jdbc, "CCCCCCCCCCCCCCCCCCCCCCCCCC", 1L, null, "VALID", requestId, "BILLING_VERIFIED", null);
+            insertCertificate(jdbc, "DDDDDDDDDDDDDDDDDDDDDDDDDD", 2L, null, "VALID", requestId, "BILLING_VERIFIED", null);
 
-            assertThatThrownBy(() -> insertCertificate(jdbc, "EEEEEEEEEEEEEEEE", 1L, null, "VALID", requestId, "BILLING_VERIFIED", null))
+            assertThatThrownBy(() -> insertCertificate(jdbc, "EEEEEEEEEEEEEEEEEEEEEEEEEE", 1L, null, "VALID", requestId, "BILLING_VERIFIED", null))
                     .isInstanceOf(DataIntegrityViolationException.class);
-            assertThatThrownBy(() -> insertCertificate(jdbc, "CCCCCCCCCCCCCCCC", 3L, null, "VALID", requestId, "BILLING_VERIFIED", null))
+            assertThatThrownBy(() -> insertCertificate(jdbc, "CCCCCCCCCCCCCCCCCCCCCCCCCC", 3L, null, "VALID", requestId, "BILLING_VERIFIED", null))
                     .isInstanceOf(DataIntegrityViolationException.class);
         }
     }
@@ -93,9 +93,9 @@ class RegularStudentCertificateMigrationTest {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
             long requestId = insertRequest(jdbc, 1L, null);
 
-            assertThatThrownBy(() -> insertCertificate(jdbc, "AAAAAAAAAAAAAAAA", 1L, null, "VALID", requestId, "MANUALLY_CONFIRMED", null))
+            assertThatThrownBy(() -> insertCertificate(jdbc, "AAAAAAAAAAAAAAAAAAAAAAAAAA", 1L, null, "VALID", requestId, "MANUALLY_CONFIRMED", null))
                     .isInstanceOf(DataIntegrityViolationException.class);
-            insertCertificate(jdbc, "BBBBBBBBBBBBBBBB", 1L, null, "VALID", requestId, "MANUALLY_CONFIRMED", 9L);
+            insertCertificate(jdbc, "BBBBBBBBBBBBBBBBBBBBBBBBBB", 1L, null, "VALID", requestId, "MANUALLY_CONFIRMED", 9L);
             assertThat(jdbc.queryForObject("select count(*) from regular_student_certificate", Integer.class)).isEqualTo(1);
         }
     }

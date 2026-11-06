@@ -107,8 +107,9 @@ public class CertificatePdfRenderer {
 
     private void drawCode(PDPageContentStream content, PDFont font, Rect rect, CertificateCode code,
                           String verificationUrl) throws IOException {
-        text(content, font, 11, rect.x(), rect.y() + 30, "Código de verificación: " + code.formatted());
-        text(content, font, 9, rect.x(), rect.y() + 14, "Verificar en: " + verificationUrl);
+        text(content, font, 8, rect.x(), rect.y() + 40, "Código de verificación");
+        text(content, font, 10, rect.x(), rect.y() + 27, code.formatted());
+        text(content, font, 7, rect.x(), rect.y() + 14, "Verificar en: " + verificationUrl);
     }
 
     private String expand(String template, CertificateSnapshot snapshot) {

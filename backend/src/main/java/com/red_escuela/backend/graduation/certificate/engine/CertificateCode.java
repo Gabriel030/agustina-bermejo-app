@@ -8,7 +8,8 @@ import java.util.Locale;
 public record CertificateCode(String value) {
 
     static final String ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-    public static final int LENGTH = 16;
+    public static final int LENGTH = 26;
+    public static final int ENTROPY_BITS = LENGTH * 5;
 
     public CertificateCode {
         if (value == null || value.length() != LENGTH || !value.chars().allMatch(c -> ALPHABET.indexOf(c) >= 0)) {
@@ -28,11 +29,15 @@ public record CertificateCode(String value) {
         if (raw == null) {
             throw new InvalidCertificateCodeException();
         }
+        if (!raw.chars().allMatch(c -> c < 128)) {
+            throw new InvalidCertificateCodeException();
+        }
         String normalized = raw.replace("-", "").replaceAll("\\s", "").toUpperCase(Locale.ROOT);
         return new CertificateCode(normalized);
     }
 
     public String formatted() {
-        return value.substring(0, 4) + "-" + value.substring(4, 8) + "-" + value.substring(8, 12) + "-" + value.substring(12, 16);
+        return value.substring(0, 5) + "-" + value.substring(5, 10) + "-" + value.substring(10, 15) + "-"
+                + value.substring(15, 20) + "-" + value.substring(20, 26);
     }
 }

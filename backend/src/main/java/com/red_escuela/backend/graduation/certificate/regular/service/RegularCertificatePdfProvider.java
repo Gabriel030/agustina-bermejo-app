@@ -46,7 +46,7 @@ public class RegularCertificatePdfProvider {
         if (stored.isPresent()) {
             return new RegularCertificatePdf(certificate.getCode(), stored.get());
         }
-        log.warn("El PDF de la constancia {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getCode());
+        log.warn("El PDF de la constancia {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
         CertificateCode code = certificate.certificateCode();
         byte[] regenerated = renderer.render(template.definitionFor(certificate.getSnapshot(), certificate.getExpiresAt().toLocalDate()),
                 certificate.getSnapshot(), code, verificationUrl.of(code));
