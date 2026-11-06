@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,7 +22,7 @@ class DraftInvoiceGroupTest {
 
     @Test
     void tenDraftsForOneMillionAgainstNineHundredThousandIssuedLastMonthDifferByOneHundredThousandAndElevenPointElevenPercent() {
-        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 10, ars("1000000"), ars("900000"));
+        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 10, ars("1000000"), ars("900000"), List.of());
 
         assertThat(group.findDifferenceFromPreviousPeriod()).contains(ars("100000"));
         assertThat(group.findPercentageDifferenceFromPreviousPeriod().orElseThrow().points()).isEqualTo(new BigDecimal("11.11"));
@@ -29,7 +30,7 @@ class DraftInvoiceGroupTest {
 
     @Test
     void aGroupWithoutPreviousPeriodHasNoDifferenceAndNoPercentage() {
-        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 10, ars("1000000"), null);
+        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 10, ars("1000000"), null, List.of());
 
         assertThat(group.findPreviousIssuedTotal()).isEmpty();
         assertThat(group.findDifferenceFromPreviousPeriod()).isEmpty();
@@ -38,7 +39,7 @@ class DraftInvoiceGroupTest {
 
     @Test
     void draftsBelowThePreviousPeriodGiveANegativeDifferenceAndPercentage() {
-        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 3, ars("750"), ars("1000"));
+        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 3, ars("750"), ars("1000"), List.of());
 
         assertThat(group.findDifferenceFromPreviousPeriod()).contains(ars("-250"));
         assertThat(group.findPercentageDifferenceFromPreviousPeriod().orElseThrow().points()).isEqualTo(new BigDecimal("-25.00"));
@@ -46,7 +47,7 @@ class DraftInvoiceGroupTest {
 
     @Test
     void aZeroPreviousTotalKeepsTheAbsoluteDifferenceButHasNoPercentage() {
-        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 3, ars("750"), ars("0"));
+        DraftInvoiceGroup group = new DraftInvoiceGroup(KEY, 3, ars("750"), ars("0"), List.of());
 
         assertThat(group.findDifferenceFromPreviousPeriod()).contains(ars("750"));
         assertThat(group.findPercentageDifferenceFromPreviousPeriod()).isEmpty();

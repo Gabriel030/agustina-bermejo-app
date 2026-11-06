@@ -523,6 +523,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | Método | Ruta | Handler |
 |---|---|---|
 | POST | `/me/program-enrollments/{id}/annual-upfront-requests` | `AnnualUpfrontRequestController#requestAnnualUpfront` |
+| POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/approvals` | `MonthlyInvoiceRunController#approveDraftInvoices` |
 
 ### Idempotency-Key opcional
 
@@ -651,6 +652,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/section-evaluation-configs/{sectionId}/submit` | `MeSectionEvaluationConfigController#submitForApproval` |
 | POST | `/monthly-invoice-runs/manual-issuances` | `ManualMonthlyInvoiceIssuanceController#issueMonthlyInvoicesManually` |
 | POST | `/monthly-invoice-runs/simulations` | `MonthlyInvoiceSimulationController#simulateMonthlyInvoices` |
+| POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards` | `MonthlyInvoiceRunController#discardDraftInvoices` |
 | POST | `/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries` | `MonthlyInvoiceRunController#retryItem` |
 | POST | `/payment-config/qr` | `PaymentGatewayConfigController#uploadQr` |
 | POST | `/payments/mp-webhook` | `MpWebhookController#webhook` |
