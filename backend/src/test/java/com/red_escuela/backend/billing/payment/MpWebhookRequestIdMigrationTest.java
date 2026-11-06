@@ -21,7 +21,7 @@ class MpWebhookRequestIdMigrationTest {
 
     @Test
     void historicalDuplicatesKeepTheLowestIdAndTheUniqueIndexIsCreated() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("189")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("188")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update(INSERT_EVENT, "request-dup", "1");
             jdbc.update(INSERT_EVENT, "request-dup", "2");
@@ -45,7 +45,7 @@ class MpWebhookRequestIdMigrationTest {
 
     @Test
     void migrationOnAnEmptyTableCreatesTheIndex() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("189")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("188")) {
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
