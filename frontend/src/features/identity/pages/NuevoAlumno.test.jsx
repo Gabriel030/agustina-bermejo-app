@@ -8,6 +8,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { RateLimitedError } from '@/api/client';
 import { NuevoAlumno } from './NuevoAlumno';
+import { addDays, addYears, installFixedClock } from '@/test/fixedClock';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
@@ -59,9 +60,7 @@ function setBirthDate(value) {
 }
 
 function isoYearsAgo(years, dayOffset = 0) {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() - years);
-  date.setDate(date.getDate() + dayOffset);
+  const date = addDays(addYears(new Date(), -years), dayOffset);
   const pad = (n) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
@@ -87,6 +86,8 @@ async function goToReviewStep(user) {
   await user.click(screen.getByRole('button', { name: 'Siguiente' }));
   await screen.findByRole('heading', { name: 'Revisar y confirmar' });
 }
+
+installFixedClock();
 
 describe('NuevoAlumno', () => {
   beforeEach(() => {

@@ -7,6 +7,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { reiniciarAvisosMarcados } from '@/features/announcements';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
+import { installFixedClock } from '@/test/fixedClock';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION } from '@/lib/notificaciones';
 
 vi.mock('@/context/AuthContext', () => ({
@@ -15,9 +16,9 @@ vi.mock('@/context/AuthContext', () => ({
 
 const API = 'http://localhost:8080';
 
-const AHORA = new Date().toISOString();
-const HACE_1H = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-const HACE_2H = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+installFixedClock();
+
+const hoursAgo = (hours) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
 function unAviso(extra = {}) {
   return {
@@ -28,8 +29,8 @@ function unAviso(extra = {}) {
     category: 'SCHEDULING',
     urgent: false,
     teacherName: 'Ana Docente',
-    createdAt: HACE_1H,
-    updatedAt: HACE_1H,
+    createdAt: hoursAgo(1),
+    updatedAt: hoursAgo(1),
     readAt: null,
     ...extra,
   };
@@ -61,8 +62,8 @@ describe('AlumnoInicio — Novedades', () => {
 
   it('renderiza los avisos ordenados por fecha descendente', async () => {
     const avisos = [
-      unAviso({ id: 1, title: 'Aviso viejo', createdAt: HACE_2H, updatedAt: HACE_2H }),
-      unAviso({ id: 2, title: 'Aviso nuevo', createdAt: HACE_1H, updatedAt: HACE_1H }),
+      unAviso({ id: 1, title: 'Aviso viejo', createdAt: hoursAgo(2), updatedAt: hoursAgo(2) }),
+      unAviso({ id: 2, title: 'Aviso nuevo', createdAt: hoursAgo(1), updatedAt: hoursAgo(1) }),
     ];
     mockearBase(avisos);
     montar();
@@ -74,8 +75,8 @@ describe('AlumnoInicio — Novedades', () => {
 
   it('urgente se muestra con pill pero no se reordena', async () => {
     const avisos = [
-      unAviso({ id: 1, title: 'Normal', urgent: false, createdAt: HACE_1H, updatedAt: HACE_1H }),
-      unAviso({ id: 2, title: 'Urgente', urgent: true, createdAt: HACE_2H, updatedAt: HACE_2H }),
+      unAviso({ id: 1, title: 'Normal', urgent: false, createdAt: hoursAgo(1), updatedAt: hoursAgo(1) }),
+      unAviso({ id: 2, title: 'Urgente', urgent: true, createdAt: hoursAgo(2), updatedAt: hoursAgo(2) }),
     ];
     mockearBase(avisos);
     montar();
@@ -97,7 +98,7 @@ describe('AlumnoInicio — Novedades', () => {
   });
 
   it('no muestra "editado" cuando updatedAt === createdAt', async () => {
-    mockearBase([unAviso({ id: 1, createdAt: HACE_1H, updatedAt: HACE_1H })]);
+    mockearBase([unAviso({ id: 1, createdAt: hoursAgo(1), updatedAt: hoursAgo(1) })]);
     montar();
 
     await screen.findByText('Cambio de aula');
@@ -243,7 +244,7 @@ describe('AlumnoInicio — acuse de lectura', () => {
   it('doesNotMarkAlreadyReadAnnouncements', async () => {
     reiniciarAvisosMarcados();
     const marcados = [];
-    mockearBase([unAviso({ id: 8, title: 'Ya leído', readAt: HACE_1H })]);
+    mockearBase([unAviso({ id: 8, title: 'Ya leído', readAt: hoursAgo(1) })]);
     server.use(
       http.post(`${API}/me/announcements/:id/read`, ({ params }) => {
         marcados.push(params.id);

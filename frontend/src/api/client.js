@@ -2,7 +2,7 @@
  * Wrapper fino sobre fetch — no se suma Axios/React Query en esta fase
  * (ver Spec - Fundación técnica y login local, decisión 5).
  */
-import { createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
+import { NetworkError, createCircuitBreaker, rateLimitMessage, runWithRetry } from '@/api/retryPolicy';
 import { ApiError } from '@/api/apiError';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
@@ -62,6 +62,11 @@ async function readErrorBody(response) {
 
 let accessToken = null;
 let onSessionExpired = null;
+let offlineSessionMode = false;
+
+export function setOfflineSessionMode(enabled) {
+  offlineSessionMode = enabled;
+}
 
 export function setAccessToken(token) {
   accessToken = token;
@@ -166,6 +171,7 @@ function expireSession() {
 }
 
 async function fetchWithAuth(path, options) {
+  if (offlineSessionMode && !path.startsWith('/auth/')) throw new NetworkError();
   const tokenSent = accessToken;
   let response = await sendWithRetryPolicy(path, options);
 

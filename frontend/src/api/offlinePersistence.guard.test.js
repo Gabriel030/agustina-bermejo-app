@@ -28,4 +28,17 @@ describe('offline whitelist guard', () => {
       .sort()
     expect(marked).toEqual(['announcements/hooks/useNovedades.js', 'notifications/hooks/useNotifications.js'])
   })
+
+  it('onlyAuthContextWritesTheOfflineProfileAndItStoresOnlyNameAndRoles', () => {
+    const srcDir = join(process.cwd(), 'src')
+    const writers = sourceFiles(srcDir)
+      .filter((file) => /storeOfflineProfile\(/.test(readFileSync(file, 'utf8')) && !/offlinePersistence\.js$/.test(file))
+      .map((file) => file.slice(srcDir.length + 1))
+      .sort()
+    expect(writers).toEqual(['context/AuthContext.jsx'])
+    const persistence = readFileSync(join(srcDir, 'api', 'offlinePersistence.js'), 'utf8')
+    const body = persistence.slice(persistence.indexOf('export async function storeOfflineProfile'), persistence.indexOf('export async function readOfflineProfile'))
+    const fields = [...body.matchAll(/^\s+(\w+):/gm)].map((match) => match[1])
+    expect(fields).toEqual(['nombre', 'apellido', 'roles'])
+  })
 })
