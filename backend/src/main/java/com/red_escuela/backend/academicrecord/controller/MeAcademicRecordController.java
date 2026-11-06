@@ -1,8 +1,10 @@
 package com.red_escuela.backend.academicrecord.controller;
 
+import com.red_escuela.backend.academicrecord.dto.MyScheduleResponse;
 import com.red_escuela.backend.academicrecord.dto.StudentAttendanceResponse;
 import com.red_escuela.backend.academicrecord.dto.StudentAttendanceRiskResponse;
 import com.red_escuela.backend.academicrecord.dto.StudentGradeItemResponse;
+import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyActiveSectionSchedulesUseCase;
 import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyEnrollmentGradeItemsUseCase;
 import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyEnrollmentAttendanceUseCase;
 import com.red_escuela.backend.academicrecord.usecase.studentrecord.ReadMyEnrollmentAttendanceRiskUseCase;
@@ -28,18 +30,28 @@ public class MeAcademicRecordController {
     private final ListMyEnrollmentAttendanceUseCase listMyEnrollmentAttendanceUseCase;
     private final ReadMyEnrollmentAttendanceRiskUseCase readMyEnrollmentAttendanceRiskUseCase;
     private final SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase;
+    private final ListMyActiveSectionSchedulesUseCase listMyActiveSectionSchedulesUseCase;
 
     public MeAcademicRecordController(
             CurrentStudentService currentStudentService,
             ListMyEnrollmentGradeItemsUseCase listMyEnrollmentGradeItemsUseCase,
             ListMyEnrollmentAttendanceUseCase listMyEnrollmentAttendanceUseCase,
             ReadMyEnrollmentAttendanceRiskUseCase readMyEnrollmentAttendanceRiskUseCase,
-            SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase) {
+            SubmitMyAbsenceProofUseCase submitMyAbsenceProofUseCase,
+            ListMyActiveSectionSchedulesUseCase listMyActiveSectionSchedulesUseCase) {
         this.currentStudentService = currentStudentService;
         this.listMyEnrollmentGradeItemsUseCase = listMyEnrollmentGradeItemsUseCase;
         this.listMyEnrollmentAttendanceUseCase = listMyEnrollmentAttendanceUseCase;
         this.readMyEnrollmentAttendanceRiskUseCase = readMyEnrollmentAttendanceRiskUseCase;
         this.submitMyAbsenceProofUseCase = submitMyAbsenceProofUseCase;
+        this.listMyActiveSectionSchedulesUseCase = listMyActiveSectionSchedulesUseCase;
+    }
+
+    @GetMapping("/schedule")
+    public MyScheduleResponse mySchedule() {
+        return currentStudentService.findCurrentStudent()
+                .map(student -> listMyActiveSectionSchedulesUseCase.list(student.getId()))
+                .orElseGet(listMyActiveSectionSchedulesUseCase::listEmpty);
     }
 
     @GetMapping("/section-enrollments/{id}/attendance")

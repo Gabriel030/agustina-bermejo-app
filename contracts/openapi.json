@@ -6792,6 +6792,47 @@
         "required" : [ "analytics", "billing", "billingNotifications", "externalBilling", "fiscalInvoicing", "paymentMethods" ],
         "type" : "object"
       },
+      "MyScheduleItemResponse" : {
+        "properties" : {
+          "courseName" : {
+            "type" : "string"
+          },
+          "courseSubjectName" : {
+            "type" : "string"
+          },
+          "instructorTitular" : {
+            "type" : "string"
+          },
+          "schedule" : {
+            "type" : "string"
+          },
+          "sectionEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "courseName", "courseSubjectName", "instructorTitular", "schedule", "sectionEnrollmentId", "sectionName" ],
+        "type" : "object"
+      },
+      "MyScheduleResponse" : {
+        "properties" : {
+          "generatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MyScheduleItemResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "generatedAt", "items" ],
+        "type" : "object"
+      },
       "NightlyBillingExecutionResponse" : {
         "properties" : {
           "run" : {
@@ -40793,6 +40834,114 @@
           }
         },
         "tags" : [ "refund-controller" ]
+      }
+    },
+    "/me/schedule" : {
+      "get" : {
+        "operationId" : "MeAcademicRecord_mySchedule",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MyScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-academic-record-controller" ]
       }
     },
     "/me/section-enrollments" : {
