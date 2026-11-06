@@ -133,6 +133,11 @@ public class PaymentPolicySetsConfiguration {
     }
 
     @Bean
+    public PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicySet() {
+        return PolicySet.named("ANNUAL_UPFRONT_APPROVAL", List.of(new AnnualUpfrontReceiptPaysExactTotalPolicy()));
+    }
+
+    @Bean
     public PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet() {
         return PolicySet.named("BANK_TRANSFER_RECEIPT_PROTECTION", List.of(new ReceiptUploadedByDueDatePolicy()));
     }

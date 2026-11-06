@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.invoice.operation;
 
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
-import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
@@ -21,15 +20,13 @@ import java.util.Objects;
 @Component
 public class AwaitingPaymentInvoiceIssuer {
     private final InvoiceRepository invoiceRepository;
-    private final StudentCurrentAccountService accountService;
     private final InvoiceNumberGenerator numberGenerator;
     private final StudentSnapshotFinder snapshotFinder;
     private final ApplicationEventPublisher eventPublisher;
 
-    public AwaitingPaymentInvoiceIssuer(InvoiceRepository invoiceRepository, StudentCurrentAccountService accountService, InvoiceNumberGenerator numberGenerator,
+    public AwaitingPaymentInvoiceIssuer(InvoiceRepository invoiceRepository, InvoiceNumberGenerator numberGenerator,
                                         StudentSnapshotFinder snapshotFinder, ApplicationEventPublisher eventPublisher) {
         this.invoiceRepository = invoiceRepository;
-        this.accountService = accountService;
         this.numberGenerator = numberGenerator;
         this.snapshotFinder = snapshotFinder;
         this.eventPublisher = eventPublisher;
@@ -44,7 +41,6 @@ public class AwaitingPaymentInvoiceIssuer {
         invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), issueDate, issueDate, snapshotFinder.findSnapshotOfStudent(lockedAccount.getStudentId()),
                 actor);
         invoiceRepository.flush();
-        accountService.recordInvoiceIssuedDebit(lockedAccount, invoice, issueDate);
         RecordedInvoiceEventTranslator.translateRecordedEventsOf(invoice).forEach((DomainEvent event) -> eventPublisher.publishEvent(event));
     }
 }

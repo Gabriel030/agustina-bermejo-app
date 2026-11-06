@@ -6,7 +6,9 @@ import com.red_escuela.backend.billing.annualupfront.repository.AnnualUpfrontReq
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.service.AnnualUpfrontDiscountReservationService;
 import com.red_escuela.backend.billing.discount.service.EnrollmentDiscountLock;
+import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.operation.AwaitingPaymentInvoiceIssuer;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAwaitingPaymentDiscardService;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -25,19 +28,23 @@ public class AnnualUpfrontRequestPaymentTracker {
     private final EnrollmentDiscountLock enrollmentLock;
     private final AnnualUpfrontDiscountReservationService discountReservations;
     private final InvoiceAwaitingPaymentDiscardService invoices;
+    private final AwaitingPaymentInvoiceIssuer invoiceIssuer;
     private final Clock clock;
 
     public AnnualUpfrontRequestPaymentTracker(AnnualUpfrontRequestRepository requestRepository, EnrollmentDiscountLock enrollmentLock,
-                                              AnnualUpfrontDiscountReservationService discountReservations, InvoiceAwaitingPaymentDiscardService invoices, Clock clock) {
+                                              AnnualUpfrontDiscountReservationService discountReservations, InvoiceAwaitingPaymentDiscardService invoices,
+                                              AwaitingPaymentInvoiceIssuer invoiceIssuer, Clock clock) {
         this.requestRepository = requestRepository;
         this.enrollmentLock = enrollmentLock;
         this.discountReservations = discountReservations;
         this.invoices = invoices;
+        this.invoiceIssuer = invoiceIssuer;
         this.clock = clock;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public Optional<AnnualUpfrontRequestPaymentFacts> findRequestOfInvoice(Long invoiceId) {
+    public Optional<AnnualUpfrontRequestPaymentFacts> lockInvoiceAndFindItsRequest(Long invoiceId) {
+        invoices.lockInvoiceAwaitingPayment(invoiceId);
         return requestRepository.findByInvoiceId(invoiceId).map(AnnualUpfrontRequestPaymentFacts::of);
     }
 
@@ -54,8 +61,10 @@ public class AnnualUpfrontRequestPaymentTracker {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void confirmApprovedPayment(Long invoiceId, Long paymentId) {
+    public void issueInvoiceAndConfirmApprovedPayment(Long invoiceId, Long paymentId, StudentCurrentAccount lockedAccount, LocalDate issueDate, StatusChangeActor actor) {
+        Invoice invoice = invoices.lockInvoiceAwaitingPayment(invoiceId);
         AnnualUpfrontRequest request = lockRequestOfInvoice(invoiceId);
+        invoiceIssuer.issueInvoiceAwaitingPayment(invoice, lockedAccount, issueDate, actor);
         request.confirmApprovedPayment(paymentId, LocalDateTime.now(clock));
         requestRepository.saveAndFlush(request);
     }

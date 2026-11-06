@@ -9,7 +9,6 @@ import com.red_escuela.backend.billing.events.PaymentApprovedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.invoice.operation.AwaitingPaymentInvoiceIssuer;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
 import com.red_escuela.backend.billing.operation.BillingOperation;
@@ -18,7 +17,9 @@ import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationRes
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.payment.domain.BankTransferPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.PaymentCheckoutItem;
-import com.red_escuela.backend.billing.payment.exception.AnnualUpfrontReceiptAmountMustBeTotalException;
+import com.red_escuela.backend.billing.payment.domain.ReceiptInvoiceFact;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptCheck;
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRejections;
 import com.red_escuela.backend.billing.payment.policy.PaymentReviewRejections;
 import com.red_escuela.backend.billing.payment.policy.PaymentVerificationCheck;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -27,7 +28,6 @@ import com.red_escuela.backend.billing.payment.domain.PendingBankTransferDecisio
 import com.red_escuela.backend.billing.payment.repository.PaymentCheckoutItemRepository;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
-import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import com.red_escuela.backend.billing.payment.exception.PaymentAlreadyApprovedException;
 import org.slf4j.Logger;
@@ -56,14 +56,14 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
     private final PaymentCheckoutItemRepository checkoutItems;
     private final PendingTransferReviewRelease reviewRelease;
     private final PolicySet<PaymentVerificationCheck> verificationPolicies;
-    private final AwaitingPaymentInvoiceIssuer annualInvoiceIssuer;
+    private final PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicies;
     private final AnnualUpfrontRequestPaymentTracker annualUpfrontRequests;
     private final Clock clock;
 
     public ApprovePendingBankTransferPaymentOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                                       InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments, PaymentCheckoutItemRepository checkoutItems,
                                                       PendingTransferReviewRelease reviewRelease, PolicySet<PaymentVerificationCheck> paymentVerificationPolicySet,
-                                                      AwaitingPaymentInvoiceIssuer annualInvoiceIssuer, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests, Clock clock) {
+                                                      PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicySet, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.invoiceQueries = invoiceQueries;
@@ -71,7 +71,7 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         this.checkoutItems = checkoutItems;
         this.reviewRelease = reviewRelease;
         this.verificationPolicies = paymentVerificationPolicySet;
-        this.annualInvoiceIssuer = annualInvoiceIssuer;
+        this.annualUpfrontApprovalPolicies = annualUpfrontApprovalPolicySet;
         this.annualUpfrontRequests = annualUpfrontRequests;
         this.clock = clock;
     }
@@ -88,7 +88,7 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
 
     @Override
     public List<String> validationMoments() {
-        return List.of(verificationPolicies.moment());
+        return List.of(verificationPolicies.moment(), annualUpfrontApprovalPolicies.moment());
     }
 
     @Override
@@ -120,7 +120,7 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         Payment payment = payments.findById(command.paymentId()).orElseThrow();
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
         List<PaymentCheckoutItem> items = checkoutItems.findByPaymentIdOrderByPositionAsc(payment.getId());
-        invoiceQueries.lockOpenInvoicesOfAccountAndTheseInIdOrder(account.getId(), items.stream().map(PaymentCheckoutItem::getInvoiceId).toList());
+        invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(account.getId());
         Map<Long, Invoice> invoicesById = invoiceQueries.findInvoicesByIds(items.stream().map(PaymentCheckoutItem::getInvoiceId).toList()).stream()
                 .collect(Collectors.toMap(Invoice::getId, Function.identity()));
         PaymentVerification verification = command.verification();
@@ -152,12 +152,12 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         List<Invoice> annualInvoices = invoicesById.values().stream().filter(invoice -> invoice.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT)
                 .sorted(java.util.Comparator.comparing(Invoice::getId)).toList();
         for (Invoice annual : annualInvoices) {
-            if (approvedAmount.value().amount().compareTo(annual.getAmounts().total().value().amount()) != 0) {
-                throw new AnnualUpfrontReceiptAmountMustBeTotalException(List.of(new PolicyViolation("ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL",
-                        "El monto verificado del pago anual tiene que ser el total exacto del pedido.")));
-            }
-            annualInvoiceIssuer.issueInvoiceAwaitingPayment(annual, account, today, command.reviewer());
-            annualUpfrontRequests.confirmApprovedPayment(annual.getId(), payment.getId());
+            ReceiptInvoiceFact annualFact = new ReceiptInvoiceFact(annual.getId(), annual.getStudentCurrentAccountId(), annual.getCurrency(), false, annual.getPaymentStatus(), null,
+                    annual.getAmounts().total().value(), false, true, annual.getPaymentDeadline());
+            annualUpfrontApprovalPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontReceiptCheck(List.of(annualFact), false, false, approvedAmount.value(),
+                    payment.getStartedAt(), payment.getStartedAt().toLocalDate())).throwIfDenied(BankTransferReceiptRejections::rejectionOf);
+            annualUpfrontRequests.issueInvoiceAndConfirmApprovedPayment(annual.getId(), payment.getId(), account, today, command.reviewer());
+            accountService.recordInvoiceIssuedDebit(account, annual, today);
         }
         return annualInvoices.stream().map(Invoice::getId).collect(Collectors.toSet());
     }

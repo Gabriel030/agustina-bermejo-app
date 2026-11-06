@@ -85,7 +85,7 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
         List<Long> itemInvoiceIds = items.stream().map(PaymentCheckoutItem::getInvoiceId).toList();
         itemInvoiceIds.forEach(annualUpfrontRequests::lockEnrollmentDiscountsOfInvoiceRequest);
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
-        invoiceQueries.lockOpenInvoicesOfAccountAndTheseInIdOrder(payment.getStudentCurrentAccountId(), itemInvoiceIds);
+        invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(payment.getStudentCurrentAccountId());
         Map<Long, Invoice> invoicesById = invoiceQueries.findInvoicesByIds(items.stream().map(PaymentCheckoutItem::getInvoiceId).toList()).stream()
                 .collect(Collectors.toMap(Invoice::getId, Function.identity()));
         payment.rejectPayment(command.rejectionReason(), command.reviewer());

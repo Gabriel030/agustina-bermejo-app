@@ -214,8 +214,7 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
         Map<Long, AnnualUpfrontRequestPaymentFacts> annualRequests = new LinkedHashMap<>();
         selectedById.values().stream().filter(invoice -> invoice.getDocumentStatus() != InvoiceDocumentStatus.ISSUED)
                 .filter(invoice -> account.getId().equals(invoice.getStudentCurrentAccountId())).map(Invoice::getId).sorted().forEach(invoiceId -> {
-                    invoiceQueries.lockInvoice(invoiceId);
-                    annualUpfrontRequests.findRequestOfInvoice(invoiceId).ifPresent(facts -> annualRequests.put(invoiceId, facts));
+                    annualUpfrontRequests.lockInvoiceAndFindItsRequest(invoiceId).ifPresent(facts -> annualRequests.put(invoiceId, facts));
                 });
         return annualRequests;
     }
