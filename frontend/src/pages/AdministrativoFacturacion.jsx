@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard, ReceiptText } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -569,6 +569,15 @@ function TabComprobantes() {
               <p className="font-semibold text-ink">{receipt.studentName ?? `Comprobante #${receipt.id}`}</p>
               {receipt.studentDni && (
                 <p className="text-sm text-ink-faint">DNI {receipt.studentDni}</p>
+              )}
+              {receipt.studentId != null && (
+                <Link
+                  to={{ pathname: '.', search: `?alumno=${receipt.studentId}` }}
+                  className="mt-0.5 inline-flex items-center gap-1 text-sm text-brand hover:underline"
+                >
+                  <ReceiptText size={13} />
+                  Ver estado de cuenta
+                </Link>
               )}
               {receipt.productName && <p className="text-sm text-ink-soft">{receipt.productName}</p>}
               <div className="mt-1.5">

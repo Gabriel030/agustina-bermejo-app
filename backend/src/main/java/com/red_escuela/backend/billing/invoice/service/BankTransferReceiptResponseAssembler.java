@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.operation.ReceiptReviewFactsLookup;
 import com.red_escuela.backend.billing.operation.ReceiptSelectedInvoice;
 import com.red_escuela.backend.identity.api.PersonRoleNamesFinder;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,9 +123,10 @@ public class BankTransferReceiptResponseAssembler {
                 .or(() -> invoice.findProgramEnrollmentId().flatMap(invoiceViewLoader::findProgramEnrollment).map(e -> e.getProgram().getName()))
                 .orElse(null);
         List<Long> invoiceIds = receipt.getPaymentId() == null ? List.of(invoice.getId()) : invoiceIdsByPaymentId.getOrDefault(receipt.getPaymentId(), List.of(invoice.getId()));
-        Person payer = invoiceRepository.findOwnerPersonByInvoiceId(invoice.getId()).orElse(null);
+        Student student = invoiceRepository.findOwnerStudentWithPersonByInvoiceId(invoice.getId()).orElse(null);
+        Person payer = student == null ? null : student.getPerson();
         ReceiptUploader uploader = uploaderRolesByPersonId == null || receipt.getUploadedBy() == null ? null
                 : ReceiptUploader.of(receipt.getUploadedBy(), payer, uploaderRolesByPersonId.getOrDefault(receipt.getUploadedBy().getId(), List.of()));
-        return BankTransferReceiptResponse.from(receipt, payer, productName, invoiceIds, detail, uploader);
+        return BankTransferReceiptResponse.from(receipt, student, productName, invoiceIds, detail, uploader);
     }
 }

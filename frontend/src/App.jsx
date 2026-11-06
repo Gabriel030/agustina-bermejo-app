@@ -1,7 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createQueryClient } from '@/api/queryClient';
-import { OFFLINE_MAX_AGE_MS, offlineDehydrateOptions, offlinePersister } from '@/api/offlinePersistence';
+import { OFFLINE_BUSTER, OFFLINE_MAX_AGE_MS, offlineDehydrateOptions, offlinePersister } from '@/api/offlinePersistence';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -17,7 +17,7 @@ const queryClient = createQueryClient();
 const persistOptions = {
   persister: offlinePersister,
   maxAge: OFFLINE_MAX_AGE_MS,
-  buster: import.meta.env.VITE_APP_VERSION ?? 'dev',
+  buster: OFFLINE_BUSTER,
   dehydrateOptions: offlineDehydrateOptions,
 };
 
