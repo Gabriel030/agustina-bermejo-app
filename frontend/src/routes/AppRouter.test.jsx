@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { setOfflineSessionMode } from '@/api/client';
-import { OFFLINE_PROFILE_KEY } from '@/api/offlinePersistence';
+import { OFFLINE_OWNER_KEY, storeOfflineProfile } from '@/api/offlinePersistence';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -24,6 +24,7 @@ vi.mock('idb-keyval', () => ({
   del: vi.fn(async (key) => {
     idbStore.delete(key);
   }),
+  keys: vi.fn(async () => [...idbStore.keys()]),
 }));
 
 function renderApp(initialPath) {
@@ -67,7 +68,8 @@ describe('AppRouter', () => {
 
   it('coldStartOfflineWithStoredProfileShowsTheMenuAndTheOfflineState', async () => {
     localStorage.setItem('refreshToken', 'stored');
-    idbStore.set(OFFLINE_PROFILE_KEY, { nombre: 'Dora', apellido: 'Directora', roles: ['DIRECTOR'] });
+    idbStore.set(OFFLINE_OWNER_KEY, 2);
+    await storeOfflineProfile({ nombre: 'Dora', apellido: 'Directora', roles: ['DIRECTOR'] });
     const meRequests = [];
     server.use(
       http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 503 })),

@@ -905,6 +905,29 @@ describe('AdministrativoFacturacion — pestañas', () => {
     expect(await screen.findByText('Martina Acosta')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Comprobantes/ })).toHaveAttribute('aria-selected', 'true');
   });
+
+  it('links each receipt to the account of its student in the same tab', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/students/2/billing-overview`, () => HttpResponse.json([])),
+    );
+    renderPage('/?tab=comprobantes');
+
+    const link = await screen.findByRole('link', { name: 'Ver estado de cuenta' });
+    expect(link).toHaveAttribute('href', '/?alumno=2');
+    expect(link).not.toHaveAttribute('target');
+    await user.click(link);
+
+    expect(await screen.findByRole('tab', { name: 'Estado de cuenta' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('Acosta, Martina')).toBeInTheDocument();
+  });
+
+  it('hides the account link when the receipt has no student id', async () => {
+    renderPage('/?tab=comprobantes', [{ ...pendingReceipt, studentId: null }]);
+
+    expect(await screen.findByText('Martina Acosta')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ver estado de cuenta' })).not.toBeInTheDocument();
+  });
 });
 
 describe('AdministrativoFacturacion — estado de cuenta', () => {
