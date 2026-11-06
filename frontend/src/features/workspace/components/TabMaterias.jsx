@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
-import { Button } from '@/components/ui/button';
+import { OfflineAwareButton } from '@/components/offline/OfflineAwareButton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InscripcionMaterias } from '@/features/enrollment';
 import { useMisInscripciones } from '@/features/enrollment';
@@ -73,9 +73,9 @@ export function TabMaterias({ carreraId }) {
             ))}
           </TabsList>
         </Tabs>
-        <Button variant="gradient" onClick={() => setInscribiendo(true)}>
+        <OfflineAwareButton variant="gradient" onClick={() => setInscribiendo(true)}>
           + Inscribirme a materias
-        </Button>
+        </OfflineAwareButton>
       </div>
 
       {isLoading ? (

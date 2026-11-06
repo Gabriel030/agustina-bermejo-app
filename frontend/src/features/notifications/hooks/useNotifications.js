@@ -1,14 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiFetch } from '@/api/client';
+import { offlineQuery } from '@/api/offlineQuery';
 
 export function useMisNotificaciones() {
-  return useQuery({
-    queryKey: ['me', 'notifications'],
-    queryFn: () => apiFetch('/me/notifications'),
-    refetchInterval: () => (navigator.onLine ? 15_000 : false),
-    meta: { offline: true },
-  });
+  return useQuery(
+    offlineQuery('N0', {
+      queryKey: ['me', 'notifications'],
+      queryFn: () => apiFetch('/me/notifications'),
+      refetchInterval: () => (navigator.onLine ? 15_000 : false),
+    }),
+  );
 }
 
 export function useMarcarNotificacionLeida() {
