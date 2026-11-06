@@ -102,3 +102,27 @@ describe('summary', () => {
     expect(summarizeSave(2, 1)).toBe('2 guardadas, 1 con error');
   });
 });
+
+describe('publication helpers', () => {
+  const exam = { type: 'EXAM', sequenceNumber: 1, published: true };
+  const tp = { type: 'TP', sequenceNumber: 1, published: false };
+  const final = { type: 'FINAL', sequenceNumber: 1, published: true };
+
+  it('locks only published non final columns', () => {
+    expect(isColumnLocked(exam)).toBe(true);
+    expect(isColumnLocked(tp)).toBe(false);
+    expect(isColumnLocked(final)).toBe(false);
+    expect(isColumnPublishable(tp)).toBe(true);
+    expect(isColumnPublishable(final)).toBe(false);
+  });
+
+  it('drops drafts of locked columns and keeps the rest', () => {
+    const drafts = { '1:EXAM-1': { score: '5' }, '1:TP-1': { score: '6' } };
+    expect(pruneLockedDrafts(drafts, [exam, tp])).toEqual({ '1:TP-1': { score: '6' } });
+  });
+
+  it('counts loaded and missing grades per column', () => {
+    const students = [{ grades: [{ type: 'TP', sequenceNumber: 1, score: 6 }] }, { grades: [] }];
+    expect(columnLoadSummary(students, tp)).toEqual({ loaded: 1, missing: 1, total: 2 });
+  });
+});

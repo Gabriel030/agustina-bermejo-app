@@ -11,6 +11,7 @@ import {
   formatScore,
   gradeColumnKey,
   gradeColumnLabel,
+  isColumnLocked,
   scoreTextState,
 } from '../lib/gradeGrid';
 
@@ -18,6 +19,7 @@ const FINAL_DISABLED_REASON = 'Requiere condición regular';
 
 function SheetRow({ student, column, draft, saved, onPatch }) {
   const label = gradeColumnLabel(column);
+  const locked = isColumnLocked(column);
   const disabled = column.type === 'FINAL' && !student.finalEnabled;
   const scoreText = draft ? draft.score : formatScore(saved?.score);
   const hasScore = scoreTextState(scoreText) !== 'empty';
@@ -29,7 +31,11 @@ function SheetRow({ student, column, draft, saved, onPatch }) {
     <div className="flex flex-col gap-2 rounded-2xl border border-border p-3">
       <div className="flex items-center justify-between gap-2">
         <Label htmlFor={`${id}-score`}>{label}</Label>
-        {disabled ? (
+        {locked ? (
+          <span className="text-sm text-ink" aria-label={`Nota de ${label}: ${scoreText || 'sin nota'}, publicada`}>
+            {scoreText || '—'} · Publicada
+          </span>
+        ) : disabled ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -53,7 +59,7 @@ function SheetRow({ student, column, draft, saved, onPatch }) {
           />
         )}
       </div>
-      {!disabled && (
+      {!disabled && !locked && (
         <>
           <Input
             type="date"
