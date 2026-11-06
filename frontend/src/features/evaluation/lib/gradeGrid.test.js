@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildGradePayload,
+  columnLoadSummary,
+  isColumnLocked,
+  isColumnPublishable,
+  pruneLockedDrafts,
   collectPendingJobs,
   correctionOf,
   formatScore,
