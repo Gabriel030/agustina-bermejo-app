@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, expect, vi } from 'vitest';
 import * as axeMatchers from 'vitest-axe/matchers';
 import { cleanup, configure } from '@testing-library/react';
 import { server } from './mocks/server';
+import { recordUnhandledRequest, takeUnhandledExcess } from './unhandledRequests';
 import { resetCircuits, setCircuitOptions, setRetrySleep } from '../api/client';
 import { warmUpContract } from './contract/validateAgainstContract';
 import { formatContractDeviations, takeContractDeviations } from './contract/withContract';
@@ -65,7 +66,12 @@ globalThis.ResizeObserver =
 // hooks directamente, ver docs/context/testing.md.
 beforeAll(() => {
   warmUpContract();
-  server.listen({ onUnhandledRequest: 'error' });
+  server.listen({
+    onUnhandledFrame: ({ frame }) => {
+      const key = recordUnhandledRequest(frame.data.request);
+      throw new Error(`Request without a matching handler: ${key}`);
+    },
+  });
   setRetrySleep(() => Promise.resolve());
   setCircuitOptions({ threshold: Number.POSITIVE_INFINITY });
 });
@@ -79,4 +85,10 @@ afterEach(() => {
     throw new Error(`Mocks deviate from contracts/openapi.json:\n${formatContractDeviations(deviations)}`);
   }
 });
-afterAll(() => server.close());
+afterAll(() => {
+  server.close();
+  const excess = takeUnhandledExcess(expect.getState().testPath ?? '');
+  if (excess.length > 0) {
+    throw new Error(`Requests without a handler outside src/test/unhandled-baseline.json:\n${excess.join('\n')}`);
+  }
+});

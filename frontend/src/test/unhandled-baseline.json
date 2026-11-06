@@ -1,0 +1,44 @@
+{
+  "src/features/announcements/pages/AvisoEditar.test.jsx": {
+    "POST /subject-sections/:id/audience-preview": 1
+  },
+  "src/features/announcements/pages/AvisoWizard.test.jsx": {
+    "POST /subject-sections/:id/audience-preview": 1
+  },
+  "src/features/announcements/pages/DocenteComisionDetalle.test.jsx": {
+    "GET /subject-sections/:id/announcements": 23
+  },
+  "src/features/billing/credit-notes/CancelInvoiceFlow.test.jsx": {
+    "GET /collection-reminders/contact-list": 84
+  },
+  "src/features/billing/dashboard/CollectionsStockPanel.test.jsx": {
+    "GET /notification-metrics/collection-reminders": 30
+  },
+  "src/features/billing/discounts/GrantDiscountPage.test.jsx": {
+    "GET /discount-definitions": 1
+  },
+  "src/features/billing/runs/BillingRunsPage.test.jsx": {
+    "GET /billing-runs/:id/steps/ACCOUNT_CONSISTENCY/items": 3
+  },
+  "src/features/identity/pages/tabs/FinancieroTab.test.jsx": {
+    "GET /students/:id/refund-eligibility": 15
+  },
+  "src/features/platform/pages/PrimerDirector.test.jsx": {
+    "GET /platform/provisioning/first-director/status": 2
+  },
+  "src/pages/AdministrativoFacturacion.test.jsx": {
+    "GET /collection-reminders/contact-list": 171
+  },
+  "src/pages/AlumnoPagos.loadError.test.jsx": {
+    "GET /me/credit-balance": 1
+  },
+  "src/pages/AlumnoPagos.test.jsx": {
+    "GET /me/credit-balance": 15
+  },
+  "src/routes/financialAccess.test.jsx": {
+    "GET /notification-metrics/collection-reminders": 3
+  },
+  "src/test/flows/login.integration.test.jsx": {
+    "GET /attendance/justifications": 1
+  }
+}
