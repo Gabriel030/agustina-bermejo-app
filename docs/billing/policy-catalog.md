@@ -1000,7 +1000,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación REGISTER_ANNUAL_UPFRONT_CASH_PAYMENT
 
-- Validaciones (momentos): ANNUAL_UPFRONT_RECEIPT
+- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, ANNUAL_UPFRONT_RECEIPT
 - Pre-procesamiento (en orden): IdempotencyKeyHandler
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —

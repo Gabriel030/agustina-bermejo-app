@@ -9375,7 +9375,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "amount", "receiptNumber" ],
+        "required" : [ "amount" ],
         "type" : "object"
       },
       "RegisterCashPaymentRequest" : {
@@ -62256,7 +62256,7 @@
         }, {
           "in" : "header",
           "name" : "Idempotency-Key",
-          "required" : false,
+          "required" : true,
           "schema" : {
             "type" : "string"
           }
@@ -62290,7 +62290,7 @@
                 }
               }
             },
-            "description" : "Bad Request"
+            "description" : "IDEMPOTENCY_KEY_INVALID (obligatoria, hasta 100 caracteres), ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL (el cobro no es por el total) o ANNUAL_UPFRONT_RECEIPT_LATE (el cobro en efectivo se registró después del plazo)"
           },
           "401" : {
             "content" : {
@@ -62330,7 +62330,7 @@
                 }
               }
             },
-            "description" : "ANNUAL_UPFRONT_PAYMENT_EXPIRED, ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED o IDEMPOTENCY_KEY_CONFLICT"
+            "description" : "ANNUAL_UPFRONT_PAYMENT_EXPIRED (el pedido ya fue descartado), ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED o IDEMPOTENCY_KEY_CONFLICT"
           },
           "429" : {
             "content" : {

@@ -190,7 +190,7 @@ class AnnualUpfrontCashPaymentIT extends AbstractAnnualUpfrontRequestIT {
         Long paymentId = jdbc.queryForObject("select id from payment where gateway = 'MANUAL' and student_current_account_id = (select student_current_account_id from invoice where id = ?)",
                 Long.class, invoiceId);
         org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
-                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("director", "n/a",
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(String.valueOf(director.getId()), "n/a",
                         List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_DIRECTOR"))));
         try {
             org.assertj.core.api.Assertions.assertThatThrownBy(() -> revokeApproval.revokeBankTransferApproval(paymentId, "Cargado por error"))
