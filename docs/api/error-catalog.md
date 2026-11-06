@@ -98,6 +98,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FEATURE_VALUE_INVALID` | no | `FeatureValueInvalidException` | platform |
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
+| `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
 | `INCOMPLETE_SUBJECT` | no | `IncompleteSubjectException` | academicstructure |
@@ -361,6 +362,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
+| `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
@@ -412,6 +414,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NO_ACTIVE_PAYMENT_PLAN` | no | `NoActivePaymentPlanException` | billing |
 | `NO_EFFECTIVE_CONFIGURATION` | no | `NoEffectiveConfigurationException` | billing |
 | `NO_EFFECTIVE_PRICE` | no | `NoEffectivePriceException` | billing |
+| `NO_PENDING_GRADES_TO_PUBLISH` | no | `NoPendingGradesToPublishException` | evaluation |
 | `OUTSTANDING_DEBT_BLOCKS_REENROLLMENT` | no | `OutstandingDebtBlocksReenrollmentException` | billing |
 | `PARTIAL_PAYMENT_NOT_ALLOWED` | no | `PartialPaymentNotAllowedException` | billing |
 | `PAYMENT_ALLOCATION_REJECTED` | no | `PaymentAllocationRejectedException` | billing |
@@ -582,6 +585,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
 | POST | `/course-sections/{id}/deactivate` | `CourseSectionController#deactivate` |
+| POST | `/course-sections/{id}/grade-items/publish` | `GradePublicationController#publishCourseSectionGradeItem` |
 | POST | `/course-sections/{id}/instructors` | `CourseSectionController#assignInstructor` |
 | POST | `/course-sections/{sectionId}/announcements` | `AnnouncementController#createForCourseSection` |
 | POST | `/course-sections/{sectionId}/audience-preview` | `AnnouncementController#previewForCourseSection` |
@@ -662,6 +666,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-sections/{id}/attendance` | `AttendanceController#loadProgramSectionAttendance` |
 | POST | `/program-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelProgramSectionClassSession` |
 | POST | `/program-sections/{id}/deactivate` | `SubjectSectionController#deactivate` |
+| POST | `/program-sections/{id}/grade-items/publish` | `GradePublicationController#publishProgramSectionGradeItem` |
 | POST | `/program-sections/{id}/instructors` | `SubjectSectionController#assignInstructor` |
 | POST | `/program-subjects/{id}/activate` | `ProgramSubjectController#reactivate` |
 | POST | `/program-subjects/{id}/corequisites` | `ProgramSubjectController#addCorequisite` |

@@ -22,7 +22,7 @@ class SectionGradeItemPublicationMigrationTest {
     private void insertEnrollment(JdbcTemplate jdbc, String table, String sectionColumn, long id, long sectionId) {
         jdbc.update("insert into " + table + " (id, " + sectionColumn + ", student_id, "
                         + (table.startsWith("subject") ? "program_enrollment_id" : "course_enrollment_id") + ") "
-                        + "overriding system value values (?, ?, 1, 1)", id, sectionId);
+                        + "overriding system value values (?, ?, ?, 1)", id, sectionId, id);
     }
 
     @Test

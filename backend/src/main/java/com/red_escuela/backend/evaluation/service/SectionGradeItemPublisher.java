@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.service;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.PublishedGradesSummary;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
@@ -38,21 +39,34 @@ public class SectionGradeItemPublisher {
     }
 
     @Transactional
-    public PublishedGradesSummary publish(
+    public PublishedGradesSummary publishProgramSection(
+            Long sectionId, Long instructorId, Long publisherPersonId, PublishGradeItemRequest request) {
+        return publish(SectionKind.PROGRAM, sectionId, instructorId, publisherPersonId,
+                request.gradeType(), request.sequenceNumber());
+    }
+
+    @Transactional
+    public PublishedGradesSummary publishCourseSection(
+            Long sectionId, Long instructorId, Long publisherPersonId, PublishGradeItemRequest request) {
+        return publish(SectionKind.COURSE, sectionId, instructorId, publisherPersonId,
+                request.gradeType(), request.sequenceNumber());
+    }
+
+    private PublishedGradesSummary publish(
             SectionKind kind, Long sectionId, Long instructorId, Long publisherPersonId,
             GradeItemType type, Integer sequenceNumber) {
         if (type == GradeItemType.FINAL) {
-            throw new GradeItemTypeNotPublishableException(type);
+            throw new GradeItemTypeNotPublishableException(type.name());
         }
         sectionFinder.requireExists(kind, sectionId);
         sectionTeachingFinder.requireTeaches(kind, sectionId, instructorId);
         if (publicationRepository.existsBySectionKindAndSectionIdAndGradeItemTypeAndSequenceNumber(
                 kind, sectionId, type, sequenceNumber)) {
-            throw new NoPendingGradesToPublishException(sectionId, type, sequenceNumber);
+            throw new NoPendingGradesToPublishException(sectionId, type.name(), sequenceNumber);
         }
         int gradeCount = (int) countGrades(kind, sectionId, type, sequenceNumber);
         if (gradeCount == 0) {
-            throw new NoPendingGradesToPublishException(sectionId, type, sequenceNumber);
+            throw new NoPendingGradesToPublishException(sectionId, type.name(), sequenceNumber);
         }
         int studentCount = (int) countEnrollments(kind, sectionId, type, sequenceNumber);
         publicationRepository.save(SectionGradeItemPublication.of(

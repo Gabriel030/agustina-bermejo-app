@@ -1,12 +1,12 @@
 package com.red_escuela.backend.evaluation.controller;
 
-import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.PublishedGradesSummary;
 import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishSectionGradeItemCommand;
-import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishSectionGradeItemUseCase;
+import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishCourseSectionGradeItemUseCase;
+import com.red_escuela.backend.evaluation.usecase.gradepublication.PublishProgramSectionGradeItemUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,12 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class GradePublicationController {
 
-    private final PublishSectionGradeItemUseCase publishSectionGradeItemUseCase;
+    private final PublishProgramSectionGradeItemUseCase publishProgramSectionGradeItemUseCase;
+    private final PublishCourseSectionGradeItemUseCase publishCourseSectionGradeItemUseCase;
     private final CurrentInstructorService currentInstructorService;
 
-    public GradePublicationController(PublishSectionGradeItemUseCase publishSectionGradeItemUseCase,
+    public GradePublicationController(PublishProgramSectionGradeItemUseCase publishProgramSectionGradeItemUseCase,
+                                      PublishCourseSectionGradeItemUseCase publishCourseSectionGradeItemUseCase,
                                       CurrentInstructorService currentInstructorService) {
-        this.publishSectionGradeItemUseCase = publishSectionGradeItemUseCase;
+        this.publishProgramSectionGradeItemUseCase = publishProgramSectionGradeItemUseCase;
+        this.publishCourseSectionGradeItemUseCase = publishCourseSectionGradeItemUseCase;
         this.currentInstructorService = currentInstructorService;
     }
 
@@ -33,7 +36,7 @@ public class GradePublicationController {
     @PreAuthorize("hasRole('DOCENTE')")
     public PublishedGradesSummary publishProgramSectionGradeItem(
             @PathVariable Long id, @Valid @RequestBody PublishGradeItemRequest request) {
-        return publish(SectionKind.PROGRAM, id, request);
+        return publishProgramSectionGradeItemUseCase.publish(commandOf(id, request));
     }
 
     @PostMapping("/course-sections/{id}/grade-items/publish")
@@ -41,13 +44,11 @@ public class GradePublicationController {
     @PreAuthorize("hasRole('DOCENTE')")
     public PublishedGradesSummary publishCourseSectionGradeItem(
             @PathVariable Long id, @Valid @RequestBody PublishGradeItemRequest request) {
-        return publish(SectionKind.COURSE, id, request);
+        return publishCourseSectionGradeItemUseCase.publish(commandOf(id, request));
     }
 
-    private PublishedGradesSummary publish(SectionKind kind, Long sectionId, PublishGradeItemRequest request) {
+    private PublishSectionGradeItemCommand commandOf(Long sectionId, PublishGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return publishSectionGradeItemUseCase.publish(new PublishSectionGradeItemCommand(
-                kind, sectionId, instructor.getId(), instructor.getPerson().getId(),
-                request.gradeType(), request.sequenceNumber()));
+        return new PublishSectionGradeItemCommand(sectionId, instructor.getId(), instructor.getPerson().getId(), request);
     }
 }

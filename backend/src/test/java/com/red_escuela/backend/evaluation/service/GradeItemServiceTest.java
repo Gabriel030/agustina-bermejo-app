@@ -10,7 +10,7 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.api.GradeItemFinder;
-import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.evaluation.dto.PublishGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.PublishedGradesSummary;
 import com.red_escuela.backend.evaluation.exception.GradeItemPublishedLockedException;
@@ -253,8 +253,8 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     private PublishedGradesSummary publishExam(SubjectSection section, Instructor instructor, int sequence) {
-        return sectionGradeItemPublisher.publish(SectionKind.PROGRAM, section.getId(), instructor.getId(),
-                instructor.getPerson().getId(), GradeItemType.EXAM, sequence);
+        return sectionGradeItemPublisher.publishProgramSection(section.getId(), instructor.getId(),
+                instructor.getPerson().getId(), new PublishGradeItemRequest(GradeItemType.EXAM, sequence));
     }
 
     @Test
@@ -303,7 +303,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         loadExam(enrollInSection("72000011", section), owner, 1, 7.0);
         entityManager.flush();
 
-        assertThatThrownBy(() -> sectionGradeItemPublisher.publish(SectionKind.PROGRAM, section.getId(), stranger.getId(), stranger.getPerson().getId(), GradeItemType.EXAM, 1)).isInstanceOf(NotOwnSectionException.class);
+        assertThatThrownBy(() -> sectionGradeItemPublisher.publishProgramSection(section.getId(), stranger.getId(), stranger.getPerson().getId(), new PublishGradeItemRequest(GradeItemType.EXAM, 1))).isInstanceOf(NotOwnSectionException.class);
     }
 
     @Test
@@ -312,8 +312,8 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         SubjectSection section = publicationSection(instructor, "MateriaPublicarFinal");
         entityManager.flush();
 
-        assertThatThrownBy(() -> sectionGradeItemPublisher.publish(SectionKind.PROGRAM, section.getId(),
-                instructor.getId(), instructor.getPerson().getId(), GradeItemType.FINAL, 1))
+        assertThatThrownBy(() -> sectionGradeItemPublisher.publishProgramSection(section.getId(),
+                instructor.getId(), instructor.getPerson().getId(), new PublishGradeItemRequest(GradeItemType.FINAL, 1)))
                 .isInstanceOf(GradeItemTypeNotPublishableException.class);
     }
 

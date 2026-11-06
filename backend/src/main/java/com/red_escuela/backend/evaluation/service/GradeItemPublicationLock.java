@@ -22,7 +22,7 @@ public class GradeItemPublicationLock {
         }
         if (publicationRepository.existsBySectionKindAndSectionIdAndGradeItemTypeAndSequenceNumber(
                 kind, sectionId, type, SectionGradeItemPublication.sequenceKey(sequenceNumber))) {
-            throw new GradeItemPublishedLockedException(type, sequenceNumber);
+            throw new GradeItemPublishedLockedException(type.name(), sequenceNumber);
         }
     }
 }

@@ -5,18 +5,17 @@ import com.red_escuela.backend.evaluation.service.SectionGradeItemPublisher;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
-public class PublishSectionGradeItemService implements PublishSectionGradeItemUseCase {
+public class PublishProgramSectionGradeItemService implements PublishProgramSectionGradeItemUseCase {
 
     private final SectionGradeItemPublisher publisher;
 
-    public PublishSectionGradeItemService(SectionGradeItemPublisher publisher) {
+    public PublishProgramSectionGradeItemService(SectionGradeItemPublisher publisher) {
         this.publisher = publisher;
     }
 
     @Override
     public PublishedGradesSummary publish(PublishSectionGradeItemCommand command) {
-        return publisher.publish(
-                command.sectionKind(), command.sectionId(), command.instructorId(), command.publisherPersonId(),
-                command.gradeType(), command.sequenceNumber());
+        return publisher.publishProgramSection(
+                command.sectionId(), command.instructorId(), command.publisherPersonId(), command.request());
     }
 }
