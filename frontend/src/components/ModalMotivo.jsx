@@ -18,6 +18,7 @@ export function ModalMotivo({
   confirmarVariant = 'gradient',
   maxLength = DEFAULT_MAX_REASON_LENGTH,
   minLength = 0,
+  showCounter = false,
   mensajeRequerido = 'El motivo del rechazo es obligatorio.',
 }) {
   const [motivo, setMotivo] = useState('');
@@ -55,6 +56,11 @@ export function ModalMotivo({
           rows={3}
           maxLength={maxLength}
         />
+        {showCounter && (
+          <div className="text-right text-xs tabular-nums text-ink-faint" aria-live="polite">
+            {motivo.length}/{maxLength}
+          </div>
+        )}
         {error && <div role="alert" className="text-[12px] font-semibold text-danger">{error}</div>}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>

@@ -20,7 +20,8 @@ const DiscountDefinitionDetailPage = lazyPage(() => import('@/features/billing/d
 const GrantDiscountPage = lazyPage(() => import('@/features/billing/discounts/GrantDiscountPage'), 'GrantDiscountPage');
 
 const MonthlyRunPage = lazyPage(() => import('@/features/billing/monthly-run/MonthlyRunPage'), 'MonthlyRunPage');
-const BillingRunsPage = lazyPage(() => import('@/features/billing/runs/BillingRunsPage'), 'BillingRunsPage');
+const DraftInvoicesPage = lazyPage(() => import('@/features/billing/monthly-run/DraftInvoicesPage'), 'DraftInvoicesPage');
+const BillingRunsPage =lazyPage(() => import('@/features/billing/runs/BillingRunsPage'), 'BillingRunsPage');
 const SimulatedMailsPage = lazyPage(() => import('@/features/billing/reminders/SimulatedMailsPage'), 'SimulatedMailsPage');
 const ReminderSettingsPage = lazyPage(() => import('@/features/billing/reminders/ReminderSettingsPage'), 'ReminderSettingsPage');
 
@@ -47,7 +48,8 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'descuentos/:id', element: <DiscountDefinitionDetailPage /> },
     { roles: ['administrativo', 'director'], path: 'corridas-de-facturacion', element: <BillingRunsPage /> },
     { roles: ['administrativo', 'director'], path: 'emision-mensual', element: <MonthlyRunPage /> },
-    { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago', element: <ReminderSettingsPage /> },
+    { roles: ['administrativo', 'director'], path: 'emision-mensual/:runId/borradores', element: <DraftInvoicesPage /> },
+    { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago',element: <ReminderSettingsPage /> },
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago/mails-simulados', element: <SimulatedMailsPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion', element: <AuthorizationInboxPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion/:id', element: <AuthorizationRequestDetailPage /> },
