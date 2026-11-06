@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,6 +6,9 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { TeacherGradeGrid } from './TeacherGradeGrid';
+
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
 
 const API = 'http://localhost:8080';
 
@@ -16,9 +19,9 @@ const grid = {
   minApprovalGrade: 7,
   promotionMinGrade: 8,
   columns: [
-    { type: 'EXAM', sequenceNumber: 1, date: '2026-09-15' },
-    { type: 'TP', sequenceNumber: 1, date: null },
-    { type: 'FINAL', sequenceNumber: 1, date: '2026-12-02' },
+    { type: 'EXAM', sequenceNumber: 1, date: '2026-09-15', published: false, publishedAt: null },
+    { type: 'TP', sequenceNumber: 1, date: null, published: false, publishedAt: null },
+    { type: 'FINAL', sequenceNumber: 1, date: '2026-12-02', published: false, publishedAt: null },
   ],
   students: [
     {
@@ -28,7 +31,7 @@ const grid = {
       dni: '42007315',
       condition: 'REGULAR',
       finalEnabled: true,
-      grades: [{ gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null }],
+      grades: [{ gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: false }],
     },
     {
       enrollmentId: 12,
@@ -47,6 +50,11 @@ function useGrid(body = grid, kind = 'program') {
 }
 
 describe('TeacherGradeGrid', () => {
+  beforeEach(() => {
+    toastMock.success.mockClear();
+    toastMock.error.mockClear();
+  });
+
   it('builds one column per scheme item, orders students and disables the final for a non regular student', async () => {
     useGrid();
     renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
@@ -150,5 +158,85 @@ describe('TeacherGradeGrid', () => {
     renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
     expect(await screen.findByText('No pudimos cargar las notas')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
+  it('publishes a loaded column after confirming and shows the summary', async () => {
+    useGrid();
+    const posted = [];
+    server.use(
+      http.post(`${API}/program-sections/7/grade-items/publish`, async ({ request }) => {
+        posted.push(await request.json());
+        return HttpResponse.json({ gradeCount: 1, studentCount: 1 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    expect(await screen.findByText('Cargada 1/2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publicar TP 1' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Publicar Parcial 1' }));
+    expect(await screen.findByText(/no se puede deshacer desde acá/)).toBeInTheDocument();
+    expect(screen.getByText('1 alumno todavía no tiene nota en Parcial 1 y ya no podrás cargarla.')).toBeInTheDocument();
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Publicar' }));
+
+    await waitFor(() => expect(posted).toEqual([{ gradeType: 'EXAM', sequenceNumber: 1 }]));
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith('1 nota publicada para 1 alumno'));
+  });
+
+  it('renders a published column read only with a lock and no publish button', async () => {
+    const published = {
+      ...grid,
+      columns: grid.columns.map((column) => (column.type === 'EXAM' ? { ...column, published: true, publishedAt: '2026-10-01T12:00:00' } : column)),
+    };
+    useGrid(published);
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    expect(await screen.findByText('Publicada')).toBeInTheDocument();
+    expect(screen.getByLabelText('Parcial 1 de Benítez, Lucía: 7, publicada')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Parcial 1 de Benítez, Lucía' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publicar Parcial 1' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publicar Final' })).not.toBeInTheDocument();
+  });
+
+  it('disables publishing while the column has unsaved grades', async () => {
+    useGrid();
+    const user = userEvent.setup();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    await user.type(await screen.findByLabelText('TP 1 de Acosta, Joaquín'), '5');
+
+    expect(screen.getByRole('button', { name: 'Publicar TP 1' })).toBeDisabled();
+  });
+
+  it('explains the lock when publishing fails with a conflict', async () => {
+    useGrid();
+    server.use(
+      http.post(`${API}/program-sections/7/grade-items/publish`, () => HttpResponse.json(errorBody('NO_PENDING_GRADES_TO_PUBLISH'), { status: 409 })),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Publicar Parcial 1' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Publicar' }));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('No hay notas cargadas para publicar en esta evaluación.'));
+  });
+
+  it('publishes through the course section endpoint', async () => {
+    useGrid(grid, 'course');
+    const posted = [];
+    server.use(
+      http.post(`${API}/course-sections/7/grade-items/publish`, async ({ request }) => {
+        posted.push(await request.json());
+        return HttpResponse.json({ gradeCount: 1, studentCount: 1 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="COURSE" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Publicar Parcial 1' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Publicar' }));
+
+    await waitFor(() => expect(posted).toHaveLength(1));
   });
 });

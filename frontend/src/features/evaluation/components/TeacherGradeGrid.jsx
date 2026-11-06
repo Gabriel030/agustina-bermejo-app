@@ -3,9 +3,22 @@ import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
+import { describeError } from '@/api/describeError';
 import { Button } from '@/components/ui/button';
-import { useSaveGradeCells, useTeacherGradeGrid } from '../hooks/useTeacherGradeGrid';
-import { collectPendingJobs, hasInvalidDraft, patchDraft, schemeSummary, settleDraft, summarizeSave } from '../lib/gradeGrid';
+import { usePublishGradeItem, useSaveGradeCells, useTeacherGradeGrid } from '../hooks/useTeacherGradeGrid';
+import {
+  collectPendingJobs,
+  columnLoadSummary,
+  gradeColumnLabel,
+  hasInvalidDraft,
+  patchDraft,
+  pruneLockedDrafts,
+  schemeSummary,
+  settleDraft,
+  summarizePublication,
+  summarizeSave,
+} from '../lib/gradeGrid';
 import { GradeGridTable } from './GradeGridTable';
 import { GradeStudentSheet } from './GradeStudentSheet';
 
@@ -35,16 +48,42 @@ function useUnsavedChangesGuard(active) {
   }, [active]);
 }
 
+function PublishDialog({ column, students, pending, onCancel, onConfirm }) {
+  const label = column ? gradeColumnLabel(column) : '';
+  const { loaded, missing } = column ? columnLoadSummary(students, column) : { loaded: 0, missing: 0 };
+  return (
+    <ConfirmActionDialog
+      open={Boolean(column)}
+      onOpenChange={(open) => !open && onCancel()}
+      title={`Publicar ${label}`}
+      description={`Vas a publicar ${loaded === 1 ? '1 nota' : `${loaded} notas`}. Los alumnos las van a ver y la columna queda bloqueada: no se puede cargar ni editar. Esto no se puede deshacer desde acá.`}
+      confirmLabel="Publicar"
+      confirmVariant="gradient"
+      pending={pending}
+      onConfirm={onConfirm}
+    >
+      {missing > 0 && (
+        <p className="text-[12.5px] text-warning">
+          {missing === 1 ? '1 alumno todavía no tiene nota' : `${missing} alumnos todavía no tienen nota`} en {label} y ya no podrás cargarla.
+        </p>
+      )}
+    </ConfirmActionDialog>
+  );
+}
+
 export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
   const { data: grid, isLoading, isError, refetch } = useTeacherGradeGrid(sectionId, kind);
   const saveGradeCells = useSaveGradeCells(sectionId, kind);
-  const [drafts, setDrafts] = useState({});
+  const publishGradeItem = usePublishGradeItem(sectionId, kind);
+  const [publishing, setPublishing] = useState(null);
+  const [rawDrafts, setDrafts] = useState({});
   const [statuses, setStatuses] = useState({});
   const [openEnrollmentId, setOpenEnrollmentId] = useState(null);
   const clearTimer = useRef(null);
 
   const students = useMemo(() => grid?.students ?? [], [grid]);
   const columns = useMemo(() => grid?.columns ?? [], [grid]);
+  const drafts = useMemo(() => pruneLockedDrafts(rawDrafts, columns), [rawDrafts, columns]);
   const jobs = useMemo(
     () => collectPendingJobs({ students, columns, drafts, statuses }),
     [students, columns, drafts, statuses],
@@ -57,6 +96,23 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => () => clearTimeout(clearTimer.current), []);
+
+  function confirmPublish() {
+    const target = publishing;
+    publishGradeItem.mutate(
+      { gradeType: target.type, sequenceNumber: target.sequenceNumber },
+      {
+        onSuccess: (result) => {
+          toast.success(summarizePublication(result));
+          setPublishing(null);
+        },
+        onError: (error) => {
+          toast.error(describeError(error).message);
+          setPublishing(null);
+        },
+      },
+    );
+  }
 
   const changeDraft = useCallback((key, saved, patch) => {
     setDrafts((current) => patchDraft(current, key, saved, patch));
@@ -172,6 +228,14 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
         onSettle={settle}
         onRetry={retryCell}
         onOpenStudent={setOpenEnrollmentId}
+        onPublish={setPublishing}
+      />
+      <PublishDialog
+        column={publishing}
+        students={students}
+        pending={publishGradeItem.isPending}
+        onCancel={() => setPublishing(null)}
+        onConfirm={confirmPublish}
       />
       <GradeStudentSheet student={openStudent} columns={columns} drafts={drafts} onPatch={changeDraft} onClose={() => setOpenEnrollmentId(null)} />
     </GlassCard>

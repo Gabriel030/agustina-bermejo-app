@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
 const SECTION_PATH = { PROGRAM: 'program-sections', COURSE: 'course-sections' };
@@ -39,4 +39,16 @@ export function useSaveGradeCells(sectionId, kind) {
   }
 
   return saveGradeCells;
+}
+
+export function usePublishGradeItem(sectionId, kind) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gradeType, sequenceNumber }) =>
+      apiFetch(`/${SECTION_PATH[kind]}/${sectionId}/grade-items/publish`, {
+        method: 'POST',
+        body: JSON.stringify({ gradeType, sequenceNumber }),
+      }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: gridKey(sectionId, kind) }),
+  });
 }

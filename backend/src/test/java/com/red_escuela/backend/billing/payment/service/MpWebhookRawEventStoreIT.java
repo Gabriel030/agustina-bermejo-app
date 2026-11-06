@@ -72,6 +72,10 @@ class MpWebhookRawEventStoreIT extends AbstractIntegrationTest {
         snapshotHolder.refresh();
     }
 
+    private static String paymentIdFor(String mode) {
+        return "OFF".equals(mode) ? "9101" : "9102";
+    }
+
     private MpWebhookController controllerWithSecret(String secret) {
         MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(secret, secret.isEmpty());
         MercadoPagoPaymentFetcher fetcherThatMustNotRun = mpPaymentId -> {
@@ -97,11 +101,11 @@ class MpWebhookRawEventStoreIT extends AbstractIntegrationTest {
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 1, 10, 30));
         Map<String, Long> before = billingMoneyRowCounts();
 
-        receive(controllerWithSecret(""), "ts=1,v1=abc", "request-" + mode, "mp-" + mode);
+        receive(controllerWithSecret(""), "ts=1,v1=abc", "request-" + mode, paymentIdFor(mode));
 
         assertThat(billingMoneyRowCounts()).isEqualTo(before);
         Map<String, Object> stored = jdbc.queryForMap("select * from mp_webhook_received_event");
-        assertThat(stored.get("mp_payment_id")).isEqualTo("mp-" + mode);
+        assertThat(stored.get("mp_payment_id")).isEqualTo(paymentIdFor(mode));
         assertThat(stored.get("x_request_id")).isEqualTo("request-" + mode);
         assertThat(stored.get("x_signature")).isEqualTo("ts=1,v1=abc");
         assertThat(stored.get("billing_mode_at_receipt")).isEqualTo(mode);
@@ -125,7 +129,7 @@ class MpWebhookRawEventStoreIT extends AbstractIntegrationTest {
             switchBillingTo(mode);
             MpWebhookController controller = controllerWithSecret("webhook-secret");
 
-            assertThatThrownBy(() -> receive(controller, "ts=1,v1=forged", "request-1", "mp-forged"))
+            assertThatThrownBy(() -> receive(controller, "ts=1,v1=forged", "request-1", "9001"))
                     .isInstanceOf(InvalidMpWebhookSignatureException.class);
 
             assertThat(jdbc.queryForObject("select count(*) from mp_webhook_received_event", Long.class)).isZero();
@@ -136,8 +140,52 @@ class MpWebhookRawEventStoreIT extends AbstractIntegrationTest {
     void aWebhookReceivedWhileBillingIsFullStoresNoRawEventAndStillQueriesTheGateway() {
         switchBillingTo("FULL");
 
-        assertThatThrownBy(() -> receive(controllerWithSecret(""), "", "request-1", "mp-full"))
+        assertThatThrownBy(() -> receive(controllerWithSecret(""), "", "request-1", "9002"))
                 .isInstanceOf(AssertionError.class);
+
+        assertThat(jdbc.queryForObject("select count(*) from mp_webhook_received_event", Long.class)).isZero();
+    }
+
+    @Test
+    void sameRequestIdTwiceStoresOneEvent() {
+        switchBillingTo("OFF");
+        MpWebhookController controller = controllerWithSecret("");
+
+        receive(controller, "ts=1,v1=abc", "request-dup", "9201");
+        receive(controller, "ts=2,v1=def", "request-dup", "9201");
+
+        assertThat(jdbc.queryForObject("select count(*) from mp_webhook_received_event where x_request_id = 'request-dup'", Long.class)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select x_signature from mp_webhook_received_event where x_request_id = 'request-dup'", String.class)).isEqualTo("ts=1,v1=abc");
+    }
+
+    @Test
+    void differentRequestIdsStoreOneEventEach() {
+        switchBillingTo("OFF");
+        MpWebhookController controller = controllerWithSecret("");
+
+        receive(controller, "ts=1,v1=abc", "request-a", "9201");
+        receive(controller, "ts=1,v1=abc", "request-b", "9201");
+
+        assertThat(jdbc.queryForObject("select count(*) from mp_webhook_received_event", Long.class)).isEqualTo(2L);
+    }
+
+    @Test
+    void eventsWithoutRequestIdAreNotDeduplicated() {
+        switchBillingTo("OFF");
+        MpWebhookController controller = controllerWithSecret("");
+
+        receive(controller, "", "", "9201");
+        receive(controller, "", "", "9202");
+
+        assertThat(jdbc.queryForObject("select count(*) from mp_webhook_received_event", Long.class)).isEqualTo(2L);
+    }
+
+    @Test
+    void aNonNumericPaymentIdIsRejectedAndNothingIsStored() {
+        switchBillingTo("OFF");
+        MpWebhookController controller = controllerWithSecret("");
+
+        assertThatThrownBy(() -> receive(controller, "", "request-1", "1\nX")).isInstanceOf(IllegalArgumentException.class);
 
         assertThat(jdbc.queryForObject("select count(*) from mp_webhook_received_event", Long.class)).isZero();
     }
