@@ -117,6 +117,49 @@ class PlatformFeatureReadIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void staleVersionConflictReportsWhoChangedAndWhen() throws Exception {
+        changeAnalytics(false, "Apagamos analítica por mantenimiento", null);
+
+        mockMvc.perform(put("/platform/features/ANALYTICS")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("If-Match", 0)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\":true,\"reason\":\"Cambio con versión vieja\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("STALE_FEATURE_VERSION"))
+                .andExpect(jsonPath("$.details.changedByName").value("Paula Plataforma"))
+                .andExpect(jsonPath("$.details.changedById").isNumber())
+                .andExpect(jsonPath("$.details.changedAt").isString())
+                .andExpect(jsonPath("$.details.actualVersion").value(1));
+    }
+
+    @Test
+    void listChangesFiltersByActorKindAndDateRange() throws Exception {
+        changeAnalytics(false, "Primer cambio de analítica", null);
+        changeAnalytics(true, "Segundo cambio de analítica", 1L);
+        Long actorId = jdbc.queryForObject("select actor_person_id from feature_change_log limit 1", Long.class);
+        jdbc.update("update feature_change_log set changed_at = '2026-01-10 10:00:00' where reason = 'Primer cambio de analítica'");
+        jdbc.update("update feature_change_log set actor_kind = 'SERVICE' where reason = 'Primer cambio de analítica'");
+
+        mockMvc.perform(get("/platform/features/changes").param("actorKind", "SERVICE").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].reason").value("Primer cambio de analítica"));
+        mockMvc.perform(get("/platform/features/changes").param("from", "2026-01-10").param("to", "2026-01-10").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].reason").value("Primer cambio de analítica"));
+        mockMvc.perform(get("/platform/features/changes").param("from", "2026-01-11").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].reason").value("Segundo cambio de analítica"));
+        mockMvc.perform(get("/platform/features/changes").param("actorPersonId", actorId.toString()).header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.totalElements").value(2));
+        mockMvc.perform(get("/platform/features/changes").param("actorPersonId", String.valueOf(actorId + 999)).header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void directorCannotReadPlatformFeatures() throws Exception {
         mockMvc.perform(get("/platform/features").header("Authorization", "Bearer " + directorToken)).andExpect(status().isForbidden());
         mockMvc.perform(get("/platform/features/changes").header("Authorization", "Bearer " + directorToken)).andExpect(status().isForbidden());

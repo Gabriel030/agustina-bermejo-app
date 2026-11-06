@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.service;
 
 import com.red_escuela.backend.platform.domain.FeatureState;
-import com.red_escuela.backend.platform.entity.FeatureChangeActorKind;
+import com.red_escuela.backend.platform.model.FeatureChangeActorKind;
 import com.red_escuela.backend.platform.entity.FeatureChangeLog;
 import com.red_escuela.backend.platform.entity.PlatformFeature;
 import com.red_escuela.backend.platform.exception.FeatureNotProvisionedException;

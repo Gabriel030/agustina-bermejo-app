@@ -1792,7 +1792,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "enabled", "mode", "reason" ],
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "ChangePasswordRequest" : {
@@ -4814,7 +4814,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "enabled", "lastReason", "mode", "updatedAt", "updatedBy", "version" ],
+        "required" : [ "code", "enabled", "lastReason", "updatedAt", "updatedBy", "version" ],
         "type" : "object"
       },
       "FeatureStateResponse" : {
@@ -4835,7 +4835,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "enabled", "mode", "version" ],
+        "required" : [ "code", "enabled", "version" ],
         "type" : "object"
       },
       "FeatureStateViewResponse" : {
@@ -4848,7 +4848,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "enabled", "mode" ],
+        "required" : [ "enabled" ],
         "type" : "object"
       },
       "FeatureTransitionPreviewResponse" : {
@@ -44224,6 +44224,38 @@
           "required" : false,
           "schema" : {
             "enum" : [ "BILLING", "FISCAL_INVOICING", "ANALYTICS", "PAYMENT_METHOD_CASH", "PAYMENT_METHOD_BANK_TRANSFER", "PAYMENT_METHOD_GATEWAY", "BILLING_NOTIFICATIONS", "EXTERNAL_BILLING" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorPersonId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actorKind",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "HUMAN", "SERVICE" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
             "type" : "string"
           }
         }, {

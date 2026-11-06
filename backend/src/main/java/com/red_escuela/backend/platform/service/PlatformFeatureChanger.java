@@ -1,11 +1,12 @@
 package com.red_escuela.backend.platform.service;
 
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.platform.domain.ActorSummary;
 import com.red_escuela.backend.platform.domain.BillingModeChangeClearance;
 import com.red_escuela.backend.platform.domain.BillingModeStateMachine;
 import com.red_escuela.backend.platform.domain.FeatureChange;
 import com.red_escuela.backend.platform.domain.FeatureState;
-import com.red_escuela.backend.platform.entity.FeatureChangeActorKind;
+import com.red_escuela.backend.platform.model.FeatureChangeActorKind;
 import com.red_escuela.backend.platform.entity.FeatureChangeLog;
 import com.red_escuela.backend.platform.entity.PlatformFeature;
 import com.red_escuela.backend.platform.exception.FeatureAlreadyInRequestedStateException;
@@ -35,6 +36,7 @@ public class PlatformFeatureChanger {
     private final FeatureSnapshotHolder snapshotHolder;
     private final CurrentActorFinder currentActorFinder;
     private final FeatureTransitionConfirmationSigner confirmationSigner;
+    private final ActorSummaryFinder actorSummaryFinder;
     private final Clock clock;
 
     public PlatformFeatureChanger(
@@ -45,6 +47,7 @@ public class PlatformFeatureChanger {
             FeatureSnapshotHolder snapshotHolder,
             CurrentActorFinder currentActorFinder,
             FeatureTransitionConfirmationSigner confirmationSigner,
+            ActorSummaryFinder actorSummaryFinder,
             Clock clock) {
         this.featureRepository = featureRepository;
         this.changeLogRepository = changeLogRepository;
@@ -53,6 +56,7 @@ public class PlatformFeatureChanger {
         this.snapshotHolder = snapshotHolder;
         this.currentActorFinder = currentActorFinder;
         this.confirmationSigner = confirmationSigner;
+        this.actorSummaryFinder = actorSummaryFinder;
         this.clock = clock;
     }
 
@@ -62,7 +66,7 @@ public class PlatformFeatureChanger {
         PlatformFeature feature = featureRepository.findByCodeForUpdate(change.code())
                 .orElseThrow(() -> new FeatureNotProvisionedException(change.code()));
         if (change.expectedVersion() != null && change.expectedVersion() != feature.getVersion()) {
-            throw new StaleFeatureVersionException(change.code(), change.expectedVersion(), feature.getVersion());
+            throw new StaleFeatureVersionException(change.code(), change.expectedVersion(), feature.getVersion(), feature.getUpdatedAt(), feature.getUpdatedById(), actorNameOf(feature.getUpdatedById()));
         }
         FeatureState before = feature.toState();
         FeatureState requested = resolveRequestedState(change, feature);
@@ -87,6 +91,11 @@ public class PlatformFeatureChanger {
                 .build());
         refreshSnapshotAfterCommit();
         return after;
+    }
+
+    private String actorNameOf(Long personId) {
+        ActorSummary actor = actorSummaryFinder.find(personId);
+        return actor == null ? null : actor.fullName();
     }
 
     private BillingModeChangeClearance clearanceOf(FeatureChange change, FeatureState before, FeatureState requested, long featureVersion) {

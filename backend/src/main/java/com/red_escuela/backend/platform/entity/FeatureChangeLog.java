@@ -1,5 +1,6 @@
 package com.red_escuela.backend.platform.entity;
 
+import com.red_escuela.backend.platform.model.FeatureChangeActorKind;
 import com.red_escuela.backend.platform.model.FeatureCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
