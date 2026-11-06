@@ -10265,11 +10265,11 @@
         "properties" : {
           "available" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "capacity" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "enrolled" : {
             "format" : "int64",

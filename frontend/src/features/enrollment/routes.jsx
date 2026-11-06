@@ -9,6 +9,7 @@ const AlumnoMisCarreras = lazyPage(() => import('@/features/workspace/pages/Alum
 const AlumnoMateriaDetalle = lazyPage(() => import('@/features/workspace/pages/AlumnoMateriaDetalle'), 'AlumnoMateriaDetalle');
 const DirectorAprobacionesExcepciones = lazyPage(() => import('@/features/enrollment/pages/DirectorAprobacionesExcepciones'), 'DirectorAprobacionesExcepciones');
 const DirectorExcepcionDetalle = lazyPage(() => import('@/features/enrollment/pages/DirectorExcepcionDetalle'), 'DirectorExcepcionDetalle');
+const InscribirAlumno = lazyPage(() => import('@/features/enrollment/pages/InscribirAlumno'), 'InscribirAlumno');
 const PadronAlumnos = lazyPage(() => import('@/features/identity/pages/PadronAlumnos'), 'PadronAlumnos');
 import { Navigate } from 'react-router-dom';
 import { lazyPage } from '@/routes/lazyPage';
@@ -26,6 +27,7 @@ export const routes = {
   ],
   role: [
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos', element: <PadronAlumnos /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/:id/inscribir', element: <InscribirAlumno /> },
     { roles: ['alumno'], path: 'mis-cursos', element: <AlumnoMisCursos /> },
     { roles: ['alumno'], path: 'mis-carreras', element: <AlumnoMisCarreras /> },
     { roles: ['alumno'], path: 'mis-carreras/materias/:id', element: <AlumnoMateriaDetalle /> },
