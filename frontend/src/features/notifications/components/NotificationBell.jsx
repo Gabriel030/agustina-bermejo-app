@@ -8,6 +8,15 @@ import { TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from '@/lib/n
 
 const ANNOUNCEMENT_TYPES = new Set(['ANNOUNCEMENT_PUBLISHED', 'ANNOUNCEMENT_UPDATED']);
 
+const GRADUATION_TYPES = new Set([
+  'GRADUATION_REQUEST_CREATED',
+  'GRADUATION_REQUEST_PENDING_REVIEW',
+  'GRADUATION_REQUEST_VERIFIED',
+  'GRADUATION_REQUEST_DEBT_BLOCKED',
+  'GRADUATION_REQUEST_APPROVED',
+  'GRADUATION_REQUEST_REJECTED',
+]);
+
 const BORDE_TONO = {
   warning: 'border-l-warning',
   success: 'border-l-success',
@@ -37,6 +46,11 @@ export function NotificationBell() {
     if (ANNOUNCEMENT_TYPES.has(n.type) && n.relatedEntityId) {
       setOpen(false);
       navigate(`/alumno/inicio?aviso=${n.relatedEntityId}`);
+      return;
+    }
+    if (GRADUATION_TYPES.has(n.type)) {
+      setOpen(false);
+      navigate('/alumno/mis-carreras');
       return;
     }
     if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {
