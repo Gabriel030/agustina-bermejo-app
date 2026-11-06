@@ -38,9 +38,10 @@ public class RefundOperationRunner {
         this.actorResolver = actorResolver;
     }
 
-    public RefundRequestResult runRefundRequest(Long studentId, Money amount, String destinationAccount, String destinationHolder, boolean requestedByStudent) {
+    public RefundRequestResult runRefundRequest(Long studentId, Money amount, String destinationAccount, String destinationHolder, boolean requestedByStudent,
+                                           String idempotencyKey) {
         IssueRefundCommand command = new IssueRefundCommand(studentId, amount, destinationAccount, destinationHolder, actorResolver.currentPersonAsActor().personId(),
-                !requestedByStudent && actorResolver.currentActorIsDirector(), null);
+                !requestedByStudent && actorResolver.currentActorIsDirector(), null, idempotencyKey);
         return switch (pipeline.runOperation(issueOperation, command)) {
             case BillingOperationOutcome.Processed<List<Refund>> processed -> new RefundRequestResult(null, processed.result());
             case BillingOperationOutcome.AwaitingAuthorization<List<Refund>> awaiting ->

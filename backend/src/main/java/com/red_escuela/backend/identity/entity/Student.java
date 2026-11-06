@@ -59,4 +59,28 @@ public class Student {
 
     @Column(name = "withdrawn_at")
     private LocalDateTime withdrawnAt;
+
+    @Column(name = "guardian_full_name")
+    private String guardianFullName;
+
+    @Column(name = "guardian_dni")
+    private String guardianDni;
+
+    @Column(name = "guardian_relationship")
+    private String guardianRelationship;
+
+    @Column(name = "guardian_phone")
+    private String guardianPhone;
+
+    @Column(name = "guardian_email")
+    private String guardianEmail;
+
+    @Column(name = "emergency_contact_name")
+    private String emergencyContactName;
+
+    @Column(name = "emergency_contact_relationship")
+    private String emergencyContactRelationship;
+
+    @Column(name = "emergency_contact_phone")
+    private String emergencyContactPhone;
 }

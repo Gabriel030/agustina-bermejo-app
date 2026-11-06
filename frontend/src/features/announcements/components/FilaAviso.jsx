@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
+import { ProgressBar } from '@/components/ProgressBar';
 import {
   CATEGORIA_AVISO_LABEL,
   esAudienciaCompleta,
@@ -16,6 +17,32 @@ function CeldaFecha({ principal, secundario }) {
       {principal ?? <span className="text-ink-faint">—</span>}
       {secundario && <small className="block text-[10.5px] text-ink-faint opacity-85">{secundario}</small>}
     </td>
+  );
+}
+
+function CeldaLectura({ aviso }) {
+  if (aviso.status === 'SCHEDULED') return <span className="text-ink-faint">Sin enviar</span>;
+  if (!aviso.readTracked) {
+    return (
+      <span className="text-ink-faint" title="Es anterior al registro de lectura">
+        Sin registro
+      </span>
+    );
+  }
+  const porcentaje = aviso.recipientCount > 0 ? (aviso.readCount / aviso.recipientCount) * 100 : 0;
+  return (
+    <div className="flex min-w-[110px] flex-col gap-1">
+      <ProgressBar
+        value={porcentaje}
+        label={`Lectura de “${aviso.title}”`}
+        showValue={false}
+        tone={porcentaje < 50 ? 'warning' : 'accent'}
+        className="[&>div:first-child]:sr-only"
+      />
+      <span className="tabular-nums text-ink-soft">
+        {aviso.readCount} de {aviso.recipientCount}
+      </span>
+    </div>
   );
 }
 
@@ -80,6 +107,9 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
         <td className="px-3 py-[11px] text-[12.5px]">
           <StatusPill tone={vigencia.tone}>{vigencia.label}</StatusPill>
         </td>
+        <td className="px-3 py-[11px] text-[12.5px]">
+          <CeldaLectura aviso={aviso} />
+        </td>
         <CeldaFecha principal={formatearFechaCorta(aviso.createdAt)} />
         <CeldaFecha
           principal={aviso.status === 'SCHEDULED' ? formatearFechaCorta(aviso.scheduledFor) : formatearFechaCorta(aviso.sentAt)}
@@ -90,7 +120,7 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
 
       {abierto && (
         <tr className="detalle-aviso">
-          <td colSpan={7} className="px-4 pb-4 pt-0">
+          <td colSpan={8} className="px-4 pb-4 pt-0">
             <div
               ref={detalleRef}
               className="sticky left-4 flex max-w-[78ch] flex-col gap-3"

@@ -33,7 +33,7 @@ public class ListAnnouncementRecipientsService implements ListAnnouncementRecipi
         sectionMembership.requireCurrentInstructorOf(announcement.getSectionType(), announcement.getSectionId());
 
         return recipientReader.listRecipients(announcementId).stream()
-                .map(recipient -> new AnnouncementRecipientResponse(recipient.studentId(), recipient.file(), recipient.fullName()))
+                .map(recipient -> new AnnouncementRecipientResponse(recipient.studentId(), recipient.file(), recipient.fullName(), null))
                 .toList();
     }
 }

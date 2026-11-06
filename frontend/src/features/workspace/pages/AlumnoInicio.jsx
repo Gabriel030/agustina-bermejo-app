@@ -6,10 +6,11 @@ import { BannerCarousel } from '@/components/BannerCarousel';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useAuth } from '@/context/AuthContext';
 import { usePaymentStanding, AdmissionInvoicePendingCard, useAdmissionInvoicesPending } from '@/features/billing';
 import { useMisCursos } from '@/features/enrollment';
-import { useNovedades } from '@/features/announcements';
+import { useNovedades, useMarcarAvisoLeido } from '@/features/announcements';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
 import { tiempoRelativo } from '@/lib/notificaciones';
 
@@ -42,7 +43,7 @@ function fueEditado(aviso) {
   return new Date(aviso.updatedAt) - new Date(aviso.createdAt) > 60_000;
 }
 
-function AvisoItem({ aviso, expandidoPorUrl, refProp }) {
+function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
   const [expandido, setExpandido] = useState(false);
   const bodyRef = useRef(null);
   const [desborda, setDesborda] = useState(false);
@@ -54,8 +55,16 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp }) {
   }, [aviso.body]);
 
   useEffect(() => {
-    if (expandidoPorUrl) setExpandido(true);
-  }, [expandidoPorUrl]);
+    if (expandidoPorUrl) {
+      setExpandido(true);
+      onAbrir(aviso);
+    }
+  }, [expandidoPorUrl, aviso, onAbrir]);
+
+  function alternar() {
+    if (!expandido) onAbrir(aviso);
+    setExpandido((v) => !v);
+  }
 
   return (
     <div
@@ -77,7 +86,22 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp }) {
           </span>
         </div>
       </div>
-      <div className="mt-1 text-[13.5px] font-semibold text-ink">{aviso.title}</div>
+      <div className="mt-1 flex items-center gap-2">
+        {!aviso.readAt && (
+          <>
+            <span className="size-2 shrink-0 rounded-full bg-brand" aria-hidden="true" />
+            <span className="sr-only">Sin leer</span>
+          </>
+        )}
+        <button
+          type="button"
+          aria-expanded={expandido}
+          onClick={alternar}
+          className="w-full text-left text-[13.5px] font-semibold text-ink"
+        >
+          {aviso.title}
+        </button>
+      </div>
       <div
         ref={bodyRef}
         className={`mt-1 text-[13px] text-ink-soft leading-relaxed overflow-hidden ${!expandido ? 'line-clamp-6' : ''}`}
@@ -87,7 +111,7 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp }) {
       {desborda && (
         <button
           type="button"
-          onClick={() => setExpandido((v) => !v)}
+          onClick={alternar}
           className="mt-1 text-[12px] font-semibold text-primary"
         >
           {expandido ? 'Ver menos' : 'Ver más'}
@@ -108,9 +132,10 @@ export function AlumnoInicio() {
   const { data: standing, isLoading: cargandoStanding } = usePaymentStanding();
   const { data: cursos } = useMisCursos();
   const { pendientes: matriculasPendientes } = useAdmissionInvoicesPending();
-  const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades } = useNovedades();
+  const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades, refetch: refetchNovedades } = useNovedades();
   const [searchParams] = useSearchParams();
   const [verTodos, setVerTodos] = useState(false);
+  const marcarLeido = useMarcarAvisoLeido();
   const avisoResaltadoRef = useRef(null);
 
   const cargandoPago = cargandoStanding;
@@ -120,6 +145,7 @@ export function AlumnoInicio() {
 
   const avisoUrlId = searchParams.get('aviso') ? Number(searchParams.get('aviso')) : null;
   const novedades = [...(novedadesRaw ?? [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const sinLeer = novedades.filter((aviso) => !aviso.readAt).length;
   const novedadesVisibles = verTodos ? novedades : novedades.slice(0, NOVEDADES_INICIAL);
 
   useEffect(() => {
@@ -172,16 +198,17 @@ export function AlumnoInicio() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
         <GlassCard className="flex flex-col p-5">
-          <div className="mb-3 font-heading text-[15px] font-semibold text-ink">Novedades</div>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="font-heading text-[15px] font-semibold text-ink">Novedades</div>
+            {sinLeer > 0 && <StatusPill tone="accent">{sinLeer} sin leer</StatusPill>}
+          </div>
           {cargandoNovedades ? (
             <div className="flex flex-col gap-2">
               <Skeleton className="h-16 w-full" />
               <Skeleton className="h-16 w-full" />
             </div>
           ) : errorNovedades ? (
-            <div className="rounded-xl bg-danger-bg px-4 py-3 text-[13px] text-danger">
-              No se pudieron cargar las novedades.
-            </div>
+            <LoadErrorState bare resource="las novedades" onRetry={refetchNovedades} />
           ) : novedades.length === 0 ? (
             <EmptyState
               icon="🔔"
@@ -198,6 +225,7 @@ export function AlumnoInicio() {
                     aviso={aviso}
                     expandidoPorUrl={esResaltado}
                     refProp={esResaltado ? avisoResaltadoRef : null}
+                    onAbrir={marcarLeido}
                   />
                 );
               })}

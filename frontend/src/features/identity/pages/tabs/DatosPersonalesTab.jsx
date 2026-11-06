@@ -91,6 +91,8 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
         <Campo label="Nombre" value={`${legajo.nombre} ${legajo.apellido}`} />
         <Campo label="Legajo" value={legajo.legajo ? `#${legajo.legajo}` : null} />
         <Campo label="DNI" value={legajo.dni} />
+        <Campo label="Fecha de nacimiento" value={legajo.birthDate ? legajo.birthDate.split('-').reverse().join('/') : null} />
+        {legajo.minor && <Campo label="Edad" value="Menor de 18 años" />}
         <Campo label="Sexo / Género" value={SEX_LABEL[legajo.sexo] ?? legajo.sexo} />
         <Campo label="Nacionalidad" value={legajo.nacionalidad} />
         <Campo label="Teléfono" value={legajo.telefono} />
@@ -99,6 +101,24 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
         <Campo label="Estado" value={ESTADO_STATUS[legajo.status] ?? legajo.status} />
         <Campo label="Onboarding" value={ESTADO_ONBOARDING[legajo.onboardingStatus] ?? legajo.onboardingStatus} />
       </Seccion>
+
+      {legajo.guardian && (
+        <Seccion titulo="Tutor">
+          <Campo label="Nombre" value={legajo.guardian.fullName} />
+          <Campo label="DNI" value={legajo.guardian.documentNumber} />
+          <Campo label="Parentesco" value={legajo.guardian.relationship} />
+          <Campo label="Teléfono" value={legajo.guardian.phone} />
+          <Campo label="Email" value={legajo.guardian.email} />
+        </Seccion>
+      )}
+
+      {legajo.emergencyContact && (
+        <Seccion titulo="Contacto de emergencia">
+          <Campo label="Nombre" value={legajo.emergencyContact.name} />
+          <Campo label="Parentesco" value={legajo.emergencyContact.relationship} />
+          <Campo label="Teléfono" value={legajo.emergencyContact.phone} />
+        </Seccion>
+      )}
 
       {hasAddress && (
         <Seccion titulo="Domicilio">

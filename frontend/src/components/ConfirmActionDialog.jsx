@@ -17,6 +17,8 @@ export default function ConfirmActionDialog({
   confirmLabel,
   pending = false,
   confirmVariant = 'destructive',
+  confirmDisabled = false,
+  children,
   onConfirm,
 }) {
   function handleOpenChange(next) {
@@ -31,13 +33,14 @@ export default function ConfirmActionDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button variant="outline" disabled={pending}>
               Cancelar
             </Button>
           </AlertDialogCancel>
-          <Button variant={confirmVariant} loading={pending} onClick={onConfirm}>
+          <Button variant={confirmVariant} loading={pending} disabled={confirmDisabled} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </AlertDialogFooter>

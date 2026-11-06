@@ -33,10 +33,14 @@ public class BillingOperationPipeline {
 
     private <C, R> BillingOperationOutcome<R> runStages(BillingOperation<C, R> operation, C context, PriorAuthorization priorAuthorization) {
         BillingOperationType type = operation.type();
-        operation.requireValidContext(context);
         List<PreProcessingHandler<C>> handlers = handlerRegistry.<C>preHandlersFor(type);
+        boolean contextValidated = false;
         for (int index = 0; index < handlers.size(); index++) {
             PreProcessingHandler<C> handler = handlers.get(index);
+            if (!contextValidated && !handler.runsBeforeContextValidation()) {
+                operation.requireValidContext(context);
+                contextValidated = true;
+            }
             PreProcessingResult result = handler.handleBeforeProcessing(type, context, priorAuthorization);
             if (result instanceof PreProcessingResult.RequiresAuthorization required) {
                 Long requestId = authorizationRequests.openAuthorizationRequest(type, context, required.requiredRole(), required.reason(), required.expiresOn());
@@ -50,6 +54,9 @@ public class BillingOperationPipeline {
                 BillingOperationOutcome<R> stored = (BillingOperationOutcome<R>) replay.storedOutcome();
                 return stored;
             }
+        }
+        if (!contextValidated) {
+            operation.requireValidContext(context);
         }
         R result = operation.processOperation(context);
         handlers.forEach(handler -> handler.handleAfterProcessing(type, context, result));

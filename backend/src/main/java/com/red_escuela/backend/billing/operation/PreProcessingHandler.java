@@ -7,6 +7,10 @@ public interface PreProcessingHandler<C> {
         return false;
     }
 
+    default boolean runsBeforeContextValidation() {
+        return false;
+    }
+
     default void handleAfterProcessing(BillingOperationType type, C context, Object result) {
     }
 

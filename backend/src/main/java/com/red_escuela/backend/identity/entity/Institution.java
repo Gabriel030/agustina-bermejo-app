@@ -61,4 +61,9 @@ public class Institution {
     @Column(name = "sms_password")
     private String smsPassword;
 
+    @Column(name = "justification_deadline_business_days", nullable = false)
+    private int justificationDeadlineBusinessDays = 5;
+
+    @Column(name = "evaluation_config_due_days", nullable = false)
+    private int evaluationConfigDueDays = 15;
 }

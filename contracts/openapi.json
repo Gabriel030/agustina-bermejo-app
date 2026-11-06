@@ -52,6 +52,38 @@
         "required" : [ "courseId", "courseName", "createdAt", "createdByName", "decidedAt", "decidedByName", "id", "programId", "programName", "rejectionReason", "status", "termId", "termName" ],
         "type" : "object"
       },
+      "AcademicSettingsRequest" : {
+        "properties" : {
+          "evaluationConfigDueDays" : {
+            "format" : "int32",
+            "maximum" : 120,
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "justificationDeadlineBusinessDays" : {
+            "format" : "int32",
+            "maximum" : 60,
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "evaluationConfigDueDays", "justificationDeadlineBusinessDays" ],
+        "type" : "object"
+      },
+      "AcademicSettingsResponse" : {
+        "properties" : {
+          "evaluationConfigDueDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "justificationDeadlineBusinessDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "evaluationConfigDueDays", "justificationDeadlineBusinessDays" ],
+        "type" : "object"
+      },
       "AccountCreditAllocationResponse" : {
         "properties" : {
           "allocations" : {
@@ -478,12 +510,16 @@
           "name" : {
             "type" : "string"
           },
+          "readAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "studentId" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "file", "name", "studentId" ],
+        "required" : [ "file", "name", "readAt", "studentId" ],
         "type" : "object"
       },
       "AnnouncementResponse" : {
@@ -510,6 +546,17 @@
             "type" : [ "string", "null" ]
           },
           "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "readCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "readTracked" : {
+            "type" : "boolean"
+          },
+          "recipientCount" : {
             "format" : "int64",
             "type" : "integer"
           },
@@ -544,7 +591,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "audienceLabel", "body", "category", "createdAt", "createdBy", "expiresAt", "id", "scheduledFor", "sectionId", "sectionType", "sentAt", "status", "title", "updatedAt", "urgent" ],
+        "required" : [ "audienceLabel", "body", "category", "createdAt", "createdBy", "expiresAt", "id", "readCount", "recipientCount", "scheduledFor", "sectionId", "sectionType", "sentAt", "status", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
       "AnnualUpfrontQuoteResponse" : {
@@ -2167,6 +2214,10 @@
       },
       "ConfirmProspectRequest" : {
         "properties" : {
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "city" : {
             "minLength" : 1,
             "type" : "string"
@@ -2182,13 +2233,29 @@
             "enum" : [ "DNI", "PASSPORT", "OTHER" ],
             "type" : "string"
           },
+          "emergencyContact" : {
+            "$ref" : "#/components/schemas/EmergencyContactRequest"
+          },
           "floor" : {
+            "type" : "string"
+          },
+          "guardian" : {
+            "$ref" : "#/components/schemas/GuardianRequest"
+          },
+          "nationality" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "number" : {
             "type" : "string"
           },
           "postalCode" : {
+            "type" : "string"
+          },
+          "sex" : {
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : "string"
           },
           "state" : {
@@ -4193,6 +4260,57 @@
         "required" : [ "description", "id", "name" ],
         "type" : "object"
       },
+      "EmergencyContactDraftRequest" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "EmergencyContactRequest" : {
+        "properties" : {
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 40,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "relationship" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "EmergencyContactResponse" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "phone", "relationship" ],
+        "type" : "object"
+      },
       "EnabledFlag" : {
         "properties" : {
           "enabled" : {
@@ -5002,6 +5120,44 @@
         "required" : [ "date", "enrollmentId", "examBoardId", "id", "score", "sequenceNumber", "type" ],
         "type" : "object"
       },
+      "GraduationCertificateResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "graduationDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "holderFullName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "issuedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "VALID", "REVOKED" ],
+            "type" : "string"
+          },
+          "titleName" : {
+            "type" : "string"
+          },
+          "verificationUrl" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "graduationDate", "holderFullName", "id", "issuedAt", "kind", "status", "titleName", "verificationUrl" ],
+        "type" : "object"
+      },
       "GraduationDebtSummaryResponse" : {
         "properties" : {
           "installments" : {
@@ -5138,6 +5294,80 @@
           }
         },
         "required" : [ "effectiveFrom", "group", "hasOpenProposal", "noticeCount", "versionId" ],
+        "type" : "object"
+      },
+      "GuardianDraftRequest" : {
+        "properties" : {
+          "documentNumber" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "email", "fullName", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "GuardianRequest" : {
+        "properties" : {
+          "documentNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 40,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "relationship" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "email", "fullName", "phone", "relationship" ],
+        "type" : "object"
+      },
+      "GuardianResponse" : {
+        "properties" : {
+          "documentNumber" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "relationship" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentNumber", "email", "fullName", "phone", "relationship" ],
         "type" : "object"
       },
       "HistoryCell" : {
@@ -5495,6 +5725,20 @@
           }
         },
         "required" : [ "creditNotes", "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "productRef", "studentDni", "studentId", "subjectId", "totalAmount" ],
+        "type" : "object"
+      },
+      "IssueGraduationCertificateRequest" : {
+        "properties" : {
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "enrollmentId", "kind" ],
         "type" : "object"
       },
       "ItemResponse" : {
@@ -6313,6 +6557,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "readAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
           "subjectName" : {
             "type" : "string"
           },
@@ -6330,7 +6578,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "body", "category", "createdAt", "id", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
+        "required" : [ "body", "category", "createdAt", "id", "readAt", "subjectName", "teacherName", "title", "updatedAt", "urgent" ],
         "type" : "object"
       },
       "MyCourseEnrollmentResponse" : {
@@ -8239,6 +8487,46 @@
         } ],
         "required" : [ "rate" ]
       },
+      "ProspectListItemResponse" : {
+        "properties" : {
+          "apellido" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "missingDocuments" : {
+            "items" : {
+              "enum" : [ "DNI_FRENTE", "DNI_DORSO", "ANALITICO_SECUNDARIO" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "telefono" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "apellido", "email", "emailVerified", "id", "missingDocuments", "nombre", "personId", "registeredAt", "telefono" ],
+        "type" : "object"
+      },
       "ProspectResponse" : {
         "properties" : {
           "apellido" : {
@@ -9212,6 +9500,10 @@
       },
       "SaveProspectDraftRequest" : {
         "properties" : {
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "city" : {
             "type" : "string"
           },
@@ -9225,13 +9517,25 @@
             "enum" : [ "DNI", "PASSPORT", "OTHER" ],
             "type" : "string"
           },
+          "emergencyContact" : {
+            "$ref" : "#/components/schemas/EmergencyContactDraftRequest"
+          },
           "floor" : {
+            "type" : "string"
+          },
+          "guardian" : {
+            "$ref" : "#/components/schemas/GuardianDraftRequest"
+          },
+          "nationality" : {
             "type" : "string"
           },
           "number" : {
             "type" : "string"
           },
           "postalCode" : {
+            "type" : "string"
+          },
+          "sex" : {
             "type" : "string"
           },
           "state" : {
@@ -10196,12 +10500,21 @@
           "emailVerified" : {
             "type" : "boolean"
           },
+          "emergencyContact" : {
+            "$ref" : "#/components/schemas/EmergencyContactResponse"
+          },
+          "guardian" : {
+            "$ref" : "#/components/schemas/GuardianResponse"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
           "legajo" : {
             "type" : "string"
+          },
+          "minor" : {
+            "type" : "boolean"
           },
           "motivoBaja" : {
             "type" : "string"
@@ -29972,6 +30285,242 @@
         "tags" : [ "financial-dashboard-controller" ]
       }
     },
+    "/graduation-certificates" : {
+      "post" : {
+        "operationId" : "GraduationCertificate_issue",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/IssueGraduationCertificateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GraduationCertificateResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-certificate-controller" ]
+      }
+    },
+    "/graduation-certificates/{id}/pdf" : {
+      "get" : {
+        "operationId" : "GraduationCertificate_pdf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "graduation-certificate-controller" ]
+      }
+    },
     "/graduation-requests" : {
       "get" : {
         "operationId" : "GraduationRequest_listByStatus",
@@ -31149,6 +31698,230 @@
         "tags" : [ "holiday-controller" ]
       }
     },
+    "/institution/academic-settings" : {
+      "get" : {
+        "operationId" : "InstitutionAcademicSettings_get",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcademicSettingsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "institution-academic-settings-controller" ]
+      },
+      "put" : {
+        "operationId" : "InstitutionAcademicSettings_update",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AcademicSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcademicSettingsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "institution-academic-settings-controller" ]
+      }
+    },
     "/institutions" : {
       "get" : {
         "operationId" : "Institution_list",
@@ -31753,6 +32526,13 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
@@ -31783,7 +32563,7 @@
                 }
               }
             },
-            "description" : "Bad Request"
+            "description" : "IDEMPOTENCY_KEY_INVALID: la clave está vacía o tiene más de 100 caracteres"
           },
           "401" : {
             "content" : {
@@ -31823,7 +32603,7 @@
                 }
               }
             },
-            "description" : "Conflict"
+            "description" : "IDEMPOTENCY_KEY_CONFLICT: la misma clave se usó con otro pedido"
           },
           "429" : {
             "content" : {
@@ -32335,6 +33115,116 @@
               }
             },
             "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-announcement-controller" ]
+      }
+    },
+    "/me/announcements/{id}/read" : {
+      "post" : {
+        "operationId" : "MeAnnouncement_markRead",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           },
           "400" : {
             "content" : {
@@ -38913,6 +39803,14 @@
       },
       "post" : {
         "operationId" : "Refund_requestOwnRefund",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -38942,7 +39840,7 @@
                 }
               }
             },
-            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"
+            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED, IDEMPOTENCY_KEY_INVALID"
           },
           "401" : {
             "content" : {
@@ -38982,7 +39880,7 @@
                 }
               }
             },
-            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT"
+            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264), REFUND_EXCEEDS_AVAILABLE_AMOUNT o IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido)"
           },
           "429" : {
             "content" : {
@@ -53031,6 +53929,115 @@
       }
     },
     "/prospects" : {
+      "get" : {
+        "operationId" : "ProspectStaff_listProspects",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProspectListItemResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "prospect-staff-controller" ]
+      },
       "post" : {
         "operationId" : "Prospect_createProspect",
         "requestBody" : {
@@ -53146,6 +54153,124 @@
           }
         },
         "tags" : [ "prospect-controller" ]
+      }
+    },
+    "/prospects/by-staff" : {
+      "post" : {
+        "operationId" : "ProspectStaff_createProspectByStaff",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateProspectRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProspectResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "prospect-staff-controller" ]
       }
     },
     "/prospects/{id}" : {
@@ -59528,6 +60653,13 @@
             "format" : "int64",
             "type" : "integer"
           }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "content" : {
@@ -59568,7 +60700,7 @@
                 }
               }
             },
-            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED"
+            "description" : "REFUND_AMOUNT_INVALID, REFUND_DESTINATION_INVALID, REFUND_DESTINATION_REQUIRED, IDEMPOTENCY_KEY_INVALID"
           },
           "401" : {
             "content" : {
@@ -59608,7 +60740,7 @@
                 }
               }
             },
-            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264) o REFUND_EXCEEDS_AVAILABLE_AMOUNT"
+            "description" : "INSUFFICIENT_ACCOUNT_CREDIT, REFUND_BLOCKED_BY_OVERDUE_DEBT (D-264), REFUND_EXCEEDS_AVAILABLE_AMOUNT o IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido)"
           },
           "429" : {
             "content" : {

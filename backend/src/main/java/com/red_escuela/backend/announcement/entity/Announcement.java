@@ -98,6 +98,10 @@ public class Announcement {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "read_tracked", nullable = false)
+    @Builder.Default
+    private boolean readTracked = true;
+
     @PrePersist
     @PreUpdate
     private void validateInvariants() {

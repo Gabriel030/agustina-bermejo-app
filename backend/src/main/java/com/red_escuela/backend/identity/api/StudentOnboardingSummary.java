@@ -16,7 +16,8 @@ public record StudentOnboardingSummary(
         String personStatus,
         Boolean emailVerified,
         LocalDateTime registeredAt,
-        Long registeredByPersonId) {
+        Long registeredByPersonId,
+        String phoneNumber) {
 
     static StudentOnboardingSummary of(Student student) {
         var person = student.getPerson();
@@ -32,6 +33,7 @@ public record StudentOnboardingSummary(
                 person.getStatus() == null ? null : person.getStatus().name(),
                 person.getEmailVerified(),
                 student.getRegisteredAt(),
-                student.getRegisteredByPersonId());
+                student.getRegisteredByPersonId(),
+                person.getPhoneNumber());
     }
 }

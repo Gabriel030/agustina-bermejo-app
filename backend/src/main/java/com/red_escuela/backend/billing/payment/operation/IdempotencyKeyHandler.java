@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
+import com.red_escuela.backend.billing.operation.IdempotencyKeyed;
 import com.red_escuela.backend.billing.payment.service.IdempotencyRecordService;
 import com.red_escuela.backend.billing.payment.service.StoredIdempotentResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,6 +16,9 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.PreProcessingHandler;
 import com.red_escuela.backend.billing.operation.PreProcessingResult;
 import com.red_escuela.backend.billing.operation.PriorAuthorization;
+import com.red_escuela.backend.billing.payment.policy.IdempotencyKeyCheck;
+import com.red_escuela.backend.billing.payment.exception.IdempotencyKeyInvalidException;
+import com.red_escuela.backend.shared.domain.policy.PolicySet;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -29,14 +33,28 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
 
     private final IdempotencyRecordService recordService;
     private final ObjectMapper canonicalMapper;
-    private final Class<?> responseType;
+    private final StoredResultMapping resultMapping;
+    private final boolean optionalKeyBeforeValidation;
+    private final PolicySet<IdempotencyKeyCheck> keyFormatPolicies;
 
     public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType) {
+        this(recordService, objectMapper, responseType, null, null);
+    }
+
+    public IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, StoredResultMapping resultMapping,
+                                 PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
+        this(recordService, objectMapper, null, resultMapping, keyFormatPolicies);
+    }
+
+    private IdempotencyKeyHandler(IdempotencyRecordService recordService, ObjectMapper objectMapper, Class<?> responseType, StoredResultMapping resultMapping,
+                                  PolicySet<IdempotencyKeyCheck> keyFormatPolicies) {
+        this.keyFormatPolicies = keyFormatPolicies;
         this.recordService = recordService;
         this.canonicalMapper = objectMapper.copy()
                 .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
                 .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        this.responseType = responseType;
+        this.optionalKeyBeforeValidation = resultMapping != null;
+        this.resultMapping = resultMapping != null ? resultMapping : new StoredResultMapping(result -> result, body -> readJson(body, responseType));
     }
 
     @Override
@@ -45,7 +63,15 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
     }
 
     @Override
+    public boolean runsBeforeContextValidation() {
+        return optionalKeyBeforeValidation;
+    }
+
+    @Override
     public PreProcessingResult handleBeforeProcessing(BillingOperationType type, C context, PriorAuthorization priorAuthorization) {
+        if (isSkipped(context)) {
+            return PreProcessingResult.proceed();
+        }
         StoredIdempotentResponse stored = recordService.claimKeyOrFindStoredResponse(context.idempotencyKey(), type, hashOf(context), priorAuthorization);
         return switch (stored) {
             case StoredIdempotentResponse.KeyClaimed claimed -> PreProcessingResult.proceed();
@@ -55,11 +81,17 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
 
     @Override
     public void handleAfterProcessing(BillingOperationType type, C context, Object result) {
-        recordService.storeResponse(context.idempotencyKey(), IdempotencyRecordService.PROCESSED_STATUS, writeJson(result));
+        if (isSkipped(context)) {
+            return;
+        }
+        recordService.storeResponse(context.idempotencyKey(), IdempotencyRecordService.PROCESSED_STATUS, writeJson(resultMapping.toStorable().apply(result)));
     }
 
     @Override
     public void handleAwaitingAuthorization(BillingOperationType type, C context, Long authorizationRequestId) {
+        if (isSkipped(context)) {
+            return;
+        }
         String body = writeJson(canonicalMapper.createObjectNode().put(AUTHORIZATION_REQUEST_ID_FIELD, authorizationRequestId));
         recordService.storeResponse(context.idempotencyKey(), IdempotencyRecordService.AWAITING_AUTHORIZATION_STATUS, body);
     }
@@ -68,14 +100,26 @@ public class IdempotencyKeyHandler<C extends IdempotencyKeyed> implements PrePro
         if (replayable.status() == IdempotencyRecordService.AWAITING_AUTHORIZATION_STATUS) {
             return new BillingOperationOutcome.AwaitingAuthorization<>(readJson(replayable.body(), JsonNode.class).get(AUTHORIZATION_REQUEST_ID_FIELD).asLong());
         }
-        return new BillingOperationOutcome.Processed<>(readJson(replayable.body(), responseType));
+        return new BillingOperationOutcome.Processed<>(resultMapping.fromStored().apply(replayable.body()));
+    }
+
+    private boolean isSkipped(C context) {
+        if (!optionalKeyBeforeValidation) {
+            return false;
+        }
+        String key = context.idempotencyKey();
+        if (key == null) {
+            return true;
+        }
+        keyFormatPolicies.evaluateRulesUntilFirstViolation(new IdempotencyKeyCheck(key)).throwIfDenied(IdempotencyKeyInvalidException::new);
+        return false;
     }
 
     private String hashOf(C context) {
         try {
             ObjectNode fingerprint = canonicalMapper.createObjectNode();
             fingerprint.set("actor", canonicalMapper.valueToTree(context.actor()));
-            fingerprint.set("request", withNormalizedNumbers(canonicalMapper.valueToTree(context)));
+            fingerprint.set("request", withNormalizedNumbers(canonicalMapper.valueToTree(context.requestFingerprint())));
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(writeJson(fingerprint).getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException exception) {

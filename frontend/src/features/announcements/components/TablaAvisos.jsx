@@ -15,7 +15,7 @@ import { FilaAviso } from './FilaAviso';
 import { RosterSegmento } from './RosterSegmento';
 import { useDestinatariosDeAviso } from '../hooks/useAvisos';
 
-const COLUMNAS = ['Aviso', 'Categoría', 'Audiencia', 'Estado', 'Creado', 'Envío', 'Vence'];
+const COLUMNAS = ['Aviso', 'Categoría', 'Audiencia', 'Estado', 'Leído por', 'Creado', 'Envío', 'Vence'];
 
 function SiluetaDeTabla() {
   return (
@@ -83,7 +83,7 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
       <GlassCard className="card-avisos overflow-hidden p-0">
         <div className="px-4 pt-3 text-[11px] text-ink-faint">Todos los horarios en UTC−3</div>
         <div ref={scrollerRef} className="overflow-x-auto">
-          <table className="tabla-avisos w-full min-w-[880px] border-collapse">
+          <table className="tabla-avisos w-full min-w-[980px] border-collapse">
             <thead>
               <tr>
                 {COLUMNAS.map((columna) => (

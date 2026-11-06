@@ -33,8 +33,10 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
     private static final Set<String> READ_METHODS = Set.of("GET", "HEAD");
     private static final Set<String> IGNORED_METHODS = Set.of("OPTIONS", "TRACE");
     private static final String POST = "POST";
+    private static final String STAFF_PROSPECTS_PATH = "/prospects/by-staff";
 
     private final Map<String, KeyedRateLimiter> publicLimiters;
+    private final KeyedRateLimiter staffProspectsLimiter;
     private final KeyedRateLimiter userReadLimiter;
     private final KeyedRateLimiter userWriteLimiter;
     private final JsonErrorResponseWriter errorWriter;
@@ -49,24 +51,29 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
             @Value("${app.rate-limit.reset-password.refill-per-minute:10}") int resetPasswordRefill,
             @Value("${app.rate-limit.prospects.capacity:10}") int prospectsCapacity,
             @Value("${app.rate-limit.prospects.refill-per-minute:10}") int prospectsRefill,
+            @Value("${app.rate-limit.staff-prospects.capacity:30}") int staffProspectsCapacity,
+            @Value("${app.rate-limit.staff-prospects.refill-per-minute:30}") int staffProspectsRefill,
             @Value("${app.rate-limit.user-read.capacity:600}") int userReadCapacity,
             @Value("${app.rate-limit.user-read.refill-per-minute:600}") int userReadRefill,
             @Value("${app.rate-limit.user-write.capacity:120}") int userWriteCapacity,
             @Value("${app.rate-limit.user-write.refill-per-minute:120}") int userWriteRefill) {
         this(errorWriter, Clock.systemUTC(), maxTrackedKeys, refreshCapacity, refreshRefill, resetPasswordCapacity,
-                resetPasswordRefill, prospectsCapacity, prospectsRefill, userReadCapacity, userReadRefill,
+                resetPasswordRefill, prospectsCapacity, prospectsRefill, staffProspectsCapacity, staffProspectsRefill,
+                userReadCapacity, userReadRefill,
                 userWriteCapacity, userWriteRefill);
     }
 
     RequestRateLimitFilter(JsonErrorResponseWriter errorWriter, Clock clock, int maxTrackedKeys, int refreshCapacity,
                            int refreshRefill, int resetPasswordCapacity, int resetPasswordRefill, int prospectsCapacity,
-                           int prospectsRefill, int userReadCapacity, int userReadRefill, int userWriteCapacity,
+                           int prospectsRefill, int staffProspectsCapacity, int staffProspectsRefill,
+                           int userReadCapacity, int userReadRefill, int userWriteCapacity,
                            int userWriteRefill) {
         this.errorWriter = errorWriter;
         this.publicLimiters = Map.of(
                 "/auth/refresh", new KeyedRateLimiter(refreshCapacity, refreshRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/auth/reset-password", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/prospects", new KeyedRateLimiter(prospectsCapacity, prospectsRefill, maxTrackedKeys, IDLE_WINDOW, clock));
+        this.staffProspectsLimiter = new KeyedRateLimiter(staffProspectsCapacity, staffProspectsRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userReadLimiter = new KeyedRateLimiter(userReadCapacity, userReadRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userWriteLimiter = new KeyedRateLimiter(userWriteCapacity, userWriteRefill, maxTrackedKeys, IDLE_WINDOW, clock);
     }
@@ -98,7 +105,7 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
     private List<KeyedRateLimiter> allLimiters() {
         return Stream.concat(
                 publicLimiters.values().stream(),
-                Stream.of(userReadLimiter, userWriteLimiter)).toList();
+                Stream.of(staffProspectsLimiter, userReadLimiter, userWriteLimiter)).toList();
     }
 
     private KeyedRateLimiter.Decision decide(HttpServletRequest request) {
@@ -115,8 +122,14 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
         if (user == null) {
             return permitted();
         }
-        KeyedRateLimiter limiter = READ_METHODS.contains(method) ? userReadLimiter : userWriteLimiter;
-        return limiter.tryConsume(user);
+        return userLimiter(method, path).tryConsume(user);
+    }
+
+    private KeyedRateLimiter userLimiter(String method, String path) {
+        if (POST.equals(method) && STAFF_PROSPECTS_PATH.equals(path)) {
+            return staffProspectsLimiter;
+        }
+        return READ_METHODS.contains(method) ? userReadLimiter : userWriteLimiter;
     }
 
     private static KeyedRateLimiter.Decision permitted() {

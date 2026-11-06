@@ -1,9 +1,11 @@
 package com.red_escuela.backend.identity.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.red_escuela.backend.identity.policy.LegalAge;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.DocumentType;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +31,10 @@ public record StudentRecordResponse(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean emailVerified,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate birthDate,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime registeredAt,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime withdrawnAt) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime withdrawnAt,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean minor,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) GuardianResponse guardian,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) EmergencyContactResponse emergencyContact) {
 
     public static StudentRecordResponse from(Student student, boolean includeWithdrawalReason) {
         var p = student.getPerson();
@@ -55,6 +60,9 @@ public record StudentRecordResponse(
                 p.getEmailVerified(),
                 p.getBirthDate(),
                 student.getRegisteredAt(),
-                student.getWithdrawnAt());
+                student.getWithdrawnAt(),
+                p.getBirthDate() != null && LegalAge.isMinor(p.getBirthDate(), ApplicationTime.today()),
+                GuardianResponse.from(student),
+                EmergencyContactResponse.from(student));
     }
 }

@@ -1,6 +1,11 @@
 package com.red_escuela.backend.identity.api;
 
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import com.red_escuela.backend.identity.policy.LegalAge;
+import com.red_escuela.backend.identity.exception.BirthDateRequiredException;
+import com.red_escuela.backend.identity.exception.GuardianRequiredForMinorException;
+import com.red_escuela.backend.shared.domain.DocumentNumber;
+import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -69,6 +74,12 @@ public class StudentOnboarding {
         if (draft.postalCode() != null) address.setPostalCode(draft.postalCode());
         if (draft.country() != null) address.setCountry(draft.country());
 
+        if (draft.birthDate() != null) person.setBirthDate(draft.birthDate());
+        if (draft.sex() != null) person.setSex(draft.sex());
+        if (draft.nationality() != null) person.setNationality(draft.nationality());
+        applyGuardianDraft(student, draft.guardian());
+        applyEmergencyContactDraft(student, draft.emergencyContact());
+
         flushRejectingDuplicateDocument(student);
     }
 
@@ -79,8 +90,22 @@ public class StudentOnboarding {
             throw new ProspectAlreadyConfirmedException(studentId);
         }
 
+        if (confirmation.birthDate() == null) {
+            throw new BirthDateRequiredException();
+        }
+        if (LegalAge.isMinor(confirmation.birthDate(), ApplicationTime.today())
+                && (isGuardianIncomplete(confirmation.guardian())
+                        || isEmergencyContactIncomplete(confirmation.emergencyContact()))) {
+            throw new GuardianRequiredForMinorException();
+        }
+
         Person person = student.getPerson();
         person.changeDocument(confirmation.documentType(), confirmation.dni());
+        person.setBirthDate(confirmation.birthDate());
+        if (confirmation.sex() != null) person.setSex(confirmation.sex());
+        if (confirmation.nationality() != null) person.setNationality(confirmation.nationality());
+        applyGuardianDraft(student, confirmation.guardian());
+        applyEmergencyContactDraft(student, confirmation.emergencyContact());
         person.setUsername(person.getDni());
 
         Address address = person.getAddress();
@@ -98,6 +123,43 @@ public class StudentOnboarding {
         flushRejectingDuplicateDocument(student);
 
         return StudentOnboardingSummary.of(student);
+    }
+
+    private static boolean isGuardianIncomplete(GuardianContact guardian) {
+        return guardian == null
+                || isBlank(guardian.fullName())
+                || isBlank(guardian.documentNumber())
+                || isBlank(guardian.relationship())
+                || isBlank(guardian.phone());
+    }
+
+    private static boolean isEmergencyContactIncomplete(EmergencyContact emergencyContact) {
+        return emergencyContact == null
+                || isBlank(emergencyContact.name())
+                || isBlank(emergencyContact.relationship())
+                || isBlank(emergencyContact.phone());
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static void applyGuardianDraft(Student student, GuardianContact guardian) {
+        if (guardian == null) return;
+        if (guardian.fullName() != null) student.setGuardianFullName(guardian.fullName());
+        if (!isBlank(guardian.documentNumber())) {
+            student.setGuardianDni(DocumentNumber.of(DocumentType.DNI, guardian.documentNumber()).value());
+        }
+        if (guardian.relationship() != null) student.setGuardianRelationship(guardian.relationship());
+        if (guardian.phone() != null) student.setGuardianPhone(guardian.phone());
+        if (guardian.email() != null) student.setGuardianEmail(guardian.email());
+    }
+
+    private static void applyEmergencyContactDraft(Student student, EmergencyContact emergencyContact) {
+        if (emergencyContact == null) return;
+        if (emergencyContact.name() != null) student.setEmergencyContactName(emergencyContact.name());
+        if (emergencyContact.relationship() != null) student.setEmergencyContactRelationship(emergencyContact.relationship());
+        if (emergencyContact.phone() != null) student.setEmergencyContactPhone(emergencyContact.phone());
     }
 
     private Student requireStudent(Long studentId) {

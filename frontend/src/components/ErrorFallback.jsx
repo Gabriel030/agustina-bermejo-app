@@ -1,10 +1,16 @@
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { OfflineState } from '@/pwa/OfflineState';
+import { useOnlineStatus } from '@/pwa/useOnlineStatus';
 
 export function ErrorFallback({ reset, fullScreen = false }) {
+  const online = useOnlineStatus();
   const content = (
     <GlassCard className="w-full max-w-md p-6">
+      {!online ? (
+        <OfflineState onRetry={reset} />
+      ) : (
       <EmptyState
         icon="⚠️"
         title="Algo salió mal"
@@ -18,6 +24,7 @@ export function ErrorFallback({ reset, fullScreen = false }) {
           </div>
         }
       />
+      )}
     </GlassCard>
   );
   if (!fullScreen) return <div className="flex flex-1 items-center justify-center p-4">{content}</div>;

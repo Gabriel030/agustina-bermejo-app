@@ -3,9 +3,17 @@ import java.time.Clock;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
+import com.red_escuela.backend.enrollment.dto.EmergencyContactDraftRequest;
+import com.red_escuela.backend.enrollment.dto.EmergencyContactRequest;
+import com.red_escuela.backend.enrollment.dto.GuardianDraftRequest;
+import com.red_escuela.backend.enrollment.dto.GuardianRequest;
+import com.red_escuela.backend.identity.api.EmergencyContact;
+import com.red_escuela.backend.identity.api.GuardianContact;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
+import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
 import com.red_escuela.backend.identity.api.ConfirmedProspect;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.api.EmailVerificationSender;
 import com.red_escuela.backend.identity.api.NewProspect;
 import com.red_escuela.backend.identity.api.PasswordResetCodeIssuer;
@@ -16,14 +24,17 @@ import com.red_escuela.backend.identity.api.StudentOnboardingSummary;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.red_escuela.backend.shared.storage.FileStorageService;
 import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 
@@ -36,6 +47,7 @@ public class ProspectService {
     private final TransactionBoundFileCleanup transactionBoundFileCleanup;
     private final PasswordResetCodeIssuer passwordResetCodeIssuer;
     private final EmailVerificationSender emailVerificationSender;
+    private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
 
     public ProspectService(StudentFinder studentFinder, StudentOnboarding studentOnboarding,
@@ -43,6 +55,7 @@ public class ProspectService {
             FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
             PasswordResetCodeIssuer passwordResetCodeIssuer,
             EmailVerificationSender emailVerificationSender,
+            CurrentActorFinder currentActorFinder,
             Clock clock) {
         this.studentFinder = studentFinder;
         this.studentOnboarding = studentOnboarding;
@@ -51,6 +64,7 @@ public class ProspectService {
         this.transactionBoundFileCleanup = transactionBoundFileCleanup;
         this.passwordResetCodeIssuer = passwordResetCodeIssuer;
         this.emailVerificationSender = emailVerificationSender;
+        this.currentActorFinder = currentActorFinder;
         this.clock = clock;
     }
 
@@ -58,20 +72,41 @@ public class ProspectService {
     public StudentOnboardingSummary createProspect(CreateProspectRequest request) {
         StudentOnboardingSummary prospect = studentOnboarding.registerProspect(new NewProspect(
                 request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(), null));
-
-        boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
-                instanceof AnonymousAuthenticationToken;
-        if (isAnonymous) {
-            emailVerificationSender.sendVerificationToStudent(prospect.studentId());
-        }
-
+        emailVerificationSender.sendVerificationToStudent(prospect.studentId());
         return prospect;
+    }
+
+    @Transactional
+    public StudentOnboardingSummary createProspectByStaff(CreateProspectRequest request) {
+        return studentOnboarding.registerProspect(new NewProspect(
+                request.nombre(), request.apellido(), request.email(), request.telefono(), request.institutionId(),
+                currentActorFinder.currentPersonId()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProspectListItemResponse> listProspects() {
+        List<StudentOnboardingSummary> prospects = studentFinder.listProspects();
+        Map<Long, Set<DocumentType>> uploadedByStudent = studentDocumentRepository
+                .findByStudentIdIn(prospects.stream().map(StudentOnboardingSummary::studentId).toList())
+                .stream()
+                .collect(Collectors.groupingBy(document -> document.getStudent().getId(),
+                        Collectors.mapping(StudentDocument::getType, Collectors.toCollection(() -> EnumSet.noneOf(DocumentType.class)))));
+        return prospects.stream()
+                .map(prospect -> ProspectListItemResponse.of(prospect,
+                        missingDocuments(uploadedByStudent.getOrDefault(prospect.studentId(), Set.of()))))
+                .toList();
+    }
+
+    private static List<DocumentType> missingDocuments(Set<DocumentType> uploaded) {
+        return Arrays.stream(DocumentType.values()).filter(type -> !uploaded.contains(type)).toList();
     }
 
     public void saveDraft(Long studentId, SaveProspectDraftRequest request) {
         studentOnboarding.saveProspectDraft(studentId, new ProspectDraft(
                 request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
-                request.city(), request.state(), request.postalCode(), request.country()));
+                request.city(), request.state(), request.postalCode(), request.country(),
+                request.birthDate(), request.sex(), request.nationality(),
+                toGuardian(request.guardian()), toEmergencyContact(request.emergencyContact())));
     }
 
     public void sendVerification(Long studentId) {
@@ -109,11 +144,33 @@ public class ProspectService {
     public StudentOnboardingSummary confirm(Long studentId, ConfirmProspectRequest request) {
         StudentOnboardingSummary confirmed = studentOnboarding.confirmProspect(studentId, new ConfirmedProspect(
                 request.dni(), request.documentType(), request.street(), request.number(), request.floor(),
-                request.city(), request.state(), request.postalCode(), request.country()));
+                request.city(), request.state(), request.postalCode(), request.country(),
+                request.birthDate(), request.sex(), request.nationality(),
+                toGuardian(request.guardian()), toEmergencyContact(request.emergencyContact())));
 
         passwordResetCodeIssuer.issuePasswordResetCode(confirmed.email());
 
         return confirmed;
+    }
+
+    private static GuardianContact toGuardian(GuardianRequest guardian) {
+        return guardian == null ? null : new GuardianContact(guardian.fullName(), guardian.documentNumber(),
+                guardian.relationship(), guardian.phone(), guardian.email());
+    }
+
+    private static EmergencyContact toEmergencyContact(EmergencyContactRequest emergencyContact) {
+        return emergencyContact == null ? null : new EmergencyContact(emergencyContact.name(),
+                emergencyContact.relationship(), emergencyContact.phone());
+    }
+
+    private static GuardianContact toGuardian(GuardianDraftRequest guardian) {
+        return guardian == null ? null : new GuardianContact(guardian.fullName(), guardian.documentNumber(),
+                guardian.relationship(), guardian.phone(), guardian.email());
+    }
+
+    private static EmergencyContact toEmergencyContact(EmergencyContactDraftRequest emergencyContact) {
+        return emergencyContact == null ? null : new EmergencyContact(emergencyContact.name(),
+                emergencyContact.relationship(), emergencyContact.phone());
     }
 
     private Student findStudentOrThrow(Long studentId) {

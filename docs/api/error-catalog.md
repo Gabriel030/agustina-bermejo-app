@@ -55,6 +55,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
 | `BANK_TRANSFER_DETAILS_REQUIRED` | no | `BankTransferDetailsRequiredException` | billing |
+| `BIRTH_DATE_REQUIRED` | no | `BirthDateRequiredException` | identity |
 | `CANCELLATION_REASON_REQUIRED` | no | `CancellationReasonRequiredException` | billing |
 | `CASH_PAYMENT_AMOUNT_INVALID` | no | `CashPaymentAmountInvalidException` | billing |
 | `CASH_PAYMENT_BACKDATE_REASON_INVALID` | no | `CashPaymentBackdateReasonInvalidException` | billing |
@@ -97,12 +98,14 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FEATURE_VALUE_INVALID` | no | `FeatureValueInvalidException` | platform |
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
+| `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
 | `INCOMPLETE_SUBJECT` | no | `IncompleteSubjectException` | academicstructure |
 | `INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `InstallmentCountOnlyForMonthlyInstallmentsException` | billing |
 | `INVALID_AD_HOC_FEE_TYPE` | no | `InvalidAdHocFeeTypeException` | billing |
 | `INVALID_ANNUAL_UPFRONT_SETTINGS` | no | `InvalidAnnualUpfrontSettingsException` | billing |
 | `INVALID_BILLING_RUN_RANGE` | no | `InvalidBillingRunRangeException` | billing |
+| `INVALID_CERTIFICATE_CODE` | no | `InvalidCertificateCodeException` | graduation |
 | `INVALID_COLLECTION_REMINDER_SCHEDULE` | no | `InvalidCollectionReminderScheduleException` | billing |
 | `INVALID_COLLECTION_REMINDER_SETTINGS` | no | `InvalidCollectionReminderSettingsException` | billing |
 | `INVALID_CONFIGURATION_VALUES` | no | `InvalidConfigurationValuesException` | billing |
@@ -248,6 +251,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_FOUND` | no | `ExamBoardRegistrationNotFoundException` | evaluation |
 | `GOOGLE_ACCOUNT_NOT_LINKED` | no | `GoogleAccountNotLinkedException` | identity |
 | `GRADE_ITEM_NOT_FOUND` | no | `GradeItemNotFoundException` | evaluation |
+| `GRADUATION_CERTIFICATE_NOT_FOUND` | no | `GraduationCertificateNotFoundException` | graduation |
 | `GRADUATION_REQUEST_NOT_FOUND` | no | `GraduationRequestNotFoundException` | graduation |
 | `HOLIDAY_NOT_FOUND` | no | `HolidayNotFoundException` | academicstructure |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
@@ -357,6 +361,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
+| `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
+| `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
 | `GRADUATION_REQUEST_ALREADY_ACTIVE` | no | `GraduationRequestAlreadyActiveException` | graduation |
 | `GRADUATION_REQUIREMENTS_NOT_MET` | no | `GraduationRequirementsNotMetException` | graduation |
 | `HOLIDAYS_NOT_LOADED_FOR_YEAR` | no | `HolidaysNotLoadedForYearException` | academicstructure |
@@ -512,12 +518,15 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | Método | Ruta | Handler |
 |---|---|---|
 | POST | `/course-enrollments/{id}/invoices/ad-hoc` | `CourseEnrollmentController#createAdHocInvoice` |
+| POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/me/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitOwnReceipt` |
 | POST | `/me/course-enrollments` | `MeEnrollmentController#enrollInCourse` |
+| POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
 | POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
 | POST | `/students/{studentId}/cash-payments` | `StudentPaymentController#registerCashPayment` |
+| POST | `/students/{studentId}/refund-requests` | `RefundController#requestRefundOnBehalfOfStudent` |
 
 ### Idempotency-Key no
 
@@ -601,14 +610,15 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-boards/{id}/registrations` | `ExamBoardRegistrationController#register` |
 | POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
+| POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
 | POST | `/holidays` | `HolidayController#create` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |
-| POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/late-payment-settings` | `LatePaymentSettingsController#create` |
+| POST | `/me/announcements/{id}/read` | `MeAnnouncementController#markRead` |
 | POST | `/me/annual-upfront-requests/{id}/discard` | `AnnualUpfrontRequestController#discardAnnualUpfrontRequest` |
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |
@@ -621,7 +631,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/program-enrollment-applications/with-documents` | `ProgramEnrollmentApplicationWithDocumentsController#requestWithDocuments` |
 | POST | `/me/program-enrollment-applications/{id}/documents` | `ProgramEnrollmentApplicationController#addDocument` |
 | POST | `/me/program-enrollments/{id}/graduation-request` | `MeGraduationRequestController#request` |
-| POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/me/refund-requests/preview` | `RefundPreviewController#previewOwnRefund` |
 | POST | `/me/section-enrollments` | `MeEnrollmentController#enroll` |
 | POST | `/me/section-enrollments/{id}/change-section` | `MeEnrollmentController#changeMySection` |
@@ -668,6 +677,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/programs/{id}/year-billing-templates` | `ProgramYearBillingTemplateController#create` |
 | POST | `/promotions/{id}/close` | `PromotionController#close` |
 | POST | `/prospects` | `ProspectController#createProspect` |
+| POST | `/prospects/by-staff` | `ProspectStaffController#createProspectByStaff` |
 | POST | `/prospects/{id}/confirm` | `ProspectController#confirm` |
 | POST | `/prospects/{id}/documents` | `ProspectController#addDocument` |
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
@@ -689,7 +699,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/students/{id}/withdraw` | `StudentController#withdraw` |
 | POST | `/students/{studentId}/cash-payments/preview` | `StudentPaymentController#previewCashPayment` |
 | POST | `/students/{studentId}/current-account/allocations` | `CurrentAccountAllocationController#allocateCredit` |
-| POST | `/students/{studentId}/refund-requests` | `RefundController#requestRefundOnBehalfOfStudent` |
 | POST | `/students/{studentId}/refund-requests/preview` | `RefundPreviewController#previewRefundOnBehalfOfStudent` |
 | POST | `/subject-sections/{id}/modification-request` | `AcademicOfferingCycleController#requestSectionModification` |
 | POST | `/subject-sections/{id}/modification-request/approve` | `AcademicOfferingCycleController#approveSectionModification` |

@@ -24,9 +24,12 @@ public record AnnouncementResponse(
         @Schema(nullable = true) LocalDateTime sentAt,
         String createdBy,
         LocalDateTime createdAt,
-        @Schema(nullable = true) LocalDateTime updatedAt) {
+        @Schema(nullable = true) LocalDateTime updatedAt,
+        long recipientCount,
+        long readCount,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean readTracked) {
 
-    public static AnnouncementResponse from(Announcement announcement) {
+    public static AnnouncementResponse from(Announcement announcement, long recipientCount, long readCount) {
         return new AnnouncementResponse(
                 announcement.getId(),
                 announcement.getSectionType(),
@@ -42,6 +45,9 @@ public record AnnouncementResponse(
                 announcement.getSentAt(),
                 announcement.getCreatedBy().getName() + " " + announcement.getCreatedBy().getLastname(),
                 announcement.getCreatedAt(),
-                announcement.getUpdatedAt());
+                announcement.getUpdatedAt(),
+                recipientCount,
+                readCount,
+                announcement.isReadTracked());
     }
 }

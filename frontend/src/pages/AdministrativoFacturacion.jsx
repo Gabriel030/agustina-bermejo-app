@@ -1,12 +1,12 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard, ReceiptText } from 'lucide-react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
+import { ModalMotivo } from '@/components/ModalMotivo';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
@@ -475,62 +475,52 @@ function TabFacturacion() {
   );
 }
 
-function RechazarModal({ receipt, onClose }) {
-  const [reason, setReason] = useState('');
-  const [error, setError] = useState('');
-  const { mutate, isPending } = useRechazarComprobante();
+const REJECT_RECEIPT_ERRORS = {
+  PAYMENT_RECEIPT_ALREADY_REVIEWED: 'Este comprobante ya fue revisado. Actualizá la bandeja.',
+  INVALID_PAYMENT_RECEIPT_STATE: 'Este comprobante ya fue revisado. Actualizá la bandeja.',
+  PAYMENT_RECEIPT_NOT_FOUND: 'No encontramos el comprobante. Actualizá la bandeja.',
+};
 
-  function handleSubmit() {
-    if (!reason.trim()) {
-      setError('El motivo es obligatorio.');
-      return;
+function RejectReceiptDialog({ receipt, onClose }) {
+  const { mutateAsync, isPending } = useRechazarComprobante();
+
+  async function handleConfirm(rejectionReason) {
+    try {
+      await mutateAsync({ id: receipt.id, rejectionReason });
+    } catch (error) {
+      toast.error(REJECT_RECEIPT_ERRORS[error?.code] ?? 'No pudimos rechazar el comprobante.');
+      return false;
     }
-    mutate(
-      { id: receipt.id, rejectionReason: reason.trim() },
-      {
-        onSuccess: () => onClose(true),
-        onError: (e) => setError(e?.message ?? 'Error al rechazar el comprobante.'),
-      }
-    );
+    toast.success('Comprobante rechazado.');
+    onClose();
+    return true;
   }
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(false); }}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Rechazar comprobante</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <div className="text-sm text-ink-faint">
-            Alumno: <span className="font-medium text-ink">{receipt.studentName ?? 'Sin datos del alumno'}</span>
-          </div>
-          <div className="text-sm text-ink-faint">
-            Comprobante subido el {formatDate(receipt.uploadedAt)}
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
-              Motivo del rechazo
-            </label>
-            <textarea
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Indicá por qué se rechaza el comprobante…"
-              className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
-            />
-          </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button variant="destructive" onClick={handleSubmit} loading={isPending}>
-            {isPending ? 'Rechazando…' : 'Rechazar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ModalMotivo
+      open
+      onClose={onClose}
+      onConfirmar={handleConfirm}
+      confirmando={isPending}
+      requerido
+      titulo="Rechazar comprobante"
+      descripcion={`${receipt.studentName ?? `Comprobante #${receipt.id}`}, subido el ${formatDate(receipt.uploadedAt)}. Indicá por qué se rechaza: el alumno lo va a ver.`}
+      placeholder="Indicá por qué se rechaza el comprobante…"
+      confirmarVariant="destructive"
+    />
+  );
+}
+
+function ReceiptInstallments({ invoices }) {
+  if (!invoices || invoices.length === 0) return null;
+  return (
+    <ul aria-label="Cuotas que cubre el comprobante" className="mt-1.5 flex flex-col gap-0.5 text-sm text-ink-soft">
+      {invoices.map((invoice) => (
+        <li key={invoice.invoiceId}>
+          {FEE_TYPE_LABELS[invoice.feeType] ?? invoice.feeType} {formatPeriod(invoice.period)} · total {formatMoney(invoice.totalAmount)} · pendiente al enviar {formatMoney(invoice.outstandingAtSubmission)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -603,6 +593,7 @@ function TabComprobantes() {
                   {receipt.transferDate && <span>Transferido {formatDate(receipt.transferDate)}</span>}
                 </div>
               )}
+              <ReceiptInstallments invoices={receipt.invoices} />
               {receipt.filePath && (
                 <button
                   type="button"
@@ -638,7 +629,7 @@ function TabComprobantes() {
       ))}
 
       {rechazarModal && (
-        <RechazarModal receipt={rechazarModal} onClose={() => setRechazarModal(null)} />
+        <RejectReceiptDialog receipt={rechazarModal} onClose={() => setRechazarModal(null)} />
       )}
 
       <ConfirmActionDialog

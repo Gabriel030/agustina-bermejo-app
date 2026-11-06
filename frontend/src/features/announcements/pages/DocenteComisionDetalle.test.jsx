@@ -42,6 +42,9 @@ function unAviso(extra = {}) {
     urgent: false,
     expiresAt: null,
     audienceLabel: 'Toda la comisión',
+    recipientCount: 25,
+    readCount: 0,
+    readTracked: true,
     status: 'SENT',
     scheduledFor: null,
     sentAt: '2026-09-23T10:00:00',
@@ -180,7 +183,7 @@ describe('DocenteComisionDetalle', () => {
     mockearAvisos([unAviso({ audienceLabel: 'Desaprobaron 2° parcial' })]);
     server.use(
       http.get(`${API}/announcements/10/recipients`, () =>
-        HttpResponse.json([{ studentId: 1, file: 'A-1042', name: 'Valentina Suárez' }]),
+        HttpResponse.json([{ studentId: 1, file: 'A-1042', name: 'Valentina Suárez', readAt: null }]),
       ),
     );
     const user = userEvent.setup();
