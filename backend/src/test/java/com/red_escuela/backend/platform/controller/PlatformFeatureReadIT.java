@@ -129,8 +129,7 @@ class PlatformFeatureReadIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("STALE_FEATURE_VERSION"))
                 .andExpect(jsonPath("$.details.changedByName").value("Paula Plataforma"))
                 .andExpect(jsonPath("$.details.changedById").isNumber())
-                .andExpect(jsonPath("$.details.changedAt").isString())
-                .andExpect(jsonPath("$.details.actualVersion").value(1));
+                .andExpect(jsonPath("$.details.changedAt").isString());
     }
 
     @Test

@@ -4814,7 +4814,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "enabled", "lastReason", "updatedAt", "updatedBy", "version" ],
+        "required" : [ "code", "enabled", "lastReason", "mode", "updatedAt", "updatedBy", "version" ],
         "type" : "object"
       },
       "FeatureStateResponse" : {
@@ -4835,7 +4835,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "enabled", "version" ],
+        "required" : [ "code", "enabled", "mode", "version" ],
         "type" : "object"
       },
       "FeatureStateViewResponse" : {
@@ -4848,7 +4848,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "enabled" ],
+        "required" : [ "enabled", "mode" ],
         "type" : "object"
       },
       "FeatureTransitionPreviewResponse" : {
