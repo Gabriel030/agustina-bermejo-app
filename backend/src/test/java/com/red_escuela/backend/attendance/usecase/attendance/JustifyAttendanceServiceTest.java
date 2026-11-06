@@ -90,12 +90,28 @@ class JustifyAttendanceServiceTest {
     }
 
     @Test
-    void combinedReasonIsTruncatedToTheColumnLength() {
+    void combinedReasonOfExactlyFiveHundredCharactersIsAccepted() {
         Attendance attendance = absence();
+        String exception = "Internación";
+        int overhead = " [Excepción fuera de plazo: ]".length() + exception.length();
 
         serviceOn(LocalDate.of(2026, 3, 14))
-                .justify(new JustifyAttendanceCommand(11L, "x".repeat(500), null, "Internación"));
+                .justify(new JustifyAttendanceCommand(11L, "x".repeat(500 - overhead), null, exception));
 
         assertThat(attendance.getJustificationReason()).hasSize(500);
+        assertThat(attendance.getStatus()).isEqualTo(AttendanceStatus.JUSTIFIED);
+    }
+
+    @Test
+    void combinedReasonOfFiveHundredAndOneCharactersIsRejected() {
+        Attendance attendance = absence();
+        String exception = "Internación";
+        int overhead = " [Excepción fuera de plazo: ]".length() + exception.length();
+        JustifyAttendanceService late = serviceOn(LocalDate.of(2026, 3, 14));
+
+        assertThatThrownBy(() -> late.justify(new JustifyAttendanceCommand(11L, "x".repeat(501 - overhead), null, exception)))
+                .isInstanceOf(InvalidJustificationInputException.class);
+        assertThat(attendance.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+        verify(attendanceRepository, never()).save(any());
     }
 }

@@ -41,6 +41,10 @@ public class AttendanceJustificationRecorder {
             throw new InvalidJustificationInputException("Fuera de plazo hay que indicar el motivo de la excepción");
         }
         String combined = reason + " [Excepción fuera de plazo: " + exceptionReason + "]";
-        return combined.length() > REASON_MAX_LENGTH ? combined.substring(0, REASON_MAX_LENGTH) : combined;
+        if (combined.length() > REASON_MAX_LENGTH) {
+            throw new InvalidJustificationInputException(
+                    "El motivo junto con el motivo de la excepción no puede superar los " + REASON_MAX_LENGTH + " caracteres");
+        }
+        return combined;
     }
 }
