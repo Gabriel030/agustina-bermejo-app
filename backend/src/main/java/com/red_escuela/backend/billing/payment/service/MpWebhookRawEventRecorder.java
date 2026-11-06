@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.payment.service;
 import com.red_escuela.backend.shared.logging.LogSanitizer;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
-import com.red_escuela.backend.billing.payment.domain.MpWebhookReceivedEvent;
 import com.red_escuela.backend.billing.payment.repository.MpWebhookReceivedEventRepository;
 import com.red_escuela.backend.shared.module.BillingMode;
 import org.slf4j.Logger;
@@ -37,8 +36,12 @@ public class MpWebhookRawEventRecorder {
             log.warn("Webhook de Mercado Pago rechazado por firma inválida: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
             throw e;
         }
-        receivedEventRepository.save(MpWebhookReceivedEvent.receivedAt(
-                LocalDateTime.now(clock), xSignature, xRequestId, mpPaymentId, billingMode));
+        int inserted = receivedEventRepository.insertIfRequestIdIsNew(
+                LocalDateTime.now(clock), xSignature, xRequestId, mpPaymentId, billingMode.name());
+        if (inserted == 0) {
+            log.info("Webhook de Mercado Pago repetido, ya estaba guardado: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
+            return;
+        }
         log.info("Webhook de Mercado Pago guardado sin procesar por facturación en modo {}: pagoMp={}", billingMode, LogSanitizer.sanitize(mpPaymentId));
     }
 }
