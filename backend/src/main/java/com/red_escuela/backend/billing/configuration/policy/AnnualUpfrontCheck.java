@@ -4,5 +4,5 @@ import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSetting
 
 import java.time.LocalDate;
 
-public record AnnualUpfrontCheck(AnnualUpfrontSettings settings, LocalDate termStart) {
+public record AnnualUpfrontCheck(AnnualUpfrontSettings settings, LocalDate termStart, LocalDate firstInstallmentDueDate) {
 }

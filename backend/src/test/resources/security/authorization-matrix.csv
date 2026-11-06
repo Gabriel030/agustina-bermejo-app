@@ -225,6 +225,7 @@ GET,/me/refund-requests,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
 POST,/me/refund-requests,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
 POST,/me/refund-requests/preview,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
 GET,/me/refunds,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+GET,/me/schedule,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/section-enrollments,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/section-enrollments,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/section-enrollments/{id}/attendance,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
@@ -432,6 +433,8 @@ POST,/monthly-invoice-runs/manual-issuances,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,
 GET,/monthly-invoice-runs/{monthlyRunId}/items,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/monthly-invoice-runs/{monthlyRunId}/draft-invoices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/monthly-invoice-runs/{monthlyRunId}/draft-invoices/approvals,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""invoiceIds"":[1]}"
+POST,/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""invoiceIds"":[1],""reason"":""Cargo duplicado""}"
 GET,/me/program-enrollments/{id}/annual-upfront/quote,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,program-enrollment,
 GET,/program-enrollments/{id}/annual-upfront/quote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/me/program-enrollments/{id}/annual-upfront-requests,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,program-enrollment,"{""termsAccepted"":true,""termsVersion"":""v1""}"
@@ -445,5 +448,10 @@ GET,/program-enrollments/{id}/annual-upfront-requests,DENY,DENY,DENY,DENY,ALLOW,
 GET,/shift-ranges,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/shift-ranges,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""ranges"":[{""shift"":""MORNING"",""startTime"":""08:00"",""endTime"":""12:30""},{""shift"":""AFTERNOON"",""startTime"":""13:30"",""endTime"":""18:00""},{""shift"":""EVENING"",""startTime"":""18:30"",""endTime"":""22:30""}]}"
 GET,/regular-certificates/eligibility,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/regular-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1,""standingConfirmed"":true,""standingEvidence"":""recibo 1234 verificado""}"
+GET,/regular-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/regular-certificates/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/regular-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/regular-certificate-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/graduation-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1}"
 GET,/graduation-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,

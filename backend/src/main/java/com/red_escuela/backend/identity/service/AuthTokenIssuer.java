@@ -29,13 +29,17 @@ public class AuthTokenIssuer {
     }
 
     public AuthTokens issueTokens(Person person) {
+        return issueTokens(person, null);
+    }
+
+    public AuthTokens issueTokens(Person person, Long parentTokenId) {
         String accessToken = jwtService.generateAccessToken(person);
-        String refreshToken = issueRefreshToken(person);
+        String refreshToken = issueRefreshToken(person, parentTokenId);
         long expiresIn = Duration.ofMinutes(jwtService.getAccessTokenExpirationMinutes()).toSeconds();
         return new AuthTokens(accessToken, refreshToken, expiresIn);
     }
 
-    private String issueRefreshToken(Person person) {
+    private String issueRefreshToken(Person person, Long parentTokenId) {
         String rawToken = secureTokenGenerator.generate();
 
         RefreshToken entity = new RefreshToken();
@@ -43,6 +47,7 @@ public class AuthTokenIssuer {
         entity.setTokenHash(TokenHashUtil.sha256Hex(rawToken));
         entity.setExpiresAt(ApplicationTime.now().plusDays(refreshTokenExpirationDays));
         entity.setRevoked(false);
+        entity.setParentId(parentTokenId);
         entity.setCreatedAt(ApplicationTime.now());
         refreshTokenRepository.save(entity);
 

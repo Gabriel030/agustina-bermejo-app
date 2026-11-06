@@ -41,7 +41,7 @@ public class MonthlyRunDraftInvoiceGrouper {
         Map<DraftInvoiceGroupKey, Totals> previousTotals = totalsByGroup(previousLines, names);
         return draftTotals.entrySet().stream()
                 .map(entry -> new DraftInvoiceGroup(entry.getKey(), entry.getValue().invoiceIds.size(), entry.getValue().total,
-                        previousTotals.containsKey(entry.getKey()) ? previousTotals.get(entry.getKey()).total : null))
+                        previousTotals.containsKey(entry.getKey()) ? previousTotals.get(entry.getKey()).total : null, entry.getValue().invoiceIds.stream().sorted().toList()))
                 .sorted(Comparator.comparing((DraftInvoiceGroup group) -> group.key().scope()).thenComparing(group -> group.key().name()).thenComparing(group -> group.key().feeType()))
                 .toList();
     }

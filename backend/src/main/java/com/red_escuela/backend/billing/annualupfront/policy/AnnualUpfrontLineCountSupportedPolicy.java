@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = {"ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED"}, decisions = {"D-131"})
+@PolicyRule(violationCodes = {"ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED"}, decisions = {"D-131", "D-524"})
 public final class AnnualUpfrontLineCountSupportedPolicy implements Policy<AnnualUpfrontRequestCheck> {
 
     @Override
@@ -16,7 +16,7 @@ public final class AnnualUpfrontLineCountSupportedPolicy implements Policy<Annua
     @Override
     public PolicyVerdict evaluateRule(AnnualUpfrontRequestCheck check) {
         return check.lineCount() < 1 || check.lineCount() > Invoice.MAX_ANNUAL_UPFRONT_LINES
-                ? PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED", "El año lectivo no tiene entre 1 y 10 cuotas para pagar por adelantado.")
+                ? PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED", "El año lectivo no tiene entre 1 y " + Invoice.MAX_ANNUAL_UPFRONT_LINES + " cuotas para pagar por adelantado.")
                 : PolicyVerdict.allow(ruleName());
     }
 }

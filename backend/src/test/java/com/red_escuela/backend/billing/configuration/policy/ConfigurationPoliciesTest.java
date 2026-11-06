@@ -130,13 +130,36 @@ class ConfigurationPoliciesTest {
     void annualUpfrontDeadlineMustPrecedeTheFirstInstallmentAndStayInTheTermYear() {
         AnnualUpfrontSettingsCoherencePolicy policy = new AnnualUpfrontSettingsCoherencePolicy();
         LocalDate termStart = LocalDate.of(2027, 3, 1);
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 48), termStart)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(termStart, 48), termStart)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(termStart.plusDays(1), 48), termStart)).code()).isEqualTo("INVALID_ANNUAL_UPFRONT_SETTINGS");
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2026, 12, 31), 48), termStart)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2025, 12, 31), 48), termStart)).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 0), termStart)).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 1), termStart)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 48), termStart, termStart)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(termStart, 48), termStart, termStart)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(termStart.plusDays(1), 48), termStart, termStart)).code()).isEqualTo("INVALID_ANNUAL_UPFRONT_SETTINGS");
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2026, 12, 31), 48), termStart, termStart)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2025, 12, 31), 48), termStart, termStart)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 0), termStart, termStart)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 1), termStart, termStart)).allowed()).isTrue();
+    }
+
+    @Tag("D-522")
+    @Tag("D-524")
+    @Test
+    void annualUpfrontDeadlineIsComparedWithTheDueDateOfTheFirstInstallmentOfTheConfiguredYear() {
+        AnnualUpfrontSettingsCoherencePolicy policy = new AnnualUpfrontSettingsCoherencePolicy();
+        LocalDate marchStart = LocalDate.of(2027, 3, 1);
+        LocalDate marchFirstDue = LocalDate.of(2027, 3, 11);
+        LocalDate februaryStart = LocalDate.of(2027, 2, 1);
+        LocalDate februaryFirstDue = LocalDate.of(2027, 2, 11);
+
+        assertThat(policy.evaluateRule(annualCheck(marchFirstDue, marchStart, marchFirstDue)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(annualCheck(marchFirstDue.plusDays(1), marchStart, marchFirstDue)).code()).isEqualTo("INVALID_ANNUAL_UPFRONT_SETTINGS");
+        assertThat(policy.evaluateRule(annualCheck(marchStart.plusDays(5), marchStart, marchFirstDue)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(annualCheck(februaryFirstDue, februaryStart, februaryFirstDue)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(annualCheck(LocalDate.of(2027, 2, 12), februaryStart, februaryFirstDue)).code()).isEqualTo("INVALID_ANNUAL_UPFRONT_SETTINGS");
+        assertThat(policy.evaluateRule(annualCheck(LocalDate.of(2027, 3, 1), februaryStart, februaryFirstDue)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(annualCheck(LocalDate.of(2027, 3, 1), marchStart, marchFirstDue)).allowed()).isTrue();
+    }
+
+    private static AnnualUpfrontCheck annualCheck(LocalDate deadline, LocalDate termStart, LocalDate firstInstallmentDueDate) {
+        return new AnnualUpfrontCheck(new AnnualUpfrontSettings(deadline, 48), termStart, firstInstallmentDueDate);
     }
 
     @Tag("D-330")

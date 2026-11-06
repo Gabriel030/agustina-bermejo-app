@@ -13,20 +13,45 @@ function sourceFiles(dir) {
   })
 }
 
+const MARKS_OFFLINE = /offline\s*:\s*true|offlineQuery\(/
+
+const OFFLINE_WHITELIST = {
+  'announcements/hooks/useNovedades.js': 'N0',
+  'attendance/hooks/useStudentAttendance.js': 'N2',
+  'notifications/hooks/useNotifications.js': 'N0',
+  'schedule/hooks/useMySchedule.js': 'N1',
+}
+
 describe('offline whitelist guard', () => {
   it('billingAndGradesQueriesAreNeverMarkedOffline', () => {
     const offenders = ['billing', 'evaluation', 'graduation']
       .flatMap((feature) => sourceFiles(join(featuresDir, feature)))
-      .filter((file) => /offline\s*:\s*true/.test(readFileSync(file, 'utf8')))
+      .filter((file) => MARKS_OFFLINE.test(readFileSync(file, 'utf8')))
     expect(offenders).toEqual([])
   })
 
   it('onlyWhitelistedHooksAreMarkedOffline', () => {
     const marked = sourceFiles(featuresDir)
-      .filter((file) => /offline\s*:\s*true/.test(readFileSync(file, 'utf8')))
+      .filter((file) => MARKS_OFFLINE.test(readFileSync(file, 'utf8')))
       .map((file) => file.slice(featuresDir.length + 1))
       .sort()
-    expect(marked).toEqual(['announcements/hooks/useNovedades.js', 'notifications/hooks/useNotifications.js'])
+    expect(marked).toEqual(Object.keys(OFFLINE_WHITELIST).sort())
+  })
+
+  it('whitelistedHooksDeclareTheirLevelAndNeverMarkOfflineByHand', () => {
+    for (const [file, level] of Object.entries(OFFLINE_WHITELIST)) {
+      const source = readFileSync(join(featuresDir, file), 'utf8')
+      expect(source).toMatch(new RegExp(`offlineQuery\\('${level}'`))
+      expect(source).not.toMatch(/offline\s*:\s*true/)
+    }
+  })
+
+  it('whitelistedHooksNeverPersistRawEnrollmentsGradesOrBilling', () => {
+    for (const file of Object.keys(OFFLINE_WHITELIST)) {
+      const source = readFileSync(join(featuresDir, file), 'utf8')
+      expect(source).not.toMatch(/['"`]\/me\/section-enrollments['"`]/)
+      expect(source).not.toMatch(/grade-items|final-?score|finalScore|billing|payment|invoice|justificationReason|justificationRejectionReason/i)
+    }
   })
 
   it('onlyAuthContextWritesTheOfflineProfileAndItStoresOnlyNameAndRoles', () => {
