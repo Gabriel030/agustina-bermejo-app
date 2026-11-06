@@ -3,7 +3,7 @@ package com.red_escuela.backend.attendance.service;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicyTest;
+import com.red_escuela.backend.attendance.api.JustificationDeadlinePolicyTest;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

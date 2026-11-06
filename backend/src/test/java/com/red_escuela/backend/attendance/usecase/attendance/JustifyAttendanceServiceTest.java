@@ -7,7 +7,7 @@ import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceActorResolver;
 import com.red_escuela.backend.attendance.service.AttendanceFinder;
 import com.red_escuela.backend.attendance.service.AttendanceJustificationRecorder;
-import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicyTest;
+import com.red_escuela.backend.attendance.api.JustificationDeadlinePolicyTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 

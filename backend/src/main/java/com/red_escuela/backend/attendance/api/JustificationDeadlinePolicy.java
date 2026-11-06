@@ -1,4 +1,4 @@
-package com.red_escuela.backend.attendance.policy;
+package com.red_escuela.backend.attendance.api;
 
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
 import com.red_escuela.backend.identity.api.InstitutionAcademicSettingsReader;

@@ -3,7 +3,7 @@ package com.red_escuela.backend.attendance.service;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.exception.InvalidJustificationInputException;
-import com.red_escuela.backend.attendance.policy.JustificationDeadlinePolicy;
+import com.red_escuela.backend.attendance.api.JustificationDeadlinePolicy;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.stereotype.Service;
 
