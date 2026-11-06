@@ -11,4 +11,12 @@ public interface RegularCertificateRequestRepository extends JpaRepository<Regul
     List<RegularCertificateRequest> findByOutcomeOrderByRequestedAtDesc(RegularRequestOutcome outcome);
 
     List<RegularCertificateRequest> findByStudentIdOrderByRequestedAtDesc(Long studentId);
+
+    List<RegularCertificateRequest> findTop200ByOrderByRequestedAtDesc();
+
+    List<RegularCertificateRequest> findTop200ByOutcomeOrderByRequestedAtDesc(RegularRequestOutcome outcome);
+
+    List<RegularCertificateRequest> findTop200ByStudentIdOrderByRequestedAtDesc(Long studentId);
+
+    List<RegularCertificateRequest> findTop200ByStudentIdAndOutcomeOrderByRequestedAtDesc(Long studentId, RegularRequestOutcome outcome);
 }
