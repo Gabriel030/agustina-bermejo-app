@@ -680,8 +680,17 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         invariants.assertAllBillingInvariantsHold();
     }
 
-    private void dropConstraint(String name) {
+    private String dropConstraint(String name) {
+        String definition = jdbc.queryForObject("select pg_get_constraintdef(oid) from pg_constraint where conname = ? and conrelid = 'late_fee_charge'::regclass", String.class, name);
         jdbc.execute("alter table late_fee_charge drop constraint " + name);
+        return definition;
+    }
+
+    private void restoreConstraint(String name, String definition) {
+        if (definition == null) {
+            return;
+        }
+        jdbc.execute("alter table late_fee_charge add constraint " + name + " " + definition);
     }
 
     @Test
@@ -711,9 +720,11 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         Long accountId = reload(origin).getStudentCurrentAccountId();
         Long versionId = (Long) charge.get("late_payment_version_id");
         Long debitNoteId = (Long) charge.get("debit_note_id");
+        String overlappingDaysDefinition = null;
+        String oneMonthDefinition = null;
         try {
-            dropConstraint("ex_late_fee_charge_no_overlapping_days");
-            dropConstraint("ck_late_fee_charge_period_one_month");
+            overlappingDaysDefinition = dropConstraint("ex_late_fee_charge_no_overlapping_days");
+            oneMonthDefinition = dropConstraint("ck_late_fee_charge_period_one_month");
             insertRawCharge(overlapSpare.getId(), origin.getId(), accountId, d(2118, 3, 20), d(2118, 3, 25), 6, versionId);
             insertRawCharge(crossSpare.getId(), origin.getId(), accountId, d(2118, 5, 25), d(2118, 6, 2), 9, versionId);
             insertRawCharge(beforeDueSpare.getId(), origin.getId(), accountId, d(2118, 3, 5), d(2118, 3, 8), 4, versionId);
@@ -737,9 +748,8 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         } finally {
             jdbc.update("delete from late_fee_charge where debit_note_id in (?, ?, ?, ?, ?, ?, ?)", overlapSpare.getId(), crossSpare.getId(), beforeDueSpare.getId(),
                     disabledSpare.getId(), overDebitNoteSpare.getId(), frozenSpare.getId(), reviewSpare.getId());
-            jdbc.execute("alter table late_fee_charge add constraint ck_late_fee_charge_period_one_month check (date_trunc('month', period_start) = date_trunc('month', period_end))");
-            jdbc.execute("alter table late_fee_charge add constraint ex_late_fee_charge_no_overlapping_days exclude using gist (origin_invoice_id with =, "
-                    + "daterange(period_start, period_end, '[]') with &&)");
+            restoreConstraint("ck_late_fee_charge_period_one_month", oneMonthDefinition);
+            restoreConstraint("ex_late_fee_charge_no_overlapping_days", overlappingDaysDefinition);
         }
         clean.assertAllBillingInvariantsHold();
     }
