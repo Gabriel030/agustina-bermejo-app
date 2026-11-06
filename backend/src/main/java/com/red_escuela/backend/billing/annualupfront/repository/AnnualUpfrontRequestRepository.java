@@ -49,6 +49,35 @@ public interface AnnualUpfrontRequestRepository extends JpaRepository<AnnualUpfr
             """, nativeQuery = true)
     List<Long> findIdsAwaitingPaymentWithDeadlineBefore(@Param("now") java.time.LocalDateTime now);
 
+    interface DeadlineNoticeCandidate {
+        Long getRequestId();
+
+        Long getInvoiceId();
+
+        Long getStudentPersonId();
+
+        java.time.LocalDateTime getRequestedAt();
+
+        java.time.LocalDateTime getPaymentDeadline();
+
+        java.math.BigDecimal getTotal();
+
+        String getCurrency();
+    }
+
+    @Query(value = """
+            select r.id as requestId, r.invoice_id as invoiceId, s.person_id as studentPersonId, r.requested_at as requestedAt,
+                   i.payment_deadline as paymentDeadline, i.total as total, i.total_currency as currency
+            from annual_upfront_request r
+            join invoice i on i.id = r.invoice_id
+            join program_enrollment pe on pe.id = r.program_enrollment_id
+            join student s on s.id = pe.student_id
+            where r.status = 'AWAITING_PAYMENT' and r.payment_id is null and i.document_status = 'AWAITING_PAYMENT'
+              and i.payment_deadline > :now and i.payment_deadline <= :noticeHorizon and s.person_id is not null
+            order by r.id
+            """, nativeQuery = true)
+    List<DeadlineNoticeCandidate> findDeadlineNoticeCandidates(@Param("now") java.time.LocalDateTime now, @Param("noticeHorizon") java.time.LocalDateTime noticeHorizon);
+
     @Query(value = "select r.program_enrollment_id from annual_upfront_request r where r.id = :id", nativeQuery = true)
     Optional<Long> findProgramEnrollmentIdById(@Param("id") Long id);
 
