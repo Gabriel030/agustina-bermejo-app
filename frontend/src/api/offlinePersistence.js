@@ -3,6 +3,7 @@ import { del, get, set } from 'idb-keyval';
 
 export const OFFLINE_CACHE_KEY = 'offline-query-cache';
 export const OFFLINE_OWNER_KEY = 'offline-query-cache-owner';
+export const OFFLINE_PROFILE_KEY = 'offline-session-profile';
 export const OFFLINE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const hasIndexedDb = () => typeof indexedDB !== 'undefined';
@@ -41,7 +42,7 @@ export const offlineDehydrateOptions = {
 };
 
 export async function clearOfflineCache() {
-  await safely(() => Promise.all([del(OFFLINE_CACHE_KEY), del(OFFLINE_OWNER_KEY)]), undefined);
+  await safely(() => Promise.all([del(OFFLINE_CACHE_KEY), del(OFFLINE_OWNER_KEY), del(OFFLINE_PROFILE_KEY)]), undefined);
 }
 
 export async function purgeOfflineData(queryClient) {
@@ -55,4 +56,19 @@ export async function claimOfflineCache(userId, queryClient) {
     await purgeOfflineData(queryClient);
   }
   await safely(() => set(OFFLINE_OWNER_KEY, userId), undefined);
+}
+
+export async function storeOfflineProfile(profile) {
+  const minimal = {
+    nombre: profile.nombre,
+    apellido: profile.apellido,
+    roles: Array.isArray(profile.roles) ? profile.roles : [],
+  };
+  await safely(() => set(OFFLINE_PROFILE_KEY, minimal), undefined);
+}
+
+export async function readOfflineProfile() {
+  const stored = await safely(() => get(OFFLINE_PROFILE_KEY), undefined);
+  if (!stored || !Array.isArray(stored.roles)) return null;
+  return { nombre: stored.nombre, apellido: stored.apellido, roles: stored.roles };
 }

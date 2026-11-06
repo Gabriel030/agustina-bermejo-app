@@ -42,7 +42,7 @@ export function NotificationBell() {
   const lista = notificaciones ?? [];
   const noLeidas = lista.filter((n) => !n.read).length;
   const loadFailed = isError && notificaciones === undefined;
-  const staleStamp = !online && notificaciones !== undefined && dataUpdatedAt > 0 ? tiempoRelativo(new Date(dataUpdatedAt).toISOString()) : '';
+  const staleStamp = (!online || isError) && notificaciones !== undefined && dataUpdatedAt > 0 ? tiempoRelativo(new Date(dataUpdatedAt).toISOString()) : '';
 
   function handleClick(n) {
     if (!n.read) marcarLeida.mutate(n.id);

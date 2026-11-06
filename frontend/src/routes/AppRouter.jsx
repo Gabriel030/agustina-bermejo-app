@@ -37,10 +37,34 @@ function renderRoleRoutes(role, pages) {
   ];
 }
 
+function OfflineShellRoutes({ retry }) {
+  const { usuario } = useAuth();
+  const role = usuario.roles[0]?.toLowerCase();
+  const Layout = (role && ROLE_CONFIG[role]?.Layout) || AutoservicioLayout;
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route
+          path="*"
+          element={
+            <div className="flex flex-1 items-center justify-center p-4">
+              <GlassCard className="w-full max-w-md p-6">
+                <OfflineState onRetry={retry} />
+              </GlassCard>
+            </div>
+          }
+        />
+      </Route>
+    </Routes>
+  );
+}
+
 export function AppRouter() {
-  const { cargando, usuario, sessionPending, retrySession } = useAuth();
+  const { cargando, usuario, sessionPending, retrySession, offlineProfile } = useAuth();
 
   if (cargando) return <CargaInicial />;
+
+  if (sessionPending && offlineProfile) return <OfflineShellRoutes retry={retrySession} />;
 
   if (sessionPending) {
     return (
