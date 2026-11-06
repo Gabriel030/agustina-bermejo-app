@@ -15,6 +15,8 @@ export const ERROR_MESSAGES = {
   INTERNAL_ERROR: 'Tuvimos un problema de nuestro lado. Probá de nuevo en unos minutos.',
   REQUEST_RATE_LIMIT_EXCEEDED: 'Demasiados pedidos seguidos. Esperá unos segundos.',
   EXTERNAL_SERVICE_UNAVAILABLE: 'Un servicio externo no está disponible. Probá en unos minutos.',
+  GRADE_ITEM_PUBLISHED_LOCKED: 'Esa evaluación ya está publicada y no se puede cargar ni editar.',
+  NO_PENDING_GRADES_TO_PUBLISH: 'No hay notas cargadas para publicar en esta evaluación.',
   MERCADO_PAGO_GATEWAY: 'Mercado Pago no respondió. Probá en unos minutos.',
   GOOGLE_SERVICE_UNAVAILABLE: 'Google no está disponible ahora. Probá más tarde.',
 };

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown, Lock } from 'lucide-react';
 import { StatusPill } from '@/components/StatusPill';
 import { ColumnFilter } from '@/components/table/ColumnFilter';
 import { multiSelectFilter } from '@/components/table/multiSelectFilter';
+import { Button } from '@/components/ui/button';
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import {
@@ -13,6 +14,10 @@ import {
   formatScore,
   gradeColumnKey,
   gradeColumnLabel,
+  columnLoadSummary,
+  hasColumnDrafts,
+  isColumnLocked,
+  isColumnPublishable,
 } from '../lib/gradeGrid';
 import { GradeEntryCell } from './GradeEntryCell';
 
@@ -20,7 +25,36 @@ const STICKY_LEFT = 'sticky left-0 z-20 w-[112px] min-w-[112px] max-w-[112px] bg
 const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right shadow-[-6px_0_8px_-6px_color-mix(in_oklch,var(--ink)_25%,transparent)] md:min-w-[72px]';
 const FINAL_DISABLED_REASON = 'Requiere condición regular';
 
-export function GradeGridTable({ students, columns, drafts, statuses, onChange, onSettle, onRetry, onOpenStudent }) {
+function PublishHeader({ column, students, hasDrafts, onPublish }) {
+  if (column.type === 'FINAL') return null;
+  const label = gradeColumnLabel(column);
+  if (isColumnLocked(column)) {
+    return (
+      <StatusPill tone="success" className="px-2 py-0.5 normal-case tracking-normal">
+        <Lock aria-hidden="true" className="size-3" />
+        Publicada
+      </StatusPill>
+    );
+  }
+  const { loaded, total } = columnLoadSummary(students, column);
+  const reason = hasDrafts ? 'Guardá las notas antes de publicar' : loaded === 0 ? 'Cargá al menos una nota para publicar' : undefined;
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <StatusPill tone={loaded ? 'warning' : 'neutral'} className="px-2 py-0.5 normal-case tracking-normal">
+        {loaded ? `Cargada ${loaded}/${total}` : 'Sin notas'}
+      </StatusPill>
+      {isColumnPublishable(column) && (
+        <span title={reason}>
+          <Button type="button" variant="outline" size="xs" aria-label={`Publicar ${label}`} disabled={Boolean(reason)} onClick={() => onPublish(column)}>
+            Publicar
+          </Button>
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function GradeGridTable({ students, columns, drafts, statuses, onChange, onSettle, onRetry, onOpenStudent, onPublish }) {
   'use no memo';
   const scrollRef = useRef(null);
   const [moreToRight, setMoreToRight] = useState(false);
@@ -76,6 +110,7 @@ export function GradeGridTable({ students, columns, drafts, statuses, onChange, 
               draft={drafts[key]}
               status={statuses[key]}
               disabledReason={column.type === 'FINAL' && !student.finalEnabled ? FINAL_DISABLED_REASON : null}
+              locked={isColumnLocked(column)}
               onChange={(text) => onChange(key, saved, { score: text })}
               onBlur={() => onSettle(key)}
               onRetry={() => onRetry(key)}
@@ -168,12 +203,20 @@ export function GradeGridTable({ students, columns, drafts, statuses, onChange, 
                         )}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-end">
+                      <div className="flex flex-col items-end gap-1">
                         <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
                         {header.column.columnDef.meta?.column?.date && (
                           <span className="text-[10.5px] font-medium normal-case tracking-normal text-ink-faint">
                             {header.column.columnDef.meta.column.date.slice(8, 10)}/{header.column.columnDef.meta.column.date.slice(5, 7)}
                           </span>
+                        )}
+                        {header.column.columnDef.meta?.column && (
+                          <PublishHeader
+                            column={header.column.columnDef.meta.column}
+                            students={students}
+                            hasDrafts={hasColumnDrafts(drafts, header.column.columnDef.meta.column)}
+                            onPublish={onPublish}
+                          />
                         )}
                       </div>
                     )}
