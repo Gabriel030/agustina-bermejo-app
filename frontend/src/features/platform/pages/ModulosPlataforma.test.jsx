@@ -133,7 +133,7 @@ describe('ModulosPlataforma', () => {
       http.put(`${FEATURES_URL}/BILLING`, ({ request }) => {
         ifMatch.push(request.headers.get('If-Match'));
         current = catalog({ billingMode: 'MIRROR', overrides: { BILLING: feature('BILLING', { enabled: true, mode: 'MIRROR', version: 3 }) } });
-        return HttpResponse.json({ code: 'STALE_FEATURE_VERSION', retryable: false }, { status: 409 });
+        return HttpResponse.json({ code: 'STALE_FEATURE_VERSION', retryable: false, details: { changedAt: '2026-11-03T14:05:00', changedById: 7, changedByName: 'Ana Pérez' } }, { status: 409 });
       }),
     );
     const user = userEvent.setup();
@@ -144,9 +144,9 @@ describe('ModulosPlataforma', () => {
     await user.type(within(dialog).getByLabelText('Motivo'), 'Motivo largo');
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar' }));
 
-    expect(await within(dialog).findByText(/Alguien cambió este módulo/)).toBeInTheDocument();
+    expect(await within(dialog).findByText('Lo cambió Ana Pérez el 03/11/2026 14:05.')).toBeInTheDocument();
     expect(ifMatch).toEqual(['2']);
-    await user.click(within(dialog).getByRole('button', { name: 'Ver estado actual' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Recargar y reintentar' }));
 
     expect(await within(dialog).findByText('Ya estaba así.')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Motivo')).toHaveValue('Motivo largo');
