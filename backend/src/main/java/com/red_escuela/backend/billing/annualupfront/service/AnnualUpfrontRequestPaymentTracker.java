@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.annualupfront.repository.AnnualUpfrontReq
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.service.AnnualUpfrontDiscountReservationService;
 import com.red_escuela.backend.billing.discount.service.EnrollmentDiscountLock;
-import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.operation.AwaitingPaymentInvoiceIssuer;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAwaitingPaymentDiscardService;
@@ -61,10 +60,10 @@ public class AnnualUpfrontRequestPaymentTracker {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void issueInvoiceAndConfirmApprovedPayment(Long invoiceId, Long paymentId, StudentCurrentAccount lockedAccount, LocalDate issueDate, StatusChangeActor actor) {
+    public void issueInvoiceAndConfirmApprovedPayment(Long invoiceId, Long paymentId, Long studentId, LocalDate issueDate, StatusChangeActor actor) {
         Invoice invoice = invoices.lockInvoiceAwaitingPayment(invoiceId);
         AnnualUpfrontRequest request = lockRequestOfInvoice(invoiceId);
-        invoiceIssuer.issueInvoiceAwaitingPayment(invoice, lockedAccount, issueDate, actor);
+        invoiceIssuer.issueInvoiceAwaitingPayment(invoice, studentId, issueDate, actor);
         request.confirmApprovedPayment(paymentId, LocalDateTime.now(clock));
         requestRepository.saveAndFlush(request);
     }

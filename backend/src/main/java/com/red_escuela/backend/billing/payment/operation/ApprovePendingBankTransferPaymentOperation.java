@@ -156,7 +156,7 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
                     annual.getAmounts().total().value(), false, true, annual.getPaymentDeadline());
             annualUpfrontApprovalPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontReceiptCheck(List.of(annualFact), false, false, approvedAmount.value(),
                     payment.getStartedAt(), payment.getStartedAt().toLocalDate())).throwIfDenied(BankTransferReceiptRejections::rejectionOf);
-            annualUpfrontRequests.issueInvoiceAndConfirmApprovedPayment(annual.getId(), payment.getId(), account, today, command.reviewer());
+            annualUpfrontRequests.issueInvoiceAndConfirmApprovedPayment(annual.getId(), payment.getId(), account.getStudentId(), today, command.reviewer());
             accountService.recordInvoiceIssuedDebit(account, annual, today);
         }
         return annualInvoices.stream().map(Invoice::getId).collect(Collectors.toSet());

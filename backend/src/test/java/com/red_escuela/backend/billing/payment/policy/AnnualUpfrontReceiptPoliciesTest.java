@@ -47,14 +47,14 @@ class AnnualUpfrontReceiptPoliciesTest {
     void aReceiptUploadedAfterTheDeadlineInstantIsLate() {
         AnnualUpfrontReceiptCheck late = check(List.of(annual()), "800000.00", DEADLINE.plusSeconds(1), LocalDate.of(2027, 3, 3));
 
-        assertThat(new AnnualUpfrontReceiptWithinPaymentDeadlinePolicy().evaluateRule(late).violations().get(0).code()).isEqualTo("ANNUAL_UPFRONT_RECEIPT_LATE");
+        assertThat(new AnnualUpfrontReceiptWithinPaymentDeadlinePolicy().evaluateRule(late).code()).isEqualTo("ANNUAL_UPFRONT_RECEIPT_LATE");
     }
 
     @Test
     void aTransferDatedAfterTheDeadlineDayIsLateEvenIfUploadedInTime() {
         AnnualUpfrontReceiptCheck late = check(List.of(annual()), "800000.00", DEADLINE.minusHours(1), LocalDate.of(2027, 3, 5));
 
-        assertThat(new AnnualUpfrontReceiptWithinPaymentDeadlinePolicy().evaluateRule(late).violations().get(0).code()).isEqualTo("ANNUAL_UPFRONT_RECEIPT_LATE");
+        assertThat(new AnnualUpfrontReceiptWithinPaymentDeadlinePolicy().evaluateRule(late).code()).isEqualTo("ANNUAL_UPFRONT_RECEIPT_LATE");
     }
 
     @Test
@@ -67,7 +67,7 @@ class AnnualUpfrontReceiptPoliciesTest {
     void theAnnualReceiptCannotBeMixedWithAMonthlyInvoice() {
         AnnualUpfrontReceiptCheck mixed = check(List.of(annual(), monthly()), "880000.00", DEADLINE, LocalDate.of(2027, 3, 4));
 
-        assertThat(new AnnualUpfrontReceiptPaysOnlyTheAnnualInvoicePolicy().evaluateRule(mixed).violations().get(0).code()).isEqualTo("ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE");
+        assertThat(new AnnualUpfrontReceiptPaysOnlyTheAnnualInvoicePolicy().evaluateRule(mixed).code()).isEqualTo("ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE");
     }
 
     @Test
@@ -75,7 +75,7 @@ class AnnualUpfrontReceiptPoliciesTest {
         AnnualUpfrontReceiptCheck discarded = new AnnualUpfrontReceiptCheck(List.of(), true, false, ars("1.00"), DEADLINE, DEADLINE.toLocalDate());
         AnnualUpfrontReceiptCheck reviewed = new AnnualUpfrontReceiptCheck(List.of(), false, true, ars("1.00"), DEADLINE, DEADLINE.toLocalDate());
 
-        assertThat(new AnnualUpfrontPaymentNotExpiredPolicy().evaluateRule(discarded).violations().get(0).code()).isEqualTo("ANNUAL_UPFRONT_PAYMENT_EXPIRED");
-        assertThat(new AnnualUpfrontPaymentNotAlreadyInitiatedPolicy().evaluateRule(reviewed).violations().get(0).code()).isEqualTo("ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED");
+        assertThat(new AnnualUpfrontPaymentNotExpiredPolicy().evaluateRule(discarded).code()).isEqualTo("ANNUAL_UPFRONT_PAYMENT_EXPIRED");
+        assertThat(new AnnualUpfrontPaymentNotAlreadyInitiatedPolicy().evaluateRule(reviewed).code()).isEqualTo("ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED");
     }
 }

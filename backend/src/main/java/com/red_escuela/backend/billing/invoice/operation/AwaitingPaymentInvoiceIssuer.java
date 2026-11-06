@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.invoice.operation;
 
-import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
@@ -33,12 +32,12 @@ public class AwaitingPaymentInvoiceIssuer {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void issueInvoiceAwaitingPayment(Invoice invoice, StudentCurrentAccount lockedAccount, LocalDate issueDate, StatusChangeActor actor) {
+    public void issueInvoiceAwaitingPayment(Invoice invoice, Long studentId, LocalDate issueDate, StatusChangeActor actor) {
         Objects.requireNonNull(invoice, "invoice");
         if (invoice.getDocumentStatus() != InvoiceDocumentStatus.AWAITING_PAYMENT) {
             throw new IllegalStateException("Invoice " + invoice.getId() + " is not awaiting payment");
         }
-        invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), issueDate, issueDate, snapshotFinder.findSnapshotOfStudent(lockedAccount.getStudentId()),
+        invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), issueDate, issueDate, snapshotFinder.findSnapshotOfStudent(studentId),
                 actor);
         invoiceRepository.flush();
         RecordedInvoiceEventTranslator.translateRecordedEventsOf(invoice).forEach((DomainEvent event) -> eventPublisher.publishEvent(event));
