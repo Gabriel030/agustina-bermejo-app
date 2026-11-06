@@ -286,6 +286,21 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
     @Test
     @Tag("D-524")
+    void withoutAnInstallmentsCountTheTemplateTakesItFromTheTermSpan() {
+        Career career = newCareer();
+        Long februaryTermId = persistTermStartingIn(2);
+        Long marchTermId = persistTermStartingIn(3);
+        authenticateAsNewPerson();
+
+        ProgramYearBillingTemplate february = createTemplate.create(career.programId(), februaryTermId, null);
+        ProgramYearBillingTemplate march = createTemplate.create(career.programId(), marchTermId, null);
+
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(february).recurringFeeInvoicesCount()).isEqualTo(11);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(march).recurringFeeInvoicesCount()).isEqualTo(10);
+    }
+
+    @Test
+    @Tag("D-524")
     void aFebruaryTermCannotHaveTwelveInstallmentsBecauseTheSpanIsElevenMonths() {
         Career career = newCareer();
         Long termId = persistTermStartingIn(2);
