@@ -248,7 +248,9 @@ describe('TabAsistencia', () => {
     server.use(
       http.post(`${API}/program-sections/5/attendance`, () => {
         calls += 1;
-        return calls === 1 ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) : new HttpResponse(null, { status: 204 });
+        if (calls === 1) return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+        mockSection({ savedStatusForAna: 'ABSENT' });
+        return new HttpResponse(null, { status: 204 });
       }),
     );
     const user = userEvent.setup();
@@ -263,7 +265,7 @@ describe('TabAsistencia', () => {
     expect(screen.getByRole('button', { name: 'Guardar asistencia' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
-    await screen.findByText('✓ Asistencia guardada', {}, { timeout: 2000 }).catch(() => null);
+    expect(await screen.findByText('✓ Asistencia guardada')).toBeInTheDocument();
     expect(calls).toBe(2);
     expect(localStorage.getItem(draftKey())).toBeNull();
   });
@@ -308,7 +310,6 @@ describe('TabAsistencia', () => {
     await user.click(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Presente' }));
     expect(localStorage.getItem(draftKey())).not.toBeNull();
     await user.click(screen.getByRole('button', { name: 'Guardar asistencia' }));
-    await screen.findByText('Todavía no se tomó asistencia esta fecha').catch(() => null);
     await vi.waitFor(() => expect(localStorage.getItem(draftKey())).toBeNull());
   });
 });
