@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ReceiptDropzone } from '@/components/billing/ReceiptDropzone';
+import { ReceiptDropzone } from '@/components/ReceiptDropzone';
 
 function TextField({ id, label, value, onChange, onBlur, error, placeholder, inputMode, autoComplete = 'off' }) {
   const errorId = `${id}-error`;

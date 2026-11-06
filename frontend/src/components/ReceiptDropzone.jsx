@@ -7,7 +7,17 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
 }
 
-export function ReceiptDropzone({ file, error, errorId, onSelect, onRemove }) {
+export function ReceiptDropzone({
+  file,
+  error,
+  errorId,
+  onSelect,
+  onRemove,
+  title = 'Subí tu comprobante',
+  hint = 'PDF, JPG o PNG · máximo 5 MB',
+  accept = '.pdf,.jpg,.jpeg,.png',
+  inputLabel = 'Comprobante de transferencia',
+}) {
   function handleChange(event) {
     const selected = event.target.files?.[0] ?? null;
     event.target.value = '';
@@ -45,13 +55,13 @@ export function ReceiptDropzone({ file, error, errorId, onSelect, onRemove }) {
           )}
         >
           <Plus className="size-6 text-ink-faint" aria-hidden="true" />
-          <span className="text-sm font-semibold text-ink">Subí tu comprobante</span>
-          <span className="text-xs text-ink-faint">PDF, JPG o PNG · máximo 5 MB</span>
+          <span className="text-sm font-semibold text-ink">{title}</span>
+          <span className="text-xs text-ink-faint">{hint}</span>
           <input
             type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
+            accept={accept}
             className="sr-only"
-            aria-label="Comprobante de transferencia"
+            aria-label={inputLabel}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
             onChange={handleChange}
