@@ -2,6 +2,8 @@ package com.red_escuela.backend.billing.payment.operation;
 
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestPaymentFacts;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestPaymentTracker;
 import com.red_escuela.backend.billing.events.BankTransferReceiptSubmittedEvent;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -17,6 +19,7 @@ import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentCheckoutItem;
 import com.red_escuela.backend.billing.payment.domain.PlannedCheckoutItem;
 import com.red_escuela.backend.billing.payment.domain.ReceiptInvoiceFact;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRegistrationCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRejections;
@@ -39,6 +42,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -59,6 +63,8 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
     private final PolicySet<BankTransferReceiptDetailsCheck> detailsPolicies;
     private final PolicySet<BankTransferReceiptRegistrationCheck> registrationPolicies;
     private final PolicySet<ReceiptProtectionCheck> protectionPolicies;
+    private final PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontPolicies;
+    private final AnnualUpfrontRequestPaymentTracker annualUpfrontRequests;
     private final StudentExistenceChecker students;
     private final StudentCurrentAccountService accountService;
     private final InvoiceAllocationQueryService invoiceQueries;
@@ -71,7 +77,9 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
     public SubmitBankTransferReceiptOperation(PolicySet<CashPaymentCheck> bankTransferReceiptIdempotencyKeyPolicySet,
                                               PolicySet<BankTransferReceiptDetailsCheck> bankTransferReceiptDetailsPolicySet,
                                               PolicySet<BankTransferReceiptRegistrationCheck> bankTransferReceiptRegistrationPolicySet,
-                                              PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet, StudentExistenceChecker students,
+                                              PolicySet<ReceiptProtectionCheck> bankTransferReceiptProtectionPolicySet,
+                                              PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontReceiptPolicySet, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests,
+                                              StudentExistenceChecker students,
                                               StudentCurrentAccountService accountService, InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
                                               PaymentCheckoutItemRepository checkoutItems, BankTransferReceiptRecordRepository receipts, TransactionBoundFileCleanup fileCleanup,
                                               Clock clock) {
@@ -80,6 +88,8 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
         this.detailsPolicies = bankTransferReceiptDetailsPolicySet;
         this.registrationPolicies = bankTransferReceiptRegistrationPolicySet;
         this.protectionPolicies = bankTransferReceiptProtectionPolicySet;
+        this.annualUpfrontPolicies = annualUpfrontReceiptPolicySet;
+        this.annualUpfrontRequests = annualUpfrontRequests;
         this.students = students;
         this.accountService = accountService;
         this.invoiceQueries = invoiceQueries;
@@ -101,7 +111,8 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
 
     @Override
     public List<String> validationMoments() {
-        return List.of(idempotencyKeyPolicies.moment(), detailsPolicies.moment(), registrationPolicies.moment(), protectionPolicies.moment());
+        return List.of(idempotencyKeyPolicies.moment(), detailsPolicies.moment(), registrationPolicies.moment(), protectionPolicies.moment(),
+                annualUpfrontPolicies.moment());
     }
 
     @Override
@@ -128,23 +139,31 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
         invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(account.getId());
         Map<Long, Invoice> openById = invoiceQueries.listOpenInvoicesOfAccount(account.getId()).stream().collect(Collectors.toMap(Invoice::getId, Function.identity()));
         Map<Long, Invoice> selectedById = selectedInvoicesById(selectedIds, openById);
+        Map<Long, AnnualUpfrontRequestPaymentFacts> annualRequests = lockAnnualUpfrontRequestsOf(selectedById, account);
         String operationNumber = command.operationNumber().strip();
         BankTransferPaymentDetails details = new BankTransferPaymentDetails(textOrNull(command.bankName()), command.originAccount().strip(), operationNumber,
                 command.holderName().strip(), command.transferDate());
         NonNegativeMoney declaredAmount = NonNegativeMoney.of(command.declaredAmount());
         boolean duplicateExists = payments.existsActiveBankTransfer(operationNumber, command.transferDate().toString(), declaredAmount.value().amount());
         boolean legacyReceiptPending = receipts.existsLegacyPendingReceiptOnAnyInvoice(selectedById.keySet());
-        registrationPolicies.evaluateRulesUntilFirstViolation(new BankTransferReceiptRegistrationCheck(account.getId(), currency,
-                selectedById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList(),
-                openById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList(), duplicateExists, legacyReceiptPending))
+        List<ReceiptInvoiceFact> selectedFacts = selectedById.values().stream().map(invoice -> factOf(invoice, annualRequests.get(invoice.getId()))).toList();
+        if (!annualRequests.isEmpty()) {
+            annualUpfrontPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontReceiptCheck(selectedFacts, annualRequests.values().stream().anyMatch(AnnualUpfrontRequestPaymentFacts::isDiscarded),
+                    annualRequests.values().stream().anyMatch(AnnualUpfrontRequestPaymentFacts::isPaymentAlreadyInitiated), command.declaredAmount(),
+                    LocalDateTime.now(clock), command.transferDate())).throwIfDenied(BankTransferReceiptRejections::rejectionOf);
+        }
+        registrationPolicies.evaluateRulesUntilFirstViolation(new BankTransferReceiptRegistrationCheck(account.getId(), currency, selectedFacts,
+                openById.values().stream().map(invoice -> factOf(invoice, null)).toList(), duplicateExists, legacyReceiptPending))
                 .throwIfDenied(BankTransferReceiptRejections::rejectionOf);
-        List<ReceiptInvoiceFact> selectedFacts = selectedById.values().stream().map(SubmitBankTransferReceiptOperation::factOf).toList();
-        List<PlannedCheckoutItem> plan = BankTransferReceiptSelectionPlanner.planItems(selectedFacts, command.declaredAmount(), today, command.transferDate(),
-                facts -> protectionPolicies.evaluateRulesUntilFirstViolation(new ReceiptProtectionCheck(facts)).allowed());
+        List<PlannedCheckoutItem> plan = annualRequests.isEmpty()
+                ? BankTransferReceiptSelectionPlanner.planItems(selectedFacts, command.declaredAmount(), today, command.transferDate(),
+                facts -> protectionPolicies.evaluateRulesUntilFirstViolation(new ReceiptProtectionCheck(facts)).allowed())
+                : selectedFacts.stream().map(fact -> new PlannedCheckoutItem(fact.invoiceId(), 1, fact.outstanding(), true, false)).toList();
         String filePath = command.fileStorage().storeReceiptFileOf(command.studentId());
         fileCleanup.deleteIfRolledBack(filePath);
         Payment payment = savePendingPayment(account, declaredAmount, details, command);
         List<PaymentCheckoutItem> items = checkoutItems.saveAll(plan.stream().map(planned -> PaymentCheckoutItem.of(payment.getId(), account.getId(), planned)).toList());
+        annualRequests.keySet().forEach(annualInvoiceId -> annualUpfrontRequests.startPaymentReview(annualInvoiceId, payment.getId()));
         plan.stream().filter(PlannedCheckoutItem::protectedFromOverdue)
                 .forEach(planned -> selectedById.get(planned.invoiceId()).markPaymentUnderReview(today, command.actor(), UNDER_REVIEW_REASON));
         BankTransferReceiptRecord receipt = receipts.save(BankTransferReceiptRecord.submittedFor(plan.get(0).invoiceId(), filePath, command.actor().personId(),
@@ -191,11 +210,22 @@ public class SubmitBankTransferReceiptOperation implements BillingOperation<Subm
         }
     }
 
-    private static ReceiptInvoiceFact factOf(Invoice invoice) {
+    private Map<Long, AnnualUpfrontRequestPaymentFacts> lockAnnualUpfrontRequestsOf(Map<Long, Invoice> selectedById, StudentCurrentAccount account) {
+        Map<Long, AnnualUpfrontRequestPaymentFacts> annualRequests = new LinkedHashMap<>();
+        selectedById.values().stream().filter(invoice -> invoice.getDocumentStatus() != InvoiceDocumentStatus.ISSUED)
+                .filter(invoice -> account.getId().equals(invoice.getStudentCurrentAccountId())).map(Invoice::getId).sorted().forEach(invoiceId -> {
+                    invoiceQueries.lockInvoice(invoiceId);
+                    annualUpfrontRequests.findRequestOfInvoice(invoiceId).ifPresent(facts -> annualRequests.put(invoiceId, facts));
+                });
+        return annualRequests;
+    }
+
+    private static ReceiptInvoiceFact factOf(Invoice invoice, AnnualUpfrontRequestPaymentFacts annualRequest) {
+        boolean annualAwaitingPayment = annualRequest != null && annualRequest.isAwaitingPayment() && invoice.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT;
         return new ReceiptInvoiceFact(invoice.getId(), invoice.getStudentCurrentAccountId(), invoice.getCurrency(),
                 invoice.getDocumentStatus() == InvoiceDocumentStatus.ISSUED, invoice.getPaymentStatus(),
                 invoice.getDueDate(), invoice.getAmounts().outstandingAmount().value(),
-                invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission());
+                invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission(), annualAwaitingPayment, invoice.getPaymentDeadline());
     }
 
     private static String textOrNull(String text) {

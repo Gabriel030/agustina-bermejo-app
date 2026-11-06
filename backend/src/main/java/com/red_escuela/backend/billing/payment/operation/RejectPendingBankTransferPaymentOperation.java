@@ -3,7 +3,9 @@ package com.red_escuela.backend.billing.payment.operation;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestPaymentTracker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
@@ -35,17 +37,19 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
     private final PaymentCheckoutItemRepository checkoutItems;
     private final PendingTransferReviewRelease reviewRelease;
     private final CurrentAccountAllocationService allocationService;
+    private final AnnualUpfrontRequestPaymentTracker annualUpfrontRequests;
     private final Clock clock;
 
     public RejectPendingBankTransferPaymentOperation(StudentCurrentAccountService accountService, InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
                                                      PaymentCheckoutItemRepository checkoutItems, PendingTransferReviewRelease reviewRelease, CurrentAccountAllocationService allocationService,
-                                                     Clock clock) {
+                                                     AnnualUpfrontRequestPaymentTracker annualUpfrontRequests, Clock clock) {
         this.accountService = accountService;
         this.invoiceQueries = invoiceQueries;
         this.payments = payments;
         this.checkoutItems = checkoutItems;
         this.reviewRelease = reviewRelease;
         this.allocationService = allocationService;
+        this.annualUpfrontRequests = annualUpfrontRequests;
         this.clock = clock;
     }
 
@@ -77,13 +81,17 @@ public class RejectPendingBankTransferPaymentOperation implements BillingOperati
     public PendingBankTransferDecisionResult processOperation(RejectPendingBankTransferPaymentCommand command) {
         LocalDate today = LocalDate.now(clock);
         Payment payment = payments.findById(command.paymentId()).orElseThrow();
-        StudentCurrentAccount account = accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
-        invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(payment.getStudentCurrentAccountId());
         List<PaymentCheckoutItem> items = checkoutItems.findByPaymentIdOrderByPositionAsc(payment.getId());
+        List<Long> itemInvoiceIds = items.stream().map(PaymentCheckoutItem::getInvoiceId).toList();
+        itemInvoiceIds.forEach(annualUpfrontRequests::lockEnrollmentDiscountsOfInvoiceRequest);
+        StudentCurrentAccount account = accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
+        invoiceQueries.lockOpenInvoicesOfAccountAndTheseInIdOrder(payment.getStudentCurrentAccountId(), itemInvoiceIds);
         Map<Long, Invoice> invoicesById = invoiceQueries.findInvoicesByIds(items.stream().map(PaymentCheckoutItem::getInvoiceId).toList()).stream()
                 .collect(Collectors.toMap(Invoice::getId, Function.identity()));
         payment.rejectPayment(command.rejectionReason(), command.reviewer());
         payments.save(payment);
+        invoicesById.values().stream().filter(invoice -> invoice.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT).map(Invoice::getId).sorted()
+                .forEach(annualInvoiceId -> annualUpfrontRequests.discardRejectedPayment(annualInvoiceId, payment.getId(), command.reviewer()));
         List<Long> released = reviewRelease.releaseProtectedItemsStillUnderReview(items, invoicesById, today, command.reviewer(), RELEASE_REASON);
         allocationService.allocateAccountCreditToOldestInvoices(account, today, command.reviewer());
         log.warn("Pago pendiente por transferencia rechazado: pago={}, cuenta={}, facturasLiberadasDeRevision={}", payment.getId(), payment.getStudentCurrentAccountId(), released);

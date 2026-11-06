@@ -1,5 +1,10 @@
 package com.red_escuela.backend.billing.payment.policy;
 
+import com.red_escuela.backend.billing.payment.exception.AnnualUpfrontPaymentAlreadyInitiatedException;
+import com.red_escuela.backend.billing.payment.exception.AnnualUpfrontPaymentExpiredException;
+import com.red_escuela.backend.billing.payment.exception.AnnualUpfrontReceiptAmountMustBeTotalException;
+import com.red_escuela.backend.billing.payment.exception.AnnualUpfrontReceiptLateException;
+import com.red_escuela.backend.billing.payment.exception.AnnualUpfrontReceiptMustBeAloneException;
 import com.red_escuela.backend.billing.payment.exception.BankTransferDetailsRequiredException;
 import com.red_escuela.backend.billing.payment.exception.InvoiceAlreadyUnderReviewException;
 import com.red_escuela.backend.billing.payment.exception.LegacyReceiptPendingOnInvoiceException;
@@ -33,6 +38,11 @@ public final class BankTransferReceiptRejections {
             case "RECEIPT_MUST_COVER_OLDEST_INVOICES_FIRST" -> new ReceiptMustCoverOldestInvoicesFirstException(violations);
             case "POSSIBLE_DUPLICATE_BANK_TRANSFER" -> new PossibleDuplicateBankTransferException(violations);
             case "LEGACY_RECEIPT_PENDING_ON_INVOICE" -> new LegacyReceiptPendingOnInvoiceException(violations);
+            case "ANNUAL_UPFRONT_PAYMENT_EXPIRED" -> new AnnualUpfrontPaymentExpiredException(violations);
+            case "ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED" -> new AnnualUpfrontPaymentAlreadyInitiatedException(violations);
+            case "ANNUAL_UPFRONT_RECEIPT_LATE" -> new AnnualUpfrontReceiptLateException(violations);
+            case "ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL" -> new AnnualUpfrontReceiptAmountMustBeTotalException(violations);
+            case "ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE" -> new AnnualUpfrontReceiptMustBeAloneException(violations);
             default -> throw new IllegalStateException("Unmapped bank transfer receipt violation " + code);
         };
     }

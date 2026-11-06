@@ -99,4 +99,29 @@ public class AnnualUpfrontRequest {
         this.discardReason = AnnualUpfrontDiscardReason.DEADLINE_EXPIRED;
         this.decidedAt = decidedAt;
     }
+
+    public void startPaymentReview(Long paymentId) {
+        Objects.requireNonNull(paymentId, "paymentId");
+        this.status = AnnualUpfrontRequestStateMachine.requireTargetFor(status, AnnualUpfrontRequestEvent.PAYMENT_INITIATED);
+        this.paymentId = paymentId;
+    }
+
+    public void confirmApprovedPayment(Long approvedPaymentId, LocalDateTime decidedAt) {
+        Objects.requireNonNull(decidedAt, "decidedAt");
+        if (!Objects.equals(paymentId, approvedPaymentId)) {
+            throw new IllegalStateException("The approved payment " + approvedPaymentId + " is not the payment under review of the annual upfront request " + id);
+        }
+        this.status = AnnualUpfrontRequestStateMachine.requireTargetFor(status, AnnualUpfrontRequestEvent.PAYMENT_APPROVED);
+        this.decidedAt = decidedAt;
+    }
+
+    public void discardRejectedPayment(Long rejectedPaymentId, LocalDateTime decidedAt) {
+        Objects.requireNonNull(decidedAt, "decidedAt");
+        if (!Objects.equals(paymentId, rejectedPaymentId)) {
+            throw new IllegalStateException("The rejected payment " + rejectedPaymentId + " is not the payment under review of the annual upfront request " + id);
+        }
+        this.status = AnnualUpfrontRequestStateMachine.requireTargetFor(status, AnnualUpfrontRequestEvent.PAYMENT_REJECTED);
+        this.discardReason = AnnualUpfrontDiscardReason.PAYMENT_REJECTED;
+        this.decidedAt = decidedAt;
+    }
 }
