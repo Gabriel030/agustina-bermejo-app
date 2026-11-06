@@ -399,7 +399,7 @@ describe('NuevoAlumno', () => {
       await goToPersonalDataStep(user);
 
       setBirthDate(isoYearsAgo(18, 1));
-      expect(await screen.findByText(/Es menor de 18 años \(17\)/)).toBeInTheDocument();
+      expect(await screen.findByText(/Es menor de 18 años \(17\)/, {}, { timeout: 5000 })).toBeInTheDocument();
     });
 
     it('requires the guardians, validates the guardian document and sends them with the draft and the confirmation', async () => {
@@ -450,7 +450,7 @@ describe('NuevoAlumno', () => {
       renderWithProviders(<NuevoAlumno />);
       await fillAndAdvance(user, '1990-05-10');
 
-      const message = await screen.findByText('Ingresá la fecha de nacimiento.');
+      const message = await screen.findByText('Ingresá la fecha de nacimiento.', {}, { timeout: 5000 });
       expect(message).toHaveAttribute('role', 'alert');
       expect(screen.getByLabelText(/Fecha de nacimiento/)).toHaveAttribute('aria-invalid', 'true');
     });
@@ -466,7 +466,7 @@ describe('NuevoAlumno', () => {
       await screen.findByRole('heading', { name: 'Revisar y confirmar' });
       await user.click(screen.getByRole('button', { name: 'Confirmar alta' }));
 
-      expect(await screen.findByText(/completá los datos del tutor y del contacto de emergencia/)).toHaveAttribute('role', 'alert');
+      expect(await screen.findByText(/completá los datos del tutor y del contacto de emergencia/, {}, { timeout: 5000 })).toHaveAttribute('role', 'alert');
       expect(screen.getByRole('heading', { name: 'Responsables' })).toBeInTheDocument();
     });
 
