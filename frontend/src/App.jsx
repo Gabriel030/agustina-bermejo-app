@@ -1,6 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createQueryClient } from '@/api/queryClient';
+import { OFFLINE_MAX_AGE_MS, offlineDehydrateOptions, offlinePersister } from '@/api/offlinePersistence';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -13,18 +14,25 @@ import { Toaster } from '@/components/ui/sonner';
 // ver docs/context/frontend.md) — antes no había caso de uso que lo justificara.
 const queryClient = createQueryClient();
 
+const persistOptions = {
+  persister: offlinePersister,
+  maxAge: OFFLINE_MAX_AGE_MS,
+  buster: import.meta.env.VITE_APP_VERSION ?? 'dev',
+  dehydrateOptions: offlineDehydrateOptions,
+};
+
 export function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''}>
       <ThemeProvider>
         <ErrorBoundary scope="root" fallback={(props) => <ErrorFallback {...props} fullScreen />}>
-          <QueryClientProvider client={queryClient}>
+          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <BrowserRouter>
               <AuthProvider>
                 <AppRouter />
               </AuthProvider>
             </BrowserRouter>
-          </QueryClientProvider>
+          </PersistQueryClientProvider>
         </ErrorBoundary>
         <Toaster position="bottom-right" />
       </ThemeProvider>

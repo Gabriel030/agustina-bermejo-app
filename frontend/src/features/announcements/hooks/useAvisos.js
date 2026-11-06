@@ -21,3 +21,12 @@ export function useDestinatariosDeAviso(announcementId) {
     enabled: !!announcementId,
   });
 }
+
+export function useReadReceiptsDeSeccion(sectionId, tipo) {
+  const base = rutaDeSeccion(tipo);
+  return useQuery({
+    queryKey: [base, sectionId, 'announcements', 'read-receipts'],
+    queryFn: () => apiFetch(`/${base}/${sectionId}/announcements/read-receipts`),
+    enabled: !!sectionId && !!tipo,
+  });
+}

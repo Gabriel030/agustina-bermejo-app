@@ -292,17 +292,15 @@ describe('PreceptorPeriodoForm', () => {
   });
 
   it('shows a retryable load error when the term to edit cannot be fetched', async () => {
-    let calls = 0;
+    let failing = true;
     server.use(
-      http.get(`${API}/terms`, () => {
-        calls += 1;
-        return calls === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(TERMS);
-      }),
+      http.get(`${API}/terms`, () => (failing ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(TERMS))),
     );
     const user = userEvent.setup();
     renderApp('/preceptor/periodos/1/editar');
 
     expect(await screen.findByText('No pudimos cargar el período', {}, { timeout: 5000 })).toBeInTheDocument();
+    failing = false;
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByRole('heading', { name: 'Editar período' })).toBeInTheDocument();

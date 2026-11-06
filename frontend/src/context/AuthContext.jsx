@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { QueryClientContext } from '@tanstack/react-query';
 import { apiFetch, setAccessToken, setSessionExpiredHandler } from '@/api/client';
+import { claimOfflineCache, purgeOfflineData } from '@/api/offlinePersistence';
 
 const AuthContext = createContext(null);
 
@@ -30,12 +32,28 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [loggedOut, setLoggedOut] = useState(false);
+  const queryClient = useContext(QueryClientContext);
 
   const limpiarSesion = useCallback(() => {
     setAccessToken(null);
     localStorage.removeItem('refreshToken');
     setUsuario(null);
-  }, []);
+    purgeOfflineData(queryClient);
+  }, [queryClient]);
+
+  const beginSession = useCallback(
+    async (tokens) => {
+      await purgeOfflineData(queryClient);
+      setAccessToken(tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      const perfil = await apiFetch('/me');
+      await claimOfflineCache(perfil.id, queryClient);
+      setUsuario(perfil);
+      setLoggedOut(false);
+      return perfil;
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     setSessionExpiredHandler(limpiarSesion);
@@ -47,8 +65,10 @@ export function AuthProvider({ children }) {
       return;
     }
     restoreStoredSession()
-      .then((perfil) => {
-        if (perfil) setUsuario(perfil);
+      .then(async (perfil) => {
+        if (!perfil) return;
+        await claimOfflineCache(perfil.id, queryClient);
+        setUsuario(perfil);
       })
       .catch(limpiarSesion)
       .finally(() => setCargando(false));
@@ -60,13 +80,8 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    setAccessToken(tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    const perfil = await apiFetch('/me');
-    setUsuario(perfil);
-    setLoggedOut(false);
-    return perfil;
-  }, []);
+    return beginSession(tokens);
+  }, [beginSession]);
 
   // Mismo patrón que login(): guarda tokens y le pide el perfil a /me. A
   // diferencia de login, la persona queda sin roles hasta su primera
@@ -76,13 +91,8 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: JSON.stringify({ nombre, apellido, email, username, password, institutionId }),
     });
-    setAccessToken(tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    const perfil = await apiFetch('/me');
-    setUsuario(perfil);
-    setLoggedOut(false);
-    return perfil;
-  }, []);
+    return beginSession(tokens);
+  }, [beginSession]);
 
   // Épica 1 Fase 2: mismo patrón que login()/register() — la diferencia entre las dos es solo
   // qué endpoint golpean, el manejo de tokens/perfil es idéntico.
@@ -91,26 +101,16 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     });
-    setAccessToken(tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    const perfil = await apiFetch('/me');
-    setUsuario(perfil);
-    setLoggedOut(false);
-    return perfil;
-  }, []);
+    return beginSession(tokens);
+  }, [beginSession]);
 
   const registerWithGoogle = useCallback(async (idToken, institutionId) => {
     const tokens = await apiFetch('/auth/google/register', {
       method: 'POST',
       body: JSON.stringify({ idToken, institutionId }),
     });
-    setAccessToken(tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    const perfil = await apiFetch('/me');
-    setUsuario(perfil);
-    setLoggedOut(false);
-    return perfil;
-  }, []);
+    return beginSession(tokens);
+  }, [beginSession]);
 
   // Re-hidrata `usuario` sin pasar por login — lo necesita Catálogo después de
   // una inscripción a curso, que puede otorgar el rol ALUMNO en el momento

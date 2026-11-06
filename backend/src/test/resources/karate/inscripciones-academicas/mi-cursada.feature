@@ -99,9 +99,22 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', date: '2026-03-15T00:00:00', score: 8 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-03-15T00:00:00', score: 8 }
     When method post
     Then status 201
+
+    Given path '/me/section-enrollments', sectionEnrollmentId, 'grade-items'
+    And header Authorization = 'Bearer ' + alumno.accessToken
+    When method get
+    Then status 200
+    And match response == '#[0]'
+
+    Given path '/program-sections', sectionId, 'grade-items', 'publish'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { gradeType: 'EXAM', sequenceNumber: 1 }
+    When method post
+    Then status 200
+    And match response == { gradeCount: 1, studentCount: 1 }
 
     Given path '/me/section-enrollments', sectionEnrollmentId, 'attendance'
     And header Authorization = 'Bearer ' + alumno.accessToken

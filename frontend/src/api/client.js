@@ -53,9 +53,10 @@ async function readErrorBody(response) {
       retryable: body?.retryable === true,
       requestId: body?.requestId ?? null,
       violations: Array.isArray(body?.violations) ? body.violations : [],
+      details: body?.details && typeof body.details === 'object' ? body.details : null,
     };
   } catch {
-    return { code: null, retryable: false, requestId: null, violations: [] };
+    return { code: null, retryable: false, requestId: null, violations: [], details: null };
   }
 }
 

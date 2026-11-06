@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -207,3 +207,22 @@ describe('NotificationBell', () => {
     expect(screen.queryByText('No pudimos cargar tus notificaciones.')).not.toBeInTheDocument();
   });
 });
+
+describe('NotificationBell offline stamp', () => {
+  it('showsLastUpdateStampWhileOffline', async () => {
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T10:00:00' }]),
+      ),
+    )
+    const onLine = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(true)
+    renderWithProviders(<NotificationBell />)
+    const bell = await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' })
+    onLine.mockReturnValue(false)
+    window.dispatchEvent(new Event('offline'))
+    await userEvent.click(bell)
+
+    expect(await screen.findByText(/Actualizado (recién|hace)/)).toBeInTheDocument()
+    onLine.mockRestore()
+  })
+})

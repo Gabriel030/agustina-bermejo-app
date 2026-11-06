@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { EmptyState } from '@/components/EmptyState';
 import { useMisNotificaciones, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
 import { TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from '@/lib/notificaciones';
+import { useOnlineStatus } from '@/pwa/useOnlineStatus';
 
 const ANNOUNCEMENT_TYPES = new Set(['ANNOUNCEMENT_PUBLISHED', 'ANNOUNCEMENT_UPDATED']);
 
@@ -34,12 +35,14 @@ const TEXTO_TONO = {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { data: notificaciones, isError, isFetching, refetch } = useMisNotificaciones();
+  const { data: notificaciones, isError, isFetching, refetch, dataUpdatedAt } = useMisNotificaciones();
+  const online = useOnlineStatus();
   const marcarLeida = useMarcarNotificacionLeida();
 
   const lista = notificaciones ?? [];
   const noLeidas = lista.filter((n) => !n.read).length;
   const loadFailed = isError && notificaciones === undefined;
+  const staleStamp = !online && notificaciones !== undefined && dataUpdatedAt > 0 ? tiempoRelativo(new Date(dataUpdatedAt).toISOString()) : '';
 
   function handleClick(n) {
     if (!n.read) marcarLeida.mutate(n.id);
@@ -99,7 +102,14 @@ export function NotificationBell() {
         sideOffset={8}
         className="flex max-h-[26rem] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-surface p-0 text-ink shadow-2xl backdrop-blur-[28px] backdrop-saturate-[1.6]"
       >
-        <div className="shrink-0 border-b border-border px-4 py-2.5 font-heading text-[13px] font-semibold text-ink">Notificaciones</div>
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 font-heading text-[13px] font-semibold text-ink">
+          Notificaciones
+          {staleStamp && (
+            <span className="rounded-full bg-warning-bg px-2 py-px text-[11px] font-semibold text-warning-ink">
+              Actualizado {staleStamp}
+            </span>
+          )}
+        </div>
         <div className="flex flex-col overflow-y-auto">
           {loadFailed ? (
             <div role="alert" className="flex flex-col items-center gap-2 px-4 py-6 text-center">

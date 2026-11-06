@@ -51,6 +51,7 @@ public class GradeItemService {
     private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final AbsenceFreeStatusChecker absenceFreeStatusChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
+    private final GradeItemPublicationLock publicationLock;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -61,7 +62,8 @@ public class GradeItemService {
             ExamBoardInstructorRepository examBoardInstructorRepository,
             GraduationRequestTriggerPort graduationRequestTrigger,
             AbsenceFreeStatusChecker absenceFreeStatusChecker,
-            FinalExamEligibilityEvaluator finalExamEligibilityEvaluator) {
+            FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
+            GradeItemPublicationLock publicationLock) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -71,6 +73,7 @@ public class GradeItemService {
         this.graduationRequestTrigger = graduationRequestTrigger;
         this.absenceFreeStatusChecker = absenceFreeStatusChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
+        this.publicationLock = publicationLock;
     }
 
     @Transactional
@@ -87,6 +90,8 @@ public class GradeItemService {
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
+        publicationLock.requireUnlocked(
+                SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), request.type(), request.sequenceNumber());
 
         GradeItem gradeItem = gradeItemRepository
                 .findByProgramSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
@@ -149,6 +154,8 @@ public class GradeItemService {
                 () -> sectionTeachingFinder
                         .teaches(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
+        publicationLock.requireUnlocked(
+                SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), request.type(), request.sequenceNumber());
 
         GradeItem gradeItem = gradeItemRepository
                 .findByCourseSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
