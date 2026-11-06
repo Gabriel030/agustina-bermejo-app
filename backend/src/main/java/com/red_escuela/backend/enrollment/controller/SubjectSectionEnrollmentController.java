@@ -27,7 +27,7 @@ public class SubjectSectionEnrollmentController {
 
     @PostMapping("/program-enrollments/{id}/section-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public SectionEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateSectionEnrollmentRequest request) {
         return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.enroll(id, request));
     }

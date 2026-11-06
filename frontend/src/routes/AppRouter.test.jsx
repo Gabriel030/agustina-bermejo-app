@@ -1,16 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { setOfflineSessionMode } from '@/api/client';
+import { OFFLINE_PROFILE_KEY } from '@/api/offlinePersistence';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AppRouter } from '@/routes/AppRouter';
 
 const API = 'http://localhost:8080';
+
+const idbStore = new Map();
+
+vi.mock('idb-keyval', () => ({
+  get: vi.fn(async (key) => idbStore.get(key)),
+  set: vi.fn(async (key, value) => {
+    idbStore.set(key, value);
+  }),
+  del: vi.fn(async (key) => {
+    idbStore.delete(key);
+  }),
+}));
 
 function renderApp(initialPath) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -30,6 +44,46 @@ function renderApp(initialPath) {
 }
 
 describe('AppRouter', () => {
+  beforeEach(() => {
+    vi.stubGlobal('indexedDB', {});
+    idbStore.clear();
+  });
+
+  afterEach(() => {
+    setOfflineSessionMode(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('showsTheOfflineStateInsteadOfLoginWhenTheStoredSessionCannotBeRefreshed', async () => {
+    localStorage.setItem('refreshToken', 'stored');
+    server.use(http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 503 })));
+    renderApp('/director/inicio');
+
+    expect(await screen.findByText('Sin conexión', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('DNI o email')).not.toBeInTheDocument();
+    expect(localStorage.getItem('refreshToken')).toBe('stored');
+    localStorage.clear();
+  }, 15000);
+
+  it('coldStartOfflineWithStoredProfileShowsTheMenuAndTheOfflineState', async () => {
+    localStorage.setItem('refreshToken', 'stored');
+    idbStore.set(OFFLINE_PROFILE_KEY, { nombre: 'Dora', apellido: 'Directora', roles: ['DIRECTOR'] });
+    const meRequests = [];
+    server.use(
+      http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 503 })),
+      http.get(`${API}/me`, () => {
+        meRequests.push(1);
+        return HttpResponse.json({ id: 2, roles: ['DIRECTOR'] });
+      }),
+    );
+    renderApp('/director/inicio');
+
+    expect(await screen.findByText('Sin conexión', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.getAllByText(/Dora Directora/).length).toBeGreaterThan(0);
+    expect(meRequests).toHaveLength(0);
+    localStorage.clear();
+  }, 15000);
+
   it('does not treat /director/alumnos/nuevo as the record of a student called "nuevo"', async () => {
     const requestedStudents = [];
     server.use(

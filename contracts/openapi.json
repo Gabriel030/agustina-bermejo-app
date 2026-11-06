@@ -3699,6 +3699,22 @@
         "required" : [ "monthlyCollected", "monthlyDebt", "monthlyProjected", "totalDebt" ],
         "type" : "object"
       },
+      "CycleOccupancyResponse" : {
+        "properties" : {
+          "cycleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sections" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SectionOccupancy"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "cycleId", "sections" ],
+        "type" : "object"
+      },
       "CycleSectionResponse" : {
         "properties" : {
           "capacity" : {
@@ -9873,6 +9889,39 @@
         "required" : [ "name", "role" ],
         "type" : "object"
       },
+      "SectionOccupancy" : {
+        "properties" : {
+          "available" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "enrolled" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM", "COURSE" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waitlisted" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "available", "capacity", "enrolled", "kind", "name", "sectionId", "waitlisted" ],
+        "type" : "object"
+      },
       "SelectPaymentPlanRequest" : {
         "properties" : {
           "paymentPlanOptionId" : {
@@ -11985,6 +12034,123 @@
           }
         },
         "tags" : [ "academic-offering-cycle-controller" ]
+      }
+    },
+    "/academic-offering-cycles/{id}/occupancy" : {
+      "get" : {
+        "operationId" : "CycleOccupancy_getOccupancy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleOccupancyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "cycle-occupancy-controller" ]
       }
     },
     "/academic-offering-cycles/{id}/reject" : {

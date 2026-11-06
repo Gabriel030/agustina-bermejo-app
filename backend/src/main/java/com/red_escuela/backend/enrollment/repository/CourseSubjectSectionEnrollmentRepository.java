@@ -14,6 +14,8 @@ import java.util.Optional;
 
 @Repository
 public interface CourseSubjectSectionEnrollmentRepository extends JpaRepository<CourseSubjectSectionEnrollment, Long> {
+    long countByCourseSubjectSectionIdAndStatusIn(Long sectionId, List<EnrollmentStatus> statuses);
+
 
     List<CourseSubjectSectionEnrollment> findByCourseEnrollmentId(Long courseEnrollmentId);
 
