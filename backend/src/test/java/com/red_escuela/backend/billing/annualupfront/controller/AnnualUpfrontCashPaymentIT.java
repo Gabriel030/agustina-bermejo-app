@@ -44,6 +44,8 @@ class AnnualUpfrontCashPaymentIT extends AbstractAnnualUpfrontRequestIT {
     private ApprovePaymentReceiptUseCase approveReceipt;
     @Autowired
     private AnnualUpfrontDeadlineExpirer expirer;
+    @Autowired
+    private com.red_escuela.backend.billing.payment.usecase.RevokeBankTransferApprovalUseCase revokeApproval;
 
     private JsonNode requestTheYear() throws Exception {
         return objectMapper.readTree(request(true, "v1", UUID.randomUUID().toString(), studentToken(), 201).getResponse().getContentAsString());
@@ -90,6 +92,20 @@ class AnnualUpfrontCashPaymentIT extends AbstractAnnualUpfrontRequestIT {
         invariants.assertAllBillingInvariantsHold();
     }
 
+    private String tokenWithOnlyRole(String roleName) {
+        return transactionTemplate.execute(status -> {
+            com.red_escuela.backend.identity.entity.Person person = studentRepository.findById(learner.studentId()).orElseThrow().getPerson();
+            person.getRoles().clear();
+            person.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
+            personRepository.save(person);
+            return jwtService.generateAccessToken(person);
+        });
+    }
+
+    private String errorCodeOf(ResultActions result) throws Exception {
+        return objectMapper.readTree(result.andReturn().getResponse().getContentAsString()).get("code").asString("");
+    }
+
     @Test
     void repeatingTheSameIdempotencyKeyReplaysAndAnotherKeyAfterTheChargeIsAConflict() throws Exception {
         JsonNode requested = requestTheYear();
@@ -99,25 +115,92 @@ class AnnualUpfrontCashPaymentIT extends AbstractAnnualUpfrontRequestIT {
 
         payInCash(requested, totalOf(requested), directorToken(), key).andExpect(status().isCreated());
         payInCash(requested, totalOf(requested), directorToken(), key).andExpect(status().isCreated());
-        payInCash(requested, totalOf(requested), directorToken(), key + "-other").andExpect(status().isConflict());
+        ResultActions other = payInCash(requested, totalOf(requested), directorToken(), key + "-other").andExpect(status().isConflict());
 
+        assertThat(errorCodeOf(other)).isEqualTo("ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED");
         assertThat(count("select count(*) from current_account_entry where invoice_id = " + invoiceId + " and entry_type = 'INVOICE_ISSUED'")).isEqualTo(1);
         assertThat(cashPaymentsOf(invoiceId)).isEqualTo(1);
     }
 
     @Test
-    void cashForAnAmountDifferentFromTheTotalOrAfterTheDeadlineOrFromAStudentIsRejected() throws Exception {
+    void aMissingOrTooLongIdempotencyKeyIsABadRequestAndNothingIsCharged() throws Exception {
         JsonNode requested = requestTheYear();
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 3, 11, 0));
 
-        payInCash(requested, "1000.00", directorToken(), "cash-a-" + System.nanoTime()).andExpect(status().is4xxClientError());
-        payInCash(requested, totalOf(requested), studentToken(), "cash-b-" + System.nanoTime()).andExpect(status().isForbidden());
-        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 5, 11, 0));
-        payInCash(requested, totalOf(requested), directorToken(), "cash-c-" + System.nanoTime()).andExpect(status().is4xxClientError());
+        ResultActions missing = mockMvc.perform(post("/students/" + learner.studentId() + "/annual-upfront-requests/" + requested.get("id").asLong() + "/cash-payment")
+                .header("Authorization", "Bearer " + directorToken()).contentType("application/json")
+                .content("{\"amount\":{\"amount\":" + totalOf(requested) + ",\"currency\":\"ARS\"}}")).andExpect(status().isBadRequest());
+        ResultActions tooLong = payInCash(requested, totalOf(requested), directorToken(), "k".repeat(101)).andExpect(status().isBadRequest());
 
+        assertThat(errorCodeOf(missing)).isEqualTo("IDEMPOTENCY_KEY_INVALID");
+        assertThat(errorCodeOf(tooLong)).isEqualTo("IDEMPOTENCY_KEY_INVALID");
         assertThat(requestStatus(requested)).isEqualTo("AWAITING_PAYMENT");
         assertThat(cashPaymentsOf(requested.get("invoiceId").asLong())).isZero();
-        assertThat(expirer.expireRequestsPastDeadline().expired()).isEqualTo(1);
+    }
+
+    @Test
+    void aWrongAmountIsABadRequestAndALateChargeIsABadRequestWithTheCashMessage() throws Exception {
+        JsonNode requested = requestTheYear();
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 3, 11, 0));
+
+        ResultActions wrongAmount = payInCash(requested, "1000.00", directorToken(), "cash-a-" + System.nanoTime()).andExpect(status().isBadRequest());
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 5, 11, 0));
+        ResultActions late = payInCash(requested, totalOf(requested), directorToken(), "cash-c-" + System.nanoTime()).andExpect(status().isBadRequest());
+
+        assertThat(errorCodeOf(wrongAmount)).isEqualTo("ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL");
+        assertThat(errorCodeOf(late)).isEqualTo("ANNUAL_UPFRONT_RECEIPT_LATE");
+        assertThat(late.andReturn().getResponse().getContentAsString()).contains("cobro en efectivo");
+        assertThat(requestStatus(requested)).isEqualTo("AWAITING_PAYMENT");
+        assertThat(cashPaymentsOf(requested.get("invoiceId").asLong())).isZero();
+    }
+
+    @Test
+    void theExactInstantOfTheDeadlineIsAcceptedAndOneSecondLaterIsRejected() throws Exception {
+        JsonNode requested = requestTheYear();
+        LocalDateTime deadline = jdbc.queryForObject("select payment_deadline from invoice where id = ?", java.sql.Timestamp.class, requested.get("invoiceId").asLong()).toLocalDateTime();
+
+        MutableClock.INSTANCE.setDateTime(deadline.plusSeconds(1));
+        ResultActions late = payInCash(requested, totalOf(requested), directorToken(), "cash-late-" + System.nanoTime()).andExpect(status().isBadRequest());
+        assertThat(errorCodeOf(late)).isEqualTo("ANNUAL_UPFRONT_RECEIPT_LATE");
+        MutableClock.INSTANCE.setDateTime(deadline);
+        payInCash(requested, totalOf(requested), directorToken(), "cash-exact-" + System.nanoTime()).andExpect(status().isCreated());
+
+        assertThat(requestStatus(requested)).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void onlyDirectorAndAdministrativeStaffCanChargeTheCash() throws Exception {
+        JsonNode requested = requestTheYear();
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 3, 11, 0));
+
+        payInCash(requested, totalOf(requested), tokenWithOnlyRole("PRECEPTOR"), "cash-p-" + System.nanoTime()).andExpect(status().isForbidden());
+        payInCash(requested, totalOf(requested), studentToken(), "cash-s-" + System.nanoTime()).andExpect(status().isForbidden());
+        assertThat(requestStatus(requested)).isEqualTo("AWAITING_PAYMENT");
+        payInCash(requested, totalOf(requested), tokenWithOnlyRole("ADMINISTRATIVO"), "cash-a-" + System.nanoTime()).andExpect(status().isCreated());
+
+        assertThat(requestStatus(requested)).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void theCashOfTheAnnualCannotBeRevokedAndLeavesEverythingAsItWas() throws Exception {
+        JsonNode requested = requestTheYear();
+        Long invoiceId = requested.get("invoiceId").asLong();
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 3, 11, 0));
+        payInCash(requested, totalOf(requested), directorToken(), "cash-" + System.nanoTime()).andExpect(status().isCreated());
+        Long paymentId = jdbc.queryForObject("select id from payment where gateway = 'MANUAL' and student_current_account_id = (select student_current_account_id from invoice where id = ?)",
+                Long.class, invoiceId);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("director", "n/a",
+                        List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_DIRECTOR"))));
+        try {
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> revokeApproval.revokeBankTransferApproval(paymentId, "Cargado por error"))
+                    .isInstanceOf(com.red_escuela.backend.billing.payment.exception.IllegalPaymentStatusTransitionException.class);
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
+
+        assertThat(count("select count(*) from invoice where id = " + invoiceId + " and payment_status = 'PAID'")).isEqualTo(1);
+        assertThat(requestStatus(requested)).isEqualTo("CONFIRMED");
     }
 
     @Test
@@ -137,6 +220,10 @@ class AnnualUpfrontCashPaymentIT extends AbstractAnnualUpfrontRequestIT {
 
         assertThat(count("select count(*) from invoice where id = " + invoiceId + " and document_status = 'ISSUED' and payment_status in ('PENDING','OVERDUE')")).isEqualTo(1);
         assertThat(requestStatus(requested)).isEqualTo("CONFIRMED");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = (select student_current_account_id from invoice where id = ?)",
+                BigDecimal.class, invoiceId)).isEqualByComparingTo("0");
+        assertThat(count("select count(*) from current_account_entry where entry_type = 'DEBIT_NOTE_ISSUED' and student_current_account_id = (select student_current_account_id from invoice where id = "
+                + invoiceId + ")")).isZero();
         invariants.assertAllBillingInvariantsHold();
     }
 }

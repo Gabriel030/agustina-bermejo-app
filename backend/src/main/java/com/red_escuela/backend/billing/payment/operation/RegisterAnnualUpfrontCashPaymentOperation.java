@@ -20,6 +20,8 @@ import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.ReceiptInvoiceFact;
 import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRejections;
+import com.red_escuela.backend.billing.payment.policy.CashPaymentCheck;
+import com.red_escuela.backend.billing.payment.policy.CashPaymentRejections;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -42,18 +44,21 @@ public class RegisterAnnualUpfrontCashPaymentOperation implements BillingOperati
     private final CurrentAccountAllocationService allocationService;
     private final InvoiceAllocationQueryService invoiceQueries;
     private final PaymentRepository payments;
+    private final PolicySet<CashPaymentCheck> idempotencyKeyPolicies;
     private final PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontPolicies;
     private final AnnualUpfrontRequestPaymentTracker annualUpfrontRequests;
     private final Clock clock;
 
     public RegisterAnnualUpfrontCashPaymentOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                                      InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
+                                                     PolicySet<CashPaymentCheck> bankTransferReceiptIdempotencyKeyPolicySet,
                                                      PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontReceiptPolicySet, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests,
                                                      Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.invoiceQueries = invoiceQueries;
         this.payments = payments;
+        this.idempotencyKeyPolicies = bankTransferReceiptIdempotencyKeyPolicySet;
         this.annualUpfrontPolicies = annualUpfrontReceiptPolicySet;
         this.annualUpfrontRequests = annualUpfrontRequests;
         this.clock = clock;
@@ -71,7 +76,7 @@ public class RegisterAnnualUpfrontCashPaymentOperation implements BillingOperati
 
     @Override
     public List<String> validationMoments() {
-        return List.of(annualUpfrontPolicies.moment());
+        return List.of(idempotencyKeyPolicies.moment(), annualUpfrontPolicies.moment());
     }
 
     @Override
@@ -81,6 +86,8 @@ public class RegisterAnnualUpfrontCashPaymentOperation implements BillingOperati
 
     @Override
     public void requireValidContext(RegisterAnnualUpfrontCashPaymentCommand command) {
+        idempotencyKeyPolicies.evaluateRulesUntilFirstViolation(new CashPaymentCheck(null, null, null, false, null, null, command.idempotencyKey()))
+                .throwIfDenied(CashPaymentRejections::rejectionOf);
         annualUpfrontRequests.findInvoiceIdOfRequest(command.requestId()).orElseThrow(() -> new AnnualUpfrontRequestNotFoundException(command.requestId()));
     }
 
@@ -102,7 +109,7 @@ public class RegisterAnnualUpfrontCashPaymentOperation implements BillingOperati
         ReceiptInvoiceFact fact = new ReceiptInvoiceFact(annual.getId(), annual.getStudentCurrentAccountId(), annual.getCurrency(), false, annual.getPaymentStatus(), null,
                 annual.getAmounts().total().value(), false, awaiting, annual.getPaymentDeadline());
         annualUpfrontPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontReceiptCheck(List.of(fact), facts.isDiscarded(), facts.isPaymentAlreadyInitiated(), command.amount(),
-                now, today)).throwIfDenied(BankTransferReceiptRejections::rejectionOf);
+                now, today, true)).throwIfDenied(BankTransferReceiptRejections::rejectionOf);
         NonNegativeMoney amount = NonNegativeMoney.of(command.amount());
         Payment payment = payments.save(Payment.registerApprovedCashPayment(account, amount, today, new CashPaymentDetails(textOrNull(command.receiptNumber())),
                 command.idempotencyKey(), command.actor()));
