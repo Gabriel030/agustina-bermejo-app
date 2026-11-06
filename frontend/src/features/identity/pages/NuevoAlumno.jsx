@@ -95,6 +95,7 @@ const LAST_STEP = REGISTRATION_STEPS.length - 1;
 const REVIEW_STEP = LAST_STEP - 1;
 
 function RegistrationWizard({ onRegisterAnother }) {
+  'use no memo';
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const rolBase = usuario?.roles[0]?.toLowerCase();
@@ -115,8 +116,9 @@ function RegistrationWizard({ onRegisterAnother }) {
     trigger,
     getValues,
     setError,
-    formState: { errors },
+    formState: { errors: formErrors },
   } = useForm({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { documentType: 'DNI', dni: '', birthDate: '', sex: '', guardianRelationship: '', emergencyRelationship: '' } });
+  const errors = { ...formErrors };
   const values = useWatch({ control });
   const birthDate = values.birthDate;
   const minor = isMinor(birthDate);
