@@ -16,6 +16,7 @@ public class NoStoreResponseFilter extends OncePerRequestFilter {
     private static final String AUTH_PREFIX = "/auth/";
     private static final String ME_PATH = "/me";
     private static final String ME_PREFIX = "/me/";
+    private static final String PUBLIC_CERTIFICATES_PREFIX = "/public/certificates/";
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
@@ -29,6 +30,7 @@ public class NoStoreResponseFilter extends OncePerRequestFilter {
     }
 
     private static boolean isSensitive(String path) {
-        return path.startsWith(AUTH_PREFIX) || path.equals(ME_PATH) || path.startsWith(ME_PREFIX);
+        return path.startsWith(AUTH_PREFIX) || path.equals(ME_PATH) || path.startsWith(ME_PREFIX)
+                || path.startsWith(PUBLIC_CERTIFICATES_PREFIX);
     }
 }

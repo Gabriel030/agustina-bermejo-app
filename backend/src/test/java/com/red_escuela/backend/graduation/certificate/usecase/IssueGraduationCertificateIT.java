@@ -175,8 +175,8 @@ class IssueGraduationCertificateIT extends AbstractIntegrationTest {
     void partialUniqueIndexRejectsSecondValidCertificateForTheSameEnrollment() {
         GraduationCertificateResponse first = issue();
         GraduationCertificate duplicate = GraduationCertificate.issue(GraduationCertificateKind.PROGRAM, enrollment.getId(),
-                enrollment.getStudent().getId(), new CertificateCode("0000000000000001"),
-                repository.findById(first.id()).orElseThrow().getSnapshot(), "b".repeat(64), "0000000000000001.pdf",
+                enrollment.getStudent().getId(), new CertificateCode("00000000000000000000000001"),
+                repository.findById(first.id()).orElseThrow().getSnapshot(), "b".repeat(64), "00000000000000000000000001.pdf",
                 LocalDateTime.now(), enrollment.getStudent().getPerson().getId());
 
         assertThatThrownBy(() -> repository.saveAndFlush(duplicate)).isInstanceOf(DataIntegrityViolationException.class);

@@ -103,6 +103,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/payments/mp-webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/verify-email").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/modules").permitAll()
+                .requestMatchers(HttpMethod.GET, "/public/certificates/*").permitAll()
                 .requestMatchers("/platform/**").hasRole(PLATFORM_ADMIN_ROLE)
                 .requestMatchers("/me/modules").authenticated()
                 .requestMatchers(HttpMethod.GET, "/me").authenticated()

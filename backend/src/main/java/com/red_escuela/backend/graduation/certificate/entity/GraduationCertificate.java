@@ -36,7 +36,7 @@ public class GraduationCertificate {
     @Version
     private Long version;
 
-    @Column(name = "code", nullable = false, length = 16, updatable = false)
+    @Column(name = "code", nullable = false, length = 26, updatable = false)
     private String code;
 
     @Enumerated(EnumType.STRING)
@@ -80,6 +80,9 @@ public class GraduationCertificate {
 
     @Column(name = "registry_number", length = 20)
     private String registryNumber;
+
+    @Column(name = "revoked_at")
+    private LocalDateTime revokedAt;
 
     public static GraduationCertificate issue(GraduationCertificateKind kind, Long enrollmentId, Long studentId,
                                               CertificateCode code, CertificateSnapshot snapshot, String pdfSha256,
