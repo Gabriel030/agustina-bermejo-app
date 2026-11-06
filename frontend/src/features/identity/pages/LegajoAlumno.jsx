@@ -52,6 +52,13 @@ export function LegajoAlumno() {
   const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
   const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
 
+  const absences = {
+    studentName: legajo ? `${legajo.nombre} ${legajo.apellido}` : '',
+    canJustify: puedeAccionar,
+    authorName: [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' '),
+    roleBase: rolBase,
+  };
+
   const badge = ESTADO_STATUS_BADGE[legajo?.status];
 
   return (
@@ -114,6 +121,7 @@ export function LegajoAlumno() {
                 enrollmentKey={enrollmentKey}
                 onEnrollmentChange={handleEnrollmentChange}
                 onViewGrades={handleViewGrades}
+                absences={absences}
               />
             </TabsContent>
             <TabsContent value="evaluacion" className="mt-4">

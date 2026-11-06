@@ -11,6 +11,8 @@ Todas las propiedades se pueden sobrescribir por variable de entorno; los defaul
 
 Despliegue típico: `FORWARD_HEADERS_STRATEGY=native` y `TRUSTED_PROXIES_REGEX` con la IP (o red) del proxy del instituto. Poner `native` sin acotar la regex a los proxies reales permite falsificar la IP.
 
+**Verificación pública de certificados (`GET /public/certificates/{code}`):** el límite por IP usa `request.getRemoteAddr()` (IPv6 agrupado por /64). Sin `FORWARD_HEADERS_STRATEGY=native` y un `TRUSTED_PROXIES_REGEX` exacto a la IP del proxy, todos los visitantes comparten la IP del proxy y comparten un único bucket: un atacante lo agota y nadie puede verificar (DoS). Con la regex demasiado amplia se puede falsificar la IP y esquivar el límite. Es requisito de despliegue de esta ruta. Los logs de acceso de Tomcat y del proxy registran la URL con el código (es una credencial): desactivarlos o enmascararlos para `/public/certificates/` y `/verificar/`.
+
 ## Rate limit (en la app, buckets en memoria por instancia)
 
 Un `429` lleva `Retry-After` (segundos), `code=REQUEST_RATE_LIMIT_EXCEEDED` y `retryable=true`. Capacidad y recarga por minuto:

@@ -19,12 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CertificatePdfRendererTest {
 
-    private static final String URL = "https://app.example/verificar/7QK3M9XH2VBN4T8R";
+    private static final String URL = "https://app.example/verificar/7QK3M9XH2VBN4T8R5W6YZ0A1B2";
 
     private final CertificatePdfRenderer renderer = new CertificatePdfRenderer(new QrMatrixFactory());
     private final CertificateTemplateDefinition template = new BuiltInCertificateTemplate()
             .resolve(GraduationCertificateKind.PROGRAM, 1L);
-    private final CertificateCode code = new CertificateCode("7QK3M9XH2VBN4T8R");
+    private final CertificateCode code = new CertificateCode("7QK3M9XH2VBN4T8R5W6YZ0A1B2");
 
     private CertificateSnapshot snapshotOf(String holder) {
         return new CertificateSnapshot(holder, "DNI", "30123456", "la carrera", "Tecnicatura en Enfermería", "UNDERGRADUATE",
@@ -38,7 +38,7 @@ class CertificatePdfRendererTest {
 
         try (PDDocument document = Loader.loadPDF(pdf)) {
             String text = new PDFTextStripper().getText(document);
-            assertThat(text).contains("PÉREZ, ANA").contains("7QK3-M9XH-2VBN-4T8R").contains("Tecnicatura en Enfermería");
+            assertThat(text).contains("PÉREZ, ANA").contains("7QK3M-9XH2V-BN4T8-R5W6Y-Z0A1B2").contains("Tecnicatura en Enfermería");
         }
     }
 

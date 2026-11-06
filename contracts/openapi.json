@@ -6023,7 +6023,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attachmentUrl", "reason" ],
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "LateFeeReinstatementResponse" : {
@@ -8980,6 +8980,55 @@
           }
         },
         "required" : [ "documentNumber", "documentType", "email", "firstName", "institutionName", "lastName", "reason" ],
+        "type" : "object"
+      },
+      "PublicCertificateView" : {
+        "properties" : {
+          "documentKind" : {
+            "enum" : [ "GRADUATION", "REGULAR" ],
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "graduationDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "holderFullName" : {
+            "type" : "string"
+          },
+          "hours" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "issuedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "maskedDocument" : {
+            "type" : "string"
+          },
+          "registryNumber" : {
+            "type" : "string"
+          },
+          "revokedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "VALID", "EXPIRED", "REVOKED" ],
+            "type" : "string"
+          },
+          "titleKind" : {
+            "type" : "string"
+          },
+          "titleName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentKind", "expiresAt", "graduationDate", "holderFullName", "hours", "issuedAt", "maskedDocument", "registryNumber", "revokedAt", "status", "titleKind", "titleName" ],
         "type" : "object"
       },
       "PublicModulesResponse" : {
@@ -57068,6 +57117,122 @@
           }
         },
         "tags" : [ "prospect-controller" ]
+      }
+    },
+    "/public/certificates/{code}" : {
+      "get" : {
+        "operationId" : "PublicCertificate_verify",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PublicCertificateView"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "public-certificate-controller" ]
       }
     },
     "/public/modules" : {
