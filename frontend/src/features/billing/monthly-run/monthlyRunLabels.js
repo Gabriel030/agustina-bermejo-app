@@ -2,6 +2,7 @@ import { formatDate } from '@/lib/billing';
 
 export const RUN_STATUS_LABELS = {
   RUNNING: 'En curso',
+  AWAITING_REVIEW: 'En revisión',
   COMPLETED: 'Completada',
   COMPLETED_WITH_FAILURES: 'Con fallas',
   FAILED: 'Fallida',
@@ -9,6 +10,7 @@ export const RUN_STATUS_LABELS = {
 
 export const RUN_STATUS_TONES = {
   RUNNING: 'accent',
+  AWAITING_REVIEW: 'warning',
   COMPLETED: 'success',
   COMPLETED_WITH_FAILURES: 'warning',
   FAILED: 'danger',

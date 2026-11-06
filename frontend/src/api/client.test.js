@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -13,10 +14,10 @@ describe('apiFetch', () => {
     localStorage.clear();
   });
 
-  function refreshHandler(counter) {
+  function refreshHandler(counter, gate) {
     return http.post(`${API}/auth/refresh`, async () => {
       counter.calls += 1;
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      if (gate) await gate.promise;
       return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
     });
   }
@@ -24,16 +25,23 @@ describe('apiFetch', () => {
   it('two concurrent requests answered with 401 trigger a single refresh and both are retried', async () => {
     localStorage.setItem('refreshToken', 'refresh-1');
     const refresh = { calls: 0 };
+    const refreshGate = createDeferred();
+    let unauthorized = 0;
     server.use(
-      http.get(`${API}/protegido`, ({ request }) =>
-        request.headers.get('authorization') === 'Bearer access-2'
-          ? HttpResponse.json({ id: new URL(request.url).searchParams.get('id') })
-          : new HttpResponse(null, { status: 401 }),
-      ),
-      refreshHandler(refresh),
+      http.get(`${API}/protegido`, ({ request }) => {
+        if (request.headers.get('authorization') === 'Bearer access-2') {
+          return HttpResponse.json({ id: new URL(request.url).searchParams.get('id') });
+        }
+        unauthorized += 1;
+        return new HttpResponse(null, { status: 401 });
+      }),
+      refreshHandler(refresh, refreshGate),
     );
 
-    const results = await Promise.all([apiFetch('/protegido?id=a'), apiFetch('/protegido?id=b')]);
+    const pending = Promise.all([apiFetch('/protegido?id=a'), apiFetch('/protegido?id=b')]);
+    await vi.waitFor(() => expect(unauthorized).toBe(2));
+    refreshGate.resolve();
+    const results = await pending;
 
     expect(results).toEqual([{ id: 'a' }, { id: 'b' }]);
     expect(refresh.calls).toBe(1);
@@ -110,10 +118,13 @@ describe('apiFetch', () => {
     localStorage.setItem('refreshToken', 'refresh-1');
     setAccessToken('access-1');
     const refresh = { calls: 0 };
+    const slowGate = createDeferred();
+    let slowArrived = false;
     server.use(
       http.get(`${API}/protegido`, async ({ request }) => {
         if (new URL(request.url).searchParams.get('speed') === 'slow') {
-          await new Promise((resolve) => setTimeout(resolve, 80));
+          slowArrived = true;
+          await slowGate.promise;
         }
         return request.headers.get('authorization') === 'Bearer access-2'
           ? HttpResponse.json({ ok: true })
@@ -122,7 +133,11 @@ describe('apiFetch', () => {
       refreshHandler(refresh),
     );
 
-    await Promise.all([apiFetch('/protegido?speed=slow'), apiFetch('/protegido?speed=fast')]);
+    const slow = apiFetch('/protegido?speed=slow');
+    await vi.waitFor(() => expect(slowArrived).toBe(true));
+    await apiFetch('/protegido?speed=fast');
+    slowGate.resolve();
+    await slow;
 
     expect(refresh.calls).toBe(1);
   });

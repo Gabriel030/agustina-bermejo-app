@@ -18,7 +18,7 @@ function wrapper(client) {
 describe('useMisNotificaciones', () => {
   it('notificationsQueryIsMarkedForOfflineAndStopsPollingWhenOffline', async () => {
     server.use(http.get(`${API}/me/notifications`, () => HttpResponse.json([])))
-    const client = new QueryClient()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { result } = renderHook(() => useMisNotificaciones(), { wrapper: wrapper(client) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 

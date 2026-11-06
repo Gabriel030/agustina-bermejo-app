@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -679,11 +680,12 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
 
   it('sends the payment once when the confirm button is tapped twice', async () => {
     let registers = 0;
+    const registration = createDeferred();
     server.use(
       http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
       http.post(`${API}/students/2/cash-payments`, async () => {
         registers += 1;
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        await registration.promise;
         return HttpResponse.json({ paymentId: 9 }, { status: 201 });
       }),
     );
@@ -698,6 +700,8 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
       confirm.click();
     });
 
+    await vi.waitFor(() => expect(registers).toBeGreaterThan(0));
+    registration.resolve();
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(registers).toBe(1);
   });
@@ -715,9 +719,10 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     const user = userEvent.setup();
     renderPage();
     const { dialog } = await failConfirmWithNetworkError(user);
+    const reload = createDeferred();
     server.use(
       http.get(`${API}/students/2/billing-overview`, async () => {
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await reload.promise;
         return HttpResponse.json([]);
       }),
     );
@@ -725,7 +730,8 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
 
     const entry = await screen.findByRole('button', { name: /Cobrar en efectivo/ });
     expect(entry).toBeDisabled();
-    await vi.waitFor(() => expect(entry).toBeEnabled(), { timeout: 3000 });
+    reload.resolve();
+    await vi.waitFor(() => expect(entry).toBeEnabled());
   });
 
   it('blocks charging with a visible retry when the student account cannot be reloaded', async () => {
@@ -742,10 +748,11 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
 
   it('asks for the preview once when the review button is tapped twice', async () => {
     let previews = 0;
+    const previewGate = createDeferred();
     server.use(
       http.post(`${API}/students/2/cash-payments/preview`, async () => {
         previews += 1;
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        await previewGate.promise;
         return HttpResponse.json(previewOf());
       }),
     );
@@ -760,6 +767,8 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
       review.click();
     });
 
+    await vi.waitFor(() => expect(previews).toBeGreaterThan(0));
+    previewGate.resolve();
     await within(dialog).findByText('Cuota mensual · sep 2026');
     expect(previews).toBe(1);
   });

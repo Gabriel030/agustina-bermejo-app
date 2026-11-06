@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
+import { createDeferred } from '@/test/deferred';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoPagos } from '@/pages/AlumnoPagos';
@@ -40,22 +41,26 @@ describe('AlumnoPagos', () => {
   });
 
   it('no ofrece pagar la matrícula de ingreso cuando ya está paga', async () => {
+    const applications = createDeferred();
     server.use(
-      http.get(`${API}/me/program-enrollment-applications`, () =>
-        HttpResponse.json([
+      http.get(`${API}/me/program-enrollment-applications`, async () => {
+        await applications.promise;
+        return HttpResponse.json([
           {
             id: 3,
             programName: 'Diseño Gráfico',
             status: 'APPROVED',
             admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2026-03-20', paymentStatus: 'PAID' },
           },
-        ]),
-      ),
+        ]);
+      }),
     );
-    renderPagos();
+    const { container } = renderPagos();
 
     await screen.findByPlaceholderText('Buscar curso o carrera…');
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(container.querySelector('.skeleton-shimmer.h-28')).toBeInTheDocument();
+    applications.resolve();
+    await waitFor(() => expect(container.querySelector('.skeleton-shimmer.h-28')).not.toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
   });
 

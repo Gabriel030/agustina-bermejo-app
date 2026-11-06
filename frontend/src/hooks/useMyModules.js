@@ -16,6 +16,7 @@ export function useMyModules({ enabled = true } = {}) {
     isError: enabled && query.isError,
     error: query.error,
     refetch: query.refetch,
+    billingMode,
     billingEnabled: Boolean(billingMode) && billingMode !== 'OFF',
   };
 }

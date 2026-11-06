@@ -67,7 +67,7 @@ describe('offline cache lifecycle', () => {
   }
 
   function renderProvider() {
-    queryClient = new QueryClient();
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     queryClient.setQueryData(['me', 'notifications'], [{ id: 1 }]);
     return render(
       <QueryClientProvider client={queryClient}>
@@ -156,7 +156,7 @@ describe('session restore failures', () => {
   }
 
   function renderProvider() {
-    queryClient = new QueryClient();
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
