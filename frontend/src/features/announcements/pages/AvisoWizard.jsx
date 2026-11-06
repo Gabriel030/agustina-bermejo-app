@@ -15,6 +15,7 @@ import { TiraDeConsecuencias } from '../components/TiraDeConsecuencias';
 import { RosterSegmento } from '../components/RosterSegmento';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
+import { useAnnouncementEmailSetting } from '../hooks/useAnnouncementEmailSetting';
 import { useCrearAviso } from '../hooks/useCrearAviso';
 import { aPayload, mensajeDeErrorDeAviso, SPEC_INICIAL, VALORES_INICIALES } from '../lib/formularioDeAviso';
 
@@ -40,6 +41,7 @@ export function AvisoWizard() {
 
   const { data: segmentos, isLoading: cargandoSegmentos, isError: sinAcceso } = useSegmentosDeAudiencia(sectionId, tipo);
   const { data: preview, recalculando } = usePreviewDeAudiencia(sectionId, tipo, spec);
+  const emailEnabled = useAnnouncementEmailSetting();
   const crearAviso = useCrearAviso(sectionId, tipo);
 
   const volverA = `/docente/mis-comisiones/${sectionId}?tab=avisos${esCurso ? '&type=COURSE' : ''}`;
@@ -174,6 +176,8 @@ export function AvisoWizard() {
               total={preview?.totalInSection ?? 0}
               sinCorregir={!!preview?.hasUngradedInstances}
               scheduledFor={programado ? valores.scheduledFor : null}
+              urgent={!!valores.urgent}
+              emailEnabled={emailEnabled}
             />
           </SeccionMensaje>
 
