@@ -4,10 +4,14 @@ import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
+import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
@@ -17,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +35,8 @@ class SectionFinderTest {
     private SubjectSectionRepository programSectionRepository;
     @Mock
     private CourseSubjectSectionRepository courseSectionRepository;
+    @Mock
+    private AcademicOfferingCycleRepository cycleRepository;
     @InjectMocks
     private SectionFinder queries;
 
@@ -135,6 +142,41 @@ class SectionFinderTest {
         assertThat(queries.isEvaluationSchemeAssigned(1L)).isTrue();
         assertThat(queries.isEvaluationSchemeAssigned(2L)).isTrue();
         assertThat(queries.isEvaluationSchemeAssigned(3L)).isFalse();
+    }
+
+    @Test
+    void listSectionsOfCycleReturnsProgramSectionsForProgramCycle() {
+        var cycle = new AcademicOfferingCycle();
+        cycle.setProgram(new Program());
+        when(cycleRepository.findById(12L)).thenReturn(Optional.of(cycle));
+        when(programSectionRepository.findByAcademicOfferingCycleId(12L))
+                .thenReturn(List.of(programSection(5L, 7L, 8L, 30)));
+
+        var sections = queries.listSectionsOfCycle(12L);
+
+        assertThat(sections).containsExactly(new CycleSectionRef(SectionKind.PROGRAM, 5L, "Comision A", 30));
+    }
+
+    @Test
+    void listSectionsOfCycleReturnsCourseSectionsForCourseCycle() {
+        var cycle = new AcademicOfferingCycle();
+        var section = new CourseSubjectSection();
+        section.setId(6L);
+        section.setName("Curso B");
+        section.setCapacity(20);
+        when(cycleRepository.findById(13L)).thenReturn(Optional.of(cycle));
+        when(courseSectionRepository.findByAcademicOfferingCycleId(13L)).thenReturn(List.of(section));
+
+        var sections = queries.listSectionsOfCycle(13L);
+
+        assertThat(sections).containsExactly(new CycleSectionRef(SectionKind.COURSE, 6L, "Curso B", 20));
+    }
+
+    @Test
+    void listSectionsOfCycleThrowsWhenCycleIsMissing() {
+        when(cycleRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> queries.listSectionsOfCycle(99L)).isInstanceOf(CycleNotFoundException.class);
     }
 
     private SubjectSection programSection(Long id, Long subjectId, Long termId, int capacity) {

@@ -10,8 +10,11 @@ import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { invoiceFixture, money } from '@/test/fixtures/invoices';
 import { receiptFixture, receiptInstallmentFixture } from '@/test/fixtures/receipts';
 import { axe } from '@/test/axe';
+import { installFixedClock } from '@/test/fixedClock';
 
 const API = 'http://localhost:8080';
+
+installFixedClock();
 
 const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'] }));
 

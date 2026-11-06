@@ -1,9 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { QueryClientContext } from '@tanstack/react-query';
-import { apiFetch, setAccessToken, setSessionExpiredHandler } from '@/api/client';
-import { claimOfflineCache, purgeOfflineData } from '@/api/offlinePersistence';
+import { apiFetch, setAccessToken, setOfflineSessionMode, setSessionExpiredHandler } from '@/api/client';
+import { claimOfflineCache, purgeOfflineData, readOfflineProfile, storeOfflineProfile } from '@/api/offlinePersistence';
 
 const AuthContext = createContext(null);
+
+const RESTORE_RETRY_DELAYS_MS = [2000, 5000, 15000, 30000, 60000];
+
+function isSessionRejected(error) {
+  return error?.status === 401 || error?.status === 403 || error?.name === 'AuthError';
+}
 
 let storedSessionRestoration = null;
 
@@ -32,22 +38,29 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [loggedOut, setLoggedOut] = useState(false);
+  const [sessionPending, setSessionPending] = useState(false);
+  const [restoreAttempts, setRestoreAttempts] = useState(0);
+  const [offlineProfile, setOfflineProfile] = useState(null);
   const queryClient = useContext(QueryClientContext);
 
   const limpiarSesion = useCallback(() => {
     setAccessToken(null);
     localStorage.removeItem('refreshToken');
     setUsuario(null);
+    setOfflineProfile(null);
+    setOfflineSessionMode(false);
     purgeOfflineData(queryClient);
   }, [queryClient]);
 
   const beginSession = useCallback(
     async (tokens) => {
       await purgeOfflineData(queryClient);
+      setOfflineSessionMode(false);
       setAccessToken(tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
       const perfil = await apiFetch('/me');
       await claimOfflineCache(perfil.id, queryClient);
+      await storeOfflineProfile(perfil);
       setUsuario(perfil);
       setLoggedOut(false);
       return perfil;
@@ -59,21 +72,61 @@ export function AuthProvider({ children }) {
     setSessionExpiredHandler(limpiarSesion);
   }, [limpiarSesion]);
 
+  const attemptRestore = useCallback(async () => {
+    try {
+      const perfil = await restoreStoredSession();
+      if (perfil) {
+        await claimOfflineCache(perfil.id, queryClient);
+        await storeOfflineProfile(perfil);
+        setUsuario(perfil);
+      }
+      setOfflineSessionMode(false);
+      setOfflineProfile(null);
+      setSessionPending(false);
+      setRestoreAttempts(0);
+      queryClient?.invalidateQueries();
+    } catch (error) {
+      if (isSessionRejected(error)) {
+        setSessionPending(false);
+        limpiarSesion();
+      } else {
+        setOfflineSessionMode(true);
+        setOfflineProfile(await readOfflineProfile());
+        setSessionPending(true);
+        setRestoreAttempts((attempts) => attempts + 1);
+      }
+    } finally {
+      setCargando(false);
+    }
+  }, [queryClient, limpiarSesion]);
+
   useEffect(() => {
     if (!localStorage.getItem('refreshToken')) {
       setCargando(false);
       return;
     }
-    restoreStoredSession()
-      .then(async (perfil) => {
-        if (!perfil) return;
-        await claimOfflineCache(perfil.id, queryClient);
-        setUsuario(perfil);
-      })
-      .catch(limpiarSesion)
-      .finally(() => setCargando(false));
+    attemptRestore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!sessionPending || restoreAttempts === 0 || restoreAttempts > RESTORE_RETRY_DELAYS_MS.length) return undefined;
+    const timer = setTimeout(attemptRestore, RESTORE_RETRY_DELAYS_MS[restoreAttempts - 1]);
+    return () => clearTimeout(timer);
+  }, [sessionPending, restoreAttempts, attemptRestore]);
+
+  useEffect(() => {
+    if (!sessionPending) return undefined;
+    const retryWhenVisible = () => {
+      if (document.visibilityState === 'visible') attemptRestore();
+    };
+    window.addEventListener('online', attemptRestore);
+    document.addEventListener('visibilitychange', retryWhenVisible);
+    return () => {
+      window.removeEventListener('online', attemptRestore);
+      document.removeEventListener('visibilitychange', retryWhenVisible);
+    };
+  }, [sessionPending, attemptRestore]);
 
   const login = useCallback(async (username, password) => {
     const tokens = await apiFetch('/auth/login', {
@@ -118,6 +171,7 @@ export function AuthProvider({ children }) {
   // para que el resto de la app vea su rol nuevo.
   const refrescarPerfil = useCallback(async () => {
     const perfil = await apiFetch('/me');
+    await storeOfflineProfile(perfil);
     setUsuario(perfil);
     setLoggedOut(false);
     return perfil;
@@ -137,9 +191,11 @@ export function AuthProvider({ children }) {
     }
   }, [limpiarSesion]);
 
+  const shownUser = usuario ?? (sessionPending ? offlineProfile : null);
+
   const value = useMemo(
-    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut }),
-    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut],
+    () => ({ usuario: shownUser, roles: shownUser?.roles ?? [], offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionPending, retrySession: attemptRestore }),
+    [shownUser, offlineProfile, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut, sessionPending, attemptRestore],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

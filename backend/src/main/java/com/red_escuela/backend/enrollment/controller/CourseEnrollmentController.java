@@ -39,7 +39,7 @@ public class CourseEnrollmentController {
 
     @PostMapping("/students/{id}/course-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public CourseEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
         return CourseEnrollmentResponse.from(courseEnrollmentService.enroll(id, request));
     }
