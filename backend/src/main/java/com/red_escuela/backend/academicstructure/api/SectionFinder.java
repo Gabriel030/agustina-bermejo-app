@@ -2,7 +2,9 @@ package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -18,11 +21,26 @@ public class SectionFinder {
 
     private final SubjectSectionRepository programSectionRepository;
     private final CourseSubjectSectionRepository courseSectionRepository;
+    private final AcademicOfferingCycleRepository cycleRepository;
 
     public SectionFinder(SubjectSectionRepository programSectionRepository,
-                                    CourseSubjectSectionRepository courseSectionRepository) {
+                                    CourseSubjectSectionRepository courseSectionRepository,
+                                    AcademicOfferingCycleRepository cycleRepository) {
         this.programSectionRepository = programSectionRepository;
         this.courseSectionRepository = courseSectionRepository;
+        this.cycleRepository = cycleRepository;
+    }
+
+    public List<CycleSectionRef> listSectionsOfCycle(Long cycleId) {
+        var cycle = cycleRepository.findById(cycleId).orElseThrow(() -> new CycleNotFoundException(cycleId));
+        if (cycle.getProgram() != null) {
+            return programSectionRepository.findByAcademicOfferingCycleId(cycleId).stream()
+                    .map(s -> new CycleSectionRef(SectionKind.PROGRAM, s.getId(), s.getName(), s.getCapacity()))
+                    .toList();
+        }
+        return courseSectionRepository.findByAcademicOfferingCycleId(cycleId).stream()
+                .map(s -> new CycleSectionRef(SectionKind.COURSE, s.getId(), s.getName(), s.getCapacity()))
+                .toList();
     }
 
     public ProgramSectionView findProgramSection(Long id) {

@@ -52,6 +52,20 @@ class AnnualUpfrontRequestPoliciesTest {
     }
 
     @Test
+    @Tag("D-524")
+    void theSupportedLineCountCoversTenElevenAndTwelveInstallmentsButNotTheirNeighbours() {
+        AnnualUpfrontRequestCheck base = allowedOn(LocalDate.of(2027, 2, 1));
+
+        assertThat(firstCodeOf(with(base, false, false, null, false, 10, true))).isNull();
+        assertThat(firstCodeOf(with(base, false, false, null, false, 11, true))).isNull();
+        assertThat(firstCodeOf(with(base, false, false, null, false, 12, true))).isNull();
+        assertThat(firstCodeOf(with(base, false, false, null, false, 13, true))).isEqualTo("ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED");
+        assertThat(firstCodeOf(with(base, false, false, null, false, 0, true))).isEqualTo("ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED");
+        assertThat(new AnnualUpfrontLineCountSupportedPolicy().evaluateRule(with(base, false, false, null, false, 13, true)).reason())
+                .isEqualTo("El año lectivo no tiene entre 1 y 12 cuotas para pagar por adelantado.");
+    }
+
+    @Test
     @Tag("D-156")
     void aYearWithoutAnnualUpfrontSettingsIsClosed() {
         AnnualUpfrontRequestCheck withoutDeadline = new AnnualUpfrontRequestCheck(true, LocalDate.of(2027, 2, 1), null, false, false, null, false, 10, true);
@@ -93,7 +107,7 @@ class AnnualUpfrontRequestPoliciesTest {
         AnnualUpfrontRequestCheck base = allowedOn(LocalDate.of(2027, 2, 1));
 
         assertThat(firstCodeOf(with(base, false, false, null, false, 0, true))).isEqualTo("ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED");
-        assertThat(firstCodeOf(with(base, false, false, null, false, 11, true))).isEqualTo("ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED");
+        assertThat(firstCodeOf(with(base, false, false, null, false, 13, true))).isEqualTo("ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED");
         assertThat(firstCodeOf(with(base, false, false, null, false, 1, true))).isNull();
         assertThat(firstCodeOf(with(base, false, false, null, false, 10, true))).isNull();
     }

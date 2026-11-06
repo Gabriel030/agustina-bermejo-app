@@ -1,7 +1,8 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.dto.AuthTokens;
+import com.red_escuela.backend.identity.dto.ClientContext;
 
 public interface RefreshTokenUseCase {
-    AuthTokens refresh(String rawRefreshToken);
+    AuthTokens refresh(String rawRefreshToken, ClientContext clientContext);
 }

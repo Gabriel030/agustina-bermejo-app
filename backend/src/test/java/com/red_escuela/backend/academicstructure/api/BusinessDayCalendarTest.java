@@ -43,4 +43,22 @@ class BusinessDayCalendarTest {
     void thePositionMustBeAtLeastOne() {
         assertThatThrownBy(() -> calendarWithHolidays().nthBusinessDayOnOrBefore(MONDAY, 0)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void nthBusinessDayAfterSkipsWeekendsAndHolidays() {
+        LocalDate friday = LocalDate.of(2038, 5, 28);
+        assertThat(calendarWithHolidays().nthBusinessDayAfter(friday, 1)).isEqualTo(MONDAY);
+        assertThat(calendarWithHolidays(MONDAY).nthBusinessDayAfter(friday, 1)).isEqualTo(LocalDate.of(2038, 6, 1));
+        assertThat(calendarWithHolidays().nthBusinessDayAfter(friday, 5)).isEqualTo(LocalDate.of(2038, 6, 4));
+    }
+
+    @Test
+    void nthBusinessDayAfterPositionZeroReturnsTheSameDate() {
+        assertThat(calendarWithHolidays().nthBusinessDayAfter(LocalDate.of(2038, 5, 29), 0)).isEqualTo(LocalDate.of(2038, 5, 29));
+    }
+
+    @Test
+    void nthBusinessDayAfterRejectsANegativePosition() {
+        assertThatThrownBy(() -> calendarWithHolidays().nthBusinessDayAfter(MONDAY, -1)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

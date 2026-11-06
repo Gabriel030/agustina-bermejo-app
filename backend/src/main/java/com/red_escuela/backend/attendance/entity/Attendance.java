@@ -78,6 +78,12 @@ public class Attendance {
         }
     }
 
+    public Long studentId() {
+        return programSubjectSectionEnrollment != null
+                ? programSubjectSectionEnrollment.getStudent().getId()
+                : courseSubjectSectionEnrollment.getStudent().getId();
+    }
+
     public boolean belongsTo(Student student) {
         Student owner = programSubjectSectionEnrollment != null
                 ? programSubjectSectionEnrollment.getStudent()

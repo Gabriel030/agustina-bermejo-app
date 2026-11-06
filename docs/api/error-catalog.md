@@ -180,6 +180,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_SHIFT_REQUIRED` | no | `SectionShiftRequiredException` | academicstructure |
 | `SEGMENT_NOT_AVAILABLE_FOR_SECTION` | no | `SegmentNotAvailableForSectionException` | announcement |
 | `SLOT_OUTSIDE_SHIFT` | no | `SlotOutsideShiftException` | academicstructure |
+| `STANDING_EVIDENCE_INVALID` | no | `StandingEvidenceInvalidException` | graduation |
+| `STANDING_NOT_CONFIRMED` | no | `StandingNotConfirmedException` | graduation |
 | `STUDENT_CURRENT_ACCOUNT_CURRENCY_MISMATCH` | no | `StudentCurrentAccountCurrencyMismatchException` | billing |
 | `STUDENT_NOT_ACTIVE` | no | `StudentNotActiveException` | identity |
 | `STUDENT_NOT_CONFIRMED` | no | `StudentNotConfirmedException` | identity |
@@ -282,6 +284,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PROMOTION_NOT_FOUND` | no | `PromotionNotFoundException` | billing |
 | `RECEIPT_INVOICE_OF_ANOTHER_ACCOUNT` | no | `ReceiptInvoiceOfAnotherAccountException` | billing |
 | `REFUND_NOT_FOUND` | no | `RefundNotFoundException` | billing |
+| `REGULAR_CERTIFICATE_NOT_FOUND` | no | `RegularCertificateNotFoundException` | graduation |
 | `REMINDER_SCHEDULE_TARGET_NOT_FOUND` | no | `ReminderScheduleTargetNotFoundException` | billing |
 | `ROLE_NOT_FOUND` | no | `RoleNotFoundException` | identity |
 | `SECTION_ENROLLMENT_NOT_FOUND` | no | `SectionEnrollmentNotFoundException` | enrollment |
@@ -326,6 +329,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CLASS_SESSION_ALREADY_CANCELED` | no | `ClassSessionAlreadyCanceledException` | attendance |
 | `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
+| `CONCURRENT_REGULAR_CERTIFICATE_ISSUE` | no | `ConcurrentRegularCertificateIssueException` | graduation |
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
 | `COURSE_ADMISSION_ALREADY_CHARGED` | no | `CourseAdmissionAlreadyChargedException` | enrollment |
 | `COURSE_ADMISSION_CHARGE_REJECTED` | no | `CourseAdmissionChargeRejectedException` | enrollment |
@@ -403,6 +407,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVOICE_LINE_NOT_ALLOWED_FOR_INVOICE_TYPE` | no | `InvoiceLineNotAllowedForInvoiceTypeException` | billing |
 | `INVOICE_NOT_PAYABLE` | no | `InvoiceNotPayableException` | billing |
 | `ISSUED_INVOICE_CANNOT_BE_MODIFIED` | no | `IssuedInvoiceCannotBeModifiedException` | billing |
+| `JUSTIFICATION_DEADLINE_EXPIRED` | no | `JustificationDeadlineExpiredException` | attendance |
 | `LATE_FEE_CORRECTION_REJECTED` | no | `LateFeeCorrectionRejectedException` | billing |
 | `LATE_FEE_ISSUING_REJECTED` | no | `LateFeeIssuingRejectedException` | billing |
 | `LEGACY_RECEIPT_PENDING_ON_INVOICE` | no | `LegacyReceiptPendingOnInvoiceException` | billing |
@@ -411,6 +416,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `MONTHLY_INVOICE_RUN_ALREADY_EXISTS` | no | `MonthlyInvoiceRunAlreadyExistsException` | billing |
 | `MONTHLY_INVOICE_RUN_NOT_AWAITING_REVIEW` | no | `MonthlyInvoiceRunNotAwaitingReviewException` | billing |
 | `NIGHTLY_BILLING_NOT_COMPLETED` | no | `NightlyBillingNotCompletedException` | billing |
+| `NOT_REGULAR` | no | `NotRegularException` | graduation |
 | `NO_ACTIVE_PAYMENT_PLAN` | no | `NoActivePaymentPlanException` | billing |
 | `NO_EFFECTIVE_CONFIGURATION` | no | `NoEffectiveConfigurationException` | billing |
 | `NO_EFFECTIVE_PRICE` | no | `NoEffectivePriceException` | billing |
@@ -449,6 +455,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `REFUND_EXCEEDS_AVAILABLE_AMOUNT` | no | `RefundExceedsAvailableAmountException` | billing |
 | `REFUND_METHOD_MISMATCH` | no | `RefundMethodMismatchException` | billing |
 | `REFUND_REQUEST_NOT_PENDING` | no | `RefundRequestNotPendingException` | billing |
+| `REGULAR_CERTIFICATE_ALREADY_ISSUED` | no | `RegularCertificateAlreadyIssuedException` | graduation |
 | `RUN_ITEM_NOT_RETRYABLE` | no | `RunItemNotRetryableException` | billing |
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
@@ -462,6 +469,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
+| `STUDENT_HAS_DEBT` | no | `StudentHasDebtException` | graduation |
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
@@ -515,6 +523,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | Método | Ruta | Handler |
 |---|---|---|
 | POST | `/me/program-enrollments/{id}/annual-upfront-requests` | `AnnualUpfrontRequestController#requestAnnualUpfront` |
+| POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/approvals` | `MonthlyInvoiceRunController#approveDraftInvoices` |
 
 ### Idempotency-Key opcional
 
@@ -544,6 +553,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/attendance/change-requests/{id}/reject` | `AttendanceChangeRequestController#reject` |
 | POST | `/attendance/{id}/approve-justification` | `AttendanceController#approveJustification` |
 | POST | `/attendance/{id}/change-requests` | `AttendanceChangeRequestController#create` |
+| POST | `/attendance/{id}/justification-proof` | `AttendanceController#submitJustificationProof` |
 | POST | `/attendance/{id}/justify` | `AttendanceController#justify` |
 | POST | `/attendance/{id}/reject-justification` | `AttendanceController#rejectJustification` |
 | POST | `/auth/forgot-password` | `AuthController#forgotPassword` |
@@ -642,6 +652,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/section-evaluation-configs/{sectionId}/submit` | `MeSectionEvaluationConfigController#submitForApproval` |
 | POST | `/monthly-invoice-runs/manual-issuances` | `ManualMonthlyInvoiceIssuanceController#issueMonthlyInvoicesManually` |
 | POST | `/monthly-invoice-runs/simulations` | `MonthlyInvoiceSimulationController#simulateMonthlyInvoices` |
+| POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards` | `MonthlyInvoiceRunController#discardDraftInvoices` |
 | POST | `/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries` | `MonthlyInvoiceRunController#retryItem` |
 | POST | `/payment-config/qr` | `PaymentGatewayConfigController#uploadQr` |
 | POST | `/payments/mp-webhook` | `MpWebhookController#webhook` |
@@ -688,6 +699,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
+| POST | `/regular-certificates` | `RegularCertificateController#issue` |
 | POST | `/section-enrollments/{id}/change-section` | `SubjectSectionEnrollmentController#changeSection` |
 | POST | `/section-enrollments/{id}/grade-items` | `GradeItemController#loadProgramEnrollmentGrade` |
 | POST | `/section-enrollments/{id}/withdraw` | `SubjectSectionEnrollmentController#withdraw` |

@@ -22,6 +22,20 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     List<RefreshToken> findByPerson(Person person);
 
     @Modifying
-    @Query("update RefreshToken rt set rt.revoked = true where rt.tokenHash = :tokenHash and rt.revoked = false")
-    int revokeIfActive(@Param("tokenHash") String tokenHash);
+    @Query("update RefreshToken rt set rt.revoked = true, rt.rotatedAt = :rotatedAt, rt.rotatedUserAgentHash = :userAgentHash "
+            + "where rt.tokenHash = :tokenHash and rt.revoked = false")
+    int rotateIfActive(@Param("tokenHash") String tokenHash, @Param("rotatedAt") LocalDateTime rotatedAt,
+                       @Param("userAgentHash") String userAgentHash);
+
+    @Modifying
+    @Query("update RefreshToken rt set rt.graceUsed = true where rt.id = :id")
+    int disableGraceById(@Param("id") Long id);
+
+    @Modifying
+    @Query("update RefreshToken rt set rt.graceUsed = true where rt.tokenHash = :tokenHash and rt.graceUsed = false")
+    int markGraceUsedIfAvailable(@Param("tokenHash") String tokenHash);
+
+    @Query("select rt.id as id, rt.person as person, rt.revoked as revoked, rt.expiresAt as expiresAt, rt.rotatedAt as rotatedAt, "
+            + "rt.rotatedUserAgentHash as rotatedUserAgentHash, rt.graceUsed as graceUsed from RefreshToken rt where rt.tokenHash = :tokenHash")
+    Optional<RefreshTokenState> findStateByTokenHash(@Param("tokenHash") String tokenHash);
 }

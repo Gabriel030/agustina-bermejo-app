@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicrecord.service;
 
+import com.red_escuela.backend.academicrecord.dto.MyScheduleItemResponse;
 import com.red_escuela.backend.academicrecord.dto.StudentCourseSectionEnrollmentResponse;
 import com.red_escuela.backend.enrollment.api.CourseSectionEnrollmentReader;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,12 @@ public class AcademicRecordCourseSectionEnrollmentFinder {
     public List<StudentCourseSectionEnrollmentResponse> listOfStudent(Long studentId, Long courseEnrollmentId) {
         return courseSectionEnrollmentReader.listOfStudent(studentId, courseEnrollmentId).stream()
                 .map(StudentCourseSectionEnrollmentResponse::from)
+                .toList();
+    }
+
+    public List<MyScheduleItemResponse> listActiveScheduleOfStudent(Long studentId) {
+        return courseSectionEnrollmentReader.listActiveScheduleOfStudent(studentId).stream()
+                .map(MyScheduleItemResponse::from)
                 .toList();
     }
 

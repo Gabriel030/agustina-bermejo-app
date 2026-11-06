@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-rea
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
-import { Button } from '@/components/ui/button';
+import { OfflineAwareButton } from '@/components/offline/OfflineAwareButton';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
 import {
   useMisInscripciones,
@@ -200,9 +200,9 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
             </div>
           )}
 
-          <Button variant="gradient" disabled={!comisionSeleccionada || inscribirme.isPending} onClick={confirmar} className="self-start">
+          <OfflineAwareButton variant="gradient" disabled={!comisionSeleccionada || inscribirme.isPending} onClick={confirmar} className="self-start">
             {inscribirme.isPending ? 'Confirmando…' : 'Confirmar inscripción'}
-          </Button>
+          </OfflineAwareButton>
         </GlassCard>
       )}
     </div>

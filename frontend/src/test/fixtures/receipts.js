@@ -19,6 +19,7 @@ export function receiptFixture(overrides = {}) {
     rejectionReason: null,
     rejectionCode: null,
     uploadedAt: '2026-10-02T10:00:00',
+    studentId: 2,
     studentName: 'Martina Acosta',
     studentDni: '28016166',
     invoicePeriod: '2026-09',

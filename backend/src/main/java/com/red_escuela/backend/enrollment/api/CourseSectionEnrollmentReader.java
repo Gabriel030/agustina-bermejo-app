@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.api.SectionInstructorView;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,11 @@ import java.util.List;
 @Component
 @Transactional(readOnly = true)
 public class CourseSectionEnrollmentReader {
+
+    private static final List<EnrollmentStatus> SCHEDULE_STATUSES = List.of(
+            EnrollmentStatus.ENROLLED,
+            EnrollmentStatus.IN_PROGRESS,
+            EnrollmentStatus.REGULAR);
 
     private final CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository;
     private final SectionInstructorFinder sectionInstructorFinder;
@@ -32,11 +38,28 @@ public class CourseSectionEnrollmentReader {
         return enrollments.stream().map(this::viewOf).toList();
     }
 
+    public List<CourseSectionScheduleView> listActiveScheduleOfStudent(Long studentId) {
+        return courseEnrollmentRepository.findByStudentIdAndStatusInOrderByIdAsc(studentId, SCHEDULE_STATUSES).stream()
+                .map(this::scheduleOf)
+                .toList();
+    }
+
     public CourseSectionEnrollmentView readOfStudent(Long id, Long studentId) {
         return courseEnrollmentRepository.findById(id)
                 .filter(enrollment -> enrollment.getStudent().getId().equals(studentId))
                 .map(this::viewOf)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
+    }
+
+    private CourseSectionScheduleView scheduleOf(CourseSubjectSectionEnrollment enrollment) {
+        CourseSubjectSection section = enrollment.getCourseSubjectSection();
+        return new CourseSectionScheduleView(
+                enrollment.getId(),
+                enrollment.getCourseEnrollment().getCourse().getName(),
+                section.getName(),
+                section.getCourseSubject().getName(),
+                section.getSchedule(),
+                instructorNameWithRole(sectionInstructorFinder.findCourseSectionInstructors(section.getId()), InstructorRole.LEAD));
     }
 
     private CourseSectionEnrollmentView viewOf(CourseSubjectSectionEnrollment enrollment) {

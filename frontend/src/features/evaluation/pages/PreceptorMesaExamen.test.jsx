@@ -6,6 +6,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { errorBody } from '@/test/fixtures/errors';
 import { PreceptorMesaExamen } from './PreceptorMesaExamen';
+import { installFixedClock } from '@/test/fixedClock';
 
 const toastMock = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
@@ -50,6 +51,8 @@ async function abrirMesa(user, tab) {
   await user.click(await screen.findByRole('button', { name: /Buscar una mesa por materia/ }));
   await user.click(await screen.findByRole('option', { name: /Didáctica General/ }));
 }
+
+installFixedClock();
 
 describe('PreceptorMesaExamen', () => {
   it('una mesa cerrada cuenta a quienes rindieron, traduce el estado y muestra la nota de final', async () => {

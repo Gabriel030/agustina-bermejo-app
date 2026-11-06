@@ -20,7 +20,10 @@ public class SessionRevoker {
     @Transactional
     public void revokeAllSessions(Person person) {
         List<RefreshToken> tokens = refreshTokenRepository.findByPerson(person);
-        tokens.forEach(token -> token.setRevoked(true));
+        tokens.forEach(token -> {
+            token.setRevoked(true);
+            token.setGraceUsed(true);
+        });
         refreshTokenRepository.saveAll(tokens);
     }
 
@@ -30,6 +33,10 @@ public class SessionRevoker {
                 .filter(t -> t.getPerson().getId().equals(person.getId()))
                 .orElseThrow(InvalidRefreshTokenException::new);
         token.setRevoked(true);
+        token.setGraceUsed(true);
         refreshTokenRepository.save(token);
+        if (token.getParentId() != null) {
+            refreshTokenRepository.disableGraceById(token.getParentId());
+        }
     }
 }

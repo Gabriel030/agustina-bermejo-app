@@ -14,12 +14,16 @@ import java.util.Optional;
 
 @Repository
 public interface CourseSubjectSectionEnrollmentRepository extends JpaRepository<CourseSubjectSectionEnrollment, Long> {
+    long countByCourseSubjectSectionIdAndStatusIn(Long sectionId, List<EnrollmentStatus> statuses);
+
 
     List<CourseSubjectSectionEnrollment> findByCourseEnrollmentId(Long courseEnrollmentId);
 
     List<CourseSubjectSectionEnrollment> findByCourseEnrollmentIdAndStatusIn(Long courseEnrollmentId, List<EnrollmentStatus> statuses);
 
     List<CourseSubjectSectionEnrollment> findByStudentIdOrderByIdAsc(Long studentId);
+
+    List<CourseSubjectSectionEnrollment> findByStudentIdAndStatusInOrderByIdAsc(Long studentId, List<EnrollmentStatus> statuses);
 
     List<CourseSubjectSectionEnrollment> findByStudentIdAndCourseEnrollmentIdOrderByIdAsc(Long studentId, Long courseEnrollmentId);
 

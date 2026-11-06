@@ -7,6 +7,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { TabAsistencia } from '@/features/attendance/pages/DocenteTomarAsistencia';
 import { localIsoDate } from '@/lib/calendario';
+import { installFixedClock } from '@/test/fixedClock';
 
 const API = 'http://localhost:8080';
 
@@ -348,5 +349,105 @@ describe('TabAsistencia load failure', () => {
     expect(screen.queryByText('Todavía no se tomó asistencia esta fecha')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Guardar/ })).not.toBeInTheDocument();
     expect(posts).toBe(0);
+  });
+});
+
+describe('TabAsistencia justification proof', () => {
+  installFixedClock();
+
+  const OPEN_DATE = '2026-11-03';
+  const EXPIRED_DATE = '2026-10-20';
+
+  function mockAbsences() {
+    server.use(
+      http.get(`${API}/program-sections/5/roster`, () => HttpResponse.json(ROSTER)),
+      http.get(`${API}/program-sections/5/attendance/history`, () =>
+        HttpResponse.json({
+          rows: [
+            {
+              studentId: 1,
+              studentName: 'Ana Gómez',
+              cellsByDate: { [OPEN_DATE]: { attendanceId: 77, status: 'ABSENT', justificationDeadline: '2026-11-10', justifiable: true } },
+            },
+            {
+              studentId: 2,
+              studentName: 'Bruno Díaz',
+              cellsByDate: { [EXPIRED_DATE]: { attendanceId: 78, status: 'ABSENT', justificationDeadline: '2026-10-27', justifiable: false } },
+            },
+          ],
+        }),
+      ),
+      http.get(`${API}/program-sections/5/class-sessions/:date`, () => new HttpResponse(null, { status: 404 })),
+    );
+  }
+
+  const PROOF_RESPONSE = {
+    id: 77,
+    classDate: OPEN_DATE,
+    enrollmentId: 11,
+    status: 'JUSTIFICATION_PENDING',
+    justificationAttachmentUrl: 'https://files.test/proof.pdf',
+    justificationReason: '',
+    justificationRejectionReason: '',
+    justifiedAt: '2026-11-05T12:00:00',
+  };
+
+  async function openRow(user, date, name) {
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+    await screen.findByText(name);
+    fireEvent.change(screen.getByDisplayValue('2026-11-05'), { target: { value: date } });
+    return within(await waitFor(() => rowOf(name)));
+  }
+
+  it('offers to attach a proof on a justifiable absence and uploads it as multipart', async () => {
+    mockAbsences();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    server.use(http.post(`${API}/attendance/77/justification-proof`, () => HttpResponse.json(PROOF_RESPONSE)));
+    const user = userEvent.setup();
+    const row = await openRow(user, OPEN_DATE, 'Ana Gómez');
+    await user.click(await row.findByRole('button', { name: 'Adjuntar comprobante' }));
+    await user.upload(screen.getByLabelText('Comprobante de justificación'), new File(['pdf'], 'certificado.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar comprobante' }));
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Enviar comprobante' })).not.toBeInTheDocument());
+    const [, options] = fetchSpy.mock.calls.find(([url, opts]) => String(url).endsWith('/attendance/77/justification-proof') && opts?.method === 'POST');
+    expect(options.body.get('proof').name).toBe('certificado.pdf');
+  });
+
+  it('does not offer the action after the deadline and says the preceptor resolves it', async () => {
+    mockAbsences();
+    const user = userEvent.setup();
+    const row = await openRow(user, EXPIRED_DATE, 'Bruno Díaz');
+
+    expect(await row.findByText('Venció el plazo para justificar: lo resuelve el preceptor.')).toBeInTheDocument();
+    expect(row.queryByRole('button', { name: 'Adjuntar comprobante' })).not.toBeInTheDocument();
+  });
+
+  it('rejects a file that is not a PDF or JPG and keeps the send button disabled', async () => {
+    mockAbsences();
+    const user = userEvent.setup({ applyAccept: false });
+    const row = await openRow(user, OPEN_DATE, 'Ana Gómez');
+    await user.click(await row.findByRole('button', { name: 'Adjuntar comprobante' }));
+    await user.upload(screen.getByLabelText('Comprobante de justificación'), new File(['x'], 'nota.txt', { type: 'text/plain' }));
+
+    expect(await screen.findByText('El comprobante tiene que ser un PDF o un JPG.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enviar comprobante' })).toBeDisabled();
+  });
+
+  it('shows the deadline message when the backend answers 409', async () => {
+    mockAbsences();
+    server.use(
+      http.post(`${API}/attendance/77/justification-proof`, () =>
+        HttpResponse.json(errorBody('JUSTIFICATION_DEADLINE_EXPIRED'), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    const row = await openRow(user, OPEN_DATE, 'Ana Gómez');
+    await user.click(await row.findByRole('button', { name: 'Adjuntar comprobante' }));
+    await user.upload(screen.getByLabelText('Comprobante de justificación'), new File(['pdf'], 'certificado.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar comprobante' }));
+
+    expect(await screen.findByText(/Venció el plazo para justificar esta falta/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enviar comprobante' })).toBeEnabled();
   });
 });

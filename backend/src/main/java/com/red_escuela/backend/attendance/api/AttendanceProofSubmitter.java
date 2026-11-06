@@ -4,6 +4,7 @@ import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
+import com.red_escuela.backend.attendance.exception.JustificationDeadlineExpiredException;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,8 +14,11 @@ public class AttendanceProofSubmitter {
 
     private final AttendanceRepository attendanceRepository;
 
-    public AttendanceProofSubmitter(AttendanceRepository attendanceRepository) {
+    private final JustificationDeadlinePolicy deadlinePolicy;
+
+    public AttendanceProofSubmitter(AttendanceRepository attendanceRepository, JustificationDeadlinePolicy deadlinePolicy) {
         this.attendanceRepository = attendanceRepository;
+        this.deadlinePolicy = deadlinePolicy;
     }
 
     @Transactional
@@ -24,6 +28,9 @@ public class AttendanceProofSubmitter {
         if (attendance.getStatus() != AttendanceStatus.ABSENT) {
             throw new CannotJustifyException(
                     "La asistencia " + attendanceId + " no está ABSENT, no se puede justificar");
+        }
+        if (!deadlinePolicy.isWithinDeadline(attendance.getClassDate())) {
+            throw new JustificationDeadlineExpiredException(attendanceId);
         }
         attendance.setStatus(AttendanceStatus.JUSTIFICATION_PENDING);
         attendance.setJustificationReason(reason);
