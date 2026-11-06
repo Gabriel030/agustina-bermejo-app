@@ -38,7 +38,7 @@ CREATE TABLE regular_student_certificate (
     snapshot JSONB NOT NULL,
     template_ref VARCHAR(40) NOT NULL,
     registry_number VARCHAR(20),
-    pdf_sha256 CHAR(64) NOT NULL,
+    pdf_sha256 VARCHAR(64) NOT NULL,
     pdf_path VARCHAR(300) NOT NULL,
     revoked_at TIMESTAMP,
     revoked_by_id BIGINT REFERENCES person(id),
