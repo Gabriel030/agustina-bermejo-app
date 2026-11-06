@@ -1,3 +1,5 @@
+import { formatDateTime } from '@/lib/billing';
+
 export const STALE_FEATURE_VERSION = 'STALE_FEATURE_VERSION';
 
 const MESSAGE_BY_CODE = {
@@ -14,6 +16,15 @@ export function isStaleFeature(error) {
 }
 
 export function featureErrorMessage(error) {
-  if (error?.code === STALE_FEATURE_VERSION) return 'Alguien cambió este módulo mientras lo editabas.';
+  if (error?.code === STALE_FEATURE_VERSION) return staleFeatureMessage(error.details);
   return MESSAGE_BY_CODE[error?.code] ?? error?.message ?? 'No pudimos guardar el cambio. Probá de nuevo.';
+}
+
+function staleFeatureMessage(details) {
+  const who = details?.changedByName;
+  const when = details?.changedAt ? formatDateTime(details.changedAt) : '';
+  if (who && when) return `Lo cambió ${who} el ${when}.`;
+  if (who) return `Lo cambió ${who}.`;
+  if (when) return `Se cambió el ${when}.`;
+  return 'Alguien cambió este módulo mientras lo editabas.';
 }
