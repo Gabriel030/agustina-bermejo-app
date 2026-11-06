@@ -19,7 +19,7 @@ import { RosterSegmento } from '../components/RosterSegmento';
 import { useAvisos, useDestinatariosDeAviso } from '../hooks/useAvisos';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
-import { useAnnouncementEmailSetting } from '../hooks/useAnnouncementEmailSetting';
+import { useAnnouncementEmailSetting } from '@/features/institution';
 import { useEditarAviso } from '../hooks/useEditarAviso';
 import { aPayload, cambiosQueMerecenAviso, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL, unirCambios } from '../lib/formularioDeAviso';
 import { formatearFechaHora } from '@/lib/avisos';
