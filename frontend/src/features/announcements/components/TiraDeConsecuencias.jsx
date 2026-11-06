@@ -1,4 +1,4 @@
-import { Bell, Clock, Eye, Info, TriangleAlert } from 'lucide-react';
+import { Bell, Clock, Eye, Info, Mail, TriangleAlert } from 'lucide-react';
 import { fechaEnPalabras, textoDeAlcance } from '@/lib/avisos';
 
 function Linea({ icono: Icono, children }) {
@@ -10,7 +10,7 @@ function Linea({ icono: Icono, children }) {
   );
 }
 
-export function TiraDeConsecuencias({ alcanzados, total, sinCorregir, scheduledFor, reNotifica, sinNotificar }) {
+export function TiraDeConsecuencias({ alcanzados, total, sinCorregir, scheduledFor, reNotifica, sinNotificar, urgent = false, emailEnabled = false }) {
   return (
     <div className="flex flex-col gap-2 rounded-2xl bg-neutral-bg/55 px-4 py-3">
       {total > 0 && (
@@ -33,6 +33,22 @@ export function TiraDeConsecuencias({ alcanzados, total, sinCorregir, scheduledF
         <Linea icono={Bell}>
           Al guardar, <span className="font-bold text-ink">los mismos destinatarios</span> vuelven a recibir la
           notificación.
+        </Linea>
+      )}
+      {!sinNotificar && (
+        <Linea icono={Mail}>
+          {urgent ? (
+            <>
+              <span className="font-bold text-ink">También por email.</span> Los avisos urgentes siempre salen por email
+              a quienes tienen el correo verificado.
+            </>
+          ) : emailEnabled ? (
+            <>
+              <span className="font-bold text-ink">También por email</span> a quienes tienen el correo verificado.
+            </>
+          ) : (
+            <>Solo por campana: tu instituto no envía por email los avisos que no son urgentes.</>
+          )}
         </Linea>
       )}
       {sinNotificar && (
