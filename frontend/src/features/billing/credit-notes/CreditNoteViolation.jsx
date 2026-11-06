@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { UNKNOWN_OUTCOME_CODE } from '../idempotency';
 import { FULL_DEBT_CODE, RECEIPT_REVIEW_CODES, STALE_INVOICE_CODES } from './creditNotes';
 
-export function CreditNoteViolation({ error, receiptsTo, onReload, onCancelInstead }) {
+export function CreditNoteViolation({ error, receiptsTo, onReload, onCancelInstead, onRetry, retrying }) {
   const ref = useRef(null);
   useEffect(() => {
     if (error) ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -19,7 +20,7 @@ export function CreditNoteViolation({ error, receiptsTo, onReload, onCancelInste
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="font-semibold text-ink">{error.title}</span>
           <span className="text-ink-soft">{error.detail}</span>
-          {error.code && <span className="text-xs text-ink-faint">{error.code}</span>}
+          {error.code && error.code !== UNKNOWN_OUTCOME_CODE && <span className="text-xs text-ink-faint">{error.code}</span>}
         </div>
       </div>
       {reviewReceipts && receiptsTo && (
@@ -30,6 +31,11 @@ export function CreditNoteViolation({ error, receiptsTo, onReload, onCancelInste
       {error.code === FULL_DEBT_CODE && onCancelInstead && (
         <Button type="button" variant="outline" size="sm" className="self-start" onClick={onCancelInstead}>
           Cancelar cuota
+        </Button>
+      )}
+      {error.code === UNKNOWN_OUTCOME_CODE && onRetry && (
+        <Button type="button" variant="outline" size="sm" className="self-start" loading={retrying} onClick={onRetry}>
+          Reintentar
         </Button>
       )}
       {stale && onReload && (

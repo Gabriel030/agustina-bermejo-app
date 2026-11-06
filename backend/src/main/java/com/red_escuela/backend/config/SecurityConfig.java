@@ -52,7 +52,7 @@ public class SecurityConfig {
     }
 
     private static AuthorizationDecision authenticatedExceptPlatformAdmin(
-            Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+            Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         Authentication current = authentication.get();
         boolean authenticated = current != null && current.isAuthenticated()
                 && !(current instanceof AnonymousAuthenticationToken);

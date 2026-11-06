@@ -374,7 +374,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         InvalidLatePaymentSettingsException exception = org.junit.jupiter.api.Assertions.assertThrows(InvalidLatePaymentSettingsException.class,
                 () -> createPolicy.create(policyRequest(-1, 30, 2, null)));
 
-        String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ErrorCodeResponse.of(exception));
+        String json = new tools.jackson.databind.ObjectMapper().writeValueAsString(ErrorCodeResponse.of(exception));
 
         assertThat(json).contains("\"code\":\"INVALID_LATE_PAYMENT_SETTINGS\"").contains("\"violations\":[{\"code\":\"NEGATIVE_GRACE_PERIOD\"");
     }

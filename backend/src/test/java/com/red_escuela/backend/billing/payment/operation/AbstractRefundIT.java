@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
@@ -102,11 +102,11 @@ abstract class AbstractRefundIT extends AbstractBankTransferReceiptHttpIT {
     }
 
     java.math.BigDecimal decimalOf(JsonNode money) {
-        return new java.math.BigDecimal(money.get("amount").asText());
+        return new java.math.BigDecimal(money.get("amount").asString(""));
     }
 
     String codeOf(MvcResult result) throws Exception {
-        return bodyOf(result).get("code").asText();
+        return bodyOf(result).get("code").asString("");
     }
 
     List<Long> partIds(JsonNode response) {

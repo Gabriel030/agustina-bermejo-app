@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.delivery.service;
 
 import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
+import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryChannel;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSettings;
@@ -105,7 +106,7 @@ public class EmailDeliveryDispatchJob {
         if (LocalTime.now(clock).isBefore(window.end())) {
             return;
         }
-        boolean pending = !deliveryRepository.findDispatchableIds(DeliveryChannel.EMAIL, WAITING, today, clock.instant(), 0L, PageRequest.of(0, 1)).isEmpty();
+        boolean pending = !deliveryRepository.findDispatchableIds(DeliveryChannel.EMAIL, DeliveryCategory.COLLECTION_REMINDER, WAITING, today, clock.instant(), 0L, PageRequest.of(0, 1)).isEmpty();
         if (pending) {
             log.warn("La franja de envio de mails se cerro con entregas pendientes fecha={}", today);
         }

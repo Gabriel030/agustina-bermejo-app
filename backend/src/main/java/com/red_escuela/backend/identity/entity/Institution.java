@@ -66,4 +66,7 @@ public class Institution {
 
     @Column(name = "evaluation_config_due_days", nullable = false)
     private int evaluationConfigDueDays = 15;
+
+    @Column(name = "announcement_email_enabled", nullable = false)
+    private boolean announcementEmailEnabled = false;
 }

@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.authorization.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationOperationCatalog;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescriber;
@@ -57,7 +56,7 @@ public class AuthorizationRequestDescriptionAssembler {
         BillingOperation<Object, Object> operation = operations.operationOf(request.getOperationType());
         try {
             return describer.describe(objectMapper.readValue(request.getOperationPayload(), operation.contextType()), request.getId());
-        } catch (JsonProcessingException | RuntimeException e) {
+        } catch (RuntimeException e) {
             log.warn("Authorization request cannot be described, falling back to the generic description: id={}, type={}", request.getId(), request.getOperationType(), e);
             return genericDescriptionOf(request);
         }

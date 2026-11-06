@@ -1,7 +1,8 @@
 package com.red_escuela.backend.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
@@ -24,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MoneyWireSchemaCustomizerTest {
 
-    private static final ObjectMapper WIRE_MAPPER = new ObjectMapper().registerModule(new ValueObjectJacksonModule());
+    private static final ObjectMapper WIRE_MAPPER = JsonMapper.builder().addModule(new ValueObjectJacksonModule()).build();
     private static final ObjectMapper SCHEMA_MAPPER = new ObjectMapper();
     private static final Path SNAPSHOT = Path.of("..", "contracts", "openapi.json");
 
@@ -42,7 +43,7 @@ class MoneyWireSchemaCustomizerTest {
 
     private static List<String> fieldNames(JsonNode node) {
         List<String> names = new ArrayList<>();
-        node.fieldNames().forEachRemaining(names::add);
+        names.addAll(node.propertyNames());
         return names;
     }
 
@@ -59,14 +60,14 @@ class MoneyWireSchemaCustomizerTest {
     @Test
     void serializedAmountIsAStringMatchingTheDeclaredPattern() throws Exception {
         JsonNode amountSchema = customizedMoneyProperties().get("amount");
-        Pattern pattern = Pattern.compile(amountSchema.get("pattern").asText());
+        Pattern pattern = Pattern.compile(amountSchema.get("pattern").asString(""));
 
-        assertThat(amountSchema.get("type").asText()).isEqualTo("string");
+        assertThat(amountSchema.get("type").asString("")).isEqualTo("string");
         for (String raw : List.of("0", "1500.5", "-20", "-0.01", "123456789.99")) {
             JsonNode amount = wireOf(raw, Currency.USD).get("amount");
 
             assertThat(amount.isTextual()).isTrue();
-            assertThat(pattern.matcher(amount.asText()).matches()).isTrue();
+            assertThat(pattern.matcher(amount.asString("")).matches()).isTrue();
         }
     }
 
@@ -76,7 +77,7 @@ class MoneyWireSchemaCustomizerTest {
 
         for (Currency currency : Currency.values()) {
             assertThat(currencySchema.get("enum")).extracting(JsonNode::asText)
-                    .contains(wireOf("10", currency).get("currency").asText());
+                    .contains(wireOf("10", currency).get("currency").asString(""));
         }
         assertThat(currencySchema.get("enum")).hasSize(Currency.values().length);
     }
@@ -97,7 +98,7 @@ class MoneyWireSchemaCustomizerTest {
         JsonNode expected = customizedMoneyProperties();
         JsonNode committedProperties = committed.at("/allOf/1/properties");
 
-        assertThat(committedProperties.at("/amount/type").asText()).isEqualTo("string");
+        assertThat(committedProperties.at("/amount/type").asString("")).isEqualTo("string");
         assertThat(committedProperties.at("/amount/pattern")).isEqualTo(expected.at("/amount/pattern"));
         assertThat(committedProperties.at("/currency/enum")).isEqualTo(expected.at("/currency/enum"));
         assertThat(fieldNames(committedProperties)).contains("amount", "currency");

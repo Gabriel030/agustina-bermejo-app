@@ -1,13 +1,13 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -45,24 +45,24 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
 
         JsonNode detail = read("/me/annual-upfront-requests/" + created.get("id").asLong(), studentToken(), 200);
 
-        assertThat(detail.get("status").asText()).isEqualTo("AWAITING_PAYMENT");
+        assertThat(detail.get("status").asString("")).isEqualTo("AWAITING_PAYMENT");
         assertThat(detail.get("invoiceId").asLong()).isEqualTo(created.get("invoiceId").asLong());
         assertThat(detail.get("programEnrollmentId").asLong()).isEqualTo(learner.programEnrollmentId());
         assertThat(detail.get("lectiveYear").asInt()).isEqualTo(2027);
-        assertThat(detail.get("paymentDeadline").asText()).isEqualTo("2027-03-04T10:00:00");
-        assertThat(new BigDecimal(detail.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
+        assertThat(detail.get("paymentDeadline").asString("")).isEqualTo("2027-03-04T10:00:00");
+        assertThat(new BigDecimal(detail.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
         assertThat(detail.get("lines")).hasSize(10);
         JsonNode first = detail.get("lines").get(0);
         assertThat(first.get("lineNumber").asInt()).isEqualTo(1);
         assertThat(first.get("period").toString()).contains("2027").contains("3");
-        assertThat(new BigDecimal(first.get("baseAmount").get("amount").asText())).isEqualByComparingTo("80000.00");
-        assertThat(new BigDecimal(first.get("discountAmount").get("amount").asText())).isEqualByComparingTo("8000.00");
-        assertThat(new BigDecimal(first.get("finalAmount").get("amount").asText())).isEqualByComparingTo("72000.00");
+        assertThat(new BigDecimal(first.get("baseAmount").get("amount").asString(""))).isEqualByComparingTo("80000.00");
+        assertThat(new BigDecimal(first.get("discountAmount").get("amount").asString(""))).isEqualByComparingTo("8000.00");
+        assertThat(new BigDecimal(first.get("finalAmount").get("amount").asString(""))).isEqualByComparingTo("72000.00");
         assertThat(detail.get("lines").get(9).get("lineNumber").asInt()).isEqualTo(10);
-        assertThat(new BigDecimal(detail.get("discount").get("totalSaving").get("amount").asText())).isEqualByComparingTo("80000.00");
-        assertThat(detail.get("discount").get("name").asText()).isNotBlank();
-        assertThat(detail.get("acceptedTermsVersion").asText()).isEqualTo("v1");
-        assertThat(detail.get("acceptedAt").asText()).isEqualTo("2027-03-02T10:00:00");
+        assertThat(new BigDecimal(detail.get("discount").get("totalSaving").get("amount").asString(""))).isEqualByComparingTo("80000.00");
+        assertThat(detail.get("discount").get("name").asString("")).isNotBlank();
+        assertThat(detail.get("acceptedTermsVersion").asString("")).isEqualTo("v1");
+        assertThat(detail.get("acceptedAt").asString("")).isEqualTo("2027-03-02T10:00:00");
         assertThat(detail.get("paymentUnderReview").asBoolean()).isFalse();
         assertThat(detail.get("discardReason").isNull()).isTrue();
         assertThat(detail.get("decidedAt").isNull()).isTrue();
@@ -73,8 +73,8 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
         JsonNode detail = read("/me/annual-upfront-requests/" + requested().get("id").asLong(), studentToken(), 200);
 
         assertThat(detail.get("discount").isNull()).isTrue();
-        assertThat(new BigDecimal(detail.get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
-        assertThat(new BigDecimal(detail.get("lines").get(0).get("discountAmount").get("amount").asText())).isEqualByComparingTo("0.00");
+        assertThat(new BigDecimal(detail.get("total").get("amount").asString(""))).isEqualByComparingTo("800000.00");
+        assertThat(new BigDecimal(detail.get("lines").get(0).get("discountAmount").get("amount").asString(""))).isEqualByComparingTo("0.00");
     }
 
     @Test
@@ -84,7 +84,7 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
 
         JsonNode underReview = read("/me/annual-upfront-requests/" + reviewId, studentToken(), 200);
 
-        assertThat(underReview.get("status").asText()).isEqualTo("PAYMENT_UNDER_REVIEW");
+        assertThat(underReview.get("status").asString("")).isEqualTo("PAYMENT_UNDER_REVIEW");
         assertThat(underReview.get("paymentUnderReview").asBoolean()).isTrue();
         assertThat(underReview.get("discardReason").isNull()).isTrue();
 
@@ -93,8 +93,8 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
         JsonNode discarded = read("/me/annual-upfront-requests/" + reviewId, studentToken(), 200);
 
         assertThat(discarded.get("paymentUnderReview").asBoolean()).isFalse();
-        assertThat(discarded.get("discardReason").asText()).isEqualTo("DEADLINE_EXPIRED");
-        assertThat(discarded.get("decidedAt").asText()).isEqualTo("2027-03-05T09:00:00");
+        assertThat(discarded.get("discardReason").asString("")).isEqualTo("DEADLINE_EXPIRED");
+        assertThat(discarded.get("decidedAt").asString("")).isEqualTo("2027-03-05T09:00:00");
     }
 
     @Test
@@ -142,7 +142,7 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
 
         assertThat(detail.get("id").asLong()).isEqualTo(requestId);
         assertThat(detail.get("lines")).hasSize(10);
-        assertThat(new BigDecimal(detail.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
+        assertThat(new BigDecimal(detail.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
         assertThat(card).hasSize(1);
         assertThat(card.get(0).get("id").asLong()).isEqualTo(requestId);
         assertThat(list.get("items").get(0).get("id").asLong()).isEqualTo(requestId);
@@ -211,13 +211,13 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
         JsonNode whileReserved = read(quotePath, otherToken, 200).get("quote");
 
         assertThat(whileReserved.get("discount").isNull()).isTrue();
-        assertThat(new BigDecimal(whileReserved.get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
+        assertThat(new BigDecimal(whileReserved.get("total").get("amount").asString(""))).isEqualByComparingTo("800000.00");
 
         mockMvc.perform(post("/me/annual-upfront-requests/" + holderId + "/discard").header("Authorization", "Bearer " + studentToken())).andExpect(status().isOk());
         JsonNode afterDiscard = read(quotePath, otherToken, 200).get("quote");
 
-        assertThat(afterDiscard.get("discount").get("name").asText()).isNotBlank();
-        assertThat(new BigDecimal(afterDiscard.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
+        assertThat(afterDiscard.get("discount").get("name").asString("")).isNotBlank();
+        assertThat(new BigDecimal(afterDiscard.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
     }
 
     @Test
@@ -244,10 +244,10 @@ class AnnualUpfrontRequestViewIT extends AbstractAnnualUpfrontRequestIT {
         JsonNode detail = read("/me/annual-upfront-requests/" + requested().get("id").asLong(), studentToken(), 200);
 
         assertThat(detail.get("lines")).allSatisfy(line -> {
-            assertThat(new BigDecimal(line.get("discountAmount").get("amount").asText())).isEqualByComparingTo("80000.00");
-            assertThat(new BigDecimal(line.get("finalAmount").get("amount").asText())).isEqualByComparingTo("0.00");
+            assertThat(new BigDecimal(line.get("discountAmount").get("amount").asString(""))).isEqualByComparingTo("80000.00");
+            assertThat(new BigDecimal(line.get("finalAmount").get("amount").asString(""))).isEqualByComparingTo("0.00");
         });
-        assertThat(new BigDecimal(detail.get("total").get("amount").asText())).isEqualByComparingTo("0.00");
+        assertThat(new BigDecimal(detail.get("total").get("amount").asString(""))).isEqualByComparingTo("0.00");
         assertThat(count("select count(*) from invoice_discount where discount_amount = 80000.00 and invoice_line_id in (select id from invoice_line where invoice_id = "
                 + detail.get("invoiceId").asLong() + ")")).isEqualTo(10);
     }

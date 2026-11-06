@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.authorization.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescriber;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestDescription;

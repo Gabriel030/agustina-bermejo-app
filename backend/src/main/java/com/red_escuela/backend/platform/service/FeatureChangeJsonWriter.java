@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.platform.domain.FeatureState;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +24,7 @@ public class FeatureChangeJsonWriter {
         fields.put("version", state.version());
         try {
             return objectMapper.writeValueAsString(fields);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("No se pudo serializar el estado de la feature", e);
         }
     }

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;

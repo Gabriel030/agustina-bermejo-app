@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Megaphone } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
@@ -15,31 +16,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DataTable } from '@/components/table/DataTable';
 import { attendancePercentToPoints } from '@/lib/attendancePercent';
 import { useReporteAusencias } from '@/features/attendance';
-import { useCycle, useCicloSecciones, useRoleBasePath } from '@/features/academic-structure';
-
-const DAY_LABELS = {
-  MONDAY: 'Lun', TUESDAY: 'Mar', WEDNESDAY: 'Mié',
-  THURSDAY: 'Jue', FRIDAY: 'Vie', SATURDAY: 'Sáb', SUNDAY: 'Dom',
-};
+import { useCycle, useCicloSecciones, useRoleBasePath, describeSection } from '@/features/academic-structure';
 
 const percentFormatter = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 });
 
 function formatPercent(value) {
   return value == null ? '—' : `${percentFormatter.format(value)}%`;
-}
-
-function describeSection(section) {
-  if (!section) return null;
-  const lead = section.instructors?.find((instructor) => instructor.role === 'LEAD');
-  const slot = section.slots?.[0];
-  return [
-    section.subjectName,
-    section.name,
-    slot && `${DAY_LABELS[slot.dayOfWeek] ?? ''} ${slot.startTime?.slice(0, 5) ?? ''}`.trim(),
-    lead && `Prof. ${lead.name}`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
 }
 
 function RiskPill() {
@@ -164,7 +146,13 @@ export function StaffSectionRoster() {
     <PageContainer className="gap-3 md:gap-6">
       <div className="flex flex-col gap-1.5">
         <Breadcrumb items={breadcrumb} />
-        <h1 className="font-heading text-xl font-bold text-ink md:text-2xl">Inscriptos y asistencia</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="font-heading text-xl font-bold text-ink md:text-2xl">Inscriptos y asistencia</h1>
+          <Button variant="outline" className="max-md:w-full" onClick={() => navigate(`${basePath}/oferta-academica/ciclos/${cycleId}/comisiones/${sectionId}/avisos`)}>
+            <Megaphone className="mr-1.5 h-4 w-4" />
+            Avisos y lectura
+          </Button>
+        </div>
         {section && <p className="text-[12.5px] text-ink-faint">{describeSection(section)}</p>}
       </div>
 

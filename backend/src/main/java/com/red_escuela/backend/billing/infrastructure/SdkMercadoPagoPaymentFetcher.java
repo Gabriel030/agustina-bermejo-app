@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.red_escuela.backend.shared.logging.LogSanitizer;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
@@ -66,10 +67,22 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
             log.warn("Pago de Mercado Pago ignorado, moneda no soportada: pagoMp={}, moneda={}", mpPaymentId, payment.getCurrencyId());
             return Optional.empty();
         }
+        Optional<Long> invoiceId = parseInvoiceReference(payment.getExternalReference());
+        if (invoiceId.isEmpty()) {
+            log.warn("Pago de Mercado Pago sin referencia externa válida: pagoMp={}", LogSanitizer.sanitize(mpPaymentId));
+            return Optional.empty();
+        }
         ReportedGatewayAllocation reported = new ReportedGatewayAllocation(
-                Long.parseLong(payment.getExternalReference()),
+                invoiceId.get(),
                 Money.of(payment.getTransactionAmount(), currency.get()));
         return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments(), toCardType(payment.getPaymentTypeId())));
+    }
+
+    static Optional<Long> parseInvoiceReference(String externalReference) {
+        if (externalReference == null || !externalReference.matches("\\d{1,18}")) {
+            return Optional.empty();
+        }
+        return Optional.of(Long.parseLong(externalReference));
     }
 
     static CardPaymentType toCardType(String paymentTypeId) {

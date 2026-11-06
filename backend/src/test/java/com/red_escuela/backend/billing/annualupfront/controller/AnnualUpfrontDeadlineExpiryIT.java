@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontPlanCannotBeChangedException;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontDeadlineExpirer;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontExpiryResult;
@@ -14,7 +14,7 @@ import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

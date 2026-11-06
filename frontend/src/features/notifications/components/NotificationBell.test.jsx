@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell';
+import { TIPO_NOTIFICACION_LABEL } from '@/lib/notificaciones';
 
 const API = 'http://localhost:8080';
 
@@ -91,6 +92,79 @@ describe('NotificationBell', () => {
     expect(await screen.findByText('Pago acreditado')).toBeInTheDocument();
   });
 
+  it.each([
+    'GRADUATION_REQUEST_CREATED',
+    'GRADUATION_REQUEST_PENDING_REVIEW',
+    'GRADUATION_REQUEST_VERIFIED',
+    'GRADUATION_REQUEST_DEBT_BLOCKED',
+    'GRADUATION_REQUEST_APPROVED',
+    'GRADUATION_REQUEST_REJECTED',
+  ])('navigates to the student graduation screen when tapping %s', async (type) => {
+    const user = userEvent.setup();
+    function Destino() {
+      return <div>{useLocation().pathname}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([
+          {
+            id: 21,
+            type,
+            message: 'Tu solicitud de egreso está detenida por una deuda pendiente de $15000 (2 cuotas).',
+            read: true,
+            relatedEntityType: 'GraduationRequest',
+            relatedEntityId: 7,
+            createdAt: '2026-10-01T10:00:00',
+          },
+        ]),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<NotificationBell />} />
+        <Route path="*" element={<Destino />} />
+      </Routes>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL[type]));
+
+    expect(await screen.findByText('/alumno/mis-carreras')).toBeInTheDocument();
+  });
+
+  it('navigates to the announcement on the student home when tapping an announcement', async () => {
+    const user = userEvent.setup();
+    function Destino() {
+      return <div>{useLocation().pathname}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([
+          {
+            id: 22,
+            type: 'ANNOUNCEMENT_PUBLISHED',
+            message: 'Nuevo aviso sobre la inscripción.',
+            read: true,
+            relatedEntityType: 'Announcement',
+            relatedEntityId: 5,
+            createdAt: '2026-10-01T10:00:00',
+          },
+        ]),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<NotificationBell />} />
+        <Route path="*" element={<Destino />} />
+      </Routes>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL.ANNOUNCEMENT_PUBLISHED));
+
+    expect(await screen.findByText('/alumno/inicio')).toBeInTheDocument();
+  });
+
   it('shows a Spanish generic label and screen reader text for unknown unread types', async () => {
     const user = userEvent.setup();
     server.use(
@@ -133,3 +207,22 @@ describe('NotificationBell', () => {
     expect(screen.queryByText('No pudimos cargar tus notificaciones.')).not.toBeInTheDocument();
   });
 });
+
+describe('NotificationBell offline stamp', () => {
+  it('showsLastUpdateStampWhileOffline', async () => {
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([{ id: 1, type: 'PAYMENT_RECEIPT_APPROVED', read: false, createdAt: '2026-10-01T10:00:00' }]),
+      ),
+    )
+    const onLine = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(true)
+    renderWithProviders(<NotificationBell />)
+    const bell = await screen.findByRole('button', { name: 'Notificaciones, 1 sin leer' })
+    onLine.mockReturnValue(false)
+    window.dispatchEvent(new Event('offline'))
+    await userEvent.click(bell)
+
+    expect(await screen.findByText(/Actualizado (recién|hace)/)).toBeInTheDocument()
+    onLine.mockRestore()
+  })
+})

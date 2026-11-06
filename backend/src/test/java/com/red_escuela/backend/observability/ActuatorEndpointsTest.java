@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -54,8 +55,8 @@ class ActuatorEndpointsTest extends AbstractIntegrationTest {
 
     @Test
     void requestsAreCountedByTemplatedUriNotByConcreteId() throws Exception {
-        mockMvc.perform(get("/students/1/program-enrollments"));
-        mockMvc.perform(get("/students/2/program-enrollments"));
+        mockMvc.perform(get("/students/1/program-enrollments").with(user("tester").roles("ADMINISTRATIVO")));
+        mockMvc.perform(get("/students/2/program-enrollments").with(user("tester").roles("ADMINISTRATIVO")));
 
         String body = mockMvc.perform(get("/actuator/prometheus").with(httpBasic("scraper", "local-test")))
                 .andReturn()

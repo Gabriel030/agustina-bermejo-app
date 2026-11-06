@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.pricing.controller;
 
 import com.red_escuela.backend.billing.support.PaymentStandingSeed;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.pricing.domain.Price;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -184,7 +184,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
     }
 
     private static void assertAmount(JsonNode version, String expected) {
-        assertThat(new BigDecimal(version.at("/finalAmount/amount").asText())).isEqualByComparingTo(expected);
+        assertThat(new BigDecimal(version.at("/finalAmount/amount").asString(""))).isEqualByComparingTo(expected);
     }
 
     private long idOf(ResultActions result) throws Exception {
@@ -211,7 +211,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
             assertThat(monthly.get("openProposal").isNull()).isTrue();
             assertThat(monthly.get("programId").asLong()).isEqualTo(programId);
             assertThat(monthly.get("courseId").isNull()).isTrue();
-            assertThat(monthly.get("currency").asText()).isEqualTo("ARS");
+            assertThat(monthly.get("currency").asString("")).isEqualTo("ARS");
         }
     }
 
@@ -227,7 +227,7 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         JsonNode before = monthlyInstallmentSummary();
         assertAmount(before.get("currentVersion"), "100000");
         assertAmount(before.get("nextScheduledVersion"), "110000");
-        assertThat(before.at("/nextScheduledVersion/effectiveFrom").asText()).isEqualTo("2027-09-01");
+        assertThat(before.at("/nextScheduledVersion/effectiveFrom").asString("")).isEqualTo("2027-09-01");
 
         activateDueVersionsOn(septemberFirst);
 

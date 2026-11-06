@@ -422,7 +422,7 @@ class RefundCreditReservationIT extends AbstractRefundIT {
         String path = "/students/" + debtor.studentId() + "/cash-payments";
         String amountJson = "{\"amount\":{\"amount\":10000.00,\"currency\":\"ARS\"}";
         String fingerprint = bodyOf(mockMvc.perform(post(path + "/preview").header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
-                .content(amountJson + "}")).andExpect(status().isOk()).andReturn()).get("previewFingerprint").asText();
+                .content(amountJson + "}")).andExpect(status().isOk()).andReturn()).get("previewFingerprint").asString("");
 
         MvcResult registered = mockMvc.perform(post(path).header("Authorization", "Bearer " + token).header("Idempotency-Key", nextKey())
                 .contentType(MediaType.APPLICATION_JSON).content(amountJson + ",\"previewFingerprint\":\"" + fingerprint + "\"}")).andReturn();

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;

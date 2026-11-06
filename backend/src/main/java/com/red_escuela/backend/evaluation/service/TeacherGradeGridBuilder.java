@@ -21,6 +21,7 @@ import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
+import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -46,19 +48,22 @@ public class TeacherGradeGridBuilder {
     private final SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder;
     private final GradeItemRepository gradeItemRepository;
     private final SectionEvaluationConfigRepository configRepository;
+    private final SectionGradeItemPublicationRepository publicationRepository;
 
     public TeacherGradeGridBuilder(SectionFinder sectionFinder,
                                    SectionTeachingFinder sectionTeachingFinder,
                                    SectionEnrollmentFinder sectionEnrollmentFinder,
                                    SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder,
                                    GradeItemRepository gradeItemRepository,
-                                   SectionEvaluationConfigRepository configRepository) {
+                                   SectionEvaluationConfigRepository configRepository,
+                                   SectionGradeItemPublicationRepository publicationRepository) {
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionFreeByAbsencesFinder = sectionFreeByAbsencesFinder;
         this.gradeItemRepository = gradeItemRepository;
         this.configRepository = configRepository;
+        this.publicationRepository = publicationRepository;
     }
 
     @Transactional(readOnly = true)
@@ -74,12 +79,13 @@ public class TeacherGradeGridBuilder {
         Set<Long> freeEnrollmentIds = sectionFreeByAbsencesFinder
                 .findProgramEnrollmentIdsFreeByAbsences(sectionId, section.getMaxAbsenceRate());
         Optional<SectionEvaluationConfig> config = configRepository.findBySubjectSectionId(sectionId);
+        Map<String, LocalDateTime> publications = publicationsOf(SectionKind.PROGRAM, sectionId);
         List<GradeGridStudentResponse> students = enrollments.stream()
                 .map(enrollment -> studentRow(enrollment.getId(), enrollment.getStudent().getPerson(), enrollment.getStatus(),
-                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds))
+                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications))
                 .sorted(byName())
                 .toList();
-        return response(sectionId, section.getEvaluationScheme(), config.orElse(null), students);
+        return response(sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
     }
 
     @Transactional(readOnly = true)
@@ -94,12 +100,25 @@ public class TeacherGradeGridBuilder {
                 item -> item.getCourseSubjectSectionEnrollment().getId());
         Set<Long> freeEnrollmentIds = sectionFreeByAbsencesFinder
                 .findCourseEnrollmentIdsFreeByAbsences(sectionId, section.getMaxAbsenceRate());
+        Map<String, LocalDateTime> publications = publicationsOf(SectionKind.COURSE, sectionId);
         List<GradeGridStudentResponse> students = enrollments.stream()
                 .map(enrollment -> studentRow(enrollment.getId(), enrollment.getStudent().getPerson(), enrollment.getStatus(),
-                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds))
+                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications))
                 .sorted(byName())
                 .toList();
-        return response(sectionId, section.getEvaluationScheme(), null, students);
+        return response(sectionId, section.getEvaluationScheme(), null, students, publications);
+    }
+
+    private Map<String, LocalDateTime> publicationsOf(SectionKind kind, Long sectionId) {
+        Map<String, LocalDateTime> publications = new HashMap<>();
+        publicationRepository.findBySectionKindAndSectionId(kind, sectionId).forEach(publication ->
+                publications.put(slotKey(publication.getGradeItemType(), publication.getSequenceNumber()),
+                        publication.getPublishedAt()));
+        return publications;
+    }
+
+    private String slotKey(GradeItemType type, int sequenceNumber) {
+        return type + ":" + sequenceNumber;
     }
 
     private Map<Long, List<GradeItem>> groupByEnrollment(List<GradeItem> items, Function<GradeItem, Long> enrollmentIdOf) {
@@ -109,14 +128,17 @@ public class TeacherGradeGridBuilder {
     }
 
     private GradeGridStudentResponse studentRow(Long enrollmentId, Person person, EnrollmentStatus status, Grade finalScore,
-                                                Map<Long, List<GradeItem>> itemsByEnrollment, Set<Long> freeEnrollmentIds) {
+                                                Map<Long, List<GradeItem>> itemsByEnrollment, Set<Long> freeEnrollmentIds,
+                                                Map<String, LocalDateTime> publications) {
         List<GradeItem> items = itemsByEnrollment.getOrDefault(enrollmentId, List.of());
         boolean hasLoadedFinal = items.stream().anyMatch(item -> item.getType() == GradeItemType.FINAL);
         List<GradeGridCellResponse> cells = items.stream()
                 .filter(item -> item.getType() != null && item.getSequenceNumber() != null)
                 .sorted(Comparator.comparing(GradeItem::getType).thenComparing(GradeItem::getSequenceNumber))
                 .map(item -> new GradeGridCellResponse(item.getId(), item.getType(), item.getSequenceNumber(),
-                        item.getScore(), item.getDate(), item.getComments()))
+                        item.getScore(), item.getDate(), item.getComments(),
+                        item.getType() == GradeItemType.FINAL
+                                || publications.containsKey(slotKey(item.getType(), item.getSequenceNumber()))))
                 .toList();
         return new GradeGridStudentResponse(
                 enrollmentId, person.getLastname(), person.getName(), person.getDni(),
@@ -132,7 +154,8 @@ public class TeacherGradeGridBuilder {
     }
 
     private TeacherGradeGridResponse response(Long sectionId, EvaluationScheme scheme, SectionEvaluationConfig config,
-                                              List<GradeGridStudentResponse> students) {
+                                              List<GradeGridStudentResponse> students,
+                                              Map<String, LocalDateTime> publications) {
         if (scheme == null) {
             return new TeacherGradeGridResponse(sectionId, null, null, null, null, List.of(), students);
         }
@@ -141,23 +164,31 @@ public class TeacherGradeGridBuilder {
                 scheme.getMinRegularGrade(),
                 scheme.getMinApprovalGrade(),
                 scheme.getPromotionMinGrade(),
-                columns(scheme, config), students);
+                columns(scheme, config, publications), students);
     }
 
-    private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, SectionEvaluationConfig config) {
+    private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, SectionEvaluationConfig config,
+                                                  Map<String, LocalDateTime> publications) {
         List<GradeGridColumnResponse> columns = new ArrayList<>();
         int exams = scheme.getExamCountExpected() == null ? 0 : scheme.getExamCountExpected();
         int tps = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
         for (int sequence = 1; sequence <= exams; sequence++) {
-            columns.add(new GradeGridColumnResponse(GradeItemType.EXAM, sequence, examDate(config, sequence)));
+            columns.add(column(GradeItemType.EXAM, sequence, examDate(config, sequence), publications));
         }
         for (int sequence = 1; sequence <= tps; sequence++) {
-            columns.add(new GradeGridColumnResponse(GradeItemType.TP, sequence, tpDate(config, sequence)));
+            columns.add(column(GradeItemType.TP, sequence, tpDate(config, sequence), publications));
         }
         if (Boolean.TRUE.equals(scheme.getHasFinal())) {
-            columns.add(new GradeGridColumnResponse(GradeItemType.FINAL, 1, config == null ? null : config.getFinalCall1Date()));
+            columns.add(new GradeGridColumnResponse(
+                    GradeItemType.FINAL, 1, config == null ? null : config.getFinalCall1Date(), true, null));
         }
         return columns;
+    }
+
+    private GradeGridColumnResponse column(GradeItemType type, int sequence, LocalDate date,
+                                           Map<String, LocalDateTime> publications) {
+        LocalDateTime publishedAt = publications.get(slotKey(type, sequence));
+        return new GradeGridColumnResponse(type, sequence, date, publishedAt != null, publishedAt);
     }
 
     private LocalDate examDate(SectionEvaluationConfig config, int sequence) {

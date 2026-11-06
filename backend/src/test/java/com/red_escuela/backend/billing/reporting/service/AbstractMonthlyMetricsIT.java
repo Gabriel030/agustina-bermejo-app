@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.reporting.service;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.note.service.AbstractCreditNoteIT;
@@ -257,7 +257,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
 
     protected static JsonNode seriesOf(JsonNode metric, String key) {
         for (JsonNode series : metric.get("series")) {
-            if (series.get("key").asText().equals(key)) {
+            if (series.get("key").asString("").equals(key)) {
                 return series;
             }
         }
@@ -266,7 +266,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
 
     protected static boolean hasSeries(JsonNode metric, String key) {
         for (JsonNode series : metric.get("series")) {
-            if (series.get("key").asText().equals(key)) {
+            if (series.get("key").asString("").equals(key)) {
                 return true;
             }
         }

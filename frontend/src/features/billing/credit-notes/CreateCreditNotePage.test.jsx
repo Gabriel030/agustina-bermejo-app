@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from '@/test/axe';
 import { errorBody } from '@/test/fixtures/errors';
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes, useLocation } from 'react-router-dom';
@@ -20,6 +21,7 @@ vi.mock('@/context/AuthContext', () => ({
 
 let invoice;
 let issueBodies;
+let issueKeys;
 let balance;
 let balanceFails;
 let balanceDelay;
@@ -35,6 +37,7 @@ function twoLineInvoice(overrides = {}) {
 
 function mockServer({ issue } = {}) {
   issueBodies = [];
+  issueKeys = [];
   server.use(
     http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' })),
     http.get(`${API}/students/2/billing-overview`, () =>
@@ -46,6 +49,7 @@ function mockServer({ issue } = {}) {
       return HttpResponse.json(balance);
     }),
     http.post(`${API}/invoices/:id/credit-notes`, async ({ request, params }) => {
+      issueKeys.push(request.headers.get('Idempotency-Key'));
       issueBodies.push({ id: params.id, body: await request.json() });
       return issue ? issue() : HttpResponse.json(creditNoteFixture({ id: 9, creditNoteNumber: 'NC-0000142' }), { status: 201 });
     }),
@@ -340,5 +344,126 @@ describe('Nota de crédito — paso 2 (confirmar)', () => {
 
     expect(link).toHaveAttribute('href', '/director/facturacion?alumno=2&tab=comprobantes');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Emitir nota de crédito' })).toBeEnabled());
+  });
+});
+
+describe('Nota de crédito — clave de idempotencia', () => {
+  async function openConfirm() {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('button', { name: 'Revisar la nota' });
+    await fillValidNote(user);
+    await user.click(screen.getByRole('button', { name: 'Revisar la nota' }));
+    return user;
+  }
+
+  it('sends an Idempotency-Key header', async () => {
+    mockServer();
+    const user = await openConfirm();
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+
+    await screen.findByTestId('ficha');
+    expect(issueKeys).toHaveLength(1);
+    expect(issueKeys[0]).toMatch(/\S{16,}/);
+  });
+
+  it('retries after an unknown outcome with the same key and without a duplicate click path', async () => {
+    let calls = 0;
+    mockServer({
+      issue: () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })
+          : HttpResponse.json(creditNoteFixture({ id: 9, creditNoteNumber: 'NC-0000142' }), { status: 201 });
+      },
+    });
+    const user = await openConfirm();
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+
+    expect(await screen.findByText('No pudimos confirmar si se emitió.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByTestId('ficha')).toBeInTheDocument();
+    expect(issueKeys).toHaveLength(2);
+    expect(issueKeys[1]).toBe(issueKeys[0]);
+  });
+
+  it('uses a new key when the content of the note changes', async () => {
+    let calls = 0;
+    mockServer({
+      issue: () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })
+          : HttpResponse.json(creditNoteFixture({ id: 9, creditNoteNumber: 'NC-0000142' }), { status: 201 });
+      },
+    });
+    const user = await openConfirm();
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+    await screen.findByText('No pudimos confirmar si se emitió.');
+    await user.click(screen.getByRole('button', { name: 'Volver a editar' }));
+    await user.type(screen.getByLabelText(/Justificación/), ' Dato corregido.');
+    await user.click(screen.getByRole('button', { name: 'Revisar la nota' }));
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+
+    await screen.findByTestId('ficha');
+    expect(issueKeys).toHaveLength(2);
+    expect(issueKeys[1]).not.toBe(issueKeys[0]);
+  });
+
+  it('uses a new key when the form is opened again', async () => {
+    mockServer({ issue: () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) });
+    const first = await openConfirm();
+    await first.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+    await screen.findByText('No pudimos confirmar si se emitió.');
+    cleanup();
+
+    const second = await openConfirm();
+    await second.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+    await screen.findByText('No pudimos confirmar si se emitió.');
+
+    expect(issueKeys).toHaveLength(2);
+    expect(issueKeys[1]).not.toBe(issueKeys[0]);
+  });
+
+  it('sends a single request when the confirm button is clicked twice', async () => {
+    mockServer({
+      issue: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return HttpResponse.json(creditNoteFixture({ id: 9, creditNoteNumber: 'NC-0000142' }), { status: 201 });
+      },
+    });
+    const user = await openConfirm();
+    const button = await screen.findByRole('button', { name: 'Emitir nota de crédito' });
+    await user.click(button);
+    await user.click(button);
+
+    await screen.findByTestId('ficha');
+    expect(issueKeys).toHaveLength(1);
+  });
+
+  it('has no accessibility violations while showing the retry action', async () => {
+    mockServer({ issue: () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) });
+    const user = await openConfirm();
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+    await screen.findByRole('button', { name: 'Reintentar' });
+
+    expect(await axe(screen.getByRole('alert'))).toHaveNoViolations();
+  });
+
+  it('explains an IDEMPOTENCY_KEY_CONFLICT in Spanish', async () => {
+    mockServer({ issue: () => HttpResponse.json(errorBody('IDEMPOTENCY_KEY_CONFLICT'), { status: 409 }) });
+    const user = await openConfirm();
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+
+    expect(await screen.findByText('Este pedido ya se había enviado con otros datos.')).toBeInTheDocument();
+  });
+
+  it('explains an IDEMPOTENCY_KEY_INVALID in Spanish', async () => {
+    mockServer({ issue: () => HttpResponse.json(errorBody('IDEMPOTENCY_KEY_INVALID'), { status: 400 }) });
+    const user = await openConfirm();
+    await user.click(await screen.findByRole('button', { name: 'Emitir nota de crédito' }));
+
+    expect(await screen.findByText('No pudimos identificar el pedido.')).toBeInTheDocument();
   });
 });

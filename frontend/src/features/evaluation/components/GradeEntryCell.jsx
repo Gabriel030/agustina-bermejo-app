@@ -1,10 +1,10 @@
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { correctionOf, formatScore, scoreTextState } from '../lib/gradeGrid';
 
-export function GradeEntryCell({ label, studentName, saved, draft, status, disabledReason, onChange, onBlur, onRetry }) {
+export function GradeEntryCell({ label, studentName, saved, draft, status, disabledReason, locked = false, onChange, onBlur, onRetry }) {
   const text = draft ? draft.score : formatScore(saved?.score);
   const invalid = draft ? scoreTextState(draft.score) === 'invalid' : false;
   const correction = correctionOf(draft, saved);
@@ -23,6 +23,15 @@ export function GradeEntryCell({ label, studentName, saved, draft, status, disab
       className={`h-10 w-14 px-1.5 text-right text-sm ${draft && !invalid ? 'border-primary' : ''}`}
     />
   );
+
+  if (locked) {
+    return (
+      <span className="inline-flex h-10 w-14 items-center justify-end gap-1 px-1.5 text-sm text-ink" aria-label={`${label} de ${studentName}: ${text || 'sin nota'}, publicada`}>
+        <Lock aria-hidden="true" className="size-3 text-ink-faint" />
+        {text || '—'}
+      </span>
+    );
+  }
 
   return (
     <div className="inline-flex flex-col items-end gap-0.5">

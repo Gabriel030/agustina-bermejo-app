@@ -105,6 +105,7 @@ export function collectPendingJobs({ students, columns, drafts, statuses, now })
   const jobs = [];
   for (const student of students) {
     for (const column of columns) {
+      if (isColumnLocked(column)) continue;
       const key = draftKey(student.enrollmentId, column.type, column.sequenceNumber);
       const draft = drafts[key];
       if (!draft || statuses[key] === 'saving' || scoreTextState(draft.score) !== 'valid') continue;
@@ -130,4 +131,34 @@ export function schemeSummary(grid) {
   if (grid.minApprovalGrade != null) parts.push(`aprueba con ${formatScore(grid.minApprovalGrade)}`);
   if (grid.promotionMinGrade != null) parts.push(`promoción desde ${formatScore(grid.promotionMinGrade)}`);
   return parts.join(', ');
+}
+
+export function isColumnLocked(column) {
+  return column.type !== 'FINAL' && column.published === true;
+}
+
+export function isColumnPublishable(column) {
+  return column.type !== 'FINAL' && column.published !== true;
+}
+
+export function columnLoadSummary(students, column) {
+  const loaded = students.filter((student) => findSavedCell(student, column)?.score != null).length;
+  return { loaded, missing: students.length - loaded, total: students.length };
+}
+
+export function hasColumnDrafts(drafts, column) {
+  const suffix = `:${gradeColumnKey(column.type, column.sequenceNumber)}`;
+  return Object.keys(drafts).some((key) => key.endsWith(suffix));
+}
+
+export function pruneLockedDrafts(drafts, columns) {
+  const locked = columns.filter(isColumnLocked).map((column) => `:${gradeColumnKey(column.type, column.sequenceNumber)}`);
+  if (!locked.length) return drafts;
+  return Object.fromEntries(Object.entries(drafts).filter(([key]) => !locked.some((suffix) => key.endsWith(suffix))));
+}
+
+export function summarizePublication({ gradeCount, studentCount }) {
+  const grades = gradeCount === 1 ? '1 nota publicada' : `${gradeCount} notas publicadas`;
+  const students = studentCount === 1 ? '1 alumno' : `${studentCount} alumnos`;
+  return `${grades} para ${students}`;
 }

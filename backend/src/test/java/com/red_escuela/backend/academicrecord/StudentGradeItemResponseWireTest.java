@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicrecord;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicrecord.dto.StudentGradeItemResponse;
 import com.red_escuela.backend.config.GradeWireSchemaCustomizer;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
@@ -25,9 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class StudentGradeItemResponseWireTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .registerModule(new ValueObjectJacksonModule());
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .addModule(new ValueObjectJacksonModule())
+            .build();
 
     private static GradeItem itemScored(String score) {
         SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();

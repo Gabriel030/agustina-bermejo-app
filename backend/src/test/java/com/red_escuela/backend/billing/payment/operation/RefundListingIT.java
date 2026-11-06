@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -52,12 +52,12 @@ class RefundListingIT extends AbstractRefundIT {
 
         assertThat(idsOf(refunds)).containsExactly(first, third, second);
         JsonNode newestOfTheSameDay = refunds.get(1);
-        assertThat(newestOfTheSameDay.get("status").asText()).isEqualTo("APPROVED");
-        assertThat(newestOfTheSameDay.get("methodType").asText()).isEqualTo("CASH");
+        assertThat(newestOfTheSameDay.get("status").asString("")).isEqualTo("APPROVED");
+        assertThat(newestOfTheSameDay.get("methodType").asString("")).isEqualTo("CASH");
         assertThat(decimalOf(newestOfTheSameDay.get("amount"))).isEqualByComparingTo("30000.00");
-        assertThat(newestOfTheSameDay.get("destinationAccount").asText()).isEqualTo(REQUEST_ACCOUNT);
-        assertThat(newestOfTheSameDay.get("destinationHolder").asText()).isEqualTo(REQUEST_HOLDER);
-        assertThat(newestOfTheSameDay.get("requestedOn").asText()).isEqualTo(EARLY_MARCH.plusDays(5).toString());
+        assertThat(newestOfTheSameDay.get("destinationAccount").asString("")).isEqualTo(REQUEST_ACCOUNT);
+        assertThat(newestOfTheSameDay.get("destinationHolder").asString("")).isEqualTo(REQUEST_HOLDER);
+        assertThat(newestOfTheSameDay.get("requestedOn").asString("")).isEqualTo(EARLY_MARCH.plusDays(5).toString());
         assertThat(listOf("/students/" + debtor.studentId() + "/refunds", staffToken("DIRECTOR"))).hasSize(3);
     }
 

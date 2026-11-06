@@ -55,7 +55,7 @@ public class EmailDispatchPlanningService {
     }
 
     private List<Long> planAndApplyInsideTransaction(LocalDate today, EmailDispatchSettings settings, LocalDate nextBusinessDay) {
-        List<NotificationDelivery> locked = deliveryRepository.lockDispatchableByPriority(DeliveryChannel.EMAIL, WAITING, today, clock.instant());
+        List<NotificationDelivery> locked = deliveryRepository.lockDispatchableByPriority(DeliveryChannel.EMAIL, DeliveryCategory.COLLECTION_REMINDER, WAITING, today, clock.instant());
         if (locked.isEmpty()) {
             return List.of();
         }

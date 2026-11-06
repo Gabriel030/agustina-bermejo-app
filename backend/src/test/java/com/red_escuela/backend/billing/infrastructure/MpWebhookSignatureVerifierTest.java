@@ -7,6 +7,10 @@ import org.springframework.mock.env.MockEnvironment;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.HexFormat;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -14,6 +18,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MpWebhookSignatureVerifierTest {
     private static final String SECRET = "webhook-secret";
+
+    private static MpWebhookSignatureVerifier verifierAtSignatureTime() {
+        Clock clock = Clock.fixed(Instant.ofEpochMilli(1700000000L), ZoneOffset.UTC);
+        return new MpWebhookSignatureVerifier(SECRET, false, clock, Duration.ofMinutes(5));
+    }
 
     private static String sign(String secret, String paymentId, String requestId, String ts) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
@@ -39,7 +48,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aCorrectlySignedWebhookIsAccepted() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
 
         assertThatCode(() -> verifier.verify(sign(SECRET, "123", "request-1", "1700000000"), "request-1", "123"))
                 .doesNotThrowAnyException();
@@ -47,7 +56,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aWebhookSignedWithAnotherSecretIsRejected() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
 
         assertThatThrownBy(() -> verifier.verify(sign("other-secret", "123", "request-1", "1700000000"), "request-1", "123"))
                 .isInstanceOf(InvalidMpWebhookSignatureException.class);
@@ -55,7 +64,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aWebhookWithoutSignatureIsRejectedWhenASecretIsConfigured() {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
 
         assertThatThrownBy(() -> verifier.verify("", "request-1", "123"))
                 .isInstanceOf(InvalidMpWebhookSignatureException.class);
@@ -93,7 +102,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aSignatureMissingTheTimestampOrTheHashIsRejected() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
         String valid = sign(SECRET, "123", "request-1", "1700000000");
         String hash = valid.substring(valid.indexOf("v1="));
 
@@ -104,7 +113,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void theSignaturePartsMayComeInAnyOrderAndWithSpacesAroundTheComma() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
         String valid = sign(SECRET, "123", "request-1", "1700000000");
         String ts = valid.substring(0, valid.indexOf(","));
         String hash = valid.substring(valid.indexOf(",") + 1);
@@ -115,7 +124,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aTamperedPaymentIdRequestIdOrTimestampIsRejected() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
         String valid = sign(SECRET, "123", "request-1", "1700000000");
 
         assertRejected(verifier, valid, "request-1", "124");
@@ -125,7 +134,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aHashThatIsATruncatedOrExtendedOrUppercasedVersionOfTheRightOneIsRejected() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
         String valid = sign(SECRET, "123", "request-1", "1700000000");
 
         assertRejected(verifier, valid.substring(0, valid.length() - 1), "request-1", "123");
@@ -135,7 +144,7 @@ class MpWebhookSignatureVerifierTest {
 
     @Test
     void aValueContainingAnEqualsSignKeepsItsWholeTextAndIsRejectedAsAMismatch() throws Exception {
-        MpWebhookSignatureVerifier verifier = new MpWebhookSignatureVerifier(SECRET, false);
+        MpWebhookSignatureVerifier verifier = verifierAtSignatureTime();
         String valid = sign(SECRET, "123", "request-1", "1700000000");
 
         assertRejected(verifier, valid + "=", "request-1", "123");

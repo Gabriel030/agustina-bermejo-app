@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.annualupfront.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
@@ -41,8 +41,8 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
 
         JsonNode body = objectMapper.readTree(discard(requestId, studentToken(), 200).getResponse().getContentAsString());
 
-        assertThat(body.get("status").asText()).isEqualTo("DISCARDED");
-        assertThat(body.get("discardReason").asText()).isEqualTo("CANCELLED_BY_STUDENT");
+        assertThat(body.get("status").asString("")).isEqualTo("DISCARDED");
+        assertThat(body.get("discardReason").asString("")).isEqualTo("CANCELLED_BY_STUDENT");
         assertThat(body.get("invoiceId").asLong()).isEqualTo(invoiceId);
         assertThat(count("select count(*) from annual_upfront_request where id = " + requestId + " and status = 'DISCARDED' and discard_reason = 'CANCELLED_BY_STUDENT' and decided_at is not null"))
                 .isEqualTo(1);
@@ -124,8 +124,8 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
         discard(holderId, studentToken(), 200);
         JsonNode withPlace = requestOf(next, nextToken);
 
-        assertThat(new BigDecimal(withoutPlace.get("total").get("amount").asText())).isEqualByComparingTo("800000.00");
-        assertThat(new BigDecimal(withPlace.get("total").get("amount").asText())).isEqualByComparingTo("720000.00");
+        assertThat(new BigDecimal(withoutPlace.get("total").get("amount").asString(""))).isEqualByComparingTo("800000.00");
+        assertThat(new BigDecimal(withPlace.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
         assertThat(count("select count(*) from student_discount where discount_definition_id = " + promotion.getId() + " and status = 'ACTIVE' and program_enrollment_id = " + next.programEnrollmentId()))
                 .isEqualTo(1);
         assertThat(count("select count(*) from student_discount where discount_definition_id = " + promotion.getId() + " and status = 'ACTIVE'")).isEqualTo(1);
@@ -140,7 +140,7 @@ class DiscardAnnualUpfrontRequestIT extends AbstractAnnualUpfrontRequestIT {
         JsonNode second = requestOf(learner, token);
 
         assertThat(second.get("id").asLong()).isNotEqualTo(firstId);
-        assertThat(second.get("status").asText()).isEqualTo("AWAITING_PAYMENT");
+        assertThat(second.get("status").asString("")).isEqualTo("AWAITING_PAYMENT");
         assertThat(count("select count(*) from annual_upfront_request where program_enrollment_id = " + learner.programEnrollmentId() + " and status = 'AWAITING_PAYMENT'")).isEqualTo(1);
     }
 }

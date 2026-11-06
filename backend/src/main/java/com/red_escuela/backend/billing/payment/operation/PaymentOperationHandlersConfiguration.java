@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.payment.operation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.authorization.service.DirectorAuthorizationHandler;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.operation.OperationPreHandlers;

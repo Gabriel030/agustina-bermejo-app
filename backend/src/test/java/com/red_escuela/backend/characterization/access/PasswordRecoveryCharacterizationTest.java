@@ -39,7 +39,7 @@ class PasswordRecoveryCharacterizationTest extends AccessCharacterizationSupport
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resetToken").isNotEmpty())
                 .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(body).get("resetToken").asText();
+        return objectMapper.readTree(body).get("resetToken").asString("");
     }
 
     @Test

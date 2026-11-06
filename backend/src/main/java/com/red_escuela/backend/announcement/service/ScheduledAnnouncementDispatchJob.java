@@ -1,7 +1,7 @@
 package com.red_escuela.backend.announcement.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
@@ -106,7 +106,7 @@ public class ScheduledAnnouncementDispatchJob {
     private String serialize(List<Map<String, Object>> errors) {
         try {
             return objectMapper.writeValueAsString(errors);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return errors.toString();
         }
     }

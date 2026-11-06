@@ -1,6 +1,6 @@
 package com.red_escuela.backend.config.infrastructure;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
@@ -63,6 +63,6 @@ public class DemoApiClient {
                 .body(Map.of("username", username, "password", DEMO_PASSWORD))
                 .retrieve()
                 .body(JsonNode.class);
-        return response.get("accessToken").asText();
+        return response.get("accessToken").asString("");
     }
 }

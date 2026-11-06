@@ -1,7 +1,7 @@
 package com.red_escuela.backend.shared.serialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.MismatchedInputException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;

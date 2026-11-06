@@ -19,6 +19,7 @@ import { RosterSegmento } from '../components/RosterSegmento';
 import { useAvisos, useDestinatariosDeAviso } from '../hooks/useAvisos';
 import { useSegmentosDeAudiencia } from '../hooks/useSegmentosDeAudiencia';
 import { usePreviewDeAudiencia } from '../hooks/usePreviewDeAudiencia';
+import { useAnnouncementEmailSetting } from '@/features/institution';
 import { useEditarAviso } from '../hooks/useEditarAviso';
 import { aPayload, cambiosQueMerecenAviso, desdeAviso, mensajeDeErrorDeAviso, SPEC_INICIAL, unirCambios } from '../lib/formularioDeAviso';
 import { formatearFechaHora } from '@/lib/avisos';
@@ -51,6 +52,7 @@ export function AvisoEditar() {
     tipo,
   );
   const { data: preview, recalculando } = usePreviewDeAudiencia(sectionId, tipo, programado ? spec : SPEC_INICIAL);
+  const emailEnabled = useAnnouncementEmailSetting();
   const destinatarios = useDestinatariosDeAviso(programado ? undefined : avisoId);
   const editarAviso = useEditarAviso(sectionId, tipo, avisoId);
 
@@ -199,6 +201,8 @@ export function AvisoEditar() {
           scheduledFor={valores.cuando === 'programar' ? valores.scheduledFor : null}
           reNotifica={!programado && notificar}
           sinNotificar={!programado && !notificar}
+          urgent={!!valores.urgent}
+          emailEnabled={emailEnabled}
         />
       </SeccionMensaje>
 

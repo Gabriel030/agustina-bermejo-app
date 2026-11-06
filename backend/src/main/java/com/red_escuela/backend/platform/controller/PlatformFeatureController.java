@@ -15,7 +15,10 @@ import com.red_escuela.backend.platform.dto.FeatureChangeResponse;
 import com.red_escuela.backend.platform.dto.FeatureDetailResponse;
 import com.red_escuela.backend.platform.usecase.ListFeatureChangesUseCase;
 import com.red_escuela.backend.platform.usecase.ListPlatformFeaturesUseCase;
+import com.red_escuela.backend.platform.model.FeatureChangeActorKind;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -50,8 +53,14 @@ public class PlatformFeatureController {
     }
 
     @GetMapping("/platform/features/changes")
-    public Page<FeatureChangeResponse> listFeatureChanges(@RequestParam(required = false) FeatureCode code, @PageableDefault(size = 25) Pageable pageable) {
-        return listFeatureChanges.list(new FeatureChangeFilter(code), pageable).map(FeatureChangeResponse::of);
+    public Page<FeatureChangeResponse> listFeatureChanges(
+            @RequestParam(required = false) FeatureCode code,
+            @RequestParam(required = false) Long actorPersonId,
+            @RequestParam(required = false) FeatureChangeActorKind actorKind,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @PageableDefault(size = 25) Pageable pageable) {
+        return listFeatureChanges.list(new FeatureChangeFilter(code, actorPersonId, actorKind, from, to), pageable).map(FeatureChangeResponse::of);
     }
 
     @GetMapping("/platform/features/{code}/preview")

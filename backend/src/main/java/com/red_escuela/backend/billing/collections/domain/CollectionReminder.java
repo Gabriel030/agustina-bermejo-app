@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.collections.domain;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 import com.red_escuela.backend.billing.events.PlannedReminderMessage;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.Column;

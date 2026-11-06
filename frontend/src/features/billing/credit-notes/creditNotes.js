@@ -1,4 +1,5 @@
 import { formatDate, formatMoney, hasPendingReceipt, isInvoicePayable } from '@/lib/billing';
+import { IDEMPOTENCY_KEY_CONFLICT_CODE, IDEMPOTENCY_KEY_INVALID_CODE, UNKNOWN_OUTCOME_CODE } from '../idempotency';
 import { fromCents, parseAmountInput, toCents } from '../refunds/refundForm';
 
 export const JUSTIFICATION_MAX_LENGTH = 1000;
@@ -83,10 +84,24 @@ export const CREDIT_NOTE_ERROR_MESSAGES = {
     title: 'Ese motivo no se puede usar desde acá.',
     detail: 'Elegí otro motivo.',
   },
+  [IDEMPOTENCY_KEY_CONFLICT_CODE]: {
+    title: 'Este pedido ya se había enviado con otros datos.',
+    detail: 'Revisá las notas de crédito de la cuota antes de volver a emitir.',
+  },
+  [IDEMPOTENCY_KEY_INVALID_CODE]: {
+    title: 'No pudimos identificar el pedido.',
+    detail: 'Volvé a entrar a la pantalla y emití la nota de nuevo.',
+  },
   [JUSTIFICATION_REQUIRED_CODE]: {
     title: 'La justificación es obligatoria.',
     detail: 'Contá por qué se hace. Queda en el registro de auditoría.',
   },
+};
+
+export const UNKNOWN_OUTCOME_ERROR = {
+  code: UNKNOWN_OUTCOME_CODE,
+  title: 'No pudimos confirmar si se emitió.',
+  detail: 'Si reintentás desde acá, no se duplica. También podés revisar las notas de crédito de la cuota.',
 };
 
 export function creditNoteErrorOf(error) {

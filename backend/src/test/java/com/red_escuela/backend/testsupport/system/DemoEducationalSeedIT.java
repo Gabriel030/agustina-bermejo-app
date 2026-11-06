@@ -1,6 +1,6 @@
 package com.red_escuela.backend.testsupport.system;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.infrastructure.DemoApiClient;
 import com.red_escuela.backend.config.DemoEducationalSeedRunner;
@@ -64,7 +64,7 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
     private long countByName(JsonNode items, String name) {
         long matches = 0;
         for (JsonNode item : items) {
-            if (name.equals(item.path("name").asText())) {
+            if (name.equals(item.path("name").asString(""))) {
                 matches++;
             }
         }

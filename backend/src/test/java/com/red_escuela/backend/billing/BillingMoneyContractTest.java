@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.shared.domain.Money;
@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,13 +50,13 @@ class BillingMoneyContractTest {
         }
     }
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new ValueObjectJacksonModule())
-            .registerModule(new JavaTimeModule());
+    private final JsonMapper objectMapper = JsonMapper.builder()
+            .addModule(new ValueObjectJacksonModule())
+            .build();
 
     private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new ContractController())
             .setControllerAdvice(new GlobalExceptionHandler())
-            .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+            .setMessageConverters(new JacksonJsonHttpMessageConverter(objectMapper))
             .build();
 
     @Test

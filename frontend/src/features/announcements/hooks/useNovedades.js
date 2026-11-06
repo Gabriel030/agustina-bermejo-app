@@ -6,6 +6,7 @@ export function useNovedades() {
     queryKey: ['me', 'announcements'],
     queryFn: () => apiFetch('/me/announcements'),
     staleTime: 60_000,
-    refetchInterval: 60_000,
+    refetchInterval: () => (navigator.onLine ? 60_000 : false),
+    meta: { offline: true },
   });
 }

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
 import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
 import com.red_escuela.backend.billing.collections.operation.LateFeeCorrectionSweepResult;
@@ -68,7 +68,7 @@ public class InvoiceOverdueSweepService {
     private String serialize(List<Map<String, Object>> errors) {
         try {
             return objectMapper.writeValueAsString(errors);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return errors.toString();
         }
     }

@@ -17,7 +17,7 @@ public class InstitutionAcademicSettingsReader {
     public InstitutionAcademicSettings read() {
         return institutionRepository.findAll().stream().findFirst()
                 .map(institution -> new InstitutionAcademicSettings(
-                        institution.getJustificationDeadlineBusinessDays(), institution.getEvaluationConfigDueDays()))
+                        institution.getJustificationDeadlineBusinessDays(), institution.getEvaluationConfigDueDays(), institution.isAnnouncementEmailEnabled()))
                 .orElse(InstitutionAcademicSettings.DEFAULTS);
     }
 }

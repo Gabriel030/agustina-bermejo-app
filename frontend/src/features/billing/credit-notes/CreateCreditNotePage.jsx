@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { formatMoney, invoiceTitle, invoiceStatusInfo } from '@/lib/billing';
 import { useAdminBillingOverview } from '@/hooks/useBilling';
 import { inboxPath, roleBaseOf } from '../authorization/authorizationRequests';
+import { isUnknownOutcome, useIdempotencyKey } from '../idempotency';
 import { useIssueCreditNote, useStudentCreditBalance, useStudentHeader } from '../hooks/useCreditNotes';
 import { fromCents, toCents } from '../refunds/refundForm';
 import { AmountDiffTable } from './AmountDiffTable';
@@ -26,6 +27,7 @@ import { CreditNoteViolation } from './CreditNoteViolation';
 import {
   JUSTIFICATION_MAX_LENGTH,
   STAFF_REASON_LABELS,
+  UNKNOWN_OUTCOME_ERROR,
   billingPath,
   creditNoteDiffRowsOf,
   creditNoteDraftOf,
@@ -107,6 +109,8 @@ export function CreateCreditNotePage() {
   const creditQuery = useStudentCreditBalance(studentId);
   const creditBalance = creditQuery.data;
   const mutation = useIssueCreditNote();
+  const keyFor = useIdempotencyKey();
+  const submitting = useRef(false);
 
   const [step, setStep] = useState('amounts');
   const [form, setForm] = useState({ justification: '', amounts: {} });
@@ -182,10 +186,12 @@ export function CreateCreditNotePage() {
   }
 
   async function handleSubmit() {
-    if (draft.blocked || creditPending || mutation.isPending) return;
+    if (draft.blocked || creditPending || mutation.isPending || submitting.current) return;
+    submitting.current = true;
     setServerError(null);
     try {
-      const result = await mutation.mutateAsync({ invoiceId: invoice.id, payload: draft.payload });
+      const idempotencyKey = keyFor({ invoiceId: invoice.id, payload: draft.payload });
+      const result = await mutation.mutateAsync({ invoiceId: invoice.id, payload: draft.payload, idempotencyKey });
       if (isAuthorizationAck(result)) {
         toast.warning('Pedido enviado. Todavía no se aplicó.', {
           description: 'La nota de crédito se emite cuando la autorice la dirección.',
@@ -204,7 +210,9 @@ export function CreateCreditNotePage() {
       }
       navigate(backPath);
     } catch (error) {
-      setServerError(creditNoteErrorOf(error));
+      setServerError(isUnknownOutcome(error) ? UNKNOWN_OUTCOME_ERROR : creditNoteErrorOf(error));
+    } finally {
+      submitting.current = false;
     }
   }
 
@@ -259,12 +267,12 @@ export function CreateCreditNotePage() {
               <CreditNoteLinesForm invoice={invoice} draft={draft} amounts={form.amounts} onChange={updateAmount} />
             </div>
 
-            <CreditNoteViolation error={serverError} receiptsTo={receiptsLocation(`/${roleBase}/facturacion`, studentId)} onReload={handleReload} onCancelInstead={handleCancelInstead} />
+            <CreditNoteViolation error={serverError} receiptsTo={receiptsLocation(`/${roleBase}/facturacion`, studentId)} onReload={handleReload} onCancelInstead={handleCancelInstead} onRetry={handleSubmit} retrying={mutation.isPending} />
           </GlassCard>
 
           <GlassCard className="flex h-fit flex-col gap-4 p-5 lg:sticky lg:top-4">
             <h2 className="font-heading text-base font-semibold text-ink">Resumen</h2>
-            <CreditNoteSummary draft={draft} creditBalance={creditBalance} creditQuery={creditQuery} onCancelInstead={handleCancelInstead} />
+            <CreditNoteSummary draft={draft} creditBalance={creditBalance} creditQuery={creditQuery} onCancelInstead={handleCancelInstead} onRetry={handleSubmit} retrying={mutation.isPending} />
             {!executesImmediately && (
               <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-bg px-3 py-2 text-sm text-ink">
                 <Info className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
@@ -320,7 +328,7 @@ export function CreateCreditNotePage() {
             </div>
           )}
 
-          <CreditNoteViolation error={serverError} receiptsTo={receiptsLocation(`/${roleBase}/facturacion`, studentId)} onReload={handleReload} onCancelInstead={handleCancelInstead} />
+          <CreditNoteViolation error={serverError} receiptsTo={receiptsLocation(`/${roleBase}/facturacion`, studentId)} onReload={handleReload} onCancelInstead={handleCancelInstead} onRetry={handleSubmit} retrying={mutation.isPending} />
         </GlassCard>
       )}
 

@@ -1,8 +1,10 @@
+import { formatDateTime } from '@/lib/billing';
+
 export const STALE_FEATURE_VERSION = 'STALE_FEATURE_VERSION';
 
 const MESSAGE_BY_CODE = {
   FEATURE_ALREADY_IN_REQUESTED_STATE: 'Este módulo ya estaba en ese estado.',
-  INVALID_BILLING_MODE_TRANSITION: 'Ese cambio de modo no está permitido todavía. Requiere un paso previo que aún no está disponible.',
+  INVALID_BILLING_MODE_TRANSITION: 'Ese cambio de modo no está permitido. Volvé a empezar el cambio.',
   INVALID_TRANSITION_CONFIRMATION: 'La verificación previa venció. Volvé a empezar el cambio.',
   FEATURE_CHANGE_REASON_INVALID: 'El motivo debe tener entre 5 y 500 caracteres.',
   FEATURE_VALUE_INVALID: 'El valor pedido no es válido para este módulo.',
@@ -14,6 +16,15 @@ export function isStaleFeature(error) {
 }
 
 export function featureErrorMessage(error) {
-  if (error?.code === STALE_FEATURE_VERSION) return 'Alguien cambió este módulo mientras lo editabas.';
+  if (error?.code === STALE_FEATURE_VERSION) return staleFeatureMessage(error.details);
   return MESSAGE_BY_CODE[error?.code] ?? error?.message ?? 'No pudimos guardar el cambio. Probá de nuevo.';
+}
+
+function staleFeatureMessage(details) {
+  const who = details?.changedByName;
+  const when = details?.changedAt ? formatDateTime(details.changedAt) : '';
+  if (who && when) return `Lo cambió ${who} el ${when}.`;
+  if (who) return `Lo cambió ${who}.`;
+  if (when) return `Se cambió el ${when}.`;
+  return 'Alguien cambió este módulo mientras lo editabas.';
 }

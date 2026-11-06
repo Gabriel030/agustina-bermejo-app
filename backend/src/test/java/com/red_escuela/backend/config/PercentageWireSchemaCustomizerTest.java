@@ -1,7 +1,8 @@
 package com.red_escuela.backend.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
 import io.swagger.v3.oas.models.Components;
@@ -19,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PercentageWireSchemaCustomizerTest {
 
-    private static final ObjectMapper WIRE_MAPPER = new ObjectMapper().registerModule(new ValueObjectJacksonModule());
+    private static final ObjectMapper WIRE_MAPPER = JsonMapper.builder().addModule(new ValueObjectJacksonModule()).build();
     private static final String REF = "#/components/schemas/Percentage";
 
     @SuppressWarnings({"rawtypes", "unchecked"})

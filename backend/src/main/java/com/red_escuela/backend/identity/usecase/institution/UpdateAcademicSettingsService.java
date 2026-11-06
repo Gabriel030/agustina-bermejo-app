@@ -17,6 +17,6 @@ public class UpdateAcademicSettingsService implements UpdateAcademicSettingsUseC
     @Override
     public AcademicSettingsResponse update(AcademicSettingsRequest request) {
         return AcademicSettingsResponse.from(writer.write(
-                request.justificationDeadlineBusinessDays(), request.evaluationConfigDueDays()));
+                request.justificationDeadlineBusinessDays(), request.evaluationConfigDueDays(), request.announcementEmailEnabled()));
     }
 }

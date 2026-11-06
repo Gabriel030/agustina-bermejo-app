@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.discount.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.operation.AbstractStudentDiscountIssuingIT;
@@ -13,7 +13,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -78,7 +78,7 @@ class StudentDiscountListingsIT extends AbstractStudentDiscountIssuingIT {
         JsonNode activeOfOther = get200("/student-discounts?status=ACTIVE&programEnrollmentId=" + other.programEnrollmentId(), token).get("items");
 
         assertThat(ids(revokedOfFirst)).containsExactly(revoked.getId());
-        assertThat(revokedOfFirst.get(0).get("revocationReason").asText()).isEqualTo("Motivo interno del director");
+        assertThat(revokedOfFirst.get(0).get("revocationReason").asString("")).isEqualTo("Motivo interno del director");
         assertThat(activeOfFirst).isEmpty();
         assertThat(ids(activeOfOther)).containsExactly(active.getId());
     }
@@ -159,15 +159,15 @@ class StudentDiscountListingsIT extends AbstractStudentDiscountIssuingIT {
         JsonNode scholarshipNode = items.get(1);
         JsonNode individualNode = items.get(0);
         assertThat(scholarshipNode.get("id").asLong()).isEqualTo(scholarship.getId());
-        assertThat(scholarshipNode.get("enrollmentName").asText()).isEqualTo(programName);
-        assertThat(scholarshipNode.get("definitionName").asText()).isEqualTo(definitionName);
-        assertThat(scholarshipNode.get("definitionType").asText()).isEqualTo("SCHOLARSHIP");
-        assertThat(scholarshipNode.get("studentName").asText()).isEqualTo(studentName);
+        assertThat(scholarshipNode.get("enrollmentName").asString("")).isEqualTo(programName);
+        assertThat(scholarshipNode.get("definitionName").asString("")).isEqualTo(definitionName);
+        assertThat(scholarshipNode.get("definitionType").asString("")).isEqualTo("SCHOLARSHIP");
+        assertThat(scholarshipNode.get("studentName").asString("")).isEqualTo(studentName);
         assertThat(scholarshipNode.get("studentId").asLong()).isEqualTo(learner.studentId());
         assertThat(individualNode.get("id").asLong()).isEqualTo(individual.getId());
         assertThat(individualNode.get("definitionName").isNull()).isTrue();
         assertThat(individualNode.get("definitionType").isNull()).isTrue();
-        assertThat(individualNode.get("enrollmentName").asText()).isEqualTo(programName);
+        assertThat(individualNode.get("enrollmentName").asString("")).isEqualTo(programName);
     }
 
     @Test
@@ -179,7 +179,7 @@ class StudentDiscountListingsIT extends AbstractStudentDiscountIssuingIT {
         JsonNode ofStudent = get200("/students/" + learner.studentId() + "/student-discounts", tokenOf(administrative));
 
         assertThat(ids(ofStudent)).containsExactly(own.getId()).doesNotContain(foreign.getId());
-        assertThat(ofStudent.get(0).get("studentName").asText()).isNotBlank();
+        assertThat(ofStudent.get(0).get("studentName").asString("")).isNotBlank();
         mockMvc.perform(get("/students/-1/student-discounts").header("Authorization", "Bearer " + tokenOf(director))).andExpect(status().isNotFound());
     }
 
@@ -193,8 +193,8 @@ class StudentDiscountListingsIT extends AbstractStudentDiscountIssuingIT {
 
         assertThat(preview.get("allowed").asBoolean()).isTrue();
         assertThat(preview.get("violations")).isEmpty();
-        assertThat(preview.get("fromPeriod").asText()).isEqualTo("2027-03");
-        assertThat(preview.get("nextInstallmentPeriod").asText()).isEqualTo("2027-03");
+        assertThat(preview.get("fromPeriod").asString("")).isEqualTo("2027-03");
+        assertThat(preview.get("nextInstallmentPeriod").asString("")).isEqualTo("2027-03");
         assertThat(preview.get("coveredPeriods").asInt()).isEqualTo(4);
         assertThat(preview.get("requiresDirectorApproval").asBoolean()).isFalse();
         assertThat(preview.get("discountDefinitionId").asLong()).isPositive();
@@ -214,9 +214,9 @@ class StudentDiscountListingsIT extends AbstractStudentDiscountIssuingIT {
                 """, tokenOf(director));
 
         assertThat(overlapping.get("allowed").asBoolean()).isFalse();
-        assertThat(overlapping.get("violations").get(0).get("code").asText()).isEqualTo("STUDENT_DISCOUNT_OVERLAP");
+        assertThat(overlapping.get("violations").get(0).get("code").asString("")).isEqualTo("STUDENT_DISCOUNT_OVERLAP");
         assertThat(overlapping.get("overlappingDiscountId").asLong()).isPositive();
-        assertThat(beforeNext.get("violations").get(0).get("code").asText()).isEqualTo("SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT");
+        assertThat(beforeNext.get("violations").get(0).get("code").asString("")).isEqualTo("SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT");
         mockMvc.perform(post("/program-enrollments/" + learner.programEnrollmentId() + "/student-discounts").header("Authorization", "Bearer " + tokenOf(director))
                 .contentType(MediaType.APPLICATION_JSON).content(overlappingBody)).andExpect(status().isConflict());
     }

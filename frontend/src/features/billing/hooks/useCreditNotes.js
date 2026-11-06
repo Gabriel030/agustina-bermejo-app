@@ -1,8 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-function post(path, payload) {
-  return apiFetch(path, { method: 'POST', body: JSON.stringify(payload) });
+function post(path, payload, headers) {
+  return apiFetch(path, { method: 'POST', body: JSON.stringify(payload), ...(headers && { headers }) });
 }
 
 export function useStudentCreditNotes(studentId) {
@@ -61,7 +61,9 @@ export function useCancelInvoice() {
 }
 
 export function useIssueCreditNote() {
-  return useInvalidatingMutation(({ invoiceId, payload }) => post(`/invoices/${invoiceId}/credit-notes`, payload));
+  return useInvalidatingMutation(({ invoiceId, payload, idempotencyKey }) =>
+    post(`/invoices/${invoiceId}/credit-notes`, payload, { 'Idempotency-Key': idempotencyKey }),
+  );
 }
 
 export function useStudentHeader(studentId) {

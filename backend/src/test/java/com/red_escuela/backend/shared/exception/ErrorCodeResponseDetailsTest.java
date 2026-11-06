@@ -1,7 +1,7 @@
 package com.red_escuela.backend.shared.exception;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
@@ -23,7 +23,7 @@ class ErrorCodeResponseDetailsTest {
 
         assertThat(PendingDebtException.TOTAL_DUE_KEY).isEqualTo("totalDue");
         assertThat(PendingDebtException.INSTALLMENT_COUNT_KEY).isEqualTo("installmentCount");
-        assertThat(body.get("code").asText()).isEqualTo("PENDING_DEBT");
+        assertThat(body.get("code").asString("")).isEqualTo("PENDING_DEBT");
         assertThat(body.get("details").get("totalDue").decimalValue()).isEqualByComparingTo("33000.00");
         assertThat(body.get("details").get("installmentCount").asInt()).isEqualTo(2);
     }

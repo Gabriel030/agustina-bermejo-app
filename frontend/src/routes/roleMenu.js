@@ -1,4 +1,4 @@
-import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle } from 'lucide-react';
+import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -17,6 +17,7 @@ const [invoicing, discounts, reminders, runs, monthlyRun] = billingItems;
 const financial = { slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
+const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
 const approvals = { slug: 'aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 };
 
 export const ROLE_MENU = {
@@ -36,7 +37,7 @@ export const ROLE_MENU = {
   preceptor: [
     inicio,
     alumnos,
-    { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked },
+    academicOffering,
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     solicitudes,
     periodos,
@@ -62,10 +63,12 @@ export const ROLE_MENU = {
   director: [
     inicio,
     alumnos,
+    academicOffering,
     personal,
     approvals,
     academicManagement,
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
+    { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     invoicing,
     discounts,
     reminders,

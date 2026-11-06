@@ -1,4 +1,4 @@
-package com.red_escuela.backend.platform.entity;
+package com.red_escuela.backend.platform.model;
 
 public enum FeatureChangeActorKind {
     HUMAN,

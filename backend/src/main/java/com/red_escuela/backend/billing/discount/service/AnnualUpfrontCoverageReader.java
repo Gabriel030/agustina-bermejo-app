@@ -29,7 +29,7 @@ public class AnnualUpfrontCoverageReader {
 
     private boolean annualUpfrontRequestCoversAnyMonthOf(EnrollmentReference enrollment, YearMonth from, YearMonth to) {
         return studentDiscountRepository.findPeriodsOfLiveAnnualUpfrontRequests(enrollment.id()).stream()
-                .map(period -> YearMonth.from(period.toLocalDate()))
+                .map(period -> YearMonth.from(period))
                 .anyMatch(period -> !period.isBefore(from) && !period.isAfter(to));
     }
 

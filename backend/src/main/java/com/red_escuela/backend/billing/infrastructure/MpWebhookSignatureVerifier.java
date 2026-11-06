@@ -12,21 +12,40 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HexFormat;
 
 @Component
 public class MpWebhookSignatureVerifier {
+    private static final Duration DEFAULT_MAX_AGE = Duration.ofMinutes(5);
+
     private final String secret;
     private final boolean unsignedAllowed;
+    private final Clock clock;
+    private final Duration maxAge;
 
     @Autowired
-    public MpWebhookSignatureVerifier(@Value("${mercadopago.webhook-secret:}") String secret, Environment environment) {
+    public MpWebhookSignatureVerifier(@Value("${mercadopago.webhook-secret:}") String secret,
+                                      @Value("${mercadopago.webhook-max-age-seconds:300}") long maxAgeSeconds,
+                                      Clock clock, Environment environment) {
+        this(secret, environment.acceptsProfiles(Profiles.of("local")), clock, Duration.ofSeconds(maxAgeSeconds));
+    }
+
+    public MpWebhookSignatureVerifier(String secret, Environment environment) {
         this(secret, environment.acceptsProfiles(Profiles.of("local")));
     }
 
     public MpWebhookSignatureVerifier(String secret, boolean unsignedAllowed) {
+        this(secret, unsignedAllowed, Clock.systemUTC(), DEFAULT_MAX_AGE);
+    }
+
+    public MpWebhookSignatureVerifier(String secret, boolean unsignedAllowed, Clock clock, Duration maxAge) {
         this.secret = secret;
         this.unsignedAllowed = unsignedAllowed;
+        this.clock = clock;
+        this.maxAge = maxAge;
     }
 
     public void verify(String xSignature, String xRequestId, String mpPaymentId) {
@@ -52,6 +71,20 @@ public class MpWebhookSignatureVerifier {
         byte[] expected = HexFormat.of().formatHex(hmacSha256(template)).getBytes(StandardCharsets.UTF_8);
         if (!MessageDigest.isEqual(expected, v1.getBytes(StandardCharsets.UTF_8))) {
             throw new InvalidMpWebhookSignatureException("Firma de webhook inválida");
+        }
+        requireFresh(ts);
+    }
+
+    private void requireFresh(String ts) {
+        long timestampMillis;
+        try {
+            timestampMillis = Long.parseLong(ts);
+        } catch (NumberFormatException e) {
+            throw new InvalidMpWebhookSignatureException("Firma de webhook inválida");
+        }
+        Duration age = Duration.between(Instant.ofEpochMilli(timestampMillis), clock.instant()).abs();
+        if (age.compareTo(maxAge) > 0) {
+            throw new InvalidMpWebhookSignatureException("Firma de webhook vencida");
         }
     }
 
