@@ -5994,7 +5994,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attachmentUrl", "reason" ],
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "LateFeeReinstatementResponse" : {

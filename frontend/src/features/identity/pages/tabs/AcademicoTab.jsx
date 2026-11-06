@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/table/DataTable';
+import { FaltasDeMateria } from '@/features/attendance';
 import { EnrollmentPicker } from '@/features/identity/components/EnrollmentPicker';
 import {
   useCourseProgress,
@@ -41,7 +42,7 @@ function LoadError({ onRetry }) {
   );
 }
 
-function SubjectDetail({ row, onViewGrades }) {
+function SubjectDetail({ row, onViewGrades, absences }) {
   return (
     <div className="sticky left-0 flex w-fit max-w-[calc(100vw-4rem)] flex-col gap-1 p-3 text-[13px] text-ink-soft">
       {row.schedule && <span>{row.schedule}</span>}
@@ -52,6 +53,14 @@ function SubjectDetail({ row, onViewGrades }) {
       <Button type="button" variant="outline" className="mt-1 h-10 w-fit" onClick={() => onViewGrades(row.id)}>
         Ver notas →
       </Button>
+      <FaltasDeMateria
+        sectionEnrollmentId={row.id}
+        studentName={absences.studentName}
+        subjectLabel={`${row.subjectName} · Com. ${row.sectionName}`}
+        canJustify={absences.canJustify}
+        authorName={absences.authorName}
+        roleBase={absences.roleBase}
+      />
     </div>
   );
 }
@@ -141,7 +150,7 @@ function PendingList({ title, items }) {
   );
 }
 
-function ProgramRecord({ programEnrollmentId, onViewGrades }) {
+function ProgramRecord({ programEnrollmentId, onViewGrades, absences }) {
   const progress = useProgramProgress(programEnrollmentId);
   const sections = useProgramSectionEnrollments(programEnrollmentId);
   const attendance = useProgramAttendanceSummary(programEnrollmentId);
@@ -200,7 +209,7 @@ function ProgramRecord({ programEnrollmentId, onViewGrades }) {
           minWidth={0}
           expandLabel="Ver detalle de la cursada"
           emptyState={<EmptyState icon="📚" title="Sin cursadas" description="Todavía no se inscribió a ninguna materia." />}
-          renderExpanded={(row) => <SubjectDetail row={row.original} onViewGrades={onViewGrades} />}
+          renderExpanded={(row) => <SubjectDetail row={row.original} onViewGrades={onViewGrades} absences={absences} />}
         />
       </GlassCard>
 
@@ -259,7 +268,7 @@ function CourseRecord({ courseEnrollmentId }) {
   );
 }
 
-export function AcademicoTab({ studentId, enrollmentKey, onEnrollmentChange, onViewGrades }) {
+export function AcademicoTab({ studentId, enrollmentKey, onEnrollmentChange, onViewGrades, absences }) {
   const { options, isLoading, isError, refetch } = useEnrollmentOptions(studentId);
 
   if (isLoading) {
@@ -287,6 +296,7 @@ export function AcademicoTab({ studentId, enrollmentKey, onEnrollmentChange, onV
         <ProgramRecord
           key={selected.key}
           programEnrollmentId={id}
+          absences={absences}
           onViewGrades={(sectionEnrollmentId) => onViewGrades(selected.key, sectionEnrollmentId)}
         />
       ) : (
