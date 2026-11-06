@@ -546,6 +546,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
 | POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
+| POST | `/students/{studentId}/annual-upfront-requests/{requestId}/cash-payment` | `AnnualUpfrontCashPaymentController#registerAnnualUpfrontCashPayment` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
 | POST | `/students/{studentId}/cash-payments` | `StudentPaymentController#registerCashPayment` |
 | POST | `/students/{studentId}/refund-requests` | `RefundController#requestRefundOnBehalfOfStudent` |
