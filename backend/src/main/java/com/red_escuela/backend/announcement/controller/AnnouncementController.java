@@ -9,6 +9,8 @@ import com.red_escuela.backend.announcement.dto.CreateAnnouncementRequest;
 import com.red_escuela.backend.announcement.dto.UpdateAnnouncementRequest;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.SectionType;
+import com.red_escuela.backend.announcement.service.AnnouncementReadCounter;
+import com.red_escuela.backend.announcement.service.StaffAnnouncementListing;
 import com.red_escuela.backend.announcement.usecase.announcement.AnnouncementReadCount;
 import com.red_escuela.backend.announcement.usecase.announcement.CountAnnouncementReadsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
@@ -17,6 +19,7 @@ import com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncem
 import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementReadReceiptsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListSectionAnnouncementsUseCase;
+import com.red_escuela.backend.announcement.usecase.announcement.ListStaffSectionAnnouncementsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementUseCase;
 import com.red_escuela.backend.announcement.usecase.audience.ListAudienceSegmentsUseCase;
@@ -47,6 +50,7 @@ public class AnnouncementController {
     private final UpdateAnnouncementUseCase updateAnnouncement;
     private final DeleteAnnouncementUseCase deleteAnnouncement;
     private final ListSectionAnnouncementsUseCase listSectionAnnouncements;
+    private final ListStaffSectionAnnouncementsUseCase listStaffSectionAnnouncements;
     private final ListAudienceSegmentsUseCase listAudienceSegments;
     private final PreviewAudienceUseCase previewAudience;
     private final ListAnnouncementRecipientsUseCase listAnnouncementRecipients;
@@ -57,6 +61,7 @@ public class AnnouncementController {
                                   UpdateAnnouncementUseCase updateAnnouncement,
                                   DeleteAnnouncementUseCase deleteAnnouncement,
                                   ListSectionAnnouncementsUseCase listSectionAnnouncements,
+                                  ListStaffSectionAnnouncementsUseCase listStaffSectionAnnouncements,
                                   ListAudienceSegmentsUseCase listAudienceSegments,
                                   PreviewAudienceUseCase previewAudience,
                                   ListAnnouncementRecipientsUseCase listAnnouncementRecipients,
@@ -66,6 +71,7 @@ public class AnnouncementController {
         this.updateAnnouncement = updateAnnouncement;
         this.deleteAnnouncement = deleteAnnouncement;
         this.listSectionAnnouncements = listSectionAnnouncements;
+        this.listStaffSectionAnnouncements = listStaffSectionAnnouncements;
         this.listAudienceSegments = listAudienceSegments;
         this.previewAudience = previewAudience;
         this.listAnnouncementRecipients = listAnnouncementRecipients;
@@ -95,6 +101,18 @@ public class AnnouncementController {
     @GetMapping("/course-sections/{sectionId}/announcements")
     public List<AnnouncementResponse> listForCourseSection(@PathVariable Long sectionId) {
         return toResponses(listSectionAnnouncements.list(SectionType.COURSE, sectionId));
+    }
+
+    @GetMapping("/subject-sections/{sectionId}/announcements/read-receipts")
+    @PreAuthorize("hasAnyRole('PRECEPTOR', 'DIRECTOR')")
+    public List<AnnouncementResponse> listReadReceiptsForSubjectSection(@PathVariable Long sectionId) {
+        return toResponses(listStaffSectionAnnouncements.listForProgramSection(sectionId));
+    }
+
+    @GetMapping("/course-sections/{sectionId}/announcements/read-receipts")
+    @PreAuthorize("hasAnyRole('PRECEPTOR', 'DIRECTOR')")
+    public List<AnnouncementResponse> listReadReceiptsForCourseSection(@PathVariable Long sectionId) {
+        return toResponses(listStaffSectionAnnouncements.listForCourseSection(sectionId));
     }
 
     @GetMapping("/subject-sections/{sectionId}/audience-segments")
@@ -155,6 +173,17 @@ public class AnnouncementController {
                 .map(announcement -> {
                     AnnouncementReadCount count = counts.getOrDefault(announcement.getId(), AnnouncementReadCount.EMPTY);
                     return AnnouncementResponse.from(announcement, count.recipientCount(), count.readCount());
+                })
+                .toList();
+    }
+
+    private List<AnnouncementResponse> toResponses(StaffAnnouncementListing listing) {
+        return listing.announcements().stream()
+                .map(announcement -> {
+                    AnnouncementReadCounter.ReadCount count = listing.counts().get(announcement.getId());
+                    return count == null
+                            ? AnnouncementResponse.from(announcement, 0, 0)
+                            : AnnouncementResponse.from(announcement, count.recipientCount(), count.readCount());
                 })
                 .toList();
     }
