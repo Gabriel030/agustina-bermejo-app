@@ -699,6 +699,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/prospects/{id}/send-verification` | `ProspectController#sendVerification` |
 | POST | `/refunds/{refundId}/completion` | `RefundController#completeRefund` |
 | POST | `/refunds/{refundId}/failure` | `RefundController#failRefund` |
+| POST | `/regular-certificates` | `RegularCertificateController#issue` |
 | POST | `/section-enrollments/{id}/change-section` | `SubjectSectionEnrollmentController#changeSection` |
 | POST | `/section-enrollments/{id}/grade-items` | `GradeItemController#loadProgramEnrollmentGrade` |
 | POST | `/section-enrollments/{id}/withdraw` | `SubjectSectionEnrollmentController#withdraw` |
