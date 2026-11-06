@@ -272,9 +272,9 @@ describe('JustificarFaltaDialog', () => {
     await waitFor(() => expect(within(rowOf('05/11/2026')).getByRole('link', { name: 'Revisar solicitud' })).toBeInTheDocument());
   });
 
-  it('shows a network failure inside the dialog without closing it', async () => {
+  it('shows a server failure inside the dialog without closing it', async () => {
     mockAttendance();
-    server.use(http.post(`${API}/attendance/41/justify`, () => HttpResponse.error()));
+    server.use(http.post(`${API}/attendance/41/justify`, () => HttpResponse.json(errorBody('INTERNAL_ERROR', { retryable: true }), { status: 500 })));
     const user = userEvent.setup();
     renderFaltas();
     const dialog = await openDialog(user, '05/11/2026');
