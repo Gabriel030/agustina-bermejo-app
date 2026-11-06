@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.dto.AuthTokens;
+import com.red_escuela.backend.identity.dto.ClientContext;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
@@ -126,14 +127,17 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void refreshWithValidTokenRotatesAndTheOldTokenStopsWorking() {
+    void refreshWithValidTokenRotatesAndTheOldTokenAllowsOnlyOneRetryInsideTheGraceWindow() {
         persistPerson("refrescable", "correcta123", AuthProvider.LOCAL);
         AuthTokens original = loginUseCase.login(new LoginCommand("refrescable", "correcta123", "127.0.0.1"));
+        ClientContext client = ClientContext.of("test-agent", "127.0.0.1");
 
-        AuthTokens rotated = refreshTokenUseCase.refresh(original.refreshToken());
+        AuthTokens rotated = refreshTokenUseCase.refresh(original.refreshToken(), client);
+        AuthTokens retried = refreshTokenUseCase.refresh(original.refreshToken(), client);
 
         assertThat(rotated.refreshToken()).isNotEqualTo(original.refreshToken());
-        assertThatThrownBy(() -> refreshTokenUseCase.refresh(original.refreshToken()))
+        assertThat(retried.refreshToken()).isNotIn(original.refreshToken(), rotated.refreshToken());
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(original.refreshToken(), client))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
@@ -144,7 +148,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
 
         logoutUseCase.logout(tokens.refreshToken());
 
-        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken(), ClientContext.of("test-agent", "127.0.0.1")))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
@@ -156,7 +160,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
         person.setStatus(StatusType.INACTIVE);
         entityManager.flush();
 
-        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken(), ClientContext.of("test-agent", "127.0.0.1")))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 }

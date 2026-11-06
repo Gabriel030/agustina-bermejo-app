@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.controller;
 
 import com.red_escuela.backend.identity.dto.AuthResponse;
+import com.red_escuela.backend.identity.dto.ClientContext;
 import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.identity.dto.GoogleLoginRequest;
 import com.red_escuela.backend.identity.dto.GoogleRegisterRequest;
@@ -107,8 +108,9 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
-        AuthTokens tokens = refreshTokenUseCase.refresh(request.refreshToken());
+    public AuthResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletRequest httpRequest) {
+        ClientContext clientContext = ClientContext.of(httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
+        AuthTokens tokens = refreshTokenUseCase.refresh(request.refreshToken(), clientContext);
         return AuthResponse.from(tokens);
     }
 

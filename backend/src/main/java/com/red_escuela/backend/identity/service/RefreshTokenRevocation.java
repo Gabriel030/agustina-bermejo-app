@@ -17,7 +17,11 @@ public class RefreshTokenRevocation {
     public void revokeByHash(String tokenHash) {
         refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
             token.setRevoked(true);
+            token.setGraceUsed(true);
             refreshTokenRepository.save(token);
+            if (token.getParentId() != null) {
+                refreshTokenRepository.disableGraceById(token.getParentId());
+            }
         });
     }
 }

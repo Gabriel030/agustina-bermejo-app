@@ -93,7 +93,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void refreshRotatesAndTheOldTokenReturns401() throws Exception {
+    void refreshRotatesAndTheOldTokenRetriedInsideTheGraceWindowReturns200ThenTheNextReuseReturns401() throws Exception {
         persistPerson("controller3", "correcta123");
 
         String loginBody = mockMvc.perform(post("/auth/login")
@@ -103,12 +103,20 @@ class AuthControllerTest extends AbstractIntegrationTest {
         AuthResponse original = objectMapper.readValue(loginBody, AuthResponse.class);
 
         mockMvc.perform(post("/auth/refresh")
+                        .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.refreshToken").value(org.hamcrest.Matchers.not(original.refreshToken())));
 
         mockMvc.perform(post("/auth/refresh")
+                        .header("User-Agent", "test-browser")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/auth/refresh")
+                        .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
                 .andExpect(status().isUnauthorized());

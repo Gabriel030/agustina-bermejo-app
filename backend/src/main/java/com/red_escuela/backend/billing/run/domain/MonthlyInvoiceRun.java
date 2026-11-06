@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunNotAwaitingReviewException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -101,6 +102,12 @@ public class MonthlyInvoiceRun {
 
     public boolean isOpenForRetriedItems() {
         return issuanceMode != MonthlyInvoiceIssuanceMode.REVIEW || status == MonthlyInvoiceRunStatus.RUNNING || status == MonthlyInvoiceRunStatus.AWAITING_REVIEW;
+    }
+
+    public void requireAwaitingReview() {
+        if (status != MonthlyInvoiceRunStatus.AWAITING_REVIEW) {
+            throw new MonthlyInvoiceRunNotAwaitingReviewException(id, status.name());
+        }
     }
 
     public void finishMonthlyRun(MonthlyInvoiceRunEvent event, LocalDateTime finishedAt) {

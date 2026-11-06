@@ -10,7 +10,6 @@ import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRun;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunEvent;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunStatus;
-import com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunNotAwaitingReviewException;
 import com.red_escuela.backend.billing.run.exception.MonthlyInvoiceRunNotFoundException;
 import com.red_escuela.backend.billing.run.repository.DraftInvoiceLineRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
@@ -48,9 +47,9 @@ public class MonthlyRunDraftReviewer {
     }
 
     @Transactional
-    public List<Invoice> approveDraftsOfRun(Long monthlyRunId, Collection<Long> invoiceIds, StatusChangeActor actor) {
-        MonthlyInvoiceRun run = lockRunAwaitingReview(monthlyRunId);
-        List<Invoice> approved = pipeline.runOperation(approval, new DraftInvoiceApprovalCommand(monthlyRunId, invoiceIds, LocalDate.now(clock), actor))
+    public List<Invoice> approveDraftsOfRun(Long monthlyRunId, Collection<Long> invoiceIds, String idempotencyKey, StatusChangeActor actor) {
+        MonthlyInvoiceRun run = lockRealRun(monthlyRunId);
+        List<Invoice> approved = pipeline.runOperation(approval, new DraftInvoiceApprovalCommand(monthlyRunId, invoiceIds, LocalDate.now(clock), idempotencyKey, actor))
                 .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
         completeRunWhenNoDraftsRemain(run);
         return approved;
@@ -58,23 +57,20 @@ public class MonthlyRunDraftReviewer {
 
     @Transactional
     public List<Invoice> discardDraftsOfRun(Long monthlyRunId, Collection<Long> invoiceIds, String reason, StatusChangeActor actor) {
-        MonthlyInvoiceRun run = lockRunAwaitingReview(monthlyRunId);
+        MonthlyInvoiceRun run = lockRealRun(monthlyRunId);
+        run.requireAwaitingReview();
         List<Invoice> discarded = discarder.discardDraftsOfRun(monthlyRunId, invoiceIds, reason, actor);
         completeRunWhenNoDraftsRemain(run);
         return discarded;
     }
 
-    private MonthlyInvoiceRun lockRunAwaitingReview(Long monthlyRunId) {
-        MonthlyInvoiceRun run = runRepository.findByIdForUpdate(monthlyRunId).filter(candidate -> candidate.getMode() == MonthlyInvoiceRunMode.REAL)
+    private MonthlyInvoiceRun lockRealRun(Long monthlyRunId) {
+        return runRepository.findByIdForUpdate(monthlyRunId).filter(candidate -> candidate.getMode() == MonthlyInvoiceRunMode.REAL)
                 .orElseThrow(() -> new MonthlyInvoiceRunNotFoundException(monthlyRunId));
-        if (run.getStatus() != MonthlyInvoiceRunStatus.AWAITING_REVIEW) {
-            throw new MonthlyInvoiceRunNotAwaitingReviewException(monthlyRunId, run.getStatus().name());
-        }
-        return run;
     }
 
     private void completeRunWhenNoDraftsRemain(MonthlyInvoiceRun run) {
-        if (draftRepository.countDraftInvoicesOfRun(run.getId()) == 0) {
+        if (run.getStatus() == MonthlyInvoiceRunStatus.AWAITING_REVIEW && draftRepository.countDraftInvoicesOfRun(run.getId()) == 0) {
             run.finishMonthlyRun(MonthlyInvoiceRunEvent.RUN_REVIEW_COMPLETED, LocalDateTime.now(clock));
             runRepository.save(run);
             log.info("Corrida mensual sin borradores pendientes: corrida={}, estado={}", run.getId(), run.getStatus());

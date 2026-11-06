@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.dto.AuthTokens;
+import com.red_escuela.backend.identity.dto.ClientContext;
 import com.red_escuela.backend.identity.service.RefreshTokenRotation;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -14,7 +15,7 @@ public class RefreshTokenService implements RefreshTokenUseCase {
     }
 
     @Override
-    public AuthTokens refresh(String rawRefreshToken) {
-        return refreshTokenRotation.rotate(rawRefreshToken);
+    public AuthTokens refresh(String rawRefreshToken, ClientContext clientContext) {
+        return refreshTokenRotation.rotate(rawRefreshToken, clientContext);
     }
 }
