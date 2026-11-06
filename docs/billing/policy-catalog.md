@@ -998,6 +998,15 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: RefundApprovedEvent
 - Post-procesamiento de RefundApprovedEvent: —
 
+## Operación REGISTER_ANNUAL_UPFRONT_CASH_PAYMENT
+
+- Validaciones (momentos): ANNUAL_UPFRONT_RECEIPT
+- Pre-procesamiento (en orden): IdempotencyKeyHandler
+- Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentApprovedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
 ## Operación REGISTER_CHARGEBACK
 
 - Validaciones (momentos): CHARGEBACK_REGISTRATION

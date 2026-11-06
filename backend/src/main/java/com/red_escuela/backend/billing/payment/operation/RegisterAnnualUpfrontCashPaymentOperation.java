@@ -48,13 +48,13 @@ public class RegisterAnnualUpfrontCashPaymentOperation implements BillingOperati
 
     public RegisterAnnualUpfrontCashPaymentOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                                      InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments,
-                                                     PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicySet, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests,
+                                                     PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontReceiptPolicySet, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests,
                                                      Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.invoiceQueries = invoiceQueries;
         this.payments = payments;
-        this.annualUpfrontPolicies = annualUpfrontApprovalPolicySet;
+        this.annualUpfrontPolicies = annualUpfrontReceiptPolicySet;
         this.annualUpfrontRequests = annualUpfrontRequests;
         this.clock = clock;
     }
