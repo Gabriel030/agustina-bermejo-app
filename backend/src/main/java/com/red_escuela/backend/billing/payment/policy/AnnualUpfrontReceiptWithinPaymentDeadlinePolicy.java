@@ -20,7 +20,9 @@ public final class AnnualUpfrontReceiptWithinPaymentDeadlinePolicy implements Po
                 continue;
             }
             if (check.startedAt().isAfter(annual.paymentDeadline())) {
-                return PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_RECEIPT_LATE", "El comprobante se subió después del plazo de pago del pedido anual.");
+                return PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_RECEIPT_LATE", check.cashPayment()
+                        ? "El cobro en efectivo se registró después del plazo de pago del pedido anual."
+                        : "El comprobante se subió después del plazo de pago del pedido anual.");
             }
             if (check.transferDate().isAfter(annual.paymentDeadline().toLocalDate())) {
                 return PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_RECEIPT_LATE", "La transferencia es posterior al plazo de pago del pedido anual.");

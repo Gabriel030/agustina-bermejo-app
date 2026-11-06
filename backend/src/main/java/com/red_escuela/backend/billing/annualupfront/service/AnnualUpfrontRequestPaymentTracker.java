@@ -47,6 +47,20 @@ public class AnnualUpfrontRequestPaymentTracker {
         return requestRepository.findByInvoiceId(invoiceId).map(AnnualUpfrontRequestPaymentFacts::of);
     }
 
+    public Optional<Long> findInvoiceIdOfRequest(Long requestId) {
+        return requestRepository.findInvoiceIdById(requestId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void issueInvoiceAndConfirmCashPayment(Long invoiceId, Long paymentId, Long studentId, LocalDate issueDate, StatusChangeActor actor) {
+        Invoice invoice = invoices.lockInvoiceAwaitingPayment(invoiceId);
+        AnnualUpfrontRequest request = lockRequestOfInvoice(invoiceId);
+        request.startPaymentReview(paymentId);
+        invoiceIssuer.issueInvoiceAwaitingPayment(invoice, studentId, issueDate, actor);
+        request.confirmApprovedPayment(paymentId, LocalDateTime.now(clock));
+        requestRepository.saveAndFlush(request);
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockEnrollmentDiscountsOfInvoiceRequest(Long invoiceId) {
         requestRepository.findByInvoiceId(invoiceId).ifPresent(request -> enrollmentLock.lockDiscountsOf(EnrollmentReference.ofProgram(request.getProgramEnrollmentId())));

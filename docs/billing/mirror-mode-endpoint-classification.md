@@ -165,4 +165,5 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 | StudentPaymentController | listOwnPayments | GET | `/me/payments` | READ | Lectura |
 | StudentPaymentController | registerCashPayment | POST | `/students/{studentId}/cash-payments` | WRITE | Registra un pago en efectivo |
 | StudentPaymentController | previewCashPayment | POST | `/students/{studentId}/cash-payments/preview` | READ | Vista previa de un pago en efectivo: PreviewCashPaymentService es de solo lectura |
+| AnnualUpfrontCashPaymentController | registerAnnualUpfrontCashPayment | POST | `/students/{studentId}/annual-upfront-requests/{requestId}/cash-payment` | WRITE | Registra el cobro en efectivo del pago anual |
 | StudentPaymentController | listPaymentsOfStudent | GET | `/students/{studentId}/payments` | READ | Lectura |

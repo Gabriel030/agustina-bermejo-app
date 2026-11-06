@@ -8,7 +8,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record AnnualUpfrontReceiptCheck(List<ReceiptInvoiceFact> selectedInvoices, boolean requestDiscarded, boolean paymentAlreadyInitiated, Money declaredAmount,
-                                        LocalDateTime startedAt, LocalDate transferDate) {
+                                        LocalDateTime startedAt, LocalDate transferDate, boolean cashPayment) {
+
+    public AnnualUpfrontReceiptCheck(List<ReceiptInvoiceFact> selectedInvoices, boolean requestDiscarded, boolean paymentAlreadyInitiated, Money declaredAmount,
+                                     LocalDateTime startedAt, LocalDate transferDate) {
+        this(selectedInvoices, requestDiscarded, paymentAlreadyInitiated, declaredAmount, startedAt, transferDate, false);
+    }
 
     public AnnualUpfrontReceiptCheck {
         selectedInvoices = List.copyOf(selectedInvoices);
