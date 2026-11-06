@@ -76,6 +76,22 @@ export function useSolicitarModificacion(attendanceId) {
   });
 }
 
+export function useAdjuntarComprobanteDeJustificacion(type, sectionId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ attendanceId, proof }) => {
+      const formData = new FormData();
+      formData.append('proof', proof);
+      return apiFetch(`/attendance/${attendanceId}/justification-proof`, { method: 'POST', body: formData });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance', 'roster', type, sectionId] });
+      queryClient.invalidateQueries({ queryKey: ['attendance', 'history', type, sectionId] });
+      queryClient.invalidateQueries({ queryKey: ['attendance', 'absence-report', type, sectionId] });
+    },
+  });
+}
+
 export async function exportarAsistencia(type, sectionId, { format, scope, classDate }) {
   const params = new URLSearchParams({ format, scope });
   if (classDate) params.set('classDate', classDate);

@@ -16,6 +16,7 @@ import { attendancePercentToPoints } from '@/lib/attendancePercent';
 import { StatusPill } from '@/components/StatusPill';
 import { attendanceRisk } from '@/features/attendance/lib/attendanceRisk';
 import { clearAttendanceDraft, loadAttendanceDraft, saveAttendanceDraft } from '@/features/attendance/lib/attendanceDraft';
+import { JustificarAusenciaDialog } from '@/features/attendance/components/JustificarAusenciaDialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useMisComisionesParaAsistencia,
@@ -78,7 +79,12 @@ function agruparFechasPorMes(fechas) {
 
 const ESTADOS_QUE_CUENTAN_COMO_AUSENCIA = ['ABSENT', 'JUSTIFICATION_PENDING'];
 
-function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirModificacion }) {
+function estadoDeJustificacion(celdaGuardada, estadoActual) {
+  if (!celdaGuardada || celdaGuardada.status !== 'ABSENT' || estadoActual !== 'ABSENT') return null;
+  return celdaGuardada.justifiable ? 'abierta' : 'vencida';
+}
+
+function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirModificacion, justificacion, onAdjuntarComprobante }) {
   const config = estado ? ESTADO_POR_VALOR[estado] : null;
   const sumaAusenciaHoy = ESTADOS_QUE_CUENTAN_COMO_AUSENCIA.includes(estado);
   const inasistenciasAMostrar = alumno.absenceCount + (sumaAusenciaHoy ? 1 : 0);
@@ -99,6 +105,9 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
             </span>
           )}
         </div>
+        {justificacion === 'vencida' && (
+          <div className="mt-1 text-[12px] text-ink-faint">Venció el plazo para justificar: lo resuelve el preceptor.</div>
+        )}
       </div>
       <div className="flex shrink-0 flex-wrap gap-1.5">
         {ESTADOS.map((e) => (
@@ -112,6 +121,11 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada, onPedirMod
             {e.label}
           </button>
         ))}
+        {justificacion === 'abierta' && (
+          <Button type="button" variant="outline" size="sm" onClick={onAdjuntarComprobante}>
+            Adjuntar comprobante
+          </Button>
+        )}
         {onPedirModificacion && (
           <Button type="button" variant="outline" size="sm" onClick={onPedirModificacion}>
             Pedir modificación
@@ -167,6 +181,7 @@ export function TabAsistencia({ type, sectionId }) {
     [celdasGuardadas],
   );
   const [modificacionPedida, setModificacionPedida] = useState(null);
+  const [ausenciaAJustificar, setAusenciaAJustificar] = useState(null);
   const hayAsistenciaGuardada = Object.keys(estadosGuardados).length > 0;
   const esClaseDeHoy = classDate === localIsoDate();
   const puedeCorregirGuardado = (enrollmentId) =>
@@ -374,6 +389,10 @@ export function TabAsistencia({ type, sectionId }) {
                 estado={estados[alumno.enrollmentId]}
                 onCambiarEstado={cambiarEstado}
                 deshabilitada={claseCancelada || (estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId))}
+                justificacion={estadoDeJustificacion(celdasGuardadas[alumno.enrollmentId], estados[alumno.enrollmentId])}
+                onAdjuntarComprobante={() =>
+                  setAusenciaAJustificar({ ...celdasGuardadas[alumno.enrollmentId], studentName: alumno.studentName, classDate })
+                }
                 onPedirModificacion={
                   !claseCancelada && estadosGuardados[alumno.enrollmentId] != null && !puedeCorregirGuardado(alumno.enrollmentId)
                     ? () => setModificacionPedida({ attendanceId: celdasGuardadas[alumno.enrollmentId].attendanceId, status: estadosGuardados[alumno.enrollmentId] })
@@ -432,6 +451,10 @@ export function TabAsistencia({ type, sectionId }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {ausenciaAJustificar && (
+        <JustificarAusenciaDialog type={type} sectionId={sectionId} absence={ausenciaAJustificar} onClose={() => setAusenciaAJustificar(null)} />
+      )}
 
       {modificacionPedida && (
         <ModalSolicitarModificacion
@@ -519,6 +542,7 @@ function TabHistorial({ type, sectionId }) {
   const { data: historial, isLoading } = useHistorialAsistencia(type, sectionId);
   const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
   const [solicitandoModificacion, setSolicitandoModificacion] = useState(false);
+  const [justificando, setJustificando] = useState(false);
   const [alumnoHover, setAlumnoHover] = useState(null);
   const [alumnoFijado, setAlumnoFijado] = useState(null);
   const alumnoResaltado = alumnoHover ?? alumnoFijado;
@@ -644,7 +668,7 @@ function TabHistorial({ type, sectionId }) {
         </div>
       </GlassCard>
 
-      <Dialog open={!!celdaSeleccionada && !solicitandoModificacion} onOpenChange={(open) => !open && setCeldaSeleccionada(null)}>
+      <Dialog open={!!celdaSeleccionada && !solicitandoModificacion && !justificando} onOpenChange={(open) => !open && setCeldaSeleccionada(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Detalle de asistencia</DialogTitle>
@@ -652,12 +676,30 @@ function TabHistorial({ type, sectionId }) {
               {celdaSeleccionada?.studentName} · {celdaSeleccionada?.fecha} · {ESTADO_POR_VALOR[celdaSeleccionada?.status]?.label}
             </DialogDescription>
           </DialogHeader>
+          {celdaSeleccionada?.status === 'ABSENT' && !celdaSeleccionada.justifiable && (
+            <p className="text-[13px] text-ink-faint">Venció el plazo para justificar esta falta: lo resuelve el preceptor.</p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setCeldaSeleccionada(null)}>Cerrar</Button>
+            {celdaSeleccionada?.status === 'ABSENT' && celdaSeleccionada.justifiable && (
+              <Button variant="outline" onClick={() => setJustificando(true)}>Adjuntar comprobante</Button>
+            )}
             <Button variant="gradient" onClick={() => setSolicitandoModificacion(true)}>Solicitar modificación</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {justificando && celdaSeleccionada && (
+        <JustificarAusenciaDialog
+          type={type}
+          sectionId={sectionId}
+          absence={{ ...celdaSeleccionada, classDate: celdaSeleccionada.fecha }}
+          onClose={() => {
+            setJustificando(false);
+            setCeldaSeleccionada(null);
+          }}
+        />
+      )}
 
       {solicitandoModificacion && celdaSeleccionada && (
         <ModalSolicitarModificacion
