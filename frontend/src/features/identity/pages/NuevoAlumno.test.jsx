@@ -452,7 +452,7 @@ describe('NuevoAlumno', () => {
       await fillAndAdvance(user, '1990-05-10');
 
       const message = await screen.findByText('Ingresá la fecha de nacimiento.', {}, { timeout: 5000 }).catch((e) => {
-        console.log('DIAG node=' + process.version + ' draftCalls=' + draftCalls + ' body=' + document.body.textContent.slice(0, 1500) + ' alerts=' + [...document.querySelectorAll('[role=alert]')].map((n) => n.textContent).join('|') + ' invalid=' + [...document.querySelectorAll('[aria-invalid=true]')].map((n) => n.id).join(','));
+        console.log('DIAG node=' + process.version + ' draftCalls=' + draftCalls + ' form=' + document.querySelector('form').textContent + ' alerts=' + [...document.querySelectorAll('[role=alert]')].map((n) => n.textContent).join('|') + ' invalid=' + [...document.querySelectorAll('[aria-invalid=true]')].map((n) => n.id).join(','));
         throw e;
       });
       expect(message).toHaveAttribute('role', 'alert');

@@ -132,7 +132,6 @@ function RegistrationWizard({ onRegisterAnother }) {
 
   function showFailure(err, fallback) {
     const failure = describeRegistrationError(err, fallback);
-    console.log('DIAG2 err=' + JSON.stringify({ name: err?.name, status: err?.status, code: err?.code, msg: err?.message }) + ' failure=' + JSON.stringify(failure));
     if (failure.field) {
       setError(failure.field, { type: 'server', message: failure.message });
       goTo(failure.step);
