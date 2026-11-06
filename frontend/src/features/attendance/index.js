@@ -3,3 +3,4 @@ export { TabAsistencia } from './components/TabAsistencia';
 export { SeccionAsistencia } from './components/SeccionAsistencia';
 export { useReporteAusencias } from './hooks/useDocenteAsistencia';
 export { TabAlumnos } from './components/TabAlumnos';
+export { FaltasDeMateria } from './components/FaltasDeMateria';

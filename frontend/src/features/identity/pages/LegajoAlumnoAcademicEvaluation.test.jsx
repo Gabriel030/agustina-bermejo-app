@@ -65,6 +65,7 @@ function mockStudent({ programs = [PROGRAM_ENROLLMENT], courses = [] } = {}) {
     http.get(`${API}/program-enrollments/4/section-enrollments`, () => HttpResponse.json(SECTIONS)),
     http.get(`${API}/program-enrollments/4/attendance-summary`, () =>
       HttpResponse.json([])),
+    http.get(`${API}/section-enrollments/:id/attendance`, () => HttpResponse.json([])),
     http.get(`${API}/section-enrollments/:id/grade-items`, ({ params }) => {
       gradeRequests.push(params.id);
       return HttpResponse.json(
