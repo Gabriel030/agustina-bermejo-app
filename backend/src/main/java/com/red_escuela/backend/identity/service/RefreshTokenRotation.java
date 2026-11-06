@@ -41,14 +41,20 @@ public class RefreshTokenRotation {
         RefreshTokenState state = refreshTokenRepository.findStateByTokenHash(hash)
                 .orElseThrow(InvalidRefreshTokenException::new);
 
-        if (isUsable(state, now)
-                && refreshTokenRepository.rotateIfActive(hash, now, clientContext.userAgentHash()) > 0) {
-            return authTokenIssuer.issueTokens(state.getPerson(), state.getId());
+        boolean lostRace = false;
+        if (isUsable(state, now)) {
+            if (refreshTokenRepository.rotateIfActive(hash, now, clientContext.userAgentHash()) > 0) {
+                return authTokenIssuer.issueTokens(state.getPerson(), state.getId());
+            }
+            lostRace = true;
         }
 
         RefreshTokenState current = refreshTokenRepository.findStateByTokenHash(hash)
                 .orElseThrow(InvalidRefreshTokenException::new);
         if (!current.getRevoked() || !current.getExpiresAt().isAfter(now)) {
+            throw new InvalidRefreshTokenException();
+        }
+        if (lostRace && current.getRotatedAt() == null) {
             throw new InvalidRefreshTokenException();
         }
         return reuseRevokedToken(hash, current, clientContext, now);

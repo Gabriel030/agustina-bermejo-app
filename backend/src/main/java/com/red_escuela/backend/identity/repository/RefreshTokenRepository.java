@@ -28,6 +28,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
                        @Param("userAgentHash") String userAgentHash);
 
     @Modifying
+    @Query("update RefreshToken rt set rt.graceUsed = true where rt.id = :id")
+    int disableGraceById(@Param("id") Long id);
+
+    @Modifying
     @Query("update RefreshToken rt set rt.graceUsed = true where rt.tokenHash = :tokenHash and rt.graceUsed = false")
     int markGraceUsedIfAvailable(@Param("tokenHash") String tokenHash);
 

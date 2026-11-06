@@ -92,4 +92,15 @@ class RefreshReuseGracePolicyTest {
         assertThatThrownBy(() -> new RefreshReuseGracePolicy(121)).isInstanceOf(IllegalStateException.class);
         assertThat(new RefreshReuseGracePolicy(120)).isNotNull();
     }
+
+    @Test
+    void missingOrBlankUserAgentNeverMatches() {
+        ClientContext blank = ClientContext.of("  ", "10.0.0.1");
+        StubRefreshTokenState rotatedWithoutAgent = new StubRefreshTokenState(person(StatusType.ACTIVE), ROTATED_AT.plusDays(7))
+                .rotated(ROTATED_AT, blank.userAgentHash());
+
+        assertThat(policy.evaluate(rotatedWithoutAgent, blank, ROTATED_AT.plusSeconds(1))).isEqualTo(Verdict.USER_AGENT_MISMATCH);
+        assertThat(policy.evaluate(rotatedByCurrentClient(), ClientContext.of(null, "10.0.0.1"), ROTATED_AT.plusSeconds(1)))
+                .isEqualTo(Verdict.USER_AGENT_MISMATCH);
+    }
 }

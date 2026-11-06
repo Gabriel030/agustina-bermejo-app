@@ -157,4 +157,16 @@ class RefreshTokenReuseTest {
 
         verify(sessionRevoker, never()).revokeAllSessions(any());
     }
+
+    @Test
+    void loserOfARaceAgainstLogoutAnswers401WithoutRevokingOtherSessions() {
+        StubRefreshTokenState beforeRace = liveToken();
+        StubRefreshTokenState afterLogout = liveToken().revoked();
+        when(repository.findStateByTokenHash(hash)).thenReturn(Optional.of(beforeRace), Optional.of(afterLogout));
+        when(repository.rotateIfActive(anyString(), any(LocalDateTime.class), anyString())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.rotate(RAW_TOKEN, CLIENT)).isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(sessionRevoker, never()).revokeAllSessions(any());
+    }
 }

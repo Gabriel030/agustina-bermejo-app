@@ -193,4 +193,60 @@ class RefreshReuseIT extends AbstractIntegrationTest {
 
         assertThat(rotated.refreshToken()).isNotEqualTo(retried.refreshToken());
     }
+
+    @Test
+    void revokeAllInsideWindowAfterRotationKillsTheGraceOfTheRotatedToken() {
+        startFixedClock();
+        Person person = persistPerson("grace-revokeall-" + System.nanoTime());
+        String tokenA = authTokenIssuer.issueTokens(person).refreshToken();
+        refreshTokenUseCase.refresh(tokenA, CLIENT);
+        MutableClock.INSTANCE.advance(Duration.ofSeconds(10));
+        sessionRevoker.revokeAllSessions(person);
+        MutableClock.INSTANCE.advance(Duration.ofSeconds(10));
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokenA, CLIENT)).isInstanceOf(InvalidRefreshTokenException.class);
+
+        assertThat(activeSessions(person)).isZero();
+    }
+
+    @Test
+    void logoutOfTheChildInsideWindowKillsTheGraceOfTheParent() {
+        startFixedClock();
+        Person person = persistPerson("grace-childlogout-" + System.nanoTime());
+        String tokenA = authTokenIssuer.issueTokens(person).refreshToken();
+        String child = refreshTokenUseCase.refresh(tokenA, CLIENT).refreshToken();
+        logoutUseCase.logout(child);
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokenA, CLIENT)).isInstanceOf(InvalidRefreshTokenException.class);
+
+        assertThat(activeSessions(person)).isZero();
+    }
+
+    @Test
+    void revokeSessionOfTheChildInsideWindowKillsTheGraceOfTheParent() {
+        startFixedClock();
+        Person person = persistPerson("grace-childsession-" + System.nanoTime());
+        String tokenA = authTokenIssuer.issueTokens(person).refreshToken();
+        String child = refreshTokenUseCase.refresh(tokenA, CLIENT).refreshToken();
+        Long childId = refreshTokenRepository.findByTokenHash(com.red_escuela.backend.identity.util.TokenHashUtil.sha256Hex(child))
+                .orElseThrow().getId();
+        sessionRevoker.revokeSession(childId, person);
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokenA, CLIENT)).isInstanceOf(InvalidRefreshTokenException.class);
+
+        assertThat(activeSessions(person)).isZero();
+    }
+
+    @Test
+    void missingUserAgentNeverEnablesGrace() {
+        startFixedClock();
+        Person person = persistPerson("grace-noagent-" + System.nanoTime());
+        ClientContext noAgent = ClientContext.of(null, "10.0.0.1");
+        String tokenA = authTokenIssuer.issueTokens(person).refreshToken();
+        refreshTokenUseCase.refresh(tokenA, noAgent);
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokenA, noAgent)).isInstanceOf(InvalidRefreshTokenException.class);
+
+        assertThat(activeSessions(person)).isZero();
+    }
 }

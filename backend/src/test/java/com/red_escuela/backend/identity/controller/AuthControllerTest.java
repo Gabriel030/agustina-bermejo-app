@@ -103,17 +103,20 @@ class AuthControllerTest extends AbstractIntegrationTest {
         AuthResponse original = objectMapper.readValue(loginBody, AuthResponse.class);
 
         mockMvc.perform(post("/auth/refresh")
+                        .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.refreshToken").value(org.hamcrest.Matchers.not(original.refreshToken())));
 
         mockMvc.perform(post("/auth/refresh")
+                        .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/auth/refresh")
+                        .header("User-Agent", "test-browser")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshRequest(original.refreshToken()))))
                 .andExpect(status().isUnauthorized());

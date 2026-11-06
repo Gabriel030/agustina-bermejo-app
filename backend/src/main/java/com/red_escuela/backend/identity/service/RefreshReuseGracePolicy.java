@@ -54,7 +54,7 @@ public class RefreshReuseGracePolicy {
         if (Duration.between(token.getRotatedAt(), now).compareTo(Duration.ofSeconds(graceSeconds)) > 0) {
             return Verdict.OUTSIDE_WINDOW;
         }
-        if (token.getRotatedUserAgentHash() == null
+        if (token.getRotatedUserAgentHash() == null || clientContext.userAgentHash() == null
                 || !token.getRotatedUserAgentHash().equals(clientContext.userAgentHash())) {
             return Verdict.USER_AGENT_MISMATCH;
         }
