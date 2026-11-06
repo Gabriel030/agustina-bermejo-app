@@ -431,6 +431,8 @@ POST,/monthly-invoice-runs/manual-issuances,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,
 GET,/monthly-invoice-runs/{monthlyRunId}/items,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/monthly-invoice-runs/{monthlyRunId}/draft-invoices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+POST,/monthly-invoice-runs/{monthlyRunId}/draft-invoices/approvals,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""invoiceIds"":[1]}"
+POST,/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""invoiceIds"":[1],""reason"":""Cargo duplicado""}"
 GET,/me/program-enrollments/{id}/annual-upfront/quote,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,program-enrollment,
 GET,/program-enrollments/{id}/annual-upfront/quote,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/me/program-enrollments/{id}/annual-upfront-requests,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,program-enrollment,"{""termsAccepted"":true,""termsVersion"":""v1""}"

@@ -100,6 +100,8 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 | MonthlyInvoiceRunController | listDraftInvoiceGroups | GET | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices` | READ | Lectura |
 | MonthlyInvoiceRunController | listItems | GET | `/monthly-invoice-runs/{monthlyRunId}/items` | READ | Lectura |
 | MonthlyInvoiceRunController | retryItem | POST | `/monthly-invoice-runs/{monthlyRunId}/items/{itemId}/retries` | WRITE | Reintenta un ítem de una corrida de facturación mensual |
+| MonthlyInvoiceRunController | approveDraftInvoices | POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/approvals` | WRITE | Aprueba y emite borradores de una corrida en revisión |
+| MonthlyInvoiceRunController | discardDraftInvoices | POST | `/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards` | WRITE | Descarta borradores de una corrida en revisión |
 | MonthlyInvoiceSimulationController | simulateMonthlyInvoices | POST | `/monthly-invoice-runs/simulations` | WRITE | Persiste una corrida de simulación (borra la anterior del período) aunque no emite facturas; igual que MonthlyInvoiceSimulationJob, que es FULL |
 | MpWebhookController | webhook | POST | `/payments/mp-webhook` | EXCEPTION_OFF | Webhook de Mercado Pago: disponible en cualquier modo, guarda el evento crudo (PR 468) |
 | OverdueContactListController | list | GET | `/collection-reminders/contact-list` | READ | Lectura |

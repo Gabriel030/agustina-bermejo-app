@@ -1,10 +1,15 @@
 package com.red_escuela.backend.billing.run.controller;
 
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItemResult;
+import com.red_escuela.backend.billing.run.dto.ApproveDraftInvoicesRequest;
+import com.red_escuela.backend.billing.run.dto.DiscardDraftInvoicesRequest;
+import com.red_escuela.backend.billing.run.dto.DraftInvoiceBatchResponse;
 import com.red_escuela.backend.billing.run.dto.DraftInvoiceGroupResponse;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceRunItemResponse;
 import com.red_escuela.backend.billing.run.dto.MonthlyInvoiceRunResponse;
 import com.red_escuela.backend.billing.run.dto.RunPage;
+import com.red_escuela.backend.billing.run.usecase.ApproveDraftInvoicesUseCase;
+import com.red_escuela.backend.billing.run.usecase.DiscardDraftInvoicesUseCase;
 import com.red_escuela.backend.billing.run.usecase.ManualMonthlyInvoiceItemRetryUseCase;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunDraftQueryUseCase;
 import com.red_escuela.backend.billing.run.usecase.MonthlyInvoiceRunQueryUseCase;
@@ -13,12 +18,15 @@ import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,9 +44,14 @@ public class MonthlyInvoiceRunController {
     private final MonthlyInvoiceRunQueryUseCase queryUseCase;
     private final ManualMonthlyInvoiceItemRetryUseCase manualRetryUseCase;
     private final MonthlyInvoiceRunDraftQueryUseCase draftQueryUseCase;
+    private final ApproveDraftInvoicesUseCase approveDraftsUseCase;
+    private final DiscardDraftInvoicesUseCase discardDraftsUseCase;
 
     public MonthlyInvoiceRunController(MonthlyInvoiceRunQueryUseCase queryUseCase, ManualMonthlyInvoiceItemRetryUseCase manualRetryUseCase,
-                                      MonthlyInvoiceRunDraftQueryUseCase draftQueryUseCase) {
+                                      MonthlyInvoiceRunDraftQueryUseCase draftQueryUseCase, ApproveDraftInvoicesUseCase approveDraftsUseCase,
+                                      DiscardDraftInvoicesUseCase discardDraftsUseCase) {
+        this.approveDraftsUseCase = approveDraftsUseCase;
+        this.discardDraftsUseCase = discardDraftsUseCase;
         this.queryUseCase = queryUseCase;
         this.manualRetryUseCase = manualRetryUseCase;
         this.draftQueryUseCase = draftQueryUseCase;
@@ -76,5 +89,18 @@ public class MonthlyInvoiceRunController {
     @PostMapping("/{monthlyRunId}/items/{itemId}/retries")
     public MonthlyInvoiceRunItemResponse retryItem(@PathVariable Long monthlyRunId, @PathVariable Long itemId) {
         return manualRetryUseCase.retryMonthlyInvoiceRunItemManually(monthlyRunId, itemId);
+    }
+
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
+    @PostMapping("/{monthlyRunId}/draft-invoices/approvals")
+    public DraftInvoiceBatchResponse approveDraftInvoices(@PathVariable Long monthlyRunId, @RequestHeader("Idempotency-Key") String idempotencyKey,
+                                                          @Valid @RequestBody ApproveDraftInvoicesRequest request) {
+        return approveDraftsUseCase.approveDraftInvoicesOfRun(monthlyRunId, request.invoiceIds(), idempotencyKey);
+    }
+
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
+    @PostMapping("/{monthlyRunId}/draft-invoices/discards")
+    public DraftInvoiceBatchResponse discardDraftInvoices(@PathVariable Long monthlyRunId, @Valid @RequestBody DiscardDraftInvoicesRequest request) {
+        return discardDraftsUseCase.discardDraftInvoicesOfRun(monthlyRunId, request.invoiceIds(), request.reason());
     }
 }

@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -60,6 +61,10 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
     private StudentCurrentAccountService accountService;
 
     private Career career;
+
+    private static String newKey() {
+        return UUID.randomUUID().toString();
+    }
 
     @BeforeEach
     @AfterEach
@@ -100,7 +105,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         List<Long> ids = draftIdsOf(run);
         today(date(2026, 4, 5));
 
-        reviewer.approveDraftsOfRun(run.getId(), ids.subList(0, 2), REVIEWER);
+        reviewer.approveDraftsOfRun(run.getId(), ids.subList(0, 2), newKey(), REVIEWER);
 
         ids.subList(0, 2).forEach(id -> {
             assertThat(documentStatusOf(id)).isEqualTo("ISSUED");
@@ -120,7 +125,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         PriceFixtures.persistPriceVersion(career.programId(), null, FeeType.MONTHLY_INSTALLMENT, "Aumento", ars(12000), date(2026, 4, 3), career.directorId());
         today(date(2026, 4, 5));
 
-        reviewer.approveDraftsOfRun(run.getId(), List.of(id), REVIEWER);
+        reviewer.approveDraftsOfRun(run.getId(), List.of(id), newKey(), REVIEWER);
 
         assertThat(jdbcTemplate.queryForObject("select total from invoice where id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo(draftAmount);
         assertThat(jdbcTemplate.queryForObject("select issue_date from invoice where id = ?", java.sql.Date.class, id).toLocalDate()).isEqualTo(date(2026, 4, 5));
@@ -135,7 +140,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         for (int i = 0; i < approvalDays.size(); i++) {
             today(approvalDays.get(i));
 
-            reviewer.approveDraftsOfRun(run.getId(), List.of(ids.get(i)), REVIEWER);
+            reviewer.approveDraftsOfRun(run.getId(), List.of(ids.get(i)), newKey(), REVIEWER);
 
             assertThat(jdbcTemplate.queryForObject("select due_date >= issue_date from invoice where id = ?", Boolean.class, ids.get(i))).isTrue();
         }
@@ -147,7 +152,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         List<Long> ids = draftIdsOf(run);
         today(date(2026, 4, 5));
 
-        reviewer.approveDraftsOfRun(run.getId(), ids.subList(0, 1), REVIEWER);
+        reviewer.approveDraftsOfRun(run.getId(), ids.subList(0, 1), newKey(), REVIEWER);
         assertThat(statusOf(run)).isEqualTo(MonthlyInvoiceRunStatus.AWAITING_REVIEW);
         reviewer.discardDraftsOfRun(run.getId(), ids.subList(1, 2), "Cargo duplicado", REVIEWER);
 
@@ -162,7 +167,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         List<Long> ids = draftIdsOf(run);
         reviewer.discardDraftsOfRun(run.getId(), ids.subList(2, 3), "Error", REVIEWER);
 
-        assertThatThrownBy(() -> reviewer.approveDraftsOfRun(run.getId(), ids, REVIEWER)).isInstanceOf(DraftNotPendingException.class);
+        assertThatThrownBy(() -> reviewer.approveDraftsOfRun(run.getId(), ids, newKey(), REVIEWER)).isInstanceOf(DraftNotPendingException.class);
 
         assertThat(ids.subList(0, 2)).allMatch(id -> "DRAFT".equals(documentStatusOf(id)));
     }
@@ -173,7 +178,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         List<Long> ids = draftIdsOf(run);
         reviewer.discardDraftsOfRun(run.getId(), ids, "Error", REVIEWER);
 
-        assertThatThrownBy(() -> reviewer.approveDraftsOfRun(run.getId(), ids, REVIEWER)).isInstanceOf(MonthlyInvoiceRunNotAwaitingReviewException.class);
+        assertThatThrownBy(() -> reviewer.approveDraftsOfRun(run.getId(), ids, newKey(), REVIEWER)).isInstanceOf(MonthlyInvoiceRunNotAwaitingReviewException.class);
     }
 
     private List<Object> runTogether(List<Callable<Object>> tasks, CountDownLatch start) throws Exception {
@@ -199,7 +204,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
     private Callable<Object> approving(Long runId, List<Long> ids, CountDownLatch start) {
         return () -> {
             start.await();
-            return reviewer.approveDraftsOfRun(runId, ids, REVIEWER);
+            return reviewer.approveDraftsOfRun(runId, ids, newKey(), REVIEWER);
         };
     }
 
@@ -288,7 +293,7 @@ class MonthlyRunDraftReviewIT extends AbstractInvoiceSequenceScenarioTest {
         }));
         try {
             assertThat(locked.await(30, TimeUnit.SECONDS)).isTrue();
-            Future<Object> approval = pool.submit(() -> reviewer.approveDraftsOfRun(run.getId(), List.of(id), REVIEWER));
+            Future<Object> approval = pool.submit(() -> reviewer.approveDraftsOfRun(run.getId(), List.of(id), newKey(), REVIEWER));
             org.awaitility.Awaitility.await().during(java.time.Duration.ofMillis(1000)).atMost(java.time.Duration.ofSeconds(10)).untilAsserted(
                     () -> assertThat(approval.isDone()).as("approval must wait for the lock held by another transaction").isFalse());
             release.countDown();
