@@ -11,6 +11,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -204,6 +205,9 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     @Query("select s.person from StudentCurrentAccount a, Invoice i, Student s where i.id = :invoiceId and a.id = i.studentCurrentAccountId and s.id = a.studentId")
     Optional<Person> findOwnerPersonByInvoiceId(@Param("invoiceId") Long invoiceId);
+
+    @Query("select s from StudentCurrentAccount a, Invoice i, Student s join fetch s.person where i.id = :invoiceId and a.id = i.studentCurrentAccountId and s.id = a.studentId")
+    Optional<Student> findOwnerStudentWithPersonByInvoiceId(@Param("invoiceId") Long invoiceId);
 
     @Query("""
             select distinct a.studentId from Invoice i, StudentCurrentAccount a

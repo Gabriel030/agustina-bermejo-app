@@ -119,6 +119,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @Autowired
+    private com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler receiptResponseAssembler;
+
+    @Autowired
     private ProgramRepository programRepository;
 
     @Autowired
@@ -547,9 +550,25 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Long invoiceId = invoice.getId();
 
         BankTransferReceiptResponse response = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(status ->
-                BankTransferReceiptResponse.from(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId)).get(0), student.getPerson(), null, List.of(invoiceId)));
+                BankTransferReceiptResponse.from(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId)).get(0), student, null, List.of(invoiceId)));
 
         assertThat(response.studentName()).isEqualTo("Ana Comprobante");
         assertThat(response.studentDni()).isEqualTo("97000013");
+    }
+
+    @Test
+    void reviewerAndOwnReceiptResponsesCarryTheStudentIdNotThePersonId() {
+        Student student = persistStudent("97000014");
+        Invoice invoice = BillingTestFixtures.invoice().forStudent(student).ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(10000)).build();
+        uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        Long invoiceId = invoice.getId();
+
+        List<BankTransferReceiptResponse> reviewer = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(status ->
+                receiptResponseAssembler.assembleReviewerReceiptResponses(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId))));
+        List<BankTransferReceiptResponse> own = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(status ->
+                receiptResponseAssembler.assembleOwnReceiptResponses(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId))));
+
+        assertThat(reviewer.get(0).studentId()).isEqualTo(student.getId()).isNotEqualTo(student.getPerson().getId());
+        assertThat(own.get(0).studentId()).isEqualTo(student.getId());
     }
 }
