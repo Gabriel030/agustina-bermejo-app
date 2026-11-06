@@ -2,15 +2,23 @@ package com.red_escuela.backend.attendance.dto;
 
 import com.red_escuela.backend.attendance.entity.Attendance;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record AttendanceResponse(
         Long id, Long enrollmentId, LocalDate classDate, String status,
         String justificationReason, String justificationAttachmentUrl, LocalDateTime justifiedAt,
-        String justificationRejectionReason) {
+        String justificationRejectionReason,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate justificationDeadline,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean justifiable) {
 
     public static AttendanceResponse from(Attendance attendance) {
+        return from(attendance, null, null);
+    }
+
+    public static AttendanceResponse from(Attendance attendance, LocalDate justificationDeadline, Boolean justifiable) {
         Long enrollmentId = attendance.getProgramSubjectSectionEnrollment() != null
                 ? attendance.getProgramSubjectSectionEnrollment().getId()
                 : attendance.getCourseSubjectSectionEnrollment().getId();
@@ -22,6 +30,8 @@ public record AttendanceResponse(
                 attendance.getJustificationReason(),
                 attendance.getJustificationAttachmentUrl(),
                 attendance.getJustifiedAt(),
-                attendance.getJustificationRejectionReason());
+                attendance.getJustificationRejectionReason(),
+                justificationDeadline,
+                justifiable);
     }
 }

@@ -42,8 +42,8 @@ import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCo
 import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.SubmitTeacherAttendanceProofCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.SubmitTeacherAttendanceProofUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.ListCourseEnrollmentAttendanceUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.ListCourseEnrollmentAttendanceDetailUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceDetailUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAttendanceUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceCommand;
@@ -79,8 +79,8 @@ public class AttendanceController {
     private final SubmitTeacherAttendanceProofUseCase submitTeacherAttendanceProofUseCase;
     private final ApproveAttendanceJustificationUseCase approveAttendanceJustificationUseCase;
     private final RejectAttendanceJustificationUseCase rejectAttendanceJustificationUseCase;
-    private final ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase;
-    private final ListCourseEnrollmentAttendanceUseCase listCourseEnrollmentAttendanceUseCase;
+    private final ListProgramEnrollmentAttendanceDetailUseCase listProgramEnrollmentAttendanceDetailUseCase;
+    private final ListCourseEnrollmentAttendanceDetailUseCase listCourseEnrollmentAttendanceDetailUseCase;
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final CalculateCourseEnrollmentAttendanceRiskUseCase calculateCourseEnrollmentAttendanceRiskUseCase;
     private final GetProgramSectionRosterUseCase getProgramSectionRosterUseCase;
@@ -104,8 +104,8 @@ public class AttendanceController {
             SubmitTeacherAttendanceProofUseCase submitTeacherAttendanceProofUseCase,
             ApproveAttendanceJustificationUseCase approveAttendanceJustificationUseCase,
             RejectAttendanceJustificationUseCase rejectAttendanceJustificationUseCase,
-            ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase,
-            ListCourseEnrollmentAttendanceUseCase listCourseEnrollmentAttendanceUseCase,
+            ListProgramEnrollmentAttendanceDetailUseCase listProgramEnrollmentAttendanceDetailUseCase,
+            ListCourseEnrollmentAttendanceDetailUseCase listCourseEnrollmentAttendanceDetailUseCase,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             CalculateCourseEnrollmentAttendanceRiskUseCase calculateCourseEnrollmentAttendanceRiskUseCase,
             GetProgramSectionRosterUseCase getProgramSectionRosterUseCase,
@@ -127,8 +127,8 @@ public class AttendanceController {
         this.submitTeacherAttendanceProofUseCase = submitTeacherAttendanceProofUseCase;
         this.approveAttendanceJustificationUseCase = approveAttendanceJustificationUseCase;
         this.rejectAttendanceJustificationUseCase = rejectAttendanceJustificationUseCase;
-        this.listProgramEnrollmentAttendanceUseCase = listProgramEnrollmentAttendanceUseCase;
-        this.listCourseEnrollmentAttendanceUseCase = listCourseEnrollmentAttendanceUseCase;
+        this.listProgramEnrollmentAttendanceDetailUseCase = listProgramEnrollmentAttendanceDetailUseCase;
+        this.listCourseEnrollmentAttendanceDetailUseCase = listCourseEnrollmentAttendanceDetailUseCase;
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.calculateCourseEnrollmentAttendanceRiskUseCase = calculateCourseEnrollmentAttendanceRiskUseCase;
         this.getProgramSectionRosterUseCase = getProgramSectionRosterUseCase;
@@ -198,13 +198,13 @@ public class AttendanceController {
     @GetMapping("/section-enrollments/{id}/attendance")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<AttendanceResponse> listProgramEnrollmentAttendance(@PathVariable Long id) {
-        return listProgramEnrollmentAttendanceUseCase.list(id).stream().map(AttendanceResponse::from).toList();
+        return listProgramEnrollmentAttendanceDetailUseCase.list(id);
     }
 
     @GetMapping("/course-section-enrollments/{id}/attendance")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<AttendanceResponse> listCourseEnrollmentAttendance(@PathVariable Long id) {
-        return listCourseEnrollmentAttendanceUseCase.list(id).stream().map(AttendanceResponse::from).toList();
+        return listCourseEnrollmentAttendanceDetailUseCase.list(id);
     }
 
     @GetMapping("/section-enrollments/{id}/attendance/risk")

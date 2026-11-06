@@ -1000,8 +1000,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "justifiable" : {
+            "type" : [ "boolean", "null" ]
+          },
           "justificationAttachmentUrl" : {
             "type" : "string"
+          },
+          "justificationDeadline" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           },
           "justificationReason" : {
             "type" : "string"
