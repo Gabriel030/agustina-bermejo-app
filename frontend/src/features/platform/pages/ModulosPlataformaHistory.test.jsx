@@ -7,6 +7,7 @@ import { axe } from '@/test/axe';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { ModulosPlataforma } from './ModulosPlataforma';
+import { installFixedClock } from '@/test/fixedClock';
 
 const API = 'http://localhost:8080';
 const FEATURES_URL = `${API}/platform/features`;
@@ -73,6 +74,8 @@ function preview(overrides = {}) {
 }
 
 const PREVIEW_URL = `${FEATURES_URL}/BILLING/preview`;
+
+installFixedClock({ advanceWithRealTime: true });
 
 describe('ModulosPlataforma history and previous check', () => {
   beforeEach(() => {
