@@ -71,6 +71,7 @@ class InstituteSettingsControllerIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void createUsers() {
+        restoreSeedState();
         directorToken = tokenOf("DIRECTOR", "Diego", "Director");
         administrativeToken = tokenOf("ADMINISTRATIVO", "Ana", "Administrativa");
         studentToken = tokenOf("ALUMNO", "Alma", "Alumna");

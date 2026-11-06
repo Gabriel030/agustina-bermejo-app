@@ -1,5 +1,7 @@
 package com.red_escuela.backend.platform.controller;
 
+import com.red_escuela.backend.platform.domain.BillingNotificationsSettingChange;
+import com.red_escuela.backend.platform.domain.PaymentMethodSettingChange;
 import com.red_escuela.backend.platform.dto.BillingNotificationsSettingResponse;
 import com.red_escuela.backend.platform.dto.ChangeInstituteSettingRequest;
 import com.red_escuela.backend.platform.dto.InstituteSettingChangeResponse;
@@ -50,7 +52,7 @@ public class InstituteSettingsController {
             @PathVariable PaymentMethodCode code,
             @RequestHeader(value = "If-Match", required = false) Long expectedVersion,
             @Valid @RequestBody ChangeInstituteSettingRequest request) {
-        return PaymentMethodSettingResponse.of(changePaymentMethod.change(code, request.enabled(), expectedVersion, request.reason()));
+        return PaymentMethodSettingResponse.of(changePaymentMethod.change(new PaymentMethodSettingChange(code, request.enabled(), expectedVersion, request.reason())));
     }
 
     @PutMapping("/institute-settings/billing-notifications")
@@ -58,7 +60,7 @@ public class InstituteSettingsController {
     public BillingNotificationsSettingResponse changeBillingNotifications(
             @RequestHeader(value = "If-Match", required = false) Long expectedVersion,
             @Valid @RequestBody ChangeInstituteSettingRequest request) {
-        return BillingNotificationsSettingResponse.of(changeBillingNotifications.change(request.enabled(), expectedVersion, request.reason()));
+        return BillingNotificationsSettingResponse.of(changeBillingNotifications.change(new BillingNotificationsSettingChange(request.enabled(), expectedVersion, request.reason())));
     }
 
     @GetMapping("/institute-settings/audit")

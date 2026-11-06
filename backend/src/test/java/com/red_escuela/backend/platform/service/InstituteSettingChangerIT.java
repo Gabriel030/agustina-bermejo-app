@@ -82,6 +82,7 @@ class InstituteSettingChangerIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void authenticateAsDirector() {
+        restoreSeedState();
         actorId = transactions.execute(status -> persistDirector().getId());
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(actorId.toString(), null));
         Mockito.when(onlinePaymentDependencies.countOpenOnlineDependencies()).thenReturn(0L);

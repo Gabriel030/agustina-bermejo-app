@@ -456,7 +456,7 @@ GET,/regular-certificate-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/graduation-certificates,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,"{""kind"":""PROGRAM"",""enrollmentId"":1}"
 GET,/graduation-certificates/{id}/pdf,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 GET,/institute-settings,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
-PUT,/institute-settings/payment-methods/{code},DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
-PUT,/institute-settings/billing-notifications,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+PUT,/institute-settings/payment-methods/{code},DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""enabled"":false,""reason"":""Motivo de prueba""}"
+PUT,/institute-settings/billing-notifications,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""enabled"":false,""reason"":""Motivo de prueba""}"
 GET,/institute-settings/audit,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/me/payment-methods,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,

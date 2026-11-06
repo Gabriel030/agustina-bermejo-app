@@ -389,6 +389,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_REFUND_STATUS_TRANSITION` | no | `IllegalRefundStatusTransitionException` | billing |
 | `ILLEGAL_STUDENT_DISCOUNT_TRANSITION` | no | `IllegalStudentDiscountTransitionException` | billing |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
+| `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
 | `INSTRUCTOR_SCHEDULE_CONFLICT` | no | `InstructorScheduleConflictException` | academicstructure |
 | `INSUFFICIENT_ACCOUNT_CREDIT` | no | `InsufficientAccountCreditException` | billing |
@@ -408,6 +409,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVOICE_NOT_PAYABLE` | no | `InvoiceNotPayableException` | billing |
 | `ISSUED_INVOICE_CANNOT_BE_MODIFIED` | no | `IssuedInvoiceCannotBeModifiedException` | billing |
 | `JUSTIFICATION_DEADLINE_EXPIRED` | no | `JustificationDeadlineExpiredException` | attendance |
+| `LAST_DIGITAL_PAYMENT_METHOD_REQUIRED` | no | `LastDigitalPaymentMethodRequiredException` | platform |
 | `LATE_FEE_CORRECTION_REJECTED` | no | `LateFeeCorrectionRejectedException` | billing |
 | `LATE_FEE_ISSUING_REJECTED` | no | `LateFeeIssuingRejectedException` | billing |
 | `LEGACY_RECEIPT_PENDING_ON_INVOICE` | no | `LegacyReceiptPendingOnInvoiceException` | billing |
@@ -465,6 +467,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
+| `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
@@ -495,6 +498,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INTERNAL_ERROR` | no | `CreditNoteSourceIntegrityException` | billing |
 | `INTERNAL_ERROR` | no | `EmailDeliveryException` | shared |
 | `INTERNAL_ERROR` | no | `FeatureNotProvisionedException` | platform |
+| `INTERNAL_ERROR` | no | `InstituteSettingNotProvisionedException` | platform |
 | `INTERNAL_ERROR` | no | `InvalidInvoiceAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `InvoiceStatusInconsistentWithAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `PaymentSourceIntegrityException` | billing |

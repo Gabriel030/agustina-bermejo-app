@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase.settings;
 
-import com.red_escuela.backend.platform.api.PaymentMethodAvailability;
-import com.red_escuela.backend.platform.api.PaymentMethodAvailability.PaymentMethodStatus;
+import com.red_escuela.backend.platform.domain.MyPaymentMethod;
+import com.red_escuela.backend.platform.service.MyPaymentMethodsReader;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;
@@ -9,14 +9,14 @@ import java.util.List;
 @UseCase
 public class GetMyPaymentMethodsService implements GetMyPaymentMethodsUseCase {
 
-    private final PaymentMethodAvailability paymentMethodAvailability;
+    private final MyPaymentMethodsReader paymentMethodsReader;
 
-    public GetMyPaymentMethodsService(PaymentMethodAvailability paymentMethodAvailability) {
-        this.paymentMethodAvailability = paymentMethodAvailability;
+    public GetMyPaymentMethodsService(MyPaymentMethodsReader paymentMethodsReader) {
+        this.paymentMethodsReader = paymentMethodsReader;
     }
 
     @Override
-    public List<PaymentMethodStatus> read() {
-        return paymentMethodAvailability.statusOfAll();
+    public List<MyPaymentMethod> read() {
+        return paymentMethodsReader.readAll();
     }
 }
