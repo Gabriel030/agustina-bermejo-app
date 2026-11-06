@@ -33,14 +33,12 @@ public class JustifyAttendanceService implements JustifyAttendanceUseCase {
     @Override
     @Transactional
     public Attendance justify(JustifyAttendanceCommand command) {
-        Attendance attendance = attendanceFinder.findOrThrowOwnedBy(command.attendanceId(), command.instructorIdIfDocente());
+        Attendance attendance = attendanceFinder.findOrThrow(command.attendanceId());
         if (attendance.getStatus() != AttendanceStatus.ABSENT) {
             throw new CannotJustifyException(
                     "La asistencia " + command.attendanceId() + " no está ABSENT, no se puede justificar");
         }
-        justificationRecorder.markJustifiedByCurrentActor(attendance);
-        attendance.setJustificationReason(command.reason());
-        attendance.setJustificationAttachmentUrl(command.attachmentUrl());
+        justificationRecorder.justifyByStaff(attendance, command.reason(), command.attachmentUrl(), command.exceptionReason());
         Attendance saved = attendanceRepository.save(attendance);
         eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved));
         return saved;

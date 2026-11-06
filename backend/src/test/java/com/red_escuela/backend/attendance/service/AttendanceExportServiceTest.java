@@ -51,7 +51,7 @@ class AttendanceExportServiceTest {
 
     private static AttendanceHistoryResponse history() {
         var ana = new AttendanceHistoryResponse.StudentHistoryRow(1L, "Ana Perez",
-                Map.of(FIRST_DAY, new AttendanceHistoryResponse.HistoryCell(10L, "PRESENT")),
+                Map.of(FIRST_DAY, new AttendanceHistoryResponse.HistoryCell(10L, "PRESENT", null, false)),
                 Percentage.ratio(1, 3).orElseThrow());
         var beto = new AttendanceHistoryResponse.StudentHistoryRow(2L, "Beto Gomez", Map.of(), null);
         return new AttendanceHistoryResponse(List.of(FIRST_DAY, SECOND_DAY), List.of(ana, beto));
@@ -225,7 +225,7 @@ class AttendanceExportServiceTest {
         List<AttendanceHistoryResponse.StudentHistoryRow> rows = new java.util.ArrayList<>();
         for (int s = 1; s <= BIG_STUDENTS; s++) {
             Map<LocalDate, AttendanceHistoryResponse.HistoryCell> cells = new java.util.HashMap<>();
-            dates.forEach(date -> cells.put(date, new AttendanceHistoryResponse.HistoryCell(1L, "PRESENT")));
+            dates.forEach(date -> cells.put(date, new AttendanceHistoryResponse.HistoryCell(1L, "PRESENT", null, false)));
             rows.add(new AttendanceHistoryResponse.StudentHistoryRow(
                     (long) s, "Alumno%03d".formatted(s), cells, Percentage.ratio(1, 2).orElseThrow()));
         }

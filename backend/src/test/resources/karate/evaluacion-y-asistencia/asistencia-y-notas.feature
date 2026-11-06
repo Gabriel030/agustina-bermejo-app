@@ -227,7 +227,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/attendance', attendanceId, 'justify'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { reason: 'Certificado médico' }
+    And request { reason: 'Certificado médico', exceptionReason: 'Presentado fuera de plazo' }
     When method post
     Then status 200
     And match response.status == 'JUSTIFIED'

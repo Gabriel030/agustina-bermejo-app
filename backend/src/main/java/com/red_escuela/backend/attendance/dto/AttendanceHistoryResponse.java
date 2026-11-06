@@ -8,7 +8,7 @@ import java.util.Map;
 
 public record AttendanceHistoryResponse(List<LocalDate> classDates, List<StudentHistoryRow> rows) {
 
-    public record HistoryCell(Long attendanceId, String status) {
+    public record HistoryCell(Long attendanceId, String status, LocalDate justificationDeadline, boolean justifiable) {
     }
 
     public record StudentHistoryRow(
