@@ -779,6 +779,20 @@
         },
         "type" : "object"
       },
+      "ApproveDraftInvoicesRequest" : {
+        "properties" : {
+          "invoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "invoiceIds" ],
+        "type" : "object"
+      },
       "AssignElectiveGroupRequest" : {
         "properties" : {
           "electiveGroupId" : {
@@ -3900,6 +3914,25 @@
         "required" : [ "decidedAt", "decisionNotes", "id", "justification", "programEnrollmentId", "programName", "requestedAt", "status", "studentName", "subjectId", "subjectName", "type" ],
         "type" : "object"
       },
+      "DiscardDraftInvoicesRequest" : {
+        "properties" : {
+          "invoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "invoiceIds", "reason" ],
+        "type" : "object"
+      },
       "DiscardedAnnualUpfrontRequestResponse" : {
         "properties" : {
           "discardReason" : {
@@ -4208,6 +4241,23 @@
         "required" : [ "violations" ],
         "type" : "object"
       },
+      "DraftInvoiceBatchResponse" : {
+        "properties" : {
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "invoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "count", "invoiceIds" ],
+        "type" : "object"
+      },
       "DraftInvoiceGroupResponse" : {
         "properties" : {
           "difference" : {
@@ -4231,6 +4281,13 @@
             "enum" : [ "MONTHLY_INSTALLMENT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
             "type" : "string"
           },
+          "invoiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
           "name" : {
             "type" : "string"
           },
@@ -4238,7 +4295,7 @@
             "$ref" : "#/components/schemas/Money"
           }
         },
-        "required" : [ "difference", "differencePercentage", "draftCount", "draftTotal", "enrollmentType", "feeType", "name", "previousPeriodIssuedTotal" ],
+        "required" : [ "difference", "differencePercentage", "draftCount", "draftTotal", "enrollmentType", "feeType", "invoiceIds", "name", "previousPeriodIssuedTotal" ],
         "type" : "object"
       },
       "EffectLine" : {
@@ -42997,6 +43054,267 @@
                     "$ref" : "#/components/schemas/DraftInvoiceGroupResponse"
                   },
                   "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
+    "/monthly-invoice-runs/{monthlyRunId}/draft-invoices/approvals" : {
+      "post" : {
+        "operationId" : "MonthlyInvoiceRun_approveDraftInvoices",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "monthlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApproveDraftInvoicesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DraftInvoiceBatchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "monthly-invoice-run-controller" ]
+      }
+    },
+    "/monthly-invoice-runs/{monthlyRunId}/draft-invoices/discards" : {
+      "post" : {
+        "operationId" : "MonthlyInvoiceRun_discardDraftInvoices",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "monthlyRunId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DiscardDraftInvoicesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DraftInvoiceBatchResponse"
                 }
               }
             },

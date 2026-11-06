@@ -32,7 +32,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @Tag("D-518")
-@Tag("D-222")
 @Tag("D-110")
 class MonthlyRunDraftReviewEndpointsIT extends AbstractInvoiceSequenceScenarioTest {
 
