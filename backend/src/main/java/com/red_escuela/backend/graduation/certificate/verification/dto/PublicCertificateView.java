@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.verification.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -10,10 +11,10 @@ public record PublicCertificateView(
         String maskedDocument,
         String titleKind,
         String titleName,
-        LocalDate graduationDate,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate graduationDate,
         LocalDateTime issuedAt,
-        LocalDateTime expiresAt,
-        LocalDateTime revokedAt,
-        String registryNumber,
-        Integer hours) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime expiresAt,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime revokedAt,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String registryNumber,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer hours) {
 }

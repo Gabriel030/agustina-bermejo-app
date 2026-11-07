@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 
 public record AttendanceResponse(
         Long id, Long enrollmentId, LocalDate classDate, String status,
-        String justificationReason, String justificationAttachmentUrl, LocalDateTime justifiedAt,
-        String justificationRejectionReason,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String justificationReason, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String justificationAttachmentUrl, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime justifiedAt,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String justificationRejectionReason,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate justificationDeadline,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Boolean justifiable) {
 

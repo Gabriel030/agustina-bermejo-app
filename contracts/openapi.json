@@ -1033,27 +1033,27 @@
             "type" : [ "boolean", "null" ]
           },
           "justificationAttachmentUrl" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justificationDeadline" : {
             "format" : "date",
             "type" : [ "string", "null" ]
           },
           "justificationReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justificationRejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justifiedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
           }
         },
-        "required" : [ "classDate", "enrollmentId", "id", "justificationAttachmentUrl", "justificationReason", "justificationRejectionReason", "justifiedAt", "status" ],
+        "required" : [ "classDate", "enrollmentId", "id", "status" ],
         "type" : "object"
       },
       "AttendanceRiskResponse" : {
@@ -2446,7 +2446,7 @@
         "properties" : {
           "completionDate" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "courseId" : {
             "format" : "int64",
@@ -2471,7 +2471,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "completionDate", "courseId", "courseName", "enrollmentDate", "id", "status", "studentId" ],
+        "required" : [ "courseId", "courseName", "enrollmentDate", "id", "status", "studentId" ],
         "type" : "object"
       },
       "CoursePricingResponse" : {
@@ -7008,10 +7008,10 @@
             "type" : "string"
           },
           "instructorTitular" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "schedule" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "sectionEnrollmentId" : {
             "format" : "int64",
@@ -7021,7 +7021,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "courseName", "courseSubjectName", "instructorTitular", "schedule", "sectionEnrollmentId", "sectionName" ],
+        "required" : [ "courseName", "courseSubjectName", "sectionEnrollmentId", "sectionName" ],
         "type" : "object"
       },
       "MyScheduleResponse" : {
@@ -8520,7 +8520,7 @@
         "properties" : {
           "completionDate" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "enrollmentDate" : {
             "format" : "date-time",
@@ -8545,7 +8545,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "completionDate", "enrollmentDate", "id", "programId", "programName", "status", "studentId" ],
+        "required" : [ "enrollmentDate", "id", "programId", "programName", "status", "studentId" ],
         "type" : "object"
       },
       "ProgramPricingResponse" : {
@@ -8990,18 +8990,18 @@
           },
           "expiresAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "graduationDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "holderFullName" : {
             "type" : "string"
           },
           "hours" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "issuedAt" : {
             "format" : "date-time",
@@ -9011,11 +9011,11 @@
             "type" : "string"
           },
           "registryNumber" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "revokedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "enum" : [ "VALID", "EXPIRED", "REVOKED" ],
@@ -9028,7 +9028,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "documentKind", "expiresAt", "graduationDate", "holderFullName", "hours", "issuedAt", "maskedDocument", "registryNumber", "revokedAt", "status", "titleKind", "titleName" ],
+        "required" : [ "documentKind", "holderFullName", "issuedAt", "maskedDocument", "status", "titleKind", "titleName" ],
         "type" : "object"
       },
       "PublicModulesResponse" : {
@@ -10388,7 +10388,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "available", "capacity", "enrolled", "kind", "name", "sectionId", "waitlisted" ],
+        "required" : [ "enrolled", "kind", "name", "sectionId", "waitlisted" ],
         "type" : "object"
       },
       "SelectPaymentPlanRequest" : {

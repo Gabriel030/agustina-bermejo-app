@@ -73,13 +73,13 @@ export const handlers = [
   http.get(`${API}/course-subjects/:id/sections`, () => HttpResponse.json([])),
   http.post(`${API}/students/:id/program-enrollments`, ({ params }) =>
     HttpResponse.json(
-      { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
+      { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
       { status: 201 },
     ),
   ),
   http.post(`${API}/students/:id/course-enrollments`, ({ params }) =>
     HttpResponse.json(
-      { id: 1, studentId: Number(params.id), courseId: 1, courseName: 'Curso de prueba', status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
+      { id: 1, studentId: Number(params.id), courseId: 1, courseName: 'Curso de prueba', status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
       { status: 201 },
     ),
   ),
