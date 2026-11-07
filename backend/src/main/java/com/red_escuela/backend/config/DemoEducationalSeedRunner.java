@@ -11,6 +11,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -25,6 +26,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     public static final String PROGRAM_NAME = "Tecnicatura en Gestión Cultural (Demo)";
     public static final String GRADUATING_PROGRAM_NAME = "Tecnicatura en Producción Escénica (Demo)";
     public static final String COURSE_NAME = "Taller de Fotografía Digital (Demo)";
+    private static final int TERM_YEAR = 2026;
     public static final String TERM_DESCRIPTION = "Ciclo lectivo 2026 (Demo)";
 
     private static final Logger log = LoggerFactory.getLogger(DemoEducationalSeedRunner.class);
@@ -60,6 +62,9 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         try {
             seedThroughPort(environment.getRequiredProperty("local.server.port", Integer.class));
+        } catch (RestClientResponseException failure) {
+            log.error("Seed demo educativo incompleto ({} {}): {}. Si el error es de feriados faltantes, cargar los feriados del año del ciclo antes de reintentar. La base queda a medias, recrearla para reintentar",
+                    failure.getStatusCode().value(), failure.getStatusText(), failure.getResponseBodyAsString());
         } catch (RuntimeException failure) {
             log.error("Seed demo educativo incompleto: la base queda a medias, recrearla para reintentar", failure);
         }
@@ -140,9 +145,16 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         return api.post(DIRECTOR, "/evaluation-schemes", scheme).get("id").asLong();
     }
 
-    private long createOpenTerm(DemoApiClient api) {
+    long createOpenTerm(DemoApiClient api) {
+        for (JsonNode existing : api.get(ADMIN, "/terms")) {
+            if (TERM_YEAR == existing.path("year").asInt(0) && "ANNUAL".equals(existing.path("type").asString(""))
+                    && "ACTIVE".equals(existing.path("status").asString(""))) {
+                log.info("Seed demo educativo reutiliza el ciclo activo {} {} existente (id={})", TERM_YEAR, "ANNUAL", existing.get("id").asLong());
+                return existing.get("id").asLong();
+            }
+        }
         Map<String, Object> term = new LinkedHashMap<>();
-        term.put("year", 2026);
+        term.put("year", TERM_YEAR);
         term.put("description", TERM_DESCRIPTION);
         term.put("type", "ANNUAL");
         term.put("startDate", "2026-03-01T00:00:00");
