@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -233,5 +234,44 @@ class AttendanceHistoryBuilderTest {
         assertThat(cells.get(LocalDate.of(2026, 2, 27)).justifiable()).isFalse();
         assertThat(cells.get(LocalDate.of(2026, 2, 27)).justificationDeadline()).isEqualTo(LocalDate.of(2026, 3, 6));
         assertThat(cells.get(LocalDate.of(2026, 3, 9)).justifiable()).isFalse();
+    }
+
+    @Test
+    void absentCellExposesTheRejectionReasonAndDateOnlyWhenTheJustificationWasRejected() {
+        var ana = programEnrollment(1L, student(10L, "Ana", "Perez"));
+        Attendance rejected = programAttendance(100L, ana, FIRST_DAY, AttendanceStatus.ABSENT);
+        rejected.setJustificationRejectionReason("illegible proof");
+        rejected.setJustificationRejectedAt(LocalDateTime.of(2026, 3, 4, 10, 30));
+        Attendance plainAbsence = programAttendance(101L, ana, SECOND_DAY, AttendanceStatus.ABSENT);
+        Attendance present = programAttendance(102L, ana, THIRD_DAY, AttendanceStatus.PRESENT);
+        when(classSessionRepository.findBySubjectSectionId(SECTION_ID)).thenReturn(List.of());
+        when(attendanceRepository.findByProgramSubjectSectionEnrollment_SubjectSection_Id(SECTION_ID))
+                .thenReturn(List.of(rejected, plainAbsence, present));
+        when(sectionEnrollmentFinder.findActiveInProgramSection(SECTION_ID)).thenReturn(List.of(ana));
+
+        var cells = builder().buildForProgramSection(SECTION_ID).rows().get(0).cellsByDate();
+
+        assertThat(cells.get(FIRST_DAY).rejection())
+                .isEqualTo(new AttendanceHistoryResponse.JustificationRejection("illegible proof", LocalDateTime.of(2026, 3, 4, 10, 30)));
+        assertThat(cells.get(SECOND_DAY).rejection()).isNull();
+        assertThat(cells.get(THIRD_DAY).rejection()).isNull();
+    }
+
+    @Test
+    void courseCellExposesTheRejectionOfItsOwnAttendanceOnly() {
+        var ana = courseEnrollment(1L, student(10L, "Ana", "Perez"));
+        var beto = courseEnrollment(2L, student(11L, "Beto", "Gomez"));
+        Attendance rejected = courseAttendance(100L, ana, FIRST_DAY, AttendanceStatus.ABSENT);
+        rejected.setJustificationRejectionReason("illegible proof");
+        rejected.setJustificationRejectedAt(LocalDateTime.of(2026, 3, 4, 10, 30));
+        when(classSessionRepository.findByCourseSubjectSectionId(SECTION_ID)).thenReturn(List.of());
+        when(attendanceRepository.findByCourseSubjectSectionEnrollment_CourseSubjectSection_Id(SECTION_ID)).thenReturn(List.of(
+                rejected, courseAttendance(101L, beto, FIRST_DAY, AttendanceStatus.ABSENT)));
+        when(sectionEnrollmentFinder.findActiveInCourseSection(SECTION_ID)).thenReturn(List.of(ana, beto));
+
+        var rows = builder().buildForCourseSection(SECTION_ID).rows();
+
+        assertThat(rows.get(0).cellsByDate().get(FIRST_DAY).rejection().reason()).isEqualTo("illegible proof");
+        assertThat(rows.get(1).cellsByDate().get(FIRST_DAY).rejection()).isNull();
     }
 }
