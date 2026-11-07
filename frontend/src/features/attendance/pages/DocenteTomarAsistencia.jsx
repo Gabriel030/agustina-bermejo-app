@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { localIsoDate } from '@/lib/calendario';
+import { formatDate } from '@/lib/billing';
 import { attendancePercentToPoints } from '@/lib/attendancePercent';
 import { StatusPill } from '@/components/StatusPill';
 import { attendanceRisk } from '@/features/attendance/lib/attendanceRisk';
@@ -538,7 +539,12 @@ function agruparPorAnioYMes(fechas) {
   }));
 }
 
-function TabHistorial({ type, sectionId }) {
+function rejectionText(rejection) {
+  const date = formatDate(rejection.rejectedAt);
+  return `Justificación rechazada: ${rejection.reason}${date ? ` (${date})` : ''}`;
+}
+
+export function TabHistorial({ type, sectionId }) {
   const { data: historial, isLoading } = useHistorialAsistencia(type, sectionId);
   const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
   const [solicitandoModificacion, setSolicitandoModificacion] = useState(false);
@@ -651,9 +657,12 @@ function TabHistorial({ type, sectionId }) {
                         setCeldaSeleccionada({ studentName: fila.studentName, fecha, ...celda });
                       }}
                       className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.filaClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
-                      title={config?.label ?? 'Sin cargar'}
+                      title={celda?.rejection ? rejectionText(celda.rejection) : (config?.label ?? 'Sin cargar')}
+                      tabIndex={celda?.rejection ? 0 : undefined}
+                      aria-label={celda?.rejection ? `${config.label}. ${rejectionText(celda.rejection)}` : undefined}
                     >
                       {config ? config.label[0] : '·'}
+                      {celda?.rejection && <span aria-hidden="true" className="ml-0.5 text-danger">!</span>}
                     </td>
                   );
                 })}
@@ -676,6 +685,9 @@ function TabHistorial({ type, sectionId }) {
               {celdaSeleccionada?.studentName} · {celdaSeleccionada?.fecha} · {ESTADO_POR_VALOR[celdaSeleccionada?.status]?.label}
             </DialogDescription>
           </DialogHeader>
+          {celdaSeleccionada?.rejection && (
+            <p className="text-[13px] font-bold text-danger">{rejectionText(celdaSeleccionada.rejection)}</p>
+          )}
           {celdaSeleccionada?.status === 'ABSENT' && !celdaSeleccionada.justifiable && (
             <p className="text-[13px] text-ink-faint">Venció el plazo para justificar esta falta: lo resuelve el preceptor.</p>
           )}

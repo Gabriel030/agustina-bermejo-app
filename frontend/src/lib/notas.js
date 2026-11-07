@@ -128,11 +128,13 @@ export function mapearNotasAColumnas(gradeItems) {
   const items = gradeItems ?? [];
   const asignados = new Set();
   const columnas = {};
+  const correcciones = {};
   for (const columna of COLUMNAS_NOTAS) {
     const item = items.find((g) => columna.match(g) && !asignados.has(g.id));
     columnas[columna.key] = item ? item.score : null;
+    correcciones[columna.key] = item?.correction ?? null;
     if (item) asignados.add(item.id);
   }
   const extras = items.filter((g) => !asignados.has(g.id));
-  return { columnas, extras };
+  return { columnas, correcciones, extras };
 }

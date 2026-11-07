@@ -42,12 +42,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | AnnualUpfrontEnrollmentActivePolicy | ENROLLMENT_NOT_ACTIVE | D-066, D-053 |
 | 2 | AnnualUpfrontRequestWindowPolicy | ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED | D-156 |
-| 3 | ScholarshipHolderCannotChooseAnnualUpfrontPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE_WITH_SCHOLARSHIP | D-130, D-302, D-388 |
-| 4 | AnnualUpfrontBlockedByOverdueDebtPolicy | OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT | D-152, D-292 |
-| 5 | OnlyOneAnnualUpfrontRequestPolicy | ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED | D-131 |
-| 6 | AnnualUpfrontMonthsStillAvailablePolicy | NO_MONTHS_LEFT_FOR_ANNUAL_UPFRONT | D-131 |
-| 7 | AnnualUpfrontLineCountSupportedPolicy | ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED | D-131, D-524 |
-| 8 | AnnualUpfrontPriceAvailablePolicy | NO_EFFECTIVE_PRICE_FOR_ANNUAL_UPFRONT | D-439 |
+| 3 | AnnualUpfrontMonthlyInstallmentAlreadyUsedPolicy | ANNUAL_UPFRONT_MONTHLY_ALREADY_USED | D-520, D-521 |
+| 4 | ScholarshipHolderCannotChooseAnnualUpfrontPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE_WITH_SCHOLARSHIP | D-130, D-302, D-388 |
+| 5 | AnnualUpfrontBlockedByOverdueDebtPolicy | OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT | D-152, D-292 |
+| 6 | OnlyOneAnnualUpfrontRequestPolicy | ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED | D-131 |
+| 7 | AnnualUpfrontMonthsStillAvailablePolicy | NO_MONTHS_LEFT_FOR_ANNUAL_UPFRONT | D-131 |
+| 8 | AnnualUpfrontLineCountSupportedPolicy | ANNUAL_UPFRONT_LINE_COUNT_NOT_SUPPORTED | D-131, D-524 |
+| 9 | AnnualUpfrontPriceAvailablePolicy | NO_EFFECTIVE_PRICE_FOR_ANNUAL_UPFRONT | D-439 |
 
 ## Momento ANNUAL_UPFRONT_SETTINGS
 
