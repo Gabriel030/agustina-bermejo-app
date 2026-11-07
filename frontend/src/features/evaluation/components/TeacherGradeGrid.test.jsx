@@ -14,6 +14,7 @@ const API = 'http://localhost:8080';
 
 const grid = {
   sectionId: 7,
+  correctionDeadline: '2026-12-18',
   evaluationSchemeName: 'Cuatrimestral',
   minRegularGrade: 6,
   minApprovalGrade: 7,
@@ -31,7 +32,7 @@ const grid = {
       dni: '42007315',
       condition: 'REGULAR',
       finalEnabled: true,
-      grades: [{ gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: false }],
+      grades: [{ gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 7, date: '2026-09-16T10:00:00', comments: null, published: false, corrected: false }],
     },
     {
       enrollmentId: 12,
