@@ -16,9 +16,9 @@ import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.policy.EmailDeliveryContext;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
-import com.red_escuela.backend.notification.delivery.service.DeliveryRequest;
-import com.red_escuela.backend.notification.delivery.service.EmailDeliveryChannel;
-import com.red_escuela.backend.notification.delivery.service.NotificationDeliveryService;
+import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryChannel;
+import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -47,7 +47,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.red_escuela.backend.notification.delivery.service.InAppDeliveryChannel;
+import com.red_escuela.backend.notification.delivery.specialist.InAppDeliveryChannel;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
@@ -65,7 +65,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
     @Autowired
     private CircuitBreakerFactory circuitBreakerFactory;
     @Autowired
-    private NotificationDeliveryService deliveryService;
+    private NotificationDeliveryEnqueuer deliveryService;
     @Autowired
     private EmailDeliveryChannel emailChannel;
     @Autowired
@@ -612,7 +612,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         EmailDeliveryChannel brokenEmail = mock(EmailDeliveryChannel.class);
         DeliveryRequest request = request(student, key, false);
         doThrow(new IllegalStateException("se cayo el canal de mail")).when(brokenEmail).enqueue(request);
-        NotificationDeliveryService firstAttempt = new NotificationDeliveryService(inAppChannel, brokenEmail, deliveryRepository, billingNotificationsPolicy);
+        NotificationDeliveryEnqueuer firstAttempt = new NotificationDeliveryEnqueuer(inAppChannel, brokenEmail, deliveryRepository, billingNotificationsPolicy);
 
         assertThatThrownBy(() -> firstAttempt.enqueue(request)).isInstanceOf(IllegalStateException.class);
         assertThat(countDeliveries(key)).isEqualTo(1);

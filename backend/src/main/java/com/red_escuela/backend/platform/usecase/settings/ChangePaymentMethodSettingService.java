@@ -2,7 +2,7 @@ package com.red_escuela.backend.platform.usecase.settings;
 
 import com.red_escuela.backend.platform.domain.InstituteSettings.PaymentMethodSetting;
 import com.red_escuela.backend.platform.domain.PaymentMethodSettingChange;
-import com.red_escuela.backend.platform.service.InstituteSettingsUpdater;
+import com.red_escuela.backend.platform.specialist.InstituteSettingsUpdater;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

@@ -8,9 +8,9 @@ import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryStatus;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
-import com.red_escuela.backend.notification.delivery.service.DeliveryRequest;
-import com.red_escuela.backend.notification.delivery.service.EmailDeliveryDispatchJob;
-import com.red_escuela.backend.notification.delivery.service.NotificationDeliveryService;
+import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryDispatchJob;
+import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -44,7 +44,7 @@ class EmailDeliveryDispatchJobIT extends AbstractIntegrationTest {
     @Autowired
     private EmailDeliveryDispatchJob job;
     @Autowired
-    private NotificationDeliveryService deliveryService;
+    private NotificationDeliveryEnqueuer deliveryService;
     @Autowired
     private NotificationDeliveryRepository deliveryRepository;
     @Autowired

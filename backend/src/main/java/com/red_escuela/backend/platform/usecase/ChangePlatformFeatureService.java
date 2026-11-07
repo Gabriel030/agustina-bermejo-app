@@ -2,7 +2,7 @@ package com.red_escuela.backend.platform.usecase;
 
 import com.red_escuela.backend.platform.domain.FeatureChange;
 import com.red_escuela.backend.platform.domain.FeatureState;
-import com.red_escuela.backend.platform.service.PlatformFeatureChanger;
+import com.red_escuela.backend.platform.specialist.PlatformFeatureChanger;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

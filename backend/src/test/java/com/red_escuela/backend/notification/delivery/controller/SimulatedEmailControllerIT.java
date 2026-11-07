@@ -7,8 +7,8 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryCategory;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryContent;
 import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
-import com.red_escuela.backend.notification.delivery.service.DeliveryRequest;
-import com.red_escuela.backend.notification.delivery.service.NotificationDeliveryService;
+import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
+import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -50,7 +50,7 @@ class SimulatedEmailControllerIT extends AbstractIntegrationTest {
     @Autowired
     private JwtService jwtService;
     @Autowired
-    private NotificationDeliveryService deliveryService;
+    private NotificationDeliveryEnqueuer deliveryService;
 
     private Person persistPerson(String roleName) {
         String username = (roleName == null ? "sin.rol" : roleName.toLowerCase()) + "." + System.nanoTime();

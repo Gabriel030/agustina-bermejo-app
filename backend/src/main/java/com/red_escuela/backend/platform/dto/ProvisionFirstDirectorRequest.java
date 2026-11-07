@@ -1,6 +1,6 @@
 package com.red_escuela.backend.platform.dto;
 
-import com.red_escuela.backend.platform.service.FeatureChangeReasonValidator;
+import com.red_escuela.backend.platform.specialist.FeatureChangeReasonValidator;
 import com.red_escuela.backend.shared.domain.DocumentType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
