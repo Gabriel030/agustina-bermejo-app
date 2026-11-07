@@ -1,4 +1,4 @@
-import { Check, Loader2, Lock } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,10 +26,21 @@ export function GradeEntryCell({ label, studentName, saved, draft, status, disab
 
   if (locked) {
     return (
-      <span className="inline-flex h-10 w-14 items-center justify-end gap-1 px-1.5 text-sm text-ink" aria-label={`${label} de ${studentName}: ${text || 'sin nota'}, publicada`}>
-        <Lock aria-hidden="true" className="size-3 text-ink-faint" />
-        {text || '—'}
-      </span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Input
+              type="text"
+              readOnly
+              aria-label={`${label} de ${studentName}`}
+              aria-describedby="published-grade-note"
+              value={text}
+              className="h-10 w-14 cursor-not-allowed px-1.5 text-right text-sm opacity-70"
+            />
+          </TooltipTrigger>
+          <TooltipContent>Publicada: solo Dirección puede corregirla</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 

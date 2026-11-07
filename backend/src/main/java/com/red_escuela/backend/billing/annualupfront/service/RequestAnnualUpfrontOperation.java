@@ -120,6 +120,7 @@ public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAn
         BillingEnrollmentFacts facts = quoteService.prepareRequestForCurrentStudent(programEnrollmentId).facts();
         enrollmentLock.lockDiscountsOf(EnrollmentReference.ofProgram(programEnrollmentId));
         StudentCurrentAccount account = accountService.findOrOpenAndLockStudentCurrentAccount(facts.studentId(), facts.currency());
+        quoteService.refreshInvoicesOfEnrollmentAfterTakingTheAccountLock(programEnrollmentId);
         AnnualUpfrontRequestPreparation preparation = prepareLockingEveryWinningDefinition(programEnrollmentId);
         AnnualUpfrontRejections.requireEligible(preparation.eligibility());
         Map<Integer, InvoiceDiscountDraft> discounts = reserveWinningDiscount(preparation, programEnrollmentId, personId);
