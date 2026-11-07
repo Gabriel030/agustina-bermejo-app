@@ -20,7 +20,7 @@ import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepos
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTerms;
 import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTermsLookup;
 import org.junit.jupiter.api.BeforeEach;

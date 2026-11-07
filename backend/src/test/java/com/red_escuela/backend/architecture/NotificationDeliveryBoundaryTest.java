@@ -46,7 +46,7 @@ class NotificationDeliveryBoundaryTest {
     void deliveryReachesIdentityOnlyThroughItsApi() {
         noClasses().that().resideInAPackage(ROOT + ".notification.delivery..")
                 .should().dependOnClassesThat().resideInAnyPackage(
-                        ROOT + ".identity.repository..", ROOT + ".identity.service..", ROOT + ".identity.usecase..", ROOT + ".identity.controller..")
+                        ROOT + ".identity.repository..", ROOT + ".identity.specialist..", ROOT + ".identity.usecase..", ROOT + ".identity.controller..")
                 .check(MAIN_CLASSES);
     }
 

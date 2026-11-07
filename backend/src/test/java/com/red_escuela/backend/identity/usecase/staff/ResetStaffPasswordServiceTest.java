@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.exception.RoleNotAssignableByActorException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.PasswordResetCodeRequester;
+import com.red_escuela.backend.identity.specialist.PasswordResetCodeRequester;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

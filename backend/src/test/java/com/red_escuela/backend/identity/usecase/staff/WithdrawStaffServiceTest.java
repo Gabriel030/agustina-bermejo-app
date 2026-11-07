@@ -3,7 +3,7 @@ package com.red_escuela.backend.identity.usecase.staff;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.SessionRevoker;
+import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;

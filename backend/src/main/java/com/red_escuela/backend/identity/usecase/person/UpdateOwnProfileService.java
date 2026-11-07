@@ -3,10 +3,10 @@ package com.red_escuela.backend.identity.usecase.person;
 import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.identity.service.OwnDocumentChanger;
-import com.red_escuela.backend.identity.service.EmailChangeRequester;
+import com.red_escuela.backend.identity.specialist.OwnDocumentChanger;
+import com.red_escuela.backend.identity.specialist.EmailChangeRequester;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase

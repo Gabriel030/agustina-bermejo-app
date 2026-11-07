@@ -5,7 +5,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentFeeExemption;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionAlreadyRevokedException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionNotFoundException;
 import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.enrollment.service.EnrollmentNotificationEvents;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;

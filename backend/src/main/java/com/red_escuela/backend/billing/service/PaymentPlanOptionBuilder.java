@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import org.springframework.stereotype.Service;
 
 @Service

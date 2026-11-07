@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.payment.dto.RefundEligibilityResponse;
 import com.red_escuela.backend.billing.payment.dto.RefundPreviewResponse;
 import com.red_escuela.backend.billing.payment.dto.RequestRefundRequest;
 import com.red_escuela.backend.billing.payment.usecase.PreviewRefundUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.domain.Currency;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

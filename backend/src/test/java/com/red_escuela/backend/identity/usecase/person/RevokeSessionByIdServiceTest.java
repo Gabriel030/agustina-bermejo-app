@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
-import com.red_escuela.backend.identity.service.SessionRevoker;
+import com.red_escuela.backend.identity.specialist.SessionRevoker;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;

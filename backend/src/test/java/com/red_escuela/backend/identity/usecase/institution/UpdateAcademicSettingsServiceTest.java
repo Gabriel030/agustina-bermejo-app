@@ -5,7 +5,7 @@ import com.red_escuela.backend.identity.dto.AcademicSettingsResponse;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.exception.InstitutionNotFoundException;
 import com.red_escuela.backend.identity.repository.InstitutionRepository;
-import com.red_escuela.backend.identity.service.InstitutionAcademicSettingsWriter;
+import com.red_escuela.backend.identity.specialist.InstitutionAcademicSettingsWriter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

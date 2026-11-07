@@ -2,10 +2,10 @@ package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
-import com.red_escuela.backend.identity.service.DummyPasswordHash;
+import com.red_escuela.backend.identity.specialist.DummyPasswordHash;
 import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.AuthTokenIssuer;
+import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.junit.jupiter.api.Test;

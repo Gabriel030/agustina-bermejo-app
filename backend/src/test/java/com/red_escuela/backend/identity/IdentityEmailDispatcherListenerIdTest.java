@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity;
 
-import com.red_escuela.backend.identity.service.IdentityEmailDispatcher;
+import com.red_escuela.backend.identity.specialist.IdentityEmailDispatcher;
 import com.red_escuela.backend.shared.event.EventPublicationResubmissionJob;
 import org.junit.jupiter.api.Test;
 

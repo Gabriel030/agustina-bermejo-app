@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.entity.ContactChangeLog;
 import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
-import com.red_escuela.backend.identity.service.EmailChangeRequestedEvent;
+import com.red_escuela.backend.identity.specialist.EmailChangeRequestedEvent;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

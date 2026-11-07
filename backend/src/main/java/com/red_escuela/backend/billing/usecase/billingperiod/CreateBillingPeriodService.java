@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest;
 import com.red_escuela.backend.billing.entity.BillingPeriod;
 import com.red_escuela.backend.billing.repository.BillingPeriodRepository;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

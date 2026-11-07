@@ -3,7 +3,7 @@ package com.red_escuela.backend.enrollment.controller;
 import com.red_escuela.backend.enrollment.dto.CourseAdmissionPreviewResponse;
 import com.red_escuela.backend.enrollment.usecase.courseenrollment.PreviewCourseAdmissionUseCase;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.GetMapping;

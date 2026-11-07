@@ -25,7 +25,7 @@ import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFactsFinder;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;

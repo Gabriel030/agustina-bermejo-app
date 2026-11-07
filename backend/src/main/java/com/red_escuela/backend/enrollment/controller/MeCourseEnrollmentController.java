@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.MyCourseEnrollmentResponse;
 import com.red_escuela.backend.enrollment.usecase.courseenrollment.ListMyCourseEnrollmentsUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

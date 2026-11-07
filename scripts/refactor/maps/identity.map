@@ -1,0 +1,5 @@
+package identity.service -> identity.specialist
+class EmailVerificationConfirmation -> EmailVerificationConfirmer
+class RefreshTokenRevocation -> RefreshTokenRevoker
+class RefreshTokenRotation -> RefreshTokenRotator
+class StaffReactivation -> StaffReactivator

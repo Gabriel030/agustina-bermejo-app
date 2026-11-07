@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository
 import com.red_escuela.backend.billing.usecase.paymentgateway.GetPaymentGatewayConfigUseCase;
 import com.red_escuela.backend.billing.usecase.paymentgateway.UpdatePaymentGatewayConfigUseCase;
 import com.red_escuela.backend.billing.usecase.paymentgateway.UploadQrImageUseCase;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.storage.FileStorageService;

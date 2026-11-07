@@ -9,7 +9,7 @@ import com.red_escuela.backend.billing.operation.AuthorizationRequestPort;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestObservers;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

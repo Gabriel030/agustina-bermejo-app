@@ -3,7 +3,7 @@ package com.red_escuela.backend.graduation.controller;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.graduation.specialist.ProgramCertificateIssuer;
 import com.red_escuela.backend.graduation.usecase.request.VerifyProgramEnrollmentOwnerUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

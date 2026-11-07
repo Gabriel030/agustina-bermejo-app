@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.note.usecase.IssueCreditNoteUseCase;
 import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentUseCase;
 import com.red_escuela.backend.billing.note.usecase.ListCreditNotesOfStudentWithAuthorshipUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

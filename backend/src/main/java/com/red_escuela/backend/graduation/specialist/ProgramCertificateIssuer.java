@@ -1,7 +1,7 @@
 package com.red_escuela.backend.graduation.specialist;
 
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;import java.time.Clock;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.graduation.entity.CertificateType;

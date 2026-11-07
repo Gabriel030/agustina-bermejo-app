@@ -1,15 +1,15 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
-import com.red_escuela.backend.identity.service.RefreshTokenRevocation;
+import com.red_escuela.backend.identity.specialist.RefreshTokenRevoker;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
 public class LogoutService implements LogoutUseCase {
 
-    private final RefreshTokenRevocation refreshTokenRevocation;
+    private final RefreshTokenRevoker refreshTokenRevocation;
 
-    public LogoutService(RefreshTokenRevocation refreshTokenRevocation) {
+    public LogoutService(RefreshTokenRevoker refreshTokenRevocation) {
         this.refreshTokenRevocation = refreshTokenRevocation;
     }
 

@@ -3,7 +3,7 @@ package com.red_escuela.backend.identity.usecase.student;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.service.PasswordResetCodeRequester;
+import com.red_escuela.backend.identity.specialist.PasswordResetCodeRequester;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
