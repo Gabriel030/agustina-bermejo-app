@@ -12,6 +12,7 @@ import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSetting
 import com.red_escuela.backend.notification.delivery.domain.PlannedDispatch;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
+import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,14 +41,16 @@ public class EmailDispatchPlanningService {
     private final EmailDispatchSource dispatchSource;
     private final Clock clock;
     private final TransactionTemplate transactionTemplate;
+    private final BillingNotificationsPolicy billingNotificationsPolicy;
     private final EmailDispatchPlanner planner = new EmailDispatchPlanner();
 
     public EmailDispatchPlanningService(NotificationDeliveryRepository deliveryRepository, EmailDispatchSource dispatchSource, Clock clock,
-                                         TransactionTemplate transactionTemplate) {
+                                         TransactionTemplate transactionTemplate, BillingNotificationsPolicy billingNotificationsPolicy) {
         this.deliveryRepository = deliveryRepository;
         this.dispatchSource = dispatchSource;
         this.clock = clock;
         this.transactionTemplate = transactionTemplate;
+        this.billingNotificationsPolicy = billingNotificationsPolicy;
     }
 
     public List<Long> planAndApplyFor(LocalDate today, EmailDispatchSettings settings, LocalDate nextBusinessDay) {
@@ -105,6 +108,10 @@ public class EmailDispatchPlanningService {
     }
 
     private boolean suppressIfNotDispatchable(NotificationDelivery delivery, LocalDate today) {
+        if (delivery.getCategory().isBillingFamily() && !billingNotificationsPolicy.areBillingNotificationsEffective()) {
+            delivery.suppress(DeliveryStatusReason.BILLING_NOTIFICATIONS_OFF);
+            return true;
+        }
         Optional<String> reason = dispatchSource.suppressionReasonOf(delivery);
         if (reason.isPresent()) {
             delivery.suppress(reason.get());
