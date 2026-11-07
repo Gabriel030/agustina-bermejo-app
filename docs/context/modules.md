@@ -10,7 +10,7 @@ Un módulo solo puede depender de los de capas inferiores y de `shared` (módulo
 
 `shared` < `identity` < `academicstructure` < `enrollment` < `attendance` < `evaluation` < `billing` < `graduation` < `announcement` < `notification`
 
-`academicrecord` es un módulo de composición que puede usar a todos. `config` (seguridad, filtros, scheduler) no tiene restricción de salida. Las dependencias que hoy van hacia arriba son violaciones congeladas en la línea base y las bajan las fases M3, M4 y M5.
+`academicrecord` es un módulo de composición que puede usar a todos. `demo` es un módulo de composición distinto: solo carga con el perfil `demo`, depende únicamente de `shared` y siembra la institución de prueba hablando por HTTP con la propia aplicación (cliente en `demo.infrastructure`), sin repositorios ni entidades de otros módulos; así no suma violaciones a la línea base. `config` (seguridad, filtros, scheduler) no tiene restricción de salida. Las dependencias que hoy van hacia arriba son violaciones congeladas en la línea base y las bajan las fases M3, M4 y M5.
 
 ## Qué expone un módulo
 
