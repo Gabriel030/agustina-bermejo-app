@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase;
 
 import com.red_escuela.backend.platform.domain.FirstDirectorProvisioningStatus;
-import com.red_escuela.backend.platform.service.FirstDirectorStatusReader;
+import com.red_escuela.backend.platform.specialist.FirstDirectorStatusReader;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

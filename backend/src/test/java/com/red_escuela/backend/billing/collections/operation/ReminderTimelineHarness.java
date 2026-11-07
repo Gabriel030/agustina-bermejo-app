@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.configuration.service.BillingConfiguratio
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.notification.delivery.service.EmailDeliveryDispatchJob;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryDispatchJob;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.springframework.jdbc.core.JdbcTemplate;
 

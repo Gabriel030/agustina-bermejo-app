@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase.settings;
 
 import com.red_escuela.backend.platform.domain.InstituteSettingChangeEntry;
-import com.red_escuela.backend.platform.service.InstituteSettingChangeEntryReader;
+import com.red_escuela.backend.platform.specialist.InstituteSettingChangeEntryReader;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -13,7 +13,7 @@ import com.red_escuela.backend.billing.reporting.service.OwnProgramEnrollmentBil
 import com.red_escuela.backend.billing.reporting.service.StudentBillingOverviewReader;
 import com.red_escuela.backend.billing.run.service.BillingRunReader;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.notification.delivery.service.SimulatedEmailListingReader;
+import com.red_escuela.backend.notification.delivery.specialist.SimulatedEmailListingReader;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
