@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@Schema(name = "GradeItemResponse")
 public record StudentGradeItemResponse(
         Long id, Long enrollmentId, String type, Integer sequenceNumber,
         Grade score, LocalDateTime date, Long examBoardId,
