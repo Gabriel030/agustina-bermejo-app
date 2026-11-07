@@ -31,10 +31,33 @@ public class TermEndWithdrawalBillingRunStep extends AbstractBillingRunStep {
 
     @Override
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
-        SuspendedEnrollmentClosureReport programs = programClosureService.closeFinishedCyclesReportingFailures();
-        SuspendedEnrollmentClosureReport courses = courseWithdrawalService.withdrawSuspendedEnrollmentsOfEndedCourses();
+        SuspendedEnrollmentClosureReport programs = emptyReport();
+        SuspendedEnrollmentClosureReport courses = emptyReport();
+        RuntimeException programFailure = null;
+        RuntimeException courseFailure = null;
+        try {
+            programs = programClosureService.closeFinishedCyclesReportingFailures();
+        } catch (RuntimeException e) {
+            programFailure = e;
+        }
+        try {
+            courses = courseWithdrawalService.withdrawSuspendedEnrollmentsOfEndedCourses();
+        } catch (RuntimeException e) {
+            courseFailure = e;
+        }
+        if (programFailure != null || courseFailure != null) {
+            RuntimeException first = programFailure != null ? programFailure : courseFailure;
+            if (programFailure != null && courseFailure != null) {
+                first.addSuppressed(courseFailure);
+            }
+            throw first;
+        }
         return BillingRunStepOutcome.ofCandidates(programs.candidates() + courses.candidates(),
                 Stream.concat(programs.failures().stream(), courses.failures().stream()).map(TermEndWithdrawalBillingRunStep::itemOf).toList());
+    }
+
+    private static SuspendedEnrollmentClosureReport emptyReport() {
+        return new SuspendedEnrollmentClosureReport(0, 0, java.util.List.of());
     }
 
     private static BillingRunItemRecord itemOf(SuspendedEnrollmentClosureReport.EnrollmentClosureFailure failure) {

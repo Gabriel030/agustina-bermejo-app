@@ -131,6 +131,42 @@ class NightlyCompletionStepsTest {
     }
 
     @Test
+    void aProgramServiceFailureDoesNotStopTheCourseWithdrawalsAndIsRethrownAfterwards() {
+        SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
+        when(closure.closeFinishedCyclesReportingFailures()).thenThrow(new IllegalStateException("programs down"));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenReturn(new SuspendedEnrollmentClosureReport(1, 1, List.of()));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT))
+                .isInstanceOf(IllegalStateException.class).hasMessage("programs down");
+
+        org.mockito.Mockito.verify(courses).withdrawSuspendedEnrollmentsOfEndedCourses();
+    }
+
+    @Test
+    void aCourseServiceFailureDoesNotStopTheProgramClosuresAndIsRethrownAfterwards() {
+        SuspendedEnrollmentClosureService closure = mock(SuspendedEnrollmentClosureService.class);
+        when(closure.closeFinishedCyclesReportingFailures()).thenReturn(new SuspendedEnrollmentClosureReport(1, 1, List.of()));
+        CourseEnrollmentWithdrawalAtCourseEndService courses = mock(CourseEnrollmentWithdrawalAtCourseEndService.class);
+        when(courses.withdrawSuspendedEnrollmentsOfEndedCourses()).thenThrow(new IllegalStateException("courses down"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TermEndWithdrawalBillingRunStep(closure, courses).runStepForBusinessDate(NIGHT))
+                .isInstanceOf(IllegalStateException.class).hasMessage("courses down");
+
+        org.mockito.Mockito.verify(closure).closeFinishedCyclesReportingFailures();
+    }
+
+    @Test
+    void theTermEndStepOnlyRunsInsideTheNightlyJobThatRequiresBillingInFullMode() throws NoSuchMethodException {
+        com.red_escuela.backend.shared.module.RequiresModule gate = NightlyBillingJob.class.getMethod("run")
+                .getAnnotation(com.red_escuela.backend.shared.module.RequiresModule.class);
+
+        assertThat(gate).isNotNull();
+        assertThat(gate.value()).isEqualTo(com.red_escuela.backend.shared.module.RequiresModule.BILLING);
+        assertThat(gate.minMode()).isEqualTo(com.red_escuela.backend.shared.module.BillingMode.FULL);
+    }
+
+    @Test
     void theCreditAllocationIsNotApplicableUnlessTheAutoApplySettingIsOn() {
         AccountCreditAllocationBillingRunStep step = new AccountCreditAllocationBillingRunStep(mock(StudentCurrentAccountRepository.class), mock(BillingOperationPipeline.class),
                 mock(AccountCreditAllocationOperation.class), configurationReader, heldAccounts);

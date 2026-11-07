@@ -3,10 +3,11 @@ package com.red_escuela.backend.billing.collections.service;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentEndView;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
-import com.red_escuela.backend.enrollment.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,26 +51,36 @@ public class CourseEnrollmentWithdrawalAtCourseEndService {
 
     public SuspendedEnrollmentClosureReport withdrawSuspendedEnrollmentsOfEndedCourses() {
         LocalDate today = LocalDate.now(clock);
-        List<Long> candidateIds = courseEnrollmentFinder.findEndViewsByIds(standingRepository.findSuspendedCourseEnrollmentIds()).stream()
-                .filter(view -> view.isActiveAndCourseEndedBefore(today)).map(CourseEnrollmentEndView::enrollmentId).sorted().toList();
+        List<CourseEnrollmentEndView> candidates = courseEnrollmentFinder.findEndViewsByIds(standingRepository.findSuspendedCourseEnrollmentIds()).stream()
+                .filter(view -> view.isActiveAndCourseEndedBefore(today)).sorted(Comparator.comparing(CourseEnrollmentEndView::enrollmentId)).toList();
         int closed = 0;
         List<SuspendedEnrollmentClosureReport.EnrollmentClosureFailure> failures = new ArrayList<>();
-        for (Long id : candidateIds) {
+        for (CourseEnrollmentEndView candidate : candidates) {
+            Long id = candidate.enrollmentId();
             try {
-                requiresNew.executeWithoutResult(status -> withdrawForNonpayment(id, today));
-                closed++;
+                if (Boolean.TRUE.equals(requiresNew.execute(status -> withdrawForNonpayment(candidate, today)))) {
+                    closed++;
+                }
             } catch (RuntimeException e) {
                 logFailure(id, e);
                 failures.add(failureOf(id, e));
             }
         }
-        return new SuspendedEnrollmentClosureReport(candidateIds.size(), closed, failures);
+        return new SuspendedEnrollmentClosureReport(candidates.size(), closed, failures);
     }
 
-    private void withdrawForNonpayment(Long enrollmentId, LocalDate today) {
-        courseEnrollmentService.withdrawForNonpayment(enrollmentId);
+    private boolean withdrawForNonpayment(CourseEnrollmentEndView candidate, LocalDate today) {
+        Long enrollmentId = candidate.enrollmentId();
+        boolean stillSuspended = standingRepository.findByCourseEnrollmentForUpdate(enrollmentId)
+                .map(standing -> standing.getStatus() == EnrollmentPaymentStatus.SUSPENDED).orElse(false);
+        if (!stillSuspended) {
+            log.info("La inscripción de curso ya no está suspendida, se omite la baja por mora: inscripcion={}", enrollmentId);
+            return false;
+        }
+        courseEnrollmentService.withdrawForNonpayment(enrollmentId, candidate.courseEndDate());
         eventPublisher.publishEvent(EnrollmentClosedWhileSuspendedEvent.closedOn(EnrollmentKind.COURSE, enrollmentId, today));
         log.info("Inscripción de curso suspendida dada de baja al terminar el curso: inscripcion={}", enrollmentId);
+        return true;
     }
 
     private SuspendedEnrollmentClosureReport.EnrollmentClosureFailure failureOf(Long enrollmentId, RuntimeException failure) {

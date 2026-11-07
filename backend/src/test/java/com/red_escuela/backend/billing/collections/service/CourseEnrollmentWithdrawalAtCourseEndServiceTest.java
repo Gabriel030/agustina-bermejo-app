@@ -3,11 +3,13 @@ package com.red_escuela.backend.billing.collections.service;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
+import com.red_escuela.backend.billing.collections.domain.EnrollmentPaymentStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.collections.repository.EnrollmentPaymentStandingRepository;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentEndView;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.enrollment.api.CourseEnrollmentNonpaymentWithdrawalPort;
+import com.red_escuela.backend.billing.api.CourseEnrollmentNonpaymentWithdrawalPort;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import org.junit.jupiter.api.Tag;
@@ -20,6 +22,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -32,7 +35,6 @@ import static org.mockito.Mockito.when;
 
 @Tag("D-123")
 @Tag("D-142")
-@Tag("D-246")
 class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
 
     private static final ZoneId ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
@@ -49,8 +51,17 @@ class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
     }
 
     private void suspended(CourseEnrollmentEndView... views) {
+        for (CourseEnrollmentEndView view : views) {
+            standingWith(view.enrollmentId(), EnrollmentPaymentStatus.SUSPENDED);
+        }
         when(standingRepository.findSuspendedCourseEnrollmentIds()).thenReturn(java.util.Arrays.stream(views).map(CourseEnrollmentEndView::enrollmentId).toList());
         when(finder.findEndViewsByIds(anyCollection())).thenReturn(List.of(views));
+    }
+
+    private void standingWith(Long enrollmentId, EnrollmentPaymentStatus status) {
+        EnrollmentPaymentStanding standing = mock(EnrollmentPaymentStanding.class);
+        when(standing.getStatus()).thenReturn(status);
+        when(standingRepository.findByCourseEnrollmentForUpdate(enrollmentId)).thenReturn(Optional.of(standing));
     }
 
     private static CourseEnrollmentEndView view(Long id, EnrollmentStatus status, LocalDate courseEnd) {
@@ -67,7 +78,7 @@ class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
         assertThat(report.candidates()).isEqualTo(1);
         assertThat(report.closed()).isEqualTo(1);
         assertThat(report.failures()).isEmpty();
-        verify(courseEnrollmentService).withdrawForNonpayment(7L);
+        verify(courseEnrollmentService).withdrawForNonpayment(7L, COURSE_END);
         verify(eventPublisher).publishEvent(ArgumentMatchers.<Object>argThat(published -> published instanceof EnrollmentClosedWhileSuspendedEvent event
                 && event.kind() == EnrollmentKind.COURSE && event.enrollmentId().equals(7L) && event.businessDate().equals(today)));
     }
@@ -105,6 +116,21 @@ class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
     }
 
     @Test
+    void aStudentWhoPaidBetweenTheSelectionAndTheirTurnIsSkippedSilentlyWithoutFailure() {
+        suspended(view(7L, EnrollmentStatus.ENROLLED, COURSE_END), view(9L, EnrollmentStatus.ENROLLED, COURSE_END));
+        standingWith(7L, EnrollmentPaymentStatus.UP_TO_DATE);
+
+        SuspendedEnrollmentClosureReport report = serviceOn(COURSE_END.plusDays(1)).withdrawSuspendedEnrollmentsOfEndedCourses();
+
+        assertThat(report.candidates()).isEqualTo(2);
+        assertThat(report.closed()).isEqualTo(1);
+        assertThat(report.failures()).isEmpty();
+        verify(courseEnrollmentService, never()).withdrawForNonpayment(7L, COURSE_END);
+        verify(courseEnrollmentService).withdrawForNonpayment(9L, COURSE_END);
+        verify(eventPublisher, never()).publishEvent(ArgumentMatchers.<Object>argThat(published -> published instanceof EnrollmentClosedWhileSuspendedEvent event && event.enrollmentId().equals(7L)));
+    }
+
+    @Test
     void noSuspendedEnrollmentsMeansNoWork() {
         suspended();
 
@@ -118,7 +144,7 @@ class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
     @Test
     void anUnexpectedFailureIsReportedAsFailedAndTheNextEnrollmentIsStillWithdrawn() {
         suspended(view(8L, EnrollmentStatus.ENROLLED, COURSE_END), view(9L, EnrollmentStatus.ENROLLED, COURSE_END));
-        doThrow(new IllegalStateException("boom")).when(courseEnrollmentService).withdrawForNonpayment(8L);
+        doThrow(new IllegalStateException("boom")).when(courseEnrollmentService).withdrawForNonpayment(8L, COURSE_END);
 
         SuspendedEnrollmentClosureReport report = serviceOn(COURSE_END.plusDays(1)).withdrawSuspendedEnrollmentsOfEndedCourses();
 
@@ -131,14 +157,14 @@ class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
             assertThat(failure.code()).isEqualTo("SUBJECT_PROCESSING_FAILED");
             assertThat(failure.message()).isEqualTo("boom");
         });
-        verify(courseEnrollmentService).withdrawForNonpayment(9L);
+        verify(courseEnrollmentService).withdrawForNonpayment(9L, COURSE_END);
         verify(eventPublisher, never()).publishEvent(ArgumentMatchers.<Object>argThat(published -> published instanceof EnrollmentClosedWhileSuspendedEvent event && event.enrollmentId().equals(8L)));
     }
 
     @Test
     void aRuleRejectionIsReportedAsSkippedWithItsViolationCodes() {
         suspended(view(8L, EnrollmentStatus.ENROLLED, COURSE_END));
-        doThrow(new RuleRejection()).when(courseEnrollmentService).withdrawForNonpayment(8L);
+        doThrow(new RuleRejection()).when(courseEnrollmentService).withdrawForNonpayment(8L, COURSE_END);
 
         SuspendedEnrollmentClosureReport report = serviceOn(COURSE_END.plusDays(1)).withdrawSuspendedEnrollmentsOfEndedCourses();
 
@@ -161,7 +187,7 @@ class CourseEnrollmentWithdrawalAtCourseEndServiceTest {
         SuspendedEnrollmentClosureReport retry = service.withdrawSuspendedEnrollmentsOfEndedCourses();
 
         assertThat(retry.candidates()).isZero();
-        verify(courseEnrollmentService).withdrawForNonpayment(7L);
+        verify(courseEnrollmentService).withdrawForNonpayment(7L, COURSE_END);
     }
 
     private static final class RuleRejection extends RuntimeException implements ReportsPolicyViolations {

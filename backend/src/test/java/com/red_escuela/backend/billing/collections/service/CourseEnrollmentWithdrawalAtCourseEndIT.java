@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-123")
 @Tag("D-142")
-@Tag("D-246")
 @Tag("D-293")
 @SlowTest(reason = "Shares the heavy Spring context of the late fee scenario hierarchy: when it is the first class of its shard it absorbs the whole context start-up")
 class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT {
@@ -80,7 +79,8 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
         assertThat(outcome.processed()).isEqualTo(1);
         assertThat(outcome.failed()).isZero();
         assertThat(enrollmentStatus()).isEqualTo("WITHDRAWN");
-        assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2121-07-01");
+        assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2121-06-30");
+        assertThat(jdbc.queryForObject("select withdrawal_registered_on::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2121-07-01");
         assertThat(jdbc.queryForObject("select withdrawn_by_person_id from course_enrollment where id = ?", Long.class, enrollment.getId())).isNull();
         assertThat(standingStatus()).isEqualTo("WITHDRAWN_FOR_NONPAYMENT");
         assertThat(jdbc.queryForList("select event, from_status, to_status, business_date::text as business_date from enrollment_payment_status_change c "
@@ -103,7 +103,7 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
         assertThat(retry.candidates()).isZero();
         assertThat(retry.failed()).isZero();
         assertThat(enrollmentStatus()).isEqualTo("WITHDRAWN");
-        assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2122-07-01");
+        assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2122-06-30");
         assertThat(standingChanges()).isEqualTo(changesAfterFirstRun);
     }
 
@@ -172,10 +172,53 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
         List<String> feesRightAfterWithdrawal = summaryOf(origin);
         reconcile(origin, d(2127, 8, 15));
 
-        assertThat(jdbc.queryForObject("select completion_date::date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2127-07-01");
+        assertThat(jdbc.queryForObject("select completion_date::date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2127-06-30");
         assertThat(feesRightAfterWithdrawal).isNotEmpty();
         assertThat(summaryOf(origin)).isEqualTo(feesRightAfterWithdrawal);
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, origin.getId())).isEqualTo("OVERDUE");
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void aStepRunningWeeksAfterTheCourseEndedBackdatesTheWithdrawalAndIssuesNoLateFeeAfterTheEnd() {
+        arrangeCourseEndingOn(2128, d(2128, 6, 30), "SUSPENDED");
+        Invoice origin = overdueInstallmentDueOn(d(2128, 6, 10));
+        reconcile(origin, d(2128, 6, 30));
+
+        runTermEndStepOn(d(2128, 7, 15));
+        reconcile(origin, d(2128, 7, 16));
+        reconcile(origin, d(2128, 9, 1));
+
+        assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2128-06-30");
+        assertThat(jdbc.queryForObject("select completion_date::date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2128-06-30");
+        assertThat(jdbc.queryForObject("select withdrawal_registered_on::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2128-07-15");
+        assertThat(jdbc.queryForObject("select count(*) from late_fee_charge where origin_invoice_id = ? and period_end > date '2128-06-30'", Long.class, origin.getId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from late_fee_charge where origin_invoice_id = ? and period_start > date '2128-06-30'", Long.class, origin.getId())).isZero();
+        assertThat(jdbc.queryForObject("select business_date::text from enrollment_payment_status_change c join enrollment_payment_standing s on s.id = c.standing_id "
+                + "where s.course_enrollment_id = ? order by c.id desc limit 1", String.class, enrollment.getId())).isEqualTo("2128-07-15");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void aWithdrawalFarAfterTheCourseEndStillBackdatesBeyondTheVoluntaryRange() {
+        arrangeCourseEndingOn(2129, d(2129, 6, 30), "SUSPENDED");
+
+        BillingRunStepOutcome outcome = runTermEndStepOn(d(2129, 9, 20));
+
+        assertThat(outcome.failed()).isZero();
+        assertThat(outcome.skipped()).isZero();
+        assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2129-06-30");
+    }
+
+    @Test
+    void withdrawingForNonpaymentAfterTheCourseEndedDoesNotPromoteTheWaitlist() {
+        arrangeCourseEndingOn(2130, d(2130, 6, 30), "SUSPENDED");
+        Long waitlistedId = jdbc.queryForObject("insert into course_enrollment (student_id, course_id, status, enrollment_date) "
+                + "select ?, course_id, 'WAITLISTED', now() from course_enrollment where id = ? returning id", Long.class, student.getId(), enrollment.getId());
+
+        runTermEndStepOn(d(2130, 7, 1));
+
+        assertThat(enrollmentStatus()).isEqualTo("WITHDRAWN");
+        assertThat(jdbc.queryForObject("select status from course_enrollment where id = ?", String.class, waitlistedId)).isEqualTo("WAITLISTED");
     }
 }
