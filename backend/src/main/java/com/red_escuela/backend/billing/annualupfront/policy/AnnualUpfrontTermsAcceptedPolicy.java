@@ -14,7 +14,7 @@ public final class AnnualUpfrontTermsAcceptedPolicy implements Policy<AnnualUpfr
 
     @Override
     public PolicyVerdict evaluateRule(AnnualUpfrontTermsAcceptance acceptance) {
-        return acceptance.acceptsTheCurrentVersion()
+        return acceptance.acceptsAPublishedVersion()
                 ? PolicyVerdict.allow(ruleName())
                 : PolicyVerdict.deny(ruleName(), "ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED", "Para pedir el pago anual hay que aceptar la condición vigente.");
     }

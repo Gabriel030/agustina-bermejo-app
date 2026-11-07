@@ -23,6 +23,10 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 |---|---|---|---|---|---|
 | AnnualUpfrontQuoteController | quoteForCurrentStudent | GET | `/me/program-enrollments/{id}/annual-upfront/quote` | READ | Lectura |
 | AnnualUpfrontQuoteController | quoteForStaff | GET | `/program-enrollments/{id}/annual-upfront/quote` | READ | Lectura |
+| AnnualUpfrontTermsController | viewCurrentTerms | GET | `/annual-upfront-terms/current` | READ | Lectura |
+| AnnualUpfrontTermsController | viewTermsOfVersion | GET | `/annual-upfront-terms/versions/{versionNumber}` | READ | Lectura |
+| AnnualUpfrontTermsController | listTermsVersions | GET | `/annual-upfront-terms/versions` | READ | Lectura |
+| AnnualUpfrontTermsController | publishNewTermsVersion | POST | `/annual-upfront-terms/versions` | WRITE | Publica una nueva versión de los términos del pago anual |
 | AnnualUpfrontRequestController | discardAnnualUpfrontRequest | POST | `/me/annual-upfront-requests/{id}/discard` | WRITE | Crea o descarta un pedido de pago anual adelantado |
 | AnnualUpfrontRequestController | requestAnnualUpfront | POST | `/me/program-enrollments/{id}/annual-upfront-requests` | WRITE | Crea o descarta un pedido de pago anual adelantado |
 | AnnualUpfrontRequestViewController | searchRequestsForStaff | GET | `/annual-upfront-requests` | READ | Lectura |

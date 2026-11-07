@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontRequest
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontTerms;
 import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontIdempotencyKeyInvalidException;
 import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontTermsNotAcceptedException;
+import com.red_escuela.backend.billing.annualupfront.exception.AnnualUpfrontTermsOutdatedException;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontIdempotencyKey;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontRejections;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontRequestCheck;
@@ -31,6 +32,7 @@ import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +53,7 @@ public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAn
     private final PolicySet<AnnualUpfrontIdempotencyKey> idempotencyKeyPolicies;
     private final PolicySet<AnnualUpfrontTermsAcceptance> termsPolicies;
     private final PolicySet<AnnualUpfrontRequestCheck> eligibilityPolicies;
+    private final AnnualUpfrontTermsReader termsReader;
     private final AnnualUpfrontQuoteService quoteService;
     private final StudentCurrentAccountService accountService;
     private final EnrollmentDiscountLock enrollmentLock;
@@ -60,12 +63,13 @@ public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAn
     private final Clock clock;
 
     public RequestAnnualUpfrontOperation(PolicySet<AnnualUpfrontIdempotencyKey> annualUpfrontIdempotencyKeyPolicies, PolicySet<AnnualUpfrontTermsAcceptance> annualUpfrontTermsPolicies, PolicySet<AnnualUpfrontRequestCheck> annualUpfrontRequestPolicies,
-                                         AnnualUpfrontQuoteService quoteService, StudentCurrentAccountService accountService, EnrollmentDiscountLock enrollmentLock,
+                                         AnnualUpfrontTermsReader termsReader, AnnualUpfrontQuoteService quoteService, StudentCurrentAccountService accountService, EnrollmentDiscountLock enrollmentLock,
                                          AnnualUpfrontDiscountReservationService discountReservations, InvoiceAwaitingPaymentRegistrationService invoices,
                                          AnnualUpfrontRequestRepository requestRepository, Clock clock) {
         this.idempotencyKeyPolicies = annualUpfrontIdempotencyKeyPolicies;
         this.termsPolicies = annualUpfrontTermsPolicies;
         this.eligibilityPolicies = annualUpfrontRequestPolicies;
+        this.termsReader = termsReader;
         this.quoteService = quoteService;
         this.accountService = accountService;
         this.enrollmentLock = enrollmentLock;
@@ -98,8 +102,15 @@ public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAn
     @Override
     public void requireValidContext(RequestAnnualUpfrontCommand command) {
         idempotencyKeyPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontIdempotencyKey(command.idempotencyKey())).throwIfDenied(AnnualUpfrontIdempotencyKeyInvalidException::new);
-        termsPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontTermsAcceptance(command.termsAccepted(), command.termsVersion(), AnnualUpfrontTerms.CURRENT.version()))
-                .throwIfDenied(AnnualUpfrontTermsNotAcceptedException::new);
+        AnnualUpfrontTermsAcceptance acceptance = new AnnualUpfrontTermsAcceptance(command.termsAccepted(), command.termsVersion(),
+                termsReader.findPublishedTermsByLabel(command.termsVersion()).isPresent(), termsReader.requireCurrentTerms().version());
+        termsPolicies.evaluateRulesUntilFirstViolation(acceptance).throwIfDenied(RequestAnnualUpfrontOperation::termsRejectionOf);
+    }
+
+    private static RuntimeException termsRejectionOf(List<PolicyViolation> violations) {
+        return violations.get(0).code().equals("ANNUAL_UPFRONT_TERMS_OUTDATED")
+                ? new AnnualUpfrontTermsOutdatedException(violations)
+                : new AnnualUpfrontTermsNotAcceptedException(violations);
     }
 
     @Override
@@ -114,9 +125,13 @@ public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAn
         Map<Integer, InvoiceDiscountDraft> discounts = reserveWinningDiscount(preparation, programEnrollmentId, personId);
         Invoice saved = invoices.saveInvoiceAwaitingPayment(buildInvoiceAwaitingPayment(preparation, account.getId(), programEnrollmentId, discounts, command));
         AnnualUpfrontRequest request = requestRepository.saveAndFlush(AnnualUpfrontRequest.registerRequest(new AnnualUpfrontRequestRegistration(programEnrollmentId,
-                preparation.lectiveYearTermId(), saved.getId(), personId, LocalDateTime.now(clock), AnnualUpfrontTerms.CURRENT)));
+                preparation.lectiveYearTermId(), saved.getId(), personId, LocalDateTime.now(clock), acceptedTermsOf(command))));
         return new RegisteredAnnualUpfrontRequest(request.getId(), request.getStatus().name(), saved.getId(), saved.getPaymentDeadline(), saved.getAmounts().total().value(),
                 request.getAcceptedAt(), request.getAcceptedTermsVersion());
+    }
+
+    private AnnualUpfrontTerms acceptedTermsOf(RequestAnnualUpfrontCommand command) {
+        return termsReader.findPublishedTermsByLabel(command.termsVersion()).orElseThrow(() -> new IllegalStateException("The accepted terms version is not published"));
     }
 
     @Override
