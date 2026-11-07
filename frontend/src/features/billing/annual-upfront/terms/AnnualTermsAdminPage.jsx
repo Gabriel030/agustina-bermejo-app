@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime } from '@/lib/billing';
 import { TermsDocument } from './TermsDocument';
-import { TERMS_MAX_LENGTH, TERMS_MIN_LENGTH, isTermsTextValid, termsPathOf } from './annualTerms';
+import { TERMS_MAX_LENGTH, TERMS_MIN_LENGTH, isTermsTextValid, publisherLabelOf, termsPathOf } from './annualTerms';
 import { usePublishTerms, useTermsVersions } from './useAnnualUpfrontTerms';
 
 const PUBLISH_FALLBACK = 'No pudimos publicar la versión. Probá de nuevo.';
@@ -111,7 +111,7 @@ function VersionsTable({ versions }) {
             <TableRow key={version.versionNumber}>
               <TableCell className="font-semibold">{version.version}</TableCell>
               <TableCell>{formatDateTime(version.publishedAt)}</TableCell>
-              <TableCell>Persona #{version.publishedByPersonId}</TableCell>
+              <TableCell>{publisherLabelOf(version.publishedByPersonId)}</TableCell>
               <TableCell>
                 <StatusPill tone={version.current ? 'success' : 'neutral'}>{version.current ? 'Vigente' : 'Reemplazada'}</StatusPill>
               </TableCell>

@@ -7,6 +7,10 @@ export function termsPathOf(versionNumber) {
   return `${TERMS_PATH}/${versionNumber}`;
 }
 
+export function publisherLabelOf(publishedByPersonId) {
+  return publishedByPersonId == null ? 'Sistema' : `Persona #${publishedByPersonId}`;
+}
+
 export function termsBlocksOf(text) {
   return String(text ?? '')
     .split(/\n\s*\n/)
