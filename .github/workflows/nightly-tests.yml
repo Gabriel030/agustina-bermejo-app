@@ -78,7 +78,7 @@ jobs:
             21
 
       - name: Restore the Maven repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository

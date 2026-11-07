@@ -140,7 +140,7 @@ jobs:
 
       - name: Restore the Maven repository
         id: maven-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -175,7 +175,7 @@ jobs:
 
       - name: Save the Maven repository
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 0 && steps.maven-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             ~/.m2/repository
@@ -237,7 +237,7 @@ jobs:
             21
 
       - name: Restore the Maven repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -294,7 +294,7 @@ jobs:
             21
 
       - name: Restore the Maven repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -325,7 +325,7 @@ jobs:
             21
 
       - name: Restore the Maven repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.m2/repository
@@ -337,7 +337,7 @@ jobs:
       - name: Restore the PIT incremental history
         id: pit-history
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: backend/target/pit-history
           key: pit-history-no-exact-match
@@ -354,7 +354,7 @@ jobs:
 
       - name: Save the PIT incremental history
         if: (success() || failure()) && hashFiles('backend/target/pit-history/history.bin') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: backend/target/pit-history
           key: pit-history-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
