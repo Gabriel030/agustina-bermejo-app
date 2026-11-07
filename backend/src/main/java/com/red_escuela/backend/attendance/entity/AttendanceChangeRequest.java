@@ -49,6 +49,9 @@ public class AttendanceChangeRequest {
     @JoinColumn(name = "approved_by_id")
     private Person approvedBy;
 
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 

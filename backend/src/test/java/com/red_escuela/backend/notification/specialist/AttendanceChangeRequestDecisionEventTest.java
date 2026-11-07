@@ -59,9 +59,9 @@ class AttendanceChangeRequestDecisionEventTest {
         AttendanceChangeRequestRejectedEvent source = AttendanceChangeRequestRejectedEvent.rejectedFor(
                 changeRequest(AttendanceStatus.PRESENT, AttendanceStatus.LATE));
         AttendanceChangeRequestRejectedNotification event = new AttendanceChangeRequestRejectedNotification(source.requestId(), new Person(),
-                source.studentFullName(), source.classDate(), source.previousStatusLabel(), source.requestedStatusLabel());
+                source.studentFullName(), source.classDate(), source.previousStatusLabel(), source.requestedStatusLabel(), "Estaba bien cargada");
 
         assertThat(event.message()).isEqualTo(
-                "Tu solicitud de modificación de asistencia de Benjamín Coronel del 12/10/2026 fue rechazada: Presente → Tarde");
+                "Tu solicitud de modificación de asistencia de Benjamín Coronel del 12/10/2026 fue rechazada: Presente → Tarde. Motivo: Estaba bien cargada");
     }
 }

@@ -3,11 +3,13 @@ package com.red_escuela.backend.attendance.controller;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.attendance.dto.AttendanceChangeRequestResponse;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
+import com.red_escuela.backend.attendance.dto.RejectAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.ListAttendanceChangeRequestsByStatusUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.ListMyAttendanceChangeRequestsUseCase;
+import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeUseCase;
@@ -83,8 +85,8 @@ public class AttendanceChangeRequestController {
 
     @PostMapping("/attendance/change-requests/{id}/reject")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceChangeRequestResponse reject(@PathVariable Long id) {
-        return toResponse(rejectAttendanceChangeRequestUseCase.reject(id));
+    public AttendanceChangeRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectAttendanceChangeRequestRequest request) {
+        return toResponse(rejectAttendanceChangeRequestUseCase.reject(new RejectAttendanceChangeRequestCommand(id, request.reason())));
     }
 
     private AttendanceChangeRequestResponse toResponse(AttendanceChangeRequest request) {

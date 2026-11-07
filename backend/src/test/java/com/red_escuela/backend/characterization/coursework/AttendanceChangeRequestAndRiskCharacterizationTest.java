@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
+import com.red_escuela.backend.attendance.dto.RejectAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -142,8 +143,24 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
                 .andExpect(status().isCreated())).get("id").asLong();
 
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/reject")
+                .andExpect(status().isBadRequest());
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/reject", new RejectAttendanceChangeRequestRequest("   "))
+                .andExpect(status().isBadRequest());
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/reject", new RejectAttendanceChangeRequestRequest("corto"))
+                .andExpect(status().isBadRequest());
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/reject", new RejectAttendanceChangeRequestRequest("x".repeat(501)))
+                .andExpect(status().isBadRequest());
+        postJson(classroom.teacher(), "/attendance/change-requests/" + requestId + "/reject", new RejectAttendanceChangeRequestRequest("Motivo suficiente"))
+                .andExpect(status().isForbidden());
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/reject", new RejectAttendanceChangeRequestRequest("  La asistencia estaba bien cargada  "))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("REJECTED"));
+                .andExpect(jsonPath("$.status").value("REJECTED"))
+                .andExpect(jsonPath("$.rejectionReason").value("La asistencia estaba bien cargada"));
+        getAs(classroom.teacher(), "/me/attendance-change-requests")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id==" + requestId + ")].rejectionReason").value("La asistencia estaba bien cargada"));
+        getAs(preceptor, "/attendance/change-requests?status=REJECTED")
+                .andExpect(jsonPath("$[?(@.id==" + requestId + ")].rejectionReason").value("La asistencia estaba bien cargada"));
         AsyncNotifications.commitTestTransaction();
         TestTransaction.start();
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/approve")
