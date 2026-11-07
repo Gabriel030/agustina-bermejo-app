@@ -10,6 +10,7 @@ import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunTrigger;
 import com.red_escuela.backend.billing.run.operation.DraftInvoicesAwaitingReviewAlertJob;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunItemRepository;
 import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepository;
+import com.red_escuela.backend.billing.run.service.EffectiveMonthlyInvoiceIssuanceModeResolver;
 import com.red_escuela.backend.billing.run.service.MonthlyInvoiceRunExecutor;
 import com.red_escuela.backend.billing.run.service.MonthlyRunDraftReviewer;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("D-194")
 @Tag("D-512")
 @Tag("D-519")
 @Tag("D-455")
@@ -49,6 +51,8 @@ class MonthlyReviewModeTimelineIT extends AbstractInvoiceSequenceScenarioTest {
     private DraftInvoicesAwaitingReviewAlertJob alertJob;
     @Autowired
     private ApplicationEvents events;
+    @Autowired
+    private EffectiveMonthlyInvoiceIssuanceModeResolver resolver;
 
     @BeforeEach
     @AfterEach
@@ -119,13 +123,29 @@ class MonthlyReviewModeTimelineIT extends AbstractInvoiceSequenceScenarioTest {
     void reviewConfigurationLeavesDraftsOnDayOneAndNothingReachesTheStudent() {
         Career career = careerWithEnrollments(2);
         configureIssuanceMode("REVIEW", date(2026, 1, 1), career);
+        long remindersBefore = jdbcTemplate.queryForObject("select count(*) from collection_reminder", Long.class);
 
         MonthlyInvoiceRun run = runTheFirstOf(date(2026, 5, 1));
 
+        assertThat(jdbcTemplate.queryForObject("select count(*) from collection_reminder", Long.class)).isEqualTo(remindersBefore);
+        for (Long id : invoiceIdsOf(run)) {
+            assertThat(jdbcTemplate.queryForObject("select invoice_number from invoice where id = ?", String.class, id)).isNull();
+            assertThat(jdbcTemplate.queryForObject("select count(*) from current_account_entry where invoice_id = ?", Long.class, id)).isZero();
+        }
         assertThat(run.getIssuanceMode()).isEqualTo(MonthlyInvoiceIssuanceMode.REVIEW);
         assertThat(statusOf(run)).isEqualTo(MonthlyInvoiceRunStatus.AWAITING_REVIEW);
         assertThat(countOf("DRAFT", run)).isEqualTo(2);
         assertThat(countOf("ISSUED", run)).isZero();
+    }
+
+    @Test
+    void theConfigurationVersionTakesEffectOnItsOwnDateAndNotTheDayBefore() {
+        Career career = careerWithEnrollments(1);
+        configureIssuanceMode("DIRECT", date(2026, 1, 1), career);
+        configureIssuanceMode("REVIEW", date(2026, 5, 1), career);
+
+        assertThat(resolver.resolveModeEffectiveOn(date(2026, 4, 30))).isEqualTo(MonthlyInvoiceIssuanceMode.DIRECT);
+        assertThat(resolver.resolveModeEffectiveOn(date(2026, 5, 1))).isEqualTo(MonthlyInvoiceIssuanceMode.REVIEW);
     }
 
     @Test

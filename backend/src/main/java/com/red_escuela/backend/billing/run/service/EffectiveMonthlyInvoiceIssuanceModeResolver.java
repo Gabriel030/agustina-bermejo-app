@@ -23,8 +23,8 @@ public class EffectiveMonthlyInvoiceIssuanceModeResolver {
         return configurationReader.findIssuanceSettingsEffectiveOn(businessDate)
                 .map(settings -> settings.issuanceMode() == IssuanceMode.REVIEW ? MonthlyInvoiceIssuanceMode.REVIEW : MonthlyInvoiceIssuanceMode.DIRECT)
                 .orElseGet(() -> {
-                    log.error("No hay configuración de emisión vigente el {}: la corrida mensual emite en modo DIRECT", businessDate);
-                    return MonthlyInvoiceIssuanceMode.DIRECT;
+                    log.error("No hay configuración de emisión vigente el {}: la corrida mensual deja borradores (REVIEW) hasta que se configure", businessDate);
+                    return MonthlyInvoiceIssuanceMode.REVIEW;
                 });
     }
 }

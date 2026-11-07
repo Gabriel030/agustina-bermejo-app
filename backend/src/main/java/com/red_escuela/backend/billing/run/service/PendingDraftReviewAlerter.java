@@ -10,7 +10,6 @@ import com.red_escuela.backend.billing.run.repository.MonthlyInvoiceRunRepositor
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.function.Predicate;
@@ -32,16 +31,24 @@ public class PendingDraftReviewAlerter {
         this.alertPublisher = alertPublisher;
     }
 
-    @Transactional
     public int alertRunsWithDraftsStillAwaitingReview(LocalDate businessDate) {
         Predicate<LocalDate> isBusinessDay = businessDayCalendar::isBusinessDay;
         int alerted = 0;
         for (MonthlyInvoiceRun run : runRepository.findByModeAndStatusOrderByIdAsc(MonthlyInvoiceRunMode.REAL, MonthlyInvoiceRunStatus.AWAITING_REVIEW)) {
             if (DraftReviewAlertSchedule.alertsOn(run.getPeriod(), businessDate, isBusinessDay)) {
-                alerted += alertWhenDraftsRemain(run, businessDate);
+                alerted += alertIsolatingFailures(run, businessDate);
             }
         }
         return alerted;
+    }
+
+    private int alertIsolatingFailures(MonthlyInvoiceRun run, LocalDate businessDate) {
+        try {
+            return alertWhenDraftsRemain(run, businessDate);
+        } catch (RuntimeException failure) {
+            log.error("No se pudo alertar los borradores de la corrida {}: se sigue con las demás", run.getId(), failure);
+            return 0;
+        }
     }
 
     private int alertWhenDraftsRemain(MonthlyInvoiceRun run, LocalDate businessDate) {

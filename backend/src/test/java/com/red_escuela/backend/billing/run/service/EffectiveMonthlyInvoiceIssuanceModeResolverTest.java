@@ -44,9 +44,9 @@ class EffectiveMonthlyInvoiceIssuanceModeResolverTest {
 
     @Test
     @Tag("D-512")
-    void withoutAnEffectiveConfigurationTheRunKeepsTheLegacyDirectMode() {
+    void withoutAnEffectiveConfigurationTheRunFailsClosedToReview() {
         when(reader.findIssuanceSettingsEffectiveOn(FIRST_DAY)).thenReturn(Optional.empty());
 
-        assertThat(resolver.resolveModeEffectiveOn(FIRST_DAY)).isEqualTo(MonthlyInvoiceIssuanceMode.DIRECT);
+        assertThat(resolver.resolveModeEffectiveOn(FIRST_DAY)).isEqualTo(MonthlyInvoiceIssuanceMode.REVIEW);
     }
 }
