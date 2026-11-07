@@ -8,6 +8,7 @@ import { Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { RequestRefundPage } from './RequestRefundPage';
+import { studentFixture } from '@/test/fixtures/students';
 
 const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'] }));
 vi.mock('@/context/AuthContext', () => ({
@@ -82,7 +83,7 @@ async function submitAndConfirm(user, name) {
 }
 
 function renderPage() {
-  server.use(http.get(`${API}/students/7`, () => HttpResponse.json({ id: 7, nombre: 'Martina', apellido: 'Acosta' })));
+  server.use(http.get(`${API}/students/7`, () => HttpResponse.json(studentFixture({ id: 7, nombre: 'Martina', apellido: 'Acosta' }))));
   return renderWithProviders(
     <Routes>
       <Route path="/:role/alumnos/:id/reembolsos/nuevo" element={<RequestRefundPage />} />

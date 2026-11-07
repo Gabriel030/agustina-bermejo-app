@@ -110,7 +110,7 @@ describe('PreceptorPeriodos', () => {
         HttpResponse.json([
           aTerm({ id: 1, description: 'Manual abierta', enrollmentOpen: true, enrollmentOverride: 'OPEN' }),
           aTerm({ id: 2, description: 'Manual cerrada', year: 2026, enrollmentOpen: false, enrollmentOverride: 'CLOSED' }),
-          aTerm({ id: 3, description: 'Por ventana', year: 2025, enrollmentOpen: true, enrollmentOverride: null }),
+          aTerm({ id: 3, description: 'Por ventana', year: 2025, enrollmentOpen: true }),
         ]),
       ),
     );
@@ -127,7 +127,7 @@ describe('PreceptorPeriodos', () => {
       http.get(`${API}/terms`, () =>
         HttpResponse.json([
           aTerm({ id: 1, description: 'Manual abierta', enrollmentOpen: true, enrollmentOverride: 'OPEN' }),
-          aTerm({ id: 2, description: 'Por ventana', year: 2026, enrollmentOverride: null }),
+          aTerm({ id: 2, description: 'Por ventana', year: 2026 }),
         ]),
       ),
     );

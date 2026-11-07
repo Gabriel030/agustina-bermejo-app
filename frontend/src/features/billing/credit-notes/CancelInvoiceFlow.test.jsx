@@ -7,6 +7,7 @@ import { server } from '@/test/mocks/server';
 import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
+import { studentFixture } from '@/test/fixtures/students';
 import {
   creditBalanceFixture,
   creditNoteFixture,
@@ -54,7 +55,7 @@ function mockServer({ preview = previewOf(), cancel, notes = [] } = {}) {
   cancelBodies = [];
   server.use(
     http.get(`${API}/students`, () => HttpResponse.json([{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO' }])),
-    http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' })),
+    http.get(`${API}/students/2`, () => HttpResponse.json(studentFixture({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }))),
     http.get(`${API}/students/2/billing-overview`, () => {
       overviewCalls += 1;
       return HttpResponse.json([

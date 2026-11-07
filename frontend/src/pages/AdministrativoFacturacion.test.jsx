@@ -12,6 +12,7 @@ import { invoiceFixture, money } from '@/test/fixtures/invoices';
 import { receiptFixture, receiptInstallmentFixture } from '@/test/fixtures/receipts';
 import { axe } from '@/test/axe';
 import { installFixedClock } from '@/test/fixedClock';
+import { studentFixture } from '@/test/fixtures/students';
 
 const API = 'http://localhost:8080';
 
@@ -59,7 +60,7 @@ function renderPage(route = '/', receipts = [pendingReceipt]) {
       receipts === null ? HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 }) : HttpResponse.json(receipts),
     ),
     http.get(`${API}/students/2/payments`, () => HttpResponse.json([])),
-    http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' })),
+    http.get(`${API}/students/2`, () => HttpResponse.json(studentFixture({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }))),
     http.get(`${API}/students/2/credit-notes`, () => HttpResponse.json([])),
     http.get(`${API}/students/2/credit-balance`, () => HttpResponse.json(creditBalance())),
   );

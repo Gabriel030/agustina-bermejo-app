@@ -7,6 +7,7 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { PreceptorNuevoCiclo } from './PreceptorNuevoCiclo';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
@@ -39,7 +40,7 @@ const EXISTING_SECTION = {
 
 function mockCatalog() {
   server.use(
-    http.get(`${API}/terms`, () => HttpResponse.json([{ id: 7, description: 'Ciclo lectivo 2027' }])),
+    http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 7, description: 'Ciclo lectivo 2027' })])),
     http.get(`${API}/programs`, () => HttpResponse.json([{ id: 9, name: 'Enfermería' }])),
     http.get(`${API}/courses`, () => HttpResponse.json([])),
     http.get(`${API}/programs/9/subjects`, () =>

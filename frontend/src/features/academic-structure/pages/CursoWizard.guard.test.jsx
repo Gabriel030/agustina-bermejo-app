@@ -6,13 +6,14 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CursoWizard } from './CursoWizard';
+import { termFixture } from '@/test/fixtures/terms';
 
 vi.setConfig({ testTimeout: 20000 });
 
 const API = 'http://localhost:8080';
 
 function mount() {
-  server.use(http.get(`${API}/terms`, () => HttpResponse.json([{ id: 4, year: 2027, description: 'Anual' }])));
+  server.use(http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 4, year: 2027, description: 'Anual' })])));
   return renderWithProviders(
     <Routes>
       <Route path="/administrativo/gestion-academica/cursos/nuevo" element={<CursoWizard />} />

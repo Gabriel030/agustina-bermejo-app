@@ -7,6 +7,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { installFixedClock } from '@/test/fixedClock';
 import { InscribirAlumno } from './InscribirAlumno';
+import { studentFixture } from '@/test/fixtures/students';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { roles: ['PRECEPTOR'], nombre: 'Paula', apellido: 'Ríos' } }),
@@ -16,7 +17,7 @@ installFixedClock();
 
 const API = 'http://localhost:8080';
 
-const STUDENT = {
+const STUDENT = studentFixture({
   id: 9,
   nombre: 'Valentina',
   apellido: 'Paz',
@@ -24,8 +25,7 @@ const STUDENT = {
   username: '50111222',
   email: 'vale@demo.test',
   status: 'ACTIVE',
-  domicilio: null,
-};
+});
 
 const PROGRAM = { id: 3, name: 'Tecnicatura en Programación', status: 'ACTIVE', totalYears: 3 };
 const COURSE = { id: 5, name: 'Inglés B1', status: 'ACTIVE', registrationOpen: true, full: false, termId: 7, schedule: 'Mar y jue' };
