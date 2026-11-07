@@ -70,6 +70,22 @@ class InvoiceIssuingPoliciesTest {
     }
 
     @Test
+    @Tag("D-523")
+    void theAdvanceEnrollmentFeeNeedsTemplateSlotAndAnEnrollment() {
+        EnrollmentFeeSlotRequiredPolicy slotPolicy = new EnrollmentFeeSlotRequiredPolicy();
+        ChargeRecipientMatchesEnrollmentPolicy recipientPolicy = new ChargeRecipientMatchesEnrollmentPolicy();
+        InvoiceIssuingRequest withoutSlot = request(FeeType.ENROLLMENT_FEE, InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE, TODAY, 5L, null);
+        InvoiceIssuingRequest complete = request(FeeType.ENROLLMENT_FEE, InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE, TODAY, 5L, 1);
+        InvoiceIssuingRequest withoutEnrollment = new InvoiceIssuingRequest(1L, null, null, 5L, null, null, FeeType.ENROLLMENT_FEE, java.time.YearMonth.of(2028, 2),
+                TODAY, TODAY, InvoiceIssuingReason.ENROLLMENT_FEE_ADVANCE, null, 4L, 1, false, null, null, null, null, null, ACTOR);
+
+        assertThat(slotPolicy.evaluateRule(context(withoutSlot, Currency.ARS, null, null)).code()).isEqualTo("ENROLLMENT_FEE_SLOT_REQUIRED");
+        assertThat(slotPolicy.evaluateRule(context(complete, Currency.ARS, null, null)).allowed()).isTrue();
+        assertThat(recipientPolicy.evaluateRule(context(withoutEnrollment, Currency.ARS, null, null)).code()).isEqualTo("ENROLLMENT_REQUIRED");
+        assertThat(recipientPolicy.evaluateRule(context(complete, Currency.ARS, null, null)).allowed()).isTrue();
+    }
+
+    @Test
     @Tag("D-097")
     void theChargeCurrencyMustBeTheOfferingCurrency() {
         OfferingCurrencyPolicy policy = new OfferingCurrencyPolicy();
