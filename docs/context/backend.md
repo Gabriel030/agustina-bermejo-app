@@ -284,10 +284,10 @@ distintos). `SectionEvaluationConfigReminderJob` es un job programado.
 (crear borrador/guardar borrador/enviar a aprobación) con decisión de
 Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
 `ProgramEnrollmentApplicationService` en enrollment. 8 use cases en
-`evaluation/usecase/sectionevaluationconfig/`, con tres colaboradores en
-`evaluation/service/`:
+`evaluation/usecase/sectionconfig/`, con tres colaboradores en
+`evaluation/specialist/`:
 - `SectionEvaluationConfigFinder` — findOrThrow compartido.
-- `SectionEvaluationConfigInstructorAccess` — validación de pertenencia/
+- `SectionEvaluationConfigInstructorAccessChecker` — validación de pertenencia/
   liderazgo de comisión y armado de la lista de docentes de la respuesta;
   se inyecta directo en los controllers para las consultas de soporte de
   UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
@@ -367,10 +367,10 @@ Administrativo *verifica deuda*, Director *aprueba*, Administrativo/Director
 colaborador del findOrThrow compartido.
 
 `createGraduationRequestIfEligible` (se dispara solo al aprobarse una
-materia, ver `evaluation.service.GradeItemService`) no es un use case — nadie
+materia, ver `evaluation.specialist.GradeItemRecorder`) no es un use case — nadie
 lo pide desde un endpoint propio, es un efecto automático de otro flujo.
 Quedó como el colaborador `GraduationRequestAutoRequester`
-(`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
+(`graduation/specialist/`), que internamente invoca `RequestGraduationUseCase`
 — un colaborador plano puede depender de un Use Case de su propia feature,
 no hace falta que todo pase por otro Use Case.
 

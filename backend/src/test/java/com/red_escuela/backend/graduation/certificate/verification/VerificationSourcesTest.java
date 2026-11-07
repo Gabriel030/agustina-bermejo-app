@@ -13,8 +13,8 @@ import com.red_escuela.backend.graduation.certificate.repository.GraduationCerti
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateDocumentKind;
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateView;
-import com.red_escuela.backend.graduation.certificate.verification.service.GraduationVerificationSource;
-import com.red_escuela.backend.graduation.certificate.verification.service.RegularVerificationSource;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.GraduationVerificationSource;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.RegularVerificationSource;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

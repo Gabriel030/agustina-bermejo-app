@@ -1,7 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.source;
 
 import com.red_escuela.backend.billing.api.StudentOutstandingDebtQuery;
-import com.red_escuela.backend.graduation.service.GraduationDebtGate;
+import com.red_escuela.backend.graduation.specialist.GraduationDebtGate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

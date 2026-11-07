@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.gradecorrection;
 
 import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
-import com.red_escuela.backend.evaluation.service.PublishedGradeCorrector;
+import com.red_escuela.backend.evaluation.specialist.PublishedGradeCorrector;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

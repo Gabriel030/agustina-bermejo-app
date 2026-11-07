@@ -5,7 +5,7 @@ import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
-import com.red_escuela.backend.evaluation.service.ExamBoardService;
+import com.red_escuela.backend.evaluation.specialist.ExamBoardManager;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,10 +29,10 @@ public class ExamBoardController {
 
     private static final Set<String> STAFF_WITH_FULL_ACCESS = Set.of("ROLE_PRECEPTOR", "ROLE_ADMINISTRATIVO", "ROLE_DIRECTOR");
 
-    private final ExamBoardService examBoardService;
+    private final ExamBoardManager examBoardService;
     private final CurrentInstructorService currentInstructorService;
 
-    public ExamBoardController(ExamBoardService examBoardService, CurrentInstructorService currentInstructorService) {
+    public ExamBoardController(ExamBoardManager examBoardService, CurrentInstructorService currentInstructorService) {
         this.examBoardService = examBoardService;
         this.currentInstructorService = currentInstructorService;
     }

@@ -20,8 +20,8 @@ public final class RawNowRule {
     private static final Set<String> GUARDED_PACKAGES = Set.of(
             ROOT + ".billing", ROOT + ".enrollment", ROOT + ".graduation");
     private static final Set<String> GUARDED_CLASSES = Set.of(
-            ROOT + ".evaluation.service.ExamBoardRegistrationService",
-            ROOT + ".evaluation.service.ExamBoardService");
+            ROOT + ".evaluation.service.ExamBoardRegistrationManager",
+            ROOT + ".evaluation.service.ExamBoardManager");
     private static final Set<String> NEVER_GUARDED = Set.of(
             ROOT + ".shared.time.ApplicationTime", ROOT + ".config.TimeZoneConfig");
 

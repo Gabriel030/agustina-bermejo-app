@@ -2,7 +2,7 @@ package com.red_escuela.backend.graduation.certificate.regular.usecase;
 
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateRequestResponse;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
-import com.red_escuela.backend.graduation.certificate.regular.service.RegularCertificateReader;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateReader;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;

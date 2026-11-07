@@ -4,13 +4,13 @@ import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigReque
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
-import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigCommand;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigUseCase;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetSectionEvaluationConfigForStaffUseCase;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ListSectionEvaluationConfigsUseCase;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.RejectSectionEvaluationConfigCommand;
-import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.RejectSectionEvaluationConfigUseCase;
+import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigInstructorAccessChecker;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.ApproveSectionEvaluationConfigCommand;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.ApproveSectionEvaluationConfigUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetSectionEvaluationConfigForStaffUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListSectionEvaluationConfigsUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigCommand;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.RejectSectionEvaluationConfigUseCase;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,14 +29,14 @@ public class SectionEvaluationConfigController {
     private final GetSectionEvaluationConfigForStaffUseCase getSectionEvaluationConfigForStaffUseCase;
     private final ApproveSectionEvaluationConfigUseCase approveSectionEvaluationConfigUseCase;
     private final RejectSectionEvaluationConfigUseCase rejectSectionEvaluationConfigUseCase;
-    private final SectionEvaluationConfigInstructorAccess instructorAccess;
+    private final SectionEvaluationConfigInstructorAccessChecker instructorAccess;
 
     public SectionEvaluationConfigController(
             ListSectionEvaluationConfigsUseCase listSectionEvaluationConfigsUseCase,
             GetSectionEvaluationConfigForStaffUseCase getSectionEvaluationConfigForStaffUseCase,
             ApproveSectionEvaluationConfigUseCase approveSectionEvaluationConfigUseCase,
             RejectSectionEvaluationConfigUseCase rejectSectionEvaluationConfigUseCase,
-            SectionEvaluationConfigInstructorAccess instructorAccess) {
+            SectionEvaluationConfigInstructorAccessChecker instructorAccess) {
         this.listSectionEvaluationConfigsUseCase = listSectionEvaluationConfigsUseCase;
         this.getSectionEvaluationConfigForStaffUseCase = getSectionEvaluationConfigForStaffUseCase;
         this.approveSectionEvaluationConfigUseCase = approveSectionEvaluationConfigUseCase;
