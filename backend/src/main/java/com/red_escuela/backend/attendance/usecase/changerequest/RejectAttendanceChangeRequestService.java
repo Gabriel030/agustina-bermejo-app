@@ -1,7 +1,6 @@
 package com.red_escuela.backend.attendance.usecase.changerequest;
 
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
-import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceChangeRequestRepository;
 import com.red_escuela.backend.attendance.specialist.AttendanceChangeRequestFinder;
 import com.red_escuela.backend.attendance.specialist.AttendanceChangeRequestDecisionRecorder;
@@ -31,10 +30,10 @@ public class RejectAttendanceChangeRequestService implements RejectAttendanceCha
 
     @Override
     @Transactional
-    public AttendanceChangeRequest reject(Long id) {
-        AttendanceChangeRequest request = finder.findOrThrow(id);
+    public AttendanceChangeRequest reject(RejectAttendanceChangeRequestCommand command) {
+        AttendanceChangeRequest request = finder.findOrThrow(command.requestId());
         finder.requirePending(request);
-        decisionRecorder.recordDecisionByCurrentActor(request, AttendanceChangeRequestStatus.REJECTED);
+        decisionRecorder.recordRejectionByCurrentActor(request, command.reason());
         AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
         eventPublisher.publishEvent(AttendanceChangeRequestRejectedEvent.rejectedFor(saved));
         return saved;

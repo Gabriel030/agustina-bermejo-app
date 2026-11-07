@@ -928,6 +928,9 @@
           "reason" : {
             "type" : "string"
           },
+          "rejectionReason" : {
+            "type" : "string"
+          },
           "requestedByName" : {
             "type" : "string"
           },
@@ -947,7 +950,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attendanceId", "classDate", "createdAt", "id", "previousStatus", "reason", "requestedByName", "requestedStatus", "sectionName", "status", "studentName", "subjectName" ],
+        "required" : [ "attendanceId", "classDate", "createdAt", "id", "previousStatus", "reason", "rejectionReason", "requestedByName", "requestedStatus", "sectionName", "status", "studentName", "subjectName" ],
         "type" : "object"
       },
       "AttendanceEntry" : {
@@ -9768,6 +9771,17 @@
         "required" : [ "attendanceControlled", "billingMode", "enrollmentId", "kind", "reasons", "regular" ],
         "type" : "object"
       },
+      "RejectAttendanceChangeRequestRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 10,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "RejectAttendanceJustificationRequest" : {
         "properties" : {
           "reason" : {
@@ -14605,6 +14619,16 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RejectAttendanceChangeRequestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {
