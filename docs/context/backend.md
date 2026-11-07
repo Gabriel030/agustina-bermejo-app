@@ -55,6 +55,16 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
 - **`Command`** solo cuando el caso de uso necesita 2+ parámetros — un solo
   `Long id` o un DTO existente que ya calza (`CreateStaffRequest`,
   `RegisterRequest`) se pasa directo, sin wrapper artificial.
+- **Vocabulario de roles (ADR 0007, 7-nov-2026)**: `service/` pasa a llamarse `specialist/`
+  (migración módulo por módulo; conviven durante la transición). `Service` queda solo para
+  la implementación de un caso de uso (`XxxService implements XxxUseCase`); los especialistas
+  llevan un sustantivo de rol (`Finder`, `Reader`, `Recorder`, `Calculator`...). `Port` es
+  solo una interfaz invertida en `api`; su implementación es `*PortAdapter`. Glosario y
+  árbol de decisión en `docs/context/modules.md`.
+- **Documentación de paquetes**: el único lugar donde se permite javadoc es
+  `package-info.java` (cuatro rótulos en castellano: Qué es / Expone / No hacer / Ejemplo).
+  En cualquier otra clase sigue vigente "cero comentarios y cero javadoc"
+  (`JavadocOnlyInPackageInfoTest`).
 - **Colaboradores en `service/`** (sin `@UseCase`): lógica compartida entre
   varios use cases del mismo subdominio que no es en sí "algo que un actor
   pide hacer" — ver `AuthTokenIssuer`, `PasswordPolicyValidator`,

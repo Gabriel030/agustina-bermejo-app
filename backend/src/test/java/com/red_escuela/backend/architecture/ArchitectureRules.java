@@ -124,7 +124,7 @@ public final class ArchitectureRules {
 
     public static ArchRule plainServicesAreNotUseCases() {
         return noClasses()
-                .that().resideInAPackage("..service..")
+                .that().resideInAnyPackage("..service..", "..specialist..")
                 .should().beAnnotatedWith(ROOT + ".shared.UseCase")
                 .because("@UseCase is reserved for classes in a usecase package");
     }
@@ -237,11 +237,21 @@ public final class ArchitectureRules {
         if (subdomain.endsWith(".billing")) {
             allowedPackages.add(subdomain + ".*.service..");
         }
+        String because = "a use case orchestrates ports, repositories and policies of its own subdomain";
+        String storedDescription = classes()
+                .that().resideInAPackage(subdomain + ".usecase..")
+                .should().onlyDependOnClassesThat().resideInAnyPackage(allowedPackages.toArray(String[]::new))
+                .because(because).getDescription();
+        allowedPackages.add(subdomain + ".specialist..");
+        if (subdomain.endsWith(".billing")) {
+            allowedPackages.add(subdomain + ".*.specialist..");
+        }
         return classes()
                 .that().resideInAPackage(subdomain + ".usecase..")
                 .should().onlyDependOnClassesThat().resideInAnyPackage(allowedPackages.toArray(String[]::new))
                 .allowEmptyShould(true)
-                .because("a use case orchestrates ports, repositories and policies of its own subdomain");
+                .because(because)
+                .as(storedDescription);
     }
 
     public static ArchRule subdomainsDoNotUseOtherSubdomainRepositories(String subdomain) {
