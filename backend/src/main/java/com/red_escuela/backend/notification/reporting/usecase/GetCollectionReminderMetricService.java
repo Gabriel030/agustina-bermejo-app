@@ -2,7 +2,7 @@ package com.red_escuela.backend.notification.reporting.usecase;
 
 import com.red_escuela.backend.notification.reporting.domain.CollectionReminderMetric;
 import com.red_escuela.backend.notification.reporting.domain.MonthWindow;
-import com.red_escuela.backend.notification.reporting.service.CollectionReminderMetricQuery;
+import com.red_escuela.backend.notification.reporting.specialist.CollectionReminderMetricReader;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,9 +14,9 @@ import java.util.Optional;
 public class GetCollectionReminderMetricService implements GetCollectionReminderMetricUseCase {
     static final int DEFAULT_MONTHS = 12;
 
-    private final CollectionReminderMetricQuery metricQuery;
+    private final CollectionReminderMetricReader metricQuery;
 
-    public GetCollectionReminderMetricService(CollectionReminderMetricQuery metricQuery) {
+    public GetCollectionReminderMetricService(CollectionReminderMetricReader metricQuery) {
         this.metricQuery = metricQuery;
     }
 

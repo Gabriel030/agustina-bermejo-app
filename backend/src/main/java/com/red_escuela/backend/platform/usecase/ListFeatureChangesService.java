@@ -2,7 +2,7 @@ package com.red_escuela.backend.platform.usecase;
 
 import com.red_escuela.backend.platform.domain.FeatureChangeEntry;
 import com.red_escuela.backend.platform.domain.FeatureChangeFilter;
-import com.red_escuela.backend.platform.service.FeatureChangeEntryReader;
+import com.red_escuela.backend.platform.specialist.FeatureChangeEntryReader;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

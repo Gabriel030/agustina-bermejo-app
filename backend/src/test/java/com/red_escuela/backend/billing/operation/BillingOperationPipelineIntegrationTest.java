@@ -19,7 +19,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
-import com.red_escuela.backend.notification.InAppNotificationChannel;
+import com.red_escuela.backend.notification.specialist.InAppNotificationChannel;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.StatusType;

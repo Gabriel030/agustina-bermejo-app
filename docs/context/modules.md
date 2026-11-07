@@ -132,7 +132,7 @@ Deuda a invertir en V2-09 / M3b: hoy hay accesos enrollment -> billing registrad
 
 ## Documentación de paquetes
 
-Cada paquete lleva `package-info.java` con javadoc en castellano y cuatro rótulos: `<b>Qué es</b>`, `<b>Expone</b>`, `<b>No hacer</b>`, `<b>Ejemplo</b>`. El javadoc va antes de la anotación (`@ApplicationModule`, `@NamedInterface`) y Spring Modulith lo ignora. Es la única excepción a "cero comentarios y cero javadoc"; `JavadocOnlyInPackageInfoTest` la hace cumplir. Escritos hoy: `academicrecord`, `announcement` y `attendance`; el resto se escribe al migrar cada módulo.
+Cada paquete lleva `package-info.java` con javadoc en castellano y cuatro rótulos: `<b>Qué es</b>`, `<b>Expone</b>`, `<b>No hacer</b>`, `<b>Ejemplo</b>`. El javadoc va antes de la anotación (`@ApplicationModule`, `@NamedInterface`) y Spring Modulith lo ignora. Es la única excepción a "cero comentarios y cero javadoc"; `JavadocOnlyInPackageInfoTest` la hace cumplir. Escritos hoy: `academicrecord`, `announcement`, `attendance`, `platform` y `notification`; el resto se escribe al migrar cada módulo.
 
 ## Diagramas de los módulos piloto
 
@@ -172,4 +172,30 @@ flowchart LR
     S --> OT[academicstructure, enrollment, attendance, evaluation: api]
     S -.publica.-> EV[announcement.events]
     J[specialist: ScheduledAnnouncementDispatchJob] --> S
+```
+
+`platform` (lo consultan otros módulos solo por `api`):
+
+```mermaid
+flowchart LR
+    C[controller: ModulesController, InstituteSettingsController] --> U[usecase/modules, usecase/settings: GetMyModulesService...]
+    U --> S[specialist: EffectiveModulesReader, PlatformFeatureChanger]
+    S --> R[repository: PlatformFeatureRepository]
+    S --> I[infrastructure: FeatureSnapshotHolder]
+    API[platform.api: FeatureQuery, BillingModeGate] --> I
+    G[guard: ModuleGuard] --> API
+```
+
+`notification` (el módulo más alto: consume eventos de todos los demás):
+
+```mermaid
+flowchart LR
+    EV[events de announcement, attendance, enrollment, billing, graduation...] -.-> L[specialist: *NotificationListener]
+    L --> D[domain: XxxNotification, recipients]
+    D -.publica.-> DS[specialist: NotificationDispatcher]
+    DS --> CH[specialist: InAppNotificationChannel]
+    L --> DE[delivery/specialist: NotificationDeliveryEnqueuer]
+    DE --> J[delivery/specialist: EmailDeliveryDispatchJob]
+    C[controller: MeNotificationController] --> IB[specialist: NotificationInboxManager]
+    CH --> R[repository: NotificationRepository]
 ```

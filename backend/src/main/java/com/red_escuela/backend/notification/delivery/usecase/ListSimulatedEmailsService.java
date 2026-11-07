@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification.delivery.usecase;
 
 import com.red_escuela.backend.notification.delivery.dto.SimulatedEmailPageResponse;
-import com.red_escuela.backend.notification.delivery.service.SimulatedEmailListingReader;
+import com.red_escuela.backend.notification.delivery.specialist.SimulatedEmailListingReader;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
 
