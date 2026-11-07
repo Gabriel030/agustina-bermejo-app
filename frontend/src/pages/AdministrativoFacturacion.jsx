@@ -29,6 +29,7 @@ import {
 } from '@/lib/billing';
 import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
 import { TabCount } from '@/components/TabCount';
+import { AnnualUpfrontStaffSection } from '@/features/billing/annual-upfront/AnnualUpfrontStaffSection';
 import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
 import { STUDENT_PAYMENTS_ANCHOR, StudentPaymentsCard } from '@/features/billing/payment-reversals/StudentPaymentsCard';
 import { CancelInvoiceDialog } from '@/features/billing/credit-notes/CancelInvoiceDialog';
@@ -184,6 +185,7 @@ function InvoicesTable({ invoices, billing }) {
 }
 
 function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
+  const isProgram = enrollment.enrollmentType === 'PROGRAM';
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const standingInfo = BILLING_STANDING_CONFIG[enrollment.paymentStatus] ?? {
@@ -216,7 +218,8 @@ function EnrollmentCard({ enrollment, billing, defaultExpanded = false }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-border px-4 pb-4 pt-3">
+        <div className="flex flex-col gap-3 border-t border-border px-4 pb-4 pt-3">
+          {isProgram && <AnnualUpfrontStaffSection enrollmentId={enrollment.enrollmentId} studentId={billing.studentId} />}
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-sm text-ink-faint">Sin cuotas generadas todavía.</p>
           ) : (
