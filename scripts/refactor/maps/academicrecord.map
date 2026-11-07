@@ -1,0 +1,3 @@
+package academicrecord.service -> academicrecord.specialist
+package academicrecord.usecase.studentrecord -> academicrecord.usecase
+class AcademicRecordEnrollmentOwnership -> AcademicRecordEnrollmentOwnershipChecker

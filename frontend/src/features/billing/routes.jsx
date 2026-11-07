@@ -24,6 +24,7 @@ const DraftInvoicesPage = lazyPage(() => import('@/features/billing/monthly-run/
 const BillingRunsPage =lazyPage(() => import('@/features/billing/runs/BillingRunsPage'), 'BillingRunsPage');
 const SimulatedMailsPage = lazyPage(() => import('@/features/billing/reminders/SimulatedMailsPage'), 'SimulatedMailsPage');
 const ReminderSettingsPage = lazyPage(() => import('@/features/billing/reminders/ReminderSettingsPage'), 'ReminderSettingsPage');
+const PaymentMethodsPage = lazyPage(() => import('@/features/billing/payment-methods/PaymentMethodsPage'), 'PaymentMethodsPage');
 
 export const routes = {
   public: [],
@@ -51,6 +52,7 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'emision-mensual/:runId/borradores', element: <DraftInvoicesPage /> },
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago',element: <ReminderSettingsPage /> },
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago/mails-simulados', element: <SimulatedMailsPage /> },
+    { roles: ['administrativo', 'director'], path: 'medios-de-pago', element: <PaymentMethodsPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion', element: <AuthorizationInboxPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion/:id', element: <AuthorizationRequestDetailPage /> },
     { roles: ['administrativo'], path: 'aprobaciones', element: <AuthorizationInboxPage /> },
