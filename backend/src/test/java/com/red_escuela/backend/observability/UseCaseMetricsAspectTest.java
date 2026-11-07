@@ -1,9 +1,9 @@
 package com.red_escuela.backend.observability;
 
 import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
-import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationUseCase;
+import com.red_escuela.backend.attendance.usecase.record.ListProgramEnrollmentAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.record.RejectAttendanceJustificationCommand;
+import com.red_escuela.backend.attendance.usecase.record.RejectAttendanceJustificationUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;

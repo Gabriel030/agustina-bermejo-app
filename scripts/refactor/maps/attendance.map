@@ -5,3 +5,4 @@ class AttendanceExportService -> AttendanceExporter
 class AttendanceChangeRequestSubmission -> AttendanceChangeRequestSubmitter
 class AttendanceSectionAccess -> AttendanceSectionAccessChecker
 class EnrollmentAbsenceCounts -> EnrollmentAbsenceCountsView
+move attendance.service.AttendanceSameDayCorrectionPolicy -> attendance.policy

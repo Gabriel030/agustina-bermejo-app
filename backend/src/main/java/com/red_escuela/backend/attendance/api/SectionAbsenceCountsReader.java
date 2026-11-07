@@ -19,27 +19,27 @@ public class SectionAbsenceCountsReader {
         this.attendanceRepository = attendanceRepository;
     }
 
-    public Map<Long, EnrollmentAbsenceCounts> countByProgramEnrollments(List<Long> enrollmentIds) {
+    public Map<Long, EnrollmentAbsenceCountsView> countByProgramEnrollments(List<Long> enrollmentIds) {
         if (enrollmentIds.isEmpty()) {
             return Map.of();
         }
         return toCounts(attendanceRepository.countsByProgramEnrollment(enrollmentIds, AttendanceStatus.ABSENT));
     }
 
-    public Map<Long, EnrollmentAbsenceCounts> countByCourseEnrollments(List<Long> enrollmentIds) {
+    public Map<Long, EnrollmentAbsenceCountsView> countByCourseEnrollments(List<Long> enrollmentIds) {
         if (enrollmentIds.isEmpty()) {
             return Map.of();
         }
         return toCounts(attendanceRepository.countsByCourseEnrollment(enrollmentIds, AttendanceStatus.ABSENT));
     }
 
-    private Map<Long, EnrollmentAbsenceCounts> toCounts(List<Object[]> rows) {
-        Map<Long, EnrollmentAbsenceCounts> byEnrollment = new HashMap<>();
+    private Map<Long, EnrollmentAbsenceCountsView> toCounts(List<Object[]> rows) {
+        Map<Long, EnrollmentAbsenceCountsView> byEnrollment = new HashMap<>();
         for (Object[] row : rows) {
             Long enrollmentId = ((Number) row[0]).longValue();
             long total = ((Number) row[1]).longValue();
             long absent = row[2] == null ? 0L : ((Number) row[2]).longValue();
-            byEnrollment.put(enrollmentId, new EnrollmentAbsenceCounts(total, absent));
+            byEnrollment.put(enrollmentId, new EnrollmentAbsenceCountsView(total, absent));
         }
         return byEnrollment;
     }

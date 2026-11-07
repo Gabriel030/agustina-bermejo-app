@@ -14,17 +14,17 @@ VERIFY_TESTS = "ArchitectureTest,QualityRulesTest,ModulePatternRulesTest,Modular
 
 
 def parse_map(path):
-    packages, classes = [], []
+    packages, classes, moves = [], [], []
     for number, raw in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        match = re.fullmatch(r"(package|class)\s+(\S+)\s*->\s*(\S+)", line)
+        match = re.fullmatch(r"(package|class|move)\s+(\S+)\s*->\s*(\S+)", line)
         if not match:
-            sys.exit(f"{path}:{number}: formato invalido: {raw!r} (esperado: 'package a.b -> a.c' o 'class Viejo -> Nuevo')")
+            sys.exit(f"{path}:{number}: formato invalido: {raw!r} (esperado: 'package a.b -> a.c', 'class Viejo -> Nuevo' o 'move a.b.Clase -> a.c')")
         kind, old, new = match.groups()
-        (packages if kind == "package" else classes).append((old, new))
-    return packages, classes
+        {"package": packages, "class": classes, "move": moves}[kind].append((old, new))
+    return packages, classes, moves
 
 
 def run(command, cwd, check=True):
@@ -55,7 +55,19 @@ def class_regex(old):
     return re.compile(r"(?:(?<![A-Za-z0-9_.])|(?<=[a-z0-9_]\.))" + re.escape(old) + r"(?P<suffix>(?:Test|IT|Tests)?)(?![A-Za-z0-9_])")
 
 
-def rewrite_text(text, packages, classes):
+def move_regex(old):
+    return re.compile(r"(?<![A-Za-z0-9_.])" + re.escape(BASE + "." + old) + r"(?![A-Za-z0-9_])")
+
+
+def split_move(old, new):
+    old_package, _, simple = old.rpartition(".")
+    return old_package, simple, new
+
+
+def rewrite_text(text, packages, classes, moves=()):
+    for old, new in moves:
+        old_package, simple, new_package = split_move(old, new)
+        text = move_regex(old).sub(BASE + "." + new_package + "." + simple, text)
     for old, new in packages:
         text = package_regex(old).sub(BASE + "." + new, text)
     for old, new in classes:
@@ -66,6 +78,34 @@ def rewrite_text(text, packages, classes):
 def frozen_line_count(repo):
     frozen = repo / FROZEN_STORE
     return sum(len(p.read_text(encoding="utf-8", errors="replace").splitlines()) for p in frozen.iterdir() if p.is_file() and p.name != "stored.rules")
+
+
+def plan_class_moves(repo, class_moves, class_names):
+    result = []
+    for source_root in ("backend/src/main/java", "backend/src/test/java"):
+        for old, new in class_moves:
+            old_package, simple, new_package = split_move(old, new)
+            old_dir = repo / source_root / BASE.replace(".", "/") / old_package.replace(".", "/")
+            target_dir = repo / source_root / BASE.replace(".", "/") / new_package.replace(".", "/")
+            if not old_dir.is_dir():
+                continue
+            for path in old_dir.iterdir():
+                if path.is_file() and (path.stem == simple or path.stem in (simple + "Test", simple + "IT", simple + "Tests")):
+                    result.append((path, target_dir / path.name))
+    return result
+
+
+def add_missing_imports(class_moves, original_packages):
+    for old, new in class_moves:
+        old_package, simple, new_package = split_move(old, new)
+        fqn = BASE + "." + new_package + "." + simple
+        for path, package in original_packages.items():
+            if package != BASE + "." + old_package or not path.exists() or path.suffix != ".java":
+                continue
+            text = path.read_text(encoding="utf-8")
+            uses = re.search(r"(?<![A-Za-z0-9_.])" + simple + r"(?![A-Za-z0-9_])", text)
+            if uses and ("import " + fqn + ";") not in text and not path.stem.startswith(simple):
+                path.write_text(re.sub(r"^import ", "import " + fqn + ";\nimport ", text, count=1, flags=re.M), encoding="utf-8")
 
 
 def plan_moves(repo, packages, classes):
@@ -109,19 +149,29 @@ def main():
     args = parser.parse_args()
 
     repo = Path(args.repo).resolve()
-    packages, classes = parse_map(args.map)
+    packages, classes, class_moves = parse_map(args.map)
     for old, _ in packages:
         if not old.startswith(args.module + "."):
             sys.exit(f"el paquete {old} no pertenece al modulo {args.module}")
 
     moves = plan_moves(repo, packages, classes)
+    explicit = plan_class_moves(repo, class_moves, classes)
+    explicit_sources = {source for source, _ in explicit}
+    moves = [move for move in moves if move[0] not in explicit_sources] + explicit
+    original_packages = {}
+    for source_root in ("backend/src/main/java", "backend/src/test/java"):
+        for old, _ in class_moves:
+            old_dir = repo / source_root / BASE.replace(".", "/") / split_move(old, "")[0].replace(".", "/")
+            if old_dir.is_dir():
+                for path in old_dir.glob("*.java"):
+                    original_packages[path] = BASE + "." + split_move(old, "")[0]
     changed = []
     for path in scan_files(repo):
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        rewritten = rewrite_text(text, packages, classes)
+        rewritten = rewrite_text(text, packages, classes, class_moves)
         if rewritten != text:
             changed.append((path, rewritten))
 
@@ -142,9 +192,17 @@ def main():
         target.parent.mkdir(parents=True, exist_ok=True)
         run(["git", "mv", str(source), str(target)], repo)
     moved = dict(moves)
-    for path, _ in changed:
+    to_write = [path for path, _ in changed] + [source for source in explicit_sources if source not in {path for path, _ in changed}]
+    for path in to_write:
         actual = moved.get(path, path)
-        actual.write_text(rewrite_text(actual.read_text(encoding="utf-8"), packages, classes), encoding="utf-8")
+        text = actual.read_text(encoding="utf-8")
+        if path in explicit_sources:
+            for old, new in class_moves:
+                old_package, _, new_package = split_move(old, new)
+                text = text.replace("package " + BASE + "." + old_package + ";", "package " + BASE + "." + new_package + ";", 1)
+        actual.write_text(rewrite_text(text, packages, classes, class_moves), encoding="utf-8")
+    renamed_originals = {moved.get(path, path): package for path, package in original_packages.items()}
+    add_missing_imports(class_moves, renamed_originals)
 
     after = frozen_line_count(repo)
     print(f"lineas congeladas despues: {after}")
