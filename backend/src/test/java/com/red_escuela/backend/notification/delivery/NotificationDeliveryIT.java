@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.delivery;
 
+import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
 import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
@@ -69,6 +70,8 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
     private EmailDeliveryChannel emailChannel;
     @Autowired
     private NotificationDeliveryRepository deliveryRepository;
+    @Autowired
+    private BillingNotificationsPolicy billingNotificationsPolicy;
     @Autowired
     private TransactionalEmailGateway gateway;
     @Autowired
@@ -609,7 +612,7 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         EmailDeliveryChannel brokenEmail = mock(EmailDeliveryChannel.class);
         DeliveryRequest request = request(student, key, false);
         doThrow(new IllegalStateException("se cayo el canal de mail")).when(brokenEmail).enqueue(request);
-        NotificationDeliveryService firstAttempt = new NotificationDeliveryService(inAppChannel, brokenEmail, deliveryRepository);
+        NotificationDeliveryService firstAttempt = new NotificationDeliveryService(inAppChannel, brokenEmail, deliveryRepository, billingNotificationsPolicy);
 
         assertThatThrownBy(() -> firstAttempt.enqueue(request)).isInstanceOf(IllegalStateException.class);
         assertThat(countDeliveries(key)).isEqualTo(1);
