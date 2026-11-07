@@ -175,6 +175,35 @@ flowchart LR
     J[specialist: ScheduledAnnouncementDispatchJob] --> S
 ```
 
+`evaluation` (lo consultan otros módulos por `api`; emite eventos que consume `notification`):
+
+```mermaid
+flowchart LR
+    C[controller: GradePublicationController, ExamBoardController] --> U[usecase/gradepublication, examboard, gradecorrection, gradegrid, sectionconfig: PublishCourseSectionGradeItemService...]
+    U --> S[specialist: SectionGradeItemPublisher, PublishedGradeCorrector, ExamBoardManager]
+    S --> P[policy: RegularStudentForFinalExamPolicy]
+    S --> R[repository: ExamBoardInstructorRepository]
+    S --> OT[academicstructure, enrollment, attendance: api]
+    S -.publica.-> EV[evaluation.events]
+    API[evaluation.api: GradeItemFinder, GraduationRequestTriggerPort] --> R
+    J[specialist: SectionEvaluationConfigReminderJob] --> S
+```
+
+`graduation` (usa `evaluation.api` y `billing`; emite eventos que consume `notification`):
+
+```mermaid
+flowchart LR
+    C[controller: GraduationRequestController, MeCertificateController] --> U[usecase/request: RequestGraduationService...]
+    U --> S[specialist: GraduationRequestRegistrar, GraduationRequestApprover, GraduationDebtChecker]
+    S --> R[repository: GraduationRequestRepository]
+    S --> OT[evaluation, billing, platform: api]
+    S -.publica.-> EV[graduation.events]
+    TA[specialist: ProgramGraduationRequestTriggerPortAdapter] --> S
+    CC[certificate/controller, regular/controller, verification/controller] --> CU[certificate/usecase, regular/usecase, verification/usecase]
+    CU --> CS[certificate/specialist, regular/specialist, verification/specialist]
+    CS --> CE[certificate/engine: CertificatePdfRenderer]
+```
+
 `platform` (lo consultan otros módulos solo por `api`):
 
 ```mermaid
