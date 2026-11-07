@@ -35,7 +35,7 @@ describe('DetalleCurso access by role and status', () => {
     server.use(
       http.get(`${API}/courses/1/subjects`, ({ request }) => {
         requestedStatus = new URL(request.url).searchParams.get('status');
-        return HttpResponse.json([{ id: 1, name: 'Módulo 1' }]);
+        return HttpResponse.json([{ id: 1, courseId: 1, name: 'Módulo 1', sortOrder: 1, status: 'ACTIVE', weeklyWorkload: 1 }]);
       }),
     );
     renderDetail();

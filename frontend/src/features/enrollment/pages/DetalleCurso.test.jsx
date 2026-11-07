@@ -51,7 +51,7 @@ async function fillReceiptData(user) {
 describe('DetalleCurso', () => {
   it('muestra nombre, cuota mensual y temario', async () => {
     server.use(
-      http.get(`${API}/courses/1/subjects`, () => HttpResponse.json([{ id: 1, name: 'Módulo 1 — Fundamentos' }])),
+      http.get(`${API}/courses/1/subjects`, () => HttpResponse.json([{ id: 1, courseId: 1, name: 'Módulo 1 — Fundamentos', sortOrder: 1, status: 'ACTIVE', weeklyWorkload: 1 }])),
     );
     renderDetalle();
 

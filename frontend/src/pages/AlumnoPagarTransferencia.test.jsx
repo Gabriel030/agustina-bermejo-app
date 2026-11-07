@@ -88,7 +88,7 @@ function renderTransfer({ receipts = [], invoices = INSTALLMENTS, invoiceId = 61
     http.get(`${API}/me/invoices/${invoiceId}/price-breakdown`, () => HttpResponse.json(breakdownOf(invoiceId, '2026-09'))),
     http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
     http.get(`${API}/me/enrollment-payment-status`, () =>
-      HttpResponse.json([{ enrollmentId: 9, enrollmentType: 'CourseEnrollment', paymentStatus: 'OVERDUE' }]),
+      HttpResponse.json([{ enrollmentId: 9, enrollmentType: 'CourseEnrollment', paymentStatus: 'OVERDUE', paymentStatusUpdatedAt: '2026-01-10T00:00:00' }]),
     ),
     http.get(`${API}/me/course-enrollments/9/invoices`, () => HttpResponse.json(enrollmentBilling(invoices))),
   );

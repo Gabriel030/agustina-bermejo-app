@@ -98,7 +98,7 @@ describe('DocenteComisionDetalle', () => {
   it('un curso suelto ofrece Avisos, Alumnos y Notas pero no Evaluación', async () => {
     server.use(
       http.get(`${API}/me/teaching-sections`, () =>
-        HttpResponse.json([{ id: SECTION_ID, type: 'COURSE', subjectName: 'Illustrator', sectionName: 'Turno noche' }]),
+        HttpResponse.json([{ id: SECTION_ID, type: 'COURSE', subjectName: 'Illustrator', sectionName: 'Turno noche', termStartDate: '2024-03-04T00:00:00', termEndDate: '2024-12-13T00:00:00' }]),
       ),
       http.get(`${API}/course-sections/${SECTION_ID}/announcements`, () => HttpResponse.json([unAviso()])),
     );
