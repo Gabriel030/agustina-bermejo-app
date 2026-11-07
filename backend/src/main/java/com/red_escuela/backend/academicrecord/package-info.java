@@ -9,7 +9,7 @@
  * lectura o una acción del propio alumno sobre su registro.
  *
  * <p><b>Ejemplo</b>: {@code MeAcademicRecordController} llama a un caso de uso de {@code usecase},
- * que llama a un especialista de {@code service} (hoy) que lee la {@code api} de {@code attendance} o {@code evaluation}.
+ * que llama a un especialista de {@code specialist} que lee la {@code api} de {@code attendance} o {@code evaluation}.
  * Decisión de fondo: ADR 0002 y ADR 0007.
  */
 @ApplicationModule(displayName = "Academic record", allowedDependencies = {"shared", "identity :: *", "academicstructure :: *", "enrollment :: *", "attendance :: *", "evaluation :: *", "billing :: *", "graduation :: *", "announcement :: *", "notification :: *"})

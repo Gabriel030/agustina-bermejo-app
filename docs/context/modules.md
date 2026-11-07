@@ -132,7 +132,7 @@ Deuda a invertir en V2-09 / M3b: hoy hay accesos enrollment -> billing registrad
 
 ## Documentación de paquetes
 
-Cada paquete lleva `package-info.java` con javadoc en castellano y cuatro rótulos: `<b>Qué es</b>`, `<b>Expone</b>`, `<b>No hacer</b>`, `<b>Ejemplo</b>`. El javadoc va antes de la anotación (`@ApplicationModule`, `@NamedInterface`) y Spring Modulith lo ignora. Es la única excepción a "cero comentarios y cero javadoc"; `JavadocOnlyInPackageInfoTest` la hace cumplir. Escritos hoy: `academicrecord` y `attendance`; el resto se escribe al migrar cada módulo.
+Cada paquete lleva `package-info.java` con javadoc en castellano y cuatro rótulos: `<b>Qué es</b>`, `<b>Expone</b>`, `<b>No hacer</b>`, `<b>Ejemplo</b>`. El javadoc va antes de la anotación (`@ApplicationModule`, `@NamedInterface`) y Spring Modulith lo ignora. Es la única excepción a "cero comentarios y cero javadoc"; `JavadocOnlyInPackageInfoTest` la hace cumplir. Escritos hoy: `academicrecord`, `announcement` y `attendance`; el resto se escribe al migrar cada módulo.
 
 ## Diagramas de los módulos piloto
 
@@ -154,8 +154,22 @@ flowchart LR
 ```mermaid
 flowchart LR
     C[controller: MeAcademicRecordController] --> U[usecase: ListMy... Read My...]
-    U --> S[service -> specialist: AcademicRecordGradeItemFinder, AcademicRecordAttendanceFinder]
+    U --> S[specialist: AcademicRecordGradeItemFinder, AcademicRecordAttendanceFinder]
     S --> A1[attendance.api]
     S --> A2[evaluation.api]
     S --> A3[enrollment.api]
+```
+
+`announcement` (emite eventos que consume `notification`; lee de los módulos de abajo):
+
+```mermaid
+flowchart LR
+    C[controller: AnnouncementController, MeAnnouncementController] --> U1[usecase/broadcast: CreateAnnouncementService...]
+    C --> U2[usecase/audience: PreviewAudienceService...]
+    U1 --> S[specialist: AnnouncementDispatcher, SectionMembershipChecker]
+    U2 --> AU[specialist/audience: AudienceSegmentResolver]
+    S --> R[repository: AnnouncementRepository]
+    S --> OT[academicstructure, enrollment, attendance, evaluation: api]
+    S -.publica.-> EV[announcement.events]
+    J[specialist: ScheduledAnnouncementDispatchJob] --> S
 ```

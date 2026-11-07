@@ -52,7 +52,7 @@ def package_regex(old):
 
 
 def class_regex(old):
-    return re.compile(r"(?<![A-Za-z0-9_.])" + re.escape(old) + r"(?![A-Za-z0-9_])")
+    return re.compile(r"(?:(?<![A-Za-z0-9_.])|(?<=[a-z0-9_]\.))" + re.escape(old) + r"(?![A-Za-z0-9_])")
 
 
 def rewrite_text(text, packages, classes):

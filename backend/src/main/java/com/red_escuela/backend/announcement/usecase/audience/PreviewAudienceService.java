@@ -3,11 +3,11 @@ package com.red_escuela.backend.announcement.usecase.audience;
 import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
 import com.red_escuela.backend.announcement.dto.AudienceStudentResponse;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
-import com.red_escuela.backend.announcement.service.SectionMembership;
-import com.red_escuela.backend.announcement.service.audience.AudienceLabels;
-import com.red_escuela.backend.announcement.service.audience.AudienceService;
-import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
-import com.red_escuela.backend.announcement.service.audience.StudentSnapshot;
+import com.red_escuela.backend.announcement.specialist.SectionMembershipChecker;
+import com.red_escuela.backend.announcement.specialist.audience.AudienceLabels;
+import com.red_escuela.backend.announcement.specialist.audience.AudienceSegmentResolver;
+import com.red_escuela.backend.announcement.specialist.audience.SectionSnapshot;
+import com.red_escuela.backend.announcement.specialist.audience.StudentSnapshot;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,11 +21,11 @@ public class PreviewAudienceService implements PreviewAudienceUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(PreviewAudienceService.class);
 
-    private final AudienceService audienceService;
-    private final SectionMembership sectionMembership;
+    private final AudienceSegmentResolver audienceService;
+    private final SectionMembershipChecker sectionMembership;
 
-    public PreviewAudienceService(AudienceService audienceService,
-                                  SectionMembership sectionMembership) {
+    public PreviewAudienceService(AudienceSegmentResolver audienceService,
+                                  SectionMembershipChecker sectionMembership) {
         this.audienceService = audienceService;
         this.sectionMembership = sectionMembership;
     }
