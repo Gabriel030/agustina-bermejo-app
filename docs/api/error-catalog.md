@@ -232,6 +232,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNOUNCEMENT_NOT_FOUND` | no | `AnnouncementNotFoundException` | announcement |
 | `ANNUAL_UPFRONT_ENROLLMENT_NOT_FOUND` | no | `AnnualUpfrontEnrollmentNotFoundException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_NOT_FOUND` | no | `AnnualUpfrontRequestNotFoundException` | billing |
+| `ANNUAL_UPFRONT_TERMS_NOT_FOUND` | no | `AnnualUpfrontTermsNotFoundException` | billing |
 | `ATTENDANCE_CHANGE_REQUEST_NOT_FOUND` | no | `AttendanceChangeRequestNotFoundException` | attendance |
 | `ATTENDANCE_NOT_FOUND` | no | `AttendanceNotFoundException` | attendance |
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
@@ -320,6 +321,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ANNUAL_UPFRONT_PAYMENT_EXPIRED` | no | `AnnualUpfrontPaymentExpiredException` | billing |
 | `ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED` | no | `AnnualUpfrontPlanCannotBeChangedException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_REJECTED` | no | `AnnualUpfrontRequestRejectedException` | billing |
+| `ANNUAL_UPFRONT_TERMS_OUTDATED` | no | `AnnualUpfrontTermsOutdatedException` | billing |
 | `APPLICATION_DOCUMENTS_INCOMPLETE` | no | `ApplicationDocumentsIncompleteException` | enrollment |
 | `APPLICATION_DOCUMENTS_LOCKED` | no | `ApplicationDocumentsLockedException` | enrollment |
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
@@ -564,6 +566,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
 | POST | `/academic-offering-cycles/{id}/sections` | `AcademicOfferingCycleController#createSection` |
 | POST | `/academic-offering-cycles/{id}/submit` | `AcademicOfferingCycleController#submit` |
+| POST | `/annual-upfront-terms/versions` | `AnnualUpfrontTermsController#publishNewTermsVersion` |
 | POST | `/attendance/change-requests/{id}/approve` | `AttendanceChangeRequestController#approve` |
 | POST | `/attendance/change-requests/{id}/reject` | `AttendanceChangeRequestController#reject` |
 | POST | `/attendance/{id}/approve-justification` | `AttendanceController#approveJustification` |

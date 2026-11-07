@@ -1,6 +1,6 @@
 package com.red_escuela.backend.announcement.dto;
 
-import com.red_escuela.backend.announcement.service.audience.StudentSnapshot;
+import com.red_escuela.backend.announcement.specialist.audience.StudentSnapshot;
 
 import java.util.Map;
 

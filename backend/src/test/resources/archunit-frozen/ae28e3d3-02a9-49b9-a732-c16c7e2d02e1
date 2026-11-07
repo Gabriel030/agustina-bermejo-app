@@ -2,9 +2,9 @@ com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleService.appr
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleService.create(com.red_escuela.backend.academicstructure.dto.CreateAcademicOfferingCycleRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService.createSection(java.lang.Long, com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest) declares @Transactional
 com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleService.reject(java.lang.Long, java.lang.String) declares @Transactional
-com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand) declares @Transactional
-com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
-com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand) declares @Transactional
+com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementService.create(com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementCommand) declares @Transactional
+com.red_escuela.backend.announcement.usecase.broadcast.DeleteAnnouncementService.delete(java.lang.Long) declares @Transactional
+com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementService.update(com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.ApproveAttendanceJustificationService.approve(java.lang.Long) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.CancelCourseSectionClassSessionService.cancel(com.red_escuela.backend.attendance.usecase.attendance.CancelCourseSectionClassSessionCommand) declares @Transactional
 com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassSessionService.cancel(com.red_escuela.backend.attendance.usecase.attendance.CancelProgramSectionClassSessionCommand) declares @Transactional

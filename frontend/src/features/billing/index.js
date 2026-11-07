@@ -6,3 +6,5 @@ export { useAuthorizationRequests } from './hooks/useAuthorizationRequests';
 export { StudentDiscountsSection } from './discounts/StudentDiscountsSection';
 export { MyDiscountsTab } from './discounts/MyDiscountsTab';
 export { CreditBalanceCard } from './credit-notes/CreditBalanceCard';
+export { AnnualUpfrontCards } from './annual-upfront/AnnualUpfrontCards';
+export { AnnualUpfrontStaffSection } from './annual-upfront/AnnualUpfrontStaffSection';
