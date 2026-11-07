@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { EmptyState } from '@/components/EmptyState';
 import { useMisNotificaciones, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
 import { StaleStamp } from '@/components/offline/StaleStamp';
+import { useStaffBasePath } from '@/features/billing/monthly-run/useStaffBasePath';
 import { TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from '@/lib/notificaciones';
 
 const ANNOUNCEMENT_TYPES = new Set(['ANNOUNCEMENT_PUBLISHED', 'ANNOUNCEMENT_UPDATED']);
@@ -39,6 +40,7 @@ const TEXTO_TONO = {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const staffBasePath = useStaffBasePath();
   const { data: notificaciones, isError, isFetching, refetch, dataUpdatedAt } = useMisNotificaciones();
   const marcarLeida = useMarcarNotificacionLeida();
 
@@ -66,6 +68,11 @@ export function NotificationBell() {
     if (GRADUATION_TYPES.has(n.type)) {
       setOpen(false);
       navigate('/alumno/mis-carreras');
+      return;
+    }
+    if (n.type === 'DRAFT_INVOICES_AWAITING_REVIEW' && n.relatedEntityId) {
+      setOpen(false);
+      navigate(`${staffBasePath}/emision-mensual/${n.relatedEntityId}/borradores`);
       return;
     }
     if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {

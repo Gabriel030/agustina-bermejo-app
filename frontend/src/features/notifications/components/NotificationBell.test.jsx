@@ -94,6 +94,33 @@ describe('NotificationBell', () => {
     expect(await screen.findByText('Pago acreditado')).toBeInTheDocument();
   });
 
+  it('navigates to the draft invoices of the run when tapping DRAFT_INVOICES_AWAITING_REVIEW', async () => {
+    const user = userEvent.setup();
+    function Destino() {
+      const location = useLocation();
+      return <div>{location.pathname}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([
+          { id: 41, type: 'DRAFT_INVOICES_AWAITING_REVIEW', message: 'Quedan 3 borradores.', read: true, relatedEntityType: 'MonthlyInvoiceRun', relatedEntityId: 7, createdAt: '2026-11-01T10:00:00' },
+        ]),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/director/inicio" element={<NotificationBell />} />
+        <Route path="*" element={<Destino />} />
+      </Routes>,
+      { route: '/director/inicio' },
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText('Facturas por revisar'));
+
+    expect(await screen.findByText('/director/emision-mensual/7/borradores')).toBeInTheDocument();
+  });
+
   it.each([
     ['GRADES_PUBLISHED', 'Section'],
     ['GRADE_CORRECTED', 'GradeItem'],

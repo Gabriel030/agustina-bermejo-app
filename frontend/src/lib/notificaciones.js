@@ -45,6 +45,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   MONTHLY_INVOICE_RUN_MISSED: 'No corrió la emisión mensual',
   MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'Reintentos de emisión agotados',
   HOLIDAYS_MISSING_FOR_NEXT_YEAR: 'Faltan los feriados del año que viene',
+  DRAFT_INVOICES_AWAITING_REVIEW: 'Facturas por revisar',
   GRADES_PUBLISHED: 'Notas publicadas',
   GRADE_CORRECTED: 'Nota corregida',
 };
@@ -96,6 +97,7 @@ export const TONO_NOTIFICACION = {
   MONTHLY_INVOICE_RUN_MISSED: 'danger',
   MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED: 'warning',
   HOLIDAYS_MISSING_FOR_NEXT_YEAR: 'warning',
+  DRAFT_INVOICES_AWAITING_REVIEW: 'warning',
   GRADES_PUBLISHED: 'success',
   GRADE_CORRECTED: 'accent2',
 };
