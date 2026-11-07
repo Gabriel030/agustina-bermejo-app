@@ -52,14 +52,14 @@ def package_regex(old):
 
 
 def class_regex(old):
-    return re.compile(r"(?:(?<![A-Za-z0-9_.])|(?<=[a-z0-9_]\.))" + re.escape(old) + r"(?![A-Za-z0-9_])")
+    return re.compile(r"(?:(?<![A-Za-z0-9_.])|(?<=[a-z0-9_]\.))" + re.escape(old) + r"(?P<suffix>(?:Test|IT|Tests)?)(?![A-Za-z0-9_])")
 
 
 def rewrite_text(text, packages, classes):
     for old, new in packages:
         text = package_regex(old).sub(BASE + "." + new, text)
     for old, new in classes:
-        text = class_regex(old).sub(new, text)
+        text = class_regex(old).sub(lambda match, new=new: new + match.group('suffix'), text)
     return text
 
 

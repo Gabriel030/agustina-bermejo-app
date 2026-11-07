@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class StudentAnnouncementReadTimesTest {
+class StudentAnnouncementReadTimeReaderTest {
 
     private static final LocalDateTime READ_AT = LocalDateTime.of(2026, 11, 6, 9, 0);
 

@@ -38,3 +38,11 @@ Cada PR de módulo incluye los `package-info.java` de ese módulo y su diagrama 
 - Una carpeta dice la figura de la cadena y el sufijo dice el rol exacto.
 - Durante la transición conviven `service` y `specialist`; las reglas lo aceptan.
 - Las reglas nuevas N1 (Service solo en casos de uso), N2 (sin `..service..`), N3 (sufijo por carpeta), N4 (subpaquete de usecase), N5 (Policy en `policy/`), N7 (package-info obligatorio) y N8 (`PortAdapter`) quedan para los PRs de módulo y el cierre; N6 ya está activa.
+
+## Estado de la migración
+
+| PR | Estado | Qué se hizo |
+|---|---|---|
+| 1 | hecho | `academicrecord`: `service` a `specialist` (6 archivos), `usecase/studentrecord` aplanado a `usecase` (20 archivos), `AcademicRecordEnrollmentOwnership` a `...Checker`. `announcement`: `service` a `specialist` (incluye `audience`), `usecase/announcement` a `usecase/broadcast` (el subpaquete ya no repite el módulo), seis renombres de rol (`AudienceService` a `AudienceSegmentResolver`, `SectionMembership` a `...Checker`, `ScheduledAnnouncementRowProcessor` a `...RowDispatcher` con `process` a `dispatchRow`, `StudentAnnouncementReadTimes` a `...Reader`, `CurrentAnnouncementAuthor` a `...Finder`, `AnnouncementSectionNames` a `...Resolver`). `package-info.java` con los cuatro rótulos en todos los paquetes de `announcement`. |
+
+Cambios en la herramienta: el renombre de clases ahora alcanza imports y nombres completos (antes dejaba intactas las referencias precedidas por un punto). No hizo falta mover una clase suelta a otro paquete, así que ese soporte queda para el módulo que lo pida. Las tiendas congeladas y la línea base de Modulith no crecieron.
