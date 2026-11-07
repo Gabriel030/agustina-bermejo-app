@@ -52,6 +52,7 @@ const failingNight = night({
   steps: [
     step({ id: 2, step: 'ACCOUNT_CONSISTENCY', status: 'COMPLETED_WITH_ERRORS', candidates: 1204, processed: 1203, skipped: 0, failed: 1 }),
     step({ id: 3, step: 'GATEWAY_SYNC', status: 'NOT_APPLICABLE', candidates: 0, processed: 0, notApplicableCode: 'GATEWAY_DISABLED' }),
+    step({ id: 4, step: 'ANNUAL_UPFRONT_EXPIRY', status: 'COMPLETED', candidates: 2, processed: 2, skipped: 0, failed: 0 }),
   ],
 });
 
@@ -107,6 +108,22 @@ describe('BillingRunsPage', () => {
 
     expect(await screen.findByText('Consistencia de cuentas')).toBeInTheDocument();
     expect(listCalls).toBe(1);
+  });
+
+  it('labels the annual upfront expiry step and its failed requests', async () => {
+    useRuns([failingNight]);
+    server.use(
+      http.get(`${API}/billing-runs/11/steps/ANNUAL_UPFRONT_EXPIRY/items`, () =>
+        HttpResponse.json([{ ...heldAccountItem, id: 92, subjectType: 'ANNUAL_UPFRONT_REQUEST', subjectId: 9, decisionCode: '', errorCode: 'ANNUAL_UPFRONT_EXPIRY_FAILED' }]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<BillingRunsPage />);
+
+    expect(await screen.findByText('Vencimiento de pagos anuales')).toBeInTheDocument();
+    await user.click((await screen.findAllByRole('button', { name: 'Ver omitidos y con error' }))[2]);
+
+    expect(await screen.findByText('Pedido de pago anual #9')).toBeInTheDocument();
   });
 
   it('explains a not applicable step with its reason', async () => {
