@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
@@ -15,6 +16,9 @@ import { localIsoDate } from '@/lib/calendario';
 import { formatDate } from '@/lib/billing';
 import { attendancePercentToPoints } from '@/lib/attendancePercent';
 import { StatusPill } from '@/components/StatusPill';
+import { TabCount } from '@/components/TabCount';
+import { MisPedidosDeAsistencia } from '@/features/attendance/components/MisPedidosDeAsistencia';
+import { findPendingRequestForAttendance, pendingRequestCount, requestHref } from '@/features/attendance/lib/attendanceRequests';
 import { attendanceRisk } from '@/features/attendance/lib/attendanceRisk';
 import { clearAttendanceDraft, loadAttendanceDraft, saveAttendanceDraft } from '@/features/attendance/lib/attendanceDraft';
 import { JustificarAusenciaDialog } from '@/features/attendance/components/JustificarAusenciaDialog';
@@ -28,6 +32,7 @@ import {
   useHistorialAsistencia,
   useReporteAusencias,
   useSolicitarModificacion,
+  useMisPedidosDeAsistencia,
   exportarAsistencia,
 } from '@/features/attendance/hooks/useDocenteAsistencia';
 
@@ -544,8 +549,9 @@ function rejectionText(rejection) {
   return `Justificación rechazada: ${rejection.reason}${date ? ` (${date})` : ''}`;
 }
 
-export function TabHistorial({ type, sectionId }) {
+export function TabHistorial({ type, sectionId, returnRequest }) {
   const { data: historial, isLoading } = useHistorialAsistencia(type, sectionId);
+  const { data: pedidos } = useMisPedidosDeAsistencia();
   const [celdaSeleccionada, setCeldaSeleccionada] = useState(null);
   const [solicitandoModificacion, setSolicitandoModificacion] = useState(false);
   const [justificando, setJustificando] = useState(false);
@@ -554,6 +560,7 @@ export function TabHistorial({ type, sectionId }) {
   const alumnoResaltado = alumnoHover ?? alumnoFijado;
   const [fechaHover, setFechaHover] = useState(null);
 
+  const pendingRequest = findPendingRequestForAttendance(pedidos, celdaSeleccionada?.attendanceId);
   const gruposPorAnio = useMemo(() => agruparPorAnioYMes(historial?.classDates ?? []), [historial]);
   // Última fecha de cada mes/año: ahí van las líneas divisorias verticales (la de año,
   // más marcada, pisa a la de mes cuando coinciden).
@@ -583,6 +590,15 @@ export function TabHistorial({ type, sectionId }) {
 
   return (
     <div className="flex flex-col gap-4 pt-4">
+      {returnRequest && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent-soft px-4 py-3 text-[13px] text-ink">
+          <span>
+            Pedido #{returnRequest.id} rechazado: clase del {formatDate(returnRequest.classDate)}, {returnRequest.studentName}.
+            {returnRequest.rejectionReason ? ` Motivo: ${returnRequest.rejectionReason}` : ''} Podés volver a pedir el cambio.
+          </span>
+          <Link to="/docente/tomar-asistencia?tab=pedidos" className="font-bold text-brand hover:underline">Volver a Mis pedidos</Link>
+        </div>
+      )}
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="font-heading text-[14px] font-semibold text-ink">Historial de asistencia</div>
         <div className="overflow-x-auto">
@@ -656,7 +672,7 @@ export function TabHistorial({ type, sectionId }) {
                         e.stopPropagation();
                         setCeldaSeleccionada({ studentName: fila.studentName, fecha, ...celda });
                       }}
-                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.filaClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
+                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.filaClass : ''} ${divisor(fecha)} ${resaltada ? 'border-accent-2' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
                       title={celda?.rejection ? rejectionText(celda.rejection) : (config?.label ?? 'Sin cargar')}
                       tabIndex={celda?.rejection ? 0 : undefined}
                       aria-label={celda?.rejection ? `${config.label}. ${rejectionText(celda.rejection)}` : undefined}
@@ -696,7 +712,16 @@ export function TabHistorial({ type, sectionId }) {
             {celdaSeleccionada?.status === 'ABSENT' && celdaSeleccionada.justifiable && (
               <Button variant="outline" onClick={() => setJustificando(true)}>Adjuntar comprobante</Button>
             )}
-            <Button variant="gradient" onClick={() => setSolicitandoModificacion(true)}>Solicitar modificación</Button>
+            {pendingRequest ? (
+              <>
+                <StatusPill tone="warning">Pedido pendiente</StatusPill>
+                <Link to={requestHref(pendingRequest.id)} className="text-[13px] font-bold text-brand hover:underline">
+                  Ver pedido #{pendingRequest.id}
+                </Link>
+              </>
+            ) : (
+              <Button variant="gradient" onClick={() => setSolicitandoModificacion(true)}>Solicitar modificación</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1001,12 +1026,30 @@ function TabExportar({ type, sectionId }) {
   );
 }
 
+const INNER_TABS = ['asistencia', 'historial', 'reporte', 'exportar'];
+
 export function DocenteTomarAsistencia() {
   const { data: comisiones, isLoading } = useMisComisionesParaAsistencia();
-  const [seccionId, setSeccionId] = useState(null);
+  const { data: pedidos } = useMisPedidosDeAsistencia();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabParam = searchParams.get('tab');
+  const topTab = tabParam === 'pedidos' ? 'pedidos' : 'asistencia';
+  const innerTab = INNER_TABS.includes(tabParam) ? tabParam : 'asistencia';
+  const seccionId = searchParams.get('seccion');
+  const requestIdParam = Number(searchParams.get('pedido')) || null;
 
   const lista = comisiones ?? [];
   const seccion = lista.find((c) => `${c.type}-${c.id}` === seccionId);
+  const returnRequest = innerTab === 'historial' && requestIdParam ? (pedidos ?? []).find((p) => p.id === requestIdParam) : null;
+
+  function updateParams(changes) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      Object.entries(changes).forEach(([key, value]) => (value == null ? next.delete(key) : next.set(key, value)));
+      return next;
+    });
+  }
 
   if (isLoading) {
     return (
@@ -1030,36 +1073,51 @@ export function DocenteTomarAsistencia() {
 
   return (
     <PageContainer>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-2xl font-bold text-ink">Tomar asistencia</h1>
-        <Select value={seccionId ?? undefined} onValueChange={setSeccionId}>
-          <SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Elegí una comisión" /></SelectTrigger>
-          <SelectContent>
-            {lista.map((c) => (
-              <SelectItem key={`${c.type}-${c.id}`} value={`${c.type}-${c.id}`}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <h1 className="font-heading text-2xl font-bold text-ink">Tomar asistencia</h1>
+      <Tabs
+        value={topTab}
+        onValueChange={(value) => updateParams({ tab: value === 'pedidos' ? 'pedidos' : null, pedido: null, fecha: null })}
+      >
+        <TabsList variant="segmented">
+          <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
+          <TabsTrigger value="pedidos">
+            Mis pedidos
+            <TabCount count={pendingRequestCount(pedidos)} />
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="asistencia" className="flex flex-col gap-4 pt-4">
+          <Select value={seccionId ?? undefined} onValueChange={(value) => updateParams({ seccion: value })}>
+            <SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Elegí una comisión" /></SelectTrigger>
+            <SelectContent>
+              {lista.map((c) => (
+                <SelectItem key={`${c.type}-${c.id}`} value={`${c.type}-${c.id}`}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      {!seccion ? (
-        <GlassCard className="p-4">
-          <EmptyState title="Elegí una comisión" description="Seleccioná arriba la comisión de la que querés tomar asistencia." />
-        </GlassCard>
-      ) : (
-        <Tabs defaultValue="asistencia">
-          <TabsList variant="segmented">
-            <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
-            <TabsTrigger value="historial">Historial</TabsTrigger>
-            <TabsTrigger value="reporte">Reporte de asistencia</TabsTrigger>
-            <TabsTrigger value="exportar">Exportar</TabsTrigger>
-          </TabsList>
-          <TabsContent value="asistencia"><TabAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
-          <TabsContent value="historial"><TabHistorial type={seccion.type} sectionId={seccion.id} /></TabsContent>
-          <TabsContent value="reporte"><TabReporteDeAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
-          <TabsContent value="exportar"><TabExportar type={seccion.type} sectionId={seccion.id} /></TabsContent>
-        </Tabs>
-      )}
+          {!seccion ? (
+            <GlassCard className="p-4">
+              <EmptyState title="Elegí una comisión" description="Seleccioná arriba la comisión de la que querés tomar asistencia." />
+            </GlassCard>
+          ) : (
+            <Tabs value={innerTab} onValueChange={(value) => updateParams({ tab: value, pedido: null, fecha: null })}>
+              <TabsList variant="segmented">
+                <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
+                <TabsTrigger value="historial">Historial</TabsTrigger>
+                <TabsTrigger value="reporte">Reporte de asistencia</TabsTrigger>
+                <TabsTrigger value="exportar">Exportar</TabsTrigger>
+              </TabsList>
+              <TabsContent value="asistencia"><TabAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
+              <TabsContent value="historial"><TabHistorial type={seccion.type} sectionId={seccion.id} returnRequest={returnRequest} /></TabsContent>
+              <TabsContent value="reporte"><TabReporteDeAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
+              <TabsContent value="exportar"><TabExportar type={seccion.type} sectionId={seccion.id} /></TabsContent>
+            </Tabs>
+          )}
+        </TabsContent>
+        <TabsContent value="pedidos" className="pt-4">
+          <MisPedidosDeAsistencia expandedRequestId={requestIdParam} />
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }
