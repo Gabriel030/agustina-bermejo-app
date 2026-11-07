@@ -15,7 +15,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SlowTest(reason = "Each of its five tests clones a database at version 193 and runs the pending Flyway migrations up to the latest one, about six seconds apiece")
+@SlowTest(reason = "The first test of the class pays for starting the Postgres container and building the version 193 template through Flyway; the five tests then only clone it and apply the pending migrations, which take well under a second each")
 @Tag("migration")
 class CertificateVerificationCodeMigrationTest {
 
