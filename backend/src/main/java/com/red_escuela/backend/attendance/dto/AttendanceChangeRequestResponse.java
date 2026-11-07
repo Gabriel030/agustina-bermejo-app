@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public record AttendanceChangeRequestResponse(
         Long id, Long attendanceId, String requestedByName, String subjectName, String sectionName,
         LocalDate classDate, String studentName, String previousStatus, String requestedStatus,
-        String reason, String status, LocalDateTime createdAt) {
+        String reason, String status, LocalDateTime createdAt, String rejectionReason) {
 
     public static AttendanceChangeRequestResponse from(
             AttendanceChangeRequest request, String requestedByName, String subjectName, String sectionName,
@@ -16,6 +16,6 @@ public record AttendanceChangeRequestResponse(
         return new AttendanceChangeRequestResponse(
                 request.getId(), request.getAttendance().getId(), requestedByName, subjectName, sectionName,
                 classDate, studentName, request.getPreviousStatus().name(), request.getRequestedStatus().name(),
-                request.getReason(), request.getStatus().name(), request.getCreatedAt());
+                request.getReason(), request.getStatus().name(), request.getCreatedAt(), request.getRejectionReason());
     }
 }

@@ -19,6 +19,7 @@ import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.attendance.exception.InvalidAttendanceChangeRequestStateException;
 import com.red_escuela.backend.attendance.repository.ClassSessionRepository;
+import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeUseCase;
@@ -203,11 +204,12 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
         AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
         actAsStaffMember();
 
-        AttendanceChangeRequest rejected = rejectChange.reject(request.getId());
+        AttendanceChangeRequest rejected = rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente"));
 
         assertThat(rejected.getStatus()).isEqualTo(AttendanceChangeRequestStatus.REJECTED);
         assertThat(rejected.getApprovedBy()).isNotNull();
         assertThat(rejected.getApprovedAt()).isNotNull();
+        assertThat(rejected.getRejectionReason()).isEqualTo("Motivo suficiente");
         assertThat(absence.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
     }
 
@@ -215,9 +217,9 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
     void aChangeRequestAlreadyRejectedCannotBeRejectedAgain() {
         AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
         actAsStaffMember();
-        rejectChange.reject(request.getId());
+        rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente"));
 
-        assertThatThrownBy(() -> rejectChange.reject(request.getId()))
+        assertThatThrownBy(() -> rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente")))
                 .isInstanceOf(InvalidAttendanceChangeRequestStateException.class);
     }
 

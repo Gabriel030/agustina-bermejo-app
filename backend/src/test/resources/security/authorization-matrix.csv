@@ -13,7 +13,7 @@ PUT,/announcements/{id},DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,
 GET,/announcements/{id}/recipients,DENY,DENY,ALLOW,ALLOW,DENY,ALLOW,DENY,,
 GET,/attendance/change-requests,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/change-requests/{id}/approve,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
-POST,/attendance/change-requests/{id}/reject,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
+POST,/attendance/change-requests/{id}/reject,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/attendance/justifications,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/approve-justification,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/change-requests,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,,
