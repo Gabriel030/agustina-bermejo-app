@@ -929,7 +929,7 @@
             "type" : "string"
           },
           "rejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "requestedByName" : {
             "type" : "string"
@@ -950,7 +950,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attendanceId", "classDate", "createdAt", "id", "previousStatus", "reason", "rejectionReason", "requestedByName", "requestedStatus", "sectionName", "status", "studentName", "subjectName" ],
+        "required" : [ "attendanceId", "classDate", "createdAt", "id", "previousStatus", "reason", "requestedByName", "requestedStatus", "sectionName", "status", "studentName", "subjectName" ],
         "type" : "object"
       },
       "AttendanceEntry" : {

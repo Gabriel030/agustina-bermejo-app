@@ -1,6 +1,7 @@
 package com.red_escuela.backend.attendance.dto;
 
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,7 +9,7 @@ import java.time.LocalDateTime;
 public record AttendanceChangeRequestResponse(
         Long id, Long attendanceId, String requestedByName, String subjectName, String sectionName,
         LocalDate classDate, String studentName, String previousStatus, String requestedStatus,
-        String reason, String status, LocalDateTime createdAt, String rejectionReason) {
+        String reason, String status, LocalDateTime createdAt, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String rejectionReason) {
 
     public static AttendanceChangeRequestResponse from(
             AttendanceChangeRequest request, String requestedByName, String subjectName, String sectionName,
