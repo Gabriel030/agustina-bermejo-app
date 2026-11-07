@@ -117,4 +117,78 @@ class GradeCorrectionCharacterizationTest extends CourseworkCharacterizationSupp
 
         getAs(director, "/grade-items/" + gradeItemId + "/audit").andExpect(jsonPath("$", hasSize(1)));
     }
+
+    @Test
+    void staffGridMarksOnlyTheCorrectedPublishedCellAndExposesTheTermEndAsDeadline() throws Exception {
+        Classroom classroom = publishedExam("cor6", "7800006", "5");
+        Person director = persistPerson("cor6.director", "78000067", "DIRECTOR");
+        classroom.section().getTerm().setEndDate(LocalDateTime.of(2026, 12, 31, 23, 59));
+        entityManager.flush();
+        long gradeItemId = gradeItemIdOf(classroom, director);
+        String staffGrid = "/staff/program-sections/" + classroom.section().getId() + "/grade-grid";
+
+        getAs(director, staffGrid)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionDeadline").value("2026-12-31"))
+                .andExpect(jsonPath("$.students[0].grades[0].corrected").value(false));
+
+        postJson(director, "/grade-items/" + gradeItemId + "/corrections", correction(8, "Error de carga")).andExpect(status().isCreated());
+
+        getAs(director, staffGrid)
+                .andExpect(jsonPath("$.students[0].grades[0].corrected").value(true))
+                .andExpect(jsonPath("$.students[0].grades[0].score").value(8.0));
+        getAs(classroom.teacher(), "/program-sections/" + classroom.section().getId() + "/grade-grid")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionDeadline").value("2026-12-31"))
+                .andExpect(jsonPath("$.students[0].grades[0].corrected").value(true));
+
+        MutableClock.INSTANCE.setDate(LocalDate.of(2027, 1, 1));
+        postJson(director, "/grade-items/" + gradeItemId + "/corrections", correction(9, "Fuera de plazo"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GRADE_CORRECTION_PERIOD_ENDED"));
+        getAs(director, staffGrid)
+                .andExpect(jsonPath("$.correctionDeadline").value("2026-12-31"))
+                .andExpect(jsonPath("$.students[0].grades[0].corrected").value(true));
+    }
+
+    @Test
+    void directorReadsTheGridWithoutTeachingWhileStudentsAndTeachersOfOtherSectionsStayOut() throws Exception {
+        Classroom classroom = publishedExam("cor7", "7800007", "5");
+        Person director = persistPerson("cor7.director", "78000077", "DIRECTOR");
+        Person stranger = persistPerson("cor7.stranger", "78000079", "DOCENTE");
+        persistInstructor(stranger);
+        String staffGrid = "/staff/program-sections/" + classroom.section().getId() + "/grade-grid";
+        String teacherGrid = "/program-sections/" + classroom.section().getId() + "/grade-grid";
+
+        getAs(director, staffGrid).andExpect(status().isOk())
+                .andExpect(jsonPath("$.students[0].enrollmentId").value(classroom.enrollment().getId()));
+        getAs(director, teacherGrid).andExpect(status().isForbidden());
+        getAs(stranger, teacherGrid).andExpect(status().isForbidden());
+        getAs(stranger, staffGrid).andExpect(status().isForbidden());
+        getAs(classroom.teacher(), staffGrid).andExpect(status().isForbidden());
+        getAs(classroom.student(), staffGrid).andExpect(status().isForbidden());
+        getAs(director, "/staff/program-sections/999999999/grade-grid").andExpect(status().isNotFound());
+        getAs(director, "/staff/course-sections/999999999/grade-grid").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void studentSeesOnlyTheLastCorrectionWithItsReasonAndNothingWhenNeverCorrected() throws Exception {
+        Classroom classroom = publishedExam("cor8", "7800008", "5");
+        Person director = persistPerson("cor8.director", "78000087", "DIRECTOR");
+        long gradeItemId = gradeItemIdOf(classroom, director);
+        String studentGrades = "/me/section-enrollments/" + classroom.enrollment().getId() + "/grade-items";
+
+        getAs(classroom.student(), studentGrades)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].correction").doesNotExist());
+
+        postJson(director, "/grade-items/" + gradeItemId + "/corrections", correction(8.5, "Primera correccion")).andExpect(status().isCreated());
+        postJson(director, "/grade-items/" + gradeItemId + "/corrections", correction(7, "Segunda correccion")).andExpect(status().isCreated());
+
+        getAs(classroom.student(), studentGrades)
+                .andExpect(jsonPath("$[0].score").value(7.0))
+                .andExpect(jsonPath("$[0].correction.previousScore").value(8.5))
+                .andExpect(jsonPath("$[0].correction.reason").value("Segunda correccion"))
+                .andExpect(jsonPath("$[0].correction.correctedAt").exists());
+    }
 }

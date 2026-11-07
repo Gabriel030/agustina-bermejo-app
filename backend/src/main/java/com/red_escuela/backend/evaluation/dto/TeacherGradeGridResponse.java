@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import com.red_escuela.backend.shared.domain.Grade;
+import java.time.LocalDate;
 import java.util.List;
 
 public record TeacherGradeGridResponse(
@@ -12,5 +13,6 @@ public record TeacherGradeGridResponse(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Grade minApprovalGrade,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) Grade promotionMinGrade,
         List<GradeGridColumnResponse> columns,
-        List<GradeGridStudentResponse> students) {
+        List<GradeGridStudentResponse> students,
+        LocalDate correctionDeadline) {
 }
