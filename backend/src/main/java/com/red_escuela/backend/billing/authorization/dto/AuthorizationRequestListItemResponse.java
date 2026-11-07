@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 public record AuthorizationRequestListItemResponse(Long id, String operationType, String operationLabel, String family, String familyLabel, String status,
-                                                   @Schema(nullable = true) String resumeOutcome, String summary, String studentName, Money amount, AuthorizationRequestPersonResponse requestedBy,
+                                                   @Schema(nullable = true) String resumeOutcome, String summary, @Schema(nullable = true) String studentName, @Schema(nullable = true) Money amount, AuthorizationRequestPersonResponse requestedBy,
                                                    Instant requestedAt, @Schema(nullable = true) LocalDate expiresOn, String requiredRole, @Schema(nullable = true) Instant decidedAt) {
 
     public static AuthorizationRequestListItemResponse from(InboxEntry entry, Map<Long, String> personNames) {

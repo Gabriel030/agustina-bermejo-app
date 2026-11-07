@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.billing.payment.domain.CashPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.Chargeback;
 import com.red_escuela.backend.billing.payment.domain.Payment;
@@ -10,11 +12,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record StudentPaymentResponse(Long id, Money amount, Money approvedAmount, Money refundedAmount, String status, String gateway, String methodType,
-                                     LocalDate paidOn, LocalDateTime registeredAt, String receiptNumber, ChargebackSummaryResponse chargeback,
-                                     PendingRefundsSummaryResponse pendingRefunds, PaymentActionsResponse actions) {
+public record StudentPaymentResponse(Long id, Money amount, @Schema(nullable = true) Money approvedAmount, Money refundedAmount, String status, String gateway, String methodType,
+                                     LocalDate paidOn, LocalDateTime registeredAt, @Schema(nullable = true) String receiptNumber, @Schema(nullable = true) ChargebackSummaryResponse chargeback,
+                                     @Schema(nullable = true) PendingRefundsSummaryResponse pendingRefunds, @Schema(nullable = true) PaymentActionsResponse actions) {
 
-    public record ChargebackSummaryResponse(Long chargebackId, Money amount, LocalDate chargedBackOn, String reference, LocalDate reversedOn) {
+    public record ChargebackSummaryResponse(Long chargebackId, Money amount, LocalDate chargedBackOn, @Schema(nullable = true) String reference, @Schema(nullable = true) LocalDate reversedOn) {
 
         static ChargebackSummaryResponse from(Chargeback chargeback) {
             return chargeback == null ? null : new ChargebackSummaryResponse(chargeback.getId(), chargeback.getAmount().value(), chargeback.getChargedBackOn(),

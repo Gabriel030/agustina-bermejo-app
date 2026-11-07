@@ -1,12 +1,14 @@
 package com.red_escuela.backend.announcement.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 
 public record AudienceSegmentResponse(
         AudienceSegmentKey key,
         String label,
-        Integer count,
+        @Schema(nullable = true) Integer count,
         boolean needsInstances,
         boolean needsThreshold,
-        Integer instanceCount) {
+        @Schema(nullable = true) Integer instanceCount) {
 }

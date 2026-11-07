@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.math.BigDecimal;
 
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
@@ -10,10 +12,10 @@ public record CreateEvaluationSchemeRequest(
         @NotBlank String name,
         @NotNull Integer examCountExpected,
         @NotNull Boolean hasFinal,
-        Double finalWeight,
-        GradeAggregationMethod aggregationMethod,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Double finalWeight,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) GradeAggregationMethod aggregationMethod,
         @NotNull BigDecimal minRegularGrade,
         @NotNull BigDecimal minApprovalGrade,
-        BigDecimal promotionMinGrade,
-        String notes) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) BigDecimal promotionMinGrade,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String notes) {
 }
