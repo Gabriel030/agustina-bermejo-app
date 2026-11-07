@@ -92,6 +92,14 @@ export const handlers = [
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollments/:id/annual-upfront/quote`, () =>
+    HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
+  ),
+  http.get(`${API}/me/program-enrollments/:id/annual-upfront-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/program-enrollments/:id/annual-upfront/quote`, () =>
+    HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
+  ),
+  http.get(`${API}/program-enrollments/:id/annual-upfront-requests`, () => HttpResponse.json([])),
   http.post(`${API}/me/program-enrollment-applications`, () =>
     HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
   ),
