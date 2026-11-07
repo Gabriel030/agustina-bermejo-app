@@ -79,3 +79,6 @@ move notification.SectionEvaluationConfigRejectedNotification -> notification.do
 move notification.SectionEvaluationConfigReminderNotification -> notification.domain
 move notification.SuspensionLiftedNotification -> notification.domain
 move notification.UserPreferenceEventResolver -> notification.specialist
+move notification.GradeEventsNotificationListener -> notification.specialist
+move notification.GradeCorrectedNotification -> notification.domain
+move notification.GradesPublishedNotification -> notification.domain

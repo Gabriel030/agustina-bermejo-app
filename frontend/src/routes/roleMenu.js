@@ -1,4 +1,4 @@
-import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet } from 'lucide-react';
+import { BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -15,7 +15,8 @@ const billingItems = [
 ];
 const [invoicing, discounts, reminders, runs, monthlyRun] = billingItems;
 const paymentMethods = { slug: 'medios-de-pago', label: 'Medios de pago', icon: Wallet };
-const financial = { slug: 'financiero', label: 'Financiero', icon: BarChart2 };
+const annualTerms = { slug: 'terminos-del-pago-anual', label: 'Términos del pago anual', icon: ScrollText };
+const financial ={ slug: 'financiero', label: 'Financiero', icon: BarChart2 };
 const certificates = { slug: 'constancias', label: 'Constancias', icon: FileText };
 const graduationVerification = { slug: 'egresos-por-verificar', label: 'Egresos por verificar', icon: ShieldCheck };
 const academicOffering = { slug: 'oferta-academica', label: 'Oferta académica', icon: BookMarked };
@@ -75,6 +76,7 @@ export const ROLE_MENU = {
     discounts,
     reminders,
     paymentMethods,
+    annualTerms,
     runs,
     monthlyRun,
     financial,

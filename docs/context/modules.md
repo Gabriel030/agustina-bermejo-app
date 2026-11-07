@@ -43,7 +43,7 @@ Entidades en `model` y motivo (se referencian por relación JPA y cambiarlas por
 
 | Mecanismo | Cuándo | Transacción | Ejemplo |
 |---|---|---|---|
-| Llamada directa a la `api` del inferior | Necesito respuesta o que pase en el mismo momento, hacia abajo en las capas | La misma | el especialista `AttendanceSectionAccess` (attendance) llama a `SectionTeachingFinder` (`academicstructure.api`) |
+| Llamada directa a la `api` del inferior | Necesito respuesta o que pase en el mismo momento, hacia abajo en las capas | La misma | el especialista `AttendanceSectionAccessChecker` (attendance) llama a `SectionTeachingFinder` (`academicstructure.api`) |
 | Puerto invertido (`*Port`) | El inferior necesita algo del superior, o de billing/notification | La misma | `OutstandingDebtPort` (D-185, ver abajo) |
 | Evento síncrono (`@EventListener`) | El inferior no debe conocer al superior y el efecto es atómico | La misma | notificaciones in-app de `notification` ante eventos de negocio |
 | Evento async con registro | Efectos secundarios y canales externos | Nueva, tras el commit | emails (se introduce en V2-00c1) |
@@ -56,8 +56,8 @@ Ejemplo: `attendance` necesita saber si un docente da una comisión.
 
 1. En el módulo proveedor, crear un especialista **concreto** en `academicstructure.api` (`SectionTeachingFinder`), sin interfaz, que usa su repositorio y devuelve records de lectura de la propia `api`, nunca entidades no expuestas.
 2. Anotar el paquete `api` con `@NamedInterface("api")` si todavía no lo está.
-3. En el consumidor, un especialista propio (`attendance.service.AttendanceSectionAccess`, que al migrar será `attendance.specialist.AttendanceSectionAccessChecker`) inyecta `SectionTeachingFinder` y lo llama directo.
-4. El caso de uso (`LoadAttendanceUseCase`) llama a `AttendanceSectionAccess`, y `AttendanceController` llama al caso de uso. Cadena: controller -> caso de uso -> especialista propio -> especialista de `api` -> repositorio. Cero interfaces, cero adaptadores. Verificar con `ModularityTest`.
+3. En el consumidor, un especialista propio (`attendance.specialist.AttendanceSectionAccessChecker`) inyecta `SectionTeachingFinder` y lo llama directo.
+4. El caso de uso (`LoadAttendanceUseCase`) llama a `AttendanceSectionAccessChecker`, y `AttendanceController` llama al caso de uso. Cadena: controller -> caso de uso -> especialista propio -> especialista de `api` -> repositorio. Cero interfaces, cero adaptadores. Verificar con `ModularityTest`.
 
 Si la consulta va hacia arriba o hacia billing/notification, no se expone un especialista: se publica un evento o se declara un `*Port` (única interfaz admitida en `api`) que implementa el módulo superior.
 
@@ -140,8 +140,9 @@ Cada paquete lleva `package-info.java` con javadoc en castellano y cuatro rótul
 
 ```mermaid
 flowchart LR
-    C[controller: AttendanceController] --> U[usecase: LoadCourseSectionAttendance...]
-    U --> S[service -> specialist: AttendanceRiskCalculator, SectionAttendanceRecorder]
+    C[controller: AttendanceController] --> U[usecase/record y usecase/changerequest: LoadCourseSectionAttendanceService, RequestAttendanceChangeService]
+    U --> S[specialist: AttendanceRiskCalculator, SectionAttendanceRecorder, AttendanceSectionAccessChecker]
+    S --> P[policy: AttendanceSameDayCorrectionPolicy]
     S --> R[repository: AttendanceRepository]
     S --> AS[academicstructure.api: SectionTeachingFinder]
     S --> EN[enrollment.api]

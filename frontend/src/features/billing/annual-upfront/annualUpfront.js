@@ -1,10 +1,5 @@
 import { moneyValue } from '@/lib/utils';
 
-export const ANNUAL_UPFRONT_TERMS_VERSION = 'v1';
-
-export const TERMS_TEXT =
-  'Acepto la condición del pago anual: si me doy de baja o egreso antes de que termine el año, no se me devuelve ni se me acredita lo que pagué por adelantado.';
-
 export const REQUEST_STATUS = {
   AWAITING_PAYMENT: { label: 'Esperando el pago', tone: 'warning' },
   PAYMENT_UNDER_REVIEW: { label: 'Pago en revisión', tone: 'warning' },

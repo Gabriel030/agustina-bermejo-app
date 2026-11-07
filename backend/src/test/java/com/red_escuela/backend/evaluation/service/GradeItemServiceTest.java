@@ -48,6 +48,19 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
+import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
+import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
+import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
+import com.red_escuela.backend.evaluation.exception.GradeCorrectionNoChangeException;
+import com.red_escuela.backend.evaluation.exception.GradeCorrectionPeriodEndedException;
+import com.red_escuela.backend.evaluation.exception.GradeItemNotPublishedException;
+import com.red_escuela.backend.evaluation.exception.InvalidGradeCorrectionReasonException;
+import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
+import com.red_escuela.backend.shared.time.MutableClock;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,8 +70,8 @@ import java.time.LocalDateTime;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
-import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCommand;
-import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.record.JustifyAttendanceCommand;
+import com.red_escuela.backend.attendance.usecase.record.JustifyAttendanceUseCase;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.red_escuela.backend.shared.domain.InvalidGradeException;
@@ -69,6 +82,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@RecordApplicationEvents
 class GradeItemServiceTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -82,6 +96,18 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private SectionGradeItemPublisher sectionGradeItemPublisher;
+
+    @Autowired
+    private PublishedGradeCorrector publishedGradeCorrector;
+
+    @Autowired
+    private GradeItemAuditReader gradeItemAuditReader;
+
+    @Autowired
+    private GradeItemRepository gradeItemRepository;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     @Autowired
     private GradeItemFinder gradeItemFinder;
@@ -910,5 +936,155 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+    }
+
+    private GradeItem publishedExam(String dni, double score) {
+        Instructor instructor = persistInstructor(dni);
+        SubjectSection section = publicationSection(instructor, "MateriaCorregir" + dni);
+        SubjectSectionEnrollment enrollment = enrollInSection(dni + "1", section);
+        loadExam(enrollment, instructor, 1, score);
+        entityManager.flush();
+        publishExam(section, instructor, 1);
+        entityManager.flush();
+        return gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).get(0);
+    }
+
+    private GradeItemAuditResponse correct(GradeItem item, double newScore, String reason) {
+        return publishedGradeCorrector.correct(item.getId(),
+                new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(newScore)), reason), item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
+    }
+
+    @Test
+    void publishingAnItemEmitsOneEventWithTheStudentsOfThatItem() {
+        Instructor instructor = persistInstructor("73000001");
+        SubjectSection section = publicationSection(instructor, "MateriaEventoPublicar");
+        SubjectSectionEnrollment first = enrollInSection("73000002", section);
+        SubjectSectionEnrollment second = enrollInSection("73000003", section);
+        enrollInSection("73000004", section);
+        loadExam(first, instructor, 1, 7.0);
+        loadExam(second, instructor, 1, 8.0);
+        loadExam(first, instructor, 2, 6.0);
+        entityManager.flush();
+
+        publishExam(section, instructor, 1);
+
+        var events = applicationEvents.stream(GradesPublishedEvent.class).toList();
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).sectionId()).isEqualTo(section.getId());
+        assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Examen");
+        assertThat(events.get(0).studentPersonIds())
+                .containsExactlyInAnyOrder(first.getStudent().getPerson().getId(), second.getStudent().getPerson().getId());
+    }
+
+    @Test
+    void failedPublishingEmitsNoEvent() {
+        Instructor instructor = persistInstructor("73000005");
+        SubjectSection section = publicationSection(instructor, "MateriaSinEvento");
+        enrollInSection("73000006", section);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> publishExam(section, instructor, 1)).isInstanceOf(NoPendingGradesToPublishException.class);
+
+        assertThat(applicationEvents.stream(GradesPublishedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void correctingAPublishedGradeStoresAuditChangesScoreAndEmitsEvent() {
+        GradeItem item = publishedExam("73100001", 5.0);
+
+        GradeItemAuditResponse audit = correct(item, 9.0, "  Error de carga del docente  ");
+        entityManager.flush();
+
+        assertThat(gradeItemRepository.findById(item.getId()).orElseThrow().getScore()).isEqualTo(Grade.of(BigDecimal.valueOf(9.0)));
+        assertThat(audit.previousScore()).isEqualTo(Grade.of(BigDecimal.valueOf(5.0)));
+        assertThat(audit.newScore()).isEqualTo(Grade.of(BigDecimal.valueOf(9.0)));
+        assertThat(audit.reason()).isEqualTo("Error de carga del docente");
+        assertThat(audit.kind()).isEqualTo(GradeItemAuditKind.CORRECTION);
+        assertThat(audit.changedAt()).isNotNull();
+        assertThat(gradeItemAuditReader.historyOf(item.getId())).hasSize(1);
+        var events = applicationEvents.stream(GradeCorrectedEvent.class).toList();
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).studentPersonId()).isEqualTo(item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
+        assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Examen");
+    }
+
+    @Test
+    void correctingADraftGradeFailsBecauseItIsNotPublished() {
+        Instructor instructor = persistInstructor("73100002");
+        SubjectSection section = publicationSection(instructor, "MateriaBorradorCorregir");
+        SubjectSectionEnrollment enrollment = enrollInSection("73100003", section);
+        loadExam(enrollment, instructor, 1, 5.0);
+        entityManager.flush();
+        GradeItem draft = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).get(0);
+
+        assertThatThrownBy(() -> correct(draft, 9.0, "Motivo válido")).isInstanceOf(GradeItemNotPublishedException.class);
+
+        assertThat(applicationEvents.stream(GradeCorrectedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void correctingOnTheLastDayOfTheTermIsAllowed() {
+        GradeItem item = publishedExam("73100004", 5.0);
+        MutableClock.INSTANCE.setDate(LocalDate.of(2999, 12, 31));
+
+        correct(item, 6.0, "Motivo válido");
+
+        assertThat(applicationEvents.stream(GradeCorrectedEvent.class)).hasSize(1);
+    }
+
+    @Test
+    void correctingAfterTheTermEndedFailsAndKeepsTheScore() {
+        GradeItem item = publishedExam("73100005", 5.0);
+        MutableClock.INSTANCE.setDate(LocalDate.of(3000, 1, 1));
+
+        assertThatThrownBy(() -> correct(item, 6.0, "Motivo válido")).isInstanceOf(GradeCorrectionPeriodEndedException.class);
+
+        assertThat(gradeItemRepository.findById(item.getId()).orElseThrow().getScore()).isEqualTo(Grade.of(BigDecimal.valueOf(5.0)));
+        assertThat(gradeItemAuditReader.historyOf(item.getId())).isEmpty();
+        assertThat(applicationEvents.stream(GradeCorrectedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void correctionReasonOutsideFiveToFiveHundredCharactersFails() {
+        GradeItem item = publishedExam("73100006", 5.0);
+
+        assertThatThrownBy(() -> correct(item, 6.0, "abcd")).isInstanceOf(InvalidGradeCorrectionReasonException.class);
+        assertThatThrownBy(() -> correct(item, 6.0, "    ab    ")).isInstanceOf(InvalidGradeCorrectionReasonException.class);
+        assertThatThrownBy(() -> correct(item, 6.0, "a".repeat(501))).isInstanceOf(InvalidGradeCorrectionReasonException.class);
+        assertThatThrownBy(() -> correct(item, 6.0, null)).isInstanceOf(InvalidGradeCorrectionReasonException.class);
+        assertThat(gradeItemAuditReader.historyOf(item.getId())).isEmpty();
+    }
+
+    @Test
+    void correctionReasonOfExactlyFiveAndFiveHundredCharactersIsAccepted() {
+        GradeItem item = publishedExam("73100007", 5.0);
+
+        correct(item, 6.0, "abcde");
+        correct(item, 7.0, "a".repeat(500));
+
+        assertThat(gradeItemAuditReader.historyOf(item.getId())).hasSize(2);
+    }
+
+    @Test
+    void correctingWithTheSameScoreFailsWithoutAuditOrEvent() {
+        GradeItem item = publishedExam("73100008", 5.0);
+
+        assertThatThrownBy(() -> correct(item, 5.0, "Motivo válido")).isInstanceOf(GradeCorrectionNoChangeException.class);
+
+        assertThat(gradeItemAuditReader.historyOf(item.getId())).isEmpty();
+        assertThat(applicationEvents.stream(GradeCorrectedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void auditHistoryListsNewestCorrectionFirst() {
+        GradeItem item = publishedExam("73100009", 5.0);
+        correct(item, 6.0, "Primera corrección");
+        MutableClock.INSTANCE.advance(java.time.Duration.ofMinutes(5));
+        correct(item, 8.0, "Segunda corrección");
+        entityManager.flush();
+
+        var history = gradeItemAuditReader.historyOf(item.getId());
+
+        assertThat(history).extracting(GradeItemAuditResponse::reason).containsExactly("Segunda corrección", "Primera corrección");
     }
 }

@@ -327,11 +327,11 @@ capacidades no relacionadas con actores distintos:
 5. **Ciclo de vida de la clase** → `Get{Program,Course}SectionClassSessionUseCase`,
    `Cancel{Program,Course}SectionClassSessionUseCase`.
 
-Todos en `attendance/usecase/attendance/` (21 use cases), con colaboradores
-en `attendance/service/`: `AttendanceFinder`, `AttendanceSectionAccess`
+Todos en `attendance/usecase/record/` (21 use cases), con colaboradores
+en `attendance/specialist/`: `AttendanceFinder`, `AttendanceSectionAccessChecker`
 (pertenencia de Docente a comisión + resolución de `Instructor`),
 `AttendanceRiskCalculator`, `SectionRosterBuilder`, `AttendanceHistoryBuilder`,
-`ClassSessionUpserter`. `AttendanceExportService` queda cohesivo (exportar a
+`ClassSessionUpserter`. `AttendanceExporter` queda cohesivo (exportar a
 PDF/XLS es un solo concepto) y consume los use cases de historial/reporte.
 
 `AttendanceChangeRequestService` (5 métodos) es la segunda excepción real,

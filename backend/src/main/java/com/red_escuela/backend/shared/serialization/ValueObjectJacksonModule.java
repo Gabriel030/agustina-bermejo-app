@@ -35,6 +35,7 @@ public class ValueObjectJacksonModule extends SimpleModule {
         addSerializer(Money.class, new MoneySerializer());
         addDeserializer(Money.class, new MoneyDeserializer());
         addSerializer(Grade.class, new GradeSerializer());
+        addDeserializer(Grade.class, new GradeDeserializer());
         addSerializer(Percentage.class, new PercentageSerializer());
         addDeserializer(Percentage.class, new PercentageDeserializer());
         addSerializer(SignedPercentage.class, new SignedPercentageSerializer());
@@ -103,6 +104,13 @@ public class ValueObjectJacksonModule extends SimpleModule {
         @Override
         public Percentage deserialize(JsonParser parser, DeserializationContext context) {
             return Percentage.ofPoints(parser.getDecimalValue());
+        }
+    }
+
+    private static final class GradeDeserializer extends ValueDeserializer<Grade> {
+        @Override
+        public Grade deserialize(JsonParser parser, DeserializationContext context) {
+            return Grade.of(parser.getDecimalValue());
         }
     }
 
