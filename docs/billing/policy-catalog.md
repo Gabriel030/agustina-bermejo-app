@@ -60,6 +60,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | AnnualUpfrontTermsAcceptedPolicy | ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED | D-236 |
+| 2 | AnnualUpfrontTermsCurrentPolicy | ANNUAL_UPFRONT_TERMS_OUTDATED | D-236 |
 
 ## Momento BANK_TRANSFER_RECEIPT_DETAILS
 
