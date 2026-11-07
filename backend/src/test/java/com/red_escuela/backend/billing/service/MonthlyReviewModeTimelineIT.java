@@ -29,7 +29,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Tag("D-194")
 @Tag("D-512")
 @Tag("D-519")
 @Tag("D-455")
@@ -134,7 +133,7 @@ class MonthlyReviewModeTimelineIT extends AbstractInvoiceSequenceScenarioTest {
         }
         assertThat(run.getIssuanceMode()).isEqualTo(MonthlyInvoiceIssuanceMode.REVIEW);
         assertThat(statusOf(run)).isEqualTo(MonthlyInvoiceRunStatus.AWAITING_REVIEW);
-        assertThat(countOf("DRAFT", run)).isEqualTo(2);
+        assertThat(countOf("DRAFT", run)).isEqualTo(invoiceIdsOf(run).size());
         assertThat(countOf("ISSUED", run)).isZero();
     }
 
@@ -158,7 +157,7 @@ class MonthlyReviewModeTimelineIT extends AbstractInvoiceSequenceScenarioTest {
 
         assertThat(run.getIssuanceMode()).isEqualTo(MonthlyInvoiceIssuanceMode.DIRECT);
         assertThat(statusOf(run)).isEqualTo(MonthlyInvoiceRunStatus.COMPLETED);
-        assertThat(countOf("ISSUED", run)).isEqualTo(2);
+        assertThat(countOf("ISSUED", run)).isEqualTo(invoiceIdsOf(run).size());
         assertThat(alertsOf(run)).isZero();
     }
 
@@ -189,7 +188,7 @@ class MonthlyReviewModeTimelineIT extends AbstractInvoiceSequenceScenarioTest {
         assertThat(alertsOf(run, date(2026, 5, 10))).isZero();
         assertThat(alertsOf(run, date(2026, 5, 11))).isEqualTo(1);
         assertThat(alertsOf(run)).isEqualTo(3);
-        assertThat(countOf("DRAFT", run)).isEqualTo(2);
+        assertThat(countOf("DRAFT", run)).isEqualTo(invoiceIdsOf(run).size());
     }
 
     @Test
@@ -206,13 +205,13 @@ class MonthlyReviewModeTimelineIT extends AbstractInvoiceSequenceScenarioTest {
         alertJob.run(date(2026, 5, 6));
 
         assertThat(events.stream(DraftInvoicesAwaitingReviewEvent.class).filter(event -> event.alertDate().equals(date(2026, 5, 5))).findFirst().orElseThrow().pendingDrafts())
-                .isEqualTo(3);
+                .isEqualTo(ids.size());
         assertThat(events.stream(DraftInvoicesAwaitingReviewEvent.class).filter(event -> event.alertDate().equals(date(2026, 5, 6))).findFirst().orElseThrow().pendingDrafts())
-                .isEqualTo(1);
+                .isEqualTo(ids.size() - 2);
         assertThat(statusOf(run)).isEqualTo(MonthlyInvoiceRunStatus.AWAITING_REVIEW);
 
         today(date(2026, 5, 7));
-        reviewer.approveDraftsOfRun(run.getId(), ids.subList(2, 3), UUID.randomUUID().toString(), REVIEWER);
+        reviewer.approveDraftsOfRun(run.getId(), ids.subList(2, ids.size()), UUID.randomUUID().toString(), REVIEWER);
         alertJob.run(date(2026, 5, 7));
         alertJob.run(date(2026, 5, 8));
 

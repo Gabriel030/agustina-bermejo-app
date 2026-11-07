@@ -28,7 +28,6 @@ public class MonthlyInvoiceRunTestDriver {
 
     public Optional<MonthlyInvoiceRun> run(YearMonth period) {
         LocalDate today = LocalDate.now(clock);
-        ensureAnIssuanceConfigurationExists();
         completeTheNightOf(today);
         forgetRunsOf(period);
         return executor.runMonthlyInvoicesOfPeriod(period, today, MonthlyInvoiceRunTrigger.SCHEDULED);
@@ -36,7 +35,6 @@ public class MonthlyInvoiceRunTestDriver {
 
     public Optional<MonthlyInvoiceRun> runWithoutForgettingPreviousRuns(YearMonth period) {
         LocalDate today = LocalDate.now(clock);
-        ensureAnIssuanceConfigurationExists();
         completeTheNightOf(today);
         return executor.runMonthlyInvoicesOfPeriod(period, today, MonthlyInvoiceRunTrigger.SCHEDULED);
     }
@@ -53,6 +51,7 @@ public class MonthlyInvoiceRunTestDriver {
     }
 
     public void completeTheNightOf(LocalDate businessDate) {
+        ensureAnIssuanceConfigurationExists();
         jdbc.update("""
                 insert into nightly_billing_run (business_date, status, trigger, started_at, finished_at)
                 values (?, 'COMPLETED', 'SCHEDULED', ?, ?) on conflict (business_date) do update set status = 'COMPLETED', finished_at = excluded.finished_at
