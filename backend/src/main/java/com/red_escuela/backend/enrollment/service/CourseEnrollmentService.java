@@ -35,12 +35,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNonpaymentWithdrawalPort;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.api.EnrollmentDebtGuard;
 
 @Service
-public class CourseEnrollmentService {
+public class CourseEnrollmentService implements CourseEnrollmentNonpaymentWithdrawalPort {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final StudentFinder studentFinder;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
@@ -205,6 +206,12 @@ public class CourseEnrollmentService {
                 .size();
         return section.capacity() == null || ocupadas < section.capacity()
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
+    @Override
+    @Transactional
+    public void withdrawForNonpayment(Long id) {
+        withdraw(id, EnrollmentWithdrawal.forNonpayment());
     }
 
     @Transactional

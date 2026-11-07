@@ -8,6 +8,6 @@ public record SuspendedEnrollmentClosureReport(int candidates, int closed, List<
         failures = List.copyOf(failures);
     }
 
-    public record EnrollmentClosureFailure(Long enrollmentId, boolean rejectedByRule, String code, String message) {
+    public record EnrollmentClosureFailure(EnrollmentKind kind, Long enrollmentId, boolean rejectedByRule, String code, String message) {
     }
 }

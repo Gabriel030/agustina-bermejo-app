@@ -1,21 +1,27 @@
 package com.red_escuela.backend.billing.run.operation;
 
+import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
+import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
+import com.red_escuela.backend.billing.collections.service.CourseEnrollmentWithdrawalAtCourseEndService;
 import com.red_escuela.backend.billing.run.domain.BillingRunItemRecord;
 import com.red_escuela.backend.billing.run.domain.BillingRunStep;
 import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
 import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
-import com.red_escuela.backend.billing.collections.domain.SuspendedEnrollmentClosureReport;
 import com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.stream.Stream;
 
 @Component
 public class TermEndWithdrawalBillingRunStep extends AbstractBillingRunStep {
-    private final SuspendedEnrollmentClosureService closureService;
+    private final SuspendedEnrollmentClosureService programClosureService;
+    private final CourseEnrollmentWithdrawalAtCourseEndService courseWithdrawalService;
 
-    public TermEndWithdrawalBillingRunStep(SuspendedEnrollmentClosureService closureService) {
-        this.closureService = closureService;
+    public TermEndWithdrawalBillingRunStep(SuspendedEnrollmentClosureService programClosureService,
+                                           CourseEnrollmentWithdrawalAtCourseEndService courseWithdrawalService) {
+        this.programClosureService = programClosureService;
+        this.courseWithdrawalService = courseWithdrawalService;
     }
 
     @Override
@@ -25,13 +31,16 @@ public class TermEndWithdrawalBillingRunStep extends AbstractBillingRunStep {
 
     @Override
     protected BillingRunStepOutcome executeStepForBusinessDate(LocalDate businessDate) {
-        SuspendedEnrollmentClosureReport report = closureService.closeFinishedCyclesReportingFailures();
-        return BillingRunStepOutcome.ofCandidates(report.candidates(), report.failures().stream().map(TermEndWithdrawalBillingRunStep::itemOf).toList());
+        SuspendedEnrollmentClosureReport programs = programClosureService.closeFinishedCyclesReportingFailures();
+        SuspendedEnrollmentClosureReport courses = courseWithdrawalService.withdrawSuspendedEnrollmentsOfEndedCourses();
+        return BillingRunStepOutcome.ofCandidates(programs.candidates() + courses.candidates(),
+                Stream.concat(programs.failures().stream(), courses.failures().stream()).map(TermEndWithdrawalBillingRunStep::itemOf).toList());
     }
 
     private static BillingRunItemRecord itemOf(SuspendedEnrollmentClosureReport.EnrollmentClosureFailure failure) {
+        BillingRunSubjectType subjectType = failure.kind() == EnrollmentKind.COURSE ? BillingRunSubjectType.COURSE_ENROLLMENT : BillingRunSubjectType.PROGRAM_ENROLLMENT;
         return failure.rejectedByRule()
-                ? BillingRunItemRecord.skippedSubject(BillingRunSubjectType.PROGRAM_ENROLLMENT, failure.enrollmentId(), failure.code(), failure.message())
-                : BillingRunItemRecord.failedSubject(BillingRunSubjectType.PROGRAM_ENROLLMENT, failure.enrollmentId(), failure.code(), failure.message());
+                ? BillingRunItemRecord.skippedSubject(subjectType, failure.enrollmentId(), failure.code(), failure.message())
+                : BillingRunItemRecord.failedSubject(subjectType, failure.enrollmentId(), failure.code(), failure.message());
     }
 }
