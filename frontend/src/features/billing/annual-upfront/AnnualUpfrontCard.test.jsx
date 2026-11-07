@@ -8,6 +8,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { annualQuote, annualRequest } from '@/test/fixtures/annualUpfront';
+import { annualTerms } from '@/test/fixtures/annualTerms';
 import { AnnualUpfrontCard } from './AnnualUpfrontCard';
 import { AnnualUpfrontCards } from './AnnualUpfrontCards';
 
@@ -64,11 +65,57 @@ describe('AnnualUpfrontCard', () => {
     await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
     const confirm = screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1);
     expect(confirm).toBeDisabled();
-    await user.click(screen.getByRole('checkbox'));
+    expect(screen.getByText('Aceptá los términos para pedir el año.')).toBeInTheDocument();
+    await user.click(await screen.findByRole('checkbox'));
     await user.click(confirm);
     const { key, body } = await sent.promise;
     expect(key).toBeTruthy();
     expect(body).toEqual({ termsAccepted: true, termsVersion: 'v1' });
+  });
+
+  it('sendsTheCurrentTermsVersionAndLinksToItInANewTab', async () => {
+    const user = userEvent.setup();
+    const sent = createDeferred();
+    mount({ quote: annualQuote() });
+    server.use(
+      http.get(`${API}/annual-upfront-terms/current`, () => HttpResponse.json(annualTerms({ versionNumber: 2, version: 'v2' }))),
+      http.post(`${API}/me/program-enrollments/3/annual-upfront-requests`, async ({ request }) => {
+        sent.resolve(await request.json());
+        return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+      }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
+    const link = await screen.findByRole('link', { name: /Leer los términos \(v2\)/ });
+    expect(link).toHaveAttribute('href', '/terminos-pago-anual/2');
+    expect(link).toHaveAttribute('target', '_blank');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
+    expect(await sent.promise).toEqual({ termsAccepted: true, termsVersion: 'v2' });
+  });
+
+  it('reloadsTermsAndAsksAgainWhenTheVersionIsOutdated', async () => {
+    const user = userEvent.setup();
+    const bodies = [];
+    let published = false;
+    mount({ quote: annualQuote() });
+    server.use(
+      http.get(`${API}/annual-upfront-terms/current`, () =>
+        HttpResponse.json(published ? annualTerms({ versionNumber: 2, version: 'v2' }) : annualTerms()),
+      ),
+      http.post(`${API}/me/program-enrollments/3/annual-upfront-requests`, async ({ request }) => {
+        bodies.push(await request.json());
+        published = true;
+        return HttpResponse.json(errorBody('ANNUAL_UPFRONT_TERMS_OUTDATED'), { status: 409 });
+      }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
+    await user.click(await screen.findByRole('checkbox'));
+    await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cambiaron los términos');
+    expect(await screen.findByRole('link', { name: /Leer los términos \(v2\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    expect(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1)).toBeDisabled();
+    expect(bodies).toEqual([{ termsAccepted: true, termsVersion: 'v1' }]);
   });
 
   it('showsServerMessageWhenRequestIsRejected', async () => {
@@ -80,7 +127,7 @@ describe('AnnualUpfrontCard', () => {
       ),
     );
     await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(await screen.findByRole('checkbox'));
     await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
     expect(await screen.findByRole('alert')).toHaveTextContent('Ya pasó la fecha límite');
   });
@@ -172,12 +219,12 @@ describe('AnnualUpfrontCard', () => {
       }),
     );
     await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(await screen.findByRole('checkbox'));
     await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos confirmar');
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(await screen.findByRole('checkbox'));
     await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
     await vi.waitFor(() => expect(keys).toHaveLength(2));
     expect(keys[1]).toBe(keys[0]);

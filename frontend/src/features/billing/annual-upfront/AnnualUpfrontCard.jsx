@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { toast } from 'sonner';
@@ -6,18 +7,16 @@ import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/billing';
 import { moneyValue } from '@/lib/utils';
 import { isUnknownOutcome, useIdempotencyKey } from '../idempotency';
+import { TermsAcceptanceRow } from './terms/TermsAcceptanceRow';
+import { TERMS_KEY, useCurrentTerms } from './terms/useAnnualUpfrontTerms';
 import {
-  ANNUAL_UPFRONT_TERMS_VERSION,
   DISCARD_REASON_LABELS,
   INELIGIBLE_REASONS,
-  TERMS_TEXT,
   installmentsSummary,
   lastDiscardedRequestOf,
   liveRequestOf,
@@ -32,7 +31,8 @@ import {
 } from './useAnnualUpfront';
 
 const REQUEST_ERRORS = {
-  ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED: 'Para pedir el año tenés que aceptar la condición.',
+  ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED: 'Para pedir el año tenés que aceptar los términos.',
+  ANNUAL_UPFRONT_TERMS_OUTDATED: 'Cambiaron los términos mientras pedías. Leelos de nuevo y volvé a aceptar.',
   ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED: 'Ya pasó la fecha límite para pedir el año completo.',
   ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED: 'Ya hay un pedido del año completo. Actualizamos la pantalla.',
   OVERDUE_DEBT_BLOCKS_ANNUAL_UPFRONT: 'Tenés cuotas vencidas: regularizalas para pedir el año.',
@@ -93,13 +93,17 @@ function InstallmentsList({ lines }) {
 }
 
 function RequestDialog({ enrollmentId, quote, keyFor, onClose }) {
-  const [accepted, setAccepted] = useState(false);
+  const queryClient = useQueryClient();
+  const terms = useCurrentTerms();
+  const [acceptedVersion, setAcceptedVersion] = useState(null);
   const [message, setMessage] = useState('');
   const [unknownOutcome, setUnknownOutcome] = useState(false);
   const mutation = useRequestAnnualUpfront(enrollmentId);
+  const shownVersion = terms.data?.version ?? null;
+  const accepted = shownVersion != null && acceptedVersion === shownVersion;
 
   function submit() {
-    const body = { termsAccepted: accepted, termsVersion: ANNUAL_UPFRONT_TERMS_VERSION };
+    const body = { termsAccepted: true, termsVersion: shownVersion };
     setMessage('');
     mutation.mutate(
       { key: keyFor(body), body },
@@ -112,6 +116,10 @@ function RequestDialog({ enrollmentId, quote, keyFor, onClose }) {
           const unknown = isUnknownOutcome(error);
           setUnknownOutcome(unknown);
           setMessage(unknown ? UNKNOWN_OUTCOME_MESSAGE : errorMessageOf(error));
+          if (error?.code === 'ANNUAL_UPFRONT_TERMS_OUTDATED') {
+            setAcceptedVersion(null);
+            queryClient.invalidateQueries({ queryKey: TERMS_KEY });
+          }
         },
       },
     );
@@ -132,23 +140,36 @@ function RequestDialog({ enrollmentId, quote, keyFor, onClose }) {
           <p className="text-[13px] text-ink-soft">
             Vas a tener hasta el {formatDateTime(quote.paymentDeadline)} para pagar por transferencia o en efectivo en administración.
           </p>
-          <div className="flex items-start gap-2">
-            <Checkbox id="annual-terms" checked={accepted} onCheckedChange={(value) => setAccepted(value === true)} />
-            <Label htmlFor="annual-terms" className="text-[13px] font-normal leading-snug text-ink-soft">
-              {TERMS_TEXT}
-            </Label>
-          </div>
+          <TermsAcceptanceRow
+            terms={terms}
+            checked={accepted}
+            onCheckedChange={(checked) => {
+              setAcceptedVersion(checked ? shownVersion : null);
+              if (checked) setMessage('');
+            }}
+          />
           {message && (
             <p role="alert" className="text-sm text-danger">
               {message}
             </p>
           )}
         </div>
+        {!accepted && (
+          <p id="annual-terms-reason" className="text-xs text-ink-faint">
+            Aceptá los términos para pedir el año.
+          </p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={submit} loading={mutation.isPending} disabled={!accepted}>
+          <Button
+            variant="gradient"
+            onClick={submit}
+            loading={mutation.isPending}
+            disabled={!accepted}
+            aria-describedby={accepted ? undefined : 'annual-terms-reason'}
+          >
             {unknownOutcome ? 'Reintentar pedido' : 'Pedir el año completo'}
           </Button>
         </DialogFooter>
