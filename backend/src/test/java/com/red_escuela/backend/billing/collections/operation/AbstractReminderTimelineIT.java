@@ -45,7 +45,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.notification.delivery.service.EmailDeliveryDispatchJob;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryDispatchJob;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;

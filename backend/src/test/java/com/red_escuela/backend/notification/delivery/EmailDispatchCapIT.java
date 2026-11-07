@@ -21,13 +21,13 @@ import com.red_escuela.backend.notification.delivery.domain.EmailDispatchWindow;
 import com.red_escuela.backend.notification.delivery.entity.NotificationDelivery;
 import com.red_escuela.backend.notification.delivery.policy.EmailDeliveryContext;
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
-import com.red_escuela.backend.notification.delivery.service.DeliveryRequest;
-import com.red_escuela.backend.notification.delivery.service.EmailDeliveryChannel;
-import com.red_escuela.backend.notification.delivery.service.EmailDeliveryDispatchJob;
-import com.red_escuela.backend.notification.delivery.service.EmailDispatchPlanningService;
-import com.red_escuela.backend.notification.delivery.service.EmailDispatchSettingsSource;
-import com.red_escuela.backend.notification.delivery.service.EmailDispatchSource;
-import com.red_escuela.backend.notification.delivery.service.NotificationDeliveryService;
+import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryChannel;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryDispatchJob;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDispatchPlanRecorder;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDispatchSettingsSource;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDispatchSource;
+import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.platform.api.BillingNotificationsPolicy;
 import com.red_escuela.backend.shared.domain.Address;
@@ -82,7 +82,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     @Autowired
     private CircuitBreakerFactory circuitBreakerFactory;
     @Autowired
-    private NotificationDeliveryService deliveryService;
+    private NotificationDeliveryEnqueuer deliveryService;
     @Autowired
     private BillingNotificationsPolicy billingNotificationsPolicy;
     @Autowired
@@ -189,7 +189,7 @@ class EmailDispatchCapIT extends AbstractIntegrationTest {
     }
 
     private EmailDeliveryDispatchJob jobWith(EmailDispatchSettingsSource settings, EmailDeliveryChannel channel) {
-        EmailDispatchPlanningService planning = new EmailDispatchPlanningService(deliveryRepository, source(), MutableClock.INSTANCE, transactionTemplate, billingNotificationsPolicy);
+        EmailDispatchPlanRecorder planning = new EmailDispatchPlanRecorder(deliveryRepository, source(), MutableClock.INSTANCE, transactionTemplate, billingNotificationsPolicy);
         return new EmailDeliveryDispatchJob(deliveryRepository, planning, settings, channel, calendar, MutableClock.INSTANCE, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }
 

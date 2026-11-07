@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase.settings;
 
 import com.red_escuela.backend.platform.domain.InstituteSettings;
-import com.red_escuela.backend.platform.service.InstituteSettingsReader;
+import com.red_escuela.backend.platform.specialist.InstituteSettingsReader;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
