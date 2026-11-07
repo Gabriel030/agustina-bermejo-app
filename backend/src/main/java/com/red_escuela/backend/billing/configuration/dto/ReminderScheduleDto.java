@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-public record ReminderScheduleDto(@Schema(description = "Solo en respuestas: true si la excepción volvió a la política del grupo. En /changes y /validation no se acepta true: usar /removal.") Boolean followsGroupSchedule, @NotNull List<@NotNull @Valid ReminderNoticeDto> notices, @Valid ReminderSendingOverridesDto sendingOverrides) {
+public record ReminderScheduleDto(@Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Solo en respuestas: true si la excepción volvió a la política del grupo. En /changes y /validation no se acepta true: usar /removal.") Boolean followsGroupSchedule, @NotNull List<@NotNull @Valid ReminderNoticeDto> notices, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) @Valid ReminderSendingOverridesDto sendingOverrides) {
 
     public ReminderSchedule toSchedule() {
         List<ReminderNotice> domainNotices = notices.stream().map(ReminderNoticeDto::toNotice).toList();
