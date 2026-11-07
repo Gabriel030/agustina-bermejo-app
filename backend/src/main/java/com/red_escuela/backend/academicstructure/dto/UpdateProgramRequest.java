@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import jakarta.validation.constraints.Min;
@@ -15,18 +17,18 @@ import java.util.Optional;
 @Setter
 @NoArgsConstructor
 public class UpdateProgramRequest {
-    private String name;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private String name;
     @Min(1)
-    private Integer totalYears;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Integer totalYears;
     @NonNegativeMoney
-    private Money price;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Money price;
     @NonNegativeMoney
-    private Money enrollmentFeeAmount;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Money enrollmentFeeAmount;
     @Min(0)
-    private Integer totalCreditsRequired;
-    private Optional<Integer> totalHoursRequired;
-    private Optional<TeachingMode> teachingMode;
-    private Optional<ProgramLevel> level;
-    private Optional<String> graduationProfile;
-    private Optional<String> admissionRequirements;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Integer totalCreditsRequired;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Optional<Integer> totalHoursRequired;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Optional<TeachingMode> teachingMode;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Optional<ProgramLevel> level;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Optional<String> graduationProfile;
+    @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) private Optional<String> admissionRequirements;
 }

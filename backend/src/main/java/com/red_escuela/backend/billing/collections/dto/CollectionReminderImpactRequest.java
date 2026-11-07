@@ -14,13 +14,13 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
-public record CollectionReminderImpactRequest(@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Grupo de la agenda propuesta; va junto con schedule. Sin ninguno de los dos, el cambio es solo de ajustes globales")
+public record CollectionReminderImpactRequest(@Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Grupo de la agenda propuesta; va junto con schedule. Sin ninguno de los dos, el cambio es solo de ajustes globales")
                                               TeachingGroup group,
-                                              @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Programa o curso de la excepción; sin valor, el cambio es a la política del grupo")
+                                              @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Programa o curso de la excepción; sin valor, el cambio es a la política del grupo")
                                               Long targetId,
-                                              @Valid @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Agenda propuesta; va junto con group")
+                                              @Valid @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Agenda propuesta; va junto con group")
                                               ReminderScheduleDto schedule, @NotNull LocalDate effectiveFrom,
-                                              @Valid @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Ajustes globales propuestos; si no vienen, quedan los vigentes. Obligatorios cuando no hay agenda")
+                                              @Valid @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Ajustes globales propuestos; si no vienen, quedan los vigentes. Obligatorios cuando no hay agenda")
                                               CollectionReminderSettingsValues globalSettings) {
 
     @JsonIgnore

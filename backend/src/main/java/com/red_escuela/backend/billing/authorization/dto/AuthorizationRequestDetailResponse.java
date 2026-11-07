@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.authorization.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatusChange;
 import com.red_escuela.backend.billing.authorization.service.AuthorizationRequestInboxReader.InboxDetail;
@@ -12,7 +14,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-public record AuthorizationRequestDetailResponse(AuthorizationRequestListItemResponse request, String reason, AuthorizationRequestPersonResponse decidedBy, String decisionReason,
+public record AuthorizationRequestDetailResponse(AuthorizationRequestListItemResponse request, String reason, @Schema(nullable = true) AuthorizationRequestPersonResponse decidedBy, @Schema(nullable = true) String decisionReason,
                                                  List<DescriptionLine> requestLines, List<EffectLine> effectLines, DetailBlock detailBlock,
                                                  List<StatusChangeResponse> statusChanges) {
 
@@ -25,8 +27,8 @@ public record AuthorizationRequestDetailResponse(AuthorizationRequestListItemRes
                 description.effectLines(), description.detailBlock(), request.getStatusChanges().stream().map(change -> StatusChangeResponse.from(change, names)).toList());
     }
 
-    public record StatusChangeResponse(String fromStatus, String toStatus, String event, Long actorPersonId, String actorName, String actorProcess, Instant changedAt,
-                                       String reason) {
+    public record StatusChangeResponse(@Schema(nullable = true) String fromStatus, String toStatus, String event, @Schema(nullable = true) Long actorPersonId, @Schema(nullable = true) String actorName, @Schema(nullable = true) String actorProcess, Instant changedAt,
+                                       @Schema(nullable = true) String reason) {
 
         static StatusChangeResponse from(AuthorizationRequestStatusChange change, Map<Long, String> names) {
             return new StatusChangeResponse(change.getFromStatus() == null ? null : change.getFromStatus().name(), change.getToStatus().name(), change.getEvent().name(),

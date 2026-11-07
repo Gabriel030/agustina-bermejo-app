@@ -10,9 +10,9 @@ import java.util.List;
 
 public record AudienceSpecRequest(
         @NotNull AudienceSegmentKey key,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) List<Integer> instances,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) AudienceQuantifier quantifier,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer threshold) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) List<Integer> instances,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) AudienceQuantifier quantifier,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer threshold) {
 
     public AudienceSpec toSpec() {
         String joined = instances == null || instances.isEmpty()

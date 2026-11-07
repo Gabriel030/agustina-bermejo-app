@@ -1,5 +1,7 @@
 package com.red_escuela.backend.identity.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.DocumentType;
@@ -15,14 +17,14 @@ public record StaffRecordResponse(
         DocumentType documentType,
         String username,
         String email,
-        String telefono,
+        @Schema(nullable = true) String telefono,
         String role,
         String status,
-        AddressResponse domicilio,
+        @Schema(nullable = true) AddressResponse domicilio,
         Boolean emailVerified,
         AuthProvider authProvider,
-        LocalDateTime lockedUntil,
-        Integer failedLoginAttempts
+        @Schema(nullable = true) LocalDateTime lockedUntil,
+        @Schema(nullable = true) Integer failedLoginAttempts
 ) {
     public static StaffRecordResponse from(Person person, String role, boolean includeFailedLoginAttempts) {
         return new StaffRecordResponse(
