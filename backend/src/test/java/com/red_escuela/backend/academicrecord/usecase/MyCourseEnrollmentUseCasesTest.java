@@ -57,7 +57,7 @@ class MyCourseEnrollmentUseCasesTest {
 
     @Test
     void listsGradeItemsOnlyAfterCheckingCourseOwnership() {
-        List<StudentGradeItemResponse> items = List.of(new StudentGradeItemResponse(1L, 4L, "EXAM", 1, null, null, null));
+        List<StudentGradeItemResponse> items = List.of(new StudentGradeItemResponse(1L, 4L, "EXAM", 1, null, null, null, null));
         when(gradeItemFinder.listCourseEnrollmentGradeItems(4L)).thenReturn(items);
 
         assertThat(gradeItemsService.list(7L, 4L)).isEqualTo(items);

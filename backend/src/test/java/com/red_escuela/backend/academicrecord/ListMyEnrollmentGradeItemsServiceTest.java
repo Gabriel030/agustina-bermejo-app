@@ -34,7 +34,7 @@ class ListMyEnrollmentGradeItemsServiceTest {
 
     @Test
     void checksOwnershipBeforeListingTheGradeItems() {
-        List<StudentGradeItemResponse> items = List.of(new StudentGradeItemResponse(1L, 4L, "EXAM", 1, null, null, null));
+        List<StudentGradeItemResponse> items = List.of(new StudentGradeItemResponse(1L, 4L, "EXAM", 1, null, null, null, null));
         when(gradeItemFinder.listProgramEnrollmentGradeItems(4L)).thenReturn(items);
 
         assertThat(service.list(7L, 4L)).isEqualTo(items);

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase.modules;
 
 import com.red_escuela.backend.platform.domain.EffectiveModules;
-import com.red_escuela.backend.platform.service.EffectiveModulesReader;
+import com.red_escuela.backend.platform.specialist.EffectiveModulesReader;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

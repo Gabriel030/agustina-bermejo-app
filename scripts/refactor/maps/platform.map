@@ -1,0 +1,2 @@
+package platform.service -> platform.specialist
+class ProvisioningRequestFingerprint -> ProvisioningRequestFingerprintCalculator

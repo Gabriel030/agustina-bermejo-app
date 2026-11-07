@@ -359,6 +359,8 @@ POST,/section-evaluation-configs/{sectionId}/approve,DENY,DENY,DENY,DENY,DENY,AL
 POST,/section-evaluation-configs/{sectionId}/reject,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/staff,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 POST,/staff,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
+GET,/staff/course-sections/{id}/grade-grid,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
+GET,/staff/program-sections/{id}/grade-grid,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/staff/{id}/assignments,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,DENY,staff-record,
 GET,/staff/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,
 PUT,/staff/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,,

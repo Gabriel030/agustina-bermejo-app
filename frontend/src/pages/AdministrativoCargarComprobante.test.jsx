@@ -8,6 +8,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { invoiceFixture } from '@/test/fixtures/invoices';
 import { AdministrativoCargarComprobante } from '@/pages/AdministrativoCargarComprobante';
+import { studentFixture } from '@/test/fixtures/students';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { id: 9, nombre: 'Marcos', apellido: 'Ledesma', roles: ['ADMINISTRATIVO'] } }),
@@ -27,7 +28,7 @@ function LocationProbe() {
 
 function renderPage(invoices = [NOVEMBER, SEPTEMBER, OCTOBER, AUGUST]) {
   server.use(
-    http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Valentina', apellido: 'Suárez', dni: '41256903' })),
+    http.get(`${API}/students/2`, () => HttpResponse.json(studentFixture({ id: 2, nombre: 'Valentina', apellido: 'Suárez', dni: '41256903' }))),
     http.get(`${API}/students/2/billing-overview`, () =>
       HttpResponse.json([{ enrollmentType: 'PROGRAM', enrollmentId: 2, productName: 'Tecnicatura en Enfermería', paymentStatus: 'OVERDUE', invoices }]),
     ),

@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import java.time.LocalDateTime;
 
 public record EnrollmentFeeExemptionResponse(Long id, Long templateId, Integer slot, String reason, String grantedByName, LocalDateTime grantedAt,
-                                             String revokedByName, @Schema(nullable = true) LocalDateTime revokedAt, String revocationNotes, boolean active) {
+                                             @Schema(nullable = true) String revokedByName, @Schema(nullable = true) LocalDateTime revokedAt, @Schema(nullable = true) String revocationNotes, boolean active) {
 
     public static EnrollmentFeeExemptionResponse from(EnrollmentFeeExemption exemption) {
         return new EnrollmentFeeExemptionResponse(exemption.getId(), exemption.getTemplate().getId(), exemption.getSlot(), exemption.getReason(),

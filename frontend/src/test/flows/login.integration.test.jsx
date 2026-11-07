@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
+import { profileFixture } from '@/test/fixtures/profile';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -75,7 +76,9 @@ describe('flujo de login end-to-end', () => {
 
     server.use(
       http.get('http://localhost:8080/me', () =>
-        HttpResponse.json({ id: 2, nombre: 'Otra', apellido: 'Persona', email: 'otra@example.com', roles: ['DIRECTOR'] }),
+        HttpResponse.json(
+          profileFixture({ id: 2, nombre: 'Otra', apellido: 'Persona', email: 'otra@example.com', roles: ['DIRECTOR'] }),
+        ),
       ),
     );
     await user.click(screen.getAllByRole('button', { name: 'Cerrar sesión' })[0]);

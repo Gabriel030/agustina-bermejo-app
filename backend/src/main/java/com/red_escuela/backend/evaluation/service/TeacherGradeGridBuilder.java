@@ -2,6 +2,7 @@ package com.red_escuela.backend.evaluation.service;
 
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
+import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -17,8 +18,11 @@ import com.red_escuela.backend.evaluation.dto.GradeGridStudentResponse;
 import com.red_escuela.backend.evaluation.dto.TeacherGradeGridResponse;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
+import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.evaluation.repository.GradeItemAuditRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -35,9 +39,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class TeacherGradeGridBuilder {
@@ -49,6 +55,8 @@ public class TeacherGradeGridBuilder {
     private final GradeItemRepository gradeItemRepository;
     private final SectionEvaluationConfigRepository configRepository;
     private final SectionGradeItemPublicationRepository publicationRepository;
+    private final GradeItemAuditRepository auditRepository;
+    private final SectionTermEndFinder sectionTermEndFinder;
 
     public TeacherGradeGridBuilder(SectionFinder sectionFinder,
                                    SectionTeachingFinder sectionTeachingFinder,
@@ -56,7 +64,9 @@ public class TeacherGradeGridBuilder {
                                    SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder,
                                    GradeItemRepository gradeItemRepository,
                                    SectionEvaluationConfigRepository configRepository,
-                                   SectionGradeItemPublicationRepository publicationRepository) {
+                                   SectionGradeItemPublicationRepository publicationRepository,
+                                   GradeItemAuditRepository auditRepository,
+                                   SectionTermEndFinder sectionTermEndFinder) {
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -64,12 +74,37 @@ public class TeacherGradeGridBuilder {
         this.gradeItemRepository = gradeItemRepository;
         this.configRepository = configRepository;
         this.publicationRepository = publicationRepository;
+        this.auditRepository = auditRepository;
+        this.sectionTermEndFinder = sectionTermEndFinder;
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSection(Long sectionId, Long instructorId) {
         sectionFinder.requireExists(SectionKind.PROGRAM, sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.PROGRAM, sectionId, instructorId);
+        return programGrid(sectionId);
+    }
+
+    @Transactional(readOnly = true)
+    public TeacherGradeGridResponse buildForProgramSectionAsStaff(Long sectionId) {
+        sectionFinder.requireExists(SectionKind.PROGRAM, sectionId);
+        return programGrid(sectionId);
+    }
+
+    @Transactional(readOnly = true)
+    public TeacherGradeGridResponse buildForCourseSection(Long sectionId, Long instructorId) {
+        sectionFinder.requireExists(SectionKind.COURSE, sectionId);
+        sectionTeachingFinder.requireTeaches(SectionKind.COURSE, sectionId, instructorId);
+        return courseGrid(sectionId);
+    }
+
+    @Transactional(readOnly = true)
+    public TeacherGradeGridResponse buildForCourseSectionAsStaff(Long sectionId) {
+        sectionFinder.requireExists(SectionKind.COURSE, sectionId);
+        return courseGrid(sectionId);
+    }
+
+    private TeacherGradeGridResponse programGrid(Long sectionId) {
         SubjectSection section = sectionFinder.findProgramSectionEntity(sectionId);
         List<SubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersWithStudentInProgramSection(sectionId);
         List<Long> enrollmentIds = enrollments.stream().map(SubjectSectionEnrollment::getId).toList();
@@ -80,18 +115,16 @@ public class TeacherGradeGridBuilder {
                 .findProgramEnrollmentIdsFreeByAbsences(sectionId, section.getMaxAbsenceRate());
         Optional<SectionEvaluationConfig> config = configRepository.findBySubjectSectionId(sectionId);
         Map<String, LocalDateTime> publications = publicationsOf(SectionKind.PROGRAM, sectionId);
+        Set<Long> correctedItemIds = correctedItemIdsOf(SectionKind.PROGRAM, sectionId);
         List<GradeGridStudentResponse> students = enrollments.stream()
                 .map(enrollment -> studentRow(enrollment.getId(), enrollment.getStudent().getPerson(), enrollment.getStatus(),
-                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications))
+                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
+        return response(SectionKind.PROGRAM, sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
     }
 
-    @Transactional(readOnly = true)
-    public TeacherGradeGridResponse buildForCourseSection(Long sectionId, Long instructorId) {
-        sectionFinder.requireExists(SectionKind.COURSE, sectionId);
-        sectionTeachingFinder.requireTeaches(SectionKind.COURSE, sectionId, instructorId);
+    private TeacherGradeGridResponse courseGrid(Long sectionId) {
         CourseSubjectSection section = sectionFinder.findCourseSectionEntity(sectionId);
         List<CourseSubjectSectionEnrollment> enrollments = sectionEnrollmentFinder.findMembersWithStudentInCourseSection(sectionId);
         List<Long> enrollmentIds = enrollments.stream().map(CourseSubjectSectionEnrollment::getId).toList();
@@ -101,12 +134,13 @@ public class TeacherGradeGridBuilder {
         Set<Long> freeEnrollmentIds = sectionFreeByAbsencesFinder
                 .findCourseEnrollmentIdsFreeByAbsences(sectionId, section.getMaxAbsenceRate());
         Map<String, LocalDateTime> publications = publicationsOf(SectionKind.COURSE, sectionId);
+        Set<Long> correctedItemIds = correctedItemIdsOf(SectionKind.COURSE, sectionId);
         List<GradeGridStudentResponse> students = enrollments.stream()
                 .map(enrollment -> studentRow(enrollment.getId(), enrollment.getStudent().getPerson(), enrollment.getStatus(),
-                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications))
+                        enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(sectionId, section.getEvaluationScheme(), null, students, publications);
+        return response(SectionKind.COURSE, sectionId, section.getEvaluationScheme(), null, students, publications);
     }
 
     private Map<String, LocalDateTime> publicationsOf(SectionKind kind, Long sectionId) {
@@ -115,6 +149,13 @@ public class TeacherGradeGridBuilder {
                 publications.put(slotKey(publication.getGradeItemType(), publication.getSequenceNumber()),
                         publication.getPublishedAt()));
         return publications;
+    }
+
+    private Set<Long> correctedItemIdsOf(SectionKind kind, Long sectionId) {
+        return auditRepository.findBySectionKindAndSectionIdAndKind(kind, sectionId, GradeItemAuditKind.CORRECTION).stream()
+                .map(GradeItemAudit::getGradeItemId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     private String slotKey(GradeItemType type, int sequenceNumber) {
@@ -129,7 +170,7 @@ public class TeacherGradeGridBuilder {
 
     private GradeGridStudentResponse studentRow(Long enrollmentId, Person person, EnrollmentStatus status, Grade finalScore,
                                                 Map<Long, List<GradeItem>> itemsByEnrollment, Set<Long> freeEnrollmentIds,
-                                                Map<String, LocalDateTime> publications) {
+                                                Map<String, LocalDateTime> publications, Set<Long> correctedItemIds) {
         List<GradeItem> items = itemsByEnrollment.getOrDefault(enrollmentId, List.of());
         boolean hasLoadedFinal = items.stream().anyMatch(item -> item.getType() == GradeItemType.FINAL);
         List<GradeGridCellResponse> cells = items.stream()
@@ -138,7 +179,8 @@ public class TeacherGradeGridBuilder {
                 .map(item -> new GradeGridCellResponse(item.getId(), item.getType(), item.getSequenceNumber(),
                         item.getScore(), item.getDate(), item.getComments(),
                         item.getType() == GradeItemType.FINAL
-                                || publications.containsKey(slotKey(item.getType(), item.getSequenceNumber()))))
+                                || publications.containsKey(slotKey(item.getType(), item.getSequenceNumber())),
+                        correctedItemIds.contains(item.getId())))
                 .toList();
         return new GradeGridStudentResponse(
                 enrollmentId, person.getLastname(), person.getName(), person.getDni(),
@@ -153,18 +195,19 @@ public class TeacherGradeGridBuilder {
                 .thenComparing(student -> student.name().toLowerCase());
     }
 
-    private TeacherGradeGridResponse response(Long sectionId, EvaluationScheme scheme, SectionEvaluationConfig config,
-                                              List<GradeGridStudentResponse> students,
+    private TeacherGradeGridResponse response(SectionKind kind, Long sectionId, EvaluationScheme scheme,
+                                              SectionEvaluationConfig config, List<GradeGridStudentResponse> students,
                                               Map<String, LocalDateTime> publications) {
+        LocalDate correctionDeadline = sectionTermEndFinder.termEndDate(kind, sectionId);
         if (scheme == null) {
-            return new TeacherGradeGridResponse(sectionId, null, null, null, null, List.of(), students);
+            return new TeacherGradeGridResponse(sectionId, null, null, null, null, List.of(), students, correctionDeadline);
         }
         return new TeacherGradeGridResponse(
                 sectionId, scheme.getName(),
                 scheme.getMinRegularGrade(),
                 scheme.getMinApprovalGrade(),
                 scheme.getPromotionMinGrade(),
-                columns(scheme, config, publications), students);
+                columns(scheme, config, publications), students, correctionDeadline);
     }
 
     private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, SectionEvaluationConfig config,

@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DirectorAniosLectivos } from './DirectorAniosLectivos';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
@@ -15,7 +16,7 @@ describe('DirectorAniosLectivos', () => {
       http.get(`${API}/programs/12/year-billing-templates`, () => HttpResponse.json([{
         id: 3, programId: 12, termId: 7, recurringFeeInvoicesCount: 10, enrollmentFeeCount: 1, firstEnrollmentFeeMonth: 2,
       }])),
-      http.get(`${API}/terms`, () => HttpResponse.json([{ id: 7, year: 2027 }])),
+      http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 7, year: 2027 })])),
       http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json([])),
     );
     const user = userEvent.setup();
