@@ -45,7 +45,12 @@ public class DemoSeedRunner implements ApplicationRunner {
         if (!enabledOnStartup) {
             return;
         }
-        seedThroughPort(environment.getRequiredProperty("local.server.port", Integer.class));
+        Integer port = environment.getProperty("local.server.port", Integer.class);
+        if (port == null) {
+            log.info("Seed demo: la aplicación no levantó un servidor web, no se siembra");
+            return;
+        }
+        seedThroughPort(port);
     }
 
     public void seedThroughPort(int port) {

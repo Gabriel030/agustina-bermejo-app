@@ -83,15 +83,22 @@ public class DemoPeopleSeedStep implements DemoSeedStep {
     }
 
     public static Long findStudentId(DemoSeedSession session, String username) {
-        if (session.studentIdsByUsername().isEmpty()) {
+        Long known = session.studentIdsByUsername().get(username);
+        if (known == null) {
             scanStudentIds(session);
         }
         return session.studentIdsByUsername().get(username);
     }
 
     private static void scanStudentIds(DemoSeedSession session) {
+        long highestListedId = 0;
+        for (JsonNode listed : session.api().get(DemoPersona.ADMIN, "/students")) {
+            long listedId = listed.get("id").asLong();
+            session.studentIdsByUsername().put(listed.path("username").asString(""), listedId);
+            highestListedId = Math.max(highestListedId, listedId);
+        }
         int consecutiveMisses = 0;
-        for (long id = 1; consecutiveMisses < MAX_CONSECUTIVE_MISSING_STUDENT_IDS; id++) {
+        for (long id = highestListedId + 1; consecutiveMisses < MAX_CONSECUTIVE_MISSING_STUDENT_IDS; id++) {
             JsonNode student = session.api().getOrNull(DemoPersona.ADMIN, "/students/" + id);
             if (student == null) {
                 consecutiveMisses++;

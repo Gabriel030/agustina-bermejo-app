@@ -78,6 +78,7 @@ class DemoSeedIT extends AbstractIntegrationTest {
 
     @BeforeAll
     void seedBaseOnce() {
+        jdbcTemplate.queryForObject("select setval(pg_get_serial_sequence('student', 'id'), 5000)", Long.class);
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 18));
         LocalSeedRunner localSeedRunner = new LocalSeedRunner(personRepository, roleRepository, personFactory, passwordEncoder);
         new DemoLearnerAccountsSeeder(localSeedRunner, personRepository, roleRepository, personFactory, passwordEncoder,
