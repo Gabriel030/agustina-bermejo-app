@@ -43,6 +43,11 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.MONTHLY_INVOICE_ITEM_RETRIES_EXHAUSTED).toBe('warning');
   });
 
+  it('etiqueta y da tono al aviso de borradores de factura por revisar', () => {
+    expect(TIPO_NOTIFICACION_LABEL.DRAFT_INVOICES_AWAITING_REVIEW).toBe('Facturas por revisar');
+    expect(TONO_NOTIFICACION.DRAFT_INVOICES_AWAITING_REVIEW).toBe('warning');
+  });
+
   it('etiqueta y da tono al aviso de feriados faltantes', () => {
     expect(TIPO_NOTIFICACION_LABEL.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('Faltan los feriados del año que viene');
     expect(TONO_NOTIFICACION.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('warning');
