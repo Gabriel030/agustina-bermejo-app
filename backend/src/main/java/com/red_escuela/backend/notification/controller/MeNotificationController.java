@@ -2,7 +2,7 @@ package com.red_escuela.backend.notification.controller;
 
 import com.red_escuela.backend.notification.dto.NotificationResponse;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.notification.service.NotificationService;
+import com.red_escuela.backend.notification.specialist.NotificationInboxManager;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,10 +13,10 @@ import java.util.List;
 @RestController
 public class MeNotificationController {
 
-    private final NotificationService notificationService;
+    private final NotificationInboxManager notificationService;
     private final CurrentPersonService currentPersonService;
 
-    public MeNotificationController(NotificationService notificationService, CurrentPersonService currentPersonService) {
+    public MeNotificationController(NotificationInboxManager notificationService, CurrentPersonService currentPersonService) {
         this.notificationService = notificationService;
         this.currentPersonService = currentPersonService;
     }

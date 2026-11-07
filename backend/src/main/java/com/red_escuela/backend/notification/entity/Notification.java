@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "notification")
 public class Notification {
     public static final int MESSAGE_COLUMN_LENGTH = 1000;
+    private static final String ELLIPSIS = "…";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,4 +44,15 @@ public class Notification {
 
     @Column(name = "dedup_key", length = 120)
     private String dedupKey;
+
+    public static String abbreviateToColumnLength(String message) {
+        if (message == null || message.length() <= Notification.MESSAGE_COLUMN_LENGTH) {
+            return message;
+        }
+        int end = Notification.MESSAGE_COLUMN_LENGTH - ELLIPSIS.length();
+        if (Character.isHighSurrogate(message.charAt(end - 1))) {
+            end--;
+        }
+        return message.substring(0, end) + ELLIPSIS;
+    }
 }
