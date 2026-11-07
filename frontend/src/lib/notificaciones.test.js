@@ -2,6 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION, etiquetaNotificacion, tiempoRelativo } from './notificaciones';
 
 describe('notificaciones', () => {
+  it('etiqueta y da tono a la autorizacion pendiente y al resto de los tipos de configuracion', () => {
+    expect(etiquetaNotificacion('AUTHORIZATION_REQUESTED')).toBe('Autorización pendiente');
+    expect(TONO_NOTIFICACION.AUTHORIZATION_REQUESTED).toBe('warning');
+    expect(etiquetaNotificacion('PRICE_CHANGE_APPROVED')).toBe('Precio aprobado');
+    expect(TONO_NOTIFICACION.PRICE_CHANGE_REJECTED).toBe('danger');
+    expect(etiquetaNotificacion('DISCOUNT_QUOTA_EXHAUSTED')).toBe('Cupo de promoción agotado');
+  });
+
   it('etiqueta y da tono a la nota de credito emitida', () => {
     expect(TIPO_NOTIFICACION_LABEL.CREDIT_NOTE_ISSUED).toBe('Nota de crédito emitida');
     expect(TONO_NOTIFICACION.CREDIT_NOTE_ISSUED).toBe('accent2');
