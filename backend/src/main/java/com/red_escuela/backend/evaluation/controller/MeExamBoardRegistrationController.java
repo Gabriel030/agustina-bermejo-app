@@ -64,6 +64,9 @@ public class MeExamBoardRegistrationController {
     @PostMapping("/exam-board-registrations")
     @ResponseStatus(HttpStatus.CREATED)
     public ExamBoardRegistrationResponse register(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
+        if (request.programSectionEnrollmentId() == null) {
+            throw new IllegalArgumentException("La inscripción tiene que referenciar la cursada: programSectionEnrollmentId");
+        }
         Student student = currentStudentService.resolveCurrentStudent();
         return ExamBoardRegistrationResponse.from(
                 examBoardRegistrationService.registerProgramEnrollmentOfStudent(
