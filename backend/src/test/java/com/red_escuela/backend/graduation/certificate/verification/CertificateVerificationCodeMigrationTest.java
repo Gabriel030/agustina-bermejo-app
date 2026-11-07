@@ -1,6 +1,7 @@
 package com.red_escuela.backend.graduation.certificate.verification;
 
 import com.red_escuela.backend.testsupport.MigrationTestDatabase;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SlowTest(reason = "Each of its five tests clones a database at version 193 and runs the pending Flyway migrations up to the latest one, about six seconds apiece")
 @Tag("migration")
 class CertificateVerificationCodeMigrationTest {
 
