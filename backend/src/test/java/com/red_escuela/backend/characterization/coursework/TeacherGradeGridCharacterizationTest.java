@@ -242,6 +242,24 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
     }
 
     @Test
+    void directorReadsACourseGridWithoutTeachingItAndSeesTheTermEndAsCorrectionDeadline() throws Exception {
+        CourseClassroom classroom = courseClassroom("gridc3", "8200003", persistScheme(1, false, null));
+        Person director = persistPerson("gridc3.director", "82000039", "DIRECTOR");
+        classroom.section().getTerm().setEndDate(LocalDateTime.of(2026, 12, 31, 23, 59));
+        entityManager.flush();
+        String path = "/course-sections/" + classroom.section().getId() + "/grade-grid";
+
+        getAs(director, "/staff" + path)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionDeadline").value("2026-12-31"))
+                .andExpect(jsonPath("$.students[0].enrollmentId").value(classroom.enrollment().getId()));
+        getAs(director, path).andExpect(status().isForbidden());
+        getAs(classroom.teacher(), "/staff" + path).andExpect(status().isForbidden());
+        getAs(classroom.teacher(), path).andExpect(status().isOk())
+                .andExpect(jsonPath("$.correctionDeadline").value("2026-12-31"));
+    }
+
+    @Test
     void teacherOfAnotherCourseSectionIsForbidden() throws Exception {
         CourseClassroom classroom = courseClassroom("gridc2", "8200002", persistScheme(1, false, null));
         Person stranger = persistPerson("gridc2.stranger", "82000029", "DOCENTE");

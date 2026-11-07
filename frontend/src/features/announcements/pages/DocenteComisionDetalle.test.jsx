@@ -131,6 +131,7 @@ describe('DocenteComisionDetalle', () => {
       http.get(`${API}/program-sections/${SECTION_ID}/grade-grid`, () =>
         HttpResponse.json({
           sectionId: SECTION_ID,
+          correctionDeadline: '2026-12-18',
           columns: [{ type: 'EXAM', sequenceNumber: 1, date: null }],
           students: [{ enrollmentId: 3, lastname: 'Rossi', name: 'Camila', dni: '42114673', condition: 'IN_PROGRESS', finalEnabled: false, grades: [] }],
         }),

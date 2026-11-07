@@ -5239,6 +5239,9 @@
           "comments" : {
             "type" : [ "string", "null" ]
           },
+          "corrected" : {
+            "type" : "boolean"
+          },
           "date" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
@@ -5358,6 +5361,22 @@
           }
         },
         "required" : [ "changedAt", "changedById", "gradeItemId", "id", "kind", "reason" ],
+        "type" : "object"
+      },
+      "GradeItemCorrectionResponse" : {
+        "properties" : {
+          "correctedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "previousScore" : {
+            "type" : "number"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "correctedAt", "reason" ],
         "type" : "object"
       },
       "GradeItemResponse" : {
@@ -11103,6 +11122,45 @@
         "required" : [ "id", "type", "uploadedAt" ],
         "type" : "object"
       },
+      "StudentGradeItemResponse" : {
+        "properties" : {
+          "correction" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GradeItemCorrectionResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "examBoardId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "score" : {
+            "type" : "number"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "date", "enrollmentId", "examBoardId", "id", "score", "sequenceNumber", "type" ],
+        "type" : "object"
+      },
       "StudentHistoryRow" : {
         "properties" : {
           "attendancePercent" : {
@@ -11427,6 +11485,10 @@
             },
             "type" : "array"
           },
+          "correctionDeadline" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "evaluationSchemeName" : {
             "type" : [ "string", "null" ]
           },
@@ -11450,7 +11512,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "columns", "sectionId", "students" ],
+        "required" : [ "columns", "correctionDeadline", "sectionId", "students" ],
         "type" : "object"
       },
       "TeachingSectionResponse" : {
@@ -37994,7 +38056,7 @@
               "application/json" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/GradeItemResponse"
+                    "$ref" : "#/components/schemas/StudentGradeItemResponse"
                   },
                   "type" : "array"
                 }
@@ -43381,7 +43443,7 @@
               "application/json" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/GradeItemResponse"
+                    "$ref" : "#/components/schemas/StudentGradeItemResponse"
                   },
                   "type" : "array"
                 }
@@ -60982,6 +61044,240 @@
           }
         },
         "tags" : [ "staff-controller" ]
+      }
+    },
+    "/staff/course-sections/{id}/grade-grid" : {
+      "get" : {
+        "operationId" : "StaffGradeGrid_getCourseSectionGradeGrid",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TeacherGradeGridResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "staff-grade-grid-controller" ]
+      }
+    },
+    "/staff/program-sections/{id}/grade-grid" : {
+      "get" : {
+        "operationId" : "StaffGradeGrid_getProgramSectionGradeGrid",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TeacherGradeGridResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "staff-grade-grid-controller" ]
       }
     },
     "/staff/{id}" : {
