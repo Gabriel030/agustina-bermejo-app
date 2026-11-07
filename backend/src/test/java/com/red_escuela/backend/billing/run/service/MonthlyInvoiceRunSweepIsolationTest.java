@@ -67,7 +67,7 @@ class MonthlyInvoiceRunSweepIsolationTest {
         when(nightlyRepository.findByBusinessDate(FIRST)).thenReturn(Optional.empty());
         executor = new MonthlyInvoiceRunExecutor(runRepository, nightlyRepository, candidateFinder, itemProcessor, mock(BillingConfigurationAlertService.class),
                 PolicySet.<NightlyBillingCompletedTodayContext>of(List.of()), new SimpleMeterRegistry(), clock,
-                new MonthlyInvoiceIssuanceStrategies(), new EffectiveMonthlyInvoiceIssuanceModeResolver());
+                new MonthlyInvoiceIssuanceStrategies(), new EffectiveMonthlyInvoiceIssuanceModeResolver(mock(com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader.class)));
         when(candidateFinder.findProgramEnrollmentIdsAfter(any(), anyLong(), anyBoolean())).thenReturn(List.of());
         when(candidateFinder.findCourseEnrollmentIdsAfter(any(), anyLong())).thenReturn(List.of());
     }

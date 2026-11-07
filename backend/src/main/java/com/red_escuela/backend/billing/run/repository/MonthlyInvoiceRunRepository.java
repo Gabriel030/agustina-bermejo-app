@@ -27,6 +27,8 @@ public interface MonthlyInvoiceRunRepository extends JpaRepository<MonthlyInvoic
 
     boolean existsByPeriodAndModeAndStatusNot(LocalDate period, com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode mode, MonthlyInvoiceRunStatus status);
 
+    List<MonthlyInvoiceRun> findByModeAndStatusOrderByIdAsc(com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunMode mode, MonthlyInvoiceRunStatus status);
+
     Page<MonthlyInvoiceRun> findByPeriod(LocalDate period, Pageable page);
 
     List<MonthlyInvoiceRun> findByPeriodOrderByIdAsc(LocalDate period);
