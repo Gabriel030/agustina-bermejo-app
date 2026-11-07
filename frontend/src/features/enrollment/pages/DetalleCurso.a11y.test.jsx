@@ -32,7 +32,7 @@ afterEach(() => localStorage.clear());
 
 describe('DetalleCurso accessibility and block errors', () => {
   it('loadedCourseHasNoAxeViolationsAndASingleHeading', async () => {
-    server.use(http.get(`${API}/courses/1/subjects`, () => HttpResponse.json([{ id: 1, name: 'Módulo 1', weeklyWorkload: 1 }])));
+    server.use(http.get(`${API}/courses/1/subjects`, () => HttpResponse.json([{ id: 1, courseId: 1, name: 'Módulo 1', sortOrder: 1, status: 'ACTIVE', weeklyWorkload: 1 }])));
     const { container } = renderDetail();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Curso de prueba' })).toBeInTheDocument();

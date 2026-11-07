@@ -30,7 +30,7 @@ describe('AniosLectivosSection', () => {
   });
 
   it('warns that nothing is emitted when the program has an open configuration alert', async () => {
-    mockApi([{ id: 1, programId: 12, period: '2027-02', affectedEnrollments: 4 }]);
+    mockApi([{ id: 1, programId: 12, period: '2027-02', affectedEnrollments: 4, programName: 'Carrera', reason: 'MISSING_CONFIGURATION', detectedAt: '2027-01-01T00:00:00', lastDetectedAt: '2027-01-02T00:00:00' }]);
     renderWithProviders(<AniosLectivosSection programId={12} />);
 
     expect(await screen.findByText(/no tiene un año lectivo configurado para 2027-02/)).toBeInTheDocument();

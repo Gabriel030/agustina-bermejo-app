@@ -94,7 +94,7 @@ describe('FinancieroTab', () => {
   it('switches between the career and the course and keeps the enrollment fee only for the career', async () => {
     mockStudent({
       obligations: [{ templateId: 5, slot: 1, status: 'PENDING', satisfied: false, dueDate: '2027-03-10' }],
-      courses: [{ id: 11, courseId: 3, courseName: 'Primeros Auxilios', status: 'ENROLLED' }],
+      courses: [{ id: 11, courseId: 3, courseName: 'Primeros Auxilios', status: 'ENROLLED', studentId: 9, enrollmentDate: '2026-03-01T00:00:00' }],
       discounts: [],
     });
     server.use(

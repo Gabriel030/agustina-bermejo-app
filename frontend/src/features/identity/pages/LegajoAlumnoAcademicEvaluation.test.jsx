@@ -14,7 +14,7 @@ vi.mock('@/context/AuthContext', () => ({
 const API = 'http://localhost:8080';
 
 const PROGRAM_ENROLLMENT = { id: 4, programId: 2, programName: 'Tecnicatura en Gestión Cultural', status: 'ENROLLED', studentId: 9 };
-const COURSE_ENROLLMENT = { id: 7, courseId: 3, courseName: 'Fotografía digital', status: 'ENROLLED', studentId: 9 };
+const COURSE_ENROLLMENT = { id: 7, courseId: 3, courseName: 'Fotografía digital', status: 'ENROLLED', studentId: 9, enrollmentDate: '2026-03-01T00:00:00' };
 
 function section(overrides) {
   return {
