@@ -31,6 +31,7 @@ import com.red_escuela.backend.billing.invoice.service.InvoiceAwaitingPaymentReg
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.enrollment.api.BillingEnrollmentFacts;
+import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.event.DomainEvent;
@@ -44,10 +45,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 @Component
 public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAnnualUpfrontCommand, RegisteredAnnualUpfrontRequest> {
+    private static final String OUTDATED_CODE = "ANNUAL_UPFRONT_TERMS_OUTDATED";
     private static final int MAX_WINNER_STABILIZATION_ROUNDS = 5;
 
     private final PolicySet<AnnualUpfrontIdempotencyKey> idempotencyKeyPolicies;
@@ -104,13 +107,10 @@ public class RequestAnnualUpfrontOperation implements BillingOperation<RequestAn
         idempotencyKeyPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontIdempotencyKey(command.idempotencyKey())).throwIfDenied(AnnualUpfrontIdempotencyKeyInvalidException::new);
         AnnualUpfrontTermsAcceptance acceptance = new AnnualUpfrontTermsAcceptance(command.termsAccepted(), command.termsVersion(),
                 termsReader.findPublishedTermsByLabel(command.termsVersion()).isPresent(), termsReader.requireCurrentTerms().version());
-        termsPolicies.evaluateRulesUntilFirstViolation(acceptance).throwIfDenied(RequestAnnualUpfrontOperation::termsRejectionOf);
-    }
-
-    private static RuntimeException termsRejectionOf(List<PolicyViolation> violations) {
-        return violations.get(0).code().equals("ANNUAL_UPFRONT_TERMS_OUTDATED")
-                ? new AnnualUpfrontTermsOutdatedException(violations)
-                : new AnnualUpfrontTermsNotAcceptedException(violations);
+        PolicyEvaluationResult termsResult = termsPolicies.evaluateRulesUntilFirstViolation(acceptance);
+        boolean outdated = termsResult.firstDenial().map(denial -> OUTDATED_CODE.equals(denial.code())).orElse(false);
+        Function<List<PolicyViolation>, RuntimeException> rejection = outdated ? AnnualUpfrontTermsOutdatedException::new : AnnualUpfrontTermsNotAcceptedException::new;
+        termsResult.throwIfDenied(rejection);
     }
 
     @Override
