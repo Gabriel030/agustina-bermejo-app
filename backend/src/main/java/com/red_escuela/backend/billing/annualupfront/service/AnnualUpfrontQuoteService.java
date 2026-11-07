@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.discount.service.ScholarshipCoverageReade
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.service.EnrollmentInvoiceQueryService;
@@ -122,7 +123,7 @@ public class AnnualUpfrontQuoteService {
         AnnualUpfrontRequestCheck check = new AnnualUpfrontRequestCheck(facts.active(), today, settings.map(AnnualUpfrontSettings::requestDeadline).orElse(null),
                 cycle.isPresent() && scholarshipCoverage.activeScholarshipCoversAnyMonthOf(programEnrollmentId, cycle.get().termStart(), cycle.get().end()),
                 hasOverdueDebt(facts.studentId(), today), findOpenRequestInvoiceId(invoices, cycle).orElse(null), monthlyInstallmentIssued(invoices, cycle),
-                periods.size(), price.isPresent());
+                periods.size(), price.isPresent(), monthlyInstallmentPaidOrStarted(invoices, cycle));
         Integer lectiveYear = cycle.map(found -> found.termStart().getYear()).orElse(null);
         PolicyEvaluationResult result = eligibilityPolicies.evaluateRulesUntilFirstViolation(check);
         if (!result.allowed()) {
@@ -165,6 +166,12 @@ public class AnnualUpfrontQuoteService {
     private static boolean monthlyInstallmentIssued(List<Invoice> invoices, Optional<YearCycle> cycle) {
         return invoices.stream()
                 .anyMatch(invoice -> invoice.getInvoiceType() == InvoiceType.MONTHLY_INSTALLMENT && isLive(invoice) && cycle.map(found -> isInCycle(invoice, found)).orElse(false));
+    }
+
+    private static boolean monthlyInstallmentPaidOrStarted(List<Invoice> invoices, Optional<YearCycle> cycle) {
+        return invoices.stream()
+                .anyMatch(invoice -> invoice.getInvoiceType() == InvoiceType.MONTHLY_INSTALLMENT && isLive(invoice) && cycle.map(found -> isInCycle(invoice, found)).orElse(false)
+                        && (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID || invoice.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW));
     }
 
     private static boolean isLive(Invoice invoice) {
