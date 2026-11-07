@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.entity;
 
 public enum GradeItemType {
-    EXAM("Examen"),
+    EXAM("Parcial"),
     TP("TP"),
     FINAL("Final");
 

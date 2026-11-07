@@ -971,7 +971,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         var events = applicationEvents.stream(GradesPublishedEvent.class).toList();
         assertThat(events).hasSize(1);
         assertThat(events.get(0).sectionId()).isEqualTo(section.getId());
-        assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Examen");
+        assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Parcial");
         assertThat(events.get(0).studentPersonIds())
                 .containsExactlyInAnyOrder(first.getStudent().getPerson().getId(), second.getStudent().getPerson().getId());
     }
@@ -1005,7 +1005,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         var events = applicationEvents.stream(GradeCorrectedEvent.class).toList();
         assertThat(events).hasSize(1);
         assertThat(events.get(0).studentPersonId()).isEqualTo(item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
-        assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Examen");
+        assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Parcial");
     }
 
     @Test

@@ -1236,7 +1236,7 @@
           },
           "publishedByPersonId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "text" : {
             "type" : "string"
@@ -1249,7 +1249,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "current", "publishedAt", "publishedByPersonId", "text", "version", "versionNumber" ],
+        "required" : [ "current", "publishedAt", "text", "version", "versionNumber" ],
         "type" : "object"
       },
       "AuthResponse" : {
