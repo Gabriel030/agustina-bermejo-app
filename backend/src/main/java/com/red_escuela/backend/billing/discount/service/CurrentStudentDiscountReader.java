@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.discount.service;
 
 import com.red_escuela.backend.billing.discount.domain.LabeledStudentDiscount;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

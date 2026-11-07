@@ -11,7 +11,7 @@ import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.dto.WithdrawEnrollmentRequest;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;

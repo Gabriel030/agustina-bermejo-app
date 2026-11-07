@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeO
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestObservers;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.exception.BadRequestException;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import org.springframework.stereotype.Component;

@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.payment.usecase.CompleteRefundUseCase;
 import com.red_escuela.backend.billing.payment.usecase.FailRefundUseCase;
 import com.red_escuela.backend.billing.payment.usecase.ListStudentRefundsUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RequestRefundUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

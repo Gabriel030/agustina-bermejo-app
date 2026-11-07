@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification.controller;
 
 import com.red_escuela.backend.notification.dto.NotificationResponse;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.notification.specialist.NotificationInboxManager;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

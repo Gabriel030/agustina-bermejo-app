@@ -2,8 +2,8 @@ package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 
@@ -34,6 +34,6 @@ final class StaffTestFixtures {
         when(currentPersonService.resolveCurrentPerson())
                 .thenReturn(personWithRoles(1L, StatusType.ACTIVE, actorRole));
         return new StaffRoleAssignmentPolicy(currentPersonService,
-                mock(com.red_escuela.backend.identity.service.EmailChangeRequester.class));
+                mock(com.red_escuela.backend.identity.specialist.EmailChangeRequester.class));
     }
 }

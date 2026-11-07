@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.SecureTokenGenerator;
+import com.red_escuela.backend.identity.specialist.SecureTokenGenerator;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.time.ApplicationTime;

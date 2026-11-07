@@ -10,7 +10,7 @@ import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
-import com.red_escuela.backend.identity.service.AuthTokenIssuer;
+import com.red_escuela.backend.identity.specialist.AuthTokenIssuer;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.ApplicationTime;

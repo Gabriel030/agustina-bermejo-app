@@ -1,15 +1,15 @@
 package com.red_escuela.backend.identity.usecase.emailverification;
 
-import com.red_escuela.backend.identity.service.EmailVerificationConfirmation;
+import com.red_escuela.backend.identity.specialist.EmailVerificationConfirmer;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
 public class VerifyEmailService implements VerifyEmailUseCase {
 
-    private final EmailVerificationConfirmation emailVerificationConfirmation;
+    private final EmailVerificationConfirmer emailVerificationConfirmation;
 
-    public VerifyEmailService(EmailVerificationConfirmation emailVerificationConfirmation) {
+    public VerifyEmailService(EmailVerificationConfirmer emailVerificationConfirmation) {
         this.emailVerificationConfirmation = emailVerificationConfirmation;
     }
 

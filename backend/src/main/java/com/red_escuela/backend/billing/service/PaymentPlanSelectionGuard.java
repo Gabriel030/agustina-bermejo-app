@@ -10,7 +10,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

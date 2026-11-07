@@ -8,7 +8,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardManager;
 import com.red_escuela.backend.evaluation.specialist.GradeItemRecorder;

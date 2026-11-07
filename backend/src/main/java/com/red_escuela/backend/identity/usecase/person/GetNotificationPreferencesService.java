@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.NotificationEvent;
 import com.red_escuela.backend.identity.entity.NotificationPreference;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.NotificationPreferenceRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.identity.domain.MandatoryNotificationChannels;
 import com.red_escuela.backend.shared.UseCase;
 

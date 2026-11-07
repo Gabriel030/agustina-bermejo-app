@@ -68,7 +68,7 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
 - **Colaboradores en `service/`** (sin `@UseCase`): lógica compartida entre
   varios use cases del mismo subdominio que no es en sí "algo que un actor
   pide hacer" — ver `AuthTokenIssuer`, `PasswordPolicyValidator`,
-  `StaffRoleAssignmentPolicy`, `CurrentPersonService` en `identity/service/`.
+  `StaffRoleAssignmentPolicy`, `CurrentPersonService` en `identity/specialist/`.
   Si un helper se usa desde un solo use case, va como método privado ahí
   adentro — no se extrae un colaborador "por las dudas".
 - **`infrastructure/`**: lo que no representa una regla de negocio (firmar
@@ -86,7 +86,7 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   Ver `adr/0002-patron-de-modulos.md`.
 - **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
   del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
-  (`identity/service/`) — reusalo, no dupliques esa resolución en un use case
+  (`identity/specialist/`) — reusalo, no dupliques esa resolución en un use case
   nuevo.
 - **Autorización de rol grueso vía `@PreAuthorize("hasRole('X')")`** a nivel
   de clase o método del controller. Cuando la regla depende de datos (ej.

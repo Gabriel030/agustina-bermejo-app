@@ -1,5 +1,5 @@
 package com.red_escuela.backend.billing.controller;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 
 import com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;

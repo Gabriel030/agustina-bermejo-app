@@ -12,7 +12,7 @@ import com.red_escuela.backend.enrollment.usecase.enrollmentfee.GrantEnrollmentF
 import com.red_escuela.backend.enrollment.usecase.enrollmentfee.ListEnrollmentFeeExemptionsUseCase;
 import com.red_escuela.backend.enrollment.usecase.enrollmentfee.RevokeEnrollmentFeeExemptionUseCase;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;

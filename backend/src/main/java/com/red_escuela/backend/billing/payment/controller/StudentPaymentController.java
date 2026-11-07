@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.payment.dto.StudentPaymentResponse;
 import com.red_escuela.backend.billing.payment.usecase.ListStudentPaymentsUseCase;
 import com.red_escuela.backend.billing.payment.usecase.PreviewCashPaymentUseCase;
 import com.red_escuela.backend.billing.payment.usecase.RegisterCashPaymentUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

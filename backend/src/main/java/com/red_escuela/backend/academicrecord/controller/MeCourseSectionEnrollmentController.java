@@ -9,7 +9,7 @@ import com.red_escuela.backend.academicrecord.usecase.ListMyCourseEnrollmentGrad
 import com.red_escuela.backend.academicrecord.usecase.ListMyCourseSectionEnrollmentsUseCase;
 import com.red_escuela.backend.academicrecord.usecase.ReadMyCourseEnrollmentAttendanceRiskUseCase;
 import com.red_escuela.backend.academicrecord.usecase.ReadMyCourseSectionEnrollmentUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

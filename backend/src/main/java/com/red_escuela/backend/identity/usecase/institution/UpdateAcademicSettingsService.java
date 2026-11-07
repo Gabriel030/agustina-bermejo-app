@@ -2,7 +2,7 @@ package com.red_escuela.backend.identity.usecase.institution;
 
 import com.red_escuela.backend.identity.dto.AcademicSettingsRequest;
 import com.red_escuela.backend.identity.dto.AcademicSettingsResponse;
-import com.red_escuela.backend.identity.service.InstitutionAcademicSettingsWriter;
+import com.red_escuela.backend.identity.specialist.InstitutionAcademicSettingsWriter;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

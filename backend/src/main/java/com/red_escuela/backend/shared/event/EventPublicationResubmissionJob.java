@@ -18,7 +18,7 @@ import java.time.Duration;
 @ConditionalOnProperty(name = "app.event-publication.resubmission.enabled", havingValue = "true", matchIfMissing = true)
 public class EventPublicationResubmissionJob {
     private static final Logger log = LoggerFactory.getLogger(EventPublicationResubmissionJob.class);
-    public static final String MAIL_LISTENER_PREFIX = "com.red_escuela.backend.identity.service.IdentityEmailDispatcher.";
+    public static final String MAIL_LISTENER_PREFIX = "com.red_escuela.backend.identity.specialist.IdentityEmailDispatcher.";
     static final Duration MINIMUM_AGE = Duration.ofMinutes(5);
     static final Duration STUCK_AFTER = Duration.ofHours(1);
 

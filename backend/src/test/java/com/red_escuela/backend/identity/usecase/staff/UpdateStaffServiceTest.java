@@ -26,8 +26,8 @@ class UpdateStaffServiceTest {
     private static final Long TARGET_ID = 80L;
 
     private final PersonRepository personRepository = mock(PersonRepository.class);
-    private final com.red_escuela.backend.identity.service.EmailChangeRequester emailChangeRequester =
-            mock(com.red_escuela.backend.identity.service.EmailChangeRequester.class);
+    private final com.red_escuela.backend.identity.specialist.EmailChangeRequester emailChangeRequester =
+            mock(com.red_escuela.backend.identity.specialist.EmailChangeRequester.class);
 
     private UpdateStaffService serviceActingAs(String actorRole) {
         return new UpdateStaffService(personRepository, policyActingAs(actorRole), emailChangeRequester);

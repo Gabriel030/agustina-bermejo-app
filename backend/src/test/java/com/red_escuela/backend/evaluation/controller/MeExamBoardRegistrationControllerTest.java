@@ -4,7 +4,7 @@ import com.red_escuela.backend.evaluation.specialist.ExamBoardManager;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
 import com.red_escuela.backend.evaluation.specialist.GradeItemRecorder;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

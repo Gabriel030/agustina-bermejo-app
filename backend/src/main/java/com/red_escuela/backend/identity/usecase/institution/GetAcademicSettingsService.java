@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.institution;
 
-import com.red_escuela.backend.identity.service.InstitutionAcademicSettingsFinder;
+import com.red_escuela.backend.identity.specialist.InstitutionAcademicSettingsFinder;
 import com.red_escuela.backend.identity.dto.AcademicSettingsResponse;
 import com.red_escuela.backend.shared.UseCase;
 

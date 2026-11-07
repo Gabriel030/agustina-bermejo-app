@@ -9,7 +9,7 @@ import com.red_escuela.backend.academicrecord.usecase.ListMyEnrollmentGradeItems
 import com.red_escuela.backend.academicrecord.usecase.ListMyEnrollmentAttendanceUseCase;
 import com.red_escuela.backend.academicrecord.usecase.ReadMyEnrollmentAttendanceRiskUseCase;
 import com.red_escuela.backend.academicrecord.usecase.SubmitMyAbsenceProofUseCase;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.identity.specialist.CurrentStudentService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

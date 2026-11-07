@@ -3,7 +3,7 @@ package com.red_escuela.backend.identity.usecase.staff;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
+import com.red_escuela.backend.identity.specialist.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.repository.PersonSpecifications;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.data.domain.Sort;
