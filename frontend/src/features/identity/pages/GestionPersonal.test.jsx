@@ -70,7 +70,17 @@ describe('GestionPersonal', () => {
   it('confirms the creation and starts the next one with an empty form', async () => {
     server.use(
       http.post(`${API}/staff`, () =>
-        HttpResponse.json({ id: 88, nombre: 'Mara', apellido: 'Gil', role: 'DOCENTE' }, { status: 201 }),
+        HttpResponse.json({
+          id: 88,
+          nombre: 'Mara',
+          apellido: 'Gil',
+          dni: '30111222',
+          username: '30111222',
+          email: 'mara@demo.test',
+          telefono: null,
+          role: 'DOCENTE',
+          status: 'ACTIVE',
+        }, { status: 201 }),
       ),
     );
     const user = userEvent.setup();
