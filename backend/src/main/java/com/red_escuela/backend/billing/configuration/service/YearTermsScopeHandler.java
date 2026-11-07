@@ -5,6 +5,8 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
+import com.red_escuela.backend.billing.advanceenrollmentfee.service.AdvanceEnrollmentFeeIssuedQuery;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import org.springframework.stereotype.Component;
@@ -16,12 +18,14 @@ public class YearTermsScopeHandler implements ConfigurationScopeHandler {
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final YearBillingConfigurationChangeLoader changeLoader;
     private final ConfigurationPolicyEvaluator policyEvaluator;
+    private final AdvanceEnrollmentFeeIssuedQuery advanceIssuedQuery;
 
     public YearTermsScopeHandler(ProgramYearBillingTemplateRepository templateRepository, YearBillingConfigurationChangeLoader changeLoader,
-                                 ConfigurationPolicyEvaluator policyEvaluator) {
+                                 ConfigurationPolicyEvaluator policyEvaluator, AdvanceEnrollmentFeeIssuedQuery advanceIssuedQuery) {
         this.templateRepository = templateRepository;
         this.changeLoader = changeLoader;
         this.policyEvaluator = policyEvaluator;
+        this.advanceIssuedQuery = advanceIssuedQuery;
     }
 
     @Override
@@ -36,11 +40,10 @@ public class YearTermsScopeHandler implements ConfigurationScopeHandler {
 
     @Override
     public void requireCoherentValues(ConfigurationTopic topic, ConfigurationValues values) {
-        YearBillingConfigurationChange change = changeLoader.loadVersionedChange(
-                templateRepository.findByProgramIdAndTermId(topic.programId(), topic.termId())
-                        .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(topic.programId())),
-                (YearBillingTerms) values);
+        ProgramYearBillingTemplate template = templateRepository.findByProgramIdAndTermId(topic.programId(), topic.termId())
+                .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(topic.programId()));
+        YearBillingConfigurationChange change = changeLoader.loadVersionedChange(template, (YearBillingTerms) values);
         policyEvaluator.requireCoherentYearConfiguration(change);
-        policyEvaluator.requireUnfrozenYearConfiguration(change);
+        policyEvaluator.requireUnfrozenYearConfiguration(change.withAdvanceEnrollmentFeeIssued(advanceIssuedQuery.hasIssuedFor(template.getId())));
     }
 }

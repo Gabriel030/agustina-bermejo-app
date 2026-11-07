@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.pricing.service;
 
 import com.red_escuela.backend.billing.configuration.policy.ProposalApprovalCheck;
+import com.red_escuela.backend.billing.configuration.service.AdvanceEnrollmentFeeCalendarReader;
 import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
 import com.red_escuela.backend.billing.events.PriceChangeDecidedEvent;
 import com.red_escuela.backend.billing.operation.BillingOperation;
@@ -10,6 +11,7 @@ import com.red_escuela.backend.billing.pricing.domain.PriceVersion;
 import com.red_escuela.backend.billing.pricing.exception.PriceChangedConcurrentlyException;
 import com.red_escuela.backend.billing.pricing.exception.PriceNotFoundException;
 import com.red_escuela.backend.billing.pricing.exception.ProposalNoLongerOpenException;
+import com.red_escuela.backend.billing.pricing.policy.AdvancePriceCheck;
 import com.red_escuela.backend.billing.pricing.policy.ChangePriceCommand;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
@@ -25,6 +27,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class ChangePriceOperation implements BillingOperation<ChangePriceCommand, PriceVersion> {
@@ -34,14 +37,16 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
     private final PriceVersionPolicyEvaluator policyEvaluator;
     private final PriceLocker priceLocker;
     private final BillingActorResolver actorResolver;
+    private final AdvanceEnrollmentFeeCalendarReader calendarReader;
     private final Clock clock;
 
     public ChangePriceOperation(PriceRepository priceRepository, PriceVersionPolicyEvaluator policyEvaluator, PriceLocker priceLocker,
-                                BillingActorResolver actorResolver, Clock clock) {
+                                BillingActorResolver actorResolver, AdvanceEnrollmentFeeCalendarReader calendarReader, Clock clock) {
         this.priceLocker = priceLocker;
         this.priceRepository = priceRepository;
         this.policyEvaluator = policyEvaluator;
         this.actorResolver = actorResolver;
+        this.calendarReader = calendarReader;
         this.clock = clock;
     }
 
@@ -70,6 +75,17 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
         Currency currency = priceRepository.findCurrencyById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()));
         policyEvaluator.requireValidPriceChange(new PriceChangeCheck(command.effectiveFrom(), LocalDate.now(clock), command.changeReason()));
         policyEvaluator.requireValidPriceVersion(command.toDraft(currency));
+        requireValidAdvancePrice(command);
+    }
+
+    private void requireValidAdvancePrice(ChangePriceCommand command) {
+        if (command.appliesToLectiveYear() == null) {
+            return;
+        }
+        Price price = priceRepository.findById(command.priceId()).orElseThrow(() -> new PriceNotFoundException(command.priceId()));
+        Optional<LocalDate> regularEmissionStart = price.getProgramId() == null ? Optional.empty()
+                : calendarReader.regularEmissionStartOf(price.getProgramId(), command.appliesToLectiveYear());
+        policyEvaluator.requireValidAdvancePrice(new AdvancePriceCheck(price.getFeeType(), command.appliesToLectiveYear(), command.effectiveFrom(), regularEmissionStart));
     }
 
     @Override
@@ -100,7 +116,7 @@ public class ChangePriceOperation implements BillingOperation<ChangePriceCommand
         price.makeRoomForVersionStartingOn(command.effectiveFrom(), today, command.requestedByPersonId(), now);
         priceRepository.flush();
         PriceVersion version = price.publishPriceVersion(command.baseAmount(), command.marketingDiscount(), command.effectiveFrom(), command.changeReason(),
-                command.requestedByPersonId(), false, today, now);
+                command.requestedByPersonId(), false, today, now, command.appliesToLectiveYear());
         priceRepository.flush();
         log.info("Price version {}: price={}, feeType={}, version={}, effectiveFrom={}, actor={}", version.getStatus(), price.getId(), price.getFeeType(),
                 version.getId(), version.getEffectiveFrom(), command.requestedByPersonId());

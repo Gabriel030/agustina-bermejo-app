@@ -8,5 +8,5 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import java.time.LocalDate;
 
 public interface ProposePriceChangeUseCase {
-    BillingOperationOutcome<PriceVersion> proposeOrPublishPriceVersion(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason);
+    BillingOperationOutcome<PriceVersion> proposeOrPublishPriceVersion(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason, Integer appliesToLectiveYear);
 }

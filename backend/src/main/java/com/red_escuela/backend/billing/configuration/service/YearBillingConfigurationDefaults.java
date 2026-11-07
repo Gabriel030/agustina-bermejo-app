@@ -30,6 +30,6 @@ public class YearBillingConfigurationDefaults {
         return new YearBillingConfigurationRequest(base.enrollmentFeeCount(), firstMonth, base.secondEnrollmentFeeMonth(),
                 base.enrollmentFeeLeadMonths(), base.lateEnrollmentFeeDueDays(), base.recurringFeeDueDays(), base.withdrawSuspendedAtTermEnd(),
                 base.paysWhilePaused(), base.blocksEnrollment(), base.blocksExamRegistration(), base.blocksCertificates(),
-                base.requireEnrollmentFeeForFinalExamOnlyStudents());
+                base.requireEnrollmentFeeForFinalExamOnlyStudents(), base.advanceEnrollmentFeeOpensOn());
     }
 }

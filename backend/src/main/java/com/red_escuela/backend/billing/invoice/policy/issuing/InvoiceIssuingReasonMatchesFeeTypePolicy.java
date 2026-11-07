@@ -27,7 +27,7 @@ public final class InvoiceIssuingReasonMatchesFeeTypePolicy implements Policy<In
         boolean courseEnrollmentFee = feeType == FeeType.ENROLLMENT_FEE && !context.request().belongsToProgram();
         boolean allowed = !courseEnrollmentFee && switch (reason) {
             case AD_HOC_CHARGE -> AD_HOC_FEE_TYPES.contains(feeType);
-            case PROGRAM_ADMISSION -> feeType == FeeType.ENROLLMENT_FEE;
+            case PROGRAM_ADMISSION, ENROLLMENT_FEE_ADVANCE -> feeType == FeeType.ENROLLMENT_FEE;
             case COURSE_ADMISSION -> feeType == FeeType.MONTHLY_INSTALLMENT;
             case MONTHLY_RUN, COURSE_MONTHLY_RUN, PAYMENT_PLAN_SELECTION, REACTIVATION, ENROLLMENT_FEE_ON_DEMAND, YEAR_CONFIGURATION_CHANGE ->
                     REGULAR_FEE_TYPES.contains(feeType);

@@ -4,6 +4,8 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
+import com.red_escuela.backend.billing.api.AdvanceEnrollmentFeeView;
+import com.red_escuela.backend.billing.advanceenrollmentfee.service.AdvanceEnrollmentFeeAvailabilityReader;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.billing.planning.domain.InvoicePlanningScope;
@@ -47,7 +49,11 @@ public class EnrollmentFeeRequirementService {
     private static final Logger log = LoggerFactory.getLogger(EnrollmentFeeRequirementService.class);
 
     public record Obligation(Long templateId, int slot, int slotCount, YearMonth periodFrom, YearMonth periodTo, EnrollmentFeeObligationStatus status,
-                             Long invoiceId, LocalDate dueDate, Money remainingBalance, boolean satisfied) {
+                             Long invoiceId, LocalDate dueDate, Money remainingBalance, boolean satisfied, AdvanceEnrollmentFeeView advance) {
+
+        public String statusName() {
+            return status.name();
+        }
     }
 
     private final InvoicePlanningContextLoader contextLoader;
@@ -59,12 +65,13 @@ public class EnrollmentFeeRequirementService {
     private final PlanningPolicySetsConfiguration policySets;
     private final EnrollmentFeeReferenceSlotResolver referenceSlotResolver = new EnrollmentFeeReferenceSlotResolver();
     private final EnrollmentFeeObligationStatusClassifier statusClassifier = new EnrollmentFeeObligationStatusClassifier();
+    private final AdvanceEnrollmentFeeAvailabilityReader availabilityReader;
     private final Clock clock;
 
     public EnrollmentFeeRequirementService(InvoicePlanningContextLoader contextLoader, InvoiceRepository invoiceRepository,
                                            BankTransferReceiptRepository receiptRepository, EnrollmentFeeExemptionRepository exemptionRepository,
                                            PlannedInvoiceIssuingService plannedInvoiceIssuingService, ProgramMonthlyInvoicePlanner planner,
-                                           PlanningPolicySetsConfiguration policySets, Clock clock) {
+                                           PlanningPolicySetsConfiguration policySets, AdvanceEnrollmentFeeAvailabilityReader availabilityReader, Clock clock) {
         this.contextLoader = contextLoader;
         this.invoiceRepository = invoiceRepository;
         this.receiptRepository = receiptRepository;
@@ -72,6 +79,7 @@ public class EnrollmentFeeRequirementService {
         this.plannedInvoiceIssuingService = plannedInvoiceIssuingService;
         this.planner = planner;
         this.policySets = policySets;
+        this.availabilityReader = availabilityReader;
         this.clock = clock;
     }
 
@@ -107,7 +115,7 @@ public class EnrollmentFeeRequirementService {
         return relevantCycles
                 .flatMap(cycle -> IntStream.rangeClosed(1, cycle.slotCount()).mapToObj(slot -> new EnrollmentFeeSlotReference(cycle, slot)))
                 .filter(reference -> !EnrollmentFeeSlotNotBeforeEntrySpecification.isSlotBeforeEntry(facts, reference.cycle(), reference.slot()))
-                .map(reference -> describeObligation(enrollment, facts, reference.cycle(), reference.slot()))
+                .map(reference -> describeObligation(enrollment, facts, reference.cycle(), reference.slot(), currentMonth))
                 .toList();
     }
 
@@ -160,7 +168,7 @@ public class EnrollmentFeeRequirementService {
         plannedInvoiceIssuingService.issuePlannedProgramInvoice(enrollment, context.selection(), charge, InvoiceIssuingReason.ENROLLMENT_FEE_ON_DEMAND, false);
     }
 
-    private Obligation describeObligation(ProgramEnrollment enrollment, ProgramInvoicePlanningFacts facts, YearCycle cycle, int slot) {
+    private Obligation describeObligation(ProgramEnrollment enrollment, ProgramInvoicePlanningFacts facts, YearCycle cycle, int slot, YearMonth currentMonth) {
         boolean exempted = exemptionRepository
                 .findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(enrollment.getId(), cycle.templateId(), slot).isPresent();
         Optional<Invoice> invoice = facts.feeOf(cycle, slot).flatMap(fee -> invoiceRepository.findById(fee.invoiceId()));
@@ -168,7 +176,8 @@ public class EnrollmentFeeRequirementService {
                 new EnrollmentFeeObligationStatusClassifier.Evidence(exempted, invoice.map(this::invoiceFactsOf)));
         return new Obligation(cycle.templateId(), slot, cycle.slotCount(), cycle.slotFrom(slot), cycle.slotTo(slot), status,
                 invoice.map(Invoice::getId).orElse(null), invoice.map(Invoice::getDueDate).orElse(null),
-                invoice.filter(found -> !status.isSatisfied()).map(found -> found.getAmounts().outstandingAmount().value()).orElse(null), status.isSatisfied());
+                invoice.filter(found -> !status.isSatisfied()).map(found -> found.getAmounts().outstandingAmount().value()).orElse(null), status.isSatisfied(),
+                availabilityReader.availabilityOfNextYearFirstSlot(enrollment, facts, cycle, slot, currentMonth).orElse(null));
     }
 
     ObligationInvoiceFacts invoiceFactsOf(Invoice invoice) {

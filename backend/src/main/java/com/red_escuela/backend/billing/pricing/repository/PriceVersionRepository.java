@@ -21,6 +21,9 @@ public interface PriceVersionRepository extends JpaRepository<PriceVersion, Long
 
     Optional<PriceVersion> findFirstByAuthorizationRequestId(Long authorizationRequestId);
 
+    Optional<PriceVersion> findFirstByPriceProgramIdAndPriceFeeTypeAndAppliesToLectiveYearAndStatusIn(
+            Long programId, FeeType feeType, Integer lectiveYear, Collection<PriceVersionStatus> statuses);
+
     @Query("select new com.red_escuela.backend.billing.pricing.repository.PriceVersionCancellationState(v.price.id, v.status, v.effectiveFrom) from PriceVersion v where v.id = :id")
     Optional<PriceVersionCancellationState> findCancellationStateById(@Param("id") Long id);
 }

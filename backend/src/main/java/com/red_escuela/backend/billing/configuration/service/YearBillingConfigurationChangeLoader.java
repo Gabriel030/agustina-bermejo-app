@@ -31,7 +31,7 @@ public class YearBillingConfigurationChangeLoader {
     public YearBillingConfigurationChange loadVersionedChange(ProgramYearBillingTemplate template, YearBillingTerms proposed) {
         YearBillingTerms current = currentTermsOf(template);
         ProgramYearBillingTemplateSnapshot snapshot = new ProgramYearBillingTemplateSnapshot(proposed.enrollmentFeeCount(), proposed.firstEnrollmentFeeMonth(),
-                proposed.secondEnrollmentFeeMonth(), proposed.recurringFeeInvoicesCount(), proposed.enrollmentFeeLeadMonths());
+                proposed.secondEnrollmentFeeMonth(), proposed.recurringFeeInvoicesCount(), proposed.enrollmentFeeLeadMonths(), proposed.advanceEnrollmentFeeOpensOn());
         return loadChange(template, snapshotOf(current), snapshot, template.termStartDate(), template.termEndDate());
     }
 
@@ -53,7 +53,13 @@ public class YearBillingConfigurationChangeLoader {
             issuedPeriods.addAll(issuedChargeQueryService.findIssuedInstallmentPeriods(
                     template.programId(), YearMonth.from(template.termStartDate()), YearMonth.from(template.termEndDate())));
         }
-        return new YearBillingConfigurationChange(current, proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods, monthOf(template.termStartDate()));
+        return new YearBillingConfigurationChange(current, proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods, monthOf(template.termStartDate()),
+                enrollmentWindowClosesOn(template), false);
+    }
+
+    private Optional<LocalDate> enrollmentWindowClosesOn(ProgramYearBillingTemplate template) {
+        LocalDateTime closes = template.termEnrollmentEndDate() != null ? template.termEnrollmentEndDate() : template.termStartDate();
+        return Optional.ofNullable(closes).map(LocalDateTime::toLocalDate);
     }
 
     private YearBillingTerms currentTermsOf(ProgramYearBillingTemplate template) {
@@ -62,7 +68,7 @@ public class YearBillingConfigurationChangeLoader {
 
     private ProgramYearBillingTemplateSnapshot snapshotOf(YearBillingTerms terms) {
         return new ProgramYearBillingTemplateSnapshot(terms.enrollmentFeeCount(), terms.firstEnrollmentFeeMonth(), terms.secondEnrollmentFeeMonth(),
-                terms.recurringFeeInvoicesCount(), terms.enrollmentFeeLeadMonths());
+                terms.recurringFeeInvoicesCount(), terms.enrollmentFeeLeadMonths(), terms.advanceEnrollmentFeeOpensOn());
     }
 
     private ProgramYearBillingTemplateSnapshot merge(ProgramYearBillingTemplateSnapshot base, YearBillingConfigurationRequest request, Integer recurringFeeInvoicesCount) {
@@ -71,7 +77,8 @@ public class YearBillingConfigurationChangeLoader {
         Integer second = request != null && request.secondEnrollmentFeeMonth() != null ? request.secondEnrollmentFeeMonth() : base.secondEnrollmentFeeMonth();
         Integer installments = recurringFeeInvoicesCount != null ? recurringFeeInvoicesCount : base.recurringFeeInvoicesCount();
         int leadMonths = request != null && request.enrollmentFeeLeadMonths() != null ? request.enrollmentFeeLeadMonths() : base.enrollmentFeeLeadMonths();
-        return new ProgramYearBillingTemplateSnapshot(count, first, count == 1 ? null : second, installments, leadMonths);
+        LocalDate advanceOpensOn = request != null && request.advanceEnrollmentFeeOpensOn() != null ? request.advanceEnrollmentFeeOpensOn() : base.advanceEnrollmentFeeOpensOn();
+        return new ProgramYearBillingTemplateSnapshot(count, first, count == 1 ? null : second, installments, leadMonths, advanceOpensOn);
     }
 
     private Optional<YearMonth> monthOf(LocalDateTime date) {

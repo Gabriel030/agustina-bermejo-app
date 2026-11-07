@@ -96,7 +96,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     }
 
     private static YearBillingConfigurationRequest config(Integer count, Integer first, Integer second, Integer dueDays) {
-        return new YearBillingConfigurationRequest(count, first, second, null, null, dueDays, null, null, null, null, null, null);
+        return new YearBillingConfigurationRequest(count, first, second, null, null, dueDays, null, null, null, null, null, null, null);
     }
 
     private Year yearWithFirstFeeIssued() {
@@ -142,13 +142,13 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         Year pristine = newYear(newCareer(), 2027, 10, 2, 2, 7);
 
         assertThatThrownBy(() -> updateYearConfiguration.update(issued.templateId(),
-                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null)))
+                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null, null)))
                 .isInstanceOfSatisfying(BillingConfigurationFrozenException.class,
                         e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("ENROLLMENT_FEE_LEAD_MONTHS_FROZEN"));
         assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(issued)).enrollmentFeeLeadMonths()).isEqualTo(1);
 
         updateYearConfiguration.update(pristine.templateId(),
-                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null));
+                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null, null));
         assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(pristine)).enrollmentFeeLeadMonths()).isEqualTo(2);
     }
 
@@ -329,7 +329,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         });
 
         ProgramYearBillingTemplate template = createTemplate.create(career.programId(), termId, 10,
-                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null));
+                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null, null));
 
         assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).firstEnrollmentFeeMonth()).isEqualTo(1);
         assertThat(marchYear.year()).isEqualTo(2028);

@@ -79,6 +79,9 @@ public class PriceVersion {
     @Column(name = "change_reason", nullable = false)
     private String changeReason;
 
+    @Column(name = "applies_to_lective_year")
+    private Integer appliesToLectiveYear;
+
     @Column(name = "proposed_by_id", nullable = false)
     private Long proposedById;
 
@@ -146,6 +149,10 @@ public class PriceVersion {
 
     void reject(Long deciderId, String reason, Instant now) {
         decide(PriceVersionEvent.REJECT, deciderId, reason, now);
+    }
+
+    void tagLectiveYear(Integer lectiveYear) {
+        this.appliesToLectiveYear = lectiveYear;
     }
 
     void withdraw(Long requesterId, Instant now) {

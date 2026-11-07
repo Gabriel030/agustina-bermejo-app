@@ -20,7 +20,7 @@ public class ValidatePriceChangeService implements ValidatePriceChangeUseCase {
 
     @Override
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
-    public List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason) {
-        return priceChangeViolationsReader.validatePriceChange(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason);
+    public List<PolicyViolation> validatePriceChange(Long priceId, NonNegativeMoney baseAmount, MarketingDiscount marketingDiscount, LocalDate effectiveFrom, String changeReason, Integer appliesToLectiveYear) {
+        return priceChangeViolationsReader.validatePriceChange(priceId, baseAmount, marketingDiscount, effectiveFrom, changeReason, appliesToLectiveYear);
     }
 }

@@ -9,6 +9,8 @@ import com.red_escuela.backend.billing.pricing.exception.CurrencyMismatchExcepti
 import com.red_escuela.backend.billing.pricing.exception.InvalidMarketingDiscountException;
 import com.red_escuela.backend.billing.pricing.exception.InvalidPriceAmountException;
 import com.red_escuela.backend.billing.pricing.exception.RejectionReasonRequiredException;
+import com.red_escuela.backend.billing.pricing.exception.InvalidAdvancePriceException;
+import com.red_escuela.backend.billing.pricing.policy.AdvancePriceCheck;
 import com.red_escuela.backend.billing.pricing.policy.PriceChangeCheck;
 import com.red_escuela.backend.billing.pricing.policy.PriceProposalSlot;
 import com.red_escuela.backend.billing.pricing.policy.PriceRejectionCheck;
@@ -28,17 +30,19 @@ public class PriceVersionPolicyEvaluator {
 
     private final PolicySet<PriceVersionDraft> priceVersionPolicySet;
     private final PolicySet<PriceChangeCheck> priceChangePolicySet;
+    private final PolicySet<AdvancePriceCheck> advancePricePolicySet;
     private final PolicySet<PriceVersionCancellationCheck> priceVersionCancellationPolicySet;
     private final PolicySet<PriceProposalSlot> priceProposalPolicySet;
     private final PolicySet<ProposalApprovalCheck> priceProposalApprovalPolicySet;
     private final PolicySet<PriceRejectionCheck> priceProposalRejectionPolicySet;
 
-    public PriceVersionPolicyEvaluator(PolicySet<PriceVersionDraft> priceVersionPolicySet, PolicySet<PriceChangeCheck> priceChangePolicySet,
+    public PriceVersionPolicyEvaluator(PolicySet<PriceVersionDraft> priceVersionPolicySet, PolicySet<PriceChangeCheck> priceChangePolicySet, PolicySet<AdvancePriceCheck> advancePricePolicySet,
                                        PolicySet<PriceVersionCancellationCheck> priceVersionCancellationPolicySet,
                                        PolicySet<PriceProposalSlot> priceProposalPolicySet, PolicySet<ProposalApprovalCheck> priceProposalApprovalPolicySet,
                                        PolicySet<PriceRejectionCheck> priceProposalRejectionPolicySet) {
         this.priceVersionPolicySet = priceVersionPolicySet;
         this.priceChangePolicySet = priceChangePolicySet;
+        this.advancePricePolicySet = advancePricePolicySet;
         this.priceVersionCancellationPolicySet = priceVersionCancellationPolicySet;
         this.priceProposalPolicySet = priceProposalPolicySet;
         this.priceProposalApprovalPolicySet = priceProposalApprovalPolicySet;
@@ -47,6 +51,10 @@ public class PriceVersionPolicyEvaluator {
 
     public void requireValidPriceVersion(PriceVersionDraft draft) {
         priceVersionPolicySet.evaluateAllRules(draft).throwIfDenied(PriceVersionPolicyEvaluator::exceptionFor);
+    }
+
+    public void requireValidAdvancePrice(AdvancePriceCheck check) {
+        advancePricePolicySet.evaluateAllRules(check).throwIfDenied(InvalidAdvancePriceException::new);
     }
 
     public void requireValidPriceChange(PriceChangeCheck check) {

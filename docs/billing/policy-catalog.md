@@ -8,6 +8,24 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | InconsistencyStaysLocalPolicy | GLOBAL_ACCOUNT_INCONSISTENCY | D-356, D-489 |
 
+## Momento ADVANCE_ENROLLMENT_FEE_ELIGIBILITY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AdvanceFeeNextYearConfiguredPolicy | ADVANCE_FEE_NEXT_YEAR_NOT_CONFIGURED | D-532, D-535 |
+| 2 | AdvanceFeeEnrollmentActivePolicy | ADVANCE_FEE_ENROLLMENT_NOT_ACTIVE | D-523 |
+| 3 | AdvanceFeeNotAlreadyIssuedPolicy | ADVANCE_FEE_ALREADY_ISSUED | D-009, D-523 |
+| 4 | AdvanceFeeNoOverdueDebtPolicy | ADVANCE_FEE_OVERDUE_DEBT | D-065, D-128 |
+| 5 | AdvanceFeeWindowOpenedPolicy | ADVANCE_FEE_WINDOW_NOT_OPEN | D-528 |
+| 6 | AdvanceFeeWindowNotClosedPolicy | ADVANCE_FEE_WINDOW_CLOSED | D-528, D-529 |
+
+## Momento ADVANCE_PRICE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | LectiveYearOnlyForEnrollmentFeePolicy | LECTIVE_YEAR_ONLY_FOR_ENROLLMENT_FEE | D-532 |
+| 2 | AdvancePriceStartsBeforeRegularEmissionPolicy | ADVANCE_PRICE_STARTS_AFTER_REGULAR_EMISSION | D-532 |
+
 ## Momento ANNUAL_UPFRONT_APPROVAL
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -625,6 +643,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 4 | FirstEnrollmentFeeNotAfterTermStartPolicy | FIRST_ENROLLMENT_FEE_AFTER_TERM_START | D-002 |
 | 5 | SecondEnrollmentFeeWithinTermPolicy | SECOND_ENROLLMENT_FEE_OUTSIDE_TERM | D-002 |
 | 6 | InstallmentCountWithinTermSpanPolicy | INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN | D-034 |
+| 7 | AdvanceEnrollmentFeeOpeningNotAfterWindowClosePolicy | ADVANCE_FEE_OPENING_AFTER_WINDOW_CLOSE | D-528 |
 
 ## Momento YEAR_BILLING_CONFIGURATION_FREEZE
 
@@ -633,8 +652,9 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | EnrollmentFeeCountFrozenPolicy | ENROLLMENT_FEE_COUNT_FROZEN | D-009, D-036 |
 | 2 | EnrollmentFeeMonthFrozenPolicy | ENROLLMENT_FEE_MONTH_FROZEN | D-036 |
 | 3 | EnrollmentFeeLeadMonthsFrozenPolicy | ENROLLMENT_FEE_LEAD_MONTHS_FROZEN | D-201 |
-| 4 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |
-| 5 | LectiveYearStartFrozenPolicy | LECTIVE_YEAR_START_FROZEN | D-036, D-524 |
+| 4 | AdvanceEnrollmentFeeOpeningFrozenPolicy | ADVANCE_FEE_OPENING_FROZEN | D-528, D-201 |
+| 5 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |
+| 6 | LectiveYearStartFrozenPolicy | LECTIVE_YEAR_START_FROZEN | D-036, D-524 |
 
 ## Máquinas de estado
 
