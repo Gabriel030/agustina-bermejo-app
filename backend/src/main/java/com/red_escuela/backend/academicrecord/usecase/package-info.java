@@ -1,7 +1,7 @@
 /**
  * <b>Qué es</b>: el guion de cada flujo del alumno sobre su registro. Cada caso de uso es un par
- * {@code XxxUseCase} y {@code XxxService} (su implementación, con {@code @UseCase}). Hoy están en el
- * subpaquete {@code studentrecord}, que se aplana en la migración (ADR 0007).
+ * {@code XxxUseCase} y {@code XxxService} (su implementación, con {@code @UseCase}). Es el único flujo del módulo,
+ * así que no hay subpaquetes (ADR 0007).
  *
  * <p><b>Expone</b>: nada. Es interno del módulo.
  *

@@ -1,9 +1,9 @@
 package com.red_escuela.backend.academicrecord;
 
 import com.red_escuela.backend.academicrecord.dto.StudentGradeItemResponse;
-import com.red_escuela.backend.academicrecord.service.AcademicRecordEnrollmentOwnership;
-import com.red_escuela.backend.academicrecord.service.AcademicRecordGradeItemFinder;
-import com.red_escuela.backend.academicrecord.usecase.studentrecord.ListMyEnrollmentGradeItemsService;
+import com.red_escuela.backend.academicrecord.specialist.AcademicRecordEnrollmentOwnershipChecker;
+import com.red_escuela.backend.academicrecord.specialist.AcademicRecordGradeItemFinder;
+import com.red_escuela.backend.academicrecord.usecase.ListMyEnrollmentGradeItemsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ListMyEnrollmentGradeItemsServiceTest {
 
     @Mock
-    private AcademicRecordEnrollmentOwnership enrollmentOwnership;
+    private AcademicRecordEnrollmentOwnershipChecker enrollmentOwnership;
 
     @Mock
     private AcademicRecordGradeItemFinder gradeItemFinder;

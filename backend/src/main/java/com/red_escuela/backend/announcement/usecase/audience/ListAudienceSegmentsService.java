@@ -3,10 +3,10 @@ package com.red_escuela.backend.announcement.usecase.audience;
 import com.red_escuela.backend.announcement.dto.AudienceSegmentResponse;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 import com.red_escuela.backend.announcement.entity.SectionType;
-import com.red_escuela.backend.announcement.service.SectionMembership;
-import com.red_escuela.backend.announcement.service.audience.AudienceLabels;
-import com.red_escuela.backend.announcement.service.audience.AudienceService;
-import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
+import com.red_escuela.backend.announcement.specialist.SectionMembershipChecker;
+import com.red_escuela.backend.announcement.specialist.audience.AudienceLabels;
+import com.red_escuela.backend.announcement.specialist.audience.AudienceSegmentResolver;
+import com.red_escuela.backend.announcement.specialist.audience.SectionSnapshot;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;
@@ -14,11 +14,11 @@ import java.util.List;
 @UseCase
 public class ListAudienceSegmentsService implements ListAudienceSegmentsUseCase {
 
-    private final AudienceService audienceService;
-    private final SectionMembership sectionMembership;
+    private final AudienceSegmentResolver audienceService;
+    private final SectionMembershipChecker sectionMembership;
 
-    public ListAudienceSegmentsService(AudienceService audienceService,
-                                       SectionMembership sectionMembership) {
+    public ListAudienceSegmentsService(AudienceSegmentResolver audienceService,
+                                       SectionMembershipChecker sectionMembership) {
         this.audienceService = audienceService;
         this.sectionMembership = sectionMembership;
     }

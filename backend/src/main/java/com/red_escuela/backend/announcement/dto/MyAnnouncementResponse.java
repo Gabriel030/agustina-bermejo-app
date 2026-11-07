@@ -3,7 +3,7 @@ package com.red_escuela.backend.announcement.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
-import com.red_escuela.backend.announcement.service.AnnouncementSectionNames;
+import com.red_escuela.backend.announcement.specialist.AnnouncementSectionNameResolver;
 
 import java.time.LocalDateTime;
 
@@ -21,8 +21,8 @@ public record MyAnnouncementResponse(
 
     public static MyAnnouncementResponse from(Announcement announcement, LocalDateTime readAt) {
         String subjectName = announcement.getSubjectSection() != null
-                ? AnnouncementSectionNames.of(announcement.getSubjectSection())
-                : AnnouncementSectionNames.of(announcement.getCourseSubjectSection());
+                ? AnnouncementSectionNameResolver.of(announcement.getSubjectSection())
+                : AnnouncementSectionNameResolver.of(announcement.getCourseSubjectSection());
         return new MyAnnouncementResponse(
                 announcement.getId(),
                 subjectName,

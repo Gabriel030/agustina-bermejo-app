@@ -2,8 +2,8 @@ package com.red_escuela.backend.announcement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.Announcement;
-import com.red_escuela.backend.announcement.service.AnnouncementReadCounter;
-import com.red_escuela.backend.announcement.service.StaffAnnouncementListing;
+import com.red_escuela.backend.announcement.specialist.AnnouncementReadCounter;
+import com.red_escuela.backend.announcement.specialist.StaffAnnouncementListing;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.SectionType;
