@@ -3,6 +3,7 @@ const PreceptorMesaExamen = lazyPage(() => import('@/features/evaluation/pages/P
 const DirectorAprobacionesConfigEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorAprobacionesConfigEvaluacion'), 'DirectorAprobacionesConfigEvaluacion');
 const DirectorEsquemasEvaluacion = lazyPage(() => import('@/features/evaluation/pages/DirectorEsquemasEvaluacion'), 'DirectorEsquemasEvaluacion');
 const DirectorRevisarConfiguracion = lazyPage(() => import('@/features/evaluation/pages/DirectorRevisarConfiguracion'), 'DirectorRevisarConfiguracion');
+const DirectorSectionGrades = lazyPage(() => import('@/features/evaluation/pages/DirectorSectionGrades'), 'DirectorSectionGrades');
 
 export const routes = {
   public: [],
@@ -12,5 +13,6 @@ export const routes = {
     { roles: ['director'], path: 'esquemas-evaluacion', element: <DirectorEsquemasEvaluacion /> },
     { roles: ['director'], path: 'revisar-configuracion/:sectionId', element: <DirectorRevisarConfiguracion /> },
     { roles: ['director'], path: 'aprobaciones/configuracion-evaluacion', element: <DirectorAprobacionesConfigEvaluacion /> },
+    { roles: ['director'], path: 'oferta-academica/ciclos/:cycleId/comisiones/:sectionId/notas', element: <DirectorSectionGrades /> },
   ],
 };

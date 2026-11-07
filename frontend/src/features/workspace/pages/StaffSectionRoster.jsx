@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Megaphone } from 'lucide-react';
+import { ClipboardList, Megaphone } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
@@ -148,10 +148,18 @@ export function StaffSectionRoster() {
         <Breadcrumb items={breadcrumb} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-heading text-xl font-bold text-ink md:text-2xl">Inscriptos y asistencia</h1>
-          <Button variant="outline" className="max-md:w-full" onClick={() => navigate(`${basePath}/oferta-academica/ciclos/${cycleId}/comisiones/${sectionId}/avisos`)}>
-            <Megaphone className="mr-1.5 h-4 w-4" />
-            Avisos y lectura
-          </Button>
+          <div className="flex flex-wrap gap-2 max-md:w-full">
+            {basePath === '/director' && (
+              <Button variant="outline" className="max-md:flex-1" onClick={() => navigate(`${basePath}/oferta-academica/ciclos/${cycleId}/comisiones/${sectionId}/notas`)}>
+                <ClipboardList className="mr-1.5 h-4 w-4" />
+                Notas
+              </Button>
+            )}
+            <Button variant="outline" className="max-md:flex-1" onClick={() => navigate(`${basePath}/oferta-academica/ciclos/${cycleId}/comisiones/${sectionId}/avisos`)}>
+              <Megaphone className="mr-1.5 h-4 w-4" />
+              Avisos y lectura
+            </Button>
+          </div>
         </div>
         {section && <p className="text-[12.5px] text-ink-faint">{describeSection(section)}</p>}
       </div>
