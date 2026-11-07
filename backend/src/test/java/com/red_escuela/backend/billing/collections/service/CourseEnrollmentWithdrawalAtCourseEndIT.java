@@ -27,6 +27,7 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
     private TermEndWithdrawalBillingRunStep termEndStep;
 
     private void arrangeCourseEndingOn(int year, LocalDate courseEnd, String standingStatus) {
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN' where id in (select course_enrollment_id from enrollment_payment_standing where status = 'SUSPENDED')");
         arrange(year);
         publishDefaults(year);
         jdbc.update("update term set end_date = ?::timestamp where id = ?", courseEnd + " 00:00:00", term.getId());
@@ -145,7 +146,7 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
     void aSuspendedEnrollmentOfAnotherCourseStillRunningIsLeftAloneWhileTheEndedOneIsWithdrawn() {
         arrangeCourseEndingOn(2126, d(2126, 6, 30), "SUSPENDED");
         Long runningTermId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) "
-                + "values (2126, true, timestamp '2126-03-01 00:00:00', timestamp '2126-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
+                + "values (2126, 'ACTIVE', timestamp '2126-03-01 00:00:00', timestamp '2126-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
         Long runningCourseId = jdbc.queryForObject("insert into course (name, term_id, currency) values ('Curso en marcha', ?, 'ARS') returning id", Long.class, runningTermId);
         Long runningEnrollmentId = jdbc.queryForObject("insert into course_enrollment (student_id, course_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
                 Long.class, student.getId(), runningCourseId);
