@@ -10,13 +10,13 @@ public record AcademicOfferingCycleResponse(
         String status,
         Long termId,
         String termName,
-        Long programId,
-        String programName,
-        Long courseId,
-        String courseName,
+        @Schema(nullable = true) Long programId,
+        @Schema(nullable = true) String programName,
+        @Schema(nullable = true) Long courseId,
+        @Schema(nullable = true) String courseName,
         String createdByName,
         LocalDateTime createdAt,
-        String decidedByName,
+        @Schema(nullable = true) String decidedByName,
         @Schema(nullable = true) LocalDateTime decidedAt,
         @Schema(nullable = true) String rejectionReason
 ) {

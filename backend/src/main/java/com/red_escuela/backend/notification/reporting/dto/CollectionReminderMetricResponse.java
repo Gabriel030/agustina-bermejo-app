@@ -1,6 +1,8 @@
 package com.red_escuela.backend.notification.reporting.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.notification.reporting.domain.CollectionReminderMetric;
 import com.red_escuela.backend.notification.reporting.domain.ReminderGoalEvaluation;
 import com.red_escuela.backend.notification.reporting.domain.ReminderMetricSeries;
@@ -11,7 +13,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record CollectionReminderMetricResponse(String panel, boolean available, boolean partial, List<String> months, List<ReminderSeriesResponse> series,
-                                               @JsonInclude(JsonInclude.Include.NON_NULL) ReminderGoalResponse goal) {
+                                               @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) @JsonInclude(JsonInclude.Include.NON_NULL) ReminderGoalResponse goal) {
 
     static final String PANEL = "collection-reminders";
     static final String GOAL_INDICATOR = "REMINDER_PAYMENT_WITHIN_72H";
@@ -25,7 +27,7 @@ public record CollectionReminderMetricResponse(String panel, boolean available, 
                 metric.series().stream().map(ReminderSeriesResponse::from).toList(), goal);
     }
 
-    public record ReminderSeriesResponse(String key, ReminderMetricUnit unit, List<BigDecimal> values) {
+    public record ReminderSeriesResponse(String key, ReminderMetricUnit unit, @ArraySchema(schema = @Schema(nullable = true)) List<BigDecimal> values) {
 
         static ReminderSeriesResponse from(ReminderMetricSeries series) {
             return new ReminderSeriesResponse(series.key(), series.unit(), series.values());

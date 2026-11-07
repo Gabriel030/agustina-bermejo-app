@@ -5,10 +5,10 @@
         "properties" : {
           "courseId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "courseName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "createdAt" : {
             "format" : "date-time",
@@ -22,7 +22,7 @@
             "type" : [ "string", "null" ]
           },
           "decidedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -30,10 +30,10 @@
           },
           "programId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "programName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "rejectionReason" : {
             "type" : [ "string", "null" ]
@@ -142,7 +142,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "minGrade", "notes", "prerequisiteProgramSubjectId", "requirementType" ],
+        "required" : [ "prerequisiteProgramSubjectId", "requirementType" ],
         "type" : "object"
       },
       "AddressResponse" : {
@@ -1178,7 +1178,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "instances", "key", "quantifier", "threshold" ],
+        "required" : [ "key" ],
         "type" : "object"
       },
       "AudienceStudentResponse" : {
@@ -1435,7 +1435,11 @@
       "BankTransferReceiptResponse" : {
         "properties" : {
           "declaredAmount" : {
-            "$ref" : "#/components/schemas/Money"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Money"
+            }, {
+              "type" : "null"
+            } ]
           },
           "filePath" : {
             "type" : "string"
@@ -1707,14 +1711,14 @@
           },
           "finishedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
           "notApplicableCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "processed" : {
             "format" : "int32",
@@ -2246,7 +2250,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "available", "goal", "months", "panel", "partial", "series" ],
+        "required" : [ "available", "months", "panel", "partial", "series" ],
         "type" : "object"
       },
       "CollectionReminderSettingsValues" : {
@@ -2767,7 +2771,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "courseId", "programId", "termId" ],
+        "required" : [ "termId" ],
         "type" : "object"
       },
       "CreateAdHocInvoiceRequest" : {
@@ -2830,7 +2834,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "audience", "body", "category", "expiresAt", "scheduledFor", "title", "urgent" ],
+        "required" : [ "body", "category", "title", "urgent" ],
         "type" : "object"
       },
       "CreateAttendanceChangeRequestRequest" : {
@@ -3474,7 +3478,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "category", "credits", "curricularTerm", "curricularYear", "electiveGroupId", "sortOrder", "subjectId", "subjectRecurrence" ],
+        "required" : [ "category", "credits", "subjectId" ],
         "type" : "object"
       },
       "CreateProgramYearBillingTemplateRequest" : {
@@ -3661,7 +3665,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "city", "country", "dni", "documentType", "email", "floor", "nombre", "number", "postalCode", "role", "state", "street" ],
+        "required" : [ "apellido", "dni", "email", "nombre", "role" ],
         "type" : "object"
       },
       "CreateSubjectRequest" : {
@@ -3698,7 +3702,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "description", "gradeMode", "maxFinalExamAttempts", "name", "weeklyHours", "weeklyHoursLab" ],
+        "required" : [ "code", "name" ],
         "type" : "object"
       },
       "CreateTermRequest" : {
@@ -3903,7 +3907,7 @@
             } ]
           },
           "shift" : {
-            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
+            "enum" : [ "MORNING", "AFTERNOON", "EVENING", null ],
             "type" : [ "string", "null" ]
           },
           "slots" : {
@@ -4168,7 +4172,7 @@
           },
           "cohortPromotionStatus" : {
             "description" : "Solo en promociones de cohorte; null en los demás tipos. Lo calcula el servidor con su fecha de hoy: CLOSED si se cerró; FINISHED si pasó la vigencia; UPCOMING si la vigencia o la ventana de inscripción no empezaron; QUOTA_FULL si el cupo está completo; ENROLLMENT_CLOSED si la ventana de inscripción terminó; OPEN en otro caso.",
-            "enum" : [ "UPCOMING", "OPEN", "QUOTA_FULL", "ENROLLMENT_CLOSED", "FINISHED", "CLOSED" ],
+            "enum" : [ "UPCOMING", "OPEN", "QUOTA_FULL", "ENROLLMENT_CLOSED", "FINISHED", "CLOSED", null ],
             "type" : [ "string", "null" ]
           },
           "courseId" : {
@@ -4600,14 +4604,14 @@
             "type" : "string"
           },
           "revocationNotes" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "revokedAt" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
           },
           "revokedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "slot" : {
             "format" : "int32",
@@ -5520,7 +5524,7 @@
             "type" : "string"
           },
           "invoiceType" : {
-            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE", null ],
             "type" : [ "string", "null" ]
           },
           "percent" : {
@@ -7157,7 +7161,7 @@
           },
           "durationSeconds" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "failedSteps" : {
             "format" : "int32",
@@ -7165,7 +7169,7 @@
           },
           "finishedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -8320,7 +8324,7 @@
             "type" : "number"
           },
           "marketingDiscountType" : {
-            "enum" : [ "PERCENTAGE", "FIXED" ],
+            "enum" : [ "PERCENTAGE", "FIXED", null ],
             "type" : [ "string", "null" ]
           },
           "previousVersionId" : {
@@ -8436,7 +8440,7 @@
             "type" : "string"
           },
           "fromStatus" : {
-            "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
+            "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED", null ],
             "type" : [ "string", "null" ]
           },
           "reason" : {
@@ -9994,7 +9998,7 @@
           },
           "values" : {
             "items" : {
-              "type" : "number"
+              "type" : [ "number", "null" ]
             },
             "type" : "array"
           }
@@ -10098,7 +10102,6 @@
             "type" : "string"
           }
         },
-        "required" : [ "notes" ],
         "type" : "object"
       },
       "RevokeStudentDiscountRequest" : {
@@ -10809,7 +10812,7 @@
             "type" : "string"
           },
           "telefono" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "username" : {
             "type" : "string"
@@ -11000,7 +11003,7 @@
             "type" : [ "string", "null" ]
           },
           "definitionType" : {
-            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY", null ],
             "type" : [ "string", "null" ]
           },
           "discountDefinitionId" : {
@@ -11008,7 +11011,7 @@
             "type" : [ "integer", "null" ]
           },
           "endCause" : {
-            "enum" : [ "INSTITUTION_DECISION", "ENROLLMENT_ENDED" ],
+            "enum" : [ "INSTITUTION_DECISION", "ENROLLMENT_ENDED", null ],
             "type" : [ "string", "null" ]
           },
           "endCauseText" : {
@@ -11186,7 +11189,7 @@
             "type" : "string"
           },
           "detalleBaja" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "dni" : {
             "type" : "string"
@@ -11196,7 +11199,11 @@
             "type" : "string"
           },
           "domicilio" : {
-            "$ref" : "#/components/schemas/AddressResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AddressResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "email" : {
             "type" : "string"
@@ -11221,7 +11228,7 @@
             "type" : "boolean"
           },
           "motivoBaja" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "nacionalidad" : {
             "type" : "string"
@@ -11497,7 +11504,7 @@
             "type" : "boolean"
           },
           "enrollmentOverride" : {
-            "enum" : [ "OPEN", "CLOSED" ],
+            "enum" : [ "OPEN", "CLOSED", null ],
             "type" : [ "string", "null" ]
           },
           "enrollmentStart" : {
@@ -11948,7 +11955,6 @@
             "type" : "string"
           }
         },
-        "required" : [ "city", "country", "email", "floor", "number", "postalCode", "state", "street", "telefono" ],
         "type" : "object"
       },
       "UpdateSubjectRequest" : {
@@ -11984,7 +11990,6 @@
             "type" : "integer"
           }
         },
-        "required" : [ "code", "description", "gradeMode", "maxFinalExamAttempts", "name", "weeklyHours", "weeklyHoursLab" ],
         "type" : "object"
       },
       "UpdateTermRequest" : {
@@ -12116,7 +12121,6 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "blocksCertificates", "blocksEnrollment", "blocksExamRegistration", "enrollmentFeeCount", "enrollmentFeeLeadMonths", "firstEnrollmentFeeMonth", "lateEnrollmentFeeDueDays", "paysWhilePaused", "recurringFeeDueDays", "requireEnrollmentFeeForFinalExamOnlyStudents", "secondEnrollmentFeeMonth", "withdrawSuspendedAtTermEnd" ],
         "type" : "object"
       }
     },
