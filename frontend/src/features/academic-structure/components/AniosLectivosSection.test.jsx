@@ -6,6 +6,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AniosLectivosSection } from './AniosLectivosSection';
 import { descripcionMatriculas } from '@/features/academic-structure/lib/aniosLectivos';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
@@ -18,7 +19,7 @@ const TEMPLATE = {
 function mockApi(alerts = []) {
   server.use(
     http.get(`${API}/programs/12/year-billing-templates`, () => HttpResponse.json([TEMPLATE])),
-    http.get(`${API}/terms`, () => HttpResponse.json([{ id: 7, year: 2027 }])),
+    http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 7, year: 2027 })])),
     http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json(alerts)),
   );
 }

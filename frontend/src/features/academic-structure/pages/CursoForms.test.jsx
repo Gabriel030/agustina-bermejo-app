@@ -8,6 +8,7 @@ import { axe } from '@/test/axe';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CursoEditarDatos } from './CursoEditarDatos';
 import { CursoWizard } from './CursoWizard';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
@@ -33,7 +34,7 @@ function renderEdit() {
 }
 
 async function fillWizard(user) {
-  server.use(http.get(`${API}/terms`, () => HttpResponse.json([{ id: 4, year: 2027, description: 'Anual' }])));
+  server.use(http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 4, year: 2027, description: 'Anual' })])));
   const view = renderWithProviders(<CursoWizard />);
   await user.type(screen.getByLabelText(/Nombre del curso/), 'Excel avanzado');
   await screen.findByRole('option', { name: '2027 — Anual' });

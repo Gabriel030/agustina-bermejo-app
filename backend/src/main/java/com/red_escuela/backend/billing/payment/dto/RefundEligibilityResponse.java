@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.payment.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.billing.payment.domain.RefundEligibility;
 import com.red_escuela.backend.billing.payment.domain.RefundablePaymentView;
 import com.red_escuela.backend.shared.domain.Money;
@@ -8,10 +10,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record RefundEligibilityResponse(String currency, Money unallocatedCredit, Money reservedByPendingRefunds, Money availableToRefund, boolean hasOverdueDebt,
-                                        RefundBlockResponse blockedBy, List<RefundablePaymentResponse> payments) {
+                                        @Schema(nullable = true) RefundBlockResponse blockedBy, List<RefundablePaymentResponse> payments) {
 
     public record RefundablePaymentResponse(Long paymentId, LocalDate paidOn, String methodType, Money credited, Money refunded, Money pending, Money refundableNow,
-                                  String receiptDestinationAccount, String receiptDestinationHolder) {
+                                  @Schema(nullable = true) String receiptDestinationAccount, @Schema(nullable = true) String receiptDestinationHolder) {
 
         static RefundablePaymentResponse from(RefundablePaymentView view) {
             return new RefundablePaymentResponse(view.paymentId(), view.paidOn(), view.methodType().name(), view.credited().value(), view.refunded().value(), view.pending().value(),

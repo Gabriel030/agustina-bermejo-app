@@ -7,6 +7,7 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CarreraDetalle } from './CarreraDetalle';
+import { subjectFixture } from '@/test/fixtures/subjects';
 
 const API = 'http://localhost:8080';
 
@@ -33,8 +34,8 @@ const PLAN = [
 ];
 
 const ACTIVE_SUBJECTS = [
-  { id: 20, code: 'S020', name: 'Microbiología', status: 'ACTIVE' },
-  { id: 21, code: 'S021', name: 'Inglés técnico', status: 'ACTIVE' },
+  subjectFixture({ id: 20, code: 'S020', name: 'Microbiología', status: 'ACTIVE' }),
+  subjectFixture({ id: 21, code: 'S021', name: 'Inglés técnico', status: 'ACTIVE' }),
 ];
 
 function mockProgram({ plan = PLAN, programGroups = [], onAdd, onDeactivate } = {}) {
@@ -42,7 +43,7 @@ function mockProgram({ plan = PLAN, programGroups = [], onAdd, onDeactivate } = 
     http.get(`${API}/programs/9`, () => HttpResponse.json(PROGRAM)),
     http.get(`${API}/programs/9/subjects`, () => HttpResponse.json(plan)),
     http.get(`${API}/subjects`, () => HttpResponse.json(ACTIVE_SUBJECTS)),
-    http.get(`${API}/elective-groups`, () => HttpResponse.json([{ id: 3, name: 'Optativas de idioma' }])),
+    http.get(`${API}/elective-groups`, () => HttpResponse.json([{ id: 3, name: 'Optativas de idioma', description: null }])),
     http.get(`${API}/programs/9/elective-groups`, () => HttpResponse.json(programGroups)),
     http.post(`${API}/programs/9/subjects`, onAdd ?? (() => HttpResponse.json({ id: 200 }, { status: 201 }))),
     http.post(`${API}/program-subjects/:id/deactivate`, onDeactivate ?? (() => new HttpResponse(null, { status: 204 }))),

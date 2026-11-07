@@ -13,9 +13,32 @@ import { EstadoColumnFilter } from '@/components/alumno/EstadoColumnFilter';
 import { AnioColumnFilter } from '@/components/alumno/AnioColumnFilter';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
 import { SortableColumnHeader } from '@/components/alumno/SortableColumnHeader';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/api/client';
 import { useGrillaDeMaterias } from '@/hooks/useGrillaDeMaterias';
 import { COLUMNAS_NOTAS, FINAL_GRADE_TYPE_LABEL, mapearNotasAColumnas } from '@/lib/notas';
+
+function GradeWithCorrection({ score, correction }) {
+  if (!correction) return score;
+  const previous = String(correction.previousScore).replace('.', ',');
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <span>
+        {String(score).replace('.', ',')} <span className="text-xs font-normal text-ink-faint">{`antes ${previous}`}</span>
+      </span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span tabIndex={0} className="w-fit rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <StatusPill tone="accent">Corregida</StatusPill>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{`Antes: ${previous}. Motivo: ${correction.reason}`}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+}
 
 const ESTADO_PILL = {
   'en-curso': { label: 'En curso', tone: 'accent' },
@@ -116,7 +139,7 @@ export function TabNotas({ carreraId }) {
                 const pill = ESTADO_PILL[fila.estado];
                 const tieneNotas = !!fila.inscripcion;
                 const query = notasQueries[i];
-                const { columnas } = tieneNotas ? mapearNotasAColumnas(query?.data) : { columnas: {} };
+                const { columnas, correcciones } = tieneNotas ? mapearNotasAColumnas(query?.data) : { columnas: {}, correcciones: {} };
                 const nuevoGrupo = !hayOrdenExplicito && fila.curricularYear !== anioAnterior;
                 anioAnterior = fila.curricularYear;
 
@@ -139,7 +162,11 @@ export function TabNotas({ carreraId }) {
                             {query?.isLoading ? (
                               <Skeleton className="h-4 w-8" />
                             ) : (
-                              (columnas[columna.key] ?? <span className="font-normal text-ink-faint">—</span>)
+                              (columnas[columna.key] == null ? (
+                                <span className="font-normal text-ink-faint">—</span>
+                              ) : (
+                                <GradeWithCorrection score={columnas[columna.key]} correction={correcciones[columna.key]} />
+                              ))
                             )}
                           </TableCell>
                         ))

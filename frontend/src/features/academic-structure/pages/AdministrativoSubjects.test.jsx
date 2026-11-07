@@ -6,6 +6,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { axe } from '@/test/axe';
 import { AdministrativoSubjects } from './AdministrativoSubjects';
+import { subjectFixture } from '@/test/fixtures/subjects';
 
 const API = 'http://localhost:8080';
 
@@ -16,7 +17,7 @@ describe('AdministrativoSubjects', () => {
         const status = new URL(request.url).searchParams.get('status');
         if (status === 'REJECTED') {
           return HttpResponse.json([
-            { id: 124, code: 'S119', name: 'Gestión de Datos Clínicos', status: 'REJECTED', rejectionReason: 'Falta bibliografía' },
+            subjectFixture({ id: 124, code: 'S119', name: 'Gestión de Datos Clínicos', status: 'REJECTED', rejectionReason: 'Falta bibliografía' }),
           ]);
         }
         return HttpResponse.json([]);
@@ -52,8 +53,8 @@ describe('AdministrativoSubjects', () => {
     server.use(
       http.get(`${API}/subjects`, () =>
         HttpResponse.json([
-          { id: 1, code: 'MAT1', name: 'Matemática I', status: 'ACTIVE', gradeMode: 'NUMERIC' },
-          { id: 2, code: 'ANAT', name: 'Anatomía', status: 'ACTIVE', gradeMode: 'NUMERIC' },
+          subjectFixture({ id: 1, code: 'MAT1', name: 'Matemática I', status: 'ACTIVE', gradeMode: 'NUMERIC' }),
+          subjectFixture({ id: 2, code: 'ANAT', name: 'Anatomía', status: 'ACTIVE', gradeMode: 'NUMERIC' }),
         ]),
       ),
     );
@@ -68,7 +69,7 @@ describe('AdministrativoSubjects', () => {
   });
 
   it('paginates the bank and filters by grading mode', async () => {
-    const subjects = Array.from({ length: 12 }, (_, index) => ({
+    const subjects = Array.from({ length: 12 }, (_, index) => subjectFixture({
       id: index + 1,
       code: `S${String(index + 1).padStart(2, '0')}`,
       name: `Materia ${String(index + 1).padStart(2, '0')}`,
@@ -94,7 +95,7 @@ describe('AdministrativoSubjects', () => {
       http.get(`${API}/subjects`, ({ request }) =>
         HttpResponse.json(
           new URL(request.url).searchParams.get('status') === 'INACTIVE'
-            ? [{ id: 9, code: 'OLD1', name: 'Histología', status: 'INACTIVE', gradeMode: 'NUMERIC' }]
+            ? [subjectFixture({ id: 9, code: 'OLD1', name: 'Histología', status: 'INACTIVE', gradeMode: 'NUMERIC' })]
             : [],
         ),
       ),
@@ -115,7 +116,7 @@ describe('AdministrativoSubjects', () => {
   it('has no accessibility violations in the bank table', async () => {
     server.use(
       http.get(`${API}/subjects`, () =>
-        HttpResponse.json([{ id: 1, code: 'MAT1', name: 'Matemática I', status: 'ACTIVE', gradeMode: 'NUMERIC', weeklyHours: 3 }]),
+        HttpResponse.json([subjectFixture({ id: 1, code: 'MAT1', name: 'Matemática I', status: 'ACTIVE', gradeMode: 'NUMERIC', weeklyHours: 3 })]),
       ),
     );
     const { container } = renderWithProviders(<AdministrativoSubjects />, { route: '/administrativo/gestion-academica' });

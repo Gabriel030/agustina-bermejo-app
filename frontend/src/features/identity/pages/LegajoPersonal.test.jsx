@@ -30,7 +30,17 @@ function record(role) {
     role,
     status: 'ACTIVE',
     domicilio: null,
+    authProvider: 'LOCAL',
+    documentType: 'DNI',
+    emailVerified: true,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
   };
+}
+
+function updated(role) {
+  const { id, nombre, apellido, dni, username, email, telefono, status } = record(role);
+  return { id, nombre, apellido, dni, username, email, telefono, role, status };
 }
 
 function mount() {
@@ -87,7 +97,7 @@ describe('LegajoPersonal', () => {
     auth.roles = ['ADMINISTRATIVO'];
     server.use(
       http.get(`${API}/staff/89`, () => HttpResponse.json(record('PRECEPTOR'))),
-      http.put(`${API}/staff/89`, () => HttpResponse.json(record('PRECEPTOR'))),
+      http.put(`${API}/staff/89`, () => HttpResponse.json(updated('PRECEPTOR'))),
     );
     const user = userEvent.setup();
     mount();
@@ -106,7 +116,7 @@ describe('LegajoPersonal', () => {
       http.get(`${API}/staff/89`, () => HttpResponse.json(record('PRECEPTOR'))),
       http.put(`${API}/staff/89`, async ({ request }) => {
         sent = await request.json();
-        return HttpResponse.json(record('PRECEPTOR'));
+        return HttpResponse.json(updated('PRECEPTOR'));
       }),
     );
     const user = userEvent.setup();
@@ -131,7 +141,7 @@ describe('LegajoPersonal', () => {
     auth.roles = ['ADMINISTRATIVO'];
     server.use(
       http.get(`${API}/staff/89`, () => HttpResponse.json(record('PRECEPTOR'))),
-      http.put(`${API}/staff/89`, () => HttpResponse.json(record('PRECEPTOR'))),
+      http.put(`${API}/staff/89`, () => HttpResponse.json(updated('PRECEPTOR'))),
     );
     const user = userEvent.setup();
     mount();

@@ -5,15 +5,15 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { TabAsistencia } from '@/features/attendance/pages/DocenteTomarAsistencia';
+import { TabAsistencia, TabHistorial } from '@/features/attendance/pages/DocenteTomarAsistencia';
 import { localIsoDate } from '@/lib/calendario';
 import { installFixedClock } from '@/test/fixedClock';
 
 const API = 'http://localhost:8080';
 
 const ROSTER = [
-  { enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 0, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 3 },
-  { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 2 },
+  { enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 0, attendancePercent: 100, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 3 },
+  { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, attendancePercent: 100, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 2 },
 ];
 
 function mockSection({ savedStatusForAna, savedDate = localIsoDate() } = {}) {
@@ -21,7 +21,7 @@ function mockSection({ savedStatusForAna, savedDate = localIsoDate() } = {}) {
     http.get(`${API}/program-sections/5/roster`, () => HttpResponse.json(ROSTER)),
     http.get(`${API}/program-sections/5/attendance/history`, () =>
       HttpResponse.json({
-        rows: savedStatusForAna ? [{ studentId: 1, studentName: 'Ana Gómez', cellsByDate: { [savedDate]: { attendanceId: 77, status: savedStatusForAna } } }] : [],
+        rows: savedStatusForAna ? [{ studentId: 1, studentName: 'Ana Gómez', cellsByDate: { [savedDate]: { attendanceId: 77, status: savedStatusForAna, justificationDeadline: null, justifiable: false, rejection: null } } }] : [],
       }),
     ),
     http.get(`${API}/program-sections/5/class-sessions/:date`, () => new HttpResponse(null, { status: 404 })),
@@ -101,6 +101,7 @@ describe('TabAsistencia', () => {
             createdAt: '2020-01-07T10:00:00',
             previousStatus: 'LATE',
             reason: 'Se equivocó el docente',
+            rejectionReason: null,
             requestedByName: 'Docente',
             requestedStatus: 'PRESENT',
             sectionName: 'Comisión',
@@ -217,7 +218,7 @@ describe('TabAsistencia', () => {
   it('shows only the absence count when the backend sends no allowance', async () => {
     server.use(
       http.get(`${API}/program-sections/5/roster`, () =>
-        HttpResponse.json([{ enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 2, atRisk: false }]),
+        HttpResponse.json([{ enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 2, attendancePercent: 100, atRisk: false }]),
       ),
       http.get(`${API}/program-sections/5/attendance/history`, () => HttpResponse.json({ rows: [] })),
       http.get(`${API}/program-sections/5/class-sessions/:date`, () => new HttpResponse(null, { status: 404 })),
@@ -368,12 +369,12 @@ describe('TabAsistencia justification proof', () => {
             {
               studentId: 1,
               studentName: 'Ana Gómez',
-              cellsByDate: { [OPEN_DATE]: { attendanceId: 77, status: 'ABSENT', justificationDeadline: '2026-11-10', justifiable: true } },
+              cellsByDate: { [OPEN_DATE]: { attendanceId: 77, status: 'ABSENT', justificationDeadline: '2026-11-10', justifiable: true, rejection: null } },
             },
             {
               studentId: 2,
               studentName: 'Bruno Díaz',
-              cellsByDate: { [EXPIRED_DATE]: { attendanceId: 78, status: 'ABSENT', justificationDeadline: '2026-10-27', justifiable: false } },
+              cellsByDate: { [EXPIRED_DATE]: { attendanceId: 78, status: 'ABSENT', justificationDeadline: '2026-10-27', justifiable: false, rejection: null } },
             },
           ],
         }),
@@ -450,5 +451,47 @@ describe('TabAsistencia justification proof', () => {
 
     expect(await screen.findByText(/Venció el plazo para justificar esta falta/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enviar comprobante' })).toBeEnabled();
+  });
+});
+
+describe('TabHistorial rejected justification', () => {
+  installFixedClock();
+
+  function mockHistory() {
+    const absent = { attendanceId: 77, status: 'ABSENT', justificationDeadline: '2026-11-10', justifiable: true };
+    server.use(
+      http.get(`${API}/program-sections/5/attendance/history`, () =>
+        HttpResponse.json({
+          classDates: ['2026-11-03'],
+          rows: [
+            { studentId: 1, studentName: 'Ana Gómez', attendancePercent: 80, cellsByDate: { '2026-11-03': { ...absent, rejection: { reason: 'Certificado ilegible', rejectedAt: '2026-11-04T10:30:00' } } } },
+            { studentId: 2, studentName: 'Bruno Díaz', attendancePercent: 90, cellsByDate: { '2026-11-03': { ...absent, attendanceId: 78, rejection: null } } },
+          ],
+        }),
+      ),
+    );
+  }
+
+  it('marks the rejected cell with the reason and date, reachable by keyboard', async () => {
+    mockHistory();
+    renderWithProviders(<TabHistorial type="PROGRAM" sectionId={5} />);
+
+    const cell = await screen.findByLabelText('Ausente. Justificación rechazada: Certificado ilegible (04/11/2026)');
+    expect(cell).toHaveAttribute('tabindex', '0');
+    expect(cell).toHaveAttribute('title', 'Justificación rechazada: Certificado ilegible (04/11/2026)');
+  });
+
+  it('shows the rejection in the cell detail and not for cells without rejection', async () => {
+    mockHistory();
+    const user = userEvent.setup();
+    renderWithProviders(<TabHistorial type="PROGRAM" sectionId={5} />);
+
+    await user.click(await screen.findByLabelText(/Justificación rechazada: Certificado ilegible/));
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Justificación rechazada: Certificado ilegible (04/11/2026)');
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await user.click(screen.getAllByTitle('Ausente')[0]);
+    expect(await screen.findByRole('dialog')).not.toHaveTextContent('Justificación rechazada');
   });
 });

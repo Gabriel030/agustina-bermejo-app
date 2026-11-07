@@ -95,6 +95,35 @@ describe('NotificationBell', () => {
   });
 
   it.each([
+    ['GRADES_PUBLISHED', 'Section'],
+    ['GRADE_CORRECTED', 'GradeItem'],
+  ])('navigates to the student grades tab when tapping %s', async (type, entityType) => {
+    const user = userEvent.setup();
+    function Destino() {
+      const location = useLocation();
+      return <div>{`${location.pathname}${location.search}`}</div>;
+    }
+    server.use(
+      http.get(`${API}/me/notifications`, () =>
+        HttpResponse.json([
+          { id: 31, type, message: 'Hay novedades en tus notas.', read: true, relatedEntityType: entityType, relatedEntityId: 5, createdAt: '2026-11-01T10:00:00' },
+        ]),
+      ),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<NotificationBell />} />
+        <Route path="*" element={<Destino />} />
+      </Routes>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Notificaciones' }));
+    await user.click(await screen.findByText(TIPO_NOTIFICACION_LABEL[type]));
+
+    expect(await screen.findByText('/alumno/mis-carreras?tab=notas')).toBeInTheDocument();
+  });
+
+  it.each([
     'GRADUATION_REQUEST_CREATED',
     'GRADUATION_REQUEST_PENDING_REVIEW',
     'GRADUATION_REQUEST_VERIFIED',

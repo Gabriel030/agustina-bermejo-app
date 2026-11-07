@@ -1,7 +1,9 @@
 package com.red_escuela.backend.academicrecord;
 
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.red_escuela.backend.academicrecord.dto.StudentGradeItemResponse;
 import com.red_escuela.backend.config.GradeWireSchemaCustomizer;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
@@ -44,14 +46,19 @@ class StudentGradeItemResponseWireTest {
 
     private static GradeItemView viewOf(GradeItem item) {
         return new GradeItemView(item.getId(), 4L, item.getType().name(), item.getSequenceNumber(),
-                item.getScore(), item.getDate(), null);
+                item.getScore(), item.getDate(), null, null);
+    }
+
+    private static JsonNode withoutCorrection(JsonNode node) {
+        ((ObjectNode) node).remove("correction");
+        return node;
     }
 
     @Test
     void scoredItemSerializesIdenticallyToTheEvaluationResponse() throws Exception {
         GradeItem item = itemScored("7.5");
 
-        assertThat(MAPPER.readTree(MAPPER.writeValueAsString(StudentGradeItemResponse.from(viewOf(item)))))
+        assertThat(withoutCorrection(MAPPER.readTree(MAPPER.writeValueAsString(StudentGradeItemResponse.from(viewOf(item))))))
                 .isEqualTo(MAPPER.readTree(MAPPER.writeValueAsString(GradeItemResponse.from(item))));
     }
 
@@ -59,7 +66,7 @@ class StudentGradeItemResponseWireTest {
     void unscoredItemSerializesIdenticallyToTheEvaluationResponse() throws Exception {
         GradeItem item = itemScored(null);
 
-        assertThat(MAPPER.readTree(MAPPER.writeValueAsString(StudentGradeItemResponse.from(viewOf(item)))))
+        assertThat(withoutCorrection(MAPPER.readTree(MAPPER.writeValueAsString(StudentGradeItemResponse.from(viewOf(item))))))
                 .isEqualTo(MAPPER.readTree(MAPPER.writeValueAsString(GradeItemResponse.from(item))));
     }
 

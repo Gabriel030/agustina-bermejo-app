@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +15,7 @@ public record CreateAnnouncementRequest(
         @NotBlank @Size(max = 1000) String body,
         @NotNull AnnouncementCategory category,
         boolean urgent,
-        LocalDate expiresAt,
-        @Future LocalDateTime scheduledFor,
-        AudienceSpecRequest audience) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate expiresAt,
+        @Future @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime scheduledFor,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) AudienceSpecRequest audience) {
 }

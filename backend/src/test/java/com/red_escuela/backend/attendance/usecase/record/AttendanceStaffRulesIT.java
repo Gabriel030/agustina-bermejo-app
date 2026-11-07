@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
+import com.red_escuela.backend.attendance.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.entity.Attendance;
@@ -19,6 +20,7 @@ import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.attendance.exception.InvalidAttendanceChangeRequestStateException;
 import com.red_escuela.backend.attendance.repository.ClassSessionRepository;
+import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeUseCase;
@@ -69,6 +71,8 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
     private RejectAttendanceJustificationUseCase rejectJustification;
     @Autowired
     private SubmitAttendanceProofUseCase submitProof;
+    @Autowired
+    private GetProgramSectionAttendanceHistoryUseCase getHistory;
     @Autowired
     private RequestAttendanceChangeUseCase requestChange;
     @Autowired
@@ -176,6 +180,46 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
                 .isInstanceOf(CannotJustifyException.class);
     }
 
+    private AttendanceHistoryResponse.HistoryCell historyCellOfTheAbsenceSeenBy(Long instructorId) {
+        return getHistory.get(new GetProgramSectionAttendanceHistoryCommand(section.getId(), instructorId))
+                .rows().get(0).cellsByDate().get(CLASS_DAY);
+    }
+
+    @Test
+    void theOwnInstructorSeesTheRejectionReasonOfARejectedJustificationInTheHistory() {
+        submitProof.submit(new SubmitAttendanceProofCommand(absence.getId(), "medical visit", "students/1/proof.pdf"));
+        actAsStaffMember();
+        rejectJustification.reject(new RejectAttendanceJustificationCommand(absence.getId(), "illegible proof"));
+
+        AttendanceHistoryResponse.HistoryCell cell = historyCellOfTheAbsenceSeenBy(owner.getId());
+
+        assertThat(cell.status()).isEqualTo("ABSENT");
+        assertThat(cell.rejection().reason()).isEqualTo("illegible proof");
+        assertThat(cell.rejection().rejectedAt()).isNotNull();
+    }
+
+    @Test
+    void theHistoryHasNoRejectionWhenTheJustificationWasNeverRejected() {
+        assertThat(historyCellOfTheAbsenceSeenBy(owner.getId()).rejection()).isNull();
+    }
+
+    @Test
+    void theHistoryHasNoRejectionWhileTheRejectedAbsenceIsStillPendingANewProof() {
+        submitProof.submit(new SubmitAttendanceProofCommand(absence.getId(), "medical visit", "students/1/proof.pdf"));
+
+        assertThat(historyCellOfTheAbsenceSeenBy(owner.getId()).rejection()).isNull();
+    }
+
+    @Test
+    void anInstructorOfAnotherSectionCannotSeeTheHistoryWithItsRejectionReasons() {
+        submitProof.submit(new SubmitAttendanceProofCommand(absence.getId(), "medical visit", "students/1/proof.pdf"));
+        actAsStaffMember();
+        rejectJustification.reject(new RejectAttendanceJustificationCommand(absence.getId(), "illegible proof"));
+
+        assertThatThrownBy(() -> historyCellOfTheAbsenceSeenBy(stranger.getId()))
+                .isInstanceOf(NotOwnSectionException.class);
+    }
+
     @Test
     void requestingAChangeOfAnUnknownAttendanceReturnsNotFound() {
         assertThatThrownBy(() -> requestChange.request(new RequestAttendanceChangeCommand(MISSING_ID, owner.getId(), changeToPresent())))
@@ -203,11 +247,12 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
         AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
         actAsStaffMember();
 
-        AttendanceChangeRequest rejected = rejectChange.reject(request.getId());
+        AttendanceChangeRequest rejected = rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente"));
 
         assertThat(rejected.getStatus()).isEqualTo(AttendanceChangeRequestStatus.REJECTED);
         assertThat(rejected.getApprovedBy()).isNotNull();
         assertThat(rejected.getApprovedAt()).isNotNull();
+        assertThat(rejected.getRejectionReason()).isEqualTo("Motivo suficiente");
         assertThat(absence.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
     }
 
@@ -215,9 +260,9 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
     void aChangeRequestAlreadyRejectedCannotBeRejectedAgain() {
         AttendanceChangeRequest request = requestChange.request(new RequestAttendanceChangeCommand(absence.getId(), owner.getId(), changeToPresent()));
         actAsStaffMember();
-        rejectChange.reject(request.getId());
+        rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente"));
 
-        assertThatThrownBy(() -> rejectChange.reject(request.getId()))
+        assertThatThrownBy(() -> rejectChange.reject(new RejectAttendanceChangeRequestCommand(request.getId(), "Motivo suficiente")))
                 .isInstanceOf(InvalidAttendanceChangeRequestStateException.class);
     }
 

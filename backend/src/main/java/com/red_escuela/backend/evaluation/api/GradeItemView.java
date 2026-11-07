@@ -6,5 +6,6 @@ import java.time.LocalDateTime;
 
 public record GradeItemView(
         Long id, Long enrollmentId, String type, Integer sequenceNumber,
-        Grade score, LocalDateTime date, Long examBoardId) {
+        Grade score, LocalDateTime date, Long examBoardId,
+        GradeItemCorrectionView correction) {
 }

@@ -21,7 +21,12 @@ function mockPanel({ onPrerequisite, onCorequisite } = {}) {
     http.get(`${API}/program-subjects/135/prerequisites`, () => HttpResponse.json([])),
     http.get(`${API}/program-subjects/135/corequisites`, () => HttpResponse.json([])),
     http.post(`${API}/program-subjects/135/prerequisites`, onPrerequisite ?? (() => HttpResponse.json({ id: 1 }, { status: 201 }))),
-    http.post(`${API}/program-subjects/135/corequisites`, onCorequisite ?? (() => HttpResponse.json({ id: 1 }, { status: 201 }))),
+    http.post(`${API}/program-subjects/135/corequisites`, onCorequisite ??
+      (() =>
+        HttpResponse.json(
+          { id: 1, corequisiteProgramSubjectId: 136, corequisiteSubjectCode: 'BIO-2', corequisiteSubjectName: 'Biología' },
+          { status: 201 },
+        ))),
   );
 }
 
@@ -72,7 +77,10 @@ describe('PanelCorrelativas', () => {
     mockPanel({
       onCorequisite: async ({ request }) => {
         body = await request.json();
-        return HttpResponse.json({ id: 1 }, { status: 201 });
+        return HttpResponse.json(
+          { id: 1, corequisiteProgramSubjectId: 136, corequisiteSubjectCode: 'BIO-2', corequisiteSubjectName: 'Biología' },
+          { status: 201 },
+        );
       },
     });
     const user = userEvent.setup();

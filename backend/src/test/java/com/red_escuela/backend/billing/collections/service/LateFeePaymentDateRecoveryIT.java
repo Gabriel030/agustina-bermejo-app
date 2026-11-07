@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.payment.domain.BankTransferReceiptSubmissionResult;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.notification.LateFeeCorrectionNotificationListener;
+import com.red_escuela.backend.notification.specialist.LateFeeCorrectionNotificationListener;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;

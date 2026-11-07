@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase.settings;
 
 import com.red_escuela.backend.platform.domain.MyPaymentMethod;
-import com.red_escuela.backend.platform.service.MyPaymentMethodsReader;
+import com.red_escuela.backend.platform.specialist.MyPaymentMethodsReader;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;

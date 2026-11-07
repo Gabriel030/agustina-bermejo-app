@@ -5,13 +5,14 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { NuevaCohortDialog } from './NuevaCohortDialog';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
 function mockTemplates(templates) {
   server.use(
     http.get(`${API}/programs/12/year-billing-templates`, () => HttpResponse.json(templates)),
-    http.get(`${API}/terms`, () => HttpResponse.json([{ id: 7, year: 2027, description: 'Ciclo lectivo 2027' }])),
+    http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 7, year: 2027, description: 'Ciclo lectivo 2027' })])),
   );
 }
 
@@ -41,7 +42,18 @@ describe('NuevaCohortDialog', () => {
     server.use(
       http.post(`${API}/year-billing-templates/3/cohorts`, async ({ request }) => {
         body = await request.json();
-        return HttpResponse.json({ id: 1 }, { status: 201 });
+        return HttpResponse.json(
+          {
+            id: 1,
+            intake: 'FIRST',
+            admissionStart: '2027-02-01',
+            admissionEnd: '2027-03-01',
+            cursadaStart: '2027-03-15',
+            createdAt: '2027-01-10T12:00:00Z',
+            createdByName: 'Ana Paz',
+          },
+          { status: 201 },
+        );
       }),
     );
     const user = userEvent.setup();

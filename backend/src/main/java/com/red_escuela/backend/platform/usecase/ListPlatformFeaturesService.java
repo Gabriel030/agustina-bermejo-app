@@ -1,7 +1,7 @@
 package com.red_escuela.backend.platform.usecase;
 
 import com.red_escuela.backend.platform.domain.FeatureDetail;
-import com.red_escuela.backend.platform.service.FeatureDetailReader;
+import com.red_escuela.backend.platform.specialist.FeatureDetailReader;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;

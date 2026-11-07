@@ -9,9 +9,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-public record CreditNoteResponse(Long id, String creditNoteNumber, Long invoiceId, String invoiceNumber, String reason, String justification,
+public record CreditNoteResponse(Long id, String creditNoteNumber, Long invoiceId, String invoiceNumber, String reason, @Schema(nullable = true) String justification,
                                  Money offsetAmount, Money freeCreditAmount, Money totalAmount, LocalDate issueDate, LocalDate factDate,
-                                 @Schema(nullable = true) Long authorizationRequestId, List<CreditNoteLineResponse> lines, String requestedByName, String authorizedByName, Instant authorizedAt) {
+                                 @Schema(nullable = true) Long authorizationRequestId, List<CreditNoteLineResponse> lines, @Schema(nullable = true) String requestedByName, @Schema(nullable = true) String authorizedByName, @Schema(nullable = true) Instant authorizedAt) {
 
     public static CreditNoteResponse from(CreditNote note) {
         return from(note, CreditNoteAuthorshipTrace.unknown());

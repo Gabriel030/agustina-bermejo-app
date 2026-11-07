@@ -13,9 +13,9 @@ import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentRece
 import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.notification.PaymentReceiptApprovedNotification;
+import com.red_escuela.backend.notification.domain.PaymentReceiptApprovedNotification;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
-import com.red_escuela.backend.notification.PaymentReceiptRejectedNotification;
+import com.red_escuela.backend.notification.domain.PaymentReceiptRejectedNotification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;

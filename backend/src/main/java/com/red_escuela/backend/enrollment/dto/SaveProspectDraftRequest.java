@@ -7,20 +7,20 @@ import com.red_escuela.backend.shared.domain.DocumentType;
 import java.time.LocalDate;
 
 public record SaveProspectDraftRequest(
-        String dni,
-        DocumentType documentType,
-        String street,
-        String number,
-        String floor,
-        String city,
-        String state,
-        String postalCode,
-        String country,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate birthDate,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String sex,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String nationality,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) GuardianDraftRequest guardian,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) EmergencyContactDraftRequest emergencyContact) implements SelfValidatingRequest {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String dni,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) DocumentType documentType,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String street,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String number,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String floor,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String city,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String state,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String postalCode,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String country,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate birthDate,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String sex,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String nationality,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) GuardianDraftRequest guardian,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) EmergencyContactDraftRequest emergencyContact) implements SelfValidatingRequest {
     public SaveProspectDraftRequest {
         RequestLimits.requireMaxLength("dni", dni, 255);
         RequestLimits.requireMaxLength("street", street, 255);

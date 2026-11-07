@@ -23,7 +23,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.delivery.domain.EmailDispatchSettings;
 import com.red_escuela.backend.notification.delivery.domain.EmailDispatchWindow;
-import com.red_escuela.backend.notification.delivery.service.EmailDispatchSettingsSource;
+import com.red_escuela.backend.notification.delivery.specialist.EmailDispatchSettingsSource;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;

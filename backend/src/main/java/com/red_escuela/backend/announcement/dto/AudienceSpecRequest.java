@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.announcement.entity.AudienceQuantifier;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
@@ -9,9 +10,9 @@ import java.util.List;
 
 public record AudienceSpecRequest(
         @NotNull AudienceSegmentKey key,
-        List<Integer> instances,
-        AudienceQuantifier quantifier,
-        Integer threshold) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) List<Integer> instances,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) AudienceQuantifier quantifier,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) Integer threshold) {
 
     public AudienceSpec toSpec() {
         String joined = instances == null || instances.isEmpty()
