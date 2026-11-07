@@ -48,7 +48,7 @@ describe('TabAlumnos', () => {
   });
 
   it('shows only the absence count when the backend sends no allowance', async () => {
-    mockRoster([{ enrollmentId: 1, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40111222', absenceCount: 1, atRisk: false }]);
+    mockRoster([{ enrollmentId: 1, studentId: 11, studentName: 'Acosta, Joaquín', dni: '40111222', absenceCount: 1, attendancePercent: 100, atRisk: false }]);
     renderWithProviders(<TabAlumnos type="PROGRAM" sectionId={5} />);
 
     await screen.findByText('Acosta, Joaquín');

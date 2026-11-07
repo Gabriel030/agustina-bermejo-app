@@ -259,13 +259,6 @@
     ],
     "reason": "mock omits properties the contract marks required"
   },
-  "GET /program-sections/{id}/roster": {
-    "source": "test-handlers",
-    "modules": [
-      "attendance"
-    ],
-    "reason": "mock omits properties the contract marks required"
-  },
   "GET /programs/{id}/subjects": {
     "source": "test-handlers",
     "modules": [
@@ -345,13 +338,6 @@
       "announcements"
     ],
     "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
-  },
-  "GET /subjects": {
-    "source": "test-handlers",
-    "modules": [
-      "academic-structure"
-    ],
-    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
   },
   "PATCH /year-billing-templates/{id}/configuration": {
     "source": "test-handlers",
