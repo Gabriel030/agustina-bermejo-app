@@ -44,6 +44,7 @@ class ModulePatternRulesTest {
         assertThatThrownBy(() -> ModulePatternRules.specialistsDoNotDependOnUseCases().check(fixturesOf("r3")))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("InvertedSpecialist")
+                .hasMessageContaining("InvertedRenamedSpecialist")
                 .hasMessageNotContaining("IndependentSpecialist");
     }
 

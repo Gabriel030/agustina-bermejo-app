@@ -38,6 +38,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [adr/0004-value-objects-money-y-percentage.md](adr/0004-value-objects-money-y-percentage.md) | Money y Percentage compartidos | aceptado |
 | [adr/0005-venta-por-instituto-y-modulos-activables.md](adr/0005-venta-por-instituto-y-modulos-activables.md) | Venta por instituto, módulo `platform`, `PLATFORM_ADMIN` | aceptado, sin implementar |
 | [adr/0006-modo-espejo-de-facturacion.md](adr/0006-modo-espejo-de-facturacion.md) | Modo espejo de facturación | propuesto |
+| [adr/0007-vocabulario-de-roles-y-migracion-de-carpetas.md](adr/0007-vocabulario-de-roles-y-migracion-de-carpetas.md) | Vocabulario de roles (`service` a `specialist`) y migración de carpetas | aceptado |
 
 ## Arquitectura de módulos (`docs/architecture/`)
 

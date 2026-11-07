@@ -25,7 +25,11 @@ no perderlas en medio de una tarea larga:
 2. **Cero comentarios y cero javadoc en código nuevo.** Ni explicando el "qué"
    ni el "por qué", ni una decisión de diseño sutil — nada. Si hace falta
    explicar un razonamiento, va en la conversación, no en el código. Aplica a
-   Java y a JS/JSX por igual. No se hace limpieza retroactiva de comentarios ya
+   Java y a JS/JSX por igual.
+   **Única excepción (aprobada el 7-nov-2026): `package-info.java`**, que lleva
+   javadoc en castellano con cuatro rótulos (Qué es / Expone / No hacer / Ejemplo),
+   antes de la anotación del paquete. Fuera de `package-info.java` no se escribe
+   javadoc (lo hace cumplir `JavadocOnlyInPackageInfoTest`). No se hace limpieza retroactiva de comentarios ya
    existentes salvo pedido explícito.
 3. **Nombres de tests también en inglés** (`validTokenMarksEmailAsVerified`, no
    `tokenValidoMarcaEmail...`).
