@@ -184,7 +184,7 @@ describe('TeacherGradeGrid', () => {
     await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith('1 nota publicada para 1 alumno'));
   });
 
-  it('renders a published column read only with a lock and no publish button', async () => {
+  it('renders a published column read only with an explanation and no publish button', async () => {
     const published = {
       ...grid,
       columns: grid.columns.map((column) => (column.type === 'EXAM' ? { ...column, published: true, publishedAt: '2026-10-01T12:00:00' } : column)),
@@ -193,8 +193,10 @@ describe('TeacherGradeGrid', () => {
     renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
 
     expect(await screen.findByText('Publicada')).toBeInTheDocument();
-    expect(screen.getByLabelText('Parcial 1 de Benítez, Lucía: 7, publicada')).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: 'Parcial 1 de Benítez, Lucía' })).not.toBeInTheDocument();
+    const cell = screen.getByRole('textbox', { name: 'Parcial 1 de Benítez, Lucía' });
+    expect(cell).toHaveAttribute('readonly');
+    expect(cell).toHaveValue('7');
+    expect(cell).toHaveAccessibleDescription('Las notas publicadas quedan bloqueadas. Si hay un error, pedíselo a Dirección.');
     expect(screen.queryByRole('button', { name: 'Publicar Parcial 1' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Publicar Final' })).not.toBeInTheDocument();
   });
