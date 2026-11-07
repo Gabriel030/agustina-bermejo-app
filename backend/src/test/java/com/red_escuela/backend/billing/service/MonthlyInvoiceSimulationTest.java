@@ -57,6 +57,7 @@ class MonthlyInvoiceSimulationTest extends AbstractInvoiceSequenceTest {
 
     @BeforeEach
     void forgetPreviousRuns() {
+        job.ensureAnIssuanceConfigurationExists();
         jdbcTemplate.update("delete from monthly_invoice_simulation_alert");
         jdbcTemplate.update("delete from monthly_invoice_simulation_line");
         jdbcTemplate.update("delete from monthly_invoice_run_item_attempt");

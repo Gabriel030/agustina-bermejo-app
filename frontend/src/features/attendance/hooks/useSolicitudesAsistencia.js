@@ -19,7 +19,8 @@ export function useAprobarSolicitud() {
 export function useRechazarSolicitud() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => apiFetch(`/attendance/change-requests/${id}/reject`, { method: 'POST' }),
+    mutationFn: ({ id, reason }) =>
+      apiFetch(`/attendance/change-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attendance', 'change-requests', 'PENDING'] }),
   });
 }

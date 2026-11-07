@@ -928,6 +928,9 @@
           "reason" : {
             "type" : "string"
           },
+          "rejectionReason" : {
+            "type" : [ "string", "null" ]
+          },
           "requestedByName" : {
             "type" : "string"
           },
@@ -1133,11 +1136,11 @@
         "properties" : {
           "count" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "instanceCount" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "key" : {
             "enum" : [ "ALL", "MUST_TAKE_FINAL", "PROMOTED", "PASSED", "FAILED_COURSE", "EXAM_FAILED", "EXAM_PASSED", "EXAM_MISSING", "TP_FAILED", "TP_MISSING", "TP_PASSED", "FINAL_PASSED", "FINAL_FAILED", "ABSENCES" ],
@@ -1163,19 +1166,19 @@
               "format" : "int32",
               "type" : "integer"
             },
-            "type" : "array"
+            "type" : [ "array", "null" ]
           },
           "key" : {
             "enum" : [ "ALL", "MUST_TAKE_FINAL", "PROMOTED", "PASSED", "FAILED_COURSE", "EXAM_FAILED", "EXAM_PASSED", "EXAM_MISSING", "TP_FAILED", "TP_MISSING", "TP_PASSED", "FINAL_PASSED", "FINAL_FAILED", "ABSENCES" ],
             "type" : "string"
           },
           "quantifier" : {
-            "enum" : [ "ANY", "ALL" ],
-            "type" : "string"
+            "enum" : [ "ANY", "ALL", null ],
+            "type" : [ "string", "null" ]
           },
           "threshold" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "key" ],
@@ -1279,10 +1282,14 @@
       "AuthorizationRequestDetailResponse" : {
         "properties" : {
           "decidedBy" : {
-            "$ref" : "#/components/schemas/AuthorizationRequestPersonResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AuthorizationRequestPersonResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "decisionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "detailBlock" : {
             "$ref" : "#/components/schemas/DetailBlock"
@@ -1318,7 +1325,11 @@
       "AuthorizationRequestListItemResponse" : {
         "properties" : {
           "amount" : {
-            "$ref" : "#/components/schemas/Money"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Money"
+            }, {
+              "type" : "null"
+            } ]
           },
           "decidedAt" : {
             "format" : "date-time",
@@ -1361,7 +1372,7 @@
             "type" : "string"
           },
           "studentName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "summary" : {
             "type" : "string"
@@ -1980,7 +1991,7 @@
           "changeReason" : {
             "maxLength" : 1000,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "effectiveFrom" : {
             "format" : "date",
@@ -1990,7 +2001,7 @@
             "$ref" : "#/components/schemas/ReminderScheduleDto"
           }
         },
-        "required" : [ "changeReason", "effectiveFrom", "schedule" ],
+        "required" : [ "effectiveFrom", "schedule" ],
         "type" : "object"
       },
       "ChangeRow" : {
@@ -2035,11 +2046,11 @@
             "type" : "string"
           },
           "reference" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reversedOn" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "amount", "chargebackId", "chargedBackOn", "reference", "reversedOn" ],
@@ -2192,22 +2203,30 @@
             "type" : "string"
           },
           "globalSettings" : {
-            "$ref" : "#/components/schemas/CollectionReminderSettingsValues",
-            "description" : "Ajustes globales propuestos; si no vienen, quedan los vigentes. Obligatorios cuando no hay agenda"
+            "description" : "Ajustes globales propuestos; si no vienen, quedan los vigentes. Obligatorios cuando no hay agenda",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CollectionReminderSettingsValues"
+            }, {
+              "type" : "null"
+            } ]
           },
           "group" : {
             "description" : "Grupo de la agenda propuesta; va junto con schedule. Sin ninguno de los dos, el cambio es solo de ajustes globales",
-            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
-            "type" : "string"
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES", null ],
+            "type" : [ "string", "null" ]
           },
           "schedule" : {
-            "$ref" : "#/components/schemas/ReminderScheduleDto",
-            "description" : "Agenda propuesta; va junto con group"
+            "description" : "Agenda propuesta; va junto con group",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReminderScheduleDto"
+            }, {
+              "type" : "null"
+            } ]
           },
           "targetId" : {
             "description" : "Programa o curso de la excepción; sin valor, el cambio es a la política del grupo",
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "effectiveFrom" ],
@@ -2265,7 +2284,7 @@
           },
           "dailyDigestEnabled" : {
             "description" : "Resumen diario único por alumno; si no viene, queda activado",
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "dailyEmailCap" : {
             "format" : "int32",
@@ -2806,7 +2825,11 @@
       "CreateAnnouncementRequest" : {
         "properties" : {
           "audience" : {
-            "$ref" : "#/components/schemas/AudienceSpecRequest"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AudienceSpecRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
           "body" : {
             "maxLength" : 1000,
@@ -2819,11 +2842,11 @@
           },
           "expiresAt" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "scheduledFor" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "title" : {
             "maxLength" : 100,
@@ -3146,8 +3169,8 @@
       "CreateEvaluationSchemeRequest" : {
         "properties" : {
           "aggregationMethod" : {
-            "enum" : [ "SIMPLE_AVERAGE", "WEIGHTED_AVERAGE", "MAX_SCORE", "LAST_ATTEMPT" ],
-            "type" : "string"
+            "enum" : [ "SIMPLE_AVERAGE", "WEIGHTED_AVERAGE", "MAX_SCORE", "LAST_ATTEMPT", null ],
+            "type" : [ "string", "null" ]
           },
           "examCountExpected" : {
             "format" : "int32",
@@ -3155,7 +3178,7 @@
           },
           "finalWeight" : {
             "format" : "double",
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "hasFinal" : {
             "type" : "boolean"
@@ -3171,20 +3194,20 @@
             "type" : "string"
           },
           "notes" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "promotionMinGrade" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "aggregationMethod", "examCountExpected", "finalWeight", "hasFinal", "minApprovalGrade", "minRegularGrade", "name", "notes", "promotionMinGrade" ],
+        "required" : [ "examCountExpected", "hasFinal", "minApprovalGrade", "minRegularGrade", "name" ],
         "type" : "object"
       },
       "CreateExamBoardRegistrationRequest" : {
         "properties" : {
           "courseSectionEnrollmentId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "examBoardId" : {
             "format" : "int64",
@@ -3192,10 +3215,10 @@
           },
           "programSectionEnrollmentId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
-        "required" : [ "courseSectionEnrollmentId", "examBoardId", "programSectionEnrollmentId" ],
+        "required" : [ "examBoardId" ],
         "type" : "object"
       },
       "CreateExamBoardRequest" : {
@@ -3561,10 +3584,10 @@
             "type" : "string"
           },
           "telefono" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "apellido", "email", "institutionId", "nombre", "telefono" ],
+        "required" : [ "apellido", "email", "institutionId", "nombre" ],
         "type" : "object"
       },
       "CreateSectionEnrollmentRequest" : {
@@ -3779,10 +3802,10 @@
           },
           "authorizedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "authorizedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "creditNoteNumber" : {
             "type" : "string"
@@ -3810,7 +3833,7 @@
             "type" : "string"
           },
           "justification" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "lines" : {
             "items" : {
@@ -3825,7 +3848,7 @@
             "type" : "string"
           },
           "requestedByName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "totalAmount" : {
             "$ref" : "#/components/schemas/Money"
@@ -4856,7 +4879,7 @@
             "type" : "string"
           },
           "finalScore" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -5879,7 +5902,11 @@
             "type" : "array"
           },
           "enrollmentFee" : {
-            "$ref" : "#/components/schemas/EnrollmentFeeResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EnrollmentFeeResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "executesImmediately" : {
             "type" : "boolean"
@@ -6973,7 +7000,7 @@
         "properties" : {
           "completionDate" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "courseId" : {
             "format" : "int64",
@@ -6991,10 +7018,14 @@
             "type" : "integer"
           },
           "progressPercent" : {
-            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
-            "maximum" : 100,
-            "minimum" : 0,
-            "type" : "number"
+            "oneOf" : [ {
+              "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
+              "maximum" : 100,
+              "minimum" : 0,
+              "type" : "number"
+            }, {
+              "type" : "null"
+            } ]
           },
           "status" : {
             "type" : "string"
@@ -7659,7 +7690,11 @@
             "type" : "boolean"
           },
           "blockedBy" : {
-            "$ref" : "#/components/schemas/RefundBlockResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RefundBlockResponse"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "allowed", "blockedBy" ],
@@ -7825,7 +7860,11 @@
             "type" : "boolean"
           },
           "blockedBy" : {
-            "$ref" : "#/components/schemas/RefundBlockResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RefundBlockResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "creditToReverse" : {
             "$ref" : "#/components/schemas/Money"
@@ -8801,15 +8840,15 @@
             "type" : "integer"
           },
           "curricularTerm" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "curricularYear" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "electiveGroupId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -8821,10 +8860,10 @@
           },
           "sortOrder" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "subjectCode" : {
             "type" : "string"
@@ -8841,11 +8880,11 @@
           },
           "weeklyHours" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "weeklyHoursLab" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
         "type" : "object"
@@ -9331,7 +9370,11 @@
             "$ref" : "#/components/schemas/Money"
           },
           "blockedBy" : {
-            "$ref" : "#/components/schemas/RefundBlockResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RefundBlockResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "currency" : {
             "type" : "string"
@@ -9390,13 +9433,13 @@
             "$ref" : "#/components/schemas/Money"
           },
           "destinationAccount" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "destinationComplete" : {
             "type" : "boolean"
           },
           "destinationHolder" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "methodType" : {
             "type" : "string"
@@ -9415,7 +9458,11 @@
             "type" : "boolean"
           },
           "blockedBy" : {
-            "$ref" : "#/components/schemas/RefundBlockResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RefundBlockResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "parts" : {
             "items" : {
@@ -9464,7 +9511,7 @@
         "properties" : {
           "authorizationRequestId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "parts" : {
             "items" : {
@@ -9554,10 +9601,10 @@
             "$ref" : "#/components/schemas/Money"
           },
           "receiptDestinationAccount" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "receiptDestinationHolder" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "refundableNow" : {
             "$ref" : "#/components/schemas/Money"
@@ -9768,6 +9815,17 @@
         "required" : [ "attendanceControlled", "billingMode", "enrollmentId", "kind", "reasons", "regular" ],
         "type" : "object"
       },
+      "RejectAttendanceChangeRequestRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 10,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "RejectAttendanceJustificationRequest" : {
         "properties" : {
           "reason" : {
@@ -9869,7 +9927,7 @@
               "enum" : [ "IN_APP", "EMAIL" ],
               "type" : "string"
             },
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "uniqueItems" : true
           },
           "messageType" : {
@@ -9881,17 +9939,21 @@
             "type" : "string"
           },
           "noticeKey" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "offsetDays" : {
             "format" : "int32",
             "type" : "integer"
           },
           "repetition" : {
-            "$ref" : "#/components/schemas/ReminderRepetitionDto"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReminderRepetitionDto"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "channels", "messageType", "milestone", "noticeKey", "offsetDays", "repetition" ],
+        "required" : [ "messageType", "milestone", "offsetDays" ],
         "type" : "object"
       },
       "ReminderRepetitionDto" : {
@@ -9901,18 +9963,18 @@
             "type" : "integer"
           },
           "until" : {
-            "enum" : [ "ISSUANCE", "DUE_DATE", "SUSPENSION" ],
-            "type" : "string"
+            "enum" : [ "ISSUANCE", "DUE_DATE", "SUSPENSION", null ],
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "everyDays", "until" ],
+        "required" : [ "everyDays" ],
         "type" : "object"
       },
       "ReminderScheduleDto" : {
         "properties" : {
           "followsGroupSchedule" : {
             "description" : "Solo en respuestas: true si la excepción volvió a la política del grupo. En /changes y /validation no se acepta true: usar /removal.",
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "notices" : {
             "items" : {
@@ -9921,10 +9983,14 @@
             "type" : "array"
           },
           "sendingOverrides" : {
-            "$ref" : "#/components/schemas/ReminderSendingOverridesDto"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReminderSendingOverridesDto"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "followsGroupSchedule", "notices", "sendingOverrides" ],
+        "required" : [ "notices" ],
         "type" : "object"
       },
       "ReminderSchedulePoliciesResponse" : {
@@ -9993,33 +10059,32 @@
         "properties" : {
           "contactListDaysOverdue" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "contactListOverdueInstallments" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "dailyEmailCap" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "emailWindowEnd" : {
             "format" : "time-local",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "emailWindowStart" : {
             "format" : "time-local",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "postWithdrawalSummaryMonths" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "suspensionNoticeEnabled" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           }
         },
-        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
         "type" : "object"
       },
       "ReminderSeriesResponse" : {
@@ -10134,7 +10199,7 @@
           "notes" : {
             "maxLength" : 500,
             "minLength" : 0,
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -10203,50 +10268,57 @@
         "properties" : {
           "birthDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "city" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "country" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "dni" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "documentType" : {
-            "enum" : [ "DNI", "PASSPORT", "OTHER" ],
-            "type" : "string"
+            "enum" : [ "DNI", "PASSPORT", "OTHER", null ],
+            "type" : [ "string", "null" ]
           },
           "emergencyContact" : {
-            "$ref" : "#/components/schemas/EmergencyContactDraftRequest"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EmergencyContactDraftRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
           "floor" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "guardian" : {
-            "$ref" : "#/components/schemas/GuardianDraftRequest"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GuardianDraftRequest"
+            }, {
+              "type" : "null"
+            } ]
           },
           "nationality" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "number" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "postalCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "sex" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "state" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "street" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "city", "country", "dni", "documentType", "floor", "number", "postalCode", "state", "street" ],
         "type" : "object"
       },
       "ScheduleSlotRequest" : {
@@ -10783,7 +10855,11 @@
             "type" : "string"
           },
           "domicilio" : {
-            "$ref" : "#/components/schemas/AddressResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AddressResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "email" : {
             "type" : "string"
@@ -10793,7 +10869,7 @@
           },
           "failedLoginAttempts" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -10801,7 +10877,7 @@
           },
           "lockedUntil" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "nombre" : {
             "type" : "string"
@@ -10813,7 +10889,7 @@
             "type" : "string"
           },
           "telefono" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "username" : {
             "type" : "string"
@@ -10859,14 +10935,14 @@
       "StatusChangeResponse" : {
         "properties" : {
           "actorName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "actorPersonId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "actorProcess" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "changedAt" : {
             "format" : "date-time",
@@ -10876,10 +10952,10 @@
             "type" : "string"
           },
           "fromStatus" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "toStatus" : {
             "type" : "string"
@@ -11208,16 +11284,28 @@
       "StudentPaymentResponse" : {
         "properties" : {
           "actions" : {
-            "$ref" : "#/components/schemas/PaymentActionsResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PaymentActionsResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "amount" : {
             "$ref" : "#/components/schemas/Money"
           },
           "approvedAmount" : {
-            "$ref" : "#/components/schemas/Money"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Money"
+            }, {
+              "type" : "null"
+            } ]
           },
           "chargeback" : {
-            "$ref" : "#/components/schemas/ChargebackSummaryResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChargebackSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "gateway" : {
             "type" : "string"
@@ -11234,10 +11322,14 @@
             "type" : "string"
           },
           "pendingRefunds" : {
-            "$ref" : "#/components/schemas/PendingRefundsSummaryResponse"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PendingRefundsSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
           },
           "receiptNumber" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "refundedAmount" : {
             "$ref" : "#/components/schemas/Money"
@@ -11840,41 +11932,49 @@
       "UpdateProgramRequest" : {
         "properties" : {
           "admissionRequirements" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "enrollmentFeeAmount" : {
-            "$ref" : "#/components/schemas/Money"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Money"
+            }, {
+              "type" : "null"
+            } ]
           },
           "graduationProfile" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "level" : {
-            "enum" : [ "UNDERGRADUATE", "GRADUATE", "EXTENSION", "DIPLOMA" ],
-            "type" : "string"
+            "enum" : [ "UNDERGRADUATE", "GRADUATE", "EXTENSION", "DIPLOMA", null ],
+            "type" : [ "string", "null" ]
           },
           "name" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "price" : {
-            "$ref" : "#/components/schemas/Money"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Money"
+            }, {
+              "type" : "null"
+            } ]
           },
           "teachingMode" : {
-            "enum" : [ "IN_PERSON", "ONLINE", "HYBRID" ],
-            "type" : "string"
+            "enum" : [ "IN_PERSON", "ONLINE", "HYBRID", null ],
+            "type" : [ "string", "null" ]
           },
           "totalCreditsRequired" : {
             "format" : "int32",
             "minimum" : 0,
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "totalHoursRequired" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "totalYears" : {
             "format" : "int32",
             "minimum" : 1,
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
         "type" : "object"
@@ -11913,46 +12013,45 @@
         "properties" : {
           "exam1Date" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "exam2Date" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "exam3Date" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "exam4Date" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "finalCall1Date" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "finalCall2Date" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "tp1DueDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "tp2DueDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "tp3DueDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "tpCount" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           }
         },
-        "required" : [ "exam1Date", "exam2Date", "exam3Date", "exam4Date", "finalCall1Date", "finalCall2Date", "tp1DueDate", "tp2DueDate", "tp3DueDate", "tpCount" ],
         "type" : "object"
       },
       "UpdateSectionRequest" : {
@@ -14605,6 +14704,16 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RejectAttendanceChangeRequestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.shared.domain.Percentage;
 
@@ -8,7 +10,7 @@ import java.util.Optional;
 
 public record MyCourseEnrollmentResponse(
         Long id, Long studentId, Long courseId, String courseName, String status,
-        LocalDateTime enrollmentDate, LocalDateTime completionDate, Percentage progressPercent) {
+        LocalDateTime enrollmentDate, @Schema(nullable = true) LocalDateTime completionDate, @Schema(nullable = true) Percentage progressPercent) {
 
     public static MyCourseEnrollmentResponse from(CourseEnrollment courseEnrollment, Optional<Percentage> progress) {
         CourseEnrollmentResponse base = CourseEnrollmentResponse.from(courseEnrollment);

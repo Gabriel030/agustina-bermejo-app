@@ -9,7 +9,7 @@ import java.time.LocalTime;
 public record CollectionReminderSettingsValues(@NotNull Boolean suspensionNoticeEnabled, @NotNull Integer postWithdrawalSummaryMonths,
                                                @NotNull LocalTime emailWindowStart, @NotNull LocalTime emailWindowEnd, @NotNull Integer dailyEmailCap,
                                                @NotNull Integer contactListDaysOverdue, @NotNull Integer contactListOverdueInstallments,
-                                               @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Resumen diario único por alumno; si no viene, queda activado")
+                                               @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED, description = "Resumen diario único por alumno; si no viene, queda activado")
                                                Boolean dailyDigestEnabled) {
 
     public CollectionReminderSettings toSettings() {

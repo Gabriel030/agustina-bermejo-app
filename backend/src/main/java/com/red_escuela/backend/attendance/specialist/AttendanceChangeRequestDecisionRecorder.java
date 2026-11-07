@@ -19,4 +19,9 @@ public class AttendanceChangeRequestDecisionRecorder {
         request.setApprovedBy(actorResolver.currentActor());
         request.setApprovedAt(ApplicationTime.now());
     }
+
+    public void recordRejectionByCurrentActor(AttendanceChangeRequest request, String reason) {
+        recordDecisionByCurrentActor(request, AttendanceChangeRequestStatus.REJECTED);
+        request.setRejectionReason(reason.trim());
+    }
 }

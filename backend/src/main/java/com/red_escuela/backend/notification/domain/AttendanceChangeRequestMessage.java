@@ -15,4 +15,11 @@ final class AttendanceChangeRequestMessage {
                 + " del " + classDate.format(DAY_FORMAT) + " fue " + decision + ": "
                 + previousStatusLabel + " → " + requestedStatusLabel;
     }
+
+    static String rejectionReasonSuffix(String rejectionReason) {
+        if (rejectionReason == null || rejectionReason.isBlank()) {
+            return "";
+        }
+        return ". Motivo: " + rejectionReason;
+    }
 }

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.note.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.red_escuela.backend.billing.discount.domain.EnrollmentFeeDiscountFacts;
 import com.red_escuela.backend.billing.discount.domain.ReleasedDiscountConsumption;
 import com.red_escuela.backend.billing.note.domain.InvoiceCancellationPreview;
@@ -11,7 +13,7 @@ import java.util.List;
 
 public record InvoiceCancellationPreviewResponse(boolean allowed, List<BlockResponse> blockedBy, Money creditNoteAmount, boolean releasesChargeKey,
                                                  boolean executesImmediately, List<LateFeeToAnnulResponse> lateFeesToAnnul,
-                                                 List<DiscountConsumptionResponse> discountConsumptionReleased, EnrollmentFeeResponse enrollmentFee) {
+                                                 List<DiscountConsumptionResponse> discountConsumptionReleased, @Schema(nullable = true) EnrollmentFeeResponse enrollmentFee) {
 
     public record BlockResponse(String code, String message) {
         static BlockResponse from(PolicyViolation violation) {
