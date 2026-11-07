@@ -39,7 +39,19 @@ public class MonthlyInvoiceRunTestDriver {
         return executor.runMonthlyInvoicesOfPeriod(period, today, MonthlyInvoiceRunTrigger.SCHEDULED);
     }
 
+    public void ensureAnIssuanceConfigurationExists() {
+        jdbc.update("""
+                insert into configuration_version (scope, topic_key, config_values, status, effective_from, change_reason, proposed_by_id, proposed_at, decided_by_id, decided_at,
+                                                   direct_publication)
+                select 'ISSUANCE', 'ISSUANCE', '{"type":"ISSUANCE","issuanceMode":"DIRECT","continueIssuingWhileOverdue":true,"maxRetryAttempts":5,"retryBackoffHours":[1,3,6,12,24]}'::jsonb,
+                       'EFFECTIVE', date '2000-01-01', 'Test support default issuance', p.id, now(), p.id, now(), true
+                from (select min(id) as id from person) p
+                where p.id is not null and not exists (select 1 from configuration_version where scope = 'ISSUANCE')
+                """);
+    }
+
     public void completeTheNightOf(LocalDate businessDate) {
+        ensureAnIssuanceConfigurationExists();
         jdbc.update("""
                 insert into nightly_billing_run (business_date, status, trigger, started_at, finished_at)
                 values (?, 'COMPLETED', 'SCHEDULED', ?, ?) on conflict (business_date) do update set status = 'COMPLETED', finished_at = excluded.finished_at

@@ -175,7 +175,7 @@ export function SolicitudesAsistencia() {
   async function confirmReject(reason) {
     try {
       if (rejecting.kind === 'justification') await rejectJustification.mutateAsync({ attendanceId: rejecting.ref, reason });
-      else await rejectCorrection.mutateAsync(rejecting.ref);
+      else await rejectCorrection.mutateAsync({ id: rejecting.ref, reason });
       toast.success(rejecting.kind === 'justification' ? 'Justificación rechazada' : 'Solicitud rechazada');
       setRejecting(null);
       return true;
@@ -242,13 +242,14 @@ export function SolicitudesAsistencia() {
         open={rejecting !== null}
         onClose={() => setRejecting(null)}
         confirmando={rejectCorrection.isPending || rejectJustification.isPending}
-        requerido={rejectingJustification}
-        minLength={rejectingJustification ? MIN_REJECTION_REASON_LENGTH : 0}
+        requerido
+        minLength={MIN_REJECTION_REASON_LENGTH}
+        showCounter
         titulo={rejectingJustification ? 'Rechazar justificación' : 'Rechazar solicitud'}
         descripcion={
           rejectingJustification
             ? 'El alumno recibe este motivo y la inasistencia sigue como Ausente.'
-            : 'La asistencia queda como estaba.'
+            : 'El docente recibe este motivo y la asistencia queda como estaba.'
         }
         placeholder="Explicá por qué se rechaza"
         confirmarVariant="destructive"

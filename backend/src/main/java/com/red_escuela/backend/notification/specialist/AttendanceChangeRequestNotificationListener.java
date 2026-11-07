@@ -37,6 +37,6 @@ public class AttendanceChangeRequestNotificationListener {
     public void notifyRejected(AttendanceChangeRequestRejectedEvent event) {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_REJECTED_HANDLER, () -> eventPublisher.publishEvent(new AttendanceChangeRequestRejectedNotification(
                 event.requestId(), entityManager.getReference(Person.class, event.requestedByPersonId()), event.studentFullName(),
-                event.classDate(), event.previousStatusLabel(), event.requestedStatusLabel())));
+                event.classDate(), event.previousStatusLabel(), event.requestedStatusLabel(), event.rejectionReason())));
     }
 }

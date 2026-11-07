@@ -86,7 +86,7 @@ public class MonthlyInvoiceRunExecutor {
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriodPricedAt(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger) {
-        return runMonthlyInvoicesOfPeriodPricedAt(period, businessDate, pricingDate, trigger, modeResolver.resolveModeOfNewRun());
+        return runMonthlyInvoicesOfPeriodPricedAt(period, businessDate, pricingDate, trigger, modeResolver.resolveModeEffectiveOn(businessDate));
     }
 
     public Optional<MonthlyInvoiceRun> runMonthlyInvoicesOfPeriodPricedAt(YearMonth period, LocalDate businessDate, LocalDate pricingDate, MonthlyInvoiceRunTrigger trigger,

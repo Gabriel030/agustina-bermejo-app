@@ -25,6 +25,7 @@ const CORRECTION = {
   studentName: 'Mateo Giménez',
   subjectName: 'Historia del Arte',
   status: 'PENDING',
+  rejectionReason: null,
 };
 
 const JUSTIFICATION = {
@@ -54,12 +55,13 @@ const ATTENDANCE = {
 function mockInbox({ corrections: initialCorrections = [CORRECTION], justifications: initialJustifications = [JUSTIFICATION] } = {}) {
   let corrections = initialCorrections;
   let justifications = initialJustifications;
-  const calls = { approvedId: null, rejectBody: null, correctionRejected: false };
+  const calls = { approvedId: null, rejectBody: null, correctionRejected: false, correctionRejectBody: null };
   server.use(
-    http.post(`${API}/attendance/change-requests/:id/reject`, () => {
+    http.post(`${API}/attendance/change-requests/:id/reject`, async ({ request }) => {
       calls.correctionRejected = true;
+      calls.correctionRejectBody = await request.json();
       corrections = [];
-      return HttpResponse.json(CORRECTION);
+      return HttpResponse.json({ ...CORRECTION, status: 'REJECTED', rejectionReason: calls.correctionRejectBody.reason });
     }),
     http.post(`${API}/attendance/:id/approve-justification`, ({ params }) => {
       calls.approvedId = params.id;
@@ -164,16 +166,28 @@ describe('SolicitudesAsistencia', () => {
     expect(calls.rejectBody).toEqual({ reason: 'El certificado no corresponde al día.' });
   });
 
-  it('rechazar una corrección no pide motivo', async () => {
+  it('rejecting a correction requires a reason of at least 10 characters and sends it', async () => {
     const calls = mockInbox({ justifications: [] });
     renderWithProviders(<SolicitudesAsistencia />);
 
     await screen.findByText('Mateo Giménez');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    const textarea = await screen.findByPlaceholderText('Explicá por qué se rechaza');
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Rechazar' }).at(-1));
+    expect(await screen.findByText('El motivo del rechazo es obligatorio.')).toBeInTheDocument();
+    await userEvent.type(textarea, 'corto');
+    expect(screen.getByText('5/500')).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Rechazar' }).at(-1));
+    expect(await screen.findByText('El motivo debe tener al menos 10 caracteres.')).toBeInTheDocument();
+    expect(calls.correctionRejected).toBe(false);
+
+    await userEvent.clear(textarea);
+    await userEvent.type(textarea, '  La clase ya estaba firmada.  ');
     await userEvent.click(screen.getAllByRole('button', { name: 'Rechazar' }).at(-1));
 
     await screen.findByText('Sin solicitudes pendientes');
-    expect(calls.correctionRejected).toBe(true);
+    expect(calls.correctionRejectBody).toEqual({ reason: 'La clase ya estaba firmada.' });
   });
 
   it('opens the attachment through the authenticated download endpoint', async () => {

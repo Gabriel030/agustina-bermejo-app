@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.service;
 
+import com.red_escuela.backend.billing.events.DraftInvoicesAwaitingReviewEvent;
 import com.red_escuela.backend.billing.events.MonthlyInvoiceItemRetriesExhaustedEvent;
 import com.red_escuela.backend.billing.events.MonthlyInvoiceRunMissedEvent;
 import com.red_escuela.backend.billing.events.NightlyBillingRunCompletedWithErrorsEvent;
@@ -20,6 +21,7 @@ public class BillingRunAlertPublisher {
     static final String MISSED_ALERT = "BillingRunAlertPublisher.publishRunMissedAlert";
     static final String WITH_ERRORS_ALERT = "BillingRunAlertPublisher.publishRunCompletedWithErrorsAlert";
     static final String MONTHLY_RUN_MISSED_ALERT = "BillingRunAlertPublisher.publishMonthlyRunMissedAlert";
+    static final String DRAFTS_AWAITING_REVIEW_ALERT = "BillingRunAlertPublisher.publishDraftsAwaitingReviewAlert";
     static final String RETRIES_EXHAUSTED_ALERT = "BillingRunAlertPublisher.publishItemRetriesExhaustedAlert";
 
     private final ApplicationEventPublisher eventPublisher;
@@ -54,6 +56,11 @@ public class BillingRunAlertPublisher {
     public void publishItemRetriesExhaustedAlert(MonthlyInvoiceRunItem item) {
         publishOnce(MonthlyInvoiceItemRetriesExhaustedEvent.exhaustedFor(item.getId(), item.getMonthlyInvoiceRunId(), item.getEnrollmentType().name(), item.getEnrollmentId(),
                 item.getErrorCode()), RETRIES_EXHAUSTED_ALERT);
+    }
+
+    @Transactional
+    public void publishDraftsAwaitingReviewAlert(Long monthlyInvoiceRunId, LocalDate period, LocalDate alertDate, long pendingDrafts) {
+        publishOnce(DraftInvoicesAwaitingReviewEvent.pendingOn(monthlyInvoiceRunId, period, alertDate, pendingDrafts), DRAFTS_AWAITING_REVIEW_ALERT);
     }
 
     private void publishOnce(DeduplicableDomainEvent event, String alertName) {
