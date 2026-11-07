@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 
 const API = 'http://localhost:8080';
 
@@ -100,6 +101,11 @@ export const handlers = [
     HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
   ),
   http.get(`${API}/program-enrollments/:id/annual-upfront-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/annual-upfront-terms/current`, () => HttpResponse.json(annualTerms())),
+  http.get(`${API}/annual-upfront-terms/versions/:versionNumber`, ({ params }) =>
+    HttpResponse.json(annualTerms({ versionNumber: Number(params.versionNumber), version: `v${params.versionNumber}` })),
+  ),
+  http.get(`${API}/annual-upfront-terms/versions`, () => HttpResponse.json([auditedAnnualTerms()])),
   http.post(`${API}/me/program-enrollment-applications`, () =>
     HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
   ),

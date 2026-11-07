@@ -26,9 +26,15 @@ const SimulatedMailsPage = lazyPage(() => import('@/features/billing/reminders/S
 const ReminderSettingsPage = lazyPage(() => import('@/features/billing/reminders/ReminderSettingsPage'), 'ReminderSettingsPage');
 const PaymentMethodsPage = lazyPage(() => import('@/features/billing/payment-methods/PaymentMethodsPage'), 'PaymentMethodsPage');
 
+const AnnualTermsPage = lazyPage(() => import('@/features/billing/annual-upfront/terms/AnnualTermsPage'), 'AnnualTermsPage');
+const AnnualTermsAdminPage = lazyPage(() => import('@/features/billing/annual-upfront/terms/AnnualTermsAdminPage'), 'AnnualTermsAdminPage');
+
 export const routes = {
   public: [],
-  shared: [],
+  shared: [
+    { path: '/terminos-pago-anual', element: <AnnualTermsPage /> },
+    { path: '/terminos-pago-anual/:versionNumber', element: <AnnualTermsPage /> },
+  ],
   role: [
     { roles: ['alumno'], path: 'pagos', element: <RequiresConnection><AlumnoPagos /></RequiresConnection> },
     { roles: ['alumno'], path: 'pagos/estado', element: <RequiresConnection><AlumnoPagoEstado /></RequiresConnection> },
@@ -53,6 +59,7 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago',element: <ReminderSettingsPage /> },
     { roles: ['administrativo', 'director'], path: 'recordatorios-de-pago/mails-simulados', element: <SimulatedMailsPage /> },
     { roles: ['administrativo', 'director'], path: 'medios-de-pago', element: <PaymentMethodsPage /> },
+    { roles: ['director'], path: 'terminos-del-pago-anual', element: <AnnualTermsAdminPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion', element: <AuthorizationInboxPage /> },
     { roles: ['director'], path: 'aprobaciones/facturacion/:id', element: <AuthorizationRequestDetailPage /> },
     { roles: ['administrativo'], path: 'aprobaciones', element: <AuthorizationInboxPage /> },
