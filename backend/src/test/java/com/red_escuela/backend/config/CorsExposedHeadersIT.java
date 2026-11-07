@@ -9,6 +9,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @SpringBootTest
@@ -26,5 +28,26 @@ class CorsExposedHeadersIT extends AbstractIntegrationTest {
                 .andExpect(header().string("Access-Control-Expose-Headers", Matchers.containsString("X-Request-Id")))
                 .andExpect(header().string("Access-Control-Expose-Headers", Matchers.containsString("Content-Disposition")))
                 .andExpect(header().string("Access-Control-Expose-Headers", Matchers.containsString("X-Total-Count")));
+    }
+
+    @Test
+    void preflightFromAllowedOriginAcceptsIfMatchHeader() throws Exception {
+        mockMvc.perform(options("/institute-settings")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "PUT")
+                        .header("Access-Control-Request-Headers", "if-match"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Headers", Matchers.containsStringIgnoringCase("If-Match")))
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void preflightFromDisallowedOriginIsRejected() throws Exception {
+        mockMvc.perform(options("/institute-settings")
+                        .header("Origin", "http://evil.example.com")
+                        .header("Access-Control-Request-Method", "PUT")
+                        .header("Access-Control-Request-Headers", "if-match"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 }
