@@ -5681,11 +5681,14 @@
             "format" : "date",
             "type" : "string"
           },
+          "rejection" : {
+            "$ref" : "#/components/schemas/JustificationRejection"
+          },
           "status" : {
             "type" : "string"
           }
         },
-        "required" : [ "attendanceId", "justifiable", "justificationDeadline", "status" ],
+        "required" : [ "attendanceId", "justifiable", "justificationDeadline", "rejection", "status" ],
         "type" : "object"
       },
       "HolidayResponse" : {
@@ -6147,6 +6150,19 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "JustificationRejection" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          },
+          "rejectedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason", "rejectedAt" ],
         "type" : "object"
       },
       "LateFeeReinstatementResponse" : {

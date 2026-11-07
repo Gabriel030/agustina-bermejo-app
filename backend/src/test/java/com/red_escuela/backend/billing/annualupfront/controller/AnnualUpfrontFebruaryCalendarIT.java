@@ -57,4 +57,17 @@ class AnnualUpfrontFebruaryCalendarIT extends AbstractAnnualUpfrontRequestIT {
         assertThat(count("select count(*) from invoice_line where invoice_id = " + invoiceId + " and fee_type = 'MONTHLY_INSTALLMENT'")).isEqualTo(10);
         assertThat(new BigDecimal(body.get("total").get("amount").asString(""))).isEqualByComparingTo("720000.00");
     }
+
+    @Test
+    @Tag("D-520")
+    void aPaidFebruaryInstallmentSpendsTheOptionOnlyInAFebruaryToDecemberYear() throws Exception {
+        configureFebruaryToDecemberYear();
+        Long invoiceId = issueInstallment(java.time.YearMonth.of(2027, 2));
+        jdbc.update("update invoice set payment_status = 'PAID', paid_amount = total, outstanding_amount = 0 where id = ?", invoiceId);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 2, 5, 10, 0));
+
+        JsonNode body = objectMapper.readTree(request(true, "v1", 409).getResponse().getContentAsString());
+
+        assertThat(body.get("violations").get(0).get("code").asString("")).isEqualTo("ANNUAL_UPFRONT_MONTHLY_ALREADY_USED");
+    }
 }

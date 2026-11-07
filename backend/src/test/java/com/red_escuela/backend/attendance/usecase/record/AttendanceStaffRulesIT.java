@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
+import com.red_escuela.backend.attendance.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.entity.Attendance;
@@ -70,6 +71,8 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
     private RejectAttendanceJustificationUseCase rejectJustification;
     @Autowired
     private SubmitAttendanceProofUseCase submitProof;
+    @Autowired
+    private GetProgramSectionAttendanceHistoryUseCase getHistory;
     @Autowired
     private RequestAttendanceChangeUseCase requestChange;
     @Autowired
@@ -175,6 +178,46 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> rejectJustification.reject(new RejectAttendanceJustificationCommand(absence.getId(), "illegible proof")))
                 .isInstanceOf(CannotJustifyException.class);
+    }
+
+    private AttendanceHistoryResponse.HistoryCell historyCellOfTheAbsenceSeenBy(Long instructorId) {
+        return getHistory.get(new GetProgramSectionAttendanceHistoryCommand(section.getId(), instructorId))
+                .rows().get(0).cellsByDate().get(CLASS_DAY);
+    }
+
+    @Test
+    void theOwnInstructorSeesTheRejectionReasonOfARejectedJustificationInTheHistory() {
+        submitProof.submit(new SubmitAttendanceProofCommand(absence.getId(), "medical visit", "students/1/proof.pdf"));
+        actAsStaffMember();
+        rejectJustification.reject(new RejectAttendanceJustificationCommand(absence.getId(), "illegible proof"));
+
+        AttendanceHistoryResponse.HistoryCell cell = historyCellOfTheAbsenceSeenBy(owner.getId());
+
+        assertThat(cell.status()).isEqualTo("ABSENT");
+        assertThat(cell.rejection().reason()).isEqualTo("illegible proof");
+        assertThat(cell.rejection().rejectedAt()).isNotNull();
+    }
+
+    @Test
+    void theHistoryHasNoRejectionWhenTheJustificationWasNeverRejected() {
+        assertThat(historyCellOfTheAbsenceSeenBy(owner.getId()).rejection()).isNull();
+    }
+
+    @Test
+    void theHistoryHasNoRejectionWhileTheRejectedAbsenceIsStillPendingANewProof() {
+        submitProof.submit(new SubmitAttendanceProofCommand(absence.getId(), "medical visit", "students/1/proof.pdf"));
+
+        assertThat(historyCellOfTheAbsenceSeenBy(owner.getId()).rejection()).isNull();
+    }
+
+    @Test
+    void anInstructorOfAnotherSectionCannotSeeTheHistoryWithItsRejectionReasons() {
+        submitProof.submit(new SubmitAttendanceProofCommand(absence.getId(), "medical visit", "students/1/proof.pdf"));
+        actAsStaffMember();
+        rejectJustification.reject(new RejectAttendanceJustificationCommand(absence.getId(), "illegible proof"));
+
+        assertThatThrownBy(() -> historyCellOfTheAbsenceSeenBy(stranger.getId()))
+                .isInstanceOf(NotOwnSectionException.class);
     }
 
     @Test
