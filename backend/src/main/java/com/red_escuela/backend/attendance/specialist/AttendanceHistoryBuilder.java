@@ -104,6 +104,14 @@ public class AttendanceHistoryBuilder {
     private AttendanceHistoryResponse.HistoryCell buildCell(Attendance attendance, LocalDate deadline) {
         boolean justifiable = attendance.getStatus() == AttendanceStatus.ABSENT && deadlinePolicy.isDeadlineOpen(deadline);
         return new AttendanceHistoryResponse.HistoryCell(
-                attendance.getId(), attendance.getStatus().name(), deadline, justifiable);
+                attendance.getId(), attendance.getStatus().name(), deadline, justifiable, rejectionOf(attendance));
+    }
+
+    private AttendanceHistoryResponse.JustificationRejection rejectionOf(Attendance attendance) {
+        if (attendance.getStatus() != AttendanceStatus.ABSENT || attendance.getJustificationRejectionReason() == null) {
+            return null;
+        }
+        return new AttendanceHistoryResponse.JustificationRejection(
+                attendance.getJustificationRejectionReason(), attendance.getJustificationRejectedAt());
     }
 }
