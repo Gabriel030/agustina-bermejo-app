@@ -10,7 +10,12 @@ class EmittedNotificationEventsTest {
     @Test
     void hidesEventsWithoutEmitter() {
         assertThat(EmittedNotificationEvents.visible())
-                .doesNotContain(NotificationEvent.ACCOUNT_CREATED, NotificationEvent.GRADE_POSTED, NotificationEvent.INVOICE_GENERATED);
+                .doesNotContain(NotificationEvent.ACCOUNT_CREATED, NotificationEvent.INVOICE_GENERATED);
+    }
+
+    @Test
+    void showsGradePostedNowThatItIsEmitted() {
+        assertThat(EmittedNotificationEvents.visible()).contains(NotificationEvent.GRADE_POSTED);
     }
 
     @Test

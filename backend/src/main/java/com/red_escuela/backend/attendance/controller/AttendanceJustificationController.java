@@ -2,8 +2,8 @@ package com.red_escuela.backend.attendance.controller;
 
 import com.red_escuela.backend.attendance.domain.AttendanceJustificationStatus;
 import com.red_escuela.backend.attendance.dto.AttendanceJustificationPage;
-import com.red_escuela.backend.attendance.usecase.attendance.ListAttendanceJustificationsUseCase;
-import com.red_escuela.backend.attendance.usecase.attendance.GetAttendanceJustificationAttachmentUseCase;
+import com.red_escuela.backend.attendance.usecase.record.ListAttendanceJustificationsUseCase;
+import com.red_escuela.backend.attendance.usecase.record.GetAttendanceJustificationAttachmentUseCase;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

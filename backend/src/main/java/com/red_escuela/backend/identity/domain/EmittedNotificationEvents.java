@@ -11,7 +11,6 @@ public final class EmittedNotificationEvents {
 
     private static final Set<NotificationEvent> UNEMITTED = EnumSet.of(
             NotificationEvent.ACCOUNT_CREATED,
-            NotificationEvent.GRADE_POSTED,
             NotificationEvent.INVOICE_GENERATED);
 
     private EmittedNotificationEvents() {

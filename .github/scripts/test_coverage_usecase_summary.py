@@ -25,7 +25,7 @@ class UsecaseSummaryTest(unittest.TestCase):
         services = self.read([
             row("com.red_escuela.backend.attendance.usecase.mark", "MarkAttendanceService", 2, 8),
             row("com.red_escuela.backend.attendance.usecase.mark", "MarkAttendanceRequest", 1, 1),
-            row("com.red_escuela.backend.attendance.service", "AttendanceRiskService", 1, 1),
+            row("com.red_escuela.backend.attendance.specialist", "AttendanceRiskService", 1, 1),
         ])
         self.assertEqual(list(services), [("com.red_escuela.backend.attendance.usecase.mark", "MarkAttendanceService")])
 
