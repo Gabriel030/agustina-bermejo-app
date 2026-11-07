@@ -106,6 +106,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
 | `INCOMPLETE_SUBJECT` | no | `IncompleteSubjectException` | academicstructure |
 | `INSTALLMENT_COUNT_ONLY_FOR_MONTHLY_INSTALLMENTS` | no | `InstallmentCountOnlyForMonthlyInstallmentsException` | billing |
+| `INVALID_ADVANCE_PRICE` | no | `InvalidAdvancePriceException` | billing |
 | `INVALID_AD_HOC_FEE_TYPE` | no | `InvalidAdHocFeeTypeException` | billing |
 | `INVALID_ANNUAL_UPFRONT_SETTINGS` | no | `InvalidAnnualUpfrontSettingsException` | billing |
 | `INVALID_BILLING_RUN_RANGE` | no | `InvalidBillingRunRangeException` | billing |
