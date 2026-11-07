@@ -13,7 +13,9 @@ import com.red_escuela.backend.billing.discount.service.ScholarshipCoverageReade
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceStatusKind;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.service.EnrollmentInvoiceQueryService;
@@ -30,7 +32,9 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -56,12 +60,13 @@ public class AnnualUpfrontQuoteService {
     private final AnnualUpfrontDiscountSelector discountSelector;
     private final PolicySet<AnnualUpfrontRequestCheck> eligibilityPolicies;
     private final Clock clock;
+    private final EntityManager entityManager;
 
     public AnnualUpfrontQuoteService(BillingEnrollmentFactsFinder enrollmentLookup, CurrentStudentService currentStudentService, AnnualUpfrontCycleReader cycleReader,
                                      BillingConfigurationReader configurationReader, PriceReader priceReader, EnrollmentInvoiceQueryService enrollmentInvoices,
                                      InvoiceFollowUpQueries invoiceFollowUp, StudentCurrentAccountService accountService, ScholarshipCoverageReader scholarshipCoverage,
                                      AnnualUpfrontDiscountCandidateFinder candidateFinder, AnnualUpfrontDiscountSelector discountSelector,
-                                     PolicySet<AnnualUpfrontRequestCheck> annualUpfrontRequestPolicies, Clock clock) {
+                                     PolicySet<AnnualUpfrontRequestCheck> annualUpfrontRequestPolicies, Clock clock, EntityManager entityManager) {
         this.enrollmentLookup = enrollmentLookup;
         this.currentStudentService = currentStudentService;
         this.cycleReader = cycleReader;
@@ -75,6 +80,7 @@ public class AnnualUpfrontQuoteService {
         this.discountSelector = discountSelector;
         this.eligibilityPolicies = annualUpfrontRequestPolicies;
         this.clock = clock;
+        this.entityManager = entityManager;
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +95,14 @@ public class AnnualUpfrontQuoteService {
             throw new AnnualUpfrontEnrollmentNotFoundException(programEnrollmentId);
         }
         return quoteFor(programEnrollmentId, facts);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void refreshInvoicesOfEnrollmentAfterTakingTheAccountLock(Long programEnrollmentId) {
+        for (Invoice invoice : enrollmentInvoices.findInvoicesOfEnrollment(programEnrollmentId, null)) {
+            entityManager.refresh(invoice);
+            invoice.getLines().forEach(entityManager::refresh);
+        }
     }
 
     private BillingEnrollmentFacts findFactsOrThrow(Long programEnrollmentId) {
@@ -170,8 +184,18 @@ public class AnnualUpfrontQuoteService {
 
     private static boolean monthlyInstallmentPaidOrStarted(List<Invoice> invoices, Optional<YearCycle> cycle) {
         return invoices.stream()
-                .anyMatch(invoice -> invoice.getInvoiceType() == InvoiceType.MONTHLY_INSTALLMENT && isLive(invoice) && cycle.map(found -> isInCycle(invoice, found)).orElse(false)
-                        && (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID || invoice.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW));
+                .filter(invoice -> invoice.getInvoiceType() == InvoiceType.MONTHLY_INSTALLMENT && cycle.map(found -> isInCycle(invoice, found)).orElse(false))
+                .anyMatch(invoice -> isLiveAndPaidOrUnderReview(invoice) || wasPaidAndIsNoLongerLive(invoice));
+    }
+
+    private static boolean isLiveAndPaidOrUnderReview(Invoice invoice) {
+        return isLive(invoice) && (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID || invoice.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW);
+    }
+
+    private static boolean wasPaidAndIsNoLongerLive(Invoice invoice) {
+        boolean noLongerLive = invoice.getPaymentStatus() == InvoicePaymentStatus.CANCELLED || invoice.getPrimaryLine().getChargeKeyReleased();
+        return noLongerLive && invoice.getDocumentStatus() != InvoiceDocumentStatus.DISCARDED && invoice.getStatusChanges().stream()
+                .anyMatch(change -> change.getStatusKind() == InvoiceStatusKind.PAYMENT && InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(change.getEvent()));
     }
 
     private static boolean isLive(Invoice invoice) {

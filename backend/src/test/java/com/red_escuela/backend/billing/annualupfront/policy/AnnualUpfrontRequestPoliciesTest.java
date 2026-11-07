@@ -120,6 +120,15 @@ class AnnualUpfrontRequestPoliciesTest {
 
     @Test
     @Tag("D-520")
+    @Tag("D-066")
+    void anInactiveEnrollmentIsReportedBeforeTheSpentOption() {
+        AnnualUpfrontRequestCheck inactiveAndSpent = new AnnualUpfrontRequestCheck(false, LocalDate.of(2027, 2, 1), DEADLINE, false, false, null, false, 10, true, true);
+
+        assertThat(firstCodeOf(inactiveAndSpent)).isEqualTo("ENROLLMENT_NOT_ACTIVE");
+    }
+
+    @Test
+    @Tag("D-520")
     @Tag("D-156")
     void thePassedDeadlineIsReportedBeforeTheSpentOption() {
         assertThat(firstCodeOf(withMonthlyInstallmentPaidOrStarted(allowedOn(LocalDate.of(2027, 3, 1))))).isEqualTo("ANNUAL_UPFRONT_REQUEST_WINDOW_CLOSED");
