@@ -11,6 +11,10 @@ import com.red_escuela.backend.billing.collections.policy.LateFeeChargingEnabled
 import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeNotFrozenPolicy;
+import com.red_escuela.backend.billing.collections.policy.ExamFeeBlockedByOverdueDebtPolicy;
+import com.red_escuela.backend.billing.collections.policy.ExamFeeIssuanceCheck;
+import com.red_escuela.backend.billing.collections.policy.NewEnrollmentBlockedByOverdueDebtPolicy;
+import com.red_escuela.backend.billing.collections.policy.NewEnrollmentDebtCheck;
 import com.red_escuela.backend.billing.collections.policy.NewInstallmentWaitsForPriorDebtPolicy;
 import com.red_escuela.backend.billing.collections.policy.OriginNotUnderPaymentReviewPolicy;
 import com.red_escuela.backend.billing.collections.policy.OverdueDetectionContext;
@@ -28,6 +32,16 @@ import java.util.List;
 
 @Configuration
 public class CollectionsPolicySetsConfiguration {
+
+    @Bean
+    public PolicySet<ExamFeeIssuanceCheck> examFeeIssuanceDebtPolicySet() {
+        return PolicySet.named("EXAM_FEE_ISSUANCE_DEBT", List.of(new ExamFeeBlockedByOverdueDebtPolicy()));
+    }
+
+    @Bean
+    public PolicySet<NewEnrollmentDebtCheck> newEnrollmentDebtPolicySet() {
+        return PolicySet.named("NEW_ENROLLMENT_DEBT", List.of(new NewEnrollmentBlockedByOverdueDebtPolicy()));
+    }
 
     @Bean
     public PolicySet<OverdueDetectionContext> overdueDetectionPolicySet() {

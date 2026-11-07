@@ -436,6 +436,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `NO_EFFECTIVE_PRICE` | no | `NoEffectivePriceException` | billing |
 | `NO_PENDING_GRADES_TO_PUBLISH` | no | `NoPendingGradesToPublishException` | evaluation |
 | `OUTSTANDING_DEBT_BLOCKS_REENROLLMENT` | no | `OutstandingDebtBlocksReenrollmentException` | billing |
+| `OVERDUE_DEBT_BLOCKS_EXAM_FEE` | no | `OverdueDebtBlocksExamFeeException` | billing |
+| `OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT` | no | `OverdueDebtBlocksNewEnrollmentException` | billing |
 | `PARTIAL_PAYMENT_NOT_ALLOWED` | no | `PartialPaymentNotAllowedException` | billing |
 | `PAYMENT_ALLOCATION_REJECTED` | no | `PaymentAllocationRejectedException` | billing |
 | `PAYMENT_ALREADY_APPROVED` | no | `PaymentAlreadyApprovedException` | billing |

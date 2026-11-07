@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.annualupfront.service;
 
-import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.collections.service.StudentOverdueDebtFinder;
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontEligibility;
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontQuote;
 import com.red_escuela.backend.billing.annualupfront.domain.AnnualUpfrontQuoteCalculator;
@@ -19,7 +19,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceStatusKind;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceDiscountCandidate;
 import com.red_escuela.backend.billing.invoice.service.EnrollmentInvoiceQueryService;
-import com.red_escuela.backend.billing.invoice.service.InvoiceFollowUpQueries;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
@@ -53,8 +52,7 @@ public class AnnualUpfrontQuoteService {
     private final BillingConfigurationReader configurationReader;
     private final PriceReader priceReader;
     private final EnrollmentInvoiceQueryService enrollmentInvoices;
-    private final InvoiceFollowUpQueries invoiceFollowUp;
-    private final StudentCurrentAccountService accountService;
+    private final StudentOverdueDebtFinder overdueDebtFinder;
     private final ScholarshipCoverageReader scholarshipCoverage;
     private final AnnualUpfrontDiscountCandidateFinder candidateFinder;
     private final AnnualUpfrontDiscountSelector discountSelector;
@@ -64,7 +62,7 @@ public class AnnualUpfrontQuoteService {
 
     public AnnualUpfrontQuoteService(BillingEnrollmentFactsFinder enrollmentLookup, CurrentStudentService currentStudentService, AnnualUpfrontCycleReader cycleReader,
                                      BillingConfigurationReader configurationReader, PriceReader priceReader, EnrollmentInvoiceQueryService enrollmentInvoices,
-                                     InvoiceFollowUpQueries invoiceFollowUp, StudentCurrentAccountService accountService, ScholarshipCoverageReader scholarshipCoverage,
+                                     StudentOverdueDebtFinder overdueDebtFinder, ScholarshipCoverageReader scholarshipCoverage,
                                      AnnualUpfrontDiscountCandidateFinder candidateFinder, AnnualUpfrontDiscountSelector discountSelector,
                                      PolicySet<AnnualUpfrontRequestCheck> annualUpfrontRequestPolicies, Clock clock, EntityManager entityManager) {
         this.enrollmentLookup = enrollmentLookup;
@@ -73,8 +71,7 @@ public class AnnualUpfrontQuoteService {
         this.configurationReader = configurationReader;
         this.priceReader = priceReader;
         this.enrollmentInvoices = enrollmentInvoices;
-        this.invoiceFollowUp = invoiceFollowUp;
-        this.accountService = accountService;
+        this.overdueDebtFinder = overdueDebtFinder;
         this.scholarshipCoverage = scholarshipCoverage;
         this.candidateFinder = candidateFinder;
         this.discountSelector = discountSelector;
@@ -160,7 +157,7 @@ public class AnnualUpfrontQuoteService {
     }
 
     private boolean hasOverdueDebt(Long studentId, LocalDate today) {
-        return accountService.findStudentCurrentAccountIds(studentId).stream().anyMatch(accountId -> invoiceFollowUp.hasUnpaidIssuedDocumentOverdue(accountId, today));
+        return overdueDebtFinder.hasOverdueDebt(studentId, today);
     }
 
     private static List<YearMonth> periodsOf(YearCycle cycle) {

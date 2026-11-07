@@ -1,7 +1,10 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.collections.service.ExamFeeOverdueDebtGuard;
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
@@ -21,16 +24,27 @@ public class AdHocInvoiceRequestResolver {
 
     private final SubjectRepository subjectRepository;
     private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
+    private final ExamFeeOverdueDebtGuard examFeeDebtGuard;
 
-    public AdHocInvoiceRequestResolver(SubjectRepository subjectRepository, ExamBoardRegistrationRepository examBoardRegistrationRepository) {
+    public AdHocInvoiceRequestResolver(SubjectRepository subjectRepository, ExamBoardRegistrationRepository examBoardRegistrationRepository,
+                                     ExamFeeOverdueDebtGuard examFeeDebtGuard) {
         this.subjectRepository = subjectRepository;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
+        this.examFeeDebtGuard = examFeeDebtGuard;
     }
 
     public void validateFeeType(FeeType feeType) {
         if (!AD_HOC_FEE_TYPES.contains(feeType)) {
             throw new InvalidAdHocFeeTypeException(feeType);
         }
+    }
+
+    public void requireExamFeeAllowed(ProgramEnrollment enrollment, FeeType feeType) {
+        examFeeDebtGuard.verifyExamFeeMayBeIssued(enrollment.getStudent().getId(), feeType);
+    }
+
+    public void requireExamFeeAllowed(CourseEnrollment enrollment, FeeType feeType) {
+        examFeeDebtGuard.verifyExamFeeMayBeIssued(enrollment.getStudent().getId(), feeType);
     }
 
     public Subject resolveSubject(Long subjectId) {

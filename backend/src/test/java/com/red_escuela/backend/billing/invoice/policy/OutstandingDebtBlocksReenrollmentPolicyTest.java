@@ -12,36 +12,22 @@ class OutstandingDebtBlocksReenrollmentPolicyTest {
 
     private final OutstandingDebtBlocksReenrollmentPolicy policy = new OutstandingDebtBlocksReenrollmentPolicy();
 
-    private PolicyVerdict verdictFor(boolean overdue, boolean withdrawnDebt, boolean inPendingRequest) {
-        return policy.evaluateRule(new OutstandingDebtFacts(1L, overdue, withdrawnDebt, inPendingRequest));
+    private PolicyVerdict verdictFor(boolean withdrawnDebt, boolean inPendingRequest) {
+        return policy.evaluateRule(new OutstandingDebtFacts(1L, withdrawnDebt, inPendingRequest));
     }
 
     @Test
     void aStudentWithoutAnyDebtMayEnroll() {
-        assertThat(verdictFor(false, false, false).allowed()).isTrue();
-    }
-
-    @Test
-    @Tag("D-065")
-    void anOverdueInvoiceInAnyEnrollmentBlocks() {
-        PolicyVerdict verdict = verdictFor(true, false, false);
-
-        assertThat(verdict.allowed()).isFalse();
-        assertThat(verdict.code()).isEqualTo("OVERDUE_INVOICE");
+        assertThat(verdictFor(false, false).allowed()).isTrue();
     }
 
     @Test
     void debtOfAWithdrawnEnrollmentBlocks() {
-        assertThat(verdictFor(false, true, false).code()).isEqualTo("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
+        assertThat(verdictFor(true, false).code()).isEqualTo("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
     }
 
     @Test
     void aPendingRequestIsReportedAsTheReasonWhenItIsPartOfTheDebt() {
-        assertThat(verdictFor(true, true, true).code()).isEqualTo("DEBT_IN_PENDING_CANCELLATION_REQUEST");
-    }
-
-    @Test
-    void withdrawnDebtWinsOverTheGenericOverdueReason() {
-        assertThat(verdictFor(true, true, false).code()).isEqualTo("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
+        assertThat(verdictFor(true, true).code()).isEqualTo("DEBT_IN_PENDING_CANCELLATION_REQUEST");
     }
 }
