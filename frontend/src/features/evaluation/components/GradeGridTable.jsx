@@ -20,6 +20,7 @@ import {
   isColumnPublishable,
 } from '../lib/gradeGrid';
 import { GradeEntryCell } from './GradeEntryCell';
+import { GradeReadCell } from './GradeReadCell';
 
 const STICKY_LEFT = 'sticky left-0 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-dialog-bg whitespace-normal shadow-[6px_0_8px_-6px_color-mix(in_oklch,var(--ink)_25%,transparent)] md:w-[170px] md:min-w-[170px] md:max-w-[170px]';
 const STICKY_RIGHT = 'sticky right-0 z-20 min-w-[56px] bg-dialog-bg text-right shadow-[-6px_0_8px_-6px_color-mix(in_oklch,var(--ink)_25%,transparent)] md:min-w-[72px]';
@@ -54,7 +55,7 @@ function PublishHeader({ column, students, hasDrafts, onPublish }) {
   );
 }
 
-export function GradeGridTable({ students, columns, drafts, statuses, onChange, onSettle, onRetry, onOpenStudent, onPublish }) {
+export function GradeGridTable({ students, columns, drafts = {}, statuses = {}, readOnly = false, onChange, onSettle, onRetry, onOpenStudent, onOpenCell, onPublish }) {
   'use no memo';
   const scrollRef = useRef(null);
   const [moreToRight, setMoreToRight] = useState(false);
@@ -102,6 +103,9 @@ export function GradeGridTable({ students, columns, drafts, statuses, onChange, 
           const student = row.original;
           const key = draftKey(student.enrollmentId, column.type, column.sequenceNumber);
           const saved = findSavedCell(student, column);
+          if (instance.options.meta.readOnly) {
+            return <GradeReadCell label={gradeColumnLabel(column)} studentName={`${student.lastname}, ${student.name}`} cell={saved} onOpen={() => instance.options.meta.onOpenCell(student.enrollmentId, column)} />;
+          }
           return (
             <GradeEntryCell
               label={gradeColumnLabel(column)}
@@ -133,7 +137,7 @@ export function GradeGridTable({ students, columns, drafts, statuses, onChange, 
     data: students,
     columns: tableColumns,
     getRowId: (row) => String(row.enrollmentId),
-    meta: { drafts, statuses, onChange, onSettle, onRetry, onOpenStudent },
+    meta: { drafts, statuses, readOnly, onChange, onSettle, onRetry, onOpenStudent, onOpenCell },
     state: { columnVisibility: { condition: false } },
     initialState: { sorting: [{ id: 'student', desc: false }] },
     getCoreRowModel: getCoreRowModel(),
@@ -210,7 +214,7 @@ export function GradeGridTable({ students, columns, drafts, statuses, onChange, 
                             {header.column.columnDef.meta.column.date.slice(8, 10)}/{header.column.columnDef.meta.column.date.slice(5, 7)}
                           </span>
                         )}
-                        {header.column.columnDef.meta?.column && (
+                        {!readOnly && header.column.columnDef.meta?.column && (
                           <PublishHeader
                             column={header.column.columnDef.meta.column}
                             students={students}
