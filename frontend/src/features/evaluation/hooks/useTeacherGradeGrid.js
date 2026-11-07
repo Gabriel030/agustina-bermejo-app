@@ -4,14 +4,14 @@ import { apiFetch } from '@/api/client';
 const SECTION_PATH = { PROGRAM: 'program-sections', COURSE: 'course-sections' };
 const ENROLLMENT_PATH = { PROGRAM: 'section-enrollments', COURSE: 'course-section-enrollments' };
 
-function gridKey(sectionId, kind) {
-  return ['teacher-grade-grid', kind, String(sectionId)];
+function gridKey(sectionId, kind, staff = false) {
+  return [staff ? 'staff-grade-grid' : 'teacher-grade-grid', kind, String(sectionId)];
 }
 
-export function useTeacherGradeGrid(sectionId, kind) {
+export function useTeacherGradeGrid(sectionId, kind, { staff = false } = {}) {
   return useQuery({
-    queryKey: gridKey(sectionId, kind),
-    queryFn: () => apiFetch(`/${SECTION_PATH[kind]}/${sectionId}/grade-grid`),
+    queryKey: gridKey(sectionId, kind, staff),
+    queryFn: () => apiFetch(`/${staff ? 'staff/' : ''}${SECTION_PATH[kind]}/${sectionId}/grade-grid`),
   });
 }
 

@@ -219,6 +219,11 @@ export function TeacherGradeGrid({ sectionId, kind, onDirtyChange }) {
           {count ? `Guardar ${count} ${count === 1 ? 'nota' : 'notas'}` : 'Guardar notas'}
         </Button>
       </div>
+      {columns.some((column) => column.type !== 'FINAL' && column.published === true) && (
+        <p id="published-grade-note" className="text-[12.5px] text-ink-faint">
+          Las notas publicadas quedan bloqueadas. Si hay un error, pedíselo a Dirección.
+        </p>
+      )}
       <GradeGridTable
         students={students}
         columns={columns}

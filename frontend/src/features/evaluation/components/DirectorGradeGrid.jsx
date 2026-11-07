@@ -9,10 +9,18 @@ import { gradeColumnKey } from '../lib/gradeGrid';
 import { GradeCorrectionSheet } from './GradeCorrectionSheet';
 import { GradeGridTable } from './GradeGridTable';
 
+function formatDeadline(isoDate) {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 export function DirectorGradeGrid({ sectionId, kind }) {
-  const { data: grid, isLoading, isError, refetch } = useTeacherGradeGrid(sectionId, kind);
+  const { data: grid, isLoading, isError, refetch } = useTeacherGradeGrid(sectionId, kind, { staff: true });
   const [open, setOpen] = useState(null);
-  const [periodEnded, setPeriodEnded] = useState(false);
+  const [ended409, setEnded409] = useState(false);
+  const deadline = grid?.correctionDeadline ?? null;
+  const today = new Date().toLocaleDateString('sv-SE');
+  const periodEnded = ended409 || (deadline !== null && today > deadline);
   const students = useMemo(() => grid?.students ?? [], [grid]);
   const columns = useMemo(() => grid?.columns ?? [], [grid]);
 
@@ -68,7 +76,7 @@ export function DirectorGradeGrid({ sectionId, kind }) {
         <div role="alert" className="flex items-start gap-2.5 rounded-xl bg-danger-bg p-3 text-[13px] text-danger">
           <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           <div>
-            <b>El plazo de corrección terminó.</b>
+            <b>{deadline ? `El plazo de corrección terminó el ${formatDeadline(deadline)}.` : 'El plazo de corrección terminó.'}</b>
             <br />
             Las notas publicadas de este cuatrimestre ya no se pueden corregir.
           </div>
@@ -90,7 +98,7 @@ export function DirectorGradeGrid({ sectionId, kind }) {
         sectionId={sectionId}
         kind={kind}
         periodEnded={periodEnded}
-        onPeriodEnded={() => setPeriodEnded(true)}
+        onPeriodEnded={() => setEnded409(true)}
         onClose={() => setOpen(null)}
       />
     </GlassCard>

@@ -12,6 +12,7 @@ import { GradeCorrectionSteps } from './GradeCorrectionSteps';
 
 function cellStatus(cell) {
   if (!cell || cell.score == null) return { tone: 'neutral', label: 'Sin nota' };
+  if (cell.corrected) return { tone: 'accent', label: 'Corregida' };
   return cell.published ? { tone: 'success', label: 'Publicada' } : { tone: 'warning', label: 'Sin publicar' };
 }
 

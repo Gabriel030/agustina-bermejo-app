@@ -22,7 +22,7 @@ export function useCorrectGradeItem(sectionId, kind) {
         body: JSON.stringify({ newScore, reason }),
       }),
     onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teacher-grade-grid', kind, String(sectionId)] });
+      queryClient.invalidateQueries({ queryKey: ['staff-grade-grid', kind, String(sectionId)] });
       queryClient.invalidateQueries({ queryKey: gradeAuditKey(variables.gradeItemId) });
     },
   });
