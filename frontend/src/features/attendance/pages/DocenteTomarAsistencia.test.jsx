@@ -101,7 +101,7 @@ describe('TabAsistencia', () => {
             createdAt: '2020-01-07T10:00:00',
             previousStatus: 'LATE',
             reason: 'Se equivocó el docente',
-            rejectionReason: '',
+            rejectionReason: null,
             requestedByName: 'Docente',
             requestedStatus: 'PRESENT',
             sectionName: 'Comisión',

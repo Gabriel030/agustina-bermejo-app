@@ -25,7 +25,7 @@ const CORRECTION = {
   studentName: 'Mateo Giménez',
   subjectName: 'Historia del Arte',
   status: 'PENDING',
-  rejectionReason: '',
+  rejectionReason: null,
 };
 
 const JUSTIFICATION = {
@@ -61,7 +61,7 @@ function mockInbox({ corrections: initialCorrections = [CORRECTION], justificati
       calls.correctionRejected = true;
       calls.correctionRejectBody = await request.json();
       corrections = [];
-      return HttpResponse.json(CORRECTION);
+      return HttpResponse.json({ ...CORRECTION, status: 'REJECTED', rejectionReason: calls.correctionRejectBody.reason });
     }),
     http.post(`${API}/attendance/:id/approve-justification`, ({ params }) => {
       calls.approvedId = params.id;
