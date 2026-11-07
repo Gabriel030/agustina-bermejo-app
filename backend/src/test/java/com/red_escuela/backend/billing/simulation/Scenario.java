@@ -67,7 +67,14 @@ public final class Scenario {
     }
 
     public Scenario payEverythingDue() {
-        Money amount = ars(ledger().outstandingTotal());
+        return payAmount(ars(ledger().outstandingTotal()));
+    }
+
+    public Scenario payAmount(String amount) {
+        return payAmount(ars(new java.math.BigDecimal(amount)));
+    }
+
+    private Scenario payAmount(Money amount) {
         actAsDirector();
         try {
             CashPaymentPreview preview = previewCashPayment.previewCashPayment(student.studentId(), amount);
@@ -77,7 +84,8 @@ public final class Scenario {
         } finally {
             SecurityContextHolder.clearContext();
         }
-        invariants.assertHoldAfter("payEverythingDue " + amount.amount().toPlainString());
+        invariants.assertNoPendingPublicationsAfter("payAmount " + amount.amount().toPlainString());
+        invariants.assertHoldAfter("payAmount " + amount.amount().toPlainString());
         return this;
     }
 
