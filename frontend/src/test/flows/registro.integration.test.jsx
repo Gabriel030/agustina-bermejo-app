@@ -8,8 +8,27 @@ import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AppRouter } from '@/routes/AppRouter';
+import { profileFixture } from '@/test/fixtures/profile';
 
 const API = 'http://localhost:8080';
+
+const NEW_USER = {
+  id: 9,
+  nombre: 'Sofía',
+  apellido: 'Ramírez',
+  email: 'sofia@example.com',
+  dni: '',
+  legajo: '',
+  sexo: '',
+  telefono: '',
+  street: null,
+  number: null,
+  floor: null,
+  city: null,
+  state: null,
+  postalCode: null,
+  country: null,
+};
 
 /*
  * Integration test del flujo crítico de Épica 7 (Fase 2 + Fase 3) — registro →
@@ -47,7 +66,7 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
   it('registrarse sin rol asignado redirige a /catalogo, no a una pantalla de rol', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', roles: [] }),
+        HttpResponse.json(profileFixture({ ...NEW_USER, roles: [] })),
       ),
       http.get(`${API}/programs`, () => HttpResponse.json([{ id: 1, name: 'Diseño Gráfico', totalYears: 3 }])),
     );
@@ -79,7 +98,7 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     let applicationSubmitted = false;
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', roles: [] }),
+        HttpResponse.json(profileFixture({ ...NEW_USER, roles: [] })),
       ),
       http.get(`${API}/programs`, () => HttpResponse.json([{ id: 1, name: 'Diseño Gráfico', totalYears: 3 }])),
       http.get(`${API}/programs/1`, () => HttpResponse.json({ id: 1, name: 'Diseño Gráfico', totalYears: 3 })),

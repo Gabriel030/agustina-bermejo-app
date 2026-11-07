@@ -5,11 +5,12 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CursoWizard } from './CursoWizard';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
 function mockTerms() {
-  server.use(http.get(`${API}/terms`, () => HttpResponse.json([{ id: 4, year: 2027, description: 'Anual' }])));
+  server.use(http.get(`${API}/terms`, () => HttpResponse.json([termFixture({ id: 4, year: 2027, description: 'Anual' })])));
 }
 
 async function completeCourseFirstStep(user) {
