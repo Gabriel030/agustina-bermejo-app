@@ -6,6 +6,7 @@ import { axe } from '@/test/axe';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DetalleCurso } from './DetalleCurso';
+import { profileFixture } from '@/test/fixtures/profile';
 
 const API = 'http://localhost:8080';
 
@@ -24,7 +25,7 @@ function signInAs(roles) {
     http.post(`${API}/auth/refresh`, () =>
       HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
     ),
-    http.get(`${API}/me`, () => HttpResponse.json({ id: 1, username: 'user', roles })),
+    http.get(`${API}/me`, () => HttpResponse.json(profileFixture({ roles }))),
   );
 }
 

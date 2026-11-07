@@ -167,4 +167,7 @@ export const handlers = [
   http.get(`${API}/billing/configuration-alerts`, () => HttpResponse.json([])),
   http.get(`${API}/announcements/:id/recipients`, () => HttpResponse.json([])),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
+  http.post(`${API}/students/:id/refund-requests/preview`, () =>
+    HttpResponse.json({ allowed: true, blockedBy: null, parts: [] }),
+  ),
 ];

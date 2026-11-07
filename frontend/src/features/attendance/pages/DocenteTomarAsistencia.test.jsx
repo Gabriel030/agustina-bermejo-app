@@ -12,8 +12,8 @@ import { installFixedClock } from '@/test/fixedClock';
 const API = 'http://localhost:8080';
 
 const ROSTER = [
-  { enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 0, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 3 },
-  { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 2 },
+  { enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 0, attendancePercent: 100, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 3 },
+  { enrollmentId: 12, studentId: 2, studentName: 'Bruno Díaz', dni: '30111333', absenceCount: 1, attendancePercent: 100, atRisk: false, classesHeld: 12, maxAbsenceRate: 25, remainingAbsences: 2 },
 ];
 
 function mockSection({ savedStatusForAna, savedDate = localIsoDate() } = {}) {
@@ -217,7 +217,7 @@ describe('TabAsistencia', () => {
   it('shows only the absence count when the backend sends no allowance', async () => {
     server.use(
       http.get(`${API}/program-sections/5/roster`, () =>
-        HttpResponse.json([{ enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 2, atRisk: false }]),
+        HttpResponse.json([{ enrollmentId: 11, studentId: 1, studentName: 'Ana Gómez', dni: '30111222', absenceCount: 2, attendancePercent: 100, atRisk: false }]),
       ),
       http.get(`${API}/program-sections/5/attendance/history`, () => HttpResponse.json({ rows: [] })),
       http.get(`${API}/program-sections/5/class-sessions/:date`, () => new HttpResponse(null, { status: 404 })),

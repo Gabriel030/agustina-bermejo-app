@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
+import { examBoardFixture } from '@/test/fixtures/examBoards';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -12,7 +13,7 @@ const API = 'http://localhost:8080';
 describe('LlamadosDisponibles', () => {
   it('explica que las inasistencias bloquean el final en vez de un error genérico', async () => {
     server.use(
-      http.get(`${API}/me/exam-boards`, () => HttpResponse.json([{ id: 1, examDate: '2026-12-01T09:00:00', classroom: null }])),
+      http.get(`${API}/me/exam-boards`, () => HttpResponse.json([examBoardFixture()])),
       http.post(`${API}/me/exam-board-registrations`, () =>
         HttpResponse.json(errorBody('STUDENT_FREE_BY_ABSENCES'), { status: 409 }),
       ),
@@ -29,7 +30,7 @@ describe('LlamadosDisponibles', () => {
 
   it('ante otro error muestra el mensaje genérico', async () => {
     server.use(
-      http.get(`${API}/me/exam-boards`, () => HttpResponse.json([{ id: 1, examDate: '2026-12-01T09:00:00', classroom: null }])),
+      http.get(`${API}/me/exam-boards`, () => HttpResponse.json([examBoardFixture()])),
       http.post(`${API}/me/exam-board-registrations`, () => new HttpResponse(null, { status: 500 })),
     );
     const user = userEvent.setup();

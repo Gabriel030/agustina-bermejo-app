@@ -6,6 +6,7 @@ import { Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { LegajoAlumno } from './LegajoAlumno';
+import { studentFixture } from '@/test/fixtures/students';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { roles: ['PRECEPTOR'] } }),
@@ -13,7 +14,7 @@ vi.mock('@/context/AuthContext', () => ({
 
 const API = 'http://localhost:8080';
 
-const STUDENT = {
+const STUDENT = studentFixture({
   id: 9,
   nombre: 'Lucía',
   apellido: 'Pérez',
@@ -21,8 +22,7 @@ const STUDENT = {
   username: '30111222',
   email: 'lucia@demo.test',
   status: 'ACTIVE',
-  domicilio: null,
-};
+});
 
 describe('LegajoAlumno — load failure', () => {
   it('shows the error state instead of an endless skeleton and loads the record again on retry', async () => {
@@ -82,7 +82,7 @@ describe('LegajoAlumno — load failure', () => {
 
   it('hides the guardian sections for an adult without guardian', async () => {
     server.use(
-      http.get(`${API}/students/9`, () => HttpResponse.json({ ...STUDENT, minor: false, guardian: null, emergencyContact: null })),
+      http.get(`${API}/students/9`, () => HttpResponse.json({ ...STUDENT, minor: false })),
       http.get(`${API}/*`, () => HttpResponse.json([])),
     );
     renderWithProviders(

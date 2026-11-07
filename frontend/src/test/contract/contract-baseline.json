@@ -121,14 +121,6 @@
     ],
     "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
   },
-  "GET /me": {
-    "source": "test-handlers",
-    "modules": [
-      "routes",
-      "test"
-    ],
-    "reason": "mock omits properties the contract marks required"
-  },
   "GET /me/bank-transfer-receipts": {
     "source": "test-handlers",
     "modules": [
@@ -163,13 +155,6 @@
       "billing"
     ],
     "reason": "Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
-  },
-  "GET /me/exam-boards": {
-    "source": "test-handlers",
-    "modules": [
-      "evaluation"
-    ],
-    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
   },
   "GET /me/invoices/{id}/price-breakdown": {
     "source": "test-handlers",
@@ -274,13 +259,6 @@
     ],
     "reason": "mock omits properties the contract marks required"
   },
-  "GET /program-sections/{id}/roster": {
-    "source": "test-handlers",
-    "modules": [
-      "attendance"
-    ],
-    "reason": "mock omits properties the contract marks required"
-  },
   "GET /programs/{id}/subjects": {
     "source": "test-handlers",
     "modules": [
@@ -302,13 +280,6 @@
     ],
     "reason": "operation not found in the contract (non-backend or planned endpoint)"
   },
-  "GET /section-evaluation-configs/{sectionId}": {
-    "source": "test-handlers",
-    "modules": [
-      "evaluation"
-    ],
-    "reason": "mock omits properties the contract marks required"
-  },
   "GET /staff/{id}": {
     "source": "test-handlers",
     "modules": [
@@ -322,14 +293,6 @@
       "billing"
     ],
     "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
-  },
-  "GET /students/{id}": {
-    "source": "test-handlers",
-    "modules": [
-      "billing",
-      "pages"
-    ],
-    "reason": "mock omits properties the contract marks required"
   },
   "GET /students/{id}/billing-overview": {
     "source": "test-handlers",
@@ -375,20 +338,6 @@
       "announcements"
     ],
     "reason": "value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
-  },
-  "GET /subjects": {
-    "source": "test-handlers",
-    "modules": [
-      "academic-structure"
-    ],
-    "reason": "mock omits properties the contract marks required; value type differs from the contract: null where the contract declares a non-nullable type (nullable gap in Q13a) or a real type mismatch"
-  },
-  "GET /terms": {
-    "source": "test-handlers",
-    "modules": [
-      "academic-structure"
-    ],
-    "reason": "mock omits properties the contract marks required"
   },
   "PATCH /year-billing-templates/{id}/configuration": {
     "source": "test-handlers",
@@ -656,26 +605,12 @@
     ],
     "reason": "the request the app sends deviates from the request schema (null or omitted fields the contract marks required and non-nullable); Money.amount: the backend serializes it as a decimal string (ValueObjectJacksonModule.MoneySerializer, toPlainString) while the contract declares number; contract bug, backend follow-up; mock omits properties the contract marks required; status not declared in the contract for this operation"
   },
-  "POST /program-subjects/{id}/corequisites": {
-    "source": "test-handlers",
-    "modules": [
-      "academic-structure"
-    ],
-    "reason": "mock omits properties the contract marks required"
-  },
   "POST /student-discounts/{id}/revocation": {
     "source": "test-handlers",
     "modules": [
       "billing"
     ],
     "reason": "mock omits properties the contract marks required; mock sends properties the contract does not declare; polymorphic (oneOf) schema not matched by the mock"
-  },
-  "POST /year-billing-templates/{id}/cohorts": {
-    "source": "test-handlers",
-    "modules": [
-      "academic-structure"
-    ],
-    "reason": "mock omits properties the contract marks required"
   },
   "PUT /evaluation-schemes/{id}": {
     "source": "test-handlers",

@@ -7,6 +7,7 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CarreraDetalle } from './CarreraDetalle';
+import { subjectFixture } from '@/test/fixtures/subjects';
 
 const API = 'http://localhost:8080';
 
@@ -33,8 +34,8 @@ const PLAN = [
 ];
 
 const ACTIVE_SUBJECTS = [
-  { id: 20, code: 'S020', name: 'Microbiología', status: 'ACTIVE' },
-  { id: 21, code: 'S021', name: 'Inglés técnico', status: 'ACTIVE' },
+  subjectFixture({ id: 20, code: 'S020', name: 'Microbiología', status: 'ACTIVE' }),
+  subjectFixture({ id: 21, code: 'S021', name: 'Inglés técnico', status: 'ACTIVE' }),
 ];
 
 function mockProgram({ plan = PLAN, programGroups = [], onAdd, onDeactivate } = {}) {

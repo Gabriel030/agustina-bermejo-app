@@ -5,17 +5,18 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DirectorSubjectReview } from '@/features/academic-structure/pages/DirectorSubjectReview';
+import { subjectFixture } from '@/test/fixtures/subjects';
 
 const API = 'http://localhost:8080';
 
 const PENDING = [
-  { id: 7, code: 'S113', name: 'Farmacología', status: 'PENDING_APPROVAL', gradeMode: 'NUMERIC', description: null, rejectionReason: null, maxFinalExamAttempts: 3, weeklyHours: 4, weeklyHoursLab: null },
+  subjectFixture({ id: 7, code: 'S113', name: 'Farmacología', status: 'PENDING_APPROVAL', gradeMode: 'NUMERIC', description: null, rejectionReason: null, maxFinalExamAttempts: 3, weeklyHours: 4, weeklyHoursLab: null }),
 ];
 
 function mockPendingSubjects() {
   server.use(
     http.get(`${API}/subjects`, () =>
-      HttpResponse.json([{ id: 7, code: 'S113', name: 'Anatomía y Fisiología Humana', gradeMode: 'NUMERIC' }]),
+      HttpResponse.json([subjectFixture({ id: 7, code: 'S113', name: 'Anatomía y Fisiología Humana', status: 'PENDING_APPROVAL' })]),
     ),
   );
 }
