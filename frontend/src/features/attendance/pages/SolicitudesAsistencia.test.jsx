@@ -25,7 +25,7 @@ const CORRECTION = {
   studentName: 'Mateo Giménez',
   subjectName: 'Historia del Arte',
   status: 'PENDING',
-  rejectionReason: null,
+  rejectionReason: '',
 };
 
 const JUSTIFICATION = {
