@@ -30,6 +30,7 @@ export const TRIGGER_LABELS = {
 export const STEP_LABELS = {
   ACCOUNT_CONSISTENCY: 'Consistencia de cuentas',
   GATEWAY_SYNC: 'Sincronización con pasarelas',
+  ANNUAL_UPFRONT_EXPIRY: 'Vencimiento de pagos anuales',
   OVERDUE_DETECTION: 'Detección de facturas vencidas',
   LATE_FEE_ACCRUAL: 'Recargos por mora',
   LATE_FEE_WITHDRAWAL_CORRECTION: 'Corrección de recargos por baja',
@@ -60,6 +61,7 @@ export const SUBJECT_TYPE_LABELS = {
   PROGRAM_ENROLLMENT: 'Inscripción a carrera',
   COURSE_ENROLLMENT: 'Inscripción a curso',
   CURRENT_ACCOUNT: 'Cuenta corriente',
+  ANNUAL_UPFRONT_REQUEST: 'Pedido de pago anual',
 };
 
 export const HELD_ACCOUNT_CODE = 'INCONSISTENT_ACCOUNT';

@@ -1704,7 +1704,7 @@
           },
           "subjectType" : {
             "type" : "string",
-            "x-extensible-enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT", "STUDENT" ]
+            "x-extensible-enum" : [ "INVOICE", "LATE_FEE_CHARGE", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "CURRENT_ACCOUNT", "STUDENT", "ANNUAL_UPFRONT_REQUEST" ]
           }
         },
         "required" : [ "decisionCode", "errorCode", "id", "message", "status", "subjectId", "subjectType" ],
@@ -1749,7 +1749,7 @@
           },
           "step" : {
             "type" : "string",
-            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ]
+            "x-extensible-enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ]
           }
         },
         "required" : [ "candidates", "failed", "finishedAt", "id", "notApplicableCode", "processed", "skipped", "startedAt", "status", "step" ],
@@ -19992,7 +19992,7 @@
           "name" : "step",
           "required" : true,
           "schema" : {
-            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ],
+            "enum" : [ "ACCOUNT_CONSISTENCY", "GATEWAY_SYNC", "ANNUAL_UPFRONT_EXPIRY", "OVERDUE_DETECTION", "LATE_FEE_ACCRUAL", "LATE_FEE_WITHDRAWAL_CORRECTION", "COLLECTIONS_SNAPSHOT", "ENROLLMENT_BILLING_COMPLIANCE", "TERM_END_WITHDRAWAL", "ACCOUNT_CREDIT_ALLOCATION", "COLLECTION_REMINDER_PLANNING" ],
             "type" : "string"
           }
         } ],

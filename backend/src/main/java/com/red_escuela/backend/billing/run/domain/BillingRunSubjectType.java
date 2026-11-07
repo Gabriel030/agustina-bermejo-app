@@ -6,5 +6,6 @@ public enum BillingRunSubjectType {
     PROGRAM_ENROLLMENT,
     COURSE_ENROLLMENT,
     CURRENT_ACCOUNT,
-    STUDENT
+    STUDENT,
+    ANNUAL_UPFRONT_REQUEST
 }

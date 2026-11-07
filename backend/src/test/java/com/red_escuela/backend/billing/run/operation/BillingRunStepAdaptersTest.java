@@ -9,6 +9,11 @@ import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetec
 import com.red_escuela.backend.billing.run.domain.BillingRunItemStatus;
 import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
 import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontDeadlineExpirer;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontExpiryResult;
+import com.red_escuela.backend.billing.run.domain.BillingRunItemStatus;
+import com.red_escuela.backend.billing.run.domain.BillingRunStep;
+import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -86,5 +91,39 @@ class BillingRunStepAdaptersTest {
     @Tag("D-447")
     void theGatewayStepDeclaresItselfNotApplicableWhileThePaymentGatewayIsOff() {
         assertThat(new GatewaySyncBillingRunStep().findNotApplicableCode(DAY)).contains("GATEWAY_DISABLED");
+    }
+
+    @Test
+    @Tag("D-155")
+    void theAnnualUpfrontExpiryStepReportsEachFailedRequestAndCountsExpiredAndSkippedSeparately() {
+        AnnualUpfrontDeadlineExpirer expirer = mock(AnnualUpfrontDeadlineExpirer.class);
+        when(expirer.expireRequestsPastDeadline()).thenReturn(new AnnualUpfrontExpiryResult(3, 2, List.of(41L, 42L)));
+        AnnualUpfrontExpiryBillingRunStep step = new AnnualUpfrontExpiryBillingRunStep(expirer);
+
+        BillingRunStepOutcome outcome = step.runStepForBusinessDate(DAY);
+
+        assertThat(step.step()).isEqualTo(BillingRunStep.ANNUAL_UPFRONT_EXPIRY);
+        assertThat(outcome.candidates()).isEqualTo(7);
+        assertThat(outcome.processed()).isEqualTo(3);
+        assertThat(outcome.skipped()).isEqualTo(2);
+        assertThat(outcome.failed()).isEqualTo(2);
+        assertThat(outcome.hasErrors()).isTrue();
+        assertThat(outcome.items()).extracting(item -> item.subjectType(), item -> item.subjectId(), item -> item.status(), item -> item.errorCode())
+                .containsExactly(
+                        org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.ANNUAL_UPFRONT_REQUEST, 41L, BillingRunItemStatus.FAILED, AnnualUpfrontExpiryBillingRunStep.ANNUAL_UPFRONT_EXPIRY_FAILED),
+                        org.assertj.core.api.Assertions.tuple(BillingRunSubjectType.ANNUAL_UPFRONT_REQUEST, 42L, BillingRunItemStatus.FAILED, AnnualUpfrontExpiryBillingRunStep.ANNUAL_UPFRONT_EXPIRY_FAILED));
+    }
+
+    @Test
+    @Tag("D-155")
+    void theAnnualUpfrontExpiryStepWithNothingToExpireReportsNoItemsAndNoErrors() {
+        AnnualUpfrontDeadlineExpirer expirer = mock(AnnualUpfrontDeadlineExpirer.class);
+        when(expirer.expireRequestsPastDeadline()).thenReturn(new AnnualUpfrontExpiryResult(0, 0, List.of()));
+
+        BillingRunStepOutcome outcome = new AnnualUpfrontExpiryBillingRunStep(expirer).runStepForBusinessDate(DAY);
+
+        assertThat(outcome.candidates()).isZero();
+        assertThat(outcome.items()).isEmpty();
+        assertThat(outcome.hasErrors()).isFalse();
     }
 }
