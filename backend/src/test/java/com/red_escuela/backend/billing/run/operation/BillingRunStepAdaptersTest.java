@@ -11,9 +11,7 @@ import com.red_escuela.backend.billing.run.domain.BillingRunStepOutcome;
 import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontDeadlineExpirer;
 import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontExpiryResult;
-import com.red_escuela.backend.billing.run.domain.BillingRunItemStatus;
 import com.red_escuela.backend.billing.run.domain.BillingRunStep;
-import com.red_escuela.backend.billing.run.domain.BillingRunSubjectType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 

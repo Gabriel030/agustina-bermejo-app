@@ -36,6 +36,6 @@ public class EnrollmentMonthCloseFactsLoader {
     }
 
     private int graceDaysOf(LocalDate dueDate) {
-        return configurationReader.findLatePaymentSettingsEffectiveOn(dueDate).map(LatePaymentTerms::gracePeriodDays).orElse(0);
+        return configurationReader.findLatePaymentSettingsEffectiveOn(dueDate).or(configurationReader::findFirstLatePaymentSettings).map(LatePaymentTerms::gracePeriodDays).orElse(0);
     }
 }
