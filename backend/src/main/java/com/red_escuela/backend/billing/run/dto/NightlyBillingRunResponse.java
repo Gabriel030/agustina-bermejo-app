@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.run.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.billing.run.domain.BillingRun;
 import com.red_escuela.backend.billing.run.domain.BillingRunStatus;
 import com.red_escuela.backend.billing.run.domain.NightlyBillingRun;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record NightlyBillingRunResponse(Long id, LocalDate businessDate, NightlyBillingRunStatus status, NightlyBillingTrigger trigger, LocalDateTime startedAt,
-                                        LocalDateTime finishedAt, Long durationSeconds, int stepsWithErrors, int failedSteps, List<BillingRunStepResponse> steps) {
+                                        @Schema(nullable = true) LocalDateTime finishedAt, @Schema(nullable = true) Long durationSeconds, int stepsWithErrors, int failedSteps, List<BillingRunStepResponse> steps) {
 
     public static NightlyBillingRunResponse of(NightlyBillingRun run, List<BillingRun> stepRuns) {
         int withErrors = (int) stepRuns.stream().filter(step -> step.getStatus() == BillingRunStatus.COMPLETED_WITH_ERRORS).count();

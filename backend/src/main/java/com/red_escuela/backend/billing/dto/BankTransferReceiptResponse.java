@@ -17,7 +17,7 @@ import java.util.List;
 public record BankTransferReceiptResponse(Long id, Long invoiceId, String filePath, String status, @Schema(nullable = true) String rejectionReason, @Schema(nullable = true) String rejectionCode,
                                      LocalDateTime uploadedAt, @Schema(nullable = true) Long studentId, String studentName, String studentDni,
                                      String invoicePeriod, String invoiceFeeType, String productName, List<Long> invoiceIds,
-                                     Money declaredAmount, LocalDate transferDate, String operationNumber, String originAccount, String holderName,
+                                     @Schema(nullable = true) Money declaredAmount, LocalDate transferDate, String operationNumber, String originAccount, String holderName,
                                      List<ReceiptInvoiceSummary> invoices, Integer pendingBusinessDays, Boolean reviewAlertSent,
                                      LocalDateTime reviewAlertSentAt, ReceiptUploader uploadedBy) {
 
