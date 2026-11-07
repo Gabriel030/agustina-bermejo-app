@@ -1,12 +1,13 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 import java.time.LocalDateTime;
 
 public record ProgramEnrollmentResponse(
         Long id, Long studentId, Long programId, String programName, String status,
-        LocalDateTime enrollmentDate, LocalDateTime completionDate) {
+        LocalDateTime enrollmentDate, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime completionDate) {
 
     public static ProgramEnrollmentResponse from(ProgramEnrollment programEnrollment) {
         return new ProgramEnrollmentResponse(

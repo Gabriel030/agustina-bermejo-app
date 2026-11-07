@@ -9,7 +9,7 @@ import { DirectorSubjectReview } from '@/features/academic-structure/pages/Direc
 const API = 'http://localhost:8080';
 
 const PENDING = [
-  { id: 7, code: 'S113', name: 'Farmacología', status: 'PENDING_APPROVAL', gradeMode: 'NUMERIC', description: null },
+  { id: 7, code: 'S113', name: 'Farmacología', status: 'PENDING_APPROVAL', gradeMode: 'NUMERIC', description: null, rejectionReason: null, maxFinalExamAttempts: 3, weeklyHours: 4, weeklyHoursLab: null },
 ];
 
 function mockPendingSubjects() {

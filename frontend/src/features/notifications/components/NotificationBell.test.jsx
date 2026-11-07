@@ -54,7 +54,9 @@ describe('NotificationBell', () => {
           },
         ]),
       ),
-      http.post(`${API}/me/notifications/9/read`, () => HttpResponse.json({})),
+      http.post(`${API}/me/notifications/9/read`, () =>
+        HttpResponse.json({ id: 9, type: 'GENERAL', message: 'Aviso', read: true, createdAt: '2026-01-01T00:00:00', relatedEntityId: 1, relatedEntityType: 'INVOICE' }),
+      ),
       http.patch(`${API}/me/notifications/9/read`, () => HttpResponse.json({})),
       http.put(`${API}/me/notifications/9/read`, () => HttpResponse.json({})),
     );

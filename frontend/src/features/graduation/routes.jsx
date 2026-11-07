@@ -4,8 +4,10 @@ const DirectorEgresoDetalle = lazyPage(() => import('@/features/graduation/pages
 const AdministrativoEgresosPorVerificar = lazyPage(() => import('@/features/graduation/pages/AdministrativoEgresosPorVerificar'), 'AdministrativoEgresosPorVerificar');
 const AdministrativoEgresoDetalle = lazyPage(() => import('@/features/graduation/pages/AdministrativoEgresoDetalle'), 'AdministrativoEgresoDetalle');
 
+const VerifyCertificate = lazyPage(() => import('@/features/graduation/certificates/pages/VerifyCertificate'), 'VerifyCertificate');
+
 export const routes = {
-  public: [],
+  public: [{ path: '/verificar/:code', element: <VerifyCertificate /> }],
   shared: [],
   role: [
     { roles: ['director'], path: 'aprobaciones/egresos', element: <DirectorAprobacionesEgresos /> },

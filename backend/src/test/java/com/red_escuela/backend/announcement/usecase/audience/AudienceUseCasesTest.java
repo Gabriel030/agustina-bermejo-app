@@ -6,10 +6,10 @@ import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.announcement.entity.SectionType;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
-import com.red_escuela.backend.announcement.service.SectionMembership;
-import com.red_escuela.backend.announcement.service.audience.AudienceService;
-import com.red_escuela.backend.announcement.service.audience.SectionSnapshot;
-import com.red_escuela.backend.announcement.service.audience.StudentSnapshot;
+import com.red_escuela.backend.announcement.specialist.SectionMembershipChecker;
+import com.red_escuela.backend.announcement.specialist.audience.AudienceSegmentResolver;
+import com.red_escuela.backend.announcement.specialist.audience.SectionSnapshot;
+import com.red_escuela.backend.announcement.specialist.audience.StudentSnapshot;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.api.EvaluationSchemeSummary;
 import com.red_escuela.backend.identity.entity.Person;
@@ -39,9 +39,9 @@ class AudienceUseCasesTest {
     private static final Long SECTION_ID = 60L;
 
     @Mock
-    private AudienceService audienceService;
+    private AudienceSegmentResolver audienceService;
     @Mock
-    private SectionMembership sectionMembership;
+    private SectionMembershipChecker sectionMembership;
 
     private PreviewAudienceService previewService;
     private ListAudienceSegmentsService listService;

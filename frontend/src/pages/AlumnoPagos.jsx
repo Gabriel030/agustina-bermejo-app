@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
-import { AdmissionInvoicePendingCard, CreditBalanceCard, MyDiscountsTab } from '@/features/billing';
+import { AdmissionInvoicePendingCard, AnnualUpfrontCards, CreditBalanceCard, MyDiscountsTab } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 import { formatDate } from '@/lib/billing';
 
@@ -108,6 +108,8 @@ export function AlumnoPagos() {
         </div>
 
         <AdmissionInvoicePendingCard />
+
+        <AnnualUpfrontCards enrollments={(carreras ?? []).filter((m) => ['ENROLLED', 'IN_PROGRESS'].includes(m.status))} />
 
         <CreditBalanceCard />
 

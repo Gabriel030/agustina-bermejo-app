@@ -776,6 +776,29 @@
         "required" : [ "acceptedAt", "acceptedTermsVersion", "id", "invoiceId", "paymentDeadline", "status", "total" ],
         "type" : "object"
       },
+      "AnnualUpfrontTermsResponse" : {
+        "properties" : {
+          "current" : {
+            "type" : "boolean"
+          },
+          "publishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          },
+          "versionNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "current", "publishedAt", "text", "version", "versionNumber" ],
+        "type" : "object"
+      },
       "AppliedStudentDiscountInstallmentResponse" : {
         "properties" : {
           "installmentNumber" : {
@@ -1033,27 +1056,27 @@
             "type" : [ "boolean", "null" ]
           },
           "justificationAttachmentUrl" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justificationDeadline" : {
             "format" : "date",
             "type" : [ "string", "null" ]
           },
           "justificationReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justificationRejectionReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "justifiedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string"
           }
         },
-        "required" : [ "classDate", "enrollmentId", "id", "justificationAttachmentUrl", "justificationReason", "justificationRejectionReason", "justifiedAt", "status" ],
+        "required" : [ "classDate", "enrollmentId", "id", "status" ],
         "type" : "object"
       },
       "AttendanceRiskResponse" : {
@@ -1197,6 +1220,33 @@
           }
         },
         "required" : [ "absences", "examScores", "file", "finalScores", "name", "studentId", "tpScores" ],
+        "type" : "object"
+      },
+      "AuditedAnnualUpfrontTermsResponse" : {
+        "properties" : {
+          "current" : {
+            "type" : "boolean"
+          },
+          "publishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "publishedByPersonId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          },
+          "versionNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "current", "publishedAt", "publishedByPersonId", "text", "version", "versionNumber" ],
         "type" : "object"
       },
       "AuthResponse" : {
@@ -2386,6 +2436,18 @@
         "required" : [ "corequisiteProgramSubjectId", "corequisiteSubjectCode", "corequisiteSubjectName", "id" ],
         "type" : "object"
       },
+      "CorrectGradeItemRequest" : {
+        "properties" : {
+          "newScore" : {
+            "type" : "number"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "newScore", "reason" ],
+        "type" : "object"
+      },
       "CountValue" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/MetricValue"
@@ -2446,7 +2508,7 @@
         "properties" : {
           "completionDate" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "courseId" : {
             "format" : "int64",
@@ -2471,7 +2533,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "completionDate", "courseId", "courseName", "enrollmentDate", "id", "status", "studentId" ],
+        "required" : [ "courseId", "courseName", "enrollmentDate", "id", "status", "studentId" ],
         "type" : "object"
       },
       "CoursePricingResponse" : {
@@ -5263,6 +5325,41 @@
         "required" : [ "condition", "dni", "enrollmentId", "finalEnabled", "grades", "lastname", "name" ],
         "type" : "object"
       },
+      "GradeItemAuditResponse" : {
+        "properties" : {
+          "changedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "changedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "gradeItemId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "CORRECTION", "FINAL_REVERT" ],
+            "type" : "string"
+          },
+          "newScore" : {
+            "type" : "number"
+          },
+          "previousScore" : {
+            "type" : "number"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "changedAt", "changedById", "gradeItemId", "id", "kind", "reason" ],
+        "type" : "object"
+      },
       "GradeItemResponse" : {
         "properties" : {
           "date" : {
@@ -7008,10 +7105,10 @@
             "type" : "string"
           },
           "instructorTitular" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "schedule" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "sectionEnrollmentId" : {
             "format" : "int64",
@@ -7021,7 +7118,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "courseName", "courseSubjectName", "instructorTitular", "schedule", "sectionEnrollmentId", "sectionName" ],
+        "required" : [ "courseName", "courseSubjectName", "sectionEnrollmentId", "sectionName" ],
         "type" : "object"
       },
       "MyScheduleResponse" : {
@@ -8520,7 +8617,7 @@
         "properties" : {
           "completionDate" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "enrollmentDate" : {
             "format" : "date-time",
@@ -8545,7 +8642,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "completionDate", "enrollmentDate", "id", "programId", "programName", "status", "studentId" ],
+        "required" : [ "enrollmentDate", "id", "programId", "programName", "status", "studentId" ],
         "type" : "object"
       },
       "ProgramPricingResponse" : {
@@ -8990,18 +9087,18 @@
           },
           "expiresAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "graduationDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "holderFullName" : {
             "type" : "string"
           },
           "hours" : {
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "issuedAt" : {
             "format" : "date-time",
@@ -9011,11 +9108,11 @@
             "type" : "string"
           },
           "registryNumber" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "revokedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "enum" : [ "VALID", "EXPIRED", "REVOKED" ],
@@ -9028,7 +9125,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "documentKind", "expiresAt", "graduationDate", "holderFullName", "hours", "issuedAt", "maskedDocument", "registryNumber", "revokedAt", "status", "titleKind", "titleName" ],
+        "required" : [ "documentKind", "holderFullName", "issuedAt", "maskedDocument", "status", "titleKind", "titleName" ],
         "type" : "object"
       },
       "PublicModulesResponse" : {
@@ -9038,6 +9135,17 @@
           }
         },
         "required" : [ "billingEnabled" ],
+        "type" : "object"
+      },
+      "PublishAnnualUpfrontTermsRequest" : {
+        "properties" : {
+          "text" : {
+            "maxLength" : 20000,
+            "minLength" : 50,
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ],
         "type" : "object"
       },
       "PublishGradeItemRequest" : {
@@ -10388,7 +10496,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "available", "capacity", "enrolled", "kind", "name", "sectionId", "waitlisted" ],
+        "required" : [ "enrolled", "kind", "name", "sectionId", "waitlisted" ],
         "type" : "object"
       },
       "SelectPaymentPlanRequest" : {
@@ -13711,6 +13819,458 @@
           }
         },
         "tags" : [ "annual-upfront-request-view-controller" ]
+      }
+    },
+    "/annual-upfront-terms/current" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontTerms_viewCurrentTerms",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontTermsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "annual-upfront-terms-controller" ]
+      }
+    },
+    "/annual-upfront-terms/versions" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontTerms_listTermsVersions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AuditedAnnualUpfrontTermsResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "annual-upfront-terms-controller" ]
+      },
+      "post" : {
+        "operationId" : "AnnualUpfrontTerms_publishNewTermsVersion",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PublishAnnualUpfrontTermsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuditedAnnualUpfrontTermsResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "annual-upfront-terms-controller" ]
+      }
+    },
+    "/annual-upfront-terms/versions/{versionNumber}" : {
+      "get" : {
+        "operationId" : "AnnualUpfrontTerms_viewTermsOfVersion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "versionNumber",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnnualUpfrontTermsResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "annual-upfront-terms-controller" ]
       }
     },
     "/attendance/change-requests" : {
@@ -31388,6 +31948,253 @@
           }
         },
         "tags" : [ "financial-dashboard-controller" ]
+      }
+    },
+    "/grade-items/{id}/audit" : {
+      "get" : {
+        "operationId" : "GradeCorrection_listGradeItemAudit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/GradeItemAuditResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "grade-correction-controller" ]
+      }
+    },
+    "/grade-items/{id}/corrections" : {
+      "post" : {
+        "operationId" : "GradeCorrection_correctPublishedGrade",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CorrectGradeItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GradeItemAuditResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "grade-correction-controller" ]
       }
     },
     "/graduation-certificates" : {

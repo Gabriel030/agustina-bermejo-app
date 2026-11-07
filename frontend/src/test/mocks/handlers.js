@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 
 const API = 'http://localhost:8080';
 
@@ -73,13 +74,13 @@ export const handlers = [
   http.get(`${API}/course-subjects/:id/sections`, () => HttpResponse.json([])),
   http.post(`${API}/students/:id/program-enrollments`, ({ params }) =>
     HttpResponse.json(
-      { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
+      { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
       { status: 201 },
     ),
   ),
   http.post(`${API}/students/:id/course-enrollments`, ({ params }) =>
     HttpResponse.json(
-      { id: 1, studentId: Number(params.id), courseId: 1, courseName: 'Curso de prueba', status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: '2027-12-01T00:00:00' },
+      { id: 1, studentId: Number(params.id), courseId: 1, courseName: 'Curso de prueba', status: 'ENROLLED', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
       { status: 201 },
     ),
   ),
@@ -92,6 +93,19 @@ export const handlers = [
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollments`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollments/:id/annual-upfront/quote`, () =>
+    HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
+  ),
+  http.get(`${API}/me/program-enrollments/:id/annual-upfront-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/program-enrollments/:id/annual-upfront/quote`, () =>
+    HttpResponse.json({ eligible: false, reasonCode: 'ENROLLMENT_NOT_ACTIVE', reasonMessage: 'La inscripción no está activa.' }),
+  ),
+  http.get(`${API}/program-enrollments/:id/annual-upfront-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/annual-upfront-terms/current`, () => HttpResponse.json(annualTerms())),
+  http.get(`${API}/annual-upfront-terms/versions/:versionNumber`, ({ params }) =>
+    HttpResponse.json(annualTerms({ versionNumber: Number(params.versionNumber), version: `v${params.versionNumber}` })),
+  ),
+  http.get(`${API}/annual-upfront-terms/versions`, () => HttpResponse.json([auditedAnnualTerms()])),
   http.post(`${API}/me/program-enrollment-applications`, () =>
     HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
   ),

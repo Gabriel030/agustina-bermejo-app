@@ -27,6 +27,7 @@ class InAppNotificationPreferencesTest {
     private static final Set<NotificationType> USER_CONFIGURABLE = EnumSet.of(
             NotificationType.ANNOUNCEMENT_PUBLISHED, NotificationType.ANNOUNCEMENT_UPDATED,
             NotificationType.EXAM_BOARD_RESCHEDULED, NotificationType.EXAM_BOARD_CANCELED,
+            NotificationType.GRADES_PUBLISHED, NotificationType.GRADE_CORRECTED,
             NotificationType.COURSE_WAITLIST_EXPIRED, NotificationType.PROGRAM_APPLICATION_APPROVED,
             NotificationType.COLLECTION_REMINDER, NotificationType.HOLIDAYS_MISSING_FOR_NEXT_YEAR);
 

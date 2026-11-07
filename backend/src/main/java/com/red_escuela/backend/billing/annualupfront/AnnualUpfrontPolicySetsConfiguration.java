@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontIdempot
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontIdempotencyKeyPolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontTermsAcceptance;
 import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontTermsAcceptedPolicy;
+import com.red_escuela.backend.billing.annualupfront.policy.AnnualUpfrontTermsCurrentPolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.OnlyOneAnnualUpfrontRequestPolicy;
 import com.red_escuela.backend.billing.annualupfront.policy.ScholarshipHolderCannotChooseAnnualUpfrontPolicy;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -52,6 +53,6 @@ public class AnnualUpfrontPolicySetsConfiguration {
 
     @Bean
     public PolicySet<AnnualUpfrontTermsAcceptance> annualUpfrontTermsPolicies() {
-        return PolicySet.named("ANNUAL_UPFRONT_TERMS", List.of(new AnnualUpfrontTermsAcceptedPolicy()));
+        return PolicySet.named("ANNUAL_UPFRONT_TERMS", List.of(new AnnualUpfrontTermsAcceptedPolicy(), new AnnualUpfrontTermsCurrentPolicy()));
     }
 }

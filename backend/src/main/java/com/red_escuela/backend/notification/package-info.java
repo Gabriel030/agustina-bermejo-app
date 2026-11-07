@@ -1,4 +1,4 @@
-@ApplicationModule(displayName = "Notification", allowedDependencies = {"shared", "identity :: *", "academicstructure :: *", "enrollment :: *", "attendance :: *", "evaluation :: *", "billing :: *", "graduation :: *", "announcement :: *"})
+@ApplicationModule(displayName = "Notification", allowedDependencies = {"shared", "identity :: *", "academicstructure :: *", "enrollment :: *", "attendance :: *", "evaluation :: *", "billing :: *", "graduation :: *", "announcement :: *", "platform :: api"})
 package com.red_escuela.backend.notification;
 
 import org.springframework.modulith.ApplicationModule;

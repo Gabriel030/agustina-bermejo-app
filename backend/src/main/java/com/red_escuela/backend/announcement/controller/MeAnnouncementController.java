@@ -2,9 +2,9 @@ package com.red_escuela.backend.announcement.controller;
 
 import com.red_escuela.backend.announcement.dto.MyAnnouncementResponse;
 import com.red_escuela.backend.announcement.entity.Announcement;
-import com.red_escuela.backend.announcement.usecase.announcement.ListMyAnnouncementReadTimesUseCase;
-import com.red_escuela.backend.announcement.usecase.announcement.ListMyAnnouncementsUseCase;
-import com.red_escuela.backend.announcement.usecase.announcement.MarkAnnouncementReadUseCase;
+import com.red_escuela.backend.announcement.usecase.broadcast.ListMyAnnouncementReadTimesUseCase;
+import com.red_escuela.backend.announcement.usecase.broadcast.ListMyAnnouncementsUseCase;
+import com.red_escuela.backend.announcement.usecase.broadcast.MarkAnnouncementReadUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

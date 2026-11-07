@@ -7,6 +7,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "public|-|/olvide-mi-contrasena|ForgotPassword",
   "public|-|/registrarse|Registrarse",
   "public|-|/verificar-email|VerificacionEmail",
+  "public|-|/verificar/:code|VerifyCertificate",
   "role|administrativo,director|alumnos/:id/descuentos/nuevo|GrantDiscountPage",
   "role|administrativo,director|alumnos/:id/reembolsos/nuevo|RequestRefundPage",
   "role|administrativo,director|corridas-de-facturacion|BillingRunsPage",
@@ -20,6 +21,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|administrativo,director|facturacion/cuotas/:invoiceId/nota-de-credito|CreateCreditNotePage",
   "role|administrativo,director|facturacion|AdministrativoFacturacion",
   "role|administrativo,director|financiero|FinancialDashboardPage",
+  "role|administrativo,director|medios-de-pago|PaymentMethodsPage",
   "role|administrativo,director|personal/:id|LegajoPersonal",
   "role|administrativo,director|personal|GestionPersonal",
   "role|administrativo,director|recordatorios-de-pago/mails-simulados|SimulatedMailsPage",
@@ -63,6 +65,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|director|financiero/anios-lectivos|DirectorAniosLectivos",
   "role|director|gestion-academica|DirectorSubjectReview",
   "role|director|revisar-configuracion/:sectionId|DirectorRevisarConfiguracion",
+  "role|director|terminos-del-pago-anual|AnnualTermsAdminPage",
   "role|docente|mis-comisiones/:sectionId/avisos/:avisoId/editar|AvisoEditar",
   "role|docente|mis-comisiones/:sectionId/avisos/nuevo|AvisoWizard",
   "role|docente|mis-comisiones/:sectionId|DocenteComisionDetalle",
@@ -96,5 +99,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "shared|-|/mis-solicitudes/:id|DetalleSolicitud",
   "shared|-|/mis-solicitudes|Navigate",
   "shared|-|/perfil|MiPerfil",
+  "shared|-|/terminos-pago-anual/:versionNumber|AnnualTermsPage",
+  "shared|-|/terminos-pago-anual|AnnualTermsPage",
 ]
 `;

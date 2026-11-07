@@ -18,7 +18,7 @@ Decisión vigente: [ADR 0002](../adr/0002-patron-de-modulos.md) (aceptado 30-oct
 
 | Interfaz | Contenido | Cómo se declara |
 |---|---|---|
-| `api` | **especialistas concretos**, sin interfaz, y los records de lectura que devuelven (más `Current*Service` de identity y academicstructure); única excepción de interfaz: los `*Port` (ver abajo) | `@NamedInterface("api")` en `<modulo>/api/package-info.java` o a nivel de tipo |
+| `api` | **especialistas concretos**, sin interfaz, y los records de lectura que devuelven (los `Current*Service` de identity y academicstructure NO están en `api`: viven en `service`, hoy `specialist` en migración, y son colaboradores nombrados de las reglas de controller); única excepción de interfaz: los `*Port` (ver abajo) | `@NamedInterface("api")` en `<modulo>/api/package-info.java` o a nivel de tipo |
 | `events` | eventos con ids y valores planos, nunca entidades | `@NamedInterface("events")` en `<modulo>/events/package-info.java` |
 | `model` | entidades que otro módulo referencia por relación JPA | `@NamedInterface("model")` a nivel de tipo en la entidad |
 
@@ -43,7 +43,7 @@ Entidades en `model` y motivo (se referencian por relación JPA y cambiarlas por
 
 | Mecanismo | Cuándo | Transacción | Ejemplo |
 |---|---|---|---|
-| Llamada directa a la `api` del inferior | Necesito respuesta o que pase en el mismo momento, hacia abajo en las capas | La misma | el especialista `AttendanceSectionAccess` (attendance) llama a `SectionTeachingFinder` (`academicstructure.api`) |
+| Llamada directa a la `api` del inferior | Necesito respuesta o que pase en el mismo momento, hacia abajo en las capas | La misma | el especialista `AttendanceSectionAccessChecker` (attendance) llama a `SectionTeachingFinder` (`academicstructure.api`) |
 | Puerto invertido (`*Port`) | El inferior necesita algo del superior, o de billing/notification | La misma | `OutstandingDebtPort` (D-185, ver abajo) |
 | Evento síncrono (`@EventListener`) | El inferior no debe conocer al superior y el efecto es atómico | La misma | notificaciones in-app de `notification` ante eventos de negocio |
 | Evento async con registro | Efectos secundarios y canales externos | Nueva, tras el commit | emails (se introduce en V2-00c1) |
@@ -56,8 +56,8 @@ Ejemplo: `attendance` necesita saber si un docente da una comisión.
 
 1. En el módulo proveedor, crear un especialista **concreto** en `academicstructure.api` (`SectionTeachingFinder`), sin interfaz, que usa su repositorio y devuelve records de lectura de la propia `api`, nunca entidades no expuestas.
 2. Anotar el paquete `api` con `@NamedInterface("api")` si todavía no lo está.
-3. En el consumidor, un especialista propio (`attendance.service.AttendanceSectionAccess`) inyecta `SectionTeachingFinder` y lo llama directo.
-4. El caso de uso (`LoadAttendanceUseCase`) llama a `AttendanceSectionAccess`, y `AttendanceController` llama al caso de uso. Cadena: controller -> caso de uso -> especialista propio -> especialista de `api` -> repositorio. Cero interfaces, cero adaptadores. Verificar con `ModularityTest`.
+3. En el consumidor, un especialista propio (`attendance.specialist.AttendanceSectionAccessChecker`) inyecta `SectionTeachingFinder` y lo llama directo.
+4. El caso de uso (`LoadAttendanceUseCase`) llama a `AttendanceSectionAccessChecker`, y `AttendanceController` llama al caso de uso. Cadena: controller -> caso de uso -> especialista propio -> especialista de `api` -> repositorio. Cero interfaces, cero adaptadores. Verificar con `ModularityTest`.
 
 Si la consulta va hacia arriba o hacia billing/notification, no se expone un especialista: se publica un evento o se declara un `*Port` (única interfaz admitida en `api`) que implementa el módulo superior.
 
@@ -104,3 +104,73 @@ Deuda a invertir en V2-09 / M3b: hoy hay accesos enrollment -> billing registrad
 ## Documentación generada
 
 `ModuleDocumentationTest` escribe por defecto en `backend/target/modulith-docs/` (no ensucia el árbol). Para regenerar lo versionado en `docs/architecture/` (`components.puml`, `module-*.puml`, `module-*.adoc`) correr `./mvnw -f backend/pom.xml test -Dtest=ModuleDocumentationTest -DargLine=-Dmodulith.docs.update=true`. La salida es determinista (aristas ordenadas): si no cambió la arquitectura, no hay diff.
+
+
+## Glosario de roles (ADR 0007)
+
+| Rol | Carpeta | Nombre | Ejemplo |
+|---|---|---|---|
+| Coordinador | `controller/` | `XxxController` | `AttendanceController` |
+| Caso de uso | `usecase/` | `XxxUseCase` (interfaz, un método) + `XxxService` (implementación, `@UseCase`) + `XxxCommand` | `JustifyAttendanceUseCase` / `JustifyAttendanceService` |
+| Especialista interno | `specialist/` (hoy `service/`) | sustantivo de rol: `Finder` (devuelve entidades), `Reader` (devuelve vistas), `Recorder`/`Submitter` (escribe), `Calculator`, `Resolver`, `Loader`, `Checker`, `Exporter` | `AttendanceRiskCalculator` |
+| Especialista expuesto | `api/` | mismo vocabulario; los records de lectura terminan en `View` | `StudentAttendanceReader` |
+| Puerto | `api/` | interfaz `XxxPort`, solo para dependencia invertida; la implementa otro módulo | `WithdrawalCorrectsLateFeesPort` |
+| Adaptador | `specialist/` del módulo superior | `XxxPortAdapter` (implementa un puerto); un cliente de lo externo vive en `infrastructure/` | a definir con el primer puerto |
+| Herramienta | `entity/`, `repository/` | `XxxRepository` | `AttendanceRepository` |
+| Regla pura | `policy/` | `XxxPolicy`, sin Spring | `JustificationDeadlinePolicy` |
+
+`Service` es solo la implementación de un caso de uso. `Port` es solo una interfaz invertida. Durante la migración conviven `service/` y `specialist/`; las reglas ArchUnit aceptan ambos.
+
+## Dónde va cada clase nueva
+
+1. ¿Lo pide un actor (HTTP, job) y es el guion de un flujo? Caso de uso en `usecase/`.
+2. ¿Es el endpoint? `controller/`.
+3. ¿Otro módulo de capa superior lo necesita? Especialista concreto en `api/` con records `*View`; si la dependencia va hacia arriba, evento en `events/` o `*Port` en `api/`.
+4. ¿Es una regla pura sin Spring ni repositorio? `policy/`.
+5. ¿Es parte de un flujo del propio módulo (leer, escribir, calcular)? Especialista en `specialist/` con sustantivo de rol, nunca `Service`.
+6. ¿Es un valor o enum? `domain/`. ¿Un error? `exception/`. ¿Un cliente de lo externo? `infrastructure/`.
+
+## Documentación de paquetes
+
+Cada paquete lleva `package-info.java` con javadoc en castellano y cuatro rótulos: `<b>Qué es</b>`, `<b>Expone</b>`, `<b>No hacer</b>`, `<b>Ejemplo</b>`. El javadoc va antes de la anotación (`@ApplicationModule`, `@NamedInterface`) y Spring Modulith lo ignora. Es la única excepción a "cero comentarios y cero javadoc"; `JavadocOnlyInPackageInfoTest` la hace cumplir. Escritos hoy: `academicrecord`, `announcement` y `attendance`; el resto se escribe al migrar cada módulo.
+
+## Diagramas de los módulos piloto
+
+`attendance` (flechas hacia otros módulos tomadas de `docs/architecture/module-attendance.puml`):
+
+```mermaid
+flowchart LR
+    C[controller: AttendanceController] --> U[usecase/record y usecase/changerequest: LoadCourseSectionAttendanceService, RequestAttendanceChangeService]
+    U --> S[specialist: AttendanceRiskCalculator, SectionAttendanceRecorder, AttendanceSectionAccessChecker]
+    S --> P[policy: AttendanceSameDayCorrectionPolicy]
+    S --> R[repository: AttendanceRepository]
+    S --> AS[academicstructure.api: SectionTeachingFinder]
+    S --> EN[enrollment.api]
+    API[attendance.api: StudentAttendanceReader] --> R
+    EV[attendance.events] -.publica.-> OT[evaluation, billing, notification]
+```
+
+`academicrecord` (solo compone lo que exponen otros módulos):
+
+```mermaid
+flowchart LR
+    C[controller: MeAcademicRecordController] --> U[usecase: ListMy... Read My...]
+    U --> S[specialist: AcademicRecordGradeItemFinder, AcademicRecordAttendanceFinder]
+    S --> A1[attendance.api]
+    S --> A2[evaluation.api]
+    S --> A3[enrollment.api]
+```
+
+`announcement` (emite eventos que consume `notification`; lee de los módulos de abajo):
+
+```mermaid
+flowchart LR
+    C[controller: AnnouncementController, MeAnnouncementController] --> U1[usecase/broadcast: CreateAnnouncementService...]
+    C --> U2[usecase/audience: PreviewAudienceService...]
+    U1 --> S[specialist: AnnouncementDispatcher, SectionMembershipChecker]
+    U2 --> AU[specialist/audience: AudienceSegmentResolver]
+    S --> R[repository: AnnouncementRepository]
+    S --> OT[academicstructure, enrollment, attendance, evaluation: api]
+    S -.publica.-> EV[announcement.events]
+    J[specialist: ScheduledAnnouncementDispatchJob] --> S
+```

@@ -1,8 +1,12 @@
 package com.red_escuela.backend.billing.annualupfront.policy;
 
-public record AnnualUpfrontTermsAcceptance(boolean termsAccepted, String acceptedVersion, String currentVersion) {
+public record AnnualUpfrontTermsAcceptance(boolean termsAccepted, String acceptedVersion, boolean acceptedVersionWasPublished, String currentVersion) {
+
+    public boolean acceptsAPublishedVersion() {
+        return termsAccepted && acceptedVersionWasPublished;
+    }
 
     public boolean acceptsTheCurrentVersion() {
-        return termsAccepted && currentVersion.equals(acceptedVersion);
+        return currentVersion.equals(acceptedVersion);
     }
 }

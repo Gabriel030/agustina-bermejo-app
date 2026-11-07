@@ -5,8 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(name = "MyScheduleItemResponse")
 public record MyScheduleItemResponse(
-        Long sectionEnrollmentId, String courseName, String sectionName, String courseSubjectName, String schedule,
-        String instructorTitular) {
+        Long sectionEnrollmentId, String courseName, String sectionName, String courseSubjectName, @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String schedule,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String instructorTitular) {
 
     public static MyScheduleItemResponse from(CourseSectionScheduleView view) {
         return new MyScheduleItemResponse(
