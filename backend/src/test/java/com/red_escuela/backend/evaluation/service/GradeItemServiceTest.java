@@ -49,7 +49,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
-import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
@@ -949,7 +949,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         return gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).get(0);
     }
 
-    private GradeItemAudit correct(GradeItem item, double newScore, String reason) {
+    private GradeItemAuditResponse correct(GradeItem item, double newScore, String reason) {
         return publishedGradeCorrector.correct(item.getId(),
                 new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(newScore)), reason), item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
     }
@@ -992,15 +992,15 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     void correctingAPublishedGradeStoresAuditChangesScoreAndEmitsEvent() {
         GradeItem item = publishedExam("73100001", 5.0);
 
-        GradeItemAudit audit = correct(item, 9.0, "  Error de carga del docente  ");
+        GradeItemAuditResponse audit = correct(item, 9.0, "  Error de carga del docente  ");
         entityManager.flush();
 
         assertThat(gradeItemRepository.findById(item.getId()).orElseThrow().getScore()).isEqualTo(Grade.of(BigDecimal.valueOf(9.0)));
-        assertThat(audit.getPreviousScore()).isEqualTo(Grade.of(BigDecimal.valueOf(5.0)));
-        assertThat(audit.getNewScore()).isEqualTo(Grade.of(BigDecimal.valueOf(9.0)));
-        assertThat(audit.getReason()).isEqualTo("Error de carga del docente");
-        assertThat(audit.getKind()).isEqualTo(GradeItemAuditKind.CORRECTION);
-        assertThat(audit.getChangedAt()).isNotNull();
+        assertThat(audit.previousScore()).isEqualTo(Grade.of(BigDecimal.valueOf(5.0)));
+        assertThat(audit.newScore()).isEqualTo(Grade.of(BigDecimal.valueOf(9.0)));
+        assertThat(audit.reason()).isEqualTo("Error de carga del docente");
+        assertThat(audit.kind()).isEqualTo(GradeItemAuditKind.CORRECTION);
+        assertThat(audit.changedAt()).isNotNull();
         assertThat(gradeItemAuditReader.historyOf(item.getId())).hasSize(1);
         var events = applicationEvents.stream(GradeCorrectedEvent.class).toList();
         assertThat(events).hasSize(1);
@@ -1085,6 +1085,6 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
         var history = gradeItemAuditReader.historyOf(item.getId());
 
-        assertThat(history).extracting(GradeItemAudit::getReason).containsExactly("Segunda corrección", "Primera corrección");
+        assertThat(history).extracting(GradeItemAuditResponse::reason).containsExactly("Segunda corrección", "Primera corrección");
     }
 }

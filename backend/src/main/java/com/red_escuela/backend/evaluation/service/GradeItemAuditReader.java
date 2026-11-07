@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
-import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
 import com.red_escuela.backend.evaluation.repository.GradeItemAuditRepository;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
@@ -21,10 +21,10 @@ public class GradeItemAuditReader {
         this.auditRepository = auditRepository;
     }
 
-    public List<GradeItemAudit> historyOf(Long gradeItemId) {
+    public List<GradeItemAuditResponse> historyOf(Long gradeItemId) {
         if (!gradeItemRepository.existsById(gradeItemId)) {
             throw new GradeItemNotFoundException(gradeItemId);
         }
-        return auditRepository.findByGradeItemIdOrderByChangedAtDescIdDesc(gradeItemId);
+        return auditRepository.findByGradeItemIdOrderByChangedAtDescIdDesc(gradeItemId).stream().map(GradeItemAuditResponse::from).toList();
     }
 }

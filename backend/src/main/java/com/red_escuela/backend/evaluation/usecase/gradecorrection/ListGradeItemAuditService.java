@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.gradecorrection;
 
-import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.service.GradeItemAuditReader;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -16,7 +16,7 @@ public class ListGradeItemAuditService implements ListGradeItemAuditUseCase {
     }
 
     @Override
-    public List<GradeItemAudit> list(Long gradeItemId) {
+    public List<GradeItemAuditResponse> list(Long gradeItemId) {
         return auditReader.historyOf(gradeItemId);
     }
 }

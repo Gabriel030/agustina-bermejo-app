@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.gradecorrection;
 
-import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 
 public interface CorrectPublishedGradeUseCase {
-    GradeItemAudit correct(CorrectPublishedGradeCommand command);
+    GradeItemAuditResponse correct(CorrectPublishedGradeCommand command);
 }

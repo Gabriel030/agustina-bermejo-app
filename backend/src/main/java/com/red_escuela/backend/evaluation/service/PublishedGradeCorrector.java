@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
 import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
@@ -59,7 +60,7 @@ public class PublishedGradeCorrector {
     }
 
     @Transactional
-    public GradeItemAudit correct(Long gradeItemId, CorrectGradeItemRequest request, Long actorPersonId) {
+    public GradeItemAuditResponse correct(Long gradeItemId, CorrectGradeItemRequest request, Long actorPersonId) {
         String reason = normalizedReason(request.reason());
         GradeItem gradeItem = gradeItemRepository.findById(gradeItemId)
                 .orElseThrow(() -> new GradeItemNotFoundException(gradeItemId));
@@ -90,7 +91,7 @@ public class PublishedGradeCorrector {
         eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
                 SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber())));
-        return audit;
+        return GradeItemAuditResponse.from(audit);
     }
 
     private String normalizedReason(String reason) {

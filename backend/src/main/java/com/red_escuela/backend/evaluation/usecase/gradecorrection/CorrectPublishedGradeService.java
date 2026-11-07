@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.gradecorrection;
 
-import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
+import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.service.PublishedGradeCorrector;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -14,7 +14,7 @@ public class CorrectPublishedGradeService implements CorrectPublishedGradeUseCas
     }
 
     @Override
-    public GradeItemAudit correct(CorrectPublishedGradeCommand command) {
+    public GradeItemAuditResponse correct(CorrectPublishedGradeCommand command) {
         return corrector.correct(command.gradeItemId(), command.request(), command.actorPersonId());
     }
 }

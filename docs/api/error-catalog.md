@@ -126,6 +126,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_EVALUATION_DATE` | no | `InvalidEvaluationDateException` | evaluation |
 | `INVALID_EVALUATION_SCHEME` | no | `InvalidEvaluationSchemeException` | evaluation |
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
+| `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
 | `INVALID_GRADE_ITEM_WEIGHT` | no | `InvalidGradeItemWeightException` | evaluation |
 | `INVALID_ISSUANCE_SETTINGS` | no | `InvalidIssuanceSettingsException` | billing |
 | `INVALID_JUSTIFICATION_INPUT` | no | `InvalidJustificationInputException` | attendance |
@@ -372,6 +373,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `FEATURE_ALREADY_IN_REQUESTED_STATE` | no | `FeatureAlreadyInRequestedStateException` | platform |
 | `GLOBAL_ACCOUNT_INCONSISTENCY` | no | `GlobalAccountInconsistencyException` | billing |
+| `GRADE_CORRECTION_NO_CHANGE` | no | `GradeCorrectionNoChangeException` | evaluation |
+| `GRADE_CORRECTION_PERIOD_ENDED` | no | `GradeCorrectionPeriodEndedException` | evaluation |
+| `GRADE_ITEM_NOT_PUBLISHED` | no | `GradeItemNotPublishedException` | evaluation |
 | `GRADE_ITEM_PUBLISHED_LOCKED` | no | `GradeItemPublishedLockedException` | evaluation |
 | `GRADUATION_CERTIFICATE_ALREADY_ISSUED` | no | `GraduationCertificateAlreadyIssuedException` | graduation |
 | `GRADUATION_CERTIFICATE_NOT_ELIGIBLE` | no | `GraduationCertificateNotEligibleException` | graduation |
@@ -635,6 +639,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-boards/{id}/registrations` | `ExamBoardRegistrationController#register` |
 | POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
+| POST | `/grade-items/{id}/corrections` | `GradeCorrectionController#correctPublishedGrade` |
 | POST | `/graduation-certificates` | `GraduationCertificateController#issue` |
 | POST | `/graduation-requests/{id}/approve` | `GraduationRequestController#approve` |
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |

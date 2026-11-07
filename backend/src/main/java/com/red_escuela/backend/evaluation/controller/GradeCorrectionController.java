@@ -37,13 +37,13 @@ public class GradeCorrectionController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public GradeItemAuditResponse correctPublishedGrade(@PathVariable Long id, @Valid @RequestBody CorrectGradeItemRequest request) {
-        return GradeItemAuditResponse.from(correctPublishedGradeUseCase.correct(
-                new CorrectPublishedGradeCommand(id, currentActorFinder.currentPersonId(), request)));
+        return correctPublishedGradeUseCase.correct(
+                new CorrectPublishedGradeCommand(id, currentActorFinder.currentPersonId(), request));
     }
 
     @GetMapping("/grade-items/{id}/audit")
     @PreAuthorize("hasRole('DIRECTOR')")
     public List<GradeItemAuditResponse> listGradeItemAudit(@PathVariable Long id) {
-        return listGradeItemAuditUseCase.list(id).stream().map(GradeItemAuditResponse::from).toList();
+        return listGradeItemAuditUseCase.list(id);
     }
 }
