@@ -26,4 +26,16 @@ class AttendanceChangeRequestDecisionRecorderTest {
         assertThat(request.getApprovedBy()).isSameAs(person);
         assertThat(request.getApprovedAt()).isNotNull();
     }
+
+    @Test
+    void recordsTheTrimmedRejectionReasonTogetherWithTheDecision() {
+        when(actorResolver.currentActor()).thenReturn(new Person());
+        AttendanceChangeRequest request = new AttendanceChangeRequest();
+
+        recorder.recordRejectionByCurrentActor(request, "  La asistencia estaba bien cargada ");
+
+        assertThat(request.getStatus()).isEqualTo(AttendanceChangeRequestStatus.REJECTED);
+        assertThat(request.getRejectionReason()).isEqualTo("La asistencia estaba bien cargada");
+        assertThat(request.getApprovedAt()).isNotNull();
+    }
 }

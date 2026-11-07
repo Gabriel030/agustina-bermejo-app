@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import java.time.LocalDate;
 import java.util.List;
 
-public record AttendanceChangeRequestRejectedNotification(Long requestId, Person requestedBy, String studentFullName, LocalDate classDate, String previousStatusLabel, String requestedStatusLabel) implements DomainNotificationEvent {
+public record AttendanceChangeRequestRejectedNotification(Long requestId, Person requestedBy, String studentFullName, LocalDate classDate, String previousStatusLabel, String requestedStatusLabel, String rejectionReason) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.ATTENDANCE_CHANGE_REQUEST_REJECTED;
@@ -14,7 +14,7 @@ public record AttendanceChangeRequestRejectedNotification(Long requestId, Person
 
     @Override
     public String message() {
-        return AttendanceChangeRequestMessage.of(studentFullName, classDate, previousStatusLabel, requestedStatusLabel, "rechazada");
+        return AttendanceChangeRequestMessage.of(studentFullName, classDate, previousStatusLabel, requestedStatusLabel, "rechazada") + AttendanceChangeRequestMessage.rejectionReasonSuffix(rejectionReason);
     }
 
     @Override
