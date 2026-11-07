@@ -89,6 +89,33 @@ public final class Scenario {
         return student.studentId();
     }
 
+    public Long programId() {
+        return catalog.programId();
+    }
+
+    public Long directorId() {
+        return catalog.directorId();
+    }
+
+    public Long enrollmentId() {
+        return student.enrollmentId();
+    }
+
+    public Scenario assertInvariantsAfter(String label) {
+        invariants.assertHoldAfter(label);
+        return this;
+    }
+
+    public Scenario asDirector(Runnable action) {
+        actAsDirector();
+        try {
+            action.run();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+        return this;
+    }
+
     public Timeline timeline() {
         return timeline;
     }

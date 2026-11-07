@@ -34,6 +34,20 @@ public abstract class AbstractSimulationTest extends AbstractIntegrationTest {
     @Autowired
     protected RegisterCashPaymentUseCase registerCashPaymentUseCase;
 
+    @Autowired
+    protected com.red_escuela.backend.billing.discount.usecase.GrantStudentDiscountUseCase grantStudentDiscountUseCase;
+    @Autowired
+    protected com.red_escuela.backend.billing.discount.usecase.RevokeStudentDiscountUseCase revokeStudentDiscountUseCase;
+
+    protected DiscountActions discounts(Scenario scenario) {
+        return new DiscountActions(scenario, grantStudentDiscountUseCase, revokeStudentDiscountUseCase);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void restoreDatabaseBetweenScenarios() {
+        com.red_escuela.backend.config.TestDatabaseIsolation.restoreNow();
+    }
+
     protected Fixtures fixtures() {
         return new Fixtures(entityManager, transactionTemplate, configurationVersionRepository, jdbcTemplate, billingTestTrigger);
     }
