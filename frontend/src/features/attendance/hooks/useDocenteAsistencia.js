@@ -66,6 +66,13 @@ export function useReporteAusencias(type, sectionId) {
   });
 }
 
+export function useMisPedidosDeAsistencia() {
+  return useQuery({
+    queryKey: ['me', 'attendance-change-requests'],
+    queryFn: () => apiFetch('/me/attendance-change-requests'),
+  });
+}
+
 export function useSolicitarModificacion(attendanceId) {
   const queryClient = useQueryClient();
   return useMutation({

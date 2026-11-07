@@ -267,6 +267,7 @@ export function DataTable({
   mobileLayout = 'cards',
   compact = false,
   initialColumnVisibility = {},
+  initialExpanded = {},
   pageSize,
   className,
 }) {
@@ -297,6 +298,7 @@ export function DataTable({
     initialState: {
       sorting: initialSorting,
       columnVisibility: initialColumnVisibility,
+      expanded: initialExpanded,
       ...(pageSize ? { pagination: { pageIndex: 0, pageSize } } : {}),
     },
     defaultColumn: { filterFn: multiSelectFilter, enableColumnFilter: false },
