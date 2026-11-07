@@ -4,6 +4,8 @@ import com.red_escuela.backend.graduation.certificate.exception.InvalidCertifica
 import org.junit.jupiter.api.Test;
 
 import java.security.SecureRandom;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,18 +13,41 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CertificateCodeTest {
 
     @Test
-    void generatedCodeHasSixteenCrockfordCharacters() {
+    void generatedCodeHasTwentySixCrockfordCharacters() {
         CertificateCode code = CertificateCode.generate(new SecureRandom());
 
-        assertThat(code.value()).hasSize(16).matches("[0-9A-HJKMNP-TV-Z]{16}");
-        assertThat(code.formatted()).matches("[0-9A-Z]{4}(-[0-9A-Z]{4}){3}");
+        assertThat(code.value()).hasSize(26).matches("[0-9A-HJKMNP-TV-Z]{26}");
+        assertThat(code.formatted()).matches("[0-9A-Z]{5}(-[0-9A-Z]{5}){3}-[0-9A-Z]{6}");
+    }
+
+    @Test
+    void codeCarriesAtLeastOneHundredTwentyEightBitsOfEntropy() {
+        assertThat(CertificateCode.ENTROPY_BITS).isGreaterThanOrEqualTo(128);
+        assertThat(CertificateCode.LENGTH * (Math.log(CertificateCode.ALPHABET.length()) / Math.log(2))).isGreaterThanOrEqualTo(128);
+    }
+
+    @Test
+    void tenThousandGeneratedCodesAreAllDifferent() {
+        SecureRandom random = new SecureRandom();
+        Set<String> codes = new HashSet<>();
+
+        for (int i = 0; i < 10_000; i++) {
+            codes.add(CertificateCode.generate(random).value());
+        }
+
+        assertThat(codes).hasSize(10_000);
+    }
+
+    @Test
+    void legacySixteenCharacterCodesAreRejected() {
+        assertThatThrownBy(() -> CertificateCode.parse("7QK3M9XH2VBN4T8R")).isInstanceOf(InvalidCertificateCodeException.class);
     }
 
     @Test
     void normalizationIgnoresHyphensAndCase() {
-        CertificateCode parsed = CertificateCode.parse(" 7qk3-m9xh 2vbn-4t8r ");
+        CertificateCode parsed = CertificateCode.parse(" 7qk3m-9xh2v bn4t8-r5w6y-z0a1b2 ");
 
-        assertThat(parsed.value()).isEqualTo("7QK3M9XH2VBN4T8R");
+        assertThat(parsed.value()).isEqualTo("7QK3M9XH2VBN4T8R5W6YZ0A1B2");
     }
 
     @Test
@@ -42,6 +67,12 @@ class CertificateCodeTest {
 
     @Test
     void charactersOutsideTheAlphabetAreRejected() {
-        assertThatThrownBy(() -> CertificateCode.parse("7QK3M9XH2VBN4T8L")).isInstanceOf(InvalidCertificateCodeException.class);
+        assertThatThrownBy(() -> CertificateCode.parse("7QK3M9XH2VBN4T8L5W6YZ0A1B2")).isInstanceOf(InvalidCertificateCodeException.class);
+    }
+
+    @Test
+    void nonAsciiCharactersAreRejectedInsteadOfBeingUppercasedIntoTheAlphabet() {
+        assertThat("\u017F".toUpperCase(java.util.Locale.ROOT)).isEqualTo("S");
+        assertThatThrownBy(() -> CertificateCode.parse("7QK3M9XH2VBN4T8R5W6YZ0A1B\u017F")).isInstanceOf(InvalidCertificateCodeException.class);
     }
 }

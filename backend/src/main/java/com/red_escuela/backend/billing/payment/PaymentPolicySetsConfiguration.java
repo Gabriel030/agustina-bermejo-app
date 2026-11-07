@@ -2,6 +2,12 @@ package com.red_escuela.backend.billing.payment;
 
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptDetailsRequiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontPaymentNotAlreadyInitiatedPolicy;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontPaymentNotExpiredPolicy;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptCheck;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptPaysExactTotalPolicy;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptPaysOnlyTheAnnualInvoicePolicy;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptWithinPaymentDeadlinePolicy;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptFileCheck;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptFilePolicy;
 import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRegistrationCheck;
@@ -118,6 +124,17 @@ public class PaymentPolicySetsConfiguration {
     public PolicySet<BankTransferReceiptRegistrationCheck> bankTransferReceiptRegistrationPolicySet() {
         return PolicySet.named("BANK_TRANSFER_RECEIPT_REGISTRATION", List.of(new SelectedInvoicesBelongToAccountPolicy(),
                 new LegacyReceiptNotPendingOnSelectedInvoicesPolicy(), new DuplicateBankTransferPolicy(), new ReceiptCoversOldestInvoicesFirstPolicy()));
+    }
+
+    @Bean
+    public PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontReceiptPolicySet() {
+        return PolicySet.named("ANNUAL_UPFRONT_RECEIPT", List.of(new AnnualUpfrontPaymentNotExpiredPolicy(), new AnnualUpfrontPaymentNotAlreadyInitiatedPolicy(),
+                new AnnualUpfrontReceiptPaysOnlyTheAnnualInvoicePolicy(), new AnnualUpfrontReceiptPaysExactTotalPolicy(), new AnnualUpfrontReceiptWithinPaymentDeadlinePolicy()));
+    }
+
+    @Bean
+    public PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicySet() {
+        return PolicySet.named("ANNUAL_UPFRONT_APPROVAL", List.of(new AnnualUpfrontReceiptPaysExactTotalPolicy()));
     }
 
     @Bean

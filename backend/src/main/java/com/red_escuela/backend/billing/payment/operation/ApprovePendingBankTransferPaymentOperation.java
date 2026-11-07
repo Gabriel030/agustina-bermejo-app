@@ -3,9 +3,11 @@ package com.red_escuela.backend.billing.payment.operation;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.annualupfront.service.AnnualUpfrontRequestPaymentTracker;
 import com.red_escuela.backend.billing.events.AccountCreditAllocatedEvent;
 import com.red_escuela.backend.billing.events.PaymentApprovedEvent;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.service.InvoiceAllocationQueryService;
@@ -15,6 +17,9 @@ import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationRes
 import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.payment.domain.BankTransferPaymentDetails;
 import com.red_escuela.backend.billing.payment.domain.PaymentCheckoutItem;
+import com.red_escuela.backend.billing.payment.domain.ReceiptInvoiceFact;
+import com.red_escuela.backend.billing.payment.policy.AnnualUpfrontReceiptCheck;
+import com.red_escuela.backend.billing.payment.policy.BankTransferReceiptRejections;
 import com.red_escuela.backend.billing.payment.policy.PaymentReviewRejections;
 import com.red_escuela.backend.billing.payment.policy.PaymentVerificationCheck;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -51,11 +56,14 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
     private final PaymentCheckoutItemRepository checkoutItems;
     private final PendingTransferReviewRelease reviewRelease;
     private final PolicySet<PaymentVerificationCheck> verificationPolicies;
+    private final PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicies;
+    private final AnnualUpfrontRequestPaymentTracker annualUpfrontRequests;
     private final Clock clock;
 
     public ApprovePendingBankTransferPaymentOperation(StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                                       InvoiceAllocationQueryService invoiceQueries, PaymentRepository payments, PaymentCheckoutItemRepository checkoutItems,
-                                                      PendingTransferReviewRelease reviewRelease, PolicySet<PaymentVerificationCheck> paymentVerificationPolicySet, Clock clock) {
+                                                      PendingTransferReviewRelease reviewRelease, PolicySet<PaymentVerificationCheck> paymentVerificationPolicySet,
+                                                      PolicySet<AnnualUpfrontReceiptCheck> annualUpfrontApprovalPolicySet, AnnualUpfrontRequestPaymentTracker annualUpfrontRequests, Clock clock) {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.invoiceQueries = invoiceQueries;
@@ -63,6 +71,8 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         this.checkoutItems = checkoutItems;
         this.reviewRelease = reviewRelease;
         this.verificationPolicies = paymentVerificationPolicySet;
+        this.annualUpfrontApprovalPolicies = annualUpfrontApprovalPolicySet;
+        this.annualUpfrontRequests = annualUpfrontRequests;
         this.clock = clock;
     }
 
@@ -78,7 +88,7 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
 
     @Override
     public List<String> validationMoments() {
-        return List.of(verificationPolicies.moment());
+        return List.of(verificationPolicies.moment(), annualUpfrontApprovalPolicies.moment());
     }
 
     @Override
@@ -109,8 +119,8 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         LocalDate today = LocalDate.now(clock);
         Payment payment = payments.findById(command.paymentId()).orElseThrow();
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(payment.getStudentCurrentAccountId());
-        invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(account.getId());
         List<PaymentCheckoutItem> items = checkoutItems.findByPaymentIdOrderByPositionAsc(payment.getId());
+        invoiceQueries.lockOpenInvoicesOfAccountInIdOrder(account.getId());
         Map<Long, Invoice> invoicesById = invoiceQueries.findInvoicesByIds(items.stream().map(PaymentCheckoutItem::getInvoiceId).toList()).stream()
                 .collect(Collectors.toMap(Invoice::getId, Function.identity()));
         PaymentVerification verification = command.verification();
@@ -122,8 +132,10 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
         payment.approvePayment(approvedAmount, uploadDate, command.reviewer(), verification.reviewNote());
         payments.save(payment);
         recordPaymentCreditOnce(account, payment, approvedAmount, uploadDate);
+        Set<Long> annualInvoiceIds = issueAnnualUpfrontInvoicesOf(invoicesById, payment, approvedAmount, account, today, command);
         Set<Long> programAdmissionInvoiceIds = invoicesById.values().stream()
-                .filter(invoice -> invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission()).map(Invoice::getId).collect(Collectors.toSet());
+                .filter(invoice -> annualInvoiceIds.contains(invoice.getId()) || invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission())
+                .map(Invoice::getId).collect(Collectors.toSet());
         Set<Long> underReviewInvoiceIdsOfThisPayment = items.stream().filter(PaymentCheckoutItem::isMarkedUnderReview).map(PaymentCheckoutItem::getInvoiceId)
                 .filter(invoiceId -> invoicesById.get(invoiceId).getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW).collect(Collectors.toSet());
         AccountCreditAllocationResult allocation = allocationService.allocateApprovedTransferCreditSettlingProgramAdmissionInvoicesFirst(account, today, command.reviewer(),
@@ -133,6 +145,21 @@ public class ApprovePendingBankTransferPaymentOperation implements BillingOperat
                 account.getId(), approvedAmount.value().amount(), uploadDate, released);
         return new PendingBankTransferDecisionResult(payment.getId(), account.getId(), uploadDate, approvedAmount, released,
                 allocation.settledInvoices().stream().map(Invoice::getId).toList(), items.stream().map(PaymentCheckoutItem::getInvoiceId).toList());
+    }
+
+    private Set<Long> issueAnnualUpfrontInvoicesOf(Map<Long, Invoice> invoicesById, Payment payment, NonNegativeMoney approvedAmount, StudentCurrentAccount account, LocalDate today,
+                                                   ApprovePendingBankTransferPaymentCommand command) {
+        List<Invoice> annualInvoices = invoicesById.values().stream().filter(invoice -> invoice.getDocumentStatus() == InvoiceDocumentStatus.AWAITING_PAYMENT)
+                .sorted(java.util.Comparator.comparing(Invoice::getId)).toList();
+        for (Invoice annual : annualInvoices) {
+            ReceiptInvoiceFact annualFact = new ReceiptInvoiceFact(annual.getId(), annual.getStudentCurrentAccountId(), annual.getCurrency(), false, annual.getPaymentStatus(), null,
+                    annual.getAmounts().total().value(), false, true, annual.getPaymentDeadline());
+            annualUpfrontApprovalPolicies.evaluateRulesUntilFirstViolation(new AnnualUpfrontReceiptCheck(List.of(annualFact), false, false, approvedAmount.value(),
+                    payment.getStartedAt(), payment.getStartedAt().toLocalDate())).throwIfDenied(BankTransferReceiptRejections::rejectionOf);
+            annualUpfrontRequests.issueInvoiceAndConfirmApprovedPayment(annual.getId(), payment.getId(), account.getStudentId(), today, command.reviewer());
+            accountService.recordInvoiceIssuedDebit(account, annual, today);
+        }
+        return annualInvoices.stream().map(Invoice::getId).collect(Collectors.toSet());
     }
 
     private void recordPaymentCreditOnce(StudentCurrentAccount account, Payment payment, NonNegativeMoney approvedAmount, LocalDate uploadDate) {

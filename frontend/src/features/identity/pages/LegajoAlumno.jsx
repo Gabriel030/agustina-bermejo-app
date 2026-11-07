@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { useWithdrawStudent, useResetStudentPassword } from '@/features/identity/hooks/useAccionesLegajo';
 import { StatusPill } from '@/components/StatusPill';
+import { Button } from '@/components/ui/button';
 import { DarDeBajaModal } from '@/features/identity/components/DarDeBajaModal';
 import { ResetPasswordModal } from '@/features/identity/components/ResetPasswordModal';
 import { DatosPersonalesTab } from './tabs/DatosPersonalesTab';
@@ -51,6 +52,13 @@ export function LegajoAlumno() {
   const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
   const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
 
+  const absences = {
+    studentName: legajo ? `${legajo.nombre} ${legajo.apellido}` : '',
+    canJustify: puedeAccionar,
+    authorName: [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' '),
+    roleBase: rolBase,
+  };
+
   const badge = ESTADO_STATUS_BADGE[legajo?.status];
 
   return (
@@ -73,6 +81,11 @@ export function LegajoAlumno() {
                 <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
               )}
               {legajo.minor && <StatusPill tone="accent">Menor de edad</StatusPill>}
+              {legajo.status !== 'DELETED' && (
+                <Button asChild variant="gradient" className="ml-auto">
+                  <Link to={`/${rolBase}/alumnos/${id}/inscribir`}>Inscribir</Link>
+                </Button>
+              )}
             </div>
           )}
 
@@ -108,6 +121,7 @@ export function LegajoAlumno() {
                 enrollmentKey={enrollmentKey}
                 onEnrollmentChange={handleEnrollmentChange}
                 onViewGrades={handleViewGrades}
+                absences={absences}
               />
             </TabsContent>
             <TabsContent value="evaluacion" className="mt-4">

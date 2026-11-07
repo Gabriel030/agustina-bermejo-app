@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -558,10 +559,12 @@ describe('AlumnoPagarTransferencia', () => {
 
   it('sendsOnlyOnceWhenTheFormIsSubmittedTwiceWhileTheRequestIsInFlight', async () => {
     let calls = 0;
+    const submission = createDeferred();
     server.use(
       http.post(`${API}/me/bank-transfer-receipts`, async () => {
         calls += 1;
-        await new Promise((resolve) => setTimeout(resolve, 400));
+        await submission.promise;
+        server.use(http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json([receiptOf()])));
         return HttpResponse.json({ receiptId: 302 }, { status: 201 });
       }),
     );
@@ -572,7 +575,8 @@ describe('AlumnoPagarTransferencia', () => {
 
     await user.type(screen.getByLabelText('Número de operación'), '{Enter}{Enter}');
     await vi.waitFor(() => expect(calls).toBeGreaterThan(0));
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    submission.resolve();
+    await screen.findByText('Comprobante en revisión');
 
     expect(calls).toBe(1);
   });

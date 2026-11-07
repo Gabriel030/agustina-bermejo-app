@@ -1,8 +1,9 @@
 import { StrictMode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
+import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
@@ -22,15 +23,19 @@ function renderInStrictMode(route) {
 describe('VerificacionEmail', () => {
   it('consumes the single-use token only once even when effects run twice', async () => {
     let calls = 0;
+    const verification = createDeferred();
     server.use(
       http.get(`${API}/verify-email`, async () => {
         calls += 1;
         if (calls > 1) return new HttpResponse(null, { status: 400 });
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await verification.promise;
         return new HttpResponse(null, { status: 200 });
       }),
     );
     renderInStrictMode('/verificar-email?token=abc');
+
+    await vi.waitFor(() => expect(calls).toBeGreaterThan(0));
+    verification.resolve();
 
     expect(await screen.findByText('Email confirmado')).toBeInTheDocument();
     expect(calls).toBe(1);
@@ -57,15 +62,17 @@ describe('VerificacionEmail', () => {
   });
 
   it('shows the confirming state while the request is in flight', async () => {
+    const verification = createDeferred();
     server.use(
       http.get(`${API}/verify-email`, async () => {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await verification.promise;
         return new HttpResponse(null, { status: 200 });
       }),
     );
     renderInStrictMode('/verificar-email?token=abc');
 
     expect(screen.getByText('Confirmando tu email…')).toBeInTheDocument();
+    verification.resolve();
     expect(await screen.findByText('Email confirmado')).toBeInTheDocument();
   });
 });

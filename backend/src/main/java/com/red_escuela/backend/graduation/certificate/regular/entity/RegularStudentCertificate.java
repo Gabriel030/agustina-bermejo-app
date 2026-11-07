@@ -35,7 +35,7 @@ public class RegularStudentCertificate {
     @Version
     private Long version;
 
-    @Column(name = "code", nullable = false, length = 16, updatable = false)
+    @Column(name = "code", nullable = false, length = 26, updatable = false)
     private String code;
 
     @Enumerated(EnumType.STRING)

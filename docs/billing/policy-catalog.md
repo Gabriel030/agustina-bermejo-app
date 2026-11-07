@@ -8,6 +8,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | InconsistencyStaysLocalPolicy | GLOBAL_ACCOUNT_INCONSISTENCY | D-356, D-489 |
 
+## Momento ANNUAL_UPFRONT_APPROVAL
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontReceiptPaysExactTotalPolicy | ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL | D-138 |
+
 ## Momento ANNUAL_UPFRONT_IDEMPOTENCY_KEY
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -19,6 +25,16 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | AnnualUpfrontPlanCannotBeChangedPolicy | ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED | D-168 |
+
+## Momento ANNUAL_UPFRONT_RECEIPT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontPaymentNotExpiredPolicy | ANNUAL_UPFRONT_PAYMENT_EXPIRED | D-155, D-521 |
+| 2 | AnnualUpfrontPaymentNotAlreadyInitiatedPolicy | ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED | D-155 |
+| 3 | AnnualUpfrontReceiptPaysOnlyTheAnnualInvoicePolicy | ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE | D-138 |
+| 4 | AnnualUpfrontReceiptPaysExactTotalPolicy | ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL | D-138 |
+| 5 | AnnualUpfrontReceiptWithinPaymentDeadlinePolicy | ANNUAL_UPFRONT_RECEIPT_LATE | D-155, D-154 |
 
 ## Momento ANNUAL_UPFRONT_REQUEST
 
@@ -590,10 +606,11 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | TermHasDatesPolicy | TERM_WITHOUT_DATES | D-002 |
-| 2 | SecondEnrollmentFeeAfterFirstPolicy | SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST | D-002 |
-| 3 | FirstEnrollmentFeeNotAfterTermStartPolicy | FIRST_ENROLLMENT_FEE_AFTER_TERM_START | D-002 |
-| 4 | SecondEnrollmentFeeWithinTermPolicy | SECOND_ENROLLMENT_FEE_OUTSIDE_TERM | D-002 |
-| 5 | InstallmentCountWithinTermSpanPolicy | INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN | D-034 |
+| 2 | LectiveYearCalendarSupportedPolicy | LECTIVE_YEAR_CALENDAR_NOT_SUPPORTED | D-524, D-001 |
+| 3 | SecondEnrollmentFeeAfterFirstPolicy | SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST | D-002 |
+| 4 | FirstEnrollmentFeeNotAfterTermStartPolicy | FIRST_ENROLLMENT_FEE_AFTER_TERM_START | D-002 |
+| 5 | SecondEnrollmentFeeWithinTermPolicy | SECOND_ENROLLMENT_FEE_OUTSIDE_TERM | D-002 |
+| 6 | InstallmentCountWithinTermSpanPolicy | INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN | D-034 |
 
 ## Momento YEAR_BILLING_CONFIGURATION_FREEZE
 
@@ -603,6 +620,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 2 | EnrollmentFeeMonthFrozenPolicy | ENROLLMENT_FEE_MONTH_FROZEN | D-036 |
 | 3 | EnrollmentFeeLeadMonthsFrozenPolicy | ENROLLMENT_FEE_LEAD_MONTHS_FROZEN | D-201 |
 | 4 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |
+| 5 | LectiveYearStartFrozenPolicy | LECTIVE_YEAR_START_FROZEN | D-036, D-524 |
 
 ## Máquinas de estado
 
@@ -850,7 +868,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación APPROVE_PENDING_BANK_TRANSFER_PAYMENT
 
-- Validaciones (momentos): PAYMENT_REVIEW
+- Validaciones (momentos): PAYMENT_REVIEW, ANNUAL_UPFRONT_APPROVAL
 - Pre-procesamiento (en orden): —
 - Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de PaymentApprovedEvent: —
@@ -982,6 +1000,15 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: RefundApprovedEvent
 - Post-procesamiento de RefundApprovedEvent: —
 
+## Operación REGISTER_ANNUAL_UPFRONT_CASH_PAYMENT
+
+- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, ANNUAL_UPFRONT_RECEIPT
+- Pre-procesamiento (en orden): IdempotencyKeyHandler
+- Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentApprovedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: EnrollmentPaymentStandingOnInvoicePaidListener#reevaluateStandingOfPaidInvoice, LateFeeCorrectionOnPaymentReviewDecidedListener#retryCorrectionOfDebitNoteWhoseReceiptWasApproved, LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
 ## Operación REGISTER_CHARGEBACK
 
 - Validaciones (momentos): CHARGEBACK_REGISTRATION
@@ -1051,7 +1078,7 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 
 ## Operación SUBMIT_BANK_TRANSFER_RECEIPT
 
-- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, BANK_TRANSFER_RECEIPT_DETAILS, BANK_TRANSFER_RECEIPT_REGISTRATION, BANK_TRANSFER_RECEIPT_PROTECTION
+- Validaciones (momentos): BANK_TRANSFER_RECEIPT_IDEMPOTENCY_KEY, BANK_TRANSFER_RECEIPT_DETAILS, BANK_TRANSFER_RECEIPT_REGISTRATION, BANK_TRANSFER_RECEIPT_PROTECTION, ANNUAL_UPFRONT_RECEIPT
 - Pre-procesamiento (en orden): IdempotencyKeyHandler
 - Eventos que publica: BankTransferReceiptSubmittedEvent
 - Post-procesamiento de BankTransferReceiptSubmittedEvent: —

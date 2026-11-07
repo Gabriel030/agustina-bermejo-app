@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
@@ -128,11 +129,10 @@ describe('Login', () => {
   });
 
   it('con credenciales válidas, deshabilita el botón mientras envía', async () => {
-    // Delay artificial: sin esto el mock resuelve tan rápido que nunca se
-    // alcanza a observar el estado intermedio "enviando".
+    const login = createDeferred();
     server.use(
       http.post(`${API}/auth/login`, async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await login.promise;
         return HttpResponse.json({ accessToken: 'a', refreshToken: 'r', expiresIn: 900 });
       }),
     );
@@ -144,6 +144,7 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: /ingresar/i }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: /ingresando/i })).toBeDisabled());
+    login.resolve();
   });
 
   it('el ojito alterna el campo de contraseña entre oculto y visible', async () => {

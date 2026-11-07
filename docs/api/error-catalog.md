@@ -51,6 +51,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ADMISSION_WINDOW_CLOSED` | no | `AdmissionWindowClosedException` | enrollment |
 | `AMBIGUOUS_SECTION` | no | `AmbiguousSectionException` | enrollment |
 | `ANNUAL_UPFRONT_IDEMPOTENCY_KEY_INVALID` | no | `AnnualUpfrontIdempotencyKeyInvalidException` | billing |
+| `ANNUAL_UPFRONT_RECEIPT_AMOUNT_MUST_BE_TOTAL` | no | `AnnualUpfrontReceiptAmountMustBeTotalException` | billing |
+| `ANNUAL_UPFRONT_RECEIPT_LATE` | no | `AnnualUpfrontReceiptLateException` | billing |
+| `ANNUAL_UPFRONT_RECEIPT_MUST_BE_ALONE` | no | `AnnualUpfrontReceiptMustBeAloneException` | billing |
 | `ANNUAL_UPFRONT_TERMS_NOT_ACCEPTED` | no | `AnnualUpfrontTermsNotAcceptedException` | billing |
 | `APPLICATION_DOCUMENT_TOO_LARGE` | no | `ApplicationDocumentTooLargeException` | enrollment |
 | `ATTENDANCE_STATUS_NOT_RECORDABLE` | no | `AttendanceStatusNotRecordableException` | attendance |
@@ -232,6 +235,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_NOT_FOUND` | no | `AttendanceNotFoundException` | attendance |
 | `AUTHORIZATION_REQUEST_NOT_FOUND` | no | `AuthorizationRequestNotFoundException` | billing |
 | `BILLING_RUN_STEP_NOT_FOUND` | no | `BillingRunStepNotFoundException` | billing |
+| `CERTIFICATE_NOT_FOUND` | no | `CertificateNotFoundException` | graduation |
 | `CHARGEBACK_NOT_FOUND` | no | `ChargebackNotFoundException` | billing |
 | `CLASSROOM_NOT_FOUND` | no | `ClassroomNotFoundException` | academicstructure |
 | `CLASS_SESSION_NOT_FOUND` | no | `ClassSessionNotFoundException` | attendance |
@@ -311,6 +315,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ALREADY_REGISTERED_IN_EXAM_BOARD` | no | `AlreadyRegisteredInExamBoardException` | evaluation |
 | `ANNOUNCEMENT_ALREADY_SENT` | no | `AnnouncementAlreadySentException` | announcement |
 | `ANNUAL_UPFRONT_OF_PROGRAM_MUST_USE_REQUEST_ENDPOINT` | no | `AnnualUpfrontOfProgramMustUseRequestEndpointException` | billing |
+| `ANNUAL_UPFRONT_PAYMENT_ALREADY_INITIATED` | no | `AnnualUpfrontPaymentAlreadyInitiatedException` | billing |
+| `ANNUAL_UPFRONT_PAYMENT_EXPIRED` | no | `AnnualUpfrontPaymentExpiredException` | billing |
 | `ANNUAL_UPFRONT_PLAN_CANNOT_BE_CHANGED` | no | `AnnualUpfrontPlanCannotBeChangedException` | billing |
 | `ANNUAL_UPFRONT_REQUEST_REJECTED` | no | `AnnualUpfrontRequestRejectedException` | billing |
 | `APPLICATION_DOCUMENTS_INCOMPLETE` | no | `ApplicationDocumentsIncompleteException` | enrollment |
@@ -389,6 +395,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ILLEGAL_REFUND_STATUS_TRANSITION` | no | `IllegalRefundStatusTransitionException` | billing |
 | `ILLEGAL_STUDENT_DISCOUNT_TRANSITION` | no | `IllegalStudentDiscountTransitionException` | billing |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
+| `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
 | `INSTRUCTOR_SCHEDULE_CONFLICT` | no | `InstructorScheduleConflictException` | academicstructure |
 | `INSUFFICIENT_ACCOUNT_CREDIT` | no | `InsufficientAccountCreditException` | billing |
@@ -408,6 +415,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVOICE_NOT_PAYABLE` | no | `InvoiceNotPayableException` | billing |
 | `ISSUED_INVOICE_CANNOT_BE_MODIFIED` | no | `IssuedInvoiceCannotBeModifiedException` | billing |
 | `JUSTIFICATION_DEADLINE_EXPIRED` | no | `JustificationDeadlineExpiredException` | attendance |
+| `LAST_DIGITAL_PAYMENT_METHOD_REQUIRED` | no | `LastDigitalPaymentMethodRequiredException` | platform |
 | `LATE_FEE_CORRECTION_REJECTED` | no | `LateFeeCorrectionRejectedException` | billing |
 | `LATE_FEE_ISSUING_REJECTED` | no | `LateFeeIssuingRejectedException` | billing |
 | `LEGACY_RECEIPT_PENDING_ON_INVOICE` | no | `LegacyReceiptPendingOnInvoiceException` | billing |
@@ -465,6 +473,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
 | `STALE_FEATURE_VERSION` | no | `StaleFeatureVersionException` | platform |
+| `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
@@ -495,6 +504,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INTERNAL_ERROR` | no | `CreditNoteSourceIntegrityException` | billing |
 | `INTERNAL_ERROR` | no | `EmailDeliveryException` | shared |
 | `INTERNAL_ERROR` | no | `FeatureNotProvisionedException` | platform |
+| `INTERNAL_ERROR` | no | `InstituteSettingNotProvisionedException` | platform |
 | `INTERNAL_ERROR` | no | `InvalidInvoiceAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `InvoiceStatusInconsistentWithAmountsException` | billing |
 | `INTERNAL_ERROR` | no | `PaymentSourceIntegrityException` | billing |
@@ -536,6 +546,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/refund-requests` | `RefundController#requestOwnRefund` |
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
 | POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
+| POST | `/students/{studentId}/annual-upfront-requests/{requestId}/cash-payment` | `AnnualUpfrontCashPaymentController#registerAnnualUpfrontCashPayment` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
 | POST | `/students/{studentId}/cash-payments` | `StudentPaymentController#registerCashPayment` |
 | POST | `/students/{studentId}/refund-requests` | `RefundController#requestRefundOnBehalfOfStudent` |

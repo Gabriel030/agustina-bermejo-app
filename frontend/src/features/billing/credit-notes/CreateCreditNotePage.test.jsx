@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '@/test/axe';
+import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -427,9 +428,10 @@ describe('Nota de crédito — clave de idempotencia', () => {
   });
 
   it('sends a single request when the confirm button is clicked twice', async () => {
+    const issuance = createDeferred();
     mockServer({
       issue: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await issuance.promise;
         return HttpResponse.json(creditNoteFixture({ id: 9, creditNoteNumber: 'NC-0000142' }), { status: 201 });
       },
     });
@@ -437,6 +439,8 @@ describe('Nota de crédito — clave de idempotencia', () => {
     const button = await screen.findByRole('button', { name: 'Emitir nota de crédito' });
     await user.click(button);
     await user.click(button);
+    await waitFor(() => expect(issueKeys).toHaveLength(1));
+    issuance.resolve();
 
     await screen.findByTestId('ficha');
     expect(issueKeys).toHaveLength(1);

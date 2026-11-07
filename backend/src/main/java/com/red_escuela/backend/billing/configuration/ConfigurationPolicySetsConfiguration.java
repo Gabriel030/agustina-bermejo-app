@@ -33,6 +33,8 @@ import com.red_escuela.backend.billing.configuration.policy.SecondEnrollmentFeeA
 import com.red_escuela.backend.billing.configuration.policy.SecondEnrollmentFeeWithinTermPolicy;
 import com.red_escuela.backend.billing.configuration.policy.SuspensionDaysNotNegativePolicy;
 import com.red_escuela.backend.billing.configuration.policy.SuspensionInvoiceCountAtLeastOnePolicy;
+import com.red_escuela.backend.billing.configuration.policy.LectiveYearCalendarSupportedPolicy;
+import com.red_escuela.backend.billing.configuration.policy.LectiveYearStartFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.TermHasDatesPolicy;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.billing.configuration.policy.ReminderChangeDoesNotFollowGroupPolicy;
@@ -60,6 +62,7 @@ public class ConfigurationPolicySetsConfiguration {
     public PolicySet<YearBillingConfigurationChange> yearBillingConfigurationPolicySet() {
         List<Policy<YearBillingConfigurationChange>> ordered = List.of(
                 new TermHasDatesPolicy(),
+                new LectiveYearCalendarSupportedPolicy(),
                 new SecondEnrollmentFeeAfterFirstPolicy(),
                 new FirstEnrollmentFeeNotAfterTermStartPolicy(),
                 new SecondEnrollmentFeeWithinTermPolicy(),
@@ -73,7 +76,8 @@ public class ConfigurationPolicySetsConfiguration {
                 new EnrollmentFeeCountFrozenPolicy(),
                 new EnrollmentFeeMonthFrozenPolicy(),
                 new EnrollmentFeeLeadMonthsFrozenPolicy(),
-                new IssuedInstallmentsWithinTermRangePolicy());
+                new IssuedInstallmentsWithinTermRangePolicy(),
+                new LectiveYearStartFrozenPolicy());
         return PolicySet.named("YEAR_BILLING_CONFIGURATION_FREEZE", ordered);
     }
 

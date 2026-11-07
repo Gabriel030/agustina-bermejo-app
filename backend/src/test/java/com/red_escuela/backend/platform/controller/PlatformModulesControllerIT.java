@@ -228,7 +228,7 @@ class PlatformModulesControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.impact.openInvoices").value(openInvoices))
                 .andExpect(jsonPath("$.impact.pendingDraftInvoices").value(drafts))
                 .andExpect(jsonPath("$.impact.paymentsPendingReconciliation").value(pendingPayments))
-                .andExpect(jsonPath("$.impact.scheduledJobs.length()").value(12))
+                .andExpect(jsonPath("$.impact.scheduledJobs.length()").value(13))
                 .andExpect(jsonPath("$.confirmationToken").isNotEmpty())
                 .andExpect(jsonPath("$.confirmationExpiresAt").isNotEmpty());
 
