@@ -1,0 +1,7 @@
+package attendance.service -> attendance.specialist
+package attendance.usecase.attendance -> attendance.usecase.record
+package attendance.usecase.attendancechangerequest -> attendance.usecase.changerequest
+class AttendanceExportService -> AttendanceExporter
+class AttendanceChangeRequestSubmission -> AttendanceChangeRequestSubmitter
+class AttendanceSectionAccess -> AttendanceSectionAccessChecker
+class EnrollmentAbsenceCounts -> EnrollmentAbsenceCountsView

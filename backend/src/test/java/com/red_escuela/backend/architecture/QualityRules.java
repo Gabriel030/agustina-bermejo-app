@@ -22,6 +22,8 @@ public final class QualityRules {
 
     static final String[] TRANSACTION_BOUNDARY_PACKAGES = {"..service..", "..operation..", "..repository..", "..api.."};
 
+    static final String[] TRANSITIONAL_TRANSACTION_BOUNDARY_PACKAGES = {"..service..", "..specialist..", "..operation..", "..repository..", "..api.."};
+
     static final String[] EXTERNAL_CLIENT_HOME_PACKAGES = {"..adapter..", "..infrastructure..", "..gateway..", ROOT + ".shared.mail.."};
 
     static final Set<String> BILLING_SUBDOMAINS = Set.of("account", "authorization", "collections", "configuration", "invoice", "note", "operation", "payment");
@@ -50,11 +52,17 @@ public final class QualityRules {
     }
 
     public static ArchRule transactionsAreDeclaredOnlyInSpecialists() {
-        return classes()
+        String because = "a transaction boundary belongs to a specialist (service, operation, repository or api), never to a use case, controller, domain, policy, DTO or entity";
+        String storedDescription = classes()
                 .that().resideOutsideOfPackages(TRANSACTION_BOUNDARY_PACKAGES)
                 .should(notDeclareTransactional())
+                .because(because).getDescription();
+        return classes()
+                .that().resideOutsideOfPackages(TRANSITIONAL_TRANSACTION_BOUNDARY_PACKAGES)
+                .should(notDeclareTransactional())
                 .allowEmptyShould(true)
-                .because("a transaction boundary belongs to a specialist (service, operation, repository or api), never to a use case, controller, domain, policy, DTO or entity");
+                .because(because)
+                .as(storedDescription);
     }
 
     public static ArchRule eventListenersDoNotDeclareTheirOwnTransaction() {

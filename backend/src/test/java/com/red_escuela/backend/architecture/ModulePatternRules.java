@@ -28,6 +28,8 @@ public final class ModulePatternRules {
             ArchitectureRules.ROOT + ".identity.service.CurrentStudentService",
             ArchitectureRules.ROOT + ".academicstructure.service.CurrentInstructorService");
 
+    static final String[] SPECIALIST_PACKAGES = {"..service..", "..specialist.."};
+
     private static final String USE_CASE_ANNOTATION = ArchitectureRules.ROOT + ".shared.UseCase";
 
     private static final String NAMED_INTERFACE_ANNOTATION = "org.springframework.modulith.NamedInterface";
@@ -51,17 +53,26 @@ public final class ModulePatternRules {
     }
 
     public static ArchRule specialistsDoNotDependOnUseCases() {
-        return noClasses()
+        String because = "a specialist is called by use cases, so depending back on a use case inverts the chain coordinator, use case, specialist, tool";
+        String storedDescription = noClasses()
                 .that().resideInAPackage("..service..")
                 .should().dependOnClassesThat().resideInAPackage("..usecase..")
+                .because(because).getDescription();
+        return noClasses()
+                .that().resideInAnyPackage(SPECIALIST_PACKAGES)
+                .should().dependOnClassesThat().resideInAPackage("..usecase..")
                 .allowEmptyShould(true)
-                .because("a specialist is called by use cases, so depending back on a use case inverts the chain coordinator, use case, specialist, tool");
+                .because(because)
+                .as(storedDescription);
     }
 
     public static ArchRule controllersCallOnlyUseCasesOfTheirOwnModule(String root, Set<String> namedCollaborators) {
+        Set<String> acceptedCollaborators = Stream.concat(namedCollaborators.stream(),
+                        namedCollaborators.stream().map(name -> name.replace(".service.", ".specialist.")))
+                .collect(Collectors.toSet());
         return classes()
                 .that().resideInAPackage(root + "..controller..")
-                .should(callNoServiceRepositoryOrForeignUseCase(root, namedCollaborators))
+                .should(callNoServiceRepositoryOrForeignUseCase(root, acceptedCollaborators))
                 .allowEmptyShould(true)
                 .because("a controller is a coordinator: it invokes the use cases of its own module and never a service or repository directly; "
                         + "the only shared collaborators allowed are " + new TreeSet<>(namedCollaborators));
@@ -138,7 +149,7 @@ public final class ModulePatternRules {
                     if (!target.getName().startsWith(root + ".") || namedCollaborators.contains(outerName(target.getName()))) {
                         continue;
                     }
-                    boolean forbidden = target.getPackageName().matches(".*\\.(service|repository)(\\..*)?")
+                    boolean forbidden = target.getPackageName().matches(".*\\.(service|specialist|repository)(\\..*)?")
                             || (target.getPackageName().matches(".*\\.usecase(\\..*)?") && !moduleOf(target, root).equals(ownModule));
                     if (forbidden) {
                         events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
