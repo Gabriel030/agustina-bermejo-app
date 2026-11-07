@@ -28,6 +28,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.billing.invoice.exception.OutstandingDebtBlocksReenrollmentException;
+import com.red_escuela.backend.billing.collections.exception.OverdueDebtBlocksNewEnrollmentException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -65,6 +66,9 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder snapshotHolder;
 
     @Autowired
     private org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -330,6 +334,13 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         return requestId;
     }
 
+    private java.util.List<String> newEnrollmentViolationCodesOf(Student student, Program program) {
+        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
+                () -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())));
+        assertThat(thrown).isInstanceOf(OverdueDebtBlocksNewEnrollmentException.class);
+        return ((OverdueDebtBlocksNewEnrollmentException) thrown).violations().stream().map(PolicyViolation::code).toList();
+    }
+
     private java.util.List<String> violationCodesOf(Student student, Program program) {
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
                 () -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())));
@@ -471,7 +482,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
                 .forPeriod(YearMonth.now().minusMonths(2)).dueOn(LocalDate.now().minusMonths(2)).withBaseAmount(ars(5000)).build();
         BillingTestFixtures.markInvoiceAsOverdue(invoice);
 
-        assertThat(violationCodesOf(student, persistProgram())).containsExactly("OVERDUE_INVOICE");
+        assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
     }
 
     @Test
@@ -486,6 +497,136 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
         assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    private Invoice persistInstallmentOfActiveEnrollment(Student student, LocalDate dueDate) {
+        return BillingTestFixtures.invoice().forProgramEnrollment(persistActiveEnrollment(student, persistProgram())).ofType(FeeType.MONTHLY_INSTALLMENT)
+                .forPeriod(YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(5000)).build();
+    }
+
+    @Test
+    @Tag("D-065")
+    void anInstallmentDueYesterdayBlocksEvenBeforeTheNightlySweepMarksItOverdue() {
+        Student student = persistStudent("88012001");
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(1));
+
+        assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
+    }
+
+    @Test
+    @Tag("D-065")
+    void anInstallmentDueTodayDoesNotBlockYet() {
+        Student student = persistStudent("88012002");
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now());
+
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-065")
+    @Tag("D-292")
+    void aLateFeeDebitNoteAloneBlocksAfterTheInstallmentWasPaid() {
+        Person admin = persistPerson("admin.debt.lf." + System.nanoTime());
+        Student student = persistStudent("88012003");
+        ProgramEnrollment active = persistActiveEnrollment(student, persistProgram());
+        Invoice installment = BillingTestFixtures.invoice().forProgramEnrollment(active).ofType(FeeType.MONTHLY_INSTALLMENT)
+                .forPeriod(YearMonth.now().minusMonths(2)).dueOn(LocalDate.now().minusMonths(2)).withBaseAmount(ars(5000)).build();
+        Invoice lateFee = BillingTestFixtures.invoice().forProgramEnrollment(active).ofType(FeeType.ADMINISTRATIVE_FEE)
+                .forPeriod(YearMonth.now().minusMonths(1)).dueOn(LocalDate.now().minusDays(3)).withBaseAmount(ars(250)).build();
+        jdbc.update("update invoice set document_type = 'DEBIT_NOTE', invoice_type = 'LATE_FEE', origin_invoice_id = ? where id = ?", installment.getId(), lateFee.getId());
+        payInFull(admin, installment);
+
+        assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
+    }
+
+    @Test
+    @Tag("D-065")
+    void payingTheOverdueInstallmentLetsTheStudentEnrollAgain() {
+        Person admin = persistPerson("admin.debt.pay." + System.nanoTime());
+        Student student = persistStudent("88012004");
+        Invoice installment = persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(10));
+        newEnrollmentViolationCodesOf(student, persistProgram());
+
+        payInFull(admin, installment);
+
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-065")
+    void anOverdueInstallmentBlocksANewCourseEnrollmentToo() {
+        Student student = persistStudent("88012005");
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(10));
+
+        assertThatThrownBy(() -> courseEnrollmentService.enroll(student.getId(), new CreateCourseEnrollmentRequest(-1L, null)))
+                .isInstanceOf(OverdueDebtBlocksNewEnrollmentException.class);
+    }
+
+    @Test
+    @Tag("D-065")
+    void theDebtOfAnotherStudentDoesNotBlock() {
+        Student indebted = persistStudent("88012006");
+        persistInstallmentOfActiveEnrollment(indebted, LocalDate.now().minusDays(10));
+        Student clean = persistStudent("88012007");
+
+        assertThat(programEnrollmentService.enroll(clean.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-065")
+    void nothingBlocksWhileBillingIsOff() {
+        Student student = persistStudent("88012008");
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(10));
+        setBillingMode("OFF");
+        try {
+            assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+                    .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+        } finally {
+            setBillingMode("FULL");
+        }
+    }
+
+    @Test
+    @Tag("D-065")
+    void theDebtStillBlocksWhileBillingMirrorsAnotherSystem() {
+        Student student = persistStudent("88012009");
+        persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(10));
+        setBillingMode("MIRROR");
+        try {
+            assertThat(newEnrollmentViolationCodesOf(student, persistProgram())).containsExactly("OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT");
+        } finally {
+            setBillingMode("FULL");
+        }
+    }
+
+    @Test
+    @Tag("D-142")
+    @Tag("D-292")
+    void anUnpaidLateFeeDebitNoteOfAWithdrawnEnrollmentBlocksTheReturnAfterTheInstallmentWasPaid() {
+        Person admin = persistPerson("admin.debt.e05." + System.nanoTime());
+        Student student = persistStudent("88012010");
+        Program program = persistProgram();
+        ProgramEnrollment withdrawn = persistWithdrawnEnrollment(student, program);
+        Invoice installment = BillingTestFixtures.invoice().forProgramEnrollment(withdrawn).ofType(FeeType.MONTHLY_INSTALLMENT)
+                .forPeriod(YearMonth.now().minusMonths(2)).dueOn(LocalDate.now().minusMonths(2)).withBaseAmount(ars(5000)).build();
+        Invoice lateFee = BillingTestFixtures.invoice().forProgramEnrollment(withdrawn).ofType(FeeType.ADMINISTRATIVE_FEE)
+                .forPeriod(YearMonth.now().minusMonths(1)).dueOn(LocalDate.now().minusDays(3)).withBaseAmount(ars(250)).build();
+        jdbc.update("update invoice set document_type = 'DEBIT_NOTE', invoice_type = 'LATE_FEE', origin_invoice_id = ? where id = ?", installment.getId(), lateFee.getId());
+        payInFull(admin, installment);
+
+        assertThat(violationCodesOf(student, program)).containsExactly("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
+
+        payInFull(admin, lateFee);
+        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    private void setBillingMode(String mode) {
+        jdbc.update("update platform_feature set enabled = ?, mode = ? where code = 'BILLING'", !"OFF".equals(mode), mode);
+        snapshotHolder.refresh();
     }
 
     private void payInFull(Person registrant, Invoice debt) {

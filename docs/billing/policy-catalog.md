@@ -294,6 +294,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 4 | EnrollmentFeeSlotNotBeforeEntryPolicy | NOT_REQUIRED_BEFORE_ENTRY | D-020 |
 | 5 | EnrollmentFeeExemptionGrantedPolicy | NOT_REQUIRED_EXEMPTION_GRANTED | D-027 |
 
+## Momento EXAM_FEE_ISSUANCE_DEBT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ExamFeeBlockedByOverdueDebtPolicy | OVERDUE_DEBT_BLOCKS_EXAM_FEE | D-152, D-292 |
+
 ## Momento IDEMPOTENCY_KEY_REUSE
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -388,6 +394,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 6 | InstallmentCapPolicy | INSTALLMENT_CAP_REACHED | D-034, D-039 |
 | 7 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
 | 8 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
+
+## Momento NEW_ENROLLMENT_DEBT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | NewEnrollmentBlockedByOverdueDebtPolicy | OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT | D-065, D-292 |
 
 ## Momento NIGHTLY_BILLING_COMPLETED_TODAY
 
@@ -538,7 +550,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | OutstandingDebtBlocksReenrollmentPolicy | DEBT_IN_PENDING_CANCELLATION_REQUEST, OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT, OVERDUE_INVOICE | D-065, D-142, D-314 |
+| 1 | OutstandingDebtBlocksReenrollmentPolicy | DEBT_IN_PENDING_CANCELLATION_REQUEST, OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT | D-142, D-314 |
 
 ## Momento REFUND_AVAILABILITY
 

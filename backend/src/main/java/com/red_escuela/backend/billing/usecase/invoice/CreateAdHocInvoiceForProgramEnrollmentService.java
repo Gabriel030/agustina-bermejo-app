@@ -45,6 +45,7 @@ public class CreateAdHocInvoiceForProgramEnrollmentService implements CreateAdHo
         requestResolver.validateFeeType(request.feeType());
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
+        requestResolver.requireExamFeeAllowed(enrollment, request.feeType());
         if (request.amount().currency() != enrollment.getProgram().getCurrency()) {
             throw new CurrencyMismatchException(enrollment.getProgram().getCurrency(), request.amount().currency());
         }

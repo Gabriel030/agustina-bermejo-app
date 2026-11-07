@@ -45,6 +45,7 @@ public class CreateAdHocInvoiceForCourseEnrollmentService implements CreateAdHoc
         requestResolver.validateFeeType(request.feeType());
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
+        requestResolver.requireExamFeeAllowed(enrollment, request.feeType());
         if (request.amount().currency() != enrollment.getCourse().getCurrency()) {
             throw new CurrencyMismatchException(enrollment.getCourse().getCurrency(), request.amount().currency());
         }

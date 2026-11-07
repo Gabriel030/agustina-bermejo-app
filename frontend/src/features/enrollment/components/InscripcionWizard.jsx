@@ -95,6 +95,7 @@ const MENSAJES_ERROR_INSCRIPCION = {
   DNI_ALREADY_EXISTS: 'Ese documento ya está registrado en otra cuenta. Revisalo en tus datos personales.',
   INVALID_DOCUMENT_NUMBER: 'El número de documento no tiene un formato válido para el tipo elegido.',
   OUTSTANDING_DEBT_BLOCKS_REENROLLMENT: 'Tenés deuda pendiente. Regularizala antes de inscribirte; si está en un pedido del director, esperá su decisión.',
+  OVERDUE_DEBT_BLOCKS_NEW_ENROLLMENT: 'Tenés una deuda vencida. Regularizala antes de inscribirte a algo nuevo.',
   PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
   ADMISSION_FEE_AWAITING_PAYMENT: 'Tu solicitud ya fue aprobada y tiene una matrícula de ingreso por pagar. Revisá Mis facturas.',
   CHARGE_REJECTED: 'El cobro fue rechazado. Revisá los datos del pago o probá con otro medio.',
