@@ -43,7 +43,7 @@ function mockProgram({ plan = PLAN, programGroups = [], onAdd, onDeactivate } = 
     http.get(`${API}/programs/9`, () => HttpResponse.json(PROGRAM)),
     http.get(`${API}/programs/9/subjects`, () => HttpResponse.json(plan)),
     http.get(`${API}/subjects`, () => HttpResponse.json(ACTIVE_SUBJECTS)),
-    http.get(`${API}/elective-groups`, () => HttpResponse.json([{ id: 3, name: 'Optativas de idioma' }])),
+    http.get(`${API}/elective-groups`, () => HttpResponse.json([{ id: 3, name: 'Optativas de idioma', description: null }])),
     http.get(`${API}/programs/9/elective-groups`, () => HttpResponse.json(programGroups)),
     http.post(`${API}/programs/9/subjects`, onAdd ?? (() => HttpResponse.json({ id: 200 }, { status: 201 }))),
     http.post(`${API}/program-subjects/:id/deactivate`, onDeactivate ?? (() => new HttpResponse(null, { status: 204 }))),
