@@ -132,8 +132,12 @@ public final class Fixtures {
     }
 
     public void configureLatePayment(Catalog catalog) {
+        configureLatePayment(catalog, 30, 2);
+    }
+
+    public void configureLatePayment(Catalog catalog, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
         transactions.executeWithoutResult(status -> LatePaymentTestFixtures.persistLatePayment(configurations, entityManager.getReference(Person.class, catalog.directorId()),
-                GRACE_DAYS, DAILY_LATE_FEE_FRACTION, 30, 2, 10, true, true, LocalDate.of(2000, 1, 1)));
+                GRACE_DAYS, DAILY_LATE_FEE_FRACTION, suspensionAfterDays, suspensionAfterInvoiceCount, 10, true, true, LocalDate.of(2000, 1, 1)));
         jdbc.update("""
                 insert into configuration_version (scope, topic_key, config_values, status, effective_from, change_reason, proposed_by_id, proposed_at, decided_by_id, decided_at,
                                                    direct_publication)
