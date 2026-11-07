@@ -22,7 +22,7 @@ import {
   lastDiscardedRequestOf,
   liveRequestOf,
   periodLabel,
-  totalBaseOf,
+  REQUEST_STATUS,
 } from './annualUpfront';
 import {
   useAnnualUpfrontQuote,
@@ -39,6 +39,11 @@ const REQUEST_ERRORS = {
   NO_MONTHS_LEFT_FOR_ANNUAL_UPFRONT: 'Ya no está disponible: alguna cuota del año ya se emitió.',
   ANNUAL_UPFRONT_NOT_AVAILABLE_WITH_SCHOLARSHIP: 'Con una beca activa no se puede pedir el año completo.',
   IDEMPOTENCY_KEY_CONFLICT: 'Este pedido ya se había enviado con otros datos. Actualizá la pantalla.',
+};
+
+const DISCARD_ERRORS = {
+  ANNUAL_UPFRONT_REQUEST_NOT_FOUND: 'No encontramos el pedido. Actualizamos la pantalla.',
+  ILLEGAL_ANNUAL_UPFRONT_REQUEST_TRANSITION: 'El pedido ya cambió de estado y no se puede descartar. Actualizamos la pantalla.',
 };
 
 const UNKNOWN_OUTCOME_MESSAGE =
@@ -87,12 +92,11 @@ function InstallmentsList({ lines }) {
   );
 }
 
-function RequestDialog({ enrollmentId, quote, onClose }) {
+function RequestDialog({ enrollmentId, quote, keyFor, onClose }) {
   const [accepted, setAccepted] = useState(false);
   const [message, setMessage] = useState('');
   const [unknownOutcome, setUnknownOutcome] = useState(false);
   const mutation = useRequestAnnualUpfront(enrollmentId);
-  const keyFor = useIdempotencyKey();
 
   function submit() {
     const body = { termsAccepted: accepted, termsVersion: ANNUAL_UPFRONT_TERMS_VERSION };
@@ -164,7 +168,7 @@ function DiscardDialog({ request, onClose }) {
         toast.success('Descartaste el pedido del año.');
         onClose();
       },
-      onError: (error) => setMessage(error?.message ?? 'No pudimos descartar el pedido. Probá de nuevo.'),
+      onError: (error) => setMessage(DISCARD_ERRORS[error?.code] ?? error?.message ?? 'No pudimos descartar el pedido. Probá de nuevo.'),
     });
   }
 
@@ -205,8 +209,9 @@ function Frame({ title, pill, children }) {
   );
 }
 
-function Offer({ enrollmentId, programName, eligibility, lastDiscarded }) {
+function Offer({ enrollmentId, programName, eligibility, lastDiscarded, primary }) {
   const [requesting, setRequesting] = useState(false);
+  const keyFor = useIdempotencyKey();
   const { quote, requestDeadline } = eligibility;
   const saving = quote.discount?.totalSaving;
   const hasSaving = saving && moneyValue(saving) > 0;
@@ -223,17 +228,16 @@ function Offer({ enrollmentId, programName, eligibility, lastDiscarded }) {
       )}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-3xl font-semibold tabular-nums text-ink">{formatMoney(quote.total)}</span>
-        {hasSaving && <span className="text-sm tabular-nums text-ink-faint line-through">{formatMoney({ amount: totalBaseOf(quote.lines).toFixed(2), currency: quote.total.currency })}</span>}
         {hasSaving && <StatusPill tone="success">Ahorrás {formatMoney(saving)}</StatusPill>}
       </div>
       <InstallmentsList lines={quote.lines} />
       <p className="text-[13px] text-ink-soft">
         Podés elegirla una sola vez, hasta el {formatDate(requestDeadline)}. Si pagás una cuota, ya no.
       </p>
-      <Button variant="gradient" className="w-full sm:w-fit" onClick={() => setRequesting(true)}>
+      <Button variant={primary ? 'gradient' : 'outline'} className="w-full sm:w-fit" onClick={() => setRequesting(true)}>
         {lastDiscarded ? 'Volver a pedir' : 'Pedir el año completo'}
       </Button>
-      {requesting && <RequestDialog enrollmentId={enrollmentId} quote={quote} onClose={() => setRequesting(false)} />}
+      {requesting && <RequestDialog enrollmentId={enrollmentId} quote={quote} keyFor={keyFor} onClose={() => setRequesting(false)} />}
     </Frame>
   );
 }
@@ -252,7 +256,7 @@ function Unavailable({ programName, eligibility, lastDiscarded }) {
   );
 }
 
-function Tracking({ request, programName }) {
+function Tracking({ request, programName, primary }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [discarding, setDiscarding] = useState(false);
@@ -281,6 +285,15 @@ function Tracking({ request, programName }) {
     );
   }
 
+  if (request.status !== 'AWAITING_PAYMENT') {
+    const fallback = REQUEST_STATUS[request.status] ?? { label: request.status, tone: 'neutral' };
+    return (
+      <Frame title={title} pill={<StatusPill tone={fallback.tone}>{fallback.label}</StatusPill>}>
+        <div className="text-2xl font-semibold tabular-nums text-ink">{formatMoney(request.total)}</div>
+      </Frame>
+    );
+  }
+
   return (
     <Frame title={title} pill={<StatusPill tone="warning">Esperando el pago</StatusPill>}>
       <div className="flex flex-wrap items-baseline gap-x-3">
@@ -296,7 +309,7 @@ function Tracking({ request, programName }) {
         </ul>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button variant="gradient" onClick={goToReceipt}>
+        <Button variant={primary ? 'gradient' : 'outline'} onClick={goToReceipt}>
           Subir comprobante
         </Button>
         <Button variant="ghost" onClick={() => setDiscarding(true)}>
@@ -308,7 +321,7 @@ function Tracking({ request, programName }) {
   );
 }
 
-export function AnnualUpfrontCard({ enrollmentId, programName }) {
+export function AnnualUpfrontCard({ enrollmentId, programName, primary = false }) {
   const quoteQuery = useAnnualUpfrontQuote(enrollmentId, 'student');
   const requestsQuery = useAnnualUpfrontRequests(enrollmentId, 'student');
 
@@ -334,12 +347,12 @@ export function AnnualUpfrontCard({ enrollmentId, programName }) {
   }
 
   const live = liveRequestOf(requestsQuery.data);
-  if (live) return <Tracking request={live} programName={programName} />;
+  if (live) return <Tracking request={live} programName={programName} primary={primary} />;
 
   const eligibility = quoteQuery.data;
   const lastDiscarded = lastDiscardedRequestOf(requestsQuery.data);
   if (eligibility.eligible && eligibility.quote) {
-    return <Offer enrollmentId={enrollmentId} programName={programName} eligibility={eligibility} lastDiscarded={lastDiscarded} />;
+    return <Offer enrollmentId={enrollmentId} programName={programName} eligibility={eligibility} lastDiscarded={lastDiscarded} primary={primary} />;
   }
   if (!eligibility.reasonCode || eligibility.reasonCode === 'ENROLLMENT_NOT_ACTIVE') return null;
   return <Unavailable programName={programName} eligibility={eligibility} lastDiscarded={lastDiscarded} />;

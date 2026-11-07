@@ -49,6 +49,8 @@ export function periodLabel(period) {
   return new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(date);
 }
 
-export function totalBaseOf(lines) {
-  return (lines ?? []).reduce((sum, line) => sum + moneyValue(line.baseAmount), 0);
+export function isAnnualUpfrontActionable(eligibility, requests) {
+  const live = liveRequestOf(requests);
+  if (live) return live.status === 'AWAITING_PAYMENT';
+  return Boolean(eligibility?.eligible && eligibility?.quote);
 }

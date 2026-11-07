@@ -32,12 +32,11 @@ function cashErrorMessage(error) {
   return known ? CASH_ERRORS[known] : (error?.message ?? 'No pudimos registrar el cobro. Probá de nuevo.');
 }
 
-function CashDialog({ studentId, request, onClose }) {
+function CashDialog({ studentId, request, keyFor, onClose }) {
   const [receiptNumber, setReceiptNumber] = useState('');
   const [message, setMessage] = useState('');
   const [unknownOutcome, setUnknownOutcome] = useState(false);
   const mutation = useRegisterAnnualUpfrontCashPayment(studentId, request.id);
-  const keyFor = useIdempotencyKey();
   const tooLong = receiptNumber.trim().length > RECEIPT_MAX_LENGTH;
 
   function confirm() {
@@ -99,9 +98,12 @@ function CashDialog({ studentId, request, onClose }) {
 export function AnnualUpfrontStaffSection({ enrollmentId, studentId }) {
   const { usuario } = useAuth();
   const [collecting, setCollecting] = useState(false);
-  const requestsQuery = useAnnualUpfrontRequests(enrollmentId, 'staff');
-  const quoteQuery = useAnnualUpfrontQuote(enrollmentId, 'staff');
+  const keyFor = useIdempotencyKey();
   const canCollect = (usuario?.roles ?? []).some((role) => role === 'ADMINISTRATIVO' || role === 'DIRECTOR');
+  const requestsQuery = useAnnualUpfrontRequests(enrollmentId, 'staff', canCollect);
+  const quoteQuery = useAnnualUpfrontQuote(enrollmentId, 'staff', canCollect);
+
+  if (!canCollect) return null;
 
   if (requestsQuery.isLoading || quoteQuery.isLoading) return <Skeleton className="h-10 w-full rounded-xl" />;
   if (requestsQuery.isError) {
@@ -163,13 +165,13 @@ export function AnnualUpfrontStaffSection({ enrollmentId, studentId }) {
       {live.status === 'PAYMENT_UNDER_REVIEW' && (
         <p className="text-[13px] text-ink-soft">El alumno subió un comprobante. Se cobra desde la bandeja de comprobantes.</p>
       )}
-      {live.status === 'AWAITING_PAYMENT' && canCollect && (
+      {live.status === 'AWAITING_PAYMENT' && (
         <Button variant="outline" className="w-full sm:w-fit" onClick={() => setCollecting(true)}>
           <Banknote size={14} className="mr-1.5" />
           Cobrar en efectivo
         </Button>
       )}
-      {collecting && <CashDialog studentId={studentId} request={live} onClose={() => setCollecting(false)} />}
+      {collecting && <CashDialog studentId={studentId} request={live} keyFor={keyFor} onClose={() => setCollecting(false)} />}
     </div>
   );
 }

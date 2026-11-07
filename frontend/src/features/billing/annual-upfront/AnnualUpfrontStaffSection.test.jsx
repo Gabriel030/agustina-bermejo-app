@@ -97,11 +97,37 @@ describe('AnnualUpfrontStaffSection', () => {
     expect(screen.getByText(/bandeja de comprobantes/)).toBeInTheDocument();
   });
 
-  it('hidesCashButtonForRolesThatCannotCollect', async () => {
+  it('rendersNothingAndSkipsRequestsForRolesThatCannotCollect', async () => {
     auth.roles = ['PRECEPTOR'];
+    let calls = 0;
+    server.use(http.get(`${API}/program-enrollments/3/annual-upfront-requests`, () => {
+      calls += 1;
+      return HttpResponse.json([]);
+    }));
+    const { container } = renderWithProviders(<AnnualUpfrontStaffSection enrollmentId={3} studentId={12} />);
+    expect(container).toBeEmptyDOMElement();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(calls).toBe(0);
+  });
+
+  it('keepsCashIdempotencyKeyWhenDialogIsClosedAndReopenedAfterUnknownOutcome', async () => {
+    const user = userEvent.setup();
+    const keys = [];
     mount([annualRequest()]);
-    expect(await screen.findByText('Esperando el pago')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Cobrar en efectivo/ })).not.toBeInTheDocument();
+    server.use(
+      http.post(`${API}/students/12/annual-upfront-requests/7/cash-payment`, ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+      }),
+    );
+    await user.click(await screen.findByRole('button', { name: /Cobrar en efectivo/ }));
+    await user.click(screen.getByRole('button', { name: 'Cobrar y confirmar el año' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos confirmar');
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await user.click(await screen.findByRole('button', { name: /Cobrar en efectivo/ }));
+    await user.click(screen.getByRole('button', { name: 'Cobrar y confirmar el año' }));
+    await vi.waitFor(() => expect(keys).toHaveLength(2));
+    expect(keys[1]).toBe(keys[0]);
   });
 
   it('showsEligibilityWhenThereIsNoRequest', async () => {

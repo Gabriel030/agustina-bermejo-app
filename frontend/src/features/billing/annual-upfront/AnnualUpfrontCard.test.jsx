@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -9,6 +9,7 @@ import { createDeferred } from '@/test/deferred';
 import { errorBody } from '@/test/fixtures/errors';
 import { annualQuote, annualRequest } from '@/test/fixtures/annualUpfront';
 import { AnnualUpfrontCard } from './AnnualUpfrontCard';
+import { AnnualUpfrontCards } from './AnnualUpfrontCards';
 
 const API = 'http://localhost:8080';
 
@@ -16,14 +17,14 @@ function Destination() {
   return <div>{useLocation().pathname}</div>;
 }
 
-function mount({ quote, requests = [] }) {
+function mount({ quote, requests = [], primary = false }) {
   server.use(
     http.get(`${API}/me/program-enrollments/3/annual-upfront/quote`, () => HttpResponse.json(quote)),
     http.get(`${API}/me/program-enrollments/3/annual-upfront-requests`, () => HttpResponse.json(requests)),
   );
   return renderWithProviders(
     <Routes>
-      <Route path="/" element={<AnnualUpfrontCard enrollmentId={3} programName="Profesorado" />} />
+      <Route path="/" element={<AnnualUpfrontCard enrollmentId={3} programName="Profesorado" primary={primary} />} />
       <Route path="*" element={<Destination />} />
     </Routes>,
   );
@@ -141,5 +142,88 @@ describe('AnnualUpfrontCard', () => {
     server.use(http.get(`${API}/me/program-enrollments/3/annual-upfront/quote`, () => HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 })));
     renderWithProviders(<AnnualUpfrontCard enrollmentId={3} programName="Profesorado" />);
     expect(await screen.findByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
+  it('showsOnlyServerTotalWithoutStruckThroughPrice', async () => {
+    const { container } = mount({ quote: annualQuote() });
+    await screen.findByText(/792\.000/);
+    expect(container.querySelector('.line-through')).toBeNull();
+    expect(screen.queryByText(/880\.000/)).not.toBeInTheDocument();
+  });
+
+  it('usesGradientCtaOnlyWhenCardIsPrimary', async () => {
+    mount({ quote: annualQuote(), primary: true });
+    expect((await screen.findByRole('button', { name: 'Pedir el año completo' })).className).toContain('bg-gradient-to-br');
+  });
+
+  it('usesOutlineCtaWhenCardIsNotPrimary', async () => {
+    mount({ quote: annualQuote() });
+    expect((await screen.findByRole('button', { name: 'Pedir el año completo' })).className).not.toContain('bg-gradient-to-br');
+  });
+
+  it('keepsIdempotencyKeyWhenDialogIsClosedAndReopenedAfterUnknownOutcome', async () => {
+    const user = userEvent.setup();
+    const keys = [];
+    mount({ quote: annualQuote() });
+    server.use(
+      http.post(`${API}/me/program-enrollments/3/annual-upfront-requests`, ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return HttpResponse.json(errorBody('INTERNAL_ERROR'), { status: 500 });
+      }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos confirmar');
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await user.click(await screen.findByRole('button', { name: 'Pedir el año completo' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getAllByRole('button', { name: 'Pedir el año completo' }).at(-1));
+    await vi.waitFor(() => expect(keys).toHaveLength(2));
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('showsNeutralFallbackForUnknownRequestStatus', async () => {
+    mount({ quote: { eligible: false, reasonCode: 'ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED', reasonMessage: 'x' }, requests: [annualRequest({ status: 'SOMETHING_NEW' })] });
+    expect(await screen.findByText('SOMETHING_NEW')).toBeInTheDocument();
+    expect(screen.queryByText('Esperando el pago')).not.toBeInTheDocument();
+  });
+
+  it('mapsDiscardFailureByBackendCode', async () => {
+    const user = userEvent.setup();
+    mount({ quote: { eligible: false, reasonCode: 'ANNUAL_UPFRONT_PAYMENT_ALREADY_REQUESTED', reasonMessage: 'x' }, requests: [annualRequest()] });
+    server.use(
+      http.post(`${API}/me/annual-upfront-requests/7/discard`, () =>
+        HttpResponse.json(errorBody('ILLEGAL_ANNUAL_UPFRONT_REQUEST_TRANSITION'), { status: 409 }),
+      ),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Descartar pedido' }));
+    await user.click(screen.getAllByRole('button', { name: 'Descartar pedido' }).at(-1));
+    expect(await screen.findByRole('alert')).toHaveTextContent('ya cambió de estado');
+  });
+
+  it('givesGradientOnlyToFirstActionableCardAndNoneWhenAdmissionIsActionable', async () => {
+    const enrollments = [{ id: 3, programName: 'Uno' }, { id: 4, programName: 'Dos' }];
+    server.use(
+      http.get(`${API}/me/program-enrollments/3/annual-upfront/quote`, () => HttpResponse.json(annualQuote())),
+      http.get(`${API}/me/program-enrollments/4/annual-upfront/quote`, () => HttpResponse.json(annualQuote())),
+    );
+    renderWithProviders(<AnnualUpfrontCards enrollments={enrollments} />);
+    const buttons = await screen.findAllByRole('button', { name: 'Pedir el año completo' });
+    expect(buttons).toHaveLength(2);
+    await vi.waitFor(() => expect(buttons[0].className).toContain('bg-gradient-to-br'));
+    expect(buttons[1].className).not.toContain('bg-gradient-to-br');
+  });
+
+  it('givesNoGradientWhenAnAdmissionInvoiceIsActionable', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 1, programName: 'X', status: 'APPROVED', admissionInvoice: { id: 10, total: { amount: '1.00', currency: 'ARS' }, dueDate: '2027-01-01', paymentStatus: 'PENDING' } }]),
+      ),
+      http.get(`${API}/me/program-enrollments/3/annual-upfront/quote`, () => HttpResponse.json(annualQuote())),
+    );
+    renderWithProviders(<AnnualUpfrontCards enrollments={[{ id: 3, programName: 'Uno' }]} />);
+    const button = await screen.findByRole('button', { name: 'Pedir el año completo' });
+    await vi.waitFor(() => expect(button.className).not.toContain('bg-gradient-to-br'));
   });
 });

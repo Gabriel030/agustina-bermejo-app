@@ -3,19 +3,19 @@ import { apiFetch } from '@/api/client';
 
 const scopePrefix = (scope) => (scope === 'student' ? '/me' : '');
 
-export function useAnnualUpfrontQuote(enrollmentId, scope) {
+export function useAnnualUpfrontQuote(enrollmentId, scope, enabled = true) {
   return useQuery({
     queryKey: ['annual-upfront', scope, enrollmentId, 'quote'],
     queryFn: () => apiFetch(`${scopePrefix(scope)}/program-enrollments/${enrollmentId}/annual-upfront/quote`),
-    enabled: enrollmentId != null,
+    enabled: enabled && enrollmentId != null,
   });
 }
 
-export function useAnnualUpfrontRequests(enrollmentId, scope) {
+export function useAnnualUpfrontRequests(enrollmentId, scope, enabled = true) {
   return useQuery({
     queryKey: ['annual-upfront', scope, enrollmentId, 'requests'],
     queryFn: () => apiFetch(`${scopePrefix(scope)}/program-enrollments/${enrollmentId}/annual-upfront-requests`),
-    enabled: enrollmentId != null,
+    enabled: enabled && enrollmentId != null,
   });
 }
 
