@@ -110,7 +110,7 @@ class NotificationPreferencesServicesTest {
         NotificationPreferencesResponse response = getService.getPreferences();
 
         assertThat(response.preferences().keySet()).containsExactlyInAnyOrderElementsOf(EmittedNotificationEvents.visible().stream().map(Enum::name).toList());
-        assertThat(response.mandatoryChannels().keySet()).doesNotContain("ACCOUNT_CREATED", "GRADE_POSTED", "INVOICE_GENERATED");
+        assertThat(response.mandatoryChannels().keySet()).doesNotContain("ACCOUNT_CREATED", "INVOICE_GENERATED");
     }
 
     @Test
@@ -118,7 +118,7 @@ class NotificationPreferencesServicesTest {
         when(currentPerson.resolveCurrentPerson()).thenReturn(person);
         when(repository.findByPersonAndEventAndChannel(any(), any(), any())).thenReturn(Optional.empty());
 
-        updateService.updatePreferences(new UpdateNotificationPreferencesRequest(Map.of("GRADE_POSTED", Map.of("APP", false, "EMAIL", false))));
+        updateService.updatePreferences(new UpdateNotificationPreferencesRequest(Map.of("ACCOUNT_CREATED", Map.of("APP", false, "EMAIL", false))));
 
         verify(repository, never()).save(any());
     }
