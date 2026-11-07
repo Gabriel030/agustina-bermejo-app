@@ -15,7 +15,7 @@ public record CreateAnnouncementRequest(
         @NotBlank @Size(max = 1000) String body,
         @NotNull AnnouncementCategory category,
         boolean urgent,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate expiresAt,
-        @Future @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime scheduledFor,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) AudienceSpecRequest audience) {
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate expiresAt,
+        @Future @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime scheduledFor,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) AudienceSpecRequest audience) {
 }
