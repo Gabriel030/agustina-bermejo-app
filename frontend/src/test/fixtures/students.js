@@ -1,0 +1,30 @@
+export function studentFixture(overrides = {}) {
+  return {
+    id: 9,
+    personId: 109,
+    nombre: 'Valentina',
+    apellido: 'Suárez',
+    dni: '41256903',
+    documentType: 'DNI',
+    legajo: 'L-109',
+    username: '41256903',
+    email: 'valentina@demo.test',
+    status: 'ACTIVE',
+    onboardingStatus: 'CONFIRMADO',
+    sexo: 'F',
+    telefono: '3511234567',
+    nacionalidad: 'Argentina',
+    motivoBaja: '',
+    detalleBaja: '',
+    domicilio: {
+      street: 'Calle',
+      number: '1',
+      floor: '',
+      city: 'Córdoba',
+      state: 'Córdoba',
+      country: 'Argentina',
+      postalCode: '5000',
+    },
+    ...overrides,
+  };
+}

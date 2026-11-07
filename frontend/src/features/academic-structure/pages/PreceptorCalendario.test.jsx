@@ -7,6 +7,7 @@ import { errorBody } from '@/test/fixtures/errors';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { PreceptorCalendario } from './PreceptorCalendario';
+import { termFixture } from '@/test/fixtures/terms';
 
 const API = 'http://localhost:8080';
 
@@ -15,8 +16,8 @@ function mockTermsAndAvailability() {
   server.use(
     http.get(`${API}/terms`, () =>
       HttpResponse.json([
-        { id: 6, description: 'Ciclo lectivo 2026' },
-        { id: 7, description: 'Ciclo lectivo 2027' },
+        termFixture({ id: 6, year: 2026, description: 'Ciclo lectivo 2026' }),
+        termFixture({ id: 7, description: 'Ciclo lectivo 2027' }),
       ]),
     ),
     http.get(`${API}/terms/:termId/classrooms/availability`, ({ params, request }) => {

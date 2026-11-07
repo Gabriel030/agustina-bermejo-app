@@ -6,6 +6,7 @@ import { Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { LegajoAlumno } from './LegajoAlumno';
+import { studentFixture } from '@/test/fixtures/students';
 
 const auth = vi.hoisted(() => ({ usuario: null }));
 vi.mock('@/context/AuthContext', () => ({
@@ -50,7 +51,7 @@ const ABSENCE = {
 
 function mockStudent() {
   server.use(
-    http.get(`${API}/students/9`, () => HttpResponse.json({ id: 9, nombre: 'Valentina', apellido: 'Suárez', status: 'ACTIVE' })),
+    http.get(`${API}/students/9`, () => HttpResponse.json(studentFixture({ id: 9, nombre: 'Valentina', apellido: 'Suárez', status: 'ACTIVE' }))),
     http.get(`${API}/students/9/program-enrollments`, () =>
       HttpResponse.json([{ id: 4, programId: 2, programName: 'Tecnicatura en Gestión Cultural', status: 'ENROLLED', studentId: 9 }])),
     http.get(`${API}/students/9/course-enrollments`, () => HttpResponse.json([])),

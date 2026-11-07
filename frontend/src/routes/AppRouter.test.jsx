@@ -11,6 +11,7 @@ import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AppRouter } from '@/routes/AppRouter';
+import { profileFixture } from '@/test/fixtures/profile';
 
 const API = 'http://localhost:8080';
 
@@ -76,7 +77,7 @@ describe('AppRouter', () => {
       http.post(`${API}/auth/refresh`, () => new HttpResponse(null, { status: 503 })),
       http.get(`${API}/me`, () => {
         meRequests.push(1);
-        return HttpResponse.json({ id: 2, roles: ['DIRECTOR'] });
+        return HttpResponse.json(profileFixture({ id: 2, roles: ['DIRECTOR'] }));
       }),
     );
     renderApp('/director/inicio');
@@ -91,7 +92,7 @@ describe('AppRouter', () => {
     const requestedStudents = [];
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 2, nombre: 'Dora', apellido: 'Directora', email: 'dora@demo.test', roles: ['DIRECTOR'] }),
+        HttpResponse.json(profileFixture({ id: 2, nombre: 'Dora', apellido: 'Directora', email: 'dora@demo.test', roles: ['DIRECTOR'] })),
       ),
       http.get(`${API}/students/:id`, ({ params }) => {
         requestedStudents.push(params.id);
@@ -117,7 +118,7 @@ describe('AppRouter', () => {
   it('sends a platform admin to the first director screen with the platform layout', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 9, nombre: 'Plataforma', apellido: 'Admin', email: 'platform@demo.test', roles: ['PLATFORM_ADMIN'] }),
+        HttpResponse.json(profileFixture({ id: 9, nombre: 'Plataforma', apellido: 'Admin', email: 'platform@demo.test', roles: ['PLATFORM_ADMIN'] })),
       ),
       http.get(`${API}/platform/provisioning/first-director/status`, () => HttpResponse.json({ directorExists: false, institutionName: null })),
     );
@@ -135,7 +136,7 @@ describe('AppRouter', () => {
   ])('lands a %s without a home screen on its first real screen instead of a placeholder', async (role, slug, heading) => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 5, nombre: 'Rol', apellido: 'Prueba', email: 'rol@demo.test', roles: [role] }),
+        HttpResponse.json(profileFixture({ id: 5, nombre: 'Rol', apellido: 'Prueba', email: 'rol@demo.test', roles: [role] })),
       ),
       http.get(`${API}/students`, () => HttpResponse.json([])),
     );
@@ -150,7 +151,7 @@ describe('AppRouter', () => {
   it('shows a readable title instead of the slug on a placeholder reached by URL', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] }),
+        HttpResponse.json(profileFixture({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] })),
       ),
     );
     renderApp('/administrativo/constancias');
@@ -165,7 +166,7 @@ describe('AppRouter', () => {
   it('shows the disabled-module screen on a direct billing URL when billing is OFF instead of redirecting', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] }),
+        HttpResponse.json(profileFixture({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] })),
       ),
       http.get(`${API}/me/modules`, () =>
         HttpResponse.json({
@@ -189,7 +190,7 @@ describe('AppRouter', () => {
   it('keeps a direct billing URL closed when the modules query fails', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] }),
+        HttpResponse.json(profileFixture({ id: 6, nombre: 'Ana', apellido: 'Admin', email: 'ana@demo.test', roles: ['ADMINISTRATIVO'] })),
       ),
       http.get(`${API}/me/modules`, () => new HttpResponse(null, { status: 500 })),
     );
@@ -203,7 +204,7 @@ describe('AppRouter', () => {
   it('lets a director reach the certificates section', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 6, nombre: 'Dora', apellido: 'Dir', email: 'dora@demo.test', roles: ['DIRECTOR'] }),
+        HttpResponse.json(profileFixture({ id: 6, nombre: 'Dora', apellido: 'Dir', email: 'dora@demo.test', roles: ['DIRECTOR'] })),
       ),
     );
     renderApp('/director/constancias');
@@ -217,7 +218,7 @@ describe('AppRouter', () => {
   it('does not let a director open the platform screens', async () => {
     server.use(
       http.get(`${API}/me`, () =>
-        HttpResponse.json({ id: 2, nombre: 'Dora', apellido: 'Directora', email: 'dora@demo.test', roles: ['DIRECTOR'] }),
+        HttpResponse.json(profileFixture({ id: 2, nombre: 'Dora', apellido: 'Directora', email: 'dora@demo.test', roles: ['DIRECTOR'] })),
       ),
     );
     renderApp('/platform_admin/primer-director');

@@ -6,6 +6,7 @@ import { Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { LegajoAlumno } from './LegajoAlumno';
+import { studentFixture } from '@/test/fixtures/students';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { roles: ['PRECEPTOR'] } }),
@@ -48,7 +49,7 @@ const SECTIONS = [
 function mockStudent({ programs = [PROGRAM_ENROLLMENT], courses = [] } = {}) {
   const gradeRequests = [];
   server.use(
-    http.get(`${API}/students/9`, () => HttpResponse.json({ id: 9, nombre: 'Valentina', apellido: 'Suárez', status: 'ACTIVE' })),
+    http.get(`${API}/students/9`, () => HttpResponse.json(studentFixture({ id: 9, nombre: 'Valentina', apellido: 'Suárez', status: 'ACTIVE' }))),
     http.get(`${API}/students/9/program-enrollments`, () => HttpResponse.json(programs)),
     http.get(`${API}/students/9/course-enrollments`, () => HttpResponse.json(courses)),
     http.get(`${API}/program-enrollments/4/progress`, () =>

@@ -8,6 +8,7 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { GrantDiscountPage } from './GrantDiscountPage';
 import { API, CATALOG, mockOffers } from './discountFixtures';
 import { currentMonth, shiftMonth } from './grantForm';
+import { studentFixture } from '@/test/fixtures/students';
 
 const auth = vi.hoisted(() => ({ roles: ['DIRECTOR'] }));
 vi.mock('@/context/AuthContext', () => ({
@@ -56,7 +57,7 @@ function renderGrant(enrollment = 'program-4') {
 function mockEnvironment({ preview = previewResponse(), onPreview, grant, onGrant } = {}) {
   mockOffers();
   server.use(
-    http.get(`${API}/students/9`, () => HttpResponse.json({ id: 9, nombre: 'Valentina', apellido: 'Suárez' })),
+    http.get(`${API}/students/9`, () => HttpResponse.json(studentFixture({ id: 9, nombre: 'Valentina', apellido: 'Suárez' }))),
     http.get(`${API}/program-enrollments/4`, () => HttpResponse.json({ id: 4, programId: 2, programName: 'Enfermería', status: 'ENROLLED', studentId: 9, enrollmentDate: '2026-03-01T00:00:00', completionDate: '2027-12-15T00:00:00' })),
     http.get(`${API}/course-enrollments/11`, () => HttpResponse.json({ id: 11, courseId: 3, courseName: 'Primeros Auxilios', status: 'ENROLLED', studentId: 9, enrollmentDate: '2026-03-01T00:00:00', completionDate: '2026-12-15T00:00:00' })),
     http.get(`${API}/discount-definitions`, () => HttpResponse.json(CATALOG)),
@@ -247,7 +248,7 @@ describe('GrantDiscountPage', () => {
       </Routes>,
       { route: '/director/alumnos/9/descuentos/nuevo' },
     );
-    server.use(http.get(`${API}/students/9`, () => HttpResponse.json({ id: 9, nombre: 'Valentina', apellido: 'Suárez' })));
+    server.use(http.get(`${API}/students/9`, () => HttpResponse.json(studentFixture({ id: 9, nombre: 'Valentina', apellido: 'Suárez' }))));
 
     expect(await screen.findByText('Elegí una inscripción desde el legajo del alumno.')).toBeInTheDocument();
   });

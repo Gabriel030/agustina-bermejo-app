@@ -11,6 +11,7 @@ import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { creditBalanceFixture, creditNoteFixture, invoiceFixture, money } from '@/test/fixtures/invoices';
 import { CreateCreditNotePage } from './CreateCreditNotePage';
+import { studentFixture } from '@/test/fixtures/students';
 
 const API = 'http://localhost:8080';
 
@@ -40,7 +41,7 @@ function mockServer({ issue } = {}) {
   issueBodies = [];
   issueKeys = [];
   server.use(
-    http.get(`${API}/students/2`, () => HttpResponse.json({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' })),
+    http.get(`${API}/students/2`, () => HttpResponse.json(studentFixture({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }))),
     http.get(`${API}/students/2/billing-overview`, () =>
       HttpResponse.json([{ enrollmentType: 'PROGRAM', enrollmentId: 2, productName: 'Profesorado', paymentStatus: 'OVERDUE', invoices: [invoice] }]),
     ),

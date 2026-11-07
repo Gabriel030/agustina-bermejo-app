@@ -9,6 +9,7 @@ import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AppRouter } from '@/routes/AppRouter';
+import { profileFixture } from '@/test/fixtures/profile';
 
 const API = 'http://localhost:8080';
 
@@ -31,7 +32,7 @@ function renderApp(initialPath) {
 
 async function signInAs(role, path) {
   server.use(
-    http.get(`${API}/me`, () => HttpResponse.json({ id: 2, nombre: 'Uno', apellido: 'Prueba', email: 'uno@demo.test', roles: [role] })),
+    http.get(`${API}/me`, () => HttpResponse.json(profileFixture({ id: 2, nombre: 'Uno', apellido: 'Prueba', email: 'uno@demo.test', roles: [role] }))),
     http.get(`${API}/students`, () => HttpResponse.json([])),
     http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 1, studentsUpToDate: 2, totalsByCurrency: [] })),
     http.get(`${API}/financial-dashboard/debtors`, () => HttpResponse.json([])),
